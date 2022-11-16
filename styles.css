@@ -28,8 +28,8 @@
 .mk-floweditor .cm-scroller {
   padding: 0 !important;
 }
-.mk-floweditor .HyperMD-header.cm-line {
-  margin: 15px 0 !important;
+.mk-floweditor-placeholder {
+  border: thin solid var(--color-base-20);
 }
 .mk-floweditor .mk-floweditor-title-container {
   display: flex;
@@ -41,7 +41,7 @@
   padding: 8px 0px;
   margin: 0;
   margin-top: 8px;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--background-modifier-hover);
   width: 100%;
   display: flex;
 }
@@ -107,6 +107,17 @@
 .mk-flow-classic .markdown-embed {
   margin-top: 24px;
 }
+.markdown-embed .markdown-rendered h1,
+.markdown-embed .markdown-rendered h2,
+.markdown-embed .markdown-rendered h3,
+.markdown-embed .markdown-rendered h4,
+.markdown-embed .markdown-rendered h5,
+.markdown-embed .markdown-rendered h6 {
+  margin: 0;
+}
+.markdown-embed p {
+  margin-bottom: 24px;
+}
 .mk-flow-seamless .markdown-embed {
   margin-top: 24px;
 }
@@ -132,8 +143,9 @@
 }
 .cm-tooltip {
   border: none !important;
+  z-index: var(--layer-popover) !important;
 }
-.cm-line:hover .mk-floweditor-selector {
+.cm-line:hover > .mk-floweditor-selector {
   visibility: visible;
 }
 .markdown-embed:hover .mk-floweditor-selector {
@@ -443,9 +455,9 @@
 /* src/components/Sidebar/TreeView/SectionView.module.css */
 .mk-section {
   display: flex;
-  padding: 4px 0px;
+  padding: 2px 0px;
+  margin-top: 1px;
   padding-left: 12px;
-  margin-top: 12px;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
   width: 100%;
@@ -539,12 +551,6 @@
   overscroll-behavior-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-.mk-file-tree::-webkit-scrollbar {
-  display: none;
-}
-:root {
-  --highlight-color: #eee;
-}
 
 /* src/components/Sidebar/MainMenu.module.css */
 .mk-main-menu-container {
@@ -609,7 +615,7 @@
 }
 .cm-active.cm-placeholder:before {
   content: attr(data-ph);
-  color: #555;
+  color: var(--text-faint);
   position: absolute;
 }
 
@@ -635,7 +641,7 @@
 .mk-sticker-filter {
   border: none;
   background: none;
-  border-bottom: thin solid #333;
+  border-bottom: thin solid var(--background-modifier-hover);
   width: 100%;
   padding: 8px 12px;
 }
@@ -653,8 +659,6 @@
   color: transparent;
 }
 .mk-maker-mode .markdown-source-view.mod-cm6 .cm-formatting-list-ul {
-  padding-left: 2px;
-  padding-right: 5px;
 }
 .mk-maker-mode .markdown-source-view.mod-cm6 .task-list-label .task-list-item-checkbox {
   margin-bottom: 4px;
@@ -725,7 +729,7 @@
   color: var(--text-muted);
 }
 .mk-divider {
-  border-left: thin solid #333;
+  border-left: thin solid var(--background-modifier-hover);
   width: 1px;
 }
 .mk-color {

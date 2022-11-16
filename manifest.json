@@ -1,10 +1,10 @@
 {
     "id": "make-md",
     "name": "MAKE.md",
-    "version": "0.3.8",
+    "version": "0.4.0",
     "minAppVersion": "0.16.0",
     "description": "This distribution makes Obsidian easy to use.",
     "author": "MAKE.md",
     "authorUrl": "https://www.make.md",
-    "isDesktopOnly": true
+    "isDesktopOnly": false
 }

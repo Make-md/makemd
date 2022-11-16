@@ -858,7 +858,7 @@ var require_react_fast_compare = __commonJS({
       }
       return a6 !== a6 && b4 !== b4;
     }
-    module2.exports = function isEqual4(a6, b4) {
+    module2.exports = function isEqual3(a6, b4) {
       try {
         return equal(a6, b4);
       } catch (error) {
@@ -878,10 +878,10 @@ __export(main_exports, {
   default: () => MakeMDPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian13 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 
 // src/components/Sidebar/FileTreeView.tsx
-var import_obsidian9 = require("obsidian");
+var import_obsidian8 = require("obsidian");
 
 // node_modules/preact/dist/preact.module.js
 var n;
@@ -6772,7 +6772,7 @@ function useForceUpdate() {
   return () => setValue((value2) => value2 + 1);
 }
 
-// src/components/Sidebar/FileExplorer.tsx
+// src/components/Sidebar/FileExplorerVirtualized.tsx
 var import_obsidian7 = require("obsidian");
 
 // src/recoil/pluginState.ts
@@ -7598,6 +7598,9 @@ var import_state3 = require("@codemirror/state");
 
 // src/utils/cm-utils.ts
 var import_language2 = require("@codemirror/language");
+function iterateTreeAtPos(pos, state, iterateFns) {
+  (0, import_language2.syntaxTree)(state).iterate({ ...iterateFns, from: pos, to: pos });
+}
 function iterateTreeInSelection(selection, state, iterateFns) {
   (0, import_language2.syntaxTree)(state).iterate({ ...iterateFns, from: selection.from, to: selection.to });
 }
@@ -8207,6 +8210,7 @@ var internalLinkHover = hoverTooltip((view2, pos, side) => {
               return { dom };
             }
           };
+          return false;
         }
       }
     }
@@ -8321,8 +8325,8 @@ var FlowEditorWidget = class extends import_view3.WidgetType {
     div.toggleClass("mk-floweditor-container", true);
     div.toggleClass("mk-floweditor-fix", this.info.startOfLineFix);
     div.setAttribute("id", "mk-flow-" + this.info.id);
-    const placeholder = div.createDiv("mk-floweditor-placeholder");
-    placeholder.style.setProperty("height", this.info.height + "px");
+    const placeholder2 = div.createDiv("mk-floweditor-placeholder");
+    placeholder2.style.setProperty("height", this.info.height + "px");
     loadFlowEditorByDOM(div, view2, this.info.id);
     return div;
   }
@@ -8518,11 +8522,11 @@ var atomicSelect = import_state5.EditorState.transactionFilter.of((tr) => {
   if (tr.annotation(arrowKeyAnnotation) && flowID) {
     const oldSel = tr.startState.selection.main;
     const lineRange = tr.state.field(selectiveLinesFacet, false);
-    const posRange = lineRange && lineRange[0] != void 0 ? lineRangeToPosRange(tr.startState, lineRange) : { from: 0, to: tr.startState.doc.length - 1 };
-    if (oldSel.from <= posRange.from && tr.annotation(arrowKeyAnnotation) == 1) {
+    const posRange = lineRange && lineRange[0] != void 0 ? lineRangeToPosRange(tr.startState, lineRange) : { from: 0, to: tr.startState.doc.length };
+    if (oldSel.from <= posRange.from && tr.annotation(arrowKeyAnnotation) == 3) {
       focusFlowEditorParent(flowID, true);
     }
-    if (oldSel.to >= posRange.to && tr.annotation(arrowKeyAnnotation) == 2) {
+    if (oldSel.to >= posRange.to && tr.annotation(arrowKeyAnnotation) == 4) {
       focusFlowEditorParent(flowID, false);
     }
     return tr;
@@ -8534,8 +8538,9 @@ var atomicSelect = import_state5.EditorState.transactionFilter.of((tr) => {
   if (flowEditors) {
     for (let info of flowEditors) {
       if (info.embed == 1) {
-        if (info.from - 4 <= selection.from && info.to + 2 >= selection.to && info.expandedState == 2) {
-          focusFlowEditor(info.id, true);
+        if (info.from - 3 <= selection.from && info.to + 2 >= selection.to && info.expandedState == 2) {
+          const top2 = tr.annotation(arrowKeyAnnotation) == 1 || tr.startState.selection.main.from > selection.from ? false : true;
+          focusFlowEditor(info.id, top2);
           return {
             selection: import_state5.EditorSelection.single(info.from - 4)
           };
@@ -8629,7 +8634,6 @@ var loadFlowEditor = (cm, flowEditorInfo2, leaf, app2) => {
     if (file) {
       const selectiveRange = getLineRangeFromRef(file, ref, app2);
       if (!dom.hasAttribute("ready")) {
-        dom.empty();
         dom.setAttribute("ready", "");
         createFlowEditorInElement(flowEditorInfo2.id, dom, ref ? "block" : "flow", file.path, selectiveRange[0], selectiveRange[1]);
       }
@@ -8661,7 +8665,7 @@ var focusPortal = async (plugin, evt) => {
             cm.focus();
             if (top2) {
               cm.dispatch({
-                selection: import_state6.EditorSelection.single(foundInfo.from - 5),
+                selection: import_state6.EditorSelection.single(foundInfo.from - 4),
                 annotations: arrowKeyAnnotation.of(1)
               });
             } else {
@@ -8691,7 +8695,7 @@ var focusPortal = async (plugin, evt) => {
         if (stateField && stateField == id) {
           cm.focus();
           const lineRange = cm.state.field(selectiveLinesFacet, false);
-          const posRange = lineRange && lineRange[0] != void 0 ? lineRangeToPosRange(cm.state, lineRange) : { from: 0, to: cm.state.doc.length - 1 };
+          const posRange = lineRange && lineRange[0] != void 0 ? lineRangeToPosRange(cm.state, lineRange) : { from: 0, to: cm.state.doc.length };
           if (top2) {
             cm.dispatch({
               selection: import_state6.EditorSelection.single(posRange.from)
@@ -8724,14 +8728,26 @@ var spawnNewPortal = async (plugin, evt) => {
   });
   view2.dom.addEventListener("keydown", (e5) => {
     if (e5.key == "ArrowUp") {
-      view2.dispatch({
-        annotations: arrowKeyAnnotation.of(1)
-      });
+      if (e5.metaKey == true) {
+        view2.dispatch({
+          annotations: arrowKeyAnnotation.of(3)
+        });
+      } else {
+        view2.dispatch({
+          annotations: arrowKeyAnnotation.of(1)
+        });
+      }
     }
     if (e5.key == "ArrowDown") {
-      view2.dispatch({
-        annotations: arrowKeyAnnotation.of(2)
-      });
+      if (e5.metaKey == true) {
+        view2.dispatch({
+          annotations: arrowKeyAnnotation.of(4)
+        });
+      } else {
+        view2.dispatch({
+          annotations: arrowKeyAnnotation.of(2)
+        });
+      }
     }
   });
   if (from && to) {
@@ -8963,20 +8979,15 @@ function getMinDepth({ nextItem }) {
 function getDragDepth(offset2, indentationWidth) {
   return Math.round(offset2 / indentationWidth) + 1;
 }
-function getProjection(items, activeId, overId, dragOffset, indentationWidth) {
-  const overItemIndex = items.findIndex(({ id }) => id === overId);
-  const activeItemIndex = items.findIndex(({ id }) => id === activeId);
-  const activeItem = items[activeItemIndex];
-  const previousItem = items[overItemIndex];
-  const nextItem = items[overItemIndex + 1];
+function getProjection(items, activeItem, overItemIndex, previousItem, nextItem, dragDepth) {
   const activeIsSection = activeItem.parentId == null;
   const overIsSection = previousItem.parentId == null;
-  if (nodeIsAncestorOfTarget(activeItem, items.find((f5) => f5.id == overId))) {
+  if (nodeIsAncestorOfTarget(activeItem, previousItem)) {
     return null;
   }
   if (activeIsSection) {
     if (overIsSection) {
-      return { depth: 0, maxDepth: 0, minDepth: 0, overId, parentId: null };
+      return { depth: 0, maxDepth: 0, minDepth: 0, overId: previousItem.id, parentId: null };
     }
     return null;
   }
@@ -8985,7 +8996,6 @@ function getProjection(items, activeId, overId, dragOffset, indentationWidth) {
       return null;
     }
   }
-  const dragDepth = getDragDepth(dragOffset, indentationWidth);
   const projectedDepth = dragDepth;
   const maxDepth = getMaxDepth({
     previousItem
@@ -9000,7 +9010,7 @@ function getProjection(items, activeId, overId, dragOffset, indentationWidth) {
   if (previousItem.section != -1 && depth > 1) {
     return null;
   }
-  return { depth, maxDepth, minDepth, overId, parentId: getParentId() };
+  return { depth, maxDepth, minDepth, overId: previousItem.id, parentId: getParentId() };
   function getParentId() {
     var _a2;
     if (depth === 0 || !previousItem) {
@@ -13323,8 +13333,7 @@ var SectionItem = k3(({
   onCollapse,
   wrapperRef,
   plugin,
-  disabled,
-  ...props
+  disabled
 }, ref) => {
   const [sections2, setSections] = Recoil_index_14(sections);
   const [focusedFolder2, setFocusedFolder] = Recoil_index_14(focusedFolder);
@@ -13397,11 +13406,10 @@ var SectionItem = k3(({
     ref: wrapperRef,
     style: {
       ...style,
-      "--spacing": `${indentationWidth * depth}px`
-    },
-    ...props
+      ...indicator ? { "--spacing": `${indentationWidth * depth}px` } : {}
+    }
   }, /* @__PURE__ */ bn.createElement("div", {
-    className: (0, import_classnames.default)("mk-section", indicator.state == 2 /* Bottom */ ? "mk-indicator-bottom" : indicator.state == 1 /* Top */ ? "mk-indicator-top" : indicator.state == 3 /* Row */ ? "mk-indicator-row" : "")
+    className: (0, import_classnames.default)("mk-section", indicator ? indicator.state == 2 /* Bottom */ ? "mk-indicator-bottom" : indicator.state == 1 /* Top */ ? "mk-indicator-top" : indicator.state == 3 /* Row */ ? "mk-indicator-row" : "" : "")
   }, /* @__PURE__ */ bn.createElement("div", {
     className: "mk-section-title",
     onContextMenu: (e5) => data.section == -1 ? triggerVaultMenu(e5) : triggerSectionMenu(data.name, data.index, e5),
@@ -16094,7 +16102,7 @@ var usePopper = function usePopper2(referenceElement, popperElement, options) {
 
 // src/components/Sidebar/TreeView/FolderTreeView.tsx
 var animateLayoutChanges = ({ isSorting, wasDragging }) => isSorting || wasDragging ? false : true;
-function SortableTreeItem({ id, data, depth, disabled, style, ...props }) {
+var SortableTreeItem = ({ id, data, depth, disabled, style, ...props }) => {
   const {
     attributes,
     isDragging,
@@ -16110,6 +16118,12 @@ function SortableTreeItem({ id, data, depth, disabled, style, ...props }) {
     disabled,
     data
   });
+  const memoListeners = F(() => {
+    return {
+      ...attributes,
+      ...listeners
+    };
+  }, [isSorting]);
   if (data.parentId == null) {
     return /* @__PURE__ */ bn.createElement(SectionItem, {
       ref: setDraggableNodeRef,
@@ -16120,10 +16134,7 @@ function SortableTreeItem({ id, data, depth, disabled, style, ...props }) {
       disableInteraction: isSorting,
       disabled,
       style,
-      handleProps: {
-        ...attributes,
-        ...listeners
-      },
+      handleProps: memoListeners,
       ...props
     });
   } else {
@@ -16136,14 +16147,11 @@ function SortableTreeItem({ id, data, depth, disabled, style, ...props }) {
       disableInteraction: isSorting,
       disabled,
       style,
-      handleProps: {
-        ...attributes,
-        ...listeners
-      },
+      handleProps: memoListeners,
       ...props
     });
   }
-}
+};
 var TreeItem = k3(({
   childCount,
   clone,
@@ -16160,8 +16168,7 @@ var TreeItem = k3(({
   wrapperRef,
   style,
   plugin,
-  disabled,
-  ...props
+  disabled
 }, ref) => {
   const collapsible = true;
   const [activeFile2, setActiveFile] = Recoil_index_14(activeFile);
@@ -16298,13 +16305,12 @@ var TreeItem = k3(({
   return /* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement("div", {
     className: (0, import_classnames2.default)("mk-tree-wrapper", clone && "mk-clone", ghost && "mk-ghost", disableSelection && "mk-disable-selection", disableInteraction && "mk-disable-interaction", activeFile2 === data.path && " mk-is-active"),
     ref: wrapperRef,
-    style,
-    ...props
+    style
   }, /* @__PURE__ */ bn.createElement("div", {
-    className: (0, import_classnames2.default)(indicator.state == 2 /* Bottom */ ? "mk-indicator-bottom" : indicator.state == 1 /* Top */ ? "mk-indicator-top" : indicator.state == 3 /* Row */ ? "mk-indicator-row" : ""),
-    style: {
+    className: indicator && (0, import_classnames2.default)(indicator.state == 2 /* Bottom */ ? "mk-indicator-bottom" : indicator.state == 1 /* Top */ ? "mk-indicator-top" : indicator.state == 3 /* Row */ ? "mk-indicator-row" : ""),
+    style: indicator ? {
       "--spacing": `${indentationWidth * indicator.depth - 12}px`
-    },
+    } : {},
     ...handleProps
   }, /* @__PURE__ */ bn.createElement("div", {
     className: (0, import_classnames2.default)(`mk-tree-item`),
@@ -16404,322 +16410,6 @@ var TreeItem = k3(({
 });
 TreeItem.displayName = "TreeItem";
 
-// src/components/Sidebar/FileExplorer.tsx
-var FileExplorerComponent = (props) => {
-  const { plugin } = props;
-  const indentationWidth = 24;
-  const [activeFolderPath2, setActiveFolderPath] = Recoil_index_14(activeFolderPath);
-  const [vaultCollapsed, setVaultCollapsed] = p2(plugin.settings.vaultCollapsed);
-  const [openFolders2, setOpenFolders] = Recoil_index_14(openFolders);
-  const [fileIcons2, setFileIcons] = Recoil_index_14(fileIcons);
-  const [focusedFolder2, setFocusedFolder] = Recoil_index_14(focusedFolder);
-  const [activeFile2, setActiveFile] = Recoil_index_14(activeFile);
-  const [sections2, setSections] = Recoil_index_14(sections);
-  const [_folderTree, setFolderTree] = Recoil_index_14(folderTree);
-  const forceUpdate = useForceUpdate();
-  const loadFolderTree = async (folder) => {
-    setFolderTree(await sortFolderTree(folder, plugin));
-  };
-  h2(() => {
-    window.addEventListener(eventTypes.vaultChange, vaultChangeEvent);
-    window.addEventListener(eventTypes.activeFileChange, changeActiveFile);
-    window.addEventListener(eventTypes.refreshView, forceUpdate);
-    window.addEventListener(eventTypes.settingsChanged, settingsChanged);
-    return () => {
-      window.removeEventListener(eventTypes.vaultChange, vaultChangeEvent);
-      window.removeEventListener(eventTypes.activeFileChange, changeActiveFile);
-      window.removeEventListener(eventTypes.refreshView, forceUpdate);
-      window.removeEventListener(eventTypes.settingsChanged, settingsChanged);
-    };
-  }, []);
-  const handleRevealFileEvent = (evt) => {
-  };
-  const vaultChangeEvent = (evt) => {
-    if (evt.detail) {
-      handleVaultChanges(evt.detail.file, evt.detail.changeType, evt.detail.oldPath);
-    }
-    const loadFolderTree2 = async () => {
-      setFolderTree(await sortFolderTree(plugin.app.vault.getRoot(), plugin));
-    };
-    cleanData();
-    plugin.saveSettings();
-    loadFolderTree2();
-  };
-  const changeActiveFile = (evt) => {
-    let filePath = evt.detail.filePath;
-    const activeLeaf = plugin.app.workspace.activeLeaf;
-    if (activeLeaf.view.getViewType() == FOLDER_VIEW_TYPE) {
-      setActiveFile(activeLeaf.view.getState().folder);
-    } else {
-      let file = plugin.app.vault.getAbstractFileByPath(filePath);
-      if (file) {
-        setActiveFile(file.path);
-      } else {
-        setActiveFile(null);
-      }
-      ;
-    }
-  };
-  function handleVaultChanges(file, changeType, oldPathBeforeRename) {
-    if (changeType == "rename") {
-      renamePathInStringTree(oldPathBeforeRename, file, plugin);
-    }
-    if (changeType == "delete") {
-    }
-  }
-  const settingsChanged = () => {
-    setSections(plugin.settings.spaces);
-    setOpenFolders(plugin.settings.openFolders);
-    setFileIcons(plugin.settings.fileIcons);
-    setVaultCollapsed(plugin.settings.vaultCollapsed);
-  };
-  h2(() => {
-    setInitialFocusedFolder();
-    settingsChanged();
-  }, []);
-  const cleanData = () => {
-    const cleanedSections = plugin.settings.spaces.map((f5) => {
-      return {
-        ...f5,
-        children: f5.children.filter((f6) => plugin.app.vault.getAbstractFileByPath(f6))
-      };
-    });
-    const cleanedCollapse = plugin.settings.openFolders;
-    const cleanedFileIcons = plugin.settings.fileIcons.filter((f5) => plugin.app.vault.getAbstractFileByPath(f5[0]));
-    plugin.settings.spaces = cleanedSections;
-    plugin.settings.openFolders = cleanedCollapse;
-    plugin.settings.fileIcons = cleanedFileIcons;
-  };
-  const setInitialFocusedFolder = () => {
-    cleanData();
-    loadFolderTree(plugin.app.vault.getRoot());
-    setFocusedFolder(plugin.app.vault.getRoot());
-  };
-  const sensors = useSensors(useSensor(MouseSensor, {
-    activationConstraint: {
-      distance: 10
-    }
-  }), useSensor(TouchSensor, {
-    activationConstraint: {
-      delay: 250,
-      tolerance: 5
-    }
-  }));
-  const measuring = {
-    droppable: {
-      strategy: MeasuringStrategy.Always
-    }
-  };
-  const [activeId, setActiveId] = p2(null);
-  const [overId, setOverId] = p2(null);
-  const [currentPosition, setCurrentPosition] = p2(null);
-  const [dropPlaceholderItem, setDropPlaceholderItem] = p2(null);
-  const [offsetLeft, setOffsetLeft] = p2(0);
-  const flattenSectionTree = (sectionTrees) => {
-    const getChildren = (section, paths, sectionIndex) => {
-      return flattenTrees(paths.map((f5) => plugin.app.vault.getAbstractFileByPath(f5)).filter((f5) => f5 != null), "/" + section + "/", sectionIndex, section, 1);
-    };
-    return sectionTrees.reduce((p6, c3, i5) => {
-      return [...p6, {
-        id: c3.section,
-        parentId: null,
-        name: c3.section,
-        depth: 0,
-        index: i5,
-        section: i5,
-        isFolder: true
-      }, ...!c3.collapsed ? getChildren(c3.section, c3.children, i5) : []];
-    }, []);
-  };
-  const flattenedItems = F(() => {
-    const flattenedTree = [
-      ...flattenSectionTree(sections2),
-      ..._folderTree ? flattenTree(_folderTree, "/", -1, vaultCollapsed) : []
-    ];
-    return includeChildrenOf(flattenedTree, openFolders2);
-  }, [_folderTree, openFolders2, sections2, vaultCollapsed]);
-  const sortedIds = F(() => flattenedItems.map(({ id }) => id), [flattenedItems]);
-  const activeItem = activeId ? flattenedItems.find(({ id }) => id === activeId) : null;
-  const projected = activeId && overId ? getProjection(flattenedItems, activeId, overId, offsetLeft, indentationWidth) : null;
-  function handleDragStart(event) {
-    const { active: { id: activeId2 } } = event;
-    const activeItem2 = flattenedItems.find(({ id }) => id === activeId2);
-    if (activeItem2.parentId == null && activeItem2.section == -1)
-      return;
-    setActiveId(activeId2);
-    setOverId(activeId2);
-    if (activeItem2) {
-      setCurrentPosition({
-        parentId: activeItem2.parentId,
-        overId: activeId2
-      });
-    }
-    document.body.style.setProperty("cursor", "grabbing");
-  }
-  function handleDragMove({ delta }) {
-    setOffsetLeft(Math.max(1, delta.x));
-  }
-  function handleDragOver({ over }) {
-    var _a2;
-    const overId2 = over == null ? void 0 : over.id;
-    if (overId2) {
-      setOverId((_a2 = over == null ? void 0 : over.id) != null ? _a2 : null);
-    }
-  }
-  function handleDragEnd({ active, over }) {
-    resetState();
-    moveFile(active, over);
-  }
-  const moveFile = async (active, over) => {
-    if (projected) {
-      const clonedItems = [
-        ...flattenSectionTree(sections2),
-        ..._folderTree ? flattenTree(_folderTree, "/", -1, false) : []
-      ];
-      const overIndex = clonedItems.findIndex(({ id }) => id === over.id);
-      const overItem = clonedItems[overIndex];
-      const activeIndex = clonedItems.findIndex(({ id }) => id === active.id);
-      const activeTreeItem = clonedItems[activeIndex];
-      const activeIsSection = activeTreeItem.parentId == null;
-      const overIsSection = overItem.parentId == null;
-      if (activeIsSection) {
-        if (overIsSection) {
-          const newSections = overItem.section == -1 ? arrayMove(sections2, activeTreeItem.index, sections2.length - 1) : overItem.index > activeIndex ? arrayMove(sections2, activeTreeItem.index, overItem.index - 1) : arrayMove(sections2, activeTreeItem.index, overItem.index);
-          plugin.settings.spaces = newSections;
-          plugin.saveSettings();
-          return;
-        }
-      }
-      const { depth, overId: overId2, parentId } = projected;
-      const parentItem = clonedItems.find(({ id }) => id === parentId);
-      if (overItem.section != activeItem.section || overItem.section != -1) {
-        if (overItem.section == -1) {
-          return;
-        }
-        if (parentId != sections2[overItem.section].section && parentId != null) {
-          return;
-        }
-        const newSections = sections2.map((s10, k5) => {
-          if (k5 == overItem.section) {
-            const index = sections2[overItem.section].children.findIndex((f5) => f5 == overItem.path) + 1;
-            const activeIndex2 = s10.children.findIndex((g4) => g4 == activeItem.path);
-            const children = s10.children.filter((g4) => g4 != activeItem.path);
-            const toIndex = activeIndex2 <= index && activeIndex2 != -1 ? index - 1 : index;
-            if (activeIndex2 == -1) {
-              new import_obsidian7.Notice(i18n_default.notice.addedToSection);
-            }
-            return {
-              ...s10,
-              children: [...children.slice(0, toIndex), activeItem.path, ...children.slice(toIndex)]
-            };
-          }
-          return s10;
-        });
-        plugin.settings.spaces = newSections;
-        plugin.saveSettings();
-        return;
-      }
-      if (parentId != activeTreeItem.parentId) {
-        const newPath = `${parentItem.isFolder ? parentItem.path : parentItem.parent.path}/${activeItem.name}`;
-        if (plugin.app.vault.getAbstractFileByPath(newPath)) {
-          new import_obsidian7.Notice(i18n_default.notice.duplicateFile);
-          return;
-        }
-        await props.plugin.app.vault.rename(activeTreeItem, newPath);
-        clonedItems[activeIndex] = { ...activeTreeItem, depth, parentId, ...plugin.app.vault.getAbstractFileByPath(newPath) };
-      } else {
-        clonedItems[activeIndex] = { ...activeTreeItem, depth, parentId };
-      }
-      const sortedItems = overIndex > activeIndex ? arrayMove(clonedItems, activeIndex, overIndex) : overIndex < activeIndex ? arrayMove(clonedItems, activeIndex, overIndex + 1) : clonedItems;
-      const newItems = buildTree(sortedItems);
-      const newFolderRank = folderTreeToStringTree(newItems);
-      plugin.settings.folderRank = newFolderRank;
-      await plugin.saveSettings();
-      loadFolderTree(plugin.app.vault.getRoot());
-    }
-  };
-  const adjustTranslate = ({ transform }) => {
-    return {
-      ...transform,
-      x: transform.x,
-      y: transform.y - 10
-    };
-  };
-  function handleDragCancel() {
-    resetState();
-  }
-  function handleCollapse(folder) {
-    if (folder.parentId == null) {
-      if (folder.id == "/") {
-        plugin.settings.vaultCollapsed = !plugin.settings.vaultCollapsed;
-        plugin.saveSettings();
-        return;
-      }
-      const newSections = sections2.map((s10, i5) => {
-        return i5 == folder.index ? { ...s10, collapsed: !s10.collapsed } : s10;
-      });
-      plugin.settings.spaces = newSections;
-      plugin.saveSettings();
-    } else {
-      const folderOpen = openFolders2.find((f5) => f5 == folder.id);
-      const newOpenFolders = !folderOpen ? [...openFolders2, folder.id] : openFolders2.filter((openFolder) => folder.id !== openFolder);
-      plugin.settings.openFolders = newOpenFolders;
-      plugin.saveSettings();
-    }
-  }
-  function resetState() {
-    setOverId(null);
-    setActiveId(null);
-    setOffsetLeft(0);
-    setDropPlaceholderItem(null);
-    document.body.style.setProperty("cursor", "");
-  }
-  return /* @__PURE__ */ bn.createElement(DndContext, {
-    sensors,
-    collisionDetection: closestCenter,
-    measuring,
-    onDragStart: handleDragStart,
-    onDragMove: handleDragMove,
-    onDragOver: handleDragOver,
-    onDragEnd: handleDragEnd,
-    onDragCancel: handleDragCancel
-  }, /* @__PURE__ */ bn.createElement(SortableContext, {
-    items: sortedIds,
-    strategy: verticalListSortingStrategy
-  }, flattenedItems.map((f5) => /* @__PURE__ */ bn.createElement(SortableTreeItem, {
-    key: f5.id,
-    id: f5.id,
-    data: f5,
-    disabled: false,
-    depth: f5.depth,
-    childCount: 0,
-    indentationWidth,
-    indicator: (projected == null ? void 0 : projected.overId) == f5.id ? f5.parentId == null && projected.parentId == null ? { state: 1 /* Top */, depth: projected.depth } : { state: 2 /* Bottom */, depth: projected.depth } : { state: 0 /* None */, depth: 0 },
-    plugin,
-    style: {},
-    collapsed: f5.parentId == null ? f5.id == "/" ? plugin.settings.vaultCollapsed : sections2[f5.index].collapsed : !openFolders2.find((i5) => i5 == f5.id),
-    onCollapse: handleCollapse
-  })), j3(/* @__PURE__ */ bn.createElement(DragOverlay, {
-    dropAnimation: null,
-    modifiers: [adjustTranslate],
-    zIndex: 1600
-  }, activeId ? /* @__PURE__ */ bn.createElement(SortableTreeItem, {
-    id: activeId,
-    data: flattenedItems.find((f5) => f5.id == activeId),
-    indicator: { state: 0 /* None */, depth: 0 },
-    depth: 0,
-    disabled: false,
-    plugin,
-    style: {},
-    clone: true,
-    childCount: 0,
-    indentationWidth
-  }) : null), document.body)));
-};
-
-// src/components/Sidebar/FileExplorerVirtualized.tsx
-var import_obsidian8 = require("obsidian");
-
 // node_modules/@babel/runtime/helpers/esm/extends.js
 function _extends() {
   _extends = Object.assign ? Object.assign.bind() : function(target) {
@@ -16784,9 +16474,9 @@ function areInputsEqual(newInputs, lastInputs) {
   }
   return true;
 }
-function memoizeOne(resultFn, isEqual4) {
-  if (isEqual4 === void 0) {
-    isEqual4 = areInputsEqual;
+function memoizeOne(resultFn, isEqual3) {
+  if (isEqual3 === void 0) {
+    isEqual3 = areInputsEqual;
   }
   var lastThis;
   var lastArgs = [];
@@ -16797,7 +16487,7 @@ function memoizeOne(resultFn, isEqual4) {
     for (var _i = 0; _i < arguments.length; _i++) {
       newArgs[_i] = arguments[_i];
     }
-    if (calledOnce && lastThis === this && isEqual4(newArgs, lastArgs)) {
+    if (calledOnce && lastThis === this && isEqual3(newArgs, lastArgs)) {
       return lastResult;
     }
     lastResult = resultFn.apply(this, newArgs);
@@ -17801,59 +17491,26 @@ AutoSizer.defaultProps = {
 };
 var index_esm_default = AutoSizer;
 
-// node_modules/memoize-one/dist/memoize-one.esm.js
-var safeIsNaN2 = Number.isNaN || function ponyfill2(value) {
-  return typeof value === "number" && value !== value;
-};
-function isEqual3(first, second) {
-  if (first === second) {
-    return true;
-  }
-  if (safeIsNaN2(first) && safeIsNaN2(second)) {
-    return true;
-  }
-  return false;
-}
-function areInputsEqual2(newInputs, lastInputs) {
-  if (newInputs.length !== lastInputs.length) {
-    return false;
-  }
-  for (var i5 = 0; i5 < newInputs.length; i5++) {
-    if (!isEqual3(newInputs[i5], lastInputs[i5])) {
-      return false;
-    }
-  }
-  return true;
-}
-function memoizeOne2(resultFn, isEqual4) {
-  if (isEqual4 === void 0) {
-    isEqual4 = areInputsEqual2;
-  }
-  var cache = null;
-  function memoized() {
-    var newArgs = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-      newArgs[_i] = arguments[_i];
-    }
-    if (cache && cache.lastThis === this && isEqual4(newArgs, cache.lastArgs)) {
-      return cache.lastResult;
-    }
-    var lastResult = resultFn.apply(this, newArgs);
-    cache = {
-      lastResult,
-      lastArgs: newArgs,
-      lastThis: this
-    };
-    return lastResult;
-  }
-  memoized.clear = function clear() {
-    cache = null;
-  };
-  return memoized;
-}
-
 // src/components/Sidebar/FileExplorerVirtualized.tsx
-var FileExplorerComponent2 = (props) => {
+var row = R(({ data, index, style }) => {
+  const { flattenedItems, projected, handleCollapse, plugin, sections: sections2, openFolders: openFolders2, indentationWidth } = data;
+  const f5 = flattenedItems[index];
+  return /* @__PURE__ */ bn.createElement(SortableTreeItem, {
+    key: f5.id,
+    id: f5.id,
+    data: f5,
+    disabled: false,
+    depth: f5.depth,
+    childCount: 0,
+    indentationWidth,
+    indicator: (projected == null ? void 0 : projected.overId) == f5.id ? f5.parentId == null && projected.parentId == null ? { state: 1 /* Top */, depth: projected.depth } : { state: 2 /* Bottom */, depth: projected.depth } : null,
+    plugin,
+    style,
+    collapsed: f5.parentId == null ? f5.id == "/" ? plugin.settings.vaultCollapsed : sections2[f5.index].collapsed : !openFolders2.find((i5) => i5 == f5.id),
+    onCollapse: handleCollapse
+  });
+}, areEqual);
+var FileExplorerComponent = (props) => {
   const { plugin } = props;
   const indentationWidth = 24;
   const [vaultCollapsed, setVaultCollapsed] = p2(plugin.settings.vaultCollapsed);
@@ -17987,7 +17644,15 @@ var FileExplorerComponent2 = (props) => {
   }, [_folderTree, openFolders2, sections2, vaultCollapsed]);
   const sortedIds = F(() => flattenedItems.map(({ id }) => id), [flattenedItems]);
   const activeItem = activeId ? flattenedItems.find(({ id }) => id === activeId) : null;
-  const projected = activeId && overId ? getProjection(flattenedItems, activeId, overId, offsetLeft, indentationWidth) : null;
+  const overIndex = overId ? flattenedItems.findIndex(({ id }) => id === overId) : null;
+  const overItem = flattenedItems[overIndex];
+  const nextItem = flattenedItems[overIndex + 1];
+  const dragDepth = F(() => {
+    return getDragDepth(offsetLeft, indentationWidth);
+  }, [offsetLeft]);
+  const projected = F(() => {
+    return activeId && overId ? getProjection(flattenedItems, activeItem, overIndex, overItem, nextItem, dragDepth) : null;
+  }, [flattenedItems, activeItem, overItem, nextItem, overIndex, dragDepth]);
   function handleDragStart(event) {
     const { active: { id: activeId2 } } = event;
     const activeItem2 = flattenedItems.find(({ id }) => id === activeId2);
@@ -18023,15 +17688,15 @@ var FileExplorerComponent2 = (props) => {
         ...flattenSectionTree(sections2),
         ..._folderTree ? flattenTree(_folderTree, "/", -1, false) : []
       ];
-      const overIndex = clonedItems.findIndex(({ id }) => id === over.id);
-      const overItem = clonedItems[overIndex];
+      const overIndex2 = clonedItems.findIndex(({ id }) => id === over.id);
+      const overItem2 = clonedItems[overIndex2];
       const activeIndex = clonedItems.findIndex(({ id }) => id === active.id);
       const activeTreeItem = clonedItems[activeIndex];
       const activeIsSection = activeTreeItem.parentId == null;
-      const overIsSection = overItem.parentId == null;
+      const overIsSection = overItem2.parentId == null;
       if (activeIsSection) {
         if (overIsSection) {
-          const newSections = overItem.section == -1 ? arrayMove(sections2, activeTreeItem.index, sections2.length - 1) : overItem.index > activeIndex ? arrayMove(sections2, activeTreeItem.index, overItem.index - 1) : arrayMove(sections2, activeTreeItem.index, overItem.index);
+          const newSections = overItem2.section == -1 ? arrayMove(sections2, activeTreeItem.index, sections2.length - 1) : overItem2.index > activeIndex ? arrayMove(sections2, activeTreeItem.index, overItem2.index - 1) : arrayMove(sections2, activeTreeItem.index, overItem2.index);
           plugin.settings.spaces = newSections;
           plugin.saveSettings();
           return;
@@ -18039,21 +17704,21 @@ var FileExplorerComponent2 = (props) => {
       }
       const { depth, overId: overId2, parentId } = projected;
       const parentItem = clonedItems.find(({ id }) => id === parentId);
-      if (overItem.section != activeItem.section || overItem.section != -1) {
-        if (overItem.section == -1) {
+      if (overItem2.section != activeItem.section || overItem2.section != -1) {
+        if (overItem2.section == -1) {
           return;
         }
-        if (parentId != sections2[overItem.section].section && parentId != null) {
+        if (parentId != sections2[overItem2.section].section && parentId != null) {
           return;
         }
         const newSections = sections2.map((s10, k5) => {
-          if (k5 == overItem.section) {
-            const index = sections2[overItem.section].children.findIndex((f5) => f5 == overItem.path) + 1;
+          if (k5 == overItem2.section) {
+            const index = sections2[overItem2.section].children.findIndex((f5) => f5 == overItem2.path) + 1;
             const activeIndex2 = s10.children.findIndex((g4) => g4 == activeItem.path);
             const children = s10.children.filter((g4) => g4 != activeItem.path);
             const toIndex = activeIndex2 <= index && activeIndex2 != -1 ? index - 1 : index;
             if (activeIndex2 == -1) {
-              new import_obsidian8.Notice(i18n_default.notice.addedToSection);
+              new import_obsidian7.Notice(i18n_default.notice.addedToSection);
             }
             return {
               ...s10,
@@ -18069,7 +17734,7 @@ var FileExplorerComponent2 = (props) => {
       if (parentId != activeTreeItem.parentId) {
         const newPath = `${parentItem.isFolder ? parentItem.path : parentItem.parent.path}/${activeItem.name}`;
         if (plugin.app.vault.getAbstractFileByPath(newPath)) {
-          new import_obsidian8.Notice(i18n_default.notice.duplicateFile);
+          new import_obsidian7.Notice(i18n_default.notice.duplicateFile);
           return;
         }
         await props.plugin.app.vault.rename(activeTreeItem, newPath);
@@ -18077,7 +17742,7 @@ var FileExplorerComponent2 = (props) => {
       } else {
         clonedItems[activeIndex] = { ...activeTreeItem, depth, parentId };
       }
-      const sortedItems = overIndex > activeIndex ? arrayMove(clonedItems, activeIndex, overIndex) : overIndex < activeIndex ? arrayMove(clonedItems, activeIndex, overIndex + 1) : clonedItems;
+      const sortedItems = overIndex2 > activeIndex ? arrayMove(clonedItems, activeIndex, overIndex2) : overIndex2 < activeIndex ? arrayMove(clonedItems, activeIndex, overIndex2 + 1) : clonedItems;
       const newItems = buildTree(sortedItems);
       const newFolderRank = folderTreeToStringTree(newItems);
       plugin.settings.folderRank = newFolderRank;
@@ -18095,7 +17760,7 @@ var FileExplorerComponent2 = (props) => {
   function handleDragCancel() {
     resetState();
   }
-  function handleCollapse(folder) {
+  const handleCollapse = T2((folder) => {
     if (folder.parentId == null) {
       if (folder.id == "/") {
         plugin.settings.vaultCollapsed = !plugin.settings.vaultCollapsed;
@@ -18113,7 +17778,7 @@ var FileExplorerComponent2 = (props) => {
       plugin.settings.openFolders = newOpenFolders;
       plugin.saveSettings();
     }
-  }
+  }, [plugin, openFolders2, sections2]);
   function resetState() {
     setOverId(null);
     setActiveId(null);
@@ -18121,35 +17786,10 @@ var FileExplorerComponent2 = (props) => {
     setDropPlaceholderItem(null);
     document.body.style.setProperty("cursor", "");
   }
-  const row = R(({ data, index, style }) => {
-    const { flattenedItems: flattenedItems2, projected: projected2, handleCollapse: handleCollapse2, plugin: plugin2, sections: sections3, openFolders: openFolders3, indentationWidth: indentationWidth2 } = data;
-    const f5 = flattenedItems2[index];
-    return /* @__PURE__ */ bn.createElement(SortableTreeItem, {
-      key: f5.id,
-      id: f5.id,
-      data: f5,
-      disabled: false,
-      depth: f5.depth,
-      childCount: 0,
-      indentationWidth: indentationWidth2,
-      indicator: (projected2 == null ? void 0 : projected2.overId) == f5.id ? f5.parentId == null && projected2.parentId == null ? { state: 1 /* Top */, depth: projected2.depth } : { state: 2 /* Bottom */, depth: projected2.depth } : { state: 0 /* None */, depth: 0 },
-      plugin: plugin2,
-      style,
-      collapsed: f5.parentId == null ? f5.id == "/" ? plugin2.settings.vaultCollapsed : sections3[f5.index].collapsed : !openFolders3.find((i5) => i5 == f5.id),
-      onCollapse: handleCollapse2
-    });
-  }, areEqual);
-  const createItemData = memoizeOne2((flattenedItems2, projected2, handleCollapse2, plugin2, sections3, openFolders3, indentationWidth2) => ({
-    flattenedItems: flattenedItems2,
-    projected: projected2,
-    handleCollapse: handleCollapse2,
-    plugin: plugin2,
-    sections: sections3,
-    openFolders: openFolders3,
-    indentationWidth: indentationWidth2
-  }));
-  const rowHeight = (index) => flattenedItems[index].parentId == null ? 44 : 29;
-  const itemData = createItemData(flattenedItems, projected, handleCollapse, plugin, sections2, openFolders2, indentationWidth);
+  const itemData = F(() => {
+    return { flattenedItems, projected, handleCollapse, plugin, sections: sections2, openFolders: openFolders2, indentationWidth };
+  }, [flattenedItems, projected, handleCollapse, plugin, sections2, openFolders2, indentationWidth]);
+  const rowHeight = (index) => 29;
   return /* @__PURE__ */ bn.createElement(DndContext, {
     sensors,
     collisionDetection: closestCenter,
@@ -18168,7 +17808,7 @@ var FileExplorerComponent2 = (props) => {
     itemCount: itemData.flattenedItems.length,
     itemData,
     width,
-    overscanCount: 10
+    overscanCount: plugin.settings.sidebarPerformance ? 0 : 20
   }, row)), j3(/* @__PURE__ */ bn.createElement(DragOverlay, {
     dropAnimation: null,
     modifiers: [adjustTranslate],
@@ -18176,7 +17816,7 @@ var FileExplorerComponent2 = (props) => {
   }, activeId ? /* @__PURE__ */ bn.createElement(SortableTreeItem, {
     id: activeId,
     data: flattenedItems.find((f5) => f5.id == activeId),
-    indicator: { state: 0 /* None */, depth: 0 },
+    indicator: null,
     depth: 0,
     disabled: false,
     plugin,
@@ -18257,9 +17897,9 @@ var MainMenu = (props) => {
 
 // src/components/Sidebar/FileTreeView.tsx
 var FILE_TREE_VIEW_TYPE = "make-file-view";
-var VIEW_DISPLAY_TEXT = "Make File Tree";
+var VIEW_DISPLAY_TEXT = "Spaces";
 var ICON = "sheets-in-box";
-var FileTreeView = class extends import_obsidian9.ItemView {
+var FileTreeView = class extends import_obsidian8.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.navigation = false;
@@ -18305,10 +17945,7 @@ var FileTreeView = class extends import_obsidian9.ItemView {
       plugin: this.plugin
     }), /* @__PURE__ */ bn.createElement("div", {
       className: "mk-file-tree"
-    }, this.plugin.settings.sidebarPerformance ? /* @__PURE__ */ bn.createElement(FileExplorerComponent2, {
-      fileTreeView: this,
-      plugin: this.plugin
-    }) : /* @__PURE__ */ bn.createElement(FileExplorerComponent, {
+    }, /* @__PURE__ */ bn.createElement(FileExplorerComponent, {
       fileTreeView: this,
       plugin: this.plugin
     })))));
@@ -18316,7 +17953,7 @@ var FileTreeView = class extends import_obsidian9.ItemView {
 };
 
 // src/settings.ts
-var import_obsidian10 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 var DEFAULT_SETTINGS = {
   filePreviewOnHover: false,
   makerMode: true,
@@ -18341,7 +17978,7 @@ var DEFAULT_SETTINGS = {
   menuTriggerChar: "/",
   emojiTriggerChar: ":"
 };
-var MakeMDPluginSettingsTab = class extends import_obsidian10.PluginSettingTab {
+var MakeMDPluginSettingsTab = class extends import_obsidian9.PluginSettingTab {
   constructor(app2, plugin) {
     super(app2, plugin);
     this.plugin = plugin;
@@ -18354,7 +17991,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian10.PluginSettingTab {
     let { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h2", { text: i18n_default.settings.sectionSidebar });
-    new import_obsidian10.Setting(containerEl).setName(i18n_default.settings.sidebar.name).setDesc(i18n_default.settings.sidebar.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebar).onChange((value) => {
+    new import_obsidian9.Setting(containerEl).setName(i18n_default.settings.sidebar.name).setDesc(i18n_default.settings.sidebar.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebar).onChange((value) => {
       this.plugin.settings.sidebar = value;
       this.plugin.saveSettings();
       if (value) {
@@ -18364,42 +18001,42 @@ var MakeMDPluginSettingsTab = class extends import_obsidian10.PluginSettingTab {
       }
       this.refreshView();
     }));
-    new import_obsidian10.Setting(containerEl).setName(i18n_default.settings.sidebarStickers.name).setDesc(i18n_default.settings.sidebarStickers.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebarStickers).onChange((value) => {
+    new import_obsidian9.Setting(containerEl).setName(i18n_default.settings.sidebarStickers.name).setDesc(i18n_default.settings.sidebarStickers.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebarStickers).onChange((value) => {
       this.plugin.settings.sidebarStickers = value;
       this.plugin.saveSettings();
       this.refreshView();
     }));
-    new import_obsidian10.Setting(containerEl).setName(i18n_default.settings.sidebarRibbon.name).setDesc(i18n_default.settings.sidebarRibbon.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebarRibbon).onChange((value) => {
+    new import_obsidian9.Setting(containerEl).setName(i18n_default.settings.sidebarRibbon.name).setDesc(i18n_default.settings.sidebarRibbon.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebarRibbon).onChange((value) => {
       this.plugin.settings.sidebarRibbon = value;
       this.plugin.saveSettings();
       document.body.classList.toggle("mk-hide-ribbon", !value);
     }));
-    new import_obsidian10.Setting(containerEl).setName(i18n_default.settings.sidebarTabs.name).setDesc(i18n_default.settings.sidebarTabs.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebarTabs).onChange((value) => {
+    new import_obsidian9.Setting(containerEl).setName(i18n_default.settings.sidebarTabs.name).setDesc(i18n_default.settings.sidebarTabs.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebarTabs).onChange((value) => {
       this.plugin.settings.sidebarTabs = value;
       this.plugin.saveSettings();
       document.body.classList.toggle("mk-hide-tabs", !value);
     }));
-    new import_obsidian10.Setting(containerEl).setName(i18n_default.settings.sidebarPerformance.name).setDesc(i18n_default.settings.sidebarPerformance.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebarPerformance).onChange((value) => {
+    new import_obsidian9.Setting(containerEl).setName(i18n_default.settings.sidebarPerformance.name).setDesc(i18n_default.settings.sidebarPerformance.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.sidebarPerformance).onChange((value) => {
       this.plugin.settings.sidebarPerformance = value;
       this.plugin.saveSettings();
     }));
     containerEl.createEl("h2", { text: i18n_default.settings.sectionEditor });
-    new import_obsidian10.Setting(containerEl).setName(i18n_default.settings.editorMakermode.name).setDesc(i18n_default.settings.editorMakermode.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.makerMode).onChange((value) => {
+    new import_obsidian9.Setting(containerEl).setName(i18n_default.settings.editorMakermode.name).setDesc(i18n_default.settings.editorMakermode.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.makerMode).onChange((value) => {
       this.plugin.settings.makerMode = value;
       this.plugin.saveSettings();
       this.refreshView();
     }));
-    new import_obsidian10.Setting(containerEl).setName(i18n_default.settings.inlineStyler.name).setDesc(i18n_default.settings.inlineStyler.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.inlineStyler).onChange((value) => {
+    new import_obsidian9.Setting(containerEl).setName(i18n_default.settings.inlineStyler.name).setDesc(i18n_default.settings.inlineStyler.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.inlineStyler).onChange((value) => {
       this.plugin.settings.inlineStyler = value;
       this.plugin.saveSettings();
       this.refreshView();
     }));
-    new import_obsidian10.Setting(containerEl).setName(i18n_default.settings.editorFlowReplace.name).setDesc(i18n_default.settings.editorFlowReplace.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.editorFlow).onChange((value) => {
+    new import_obsidian9.Setting(containerEl).setName(i18n_default.settings.editorFlowReplace.name).setDesc(i18n_default.settings.editorFlowReplace.desc).addToggle((toggle) => toggle.setValue(this.plugin.settings.editorFlow).onChange((value) => {
       this.plugin.settings.editorFlow = value;
       this.plugin.saveSettings();
       this.refreshView();
     }));
-    new import_obsidian10.Setting(containerEl).setName(i18n_default.settings.editorFlowStyle.name).setDesc(i18n_default.settings.editorFlowStyle.desc).addDropdown((dropdown) => {
+    new import_obsidian9.Setting(containerEl).setName(i18n_default.settings.editorFlowStyle.name).setDesc(i18n_default.settings.editorFlowStyle.desc).addDropdown((dropdown) => {
       dropdown.addOption("classic", i18n_default.settings.editorFlowStyle.classic);
       dropdown.addOption("seamless", i18n_default.settings.editorFlowStyle.seamless);
       dropdown.setValue(this.plugin.settings.editorFlowStyle).onChange(async (value) => {
@@ -18416,7 +18053,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian10.PluginSettingTab {
 };
 
 // src/components/Editor/MakeMenu/MakeMenu.tsx
-var import_obsidian11 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 
 // src/components/Editor/MakeMenu/commands/default.ts
 var default_default = [
@@ -18589,7 +18226,7 @@ function resolveCommands(plugin) {
 }
 
 // src/components/Editor/MakeMenu/MakeMenu.tsx
-var MakeMenu = class extends import_obsidian11.EditorSuggest {
+var MakeMenu = class extends import_obsidian10.EditorSuggest {
   constructor(app2, plugin) {
     super(app2);
     this.inCmd = false;
@@ -18619,7 +18256,7 @@ var MakeMenu = class extends import_obsidian11.EditorSuggest {
     return { start: cursor, end: cursor, query: currentCmd.slice(1) };
   }
   getSuggestions(context) {
-    const suggestions = resolveCommands(this.plugin).filter(({ label }) => label.includes(context.query));
+    const suggestions = resolveCommands(this.plugin).filter(({ label }) => label.toLowerCase().includes(context.query.toLowerCase()) || i18n_default.commands[label] && i18n_default.commands[label].toLowerCase().includes(context.query.toLowerCase()));
     return suggestions.length > 0 ? suggestions : [{ label: i18n_default.commandsSuggest.noResult, value: "", icon: "" }];
   }
   renderSuggestion(value, el) {
@@ -18646,8 +18283,8 @@ var MakeMenu = class extends import_obsidian11.EditorSuggest {
 };
 
 // src/components/Editor/StickerMenu/StickerMenu.tsx
-var import_obsidian12 = require("obsidian");
-var StickerMenu = class extends import_obsidian12.EditorSuggest {
+var import_obsidian11 = require("obsidian");
+var StickerMenu = class extends import_obsidian11.EditorSuggest {
   constructor(app2, plugin) {
     super(app2);
     this.inCmd = false;
@@ -18678,7 +18315,7 @@ var StickerMenu = class extends import_obsidian12.EditorSuggest {
     return { start: cursor, end: cursor, query: currentCmd.slice(1) };
   }
   getSuggestions(context) {
-    const suggestions = this.emojis.filter(({ label }) => label.includes(context.query));
+    const suggestions = this.emojis.filter(({ label, desc }) => label.includes(context.query) || (desc == null ? void 0 : desc.includes(context.query)));
     return suggestions.length > 0 ? suggestions : [{ label: i18n_default.commandsSuggest.noResult, unicode: "", desc: "" }];
   }
   renderSuggestion(value, el) {
@@ -18820,6 +18457,7 @@ var oMarks = [
   {
     mark: "em",
     formatting: "formatting-em",
+    altFormatting: "em_formatting_formatting-strong",
     formatChar: "*"
   },
   {
@@ -18841,10 +18479,52 @@ var oMarks = [
 
 // src/cm-extensions/inlineStylerView/marks.ts
 var toggleMark = import_state8.Annotation.define();
+var trimSpace = (pos, moveDirLeft, state) => {
+  if (moveDirLeft && state.sliceDoc(pos, pos + 1) == " ")
+    return pos + 1;
+  if (!moveDirLeft && state.sliceDoc(pos - 1, pos) == " ")
+    return pos - 1;
+  return pos;
+};
+var newPosAfterFormatting = (pos, moveDirLeft, state) => {
+  const line = state.doc.lineAt(pos);
+  const start2 = moveDirLeft ? line.from : pos;
+  const end2 = moveDirLeft ? pos : line.to;
+  let newPos = start2;
+  let lastFormatPos = start2;
+  let exitFormatRange = false;
+  iterateTreeInSelection({ from: start2, to: end2 }, state, {
+    enter: (node) => {
+      if (exitFormatRange)
+        return false;
+      if (node.name.contains("formatting")) {
+        if (!moveDirLeft && node.from > start2) {
+          return false;
+        }
+        if (moveDirLeft) {
+          newPos = node.from;
+          lastFormatPos = node.to;
+        } else {
+          newPos = node.to;
+        }
+      }
+    }
+  });
+  if (moveDirLeft && lastFormatPos < pos) {
+    newPos = pos;
+  }
+  return newPos;
+};
+var expandRange = (selection, state) => {
+  const from = trimSpace(newPosAfterFormatting(selection.from, true, state), true, state);
+  const to = trimSpace(newPosAfterFormatting(selection.to, false, state), false, state);
+  return { from, to };
+};
+var addMarkAtPos = (pos, mark) => ({ changes: { from: pos, to: pos, insert: mark.formatChar } });
 var rangeIsMark = (state, mark, selection) => posIsMark(selection.from, state, mark.mark) && posIsMark(selection.to, state, mark.mark);
 var posIsMark = (pos, state, markString) => {
   let isMark = false;
-  iterateTreeInSelection({ from: pos, to: pos }, state, {
+  iterateTreeAtPos(pos, state, {
     enter: ({ name, from, to }) => {
       if (nodeNameContainsMark(name, markString))
         isMark = true;
@@ -18855,82 +18535,24 @@ var posIsMark = (pos, state, markString) => {
 var nodeNameContainsMark = (name, markString) => {
   return name.contains(markString);
 };
-var toggleMarkExtension = import_state8.EditorState.transactionFilter.of((tr) => {
-  if (!tr.annotation(toggleMark))
-    return tr;
-  const markToggle = tr.annotation(toggleMark);
-  const mark = oMarks.find((f5) => f5.mark == markToggle);
-  const selection = tr.startState.selection.main;
-  const newPosAfterFormatting = (pos, moveDirLeft, state) => {
-    const line = tr.state.doc.lineAt(pos);
-    const start2 = moveDirLeft ? line.from : pos;
-    const end2 = moveDirLeft ? pos : line.to;
-    let newPos = start2;
-    let lastFormatPos = start2;
-    let exitFormatRange = false;
-    iterateTreeInSelection({ from: start2, to: end2 }, state, {
-      enter: (node) => {
-        if (exitFormatRange || moveDirLeft && node.from >= start2)
-          return false;
-        if (node.name.contains("formatting")) {
-          if (moveDirLeft) {
-            if (node.from < lastFormatPos)
-              newPos = node.from;
-            lastFormatPos = node.to;
-          } else {
-            newPos = node.to;
-          }
-        } else if (!moveDirLeft) {
-          exitFormatRange = true;
-        }
-      }
-    });
-    if (moveDirLeft && lastFormatPos < pos) {
-      newPos = pos;
-    }
-    return newPos;
-  };
-  const expandRange = (selection2, state) => {
-    const from = newPosAfterFormatting(selection2.from, true, state);
-    const to = newPosAfterFormatting(selection2.to, false, state);
-    return { from, to };
-  };
-  const edgeIsMark = (pos, state, mark2) => posIsMark(pos, state, mark2.mark);
-  const edgeIsMarkFormat = (pos, state, mark2) => posIsMark(pos, state, mark2.formatting);
-  const addMarkAtPos = (pos, mark2) => ({ changes: { from: pos, to: pos, insert: mark2.formatChar } });
-  const removeAllInternalMarks = (sel, state, mark2) => {
-    let returnTrans = [];
-    iterateTreeInSelection({ from: sel.from, to: sel.to }, state, {
-      enter: ({ name, from, to }) => {
-        if (nodeNameContainsMark(name, mark2.formatting))
-          returnTrans.push({
-            from,
-            to
-          });
-      }
-    });
-    return {
-      changes: returnTrans
-    };
-  };
-  const range = expandRange(selection, tr.startState);
+var edgeIsMark = (pos, state, mark) => posIsMark(pos, state, mark.mark);
+var edgeIsMarkFormat = (pos, state, mark) => posIsMark(pos, state, mark.formatting) ? true : mark.altFormatting ? posIsMark(pos, state, mark.altFormatting) : false;
+var transactionChangesForMark = (range, mark, state) => {
   let newTrans = [];
-  newTrans.push(removeAllInternalMarks(selection, tr.startState, mark));
-  if (rangeIsMark(tr.state, mark, range)) {
-    if (edgeIsMarkFormat(range.from, tr.startState, mark) && !edgeIsMarkFormat(range.to, tr.startState, mark)) {
+  if (rangeIsMark(state, mark, range)) {
+    if (edgeIsMarkFormat(range.from, state, mark) && !edgeIsMarkFormat(range.to, state, mark)) {
       newTrans.push(addMarkAtPos(range.to, mark));
     }
-    if (edgeIsMarkFormat(range.to, tr.startState, mark) && !edgeIsMarkFormat(range.from, tr.startState, mark)) {
+    if (edgeIsMarkFormat(range.to, state, mark) && !edgeIsMarkFormat(range.from, state, mark)) {
       newTrans.push(addMarkAtPos(range.from, mark));
     }
-    return [tr, ...newTrans];
-  } else if (edgeIsMark(range.from, tr.startState, mark)) {
-    if (edgeIsMarkFormat(range.from, tr.startState, mark)) {
+  } else if (edgeIsMark(range.from, state, mark)) {
+    if (edgeIsMarkFormat(range.from, state, mark) && !edgeIsMark(range.from - 1, state, mark)) {
       newTrans.push(addMarkAtPos(range.from, mark));
     }
     newTrans.push(addMarkAtPos(range.to, mark));
-  } else if (edgeIsMark(range.to, tr.startState, mark)) {
-    if (edgeIsMarkFormat(range.to, tr.startState, mark)) {
+  } else if (edgeIsMark(range.to, state, mark)) {
+    if (edgeIsMarkFormat(range.to, state, mark) && !edgeIsMark(range.to + 1, state, mark)) {
       newTrans.push(addMarkAtPos(range.to, mark));
     }
     newTrans.push(addMarkAtPos(range.from, mark));
@@ -18938,7 +18560,61 @@ var toggleMarkExtension = import_state8.EditorState.transactionFilter.of((tr) =>
     newTrans.push(addMarkAtPos(range.to, mark));
     newTrans.push(addMarkAtPos(range.from, mark));
   }
-  return [tr, ...newTrans];
+  return newTrans;
+};
+var removeAllInternalMarks = (sel, state, mark) => {
+  let returnTrans = [];
+  iterateTreeInSelection({ from: sel.from, to: sel.to }, state, {
+    enter: ({ name, from, to }) => {
+      if (nodeNameContainsMark(name, mark.formatting) || (mark.altFormatting ? nodeNameContainsMark(name, mark.altFormatting) : false))
+        returnTrans.push({
+          from,
+          to: from + mark.formatChar.length
+        });
+    }
+  });
+  return {
+    changes: returnTrans
+  };
+};
+var toggleMarkExtension = import_state8.EditorState.transactionFilter.of((tr) => {
+  if (!tr.annotation(toggleMark))
+    return tr;
+  const markToggle = tr.annotation(toggleMark);
+  const mark = oMarks.find((f5) => f5.mark == markToggle);
+  if (!mark) {
+    return tr;
+  }
+  const selection = tr.startState.selection.main;
+  let newTrans = [];
+  if (selection.head == selection.anchor) {
+    if (tr.startState.sliceDoc(selection.head - mark.formatChar.length, selection.head) == mark.formatChar && tr.startState.sliceDoc(selection.head, selection.head + mark.formatChar.length) == mark.formatChar) {
+      newTrans.push({
+        changes: {
+          from: selection.head - mark.formatChar.length,
+          to: selection.head + mark.formatChar.length
+        }
+      });
+    } else {
+      newTrans.push({
+        changes: {
+          from: selection.head,
+          insert: mark.formatChar + mark.formatChar
+        },
+        selection: {
+          anchor: selection.head + mark.formatChar.length,
+          head: selection.head + mark.formatChar.length
+        }
+      });
+    }
+    return [tr, ...newTrans];
+  }
+  const range = expandRange(selection, tr.startState);
+  newTrans.push(removeAllInternalMarks(range, tr.startState, mark));
+  let newFrom = range.from;
+  let newTo = range.to;
+  newTrans.push(...transactionChangesForMark(range, mark, tr.startState));
+  return [tr, ...newTrans, { selection: { anchor: newFrom, head: newTo } }];
 });
 
 // src/cm-extensions/makerMode/selection.ts
@@ -18981,13 +18657,11 @@ var delFromTo = (tr, from, to) => {
 };
 var pointDeletion = (tr, from, to, pos) => checkMarkMiddle(from, to, pos) ? deleteMark(tr, from, pos) : {};
 var deleteMark = (tr, from, pos) => from == 0 ? delFromTo(tr, from, pos) : delFromTo(tr, from, pos);
-var changeSelectionToPrevLine = (from, head) => selFromTo(from - 1, head);
 var changeSelectionToEndPrevLine = (from, head) => selFromTo(from, head - 1);
 var changeSelectionToAfterMark = (head, to) => selFromTo(head, to);
 var changeSelectionToMark = (to, head) => selFromTo(to, head);
 var rangeBeginsInMark = (from, to, pos) => pos >= from && pos < to;
 var rangeEndsAtMark = (from, to, pos) => pos == from;
-var rangeBeginsBefore = (from, to, anchor, head) => head == from - 1;
 var pointSelection = (from, to, pos, left2) => checkLineStart(from, pos) ? to - from == 1 && left2 ? selectPreviousLine(from, pos) : selectLineStart(to) : checkMarkMiddle(from, to, pos) ? left2 && checkMarkMiddleRightMost(from, to, pos) ? selectPreviousLine(from, pos) : selectLineStart(to) : {};
 var checkLineStart = (from, pos) => from == pos;
 var checkMarkMiddle = (from, to, pos) => pos > from && pos < to;
@@ -19023,10 +18697,6 @@ var positionMarkOffset = (typeString, from, to, state) => {
 var rangeSelection = (from, to, anchor, head) => {
   const minFrom = Math.min(anchor, head);
   const maxTo = Math.max(anchor, head);
-  if (rangeBeginsBefore(from, to, maxTo, minFrom)) {
-    const newSel = changeSelectionToMark(to, maxTo);
-    return minFrom == head ? newSel : reverseSel(newSel);
-  }
   if (rangeEndsAtMark(from, to, maxTo)) {
     const newSel = changeSelectionToAfterMark(minFrom, to);
     return minFrom == anchor ? newSel : reverseSel(newSel);
@@ -19036,7 +18706,7 @@ var rangeSelection = (from, to, anchor, head) => {
     return minFrom == anchor ? newSel : reverseSel(newSel);
   }
   if (rangeBeginsInMark(from, to, minFrom)) {
-    const newSel = changeSelectionToPrevLine(from, maxTo);
+    const newSel = changeSelectionToMark(to, maxTo);
     return minFrom == head ? newSel : reverseSel(newSel);
   }
   return {};
@@ -19157,6 +18827,7 @@ var InlineMenuComponent = (props) => {
     }
     const selection = props.cm.state.selection.main;
     const selectedText = props.cm.state.sliceDoc(selection.from, selection.to);
+    props.cm.focus();
     props.cm.dispatch({
       changes: { from: selection.from, to: selection.to, insert: s10.value.substring(0, s10.insertOffset) + selectedText + s10.value.substring(s10.insertOffset) },
       selection: s10.cursorOffset ? { anchor: selection.from + s10.value.substring(0, s10.insertOffset).length + selectedText.length + s10.cursorOffset, head: selection.from + s10.value.substring(0, s10.insertOffset).length + selectedText.length + s10.cursorOffset } : { anchor: selection.from + s10.value.substring(0, s10.insertOffset).length, head: selection.from + s10.value.substring(0, s10.insertOffset).length + selectedText.length }
@@ -19261,8 +18932,9 @@ var cursorTooltipField = import_state10.StateField.define({
 });
 function getCursorTooltips(state) {
   return state.selection.ranges.filter((range) => !range.empty).map((range) => {
+    const expandedRange = expandRange(range, state);
     let line = state.doc.lineAt(range.head);
-    let activeMarks = oMarks.map((f5) => rangeIsMark(state, f5, range) ? f5.mark : "").filter((f5) => f5 != "");
+    let activeMarks = oMarks.map((f5) => rangeIsMark(state, f5, expandedRange) ? f5.mark : "").filter((f5) => f5 != "");
     return {
       pos: Math.min(range.head, range.anchor),
       above: true,
@@ -19324,13 +18996,33 @@ var flowViewUpdates = import_view6.EditorView.updateListener.of((v3) => {
   }
 });
 
-// src/cm-extensions/makerMode.ts
-var makerMode = (mode, flow) => [
+// src/cm-extensions/placeholder.ts
+var import_view7 = require("@codemirror/view");
+var import_state11 = require("@codemirror/state");
+var placeholderLine = import_view7.Decoration.line({ attributes: { "data-ph": i18n_default.labels.placeholder }, class: "cm-placeholder" });
+var placeholder = import_state11.StateField.define({
+  create() {
+    return import_view7.Decoration.none;
+  },
+  update(value, tr) {
+    let builder = new import_state11.RangeSetBuilder();
+    const currentLine = tr.state.doc.lineAt(tr.state.selection.main.head);
+    if ((currentLine == null ? void 0 : currentLine.length) == 0)
+      builder.add(currentLine.from, currentLine.from, placeholderLine);
+    const dec = builder.finish();
+    return dec;
+  },
+  provide: (f5) => import_view7.EditorView.decorations.from(f5)
+});
+
+// src/cm-extensions/cmExtensions.ts
+var cmExtensions = (mode, flow) => [
   ...mode ? [
     hrResetFix,
     makerSelect,
     makerDelete,
-    hrField
+    hrField,
+    placeholder
   ] : [],
   ...flow ? [
     flowTypeStateField,
@@ -19393,17 +19085,34 @@ var replaceAllEmbed = (el, ctx) => {
             toggleFlow: (e5) => {
               const cm = getCMFromElement(dom);
               const pos = cm.posAtDOM(dom);
-              iterateTreeInSelection({ from: pos, to: pos + 3 }, cm.state, {
+              iterateTreeInSelection({ from: pos - 3, to: pos + 4 }, cm.state, {
                 enter: (node) => {
                   if (node.name.contains("hmd-internal-link")) {
                     if (cm.state.sliceDoc(node.from - 4, node.from - 3) != "!") {
-                      cm.dispatch({
-                        changes: {
-                          from: node.from - 3,
-                          to: node.from - 3,
-                          insert: "!"
-                        }
-                      });
+                      if (cm.state.sliceDoc(node.to + 2, node.to + 3) != cm.state.lineBreak) {
+                        cm.dispatch({
+                          changes: [
+                            {
+                              from: node.from - 3,
+                              to: node.from - 3,
+                              insert: "!"
+                            },
+                            {
+                              from: node.to + 2,
+                              to: node.to + 2,
+                              insert: cm.state.lineBreak
+                            }
+                          ]
+                        });
+                      } else {
+                        cm.dispatch({
+                          changes: {
+                            from: node.from - 3,
+                            to: node.from - 3,
+                            insert: "!"
+                          }
+                        });
+                      }
                     }
                   }
                 }
@@ -19423,9 +19132,21 @@ var replaceAllEmbed = (el, ctx) => {
 };
 
 // src/main.ts
-var MakeMDPlugin = class extends import_obsidian13.Plugin {
+var MakeMDPlugin = class extends import_obsidian12.Plugin {
   constructor() {
     super(...arguments);
+    this.getActiveCM = () => {
+      let rcm;
+      app.workspace.iterateLeaves((leaf) => {
+        var _a2;
+        const cm = (_a2 = leaf.view.editor) == null ? void 0 : _a2.cm;
+        if (cm.hasFocus) {
+          rcm = cm;
+          return true;
+        }
+      }, app.workspace["rootSplit"]);
+      return rcm;
+    };
     this.triggerVaultChangeEvent = (file, changeType, oldPath) => {
       let event = new CustomEvent(eventTypes.vaultChange, {
         detail: {
@@ -19464,7 +19185,7 @@ var MakeMDPlugin = class extends import_obsidian13.Plugin {
     };
   }
   patchFileExplorer() {
-    this.register(around(import_obsidian13.Workspace.prototype, {
+    this.register(around(import_obsidian12.Workspace.prototype, {
       getLeavesOfType(old) {
         return function(type) {
           if (type == "file-explorer") {
@@ -19477,7 +19198,7 @@ var MakeMDPlugin = class extends import_obsidian13.Plugin {
   }
   patchWorkspace() {
     let layoutChanging = false;
-    const uninstaller = around(import_obsidian13.Workspace.prototype, {
+    const uninstaller = around(import_obsidian12.Workspace.prototype, {
       changeLayout(old) {
         return async function(workspace) {
           layoutChanging = true;
@@ -19498,7 +19219,7 @@ var MakeMDPlugin = class extends import_obsidian13.Plugin {
             return false;
           if (layoutChanging)
             return false;
-          if (parent === app.workspace.rootSplit || import_obsidian13.WorkspaceContainer && parent instanceof import_obsidian13.WorkspaceContainer) {
+          if (parent === app.workspace.rootSplit || import_obsidian12.WorkspaceContainer && parent instanceof import_obsidian12.WorkspaceContainer) {
             for (const popover of FlowEditor.popoversForWindow(parent.win)) {
               if (old.call(this, cb, popover.rootSplit))
                 return true;
@@ -19528,7 +19249,7 @@ var MakeMDPlugin = class extends import_obsidian13.Plugin {
     this.register(uninstaller);
   }
   patchWorkspaceLeaf() {
-    this.register(around(import_obsidian13.WorkspaceLeaf.prototype, {
+    this.register(around(import_obsidian12.WorkspaceLeaf.prototype, {
       getRoot(old) {
         return function() {
           const top2 = old.call(this);
@@ -19576,21 +19297,60 @@ var MakeMDPlugin = class extends import_obsidian13.Plugin {
         };
       }
     }));
-    this.register(around(import_obsidian13.WorkspaceItem.prototype, {
+    this.register(around(import_obsidian12.WorkspaceItem.prototype, {
       getContainer(old) {
         return function() {
           if (!old)
             return;
-          if (!this.parentSplit || this instanceof import_obsidian13.WorkspaceContainer)
+          if (!this.parentSplit || this instanceof import_obsidian12.WorkspaceContainer)
             return old.call(this);
           return this.parentSplit.getContainer();
         };
       }
     }));
   }
+  toggleBold() {
+    const cm = this.getActiveCM();
+    if (cm) {
+      cm.dispatch({
+        annotations: toggleMark.of("strong")
+      });
+    }
+  }
+  toggleEm() {
+    const cm = this.getActiveCM();
+    if (cm) {
+      cm.dispatch({
+        annotations: toggleMark.of("em")
+      });
+    }
+  }
   async onload() {
     console.log("Loading Make.md");
+    this.addCommand({
+      id: "mk-toggle-bold",
+      name: "Much more accurate bold toggle",
+      callback: () => this.toggleBold(),
+      hotkeys: [
+        {
+          modifiers: ["Mod"],
+          key: "b"
+        }
+      ]
+    });
+    this.addCommand({
+      id: "mk-toggle-italics",
+      name: "Much more accurate italics toggle",
+      callback: () => this.toggleEm(),
+      hotkeys: [
+        {
+          modifiers: ["Mod", "Shift"],
+          key: "i"
+        }
+      ]
+    });
     this.patchWorkspace();
+    this.app.keymap;
     this.addSettingTab(new MakeMDPluginSettingsTab(this.app, this));
     await this.loadSettings();
     document.body.classList.toggle("mk-hide-ribbon", !this.settings.sidebarRibbon);
@@ -19629,7 +19389,7 @@ var MakeMDPlugin = class extends import_obsidian13.Plugin {
     window.addEventListener(eventTypes.spawnPortal, this.spawnPortal);
     window.addEventListener(eventTypes.focusPortal, this.focusPortal);
     window.addEventListener(eventTypes.openFilePortal, this.openFileFromPortal);
-    this.registerEditorExtension([makerMode(this.settings.makerMode, this.settings.editorFlow)]);
+    this.registerEditorExtension([cmExtensions(this.settings.makerMode, this.settings.editorFlow)]);
     this.app.vault.on("create", this.onCreate);
     this.app.vault.on("delete", this.onDelete);
     this.app.vault.on("rename", this.onRename);
