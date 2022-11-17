@@ -16377,7 +16377,7 @@ var TreeItem = k3(({
   }, /* @__PURE__ */ bn.createElement("button", {
     "aria-label": i18n_default.buttons.moreOptions,
     onClick: (e5) => {
-      triggerContextMenu(data, true, e5);
+      triggerContextMenu(data, data.isFolder, e5);
       e5.stopPropagation();
     }
   }, /* @__PURE__ */ bn.createElement("svg", {
