@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "jsx": "react",
+        "esModuleInterop": true,
+        "baseUrl": "src",
+        "inlineSourceMap": true,
+        "inlineSources": true,
+        "isolatedModules": true,
+        "module": "ESNext",
+        "target": "es6",
+        "allowJs": true,
+        "noImplicitAny": true,
+        "moduleResolution": "node",
+        "importHelpers": true,
+        "allowSyntheticDefaultImports": true,
+        "lib": ["dom", "es5", "scripthost", "es2015"]
+    },
+    "include": ["**/*.ts", "**/*.tsx", "src/components/Spaces/FileTreeView.tsx", "src/utils/autosizer.js", "src/utils/autosizer.js", "src/utils/detectElementResize.js"]
+}

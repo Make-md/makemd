@@ -1,0 +1,41 @@
+.mk-flow-bar {
+display: flex;
+}
+.is-mobile .mk-flow-bar {
+    border-top: thin solid var(--divider-color);
+}
+.mk-new-note {
+flex-grow:1;
+    padding: 8px 12px;
+    font-size: var(--font-ui-smaller);
+    margin:4px 12px;
+    display:flex;
+    align-items: center;
+}
+
+.is-mobile .mk-new-note {
+    margin: 8px 12px;
+}
+
+.mk-new-note p {
+    margin:0;
+    margin-left: 8px;
+    padding:0;
+}
+
+.mk-new-note svg {
+width: 16px;
+height: 16px;
+}
+
+.mk-search {
+    display: flex;
+    padding: 8px 8px;
+    margin:4px 12px;
+    margin-left: 0px;
+    }
+
+.mk-search svg {
+width: 16px;
+height: 16px;
+}

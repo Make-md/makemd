@@ -1,0 +1,140 @@
+.mk-folder-scroller {
+    display: flex !important;
+    align-items: flex-start !important;
+    line-height: 1.4;
+    height: 100%;
+    overflow-x: auto;
+    position: relative;
+    z-index: 0;
+    padding: var(--file-margins);
+}
+.mk-folder-header {
+    display: flex;
+}
+.mk-folder-header .inline-title{
+    flex-grow:1
+}
+.mk-folder-sizer {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: var(--file-line-width);
+    margin-left: auto;
+    margin-right: auto;
+}
+.mk-file-table-header {
+    margin-top: 24px;
+    color: var(--text-faint)
+}
+.mk-file-table {
+        border-collapse: collapse; 
+        table-layout: fixed;
+        width: 100%;
+}
+.mk-file-row {
+
+}
+.mk-file-row:hover  {
+    background: var(--background-modifier-hover) !important;
+}
+
+.mk-file-table tr:nth-child(even) {
+    background: var(--color-base-10);
+  }
+.mk-file-row td {
+    padding: 10px 10px;
+    
+}
+.mk-file-row .mk-column-file {
+    width: 99%;
+}
+.mk-file-row p {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  margin: 0;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  display: -webkit-box;
+}
+.mk-file-row .mk-file-name {
+    font-weight: var(--font-medium);
+}
+
+.mk-file-date {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    width: 100px;
+}
+.mk-column-icon {
+    width: 40px;
+}
+.mk-column-icon svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted)
+}
+
+.mk-flowspace-title svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted)
+}
+
+.mk-flowspace-title p {
+    margin: 0;
+    padding: 0;
+    margin-left: 8px;
+}
+
+.mk-flowspace-title .mk-flowspace-date {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted)
+}
+
+.mk-flowspace-title {
+    display:flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-top: 1px solid var(--divider-color);
+   
+}
+.mk-flowspace-editor {
+    padding: 0px 12px;
+}
+.mk-flowspace-editor .mk-floweditor {
+    border-top: 1px solid var(--divider-color);
+    padding: 12px 0px;
+}
+.mk-flowspace-container {
+}
+
+.mk-flowspace-title span {
+    flex-grow: 1;
+}
+
+.mk-flowspace-title button {
+    padding: 8px;
+    margin-left: 8px;
+    width: unset;
+}
+
+.mk-flowspace-title button.mk-open {
+    background: var(--icon-color-active);
+}
+
+.mk-flowspace-title:hover {
+    background: var(--color-base-10)
+}
+
+.mk-folder-empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-ui-small);
+    font-style: italic;
+}

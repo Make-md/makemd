@@ -1,0 +1,104 @@
+
+/* fix checkbox margin */
+.markdown-source-view.mod-cm6 .task-list-label .task-list-item-checkbox {
+  margin-bottom: 4px;
+}
+
+
+.mk-mark-sans .cm-s-obsidian span.cm-hmd-escape-backslash,
+.mk-mark-sans .cm-s-obsidian .HyperMD-header:not(.mk-reset) span.cm-formatting-header {
+  
+  display: inline;
+  position: absolute;
+  right: 100%;
+  white-space: nowrap;
+  color: transparent;
+}
+
+
+.mk-mark-sans .cm-s-obsidian .HyperMD-header.mk-reset span.cm-formatting-header {
+   color: unset;
+  }
+  
+
+.mk-mark-sans .mk-reset .cm-fold-indicator {
+    display: none !important;
+}
+.mk-mark-sans div[class*="HyperMD-header-"].mk-reset {
+    
+    font-variant: unset;
+    letter-spacing: unset;
+    line-height: unset;
+    font-size: unset;
+    color: unset;
+    font-weight: unset;
+    font-style: unset;
+    font-family: unset;
+}
+
+.mk-mark-sans .HyperMD-quote-lazy:before {
+    content: none !important;
+}
+
+.mk-mark-sans .cm-s-obsidian span.cm-formatting-quote:not(.cm-hmd-callout) {
+    color: transparent;
+}
+
+.mk-mark-sans .cm-s-obsidian span.cm-hmd-escape-backslash::selection,
+.mk-mark-sans .cm-s-obsidian span.cm-formatting-header::selection {
+ 
+  background: transparent;
+}
+
+
+
+/* .mk-maker-mode .cm-s-obsidian span.cm-formatting-em,
+.mk-maker-mode .cm-s-obsidian span.cm-formatting-strong,
+.mk-maker-mode .cm-s-obsidian span.cm-formatting-strikethrough,
+.mk-maker-mode .cm-s-obsidian span.cm-formatting-code {
+  display: inline;
+  position: absolute;
+  z-index: -1;
+  white-space: nowrap;
+  color: transparent;
+} 
+
+
+.mk-maker-mode .cm-s-obsidian span.cm-formatting-em::selection,
+.mk-maker-mode .cm-s-obsidian span.cm-formatting-strong::selection,
+.mk-maker-mode .cm-s-obsidian span.cm-formatting-strikethrough::selection,
+.mk-maker-mode .cm-s-obsidian span.cm-formatting-code::selection {
+  background: transparent;
+}  */
+
+
+
+.mk-flow-replace .mk-new-file {
+  /* color: transparent; */
+  background: var(--color-base-10);
+border-bottom: thin solid #333;
+} 
+
+.mk-flow-replace .mk-new-file:hover {
+  /* color: transparent; */
+  background: var(--color-base-10);
+border-bottom: thin solid #333;
+} 
+
+
+.mobile-toolbar-options-container {
+  border-top: var(--divider-width) solid var(--divider-color);
+}
+
+.mk-mark-sans .markdown-source-view.mod-cm6 .HyperMD-quote:not(.HyperMD-callout):before, 
+.mk-mark-sans .markdown-source-view.mod-cm6 .cm-blockquote-border:before {
+  left: 0;
+  content: "\200b";
+  display: block;
+  width: 1px;
+  border-left: var(--blockquote-border-thickness) solid var(--blockquote-border-color);
+  color: transparent;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}

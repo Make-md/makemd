@@ -1,0 +1,49 @@
+{
+    "name": "make-md",
+    "version": "0.5.0",
+    "description": "This plugin allows you to have an alternative file tree view.",
+    "main": "main.js",
+    "scripts": {
+        "dev": "node esbuild.config.mjs",
+        "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+        "demo": "node esbuild.config.mjs demo",
+        "version": "node version-bump.mjs && git add manifest.json versions.json"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/common-tags": "^1.8.1",
+        "@types/node": "^14.14.37",
+        "@types/react": "17.0.2",
+        "@types/react-dom": "^18.0.8",
+        "@types/react-virtualized-auto-sizer": "^1.0.1",
+        "@types/react-window": "^1.8.5",
+        "builtin-modules": "3.3.0",
+        "cross-env": "^7",
+        "dotenv": "^16.0.3",
+        "esbuild": "^0.14.47",
+        "esbuild-envfile-plugin": "^1.0.3",
+        "esbuild-plugin-copy": "^1.6.0",
+        "obsidian": "^0.16.3",
+        "prop-types": "^15.7.2",
+        "tslib": "^2.2.0",
+        "typescript": "^4.2.4"
+    },
+    "dependencies": {
+        "@codemirror/language": "^6.3.0",
+        "@dnd-kit/core": "^6.0.5",
+        "@dnd-kit/sortable": "^7.0.1",
+        "@lezer/common": "^1.0.1",
+        "classnames": "^2.3.2",
+        "common-tags": "^1.8.2",
+        "dayjs": "^1.10.7",
+        "monkey-around": "^2.3.0",
+        "range-analyzer": "^0.1.1-alpha.2",
+        "react": "npm:@preact/compat@^17.0.2",
+        "react-dom": "npm:@preact/compat@^17.0.2",
+        "react-popper": "^2.3.0",
+        "react-window": "^1.8.8",
+        "recoil": "^0.4.1"
+    }
+}

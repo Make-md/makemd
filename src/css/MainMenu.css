@@ -1,0 +1,56 @@
+.mk-main-menu-container {
+    display: flex;
+    padding: 12px 8px;
+}
+.mk-main-menu-button {
+    text-align:left;
+    padding:8px 8px;
+    border-radius: 4px;
+    align-items: center; 
+    display:flex;
+    width:calc(100% - 50px);
+}
+.is-mobile .mk-main-menu-button {
+    font-size: var(--font-ui-medium);
+    font-weight: var(--font-medium);
+}
+.mk-main-menu-button > div {
+    display: flex;
+}
+
+.mk-main-menu-button svg {
+height: 16px;
+width: 16px;
+}
+body:not(.is-mobile) .mk-main-menu-button:hover {
+    background:var(--nav-item-background-hover);
+}
+.mk-main-menu {
+    position: absolute; 
+    left: 8px; 
+    z-index:var(--layer-menu);
+    margin-top: 2.25rem; 
+    margin-left: 2px; 
+    background-color: var(--background-secondary);
+    transform-origin: top left; 
+    border-radius: var(--radius-m);
+    border: 1px solid var(--background-modifier-border-hover);
+    box-shadow: var(--shadow-s);
+}
+
+.mk-menu-button {
+    display: flex; 
+padding-top: 0.5rem;
+padding-bottom: 0.5rem; 
+padding-left: 0.5rem;
+padding-right: 0.5rem; 
+font-size: 0.75rem;
+line-height: 1.25rem; 
+align-items: center; 
+width: 100%; 
+border-radius: 0.375rem; 
+
+}
+.mk-menu-button:hover {
+background: var(--nav-item-background-hover);
+}

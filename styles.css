@@ -422,8 +422,13 @@ body:not(.is-mobile) .mk-tree-wrapper:hover .mk-folder-buttons {
   height: 20px;
   color: var(--text-faint);
 }
+.is-mobile .mk-tree-wrapper .mk-file-icon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-faint);
+}
 .mk-tree-text {
-  padding: 0.15rem 0.5rem;
+  padding: 0.15rem 4px;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -586,7 +591,7 @@ body:not(.is-mobile) .mk-section:hover .mk-collapse {
   padding: unset;
 }
 .is-mobile .mk-sidebar .mk-file-icon button {
-  font-size: 20px;
+  font-size: 16px;
 }
 body.is-mobile .sidebar-toggle-button {
   display: flex !important;
@@ -633,6 +638,9 @@ body.is-mobile .sidebar-toggle-button {
 .is-mobile .mk-main-menu-button {
   font-size: var(--font-ui-medium);
   font-weight: var(--font-medium);
+}
+.mk-main-menu-button > div {
+  display: flex;
 }
 .mk-main-menu-button svg {
   height: 16px;
@@ -697,6 +705,10 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   align-content: flex-start;
   flex-direction: row;
 }
+.mk-sticker-modal {
+  display: flex;
+  flex-wrap: wrap;
+}
 .mk-sticker-menu .suggestion-item {
   width: 30px;
   height: 30px;
@@ -757,6 +769,10 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   background: transparent;
 }
 .mk-flow-replace .mk-new-file {
+  background: var(--color-base-10);
+  border-bottom: thin solid #333;
+}
+.mk-flow-replace .mk-new-file:hover {
   background: var(--color-base-10);
   border-bottom: thin solid #333;
 }

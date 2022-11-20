@@ -1,0 +1,106 @@
+
+import MakeMDPlugin from "main"
+import {
+    App,
+    Editor,
+    EditorPosition,
+    EditorSuggest,
+    EditorSuggestContext,
+    EditorSuggestTriggerInfo,
+    TFile,
+} from "obsidian"
+import 'css/MakeMenu.css'
+import { resolveCommands, Command } from "./commands"
+import t from "i18n"
+import { makeIconSet, markIconSet } from "utils/icons";
+
+export default class MakeMenu extends EditorSuggest<Command> {
+    inCmd = false
+    cmdStartCh = 0
+    plugin: MakeMDPlugin
+
+    constructor(app: App, plugin: MakeMDPlugin) {
+        super(app)
+        this.plugin = plugin
+        
+    }
+    resetInfos() {
+        this.cmdStartCh = 0
+        this.inCmd = false
+    }
+
+    onTrigger(
+        cursor: EditorPosition,
+        editor: Editor,
+        _file: TFile
+    ): EditorSuggestTriggerInfo {
+        const currentLine = editor.getLine(cursor.line).slice(0, cursor.ch)
+
+        if (
+            !this.inCmd &&
+            currentLine[0] !==
+                this.plugin.settings.menuTriggerChar
+        ) {
+            this.resetInfos()
+            return null
+        }
+
+        if (!this.inCmd) {
+            this.cmdStartCh = currentLine.length - 1
+            this.inCmd = true
+        }
+
+        const currentCmd = currentLine.slice(this.cmdStartCh, cursor.ch)
+
+        if (
+            currentCmd.includes(" ") ||
+            !currentCmd.includes(this.plugin.settings.menuTriggerChar)
+        ) {
+            this.resetInfos()
+            return null
+        }
+        return { start: cursor, end: cursor, query: currentCmd.slice(1) }
+    }
+
+    getSuggestions(
+        context: EditorSuggestContext
+    ): Command[] | Promise<Command[]> {
+        const suggestions = resolveCommands(this.plugin).filter(({ label }) =>
+        //@ts-ignore
+            label.toLowerCase().includes(context.query.toLowerCase()) || (t.commands[label] && t.commands[label].toLowerCase().includes(context.query.toLowerCase()))
+        )
+
+        return suggestions.length > 0
+            ? suggestions
+            : [{ label: t.commandsSuggest.noResult, value: "", icon: ''}]
+    }
+
+    renderSuggestion(value: Command, el: HTMLElement): void {
+        
+        const div = el.createDiv("mk-slash-item")
+        const icon = div.createDiv('mk-slash-icon');
+        icon.innerHTML = makeIconSet[value.icon];
+        const title = div.createDiv()
+        //@ts-ignore
+        title.setText(t.commands[value.label])
+
+    }
+
+    selectSuggestion(cmd: Command, _evt: MouseEvent | KeyboardEvent): void {
+        if (cmd.label === t.commandsSuggest.noResult) return
+
+        this.context.editor.replaceRange(
+            cmd.value,
+            { ...this.context.start, ch: this.cmdStartCh },
+            this.context.end
+        )
+        if (cmd.offset) {
+            this.context.editor.setSelection({ ...this.context.start, ch: cmd.offset[1] }, { ...this.context.end, ch: cmd.value.length+cmd.offset[0] })
+        }
+
+
+        this.resetInfos()
+
+        this.close()
+    }
+}
