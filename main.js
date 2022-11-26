@@ -6852,7 +6852,11 @@ var T4 = class {
         },
         commandPalette: {
           enable: "Enable",
-          disabled: "Disable"
+          disabled: "Disable",
+          openFlow: "Open Flow Editors in Selection",
+          closeFlow: "Close Flow Editors in Selection",
+          toggleBold: "Toggle Bold",
+          toggleItalics: "Toggle Italics"
         },
         menu: {
           openFilePane: "Open in a new pane",
@@ -18438,15 +18442,29 @@ var MakeMDPlugin = class extends import_obsidian15.Plugin {
       this.openFileTreeLeaf(true);
     };
   }
-  toggleFlow() {
+  openFlow() {
     const cm = getActiveCM();
     if (cm) {
       const value = cm.state.field(flowEditorInfo, false);
       const currPosition = cm.state.selection.main;
       for (let flowEditor of value) {
-        if (flowEditor.from > currPosition.from && flowEditor.to < currPosition.to) {
+        if (flowEditor.from < currPosition.to && flowEditor.to > currPosition.from) {
           cm.dispatch({
             annotations: toggleFlowEditor.of([flowEditor.id, 2])
+          });
+        }
+      }
+    }
+  }
+  closeFlow() {
+    const cm = getActiveCM();
+    if (cm) {
+      const value = cm.state.field(flowEditorInfo, false);
+      const currPosition = cm.state.selection.main;
+      for (let flowEditor of value) {
+        if (flowEditor.from < currPosition.to && flowEditor.to > currPosition.from) {
+          cm.dispatch({
+            annotations: toggleFlowEditor.of([flowEditor.id, 0])
           });
         }
       }
@@ -18494,9 +18512,14 @@ var MakeMDPlugin = class extends import_obsidian15.Plugin {
     document.body.classList.toggle("mk-flow-replace", this.settings.editorFlow);
     document.body.classList.toggle("mk-flow-" + this.settings.editorFlowStyle, true);
     this.addCommand({
-      id: "mk-toggle-flow",
-      name: "Open Flow Editors in Selection",
-      callback: () => this.toggleFlow()
+      id: "mk-open-flow",
+      name: i18n_default.commandPalette.openFlow,
+      callback: () => this.openFlow()
+    });
+    this.addCommand({
+      id: "mk-close-flow",
+      name: i18n_default.commandPalette.closeFlow,
+      callback: () => this.closeFlow()
     });
     if (this.settings.editorFlow) {
       this.registerMarkdownPostProcessor((element, context) => {
@@ -18520,7 +18543,7 @@ var MakeMDPlugin = class extends import_obsidian15.Plugin {
     document.body.classList.toggle("mk-mark-sans", this.settings.markSans);
     this.addCommand({
       id: "mk-toggle-bold",
-      name: "Toggle Bold",
+      name: i18n_default.commandPalette.toggleBold,
       callback: () => this.toggleBold(),
       hotkeys: [
         {
@@ -18531,7 +18554,7 @@ var MakeMDPlugin = class extends import_obsidian15.Plugin {
     });
     this.addCommand({
       id: "mk-toggle-italics",
-      name: "Toggle Italics",
+      name: i18n_default.commandPalette.toggleItalics,
       callback: () => this.toggleEm(),
       hotkeys: [
         {

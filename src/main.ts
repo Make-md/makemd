@@ -21,20 +21,35 @@ import { platform } from 'os';
 import { getActiveCM, iterateTreeAtPos } from 'utils/codemirror';
 import { mkLogo } from 'utils/icons';
 import { flowEditorInfo, toggleFlowEditor } from 'cm-extensions/flowEditor/flowEditor';
+import t from 'i18n'
 export default class MakeMDPlugin extends Plugin {
     settings: MakeMDPluginSettings;
     activeEditorView?: MarkdownView;
     flowEditors: FlowEditor[];
     
-    toggleFlow() {
+    openFlow() {
       const cm = getActiveCM();
         if (cm) {
           const value = cm.state.field(flowEditorInfo, false);
           const currPosition = cm.state.selection.main;
           for (let flowEditor of value) {
-            if (flowEditor.from > currPosition.from && flowEditor.to < currPosition.to) {
+            if (flowEditor.from < currPosition.to && flowEditor.to > currPosition.from) {
               cm.dispatch({
                 annotations: toggleFlowEditor.of([flowEditor.id, 2])
+              });
+            }
+          }
+        }
+    }
+    closeFlow() {
+      const cm = getActiveCM();
+        if (cm) {
+          const value = cm.state.field(flowEditorInfo, false);
+          const currPosition = cm.state.selection.main;
+          for (let flowEditor of value) {
+            if (flowEditor.from < currPosition.to && flowEditor.to > currPosition.from) {
+              cm.dispatch({
+                annotations: toggleFlowEditor.of([flowEditor.id, 0])
               });
             }
           }
@@ -87,11 +102,16 @@ export default class MakeMDPlugin extends Plugin {
         document.body.classList.toggle('mk-flow-'+this.settings.editorFlowStyle, true);
         
         this.addCommand({
-          id: 'mk-toggle-flow',
-          name: 'Open Flow Editors in Selection',
-          callback: () => this.toggleFlow(),
+          id: 'mk-open-flow',
+          name: t.commandPalette.openFlow,
+          callback: () => this.openFlow(),
         });
 
+        this.addCommand({
+          id: 'mk-close-flow',
+          name: t.commandPalette.closeFlow,
+          callback: () => this.closeFlow(),
+        });
         if (this.settings.editorFlow) {
           this.registerMarkdownPostProcessor((element, context) => {
             const removeAllFlowMarks = (el: HTMLElement) => {
@@ -118,7 +138,7 @@ export default class MakeMDPlugin extends Plugin {
         document.body.classList.toggle('mk-mark-sans', this.settings.markSans);
         this.addCommand({
           id: 'mk-toggle-bold',
-          name: 'Toggle Bold',
+          name: t.commandPalette.toggleBold,
           callback: () => this.toggleBold(),
           hotkeys: [
             {
@@ -130,7 +150,7 @@ export default class MakeMDPlugin extends Plugin {
     
         this.addCommand({
           id: 'mk-toggle-italics',
-          name: 'Toggle Italics',
+          name: t.commandPalette.toggleItalics,
           callback: () => this.toggleEm(),
           hotkeys: [
             {

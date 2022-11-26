@@ -22,7 +22,7 @@ class T {
                 tag: 'Tag',
                 makeMenu: 'Make Menu',
                 selectStyle: 'Style',
-                toggleKeyboard: 'Toggle Keyboard'
+                toggleKeyboard: 'Toggle Keyboard',
                 
             },
             styles: {
@@ -41,6 +41,10 @@ class T {
             commandPalette: {
                 enable: "Enable",
                 disabled: "Disable",
+                openFlow: 'Open Flow Editors in Selection',
+                closeFlow: 'Close Flow Editors in Selection',
+                toggleBold: 'Toggle Bold',
+                toggleItalics: 'Toggle Italics',
             },
             menu: {
                 openFilePane: 'Open in a new pane',
