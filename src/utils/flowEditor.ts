@@ -41,10 +41,11 @@ const parseOutReferences = (ostr: string) : [string, string | undefined] => {
         const level = headings[index]?.level
         const nextIndex = headings.findIndex((f, i) => i > index && f.level <= level)
         
+        const start = window.make.settings.editorFlowStyle == 'classic' ? heading.position.start.line+1 : heading.position.start.line+2;
         if (index < headings.length-1 && nextIndex != -1) {
-          return [heading.position.start.line+2, headings[nextIndex].position.end.line]
+          return [start, headings[nextIndex].position.end.line]
         }
-        return [heading.position.start.line+2, sections[sections.length-1].position.end.line+1]
+        return [start, sections[sections.length-1].position.end.line+1]
     }
     return [undefined, undefined];
   }

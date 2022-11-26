@@ -18,13 +18,29 @@ import { replaceMobileMainMenu } from 'components/Spaces/MainMenu';
 import { loadStylerIntoContainer } from 'cm-extensions/inlineStylerView/InlineMenu';
 import { patchFileExplorer, patchWorkspace } from 'utils/patches';
 import { platform } from 'os';
-import { getActiveCM } from 'utils/codemirror';
+import { getActiveCM, iterateTreeAtPos } from 'utils/codemirror';
 import { mkLogo } from 'utils/icons';
+import { flowEditorInfo, toggleFlowEditor } from 'cm-extensions/flowEditor/flowEditor';
 export default class MakeMDPlugin extends Plugin {
     settings: MakeMDPluginSettings;
     activeEditorView?: MarkdownView;
     flowEditors: FlowEditor[];
-      
+    
+    toggleFlow() {
+      const cm = getActiveCM();
+        if (cm) {
+          const value = cm.state.field(flowEditorInfo, false);
+          const currPosition = cm.state.selection.main;
+          for (let flowEditor of value) {
+            if (flowEditor.from > currPosition.from && flowEditor.to < currPosition.to) {
+              cm.dispatch({
+                annotations: toggleFlowEditor.of([flowEditor.id, 2])
+              });
+            }
+          }
+        }
+    }
+
       toggleBold () {
         const cm = getActiveCM();
         if (cm) {
@@ -51,7 +67,8 @@ export default class MakeMDPlugin extends Plugin {
               return new FlowView(leaf, this);
           });
           if (this.settings.spacesEnabled) {
-            patchFileExplorer(this);
+            if (!this.settings.spacesDisablePatch)
+              patchFileExplorer(this);
             this.registerView(FILE_TREE_VIEW_TYPE, (leaf) => {
               return new FileTreeView(leaf, this);
           });
@@ -68,6 +85,13 @@ export default class MakeMDPlugin extends Plugin {
       loadFlowEditor () {
         document.body.classList.toggle('mk-flow-replace', this.settings.editorFlow);
         document.body.classList.toggle('mk-flow-'+this.settings.editorFlowStyle, true);
+        
+        this.addCommand({
+          id: 'mk-toggle-flow',
+          name: 'Open Flow Editors in Selection',
+          callback: () => this.toggleFlow(),
+        });
+
         if (this.settings.editorFlow) {
           this.registerMarkdownPostProcessor((element, context) => {
             const removeAllFlowMarks = (el: HTMLElement) => {

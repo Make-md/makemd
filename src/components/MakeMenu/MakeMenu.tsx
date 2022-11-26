@@ -34,19 +34,20 @@ export default class MakeMenu extends EditorSuggest<Command> {
         editor: Editor,
         _file: TFile
     ): EditorSuggestTriggerInfo {
-        const currentLine = editor.getLine(cursor.line).slice(0, cursor.ch)
-
+        const currentLine = editor.getLine(cursor.line).slice(0, cursor.ch);
+        const triggerCharLength =  this.plugin.settings.menuTriggerChar.length;
         if (
             !this.inCmd &&
-            currentLine[0] !==
-                this.plugin.settings.menuTriggerChar
+            currentLine.slice(0, triggerCharLength) !==
+                this.plugin.settings.menuTriggerChar && currentLine.slice(-2-triggerCharLength) !==
+                "- "+this.plugin.settings.menuTriggerChar
         ) {
             this.resetInfos()
             return null
         }
 
         if (!this.inCmd) {
-            this.cmdStartCh = currentLine.length - 1
+            this.cmdStartCh = currentLine.length - triggerCharLength
             this.inCmd = true
         }
 
@@ -59,7 +60,7 @@ export default class MakeMenu extends EditorSuggest<Command> {
             this.resetInfos()
             return null
         }
-        return { start: cursor, end: cursor, query: currentCmd.slice(1) }
+        return { start: cursor, end: cursor, query: currentCmd.slice(triggerCharLength) }
     }
 
     getSuggestions(
@@ -95,7 +96,7 @@ export default class MakeMenu extends EditorSuggest<Command> {
             this.context.end
         )
         if (cmd.offset) {
-            this.context.editor.setSelection({ ...this.context.start, ch: cmd.offset[1] }, { ...this.context.end, ch: cmd.value.length+cmd.offset[0] })
+            this.context.editor.setSelection({ ...this.context.start, ch: this.cmdStartCh+cmd.offset[1] }, { ...this.context.end, ch: this.cmdStartCh+cmd.value.length+cmd.offset[0] })
         }
 
 

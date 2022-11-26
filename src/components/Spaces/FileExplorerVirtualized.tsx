@@ -46,7 +46,6 @@ const row: React.FC<ListChildComponentProps> = memo(({data, index, style}) =>
   
 export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
 
-  
 
     const { plugin } = props;
     const indentationWidth = 24;
@@ -58,6 +57,7 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
     const [activeFile, setActiveFile] = useRecoilState(recoilState.activeFile);
     const [sections, setSections] = useRecoilState(recoilState.sections);
     const [_folderTree, setFolderTree] = useRecoilState(recoilState.folderTree);
+    const [selectedFiles, setSelectedFiles] = useState<TFile[]>([]);
     // const [dropPlaceholderItem, setDropPlaceholderItem] = useState<[Record<string, string>, number] | null>(null);
   const [offsetLeft, setOffsetLeft] = useState(0);
 
@@ -75,18 +75,25 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
         window.addEventListener(eventTypes.activeFileChange, changeActiveFile);
         window.addEventListener(eventTypes.refreshView, forceUpdate);
         window.addEventListener(eventTypes.settingsChanged, settingsChanged);
-        // window.addEventListener(eventTypes.revealFile, handleRevealFileEvent);
+        window.addEventListener(eventTypes.revealFile, handleRevealFileEvent);
         return () => {
             window.removeEventListener(eventTypes.vaultChange, vaultChangeEvent);
             window.removeEventListener(eventTypes.activeFileChange, changeActiveFile);
             window.removeEventListener(eventTypes.refreshView, forceUpdate);
             window.removeEventListener(eventTypes.settingsChanged, settingsChanged);
-            // window.removeEventListener(eventTypes.revealFile, handleRevealFileEvent);
+            window.removeEventListener(eventTypes.revealFile, handleRevealFileEvent);
         };
     }, []);
 
     const handleRevealFileEvent = (evt: CustomVaultChangeEvent) => {
-      // todo reveal file
+      if (evt.detail) {
+        setSelectedFiles([evt.detail.file]);
+        const folders = evt.detail.file.path.split('/');
+        const openPaths = folders.reduce((p, c) => [...p, `${p}/${c}`], ['/']).slice(0, -1);
+        const newOpenFolders = [...openFolders.filter(f => !openPaths.find(g => g == f)), ...openPaths];
+        plugin.settings.openFolders = newOpenFolders;
+        plugin.saveSettings();
+      }
     }
     const vaultChangeEvent = (evt: CustomVaultChangeEvent) => {
 

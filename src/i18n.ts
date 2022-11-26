@@ -65,13 +65,14 @@ class T {
                 moreOptions: 'More Options',
                 newNote: 'New Note',
                 changeIcon: 'Change Sticker',
+                removeIcon: 'Remove Sticker',
                 rename: 'Change Name',
                 createFolder: 'New Folder',
                 createNote: 'New Note',
                 createSection: 'New Space',
                 cancel: 'Cancel',
                 search: 'Search',
-                toggleFlow: 'Hide Flow',
+                toggleFlow: 'Toggle Flow',
                 openFlow: 'Open Flow',
                 hideFlow: 'Hide Flow',
                 openLink: 'Open Link'
@@ -103,6 +104,7 @@ class T {
                 sectionSidebar: 'Spaces', 
                 sectionEditor: 'Maker Mode', 
                 sectionFlow: 'Flow Editor', 
+                sectionAdvanced: 'Advanced',
                 spaces: { 
                     name: 'Spaces',
                     desc: `Spaces gives you control over how you organize your files`
@@ -110,6 +112,10 @@ class T {
                 spacesStickers: { 
                     name: 'Stickers',
                     desc: `Use Emojis to make it easier to find your notes`
+                },
+                spacesFileExplorerDual: {
+                    name: 'Use Spaces Alongside File Explorer',
+                    desc: 'This will allow plugins that uses the File Explorer to work while using Spaces'
                 },
                 spacesDeleteOption: {
                     name: 'Delete File Option',

@@ -14,6 +14,7 @@ export interface MakeMDPluginSettings {
     editorFlow: boolean;
     editorFlowStyle: string;
     spacesEnabled: boolean;
+    spacesDisablePatch: boolean;
     spacesPerformance: boolean;
     spacesStickers: boolean;
     sidebarRibbon: boolean;
@@ -41,6 +42,7 @@ export const DEFAULT_SETTINGS: MakeMDPluginSettings = {
     spacesEnabled: true,
     spacesPerformance: false,
     spacesStickers: true,
+    spacesDisablePatch: false,
     sidebarRibbon: false,
     sidebarTabs: false,
     deleteFileOption: 'trash',
@@ -100,49 +102,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                             this.refreshView();
                         })
                     );
-                    new Setting(containerEl)
-                    .setName(t.settings.sidebarRibbon.name)
-                    .setDesc(t.settings.sidebarRibbon.desc)
-                    .addToggle((toggle) =>
-                        toggle.setValue(this.plugin.settings.sidebarRibbon).onChange((value) => {
-                            this.plugin.settings.sidebarRibbon = value;
-                            this.plugin.saveSettings();
-                            document.body.classList.toggle('mk-hide-ribbon', !value);
-                        })
-                    );
-                    new Setting(containerEl)
-                    .setName(t.settings.sidebarTabs.name)
-                    .setDesc(t.settings.sidebarTabs.desc)
-                    .addToggle((toggle) =>
-                        toggle.setValue(this.plugin.settings.sidebarTabs).onChange((value) => {
-                            this.plugin.settings.sidebarTabs = value;
-                            this.plugin.saveSettings();
-                            document.body.classList.toggle('mk-hide-tabs', !value);
-                        })
-                    );
-                    new Setting(containerEl)
-                    .setName(t.settings.spacesPerformance.name)
-                    .setDesc(t.settings.spacesPerformance.desc)
-                    .addToggle((toggle) =>
-                        toggle.setValue(this.plugin.settings.spacesPerformance).onChange((value) => {
-                            this.plugin.settings.spacesPerformance = value;
-                            this.plugin.saveSettings();
-                        })
-                    );
-            
-                    new Setting(containerEl)
-            .setName(t.settings.spacesDeleteOption.name)
-            .setDesc(t.settings.spacesDeleteOption.desc)
-            .addDropdown((dropdown) => {
-                dropdown.addOption('permanent', t.settings.spacesDeleteOptions.permanant);
-                dropdown.addOption('trash', t.settings.spacesDeleteOptions.trash);
-                dropdown.addOption('system-trash', t.settings.spacesDeleteOptions['system-trash']);
-                dropdown.setValue(this.plugin.settings.deleteFileOption);
-                dropdown.onChange((option: DeleteFileOption) => {
-                    this.plugin.settings.deleteFileOption = option;
-                    this.plugin.saveSettings();
-                });
-            });
+                    
 
                     containerEl.createEl('h2', { text: t.settings.sectionFlow });
 
@@ -239,6 +199,62 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     this.refreshView();
                 })
             );
+
+            containerEl.createEl('h2', { text: t.settings.sectionAdvanced });
+
+            new Setting(containerEl)
+                    .setName(t.settings.sidebarRibbon.name)
+                    .setDesc(t.settings.sidebarRibbon.desc)
+                    .addToggle((toggle) =>
+                        toggle.setValue(this.plugin.settings.sidebarRibbon).onChange((value) => {
+                            this.plugin.settings.sidebarRibbon = value;
+                            this.plugin.saveSettings();
+                            document.body.classList.toggle('mk-hide-ribbon', !value);
+                        })
+                    );
+                    new Setting(containerEl)
+                    .setName(t.settings.sidebarTabs.name)
+                    .setDesc(t.settings.sidebarTabs.desc)
+                    .addToggle((toggle) =>
+                        toggle.setValue(this.plugin.settings.sidebarTabs).onChange((value) => {
+                            this.plugin.settings.sidebarTabs = value;
+                            this.plugin.saveSettings();
+                            document.body.classList.toggle('mk-hide-tabs', !value);
+                        })
+                    );
+                    new Setting(containerEl)
+                    .setName(t.settings.spacesFileExplorerDual.name)
+                    .setDesc(t.settings.spacesFileExplorerDual.desc)
+                    .addToggle((toggle) =>
+                        toggle.setValue(this.plugin.settings.spacesDisablePatch).onChange((value) => {
+                            this.plugin.settings.spacesDisablePatch = value;
+                            this.plugin.saveSettings();
+                        })
+                    );
+                    new Setting(containerEl)
+                    .setName(t.settings.spacesPerformance.name)
+                    .setDesc(t.settings.spacesPerformance.desc)
+                    .addToggle((toggle) =>
+                        toggle.setValue(this.plugin.settings.spacesPerformance).onChange((value) => {
+                            this.plugin.settings.spacesPerformance = value;
+                            this.plugin.saveSettings();
+                        })
+                    );
+            
+                    new Setting(containerEl)
+            .setName(t.settings.spacesDeleteOption.name)
+            .setDesc(t.settings.spacesDeleteOption.desc)
+            .addDropdown((dropdown) => {
+                dropdown.addOption('permanent', t.settings.spacesDeleteOptions.permanant);
+                dropdown.addOption('trash', t.settings.spacesDeleteOptions.trash);
+                dropdown.addOption('system-trash', t.settings.spacesDeleteOptions['system-trash']);
+                dropdown.setValue(this.plugin.settings.deleteFileOption);
+                dropdown.onChange((option: DeleteFileOption) => {
+                    this.plugin.settings.deleteFileOption = option;
+                    this.plugin.saveSettings();
+                });
+            });
+
             new Setting(containerEl)
             .setName(t.settings.inlineStylerColor.name)
             .setDesc(t.settings.inlineStylerColor.desc)

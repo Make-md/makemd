@@ -2,6 +2,7 @@ import esbuild from "esbuild";
 import process from "process";
 import builtins from 'builtin-modules'
 import fs from 'fs'
+import path from 'path'
 import { copy } from 'esbuild-plugin-copy';
 import * as dotenv from 'dotenv'
 dotenv.config()
@@ -15,6 +16,18 @@ if you want to view the source, please visit the github repository of this plugi
 
 const demo = (process.argv[2] === 'demo');
 const prod = (process.argv[2] === 'production');
+
+
+const preactCompatPlugin = {
+    name: "preact-compat",
+    setup(build) {
+        const preact = path.join(process.cwd(), "node_modules", "preact", "compat", "dist", "compat.module.js");
+
+        build.onResolve({filter: /^(react-dom|react)$/}, args => {
+            return {path: preact};
+        });
+    }
+}
 
 let renamePlugin = {
     name: 'rename-styles',
@@ -58,7 +71,8 @@ esbuild.build({
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
 	outfile: outputDir+'/main.js',
-	plugins: [renamePlugin,
+	plugins: [renamePlugin, 
+		preactCompatPlugin,
 		...(prod ? [copy({
 			resolveFrom: 'cwd',
 			assets: {

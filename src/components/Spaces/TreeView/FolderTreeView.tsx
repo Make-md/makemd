@@ -159,6 +159,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
   }
 
   const triggerStickerMenu = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
     let vaultChangeModal = new StickerModal(plugin.app, (emoji) => saveFileIcon(emoji));
     vaultChangeModal.open();
   }
@@ -220,7 +221,27 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
           });
       });
       })
-      
+      if (plugin.settings.spacesStickers) {
+      fileMenu.addSeparator();
+      // Rename Item
+      fileMenu.addItem((menuItem) => {
+          menuItem.setTitle(t.buttons.changeIcon);
+          menuItem.setIcon('lucide-sticker');
+          menuItem.onClick((ev: MouseEvent) => {
+            let vaultChangeModal = new StickerModal(plugin.app, (emoji) => saveFileIcon(emoji));
+            vaultChangeModal.open();
+          });
+      });
+
+      fileMenu.addItem((menuItem) => {
+        menuItem.setTitle(t.buttons.removeIcon);
+        menuItem.setIcon('lucide-file-minus');
+        menuItem.onClick((ev: MouseEvent) => {
+          removeFileIcon();
+        });
+    });
+  }
+
       fileMenu.addSeparator();
       // Rename Item
       fileMenu.addItem((menuItem) => {
@@ -303,6 +324,13 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
   const saveFileIcon = (icon: string) => 
   {
     const newFileIcons = [...fileIcons.filter(f => f[0] != data.path), [data.path, icon]] as [string, string][]
+    plugin.settings.fileIcons = newFileIcons;
+    plugin.saveSettings();
+  }
+
+  const removeFileIcon = () => 
+  {
+    const newFileIcons = [...fileIcons.filter(f => f[0] != data.path)] as [string, string][]
     plugin.settings.fileIcons = newFileIcons;
     plugin.saveSettings();
   }

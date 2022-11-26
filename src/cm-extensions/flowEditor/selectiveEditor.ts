@@ -17,7 +17,7 @@ export const hideLine = StateField.define<DecorationSet>({
     if (tr.state.field(selectiveLinesFacet)?.[0] != undefined) {
         builder.add(tr.state.doc.line(1).from, 
         tr.state.doc.line(tr.state.field(selectiveLinesFacet)[0]).from, hiddenLine);
-        builder.add(tr.state.doc.line(tr.state.field(selectiveLinesFacet)[1]).to, 
+        builder.add(tr.state.doc.line(Math.min(tr.newDoc.lines, tr.state.field(selectiveLinesFacet)[1])).to, 
         tr.state.doc.line(tr.newDoc.lines).to, hiddenLine);
     }
     const dec = builder.finish()
@@ -44,7 +44,7 @@ export const hideLine = StateField.define<DecorationSet>({
 export const lineRangeToPosRange = (state: EditorState, range: [number, number]) => {
   return {
     from: state.doc.line(range[0]).from,
-    to: state.doc.line(range[1]+1).from,
+    to: state.doc.line(Math.min(state.doc.lines, range[1])).to,
   }
 }
 
@@ -59,12 +59,13 @@ export const smartDelete = EditorState.transactionFilter.of((tr:Transaction) => 
     if(initialSelections.length > 0 && tr.startState.field(selectiveLinesFacet)?.[0]) 
     { 
       const posRange = lineRangeToPosRange(tr.startState, tr.startState.field(selectiveLinesFacet));
-     
+     const minFrom = Math.max(posRange.from, initialSelections[0].from);
+     const minTo = Math.min(posRange.to, initialSelections[0].to);
       tr.startState.update(
           {
               changes:{
-                  from:Math.max(posRange.from, initialSelections[0].from),
-                  to:Math.min(posRange.to, initialSelections[0].to),
+                  from: Math.min(minFrom, minTo),
+                  to: Math.max(minFrom, minTo)
                 },
             annotations: Transaction.userEvent.of(`${tr.annotation(Transaction.userEvent)}.smart`)
         });
