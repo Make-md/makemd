@@ -1,4 +1,4 @@
-# Make.md gives makers the ulimate experience on Obsidian
+# Make.md gives makers the ultimate experience on Obsidian
 [Discord](https://make.md/community)
 
 ## Key Features
@@ -13,7 +13,7 @@ Use the Flow Editor to directly create flows between notes and edit them in the 
 Don't let markdown stop you from making. Use the Make menu (/) and the inline styler for all your styling needs.
 
 ### 📱 Streamlined Mobile Experience
-We've streamlined the way Obsidian mobile app works to be more intuitive and easier to use.
+We've streamlined the way the Obsidian mobile app works to be more intuitive and easier to use.
 
 ---
 
