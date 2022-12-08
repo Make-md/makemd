@@ -6762,6 +6762,7 @@ var eventTypes = {
   updateSections: "mkmd-update-sections",
   settingsChanged: "mkmd-settings-changed",
   spawnPortal: "mkmd-portal-spawn",
+  loadPortal: "mkmd-portal-load",
   openFilePortal: "mkmd-portal-file",
   focusPortal: "mkmd-portal-focus"
 };
@@ -8157,6 +8158,12 @@ var createFlowEditorInElement = (id, el, type, file, from, to) => {
   });
   activeWindow.dispatchEvent(evt);
 };
+var loadFlowEditorByDOM = (el, view, id) => {
+  let evt = new CustomEvent(eventTypes.loadPortal, {
+    detail: { id, el, view }
+  });
+  activeWindow.dispatchEvent(evt);
+};
 var focusFlowEditor = (id, top2) => {
   let evt = new CustomEvent(eventTypes.focusPortal, {
     detail: { id, parent: false, top: top2 }
@@ -8798,12 +8805,12 @@ var parseOutReferences = (ostr) => {
 var getFileFromString = (url, source) => {
   return app.metadataCache.getFirstLinkpathDest(url, source);
 };
-var getLineRangeFromRef = (file, ref, app2) => {
+var getLineRangeFromRef = (file, ref, plugin) => {
   var _a2;
   if (!ref) {
     return [void 0, void 0];
   }
-  const cache = app2.metadataCache.getFileCache(file);
+  const cache = app.metadataCache.getFileCache(file);
   const headings = cache.headings;
   const blocks = cache.blocks;
   const sections2 = cache.sections;
@@ -8818,7 +8825,7 @@ var getLineRangeFromRef = (file, ref, app2) => {
     const index = headings.findIndex((f4) => f4.heading == heading.heading);
     const level = (_a2 = headings[index]) == null ? void 0 : _a2.level;
     const nextIndex2 = headings.findIndex((f4, i3) => i3 > index && f4.level <= level);
-    const start2 = window.make.settings.editorFlowStyle == "classic" ? heading.position.start.line + 1 : heading.position.start.line + 2;
+    const start2 = plugin.settings.editorFlowStyle == "classic" ? heading.position.start.line + 1 : heading.position.start.line + 2;
     if (index < headings.length - 1 && nextIndex2 != -1) {
       return [start2, headings[nextIndex2].position.end.line];
     }
@@ -8826,7 +8833,7 @@ var getLineRangeFromRef = (file, ref, app2) => {
   }
   return [void 0, void 0];
 };
-var loadFlowEditorByDOM = (el, view, id) => {
+var loadFlowEditorByDOM2 = (make, el, view, id) => {
   setTimeout(async () => {
     let counter = 0;
     while (!el.parentElement && counter++ <= 50)
@@ -8850,22 +8857,22 @@ var loadFlowEditorByDOM = (el, view, id) => {
         var _a2;
         const cm = (_a2 = leaf.view.editor) == null ? void 0 : _a2.cm;
         if (cm && view.dom == cm.dom) {
-          loadFlowEditorsForLeafForID(cm, leaf, app, id);
+          loadFlowEditorsForLeafForID(cm, leaf, make, id);
         }
       }, app.workspace["rootSplit"]);
     });
   });
 };
-var loadFlowEditorsForLeafForID = (cm, leaf, app2, id) => {
+var loadFlowEditorsForLeafForID = (cm, leaf, make, id) => {
   const stateField = cm.state.field(flowEditorInfo, false);
   if (!stateField)
     return;
   const flowInfo = stateField.find((f4) => f4.id == id);
   if (flowInfo && flowInfo.expandedState == 2) {
-    loadFlowEditor(cm, flowInfo, leaf, app2);
+    loadFlowEditor(cm, flowInfo, leaf, make);
   }
 };
-var loadFlowEditor = (cm, flowEditorInfo2, leaf, app2) => {
+var loadFlowEditor = (cm, flowEditorInfo2, leaf, make) => {
   var _a2;
   const dom = cm.dom.querySelector("#mk-flow-" + flowEditorInfo2.id);
   const [link, ref] = parseOutReferences(flowEditorInfo2.link);
@@ -8873,7 +8880,7 @@ var loadFlowEditor = (cm, flowEditorInfo2, leaf, app2) => {
   const file = getFileFromString(link, source);
   if (dom) {
     if (file) {
-      const selectiveRange = getLineRangeFromRef(file, ref, app2);
+      const selectiveRange = getLineRangeFromRef(file, ref, make);
       if (!dom.hasAttribute("ready")) {
         dom.setAttribute("ready", "");
         createFlowEditorInElement(flowEditorInfo2.id, dom, ref ? "block" : "flow", file.path, selectiveRange[0], selectiveRange[1]);
@@ -8885,8 +8892,8 @@ var loadFlowEditor = (cm, flowEditorInfo2, leaf, app2) => {
       const createFile = async (e3) => {
         e3.stopPropagation();
         e3.stopImmediatePropagation();
-        await app2.fileManager.createNewMarkdownFile(app2.vault.getRoot(), link);
-        loadFlowEditor(cm, flowEditorInfo2, leaf, app2);
+        await app.fileManager.createNewMarkdownFile(app.vault.getRoot(), link);
+        loadFlowEditor(cm, flowEditorInfo2, leaf, make);
       };
       createDiv.setText(`"${link}" ` + i18n_default.labels.noFile);
       createDiv.addEventListener("click", createFile);
@@ -23545,11 +23552,12 @@ var Mark = (props) => {
 
 // src/cm-extensions/inlineStylerView/InlineMenu.tsx
 var import_classnames3 = __toESM(require_classnames());
-var loadStylerIntoContainer = (el) => {
+var loadStylerIntoContainer = (el, plugin) => {
   const root = createRoot(el);
   root.render(/* @__PURE__ */ bn.createElement(InlineMenuComponent, {
     mobile: true,
-    activeMarks: []
+    activeMarks: [],
+    plugin
   }));
 };
 var InlineMenuComponent = (props) => {
@@ -23573,7 +23581,7 @@ var InlineMenuComponent = (props) => {
     if (!cm)
       return;
     const end2 = cm.state.selection.main.to;
-    const insertChars = cm.state.sliceDoc(end2 - 1, end2) == cm.state.lineBreak ? window.make.settings.menuTriggerChar : cm.state.lineBreak + window.make.settings.menuTriggerChar;
+    const insertChars = cm.state.sliceDoc(end2 - 1, end2) == cm.state.lineBreak ? props.plugin.settings.menuTriggerChar : cm.state.lineBreak + props.plugin.settings.menuTriggerChar;
     cm.dispatch({
       changes: {
         from: end2,
@@ -23633,7 +23641,7 @@ var InlineMenuComponent = (props) => {
     "aria-label": !platformIsMobile() ? i18n_default.commands.image : void 0,
     onMouseDown: () => {
       const view = getActiveMarkdownView();
-      window.make.app.commands.commands["editor:attach-file"].editorCallback(view.editor, view);
+      props.plugin.app.commands.commands["editor:attach-file"].editorCallback(view.editor, view);
     },
     className: "mk-mark",
     dangerouslySetInnerHTML: { __html: markIconSet["mk-make-attach"] }
@@ -23641,7 +23649,7 @@ var InlineMenuComponent = (props) => {
     "aria-label": !platformIsMobile() ? i18n_default.commands.toggleKeyboard : void 0,
     onMouseDown: () => {
       const view = getActiveMarkdownView();
-      window.make.app.commands.commands["editor:toggle-keyboard"].editorCallback(view.editor, view);
+      props.plugin.app.commands.commands["editor:toggle-keyboard"].editorCallback(view.editor, view);
     },
     className: "mk-mark",
     dangerouslySetInnerHTML: { __html: markIconSet["mk-make-keyboard"] }
@@ -23688,7 +23696,7 @@ var InlineMenuComponent = (props) => {
       active: props.activeMarks.find((f4) => f4 == s3.mark) ? true : false,
       toggleMarkAction
     });
-  }), window.make.settings.inlineStylerColors ? /* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement("div", {
+  }), props.plugin.settings.inlineStylerColors ? /* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement("div", {
     className: "mk-divider"
   }), /* @__PURE__ */ bn.createElement("div", {
     "aria-label": !platformIsMobile() ? i18n_default.styles.textColor : void 0,
@@ -23724,16 +23732,16 @@ var InlineMenuComponent = (props) => {
 };
 
 // src/cm-extensions/inlineStylerView/inlineStyler.tsx
-var cursorTooltipField = import_state10.StateField.define({
-  create: getCursorTooltips,
+var cursorTooltipField = (plugin) => import_state10.StateField.define({
+  create: getCursorTooltips(plugin),
   update(tooltips3, tr) {
     if (!tr.docChanged && !tr.selection)
       return tooltips3;
-    return getCursorTooltips(tr.state);
+    return getCursorTooltips(plugin)(tr.state);
   },
   provide: (f4) => showTooltip.computeN([f4], (state) => state.field(f4))
 });
-function getCursorTooltips(state) {
+var getCursorTooltips = (plugin) => (state) => {
   return state.selection.ranges.filter((range) => !range.empty).map((range) => {
     const expandedRange = expandRange(range, state);
     let line = state.doc.lineAt(range.head);
@@ -23748,6 +23756,7 @@ function getCursorTooltips(state) {
         dom.className = "cm-tooltip-cursor";
         const reactElement = createRoot(dom);
         reactElement.render(/* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement(InlineMenuComponent, {
+          plugin,
           cm: view,
           activeMarks,
           mobile: false
@@ -23756,9 +23765,9 @@ function getCursorTooltips(state) {
       }
     };
   });
-}
-function cursorTooltip() {
-  return cursorTooltipField;
+};
+function cursorTooltip(plugin) {
+  return cursorTooltipField(plugin);
 }
 
 // src/cm-extensions/flowEditor/flowViewUpdates.ts
@@ -23829,7 +23838,7 @@ var placeholder = import_state11.StateField.define({
 var cmExtensions = (plugin, mobile) => {
   let extensions = [toggleMarkExtension, tooltips({ parent: document.body })];
   if (!mobile && plugin.settings.inlineStyler) {
-    extensions.push(cursorTooltip());
+    extensions.push(cursorTooltip(plugin));
   }
   if (plugin.settings.markSans) {
     if (!mobile) {
@@ -24167,6 +24176,7 @@ var MakeMDPlugin = class extends import_obsidian15.Plugin {
         replaceAllEmbed(element, context);
       });
       window.addEventListener(eventTypes.spawnPortal, this.spawnPortal);
+      window.addEventListener(eventTypes.loadPortal, this.loadPortal);
       window.addEventListener(eventTypes.focusPortal, this.focusPortal);
       window.addEventListener(eventTypes.openFilePortal, this.openFileFromPortal);
     }
@@ -24198,10 +24208,9 @@ var MakeMDPlugin = class extends import_obsidian15.Plugin {
     this.registerEditorSuggest(new MakeMenu(this.app, this));
     this.registerEditorSuggest(new StickerMenu(this.app, this));
     if (platformIsMobile() && this.settings.mobileMakeBar)
-      loadStylerIntoContainer(app.mobileToolbar.containerEl);
+      loadStylerIntoContainer(app.mobileToolbar.containerEl, this);
   }
   async onload() {
-    window.make = this;
     (0, import_obsidian15.addIcon)("mk-logo", mkLogo);
     console.log("Loading Make.md");
     this.addSettingTab(new MakeMDPluginSettingsTab(this.app, this));
@@ -24213,6 +24222,9 @@ var MakeMDPlugin = class extends import_obsidian15.Plugin {
   }
   openFileFromPortal(e3) {
     openFileFromPortal(this, e3);
+  }
+  loadPortal(e3) {
+    loadFlowEditorByDOM2(this, e3.detail.el, e3.detail.view, e3.detail.id);
   }
   spawnPortal(e3) {
     spawnNewPortal(this, e3);
@@ -24233,6 +24245,7 @@ var MakeMDPlugin = class extends import_obsidian15.Plugin {
   onunload() {
     console.log("Unloading Make.md");
     window.removeEventListener(eventTypes.spawnPortal, this.spawnPortal);
+    window.removeEventListener(eventTypes.loadPortal, this.loadPortal);
     window.removeEventListener(eventTypes.focusPortal, this.focusPortal);
     window.removeEventListener(eventTypes.openFilePortal, this.openFileFromPortal);
     this.detachFileTreeLeafs();

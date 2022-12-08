@@ -19,7 +19,7 @@ import { tooltips } from "./tooltip";
 export const cmExtensions = (plugin: MakeMDPlugin, mobile: boolean) => {
   let extensions = [toggleMarkExtension, tooltips({ parent: document.body })];
   if (!mobile && plugin.settings.inlineStyler) {
-    extensions.push(cursorTooltip());
+    extensions.push(cursorTooltip(plugin));
   }
   if (plugin.settings.markSans) {
     if (!mobile) {

@@ -25,10 +25,10 @@ import { Tooltip, hoverTooltip } from "cm-extensions/tooltip";
 import React from "react";
 import ReactDOM from "react-dom";
 import { createRoot } from "react-dom/client";
-import { loadFlowEditorByDOM } from "utils/flowEditor";
+
 import { info } from "console";
 import { openFile } from "utils/utils";
-import { openFileFlowEditor } from "dispatch/flowDispatch";
+import { loadFlowEditorByDOM, openFileFlowEditor } from "dispatch/flowDispatch";
 import { FlowEditorHover } from "components/FlowEditor/FlowEditorHover";
 import { MarkdownView } from "obsidian";
 import t from "i18n";

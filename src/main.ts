@@ -28,6 +28,7 @@ import {
 import {
   eventTypes,
   FocusPortalEvent,
+  LoadPortalEvent,
   OpenFilePortalEvent,
   SpawnPortalEvent,
   VaultChange,
@@ -42,6 +43,7 @@ import "css/makerMode.css";
 import { cmExtensions } from "cm-extensions/cmExtensions";
 import {
   focusPortal,
+  loadFlowEditorByDOM,
   loadFlowEditorsForLeaf,
   openFileFromPortal,
   spawnNewPortal,
@@ -175,6 +177,7 @@ export default class MakeMDPlugin extends Plugin {
       });
 
       window.addEventListener(eventTypes.spawnPortal, this.spawnPortal);
+      window.addEventListener(eventTypes.loadPortal, this.loadPortal);
       window.addEventListener(eventTypes.focusPortal, this.focusPortal);
       window.addEventListener(
         eventTypes.openFilePortal,
@@ -211,10 +214,9 @@ export default class MakeMDPlugin extends Plugin {
     this.registerEditorSuggest(new MakeMenu(this.app, this));
     this.registerEditorSuggest(new StickerMenu(this.app, this));
     if (platformIsMobile() && this.settings.mobileMakeBar)
-      loadStylerIntoContainer(app.mobileToolbar.containerEl);
+      loadStylerIntoContainer(app.mobileToolbar.containerEl, this);
   }
   async onload() {
-    window.make = this;
     addIcon("mk-logo", mkLogo);
     console.log("Loading Make.md");
     // Load Settings
@@ -229,6 +231,9 @@ export default class MakeMDPlugin extends Plugin {
   //Flow Editor Listeners
   openFileFromPortal(e: OpenFilePortalEvent) {
     openFileFromPortal(this, e);
+  }
+  loadPortal(e: LoadPortalEvent) {
+    loadFlowEditorByDOM(this, e.detail.el, e.detail.view, e.detail.id);
   }
   spawnPortal(e: SpawnPortalEvent) {
     spawnNewPortal(this, e);
@@ -299,6 +304,7 @@ export default class MakeMDPlugin extends Plugin {
   onunload() {
     console.log("Unloading Make.md");
     window.removeEventListener(eventTypes.spawnPortal, this.spawnPortal);
+    window.removeEventListener(eventTypes.loadPortal, this.loadPortal);
     window.removeEventListener(eventTypes.focusPortal, this.focusPortal);
     window.removeEventListener(
       eventTypes.openFilePortal,

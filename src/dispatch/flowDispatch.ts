@@ -1,5 +1,6 @@
 import { TFile } from "obsidian";
 import { SpawnPortalEvent, eventTypes, PortalType } from "types/types";
+import { EditorView } from '@codemirror/view'
 
 export const createFlowEditorInElement = (
   id: string,
@@ -14,6 +15,17 @@ export const createFlowEditorInElement = (
   });
   activeWindow.dispatchEvent(evt);
 };
+
+export const loadFlowEditorByDOM = (
+  el: HTMLElement,
+  view: EditorView,
+  id: string,
+) => {
+  let evt = new CustomEvent(eventTypes.loadPortal, {
+    detail: { id, el, view },
+  });
+  activeWindow.dispatchEvent(evt);
+}
 
 export const focusFlowEditor = (id: string, top: boolean) => {
   let evt = new CustomEvent(eventTypes.focusPortal, {

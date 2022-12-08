@@ -46,7 +46,7 @@ export const getFileFromString = (url: string, source: string) => {
 const getLineRangeFromRef = (
   file: TFile,
   ref: string | undefined,
-  app: App
+  plugin: MakeMDPlugin
 ): [number | undefined, number | undefined] => {
   if (!ref) {
     return [undefined, undefined];
@@ -70,7 +70,7 @@ const getLineRangeFromRef = (
     );
 
     const start =
-      window.make.settings.editorFlowStyle == "classic"
+      plugin.settings.editorFlowStyle == "classic"
         ? heading.position.start.line + 1
         : heading.position.start.line + 2;
     if (index < headings.length - 1 && nextIndex != -1) {
@@ -82,9 +82,11 @@ const getLineRangeFromRef = (
 };
 
 export const loadFlowEditorByDOM = (
+  make: MakeMDPlugin,
   el: HTMLElement,
   view: EditorView,
-  id: string
+  id: string,
+  
 ) => {
   setTimeout(async () => {
     //wait for el to be attached to the displayed document
@@ -114,7 +116,7 @@ export const loadFlowEditorByDOM = (
         //@ts-ignore
         const cm = leaf.view.editor?.cm as EditorView;
         if (cm && view.dom == cm.dom) {
-          loadFlowEditorsForLeafForID(cm, leaf, app, id);
+          loadFlowEditorsForLeafForID(cm, leaf, make, id);
         }
       }, app.workspace["rootSplit"]!);
     });
@@ -123,27 +125,27 @@ export const loadFlowEditorByDOM = (
 export const loadFlowEditorsForLeafForID = (
   cm: EditorView,
   leaf: WorkspaceLeaf,
-  app: App,
+  make: MakeMDPlugin,
   id: string
 ) => {
   const stateField = cm.state.field(flowEditorInfo, false);
   if (!stateField) return;
   const flowInfo = stateField.find((f) => f.id == id);
   if (flowInfo && flowInfo.expandedState == 2) {
-    loadFlowEditor(cm, flowInfo, leaf, app);
+    loadFlowEditor(cm, flowInfo, leaf, make);
   }
 };
 
 export const loadFlowEditorsForLeaf = (
   cm: EditorView,
   leaf: WorkspaceLeaf,
-  app: App
+  make: MakeMDPlugin,
 ) => {
   const stateField = cm.state.field(flowEditorInfo, false);
   if (!stateField) return;
   for (let flowInfo of stateField) {
     if (flowInfo.expandedState == 2 && flowInfo.embed <= 1) {
-      loadFlowEditor(cm, flowInfo, leaf, app);
+      loadFlowEditor(cm, flowInfo, leaf, make);
     }
   }
 };
@@ -152,7 +154,7 @@ export const loadFlowEditor = (
   cm: EditorView,
   flowEditorInfo: FlowEditorInfo,
   leaf: WorkspaceLeaf,
-  app: App
+  make: MakeMDPlugin,
 ) => {
   const dom = cm.dom.querySelector(
     "#mk-flow-" + flowEditorInfo.id
@@ -163,7 +165,7 @@ export const loadFlowEditor = (
   const file = getFileFromString(link, source);
   if (dom) {
     if (file) {
-      const selectiveRange = getLineRangeFromRef(file, ref, app);
+      const selectiveRange = getLineRangeFromRef(file, ref, make);
       if (!dom.hasAttribute("ready")) {
         // dom.empty();
         dom.setAttribute("ready", "");
@@ -185,7 +187,7 @@ export const loadFlowEditor = (
         e.stopImmediatePropagation();
         //@ts-ignore
         await app.fileManager.createNewMarkdownFile(app.vault.getRoot(), link);
-        loadFlowEditor(cm, flowEditorInfo, leaf, app);
+        loadFlowEditor(cm, flowEditorInfo, leaf, make);
       };
       createDiv.setText(`"${link}" ` + t.labels.noFile);
       createDiv.addEventListener("click", createFile);

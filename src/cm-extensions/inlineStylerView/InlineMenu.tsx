@@ -15,11 +15,11 @@ import { markIconSet, uiIconSet } from "utils/icons";
 import MakeMenu from "components/MakeMenu/MakeMenu";
 import classNames from "classnames";
 
-export const loadStylerIntoContainer = (el: HTMLElement) => {
+export const loadStylerIntoContainer = (el: HTMLElement, plugin: MakeMDPlugin) => {
   // el.removeChild(el.querySelector('.mobile-toolbar-options-container'))
   const root = createRoot(el);
   root.render(
-    <InlineMenuComponent mobile={true} activeMarks={[]}></InlineMenuComponent>
+    <InlineMenuComponent mobile={true} activeMarks={[]} plugin={plugin}></InlineMenuComponent>
   );
 };
 
@@ -27,6 +27,7 @@ export const InlineMenuComponent: React.FC<{
   cm?: EditorView;
   activeMarks: string[];
   mobile: boolean;
+  plugin: MakeMDPlugin
 }> = (props) => {
   const [mode, setMode] = useState(props.mobile ? 0 : 1);
   const [colorMode, setColorMode] = useState<{
@@ -53,8 +54,8 @@ export const InlineMenuComponent: React.FC<{
     const end = cm.state.selection.main.to;
     const insertChars =
       cm.state.sliceDoc(end - 1, end) == cm.state.lineBreak
-        ? window.make.settings.menuTriggerChar
-        : cm.state.lineBreak + window.make.settings.menuTriggerChar;
+        ? props.plugin.settings.menuTriggerChar
+        : cm.state.lineBreak + props.plugin.settings.menuTriggerChar;
     cm.dispatch({
       changes: {
         from: end,
@@ -135,7 +136,7 @@ export const InlineMenuComponent: React.FC<{
         aria-label={!platformIsMobile() ? t.commands.image : undefined}
         onMouseDown={() => {
           const view = getActiveMarkdownView();
-          window.make.app.commands.commands[
+          props.plugin.app.commands.commands[
             "editor:attach-file"
           ].editorCallback(view.editor, view);
         }}
@@ -146,7 +147,7 @@ export const InlineMenuComponent: React.FC<{
         aria-label={!platformIsMobile() ? t.commands.toggleKeyboard : undefined}
         onMouseDown={() => {
           const view = getActiveMarkdownView();
-          window.make.app.commands.commands[
+          props.plugin.app.commands.commands[
             "editor:toggle-keyboard"
           ].editorCallback(view.editor, view);
         }}
@@ -222,7 +223,7 @@ export const InlineMenuComponent: React.FC<{
           ></Mark>
         );
       })}
-      {window.make.settings.inlineStylerColors ? (
+      {props.plugin.settings.inlineStylerColors ? (
         <>
           <div className="mk-divider"></div>
           <div

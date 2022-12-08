@@ -5,12 +5,12 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { createRoot } from "react-dom/client";
 
-const cursorTooltipField = StateField.define<readonly Tooltip[]>({
-  create: getCursorTooltips,
+const cursorTooltipField = (plugin: MakeMDPlugin) => StateField.define<readonly Tooltip[]>({
+  create: getCursorTooltips(plugin),
 
   update(tooltips, tr) {
     if (!tr.docChanged && !tr.selection) return tooltips;
-    return getCursorTooltips(tr.state);
+    return getCursorTooltips(plugin)(tr.state);
   },
 
   provide: (f) => showTooltip.computeN([f], (state) => state.field(f)),
@@ -19,8 +19,9 @@ import { EditorState } from "@codemirror/state";
 import { InlineMenuComponent } from "cm-extensions/inlineStylerView/InlineMenu";
 import { oMarks } from "cm-extensions/markSans/obsidianSyntax";
 import { rangeIsMark, expandRange } from "./marks";
+import MakeMDPlugin from "main";
 
-function getCursorTooltips(state: EditorState): readonly Tooltip[] {
+const getCursorTooltips = (plugin: MakeMDPlugin) => (state: EditorState): readonly Tooltip[] => {
   return state.selection.ranges
     .filter((range) => !range.empty)
     .map((range) => {
@@ -41,6 +42,7 @@ function getCursorTooltips(state: EditorState): readonly Tooltip[] {
           reactElement.render(
             <>
               <InlineMenuComponent
+              plugin={plugin}
                 cm={view}
                 activeMarks={activeMarks}
                 mobile={false}
@@ -53,6 +55,6 @@ function getCursorTooltips(state: EditorState): readonly Tooltip[] {
     });
 }
 
-export function cursorTooltip() {
-  return cursorTooltipField;
+export function cursorTooltip(plugin: MakeMDPlugin) {
+  return cursorTooltipField(plugin);
 }

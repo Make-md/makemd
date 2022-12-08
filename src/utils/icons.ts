@@ -187,3 +187,10 @@ export const markIconSet: Record<string, string> = {
 <path opacity="0.2" fill-rule="evenodd" clip-rule="evenodd" d="M18 21H6V19H18V20Z" fill="currentColor"/>
 </svg>`,
 };
+
+/**
+ * Some UI Icons based on
+ * Hero Icons
+ * https://github.com/tailwindlabs/heroicons
+ * tailwindlabs
+ **/

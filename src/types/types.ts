@@ -1,5 +1,6 @@
 import { TFolder, TFile } from "obsidian";
 import { UniqueIdentifier } from "@dnd-kit/core";
+import { EditorView } from '@codemirror/view'
 
 export interface SectionTree {
   section: string;
@@ -37,6 +38,7 @@ export const eventTypes = {
   updateSections: "mkmd-update-sections",
   settingsChanged: "mkmd-settings-changed",
   spawnPortal: "mkmd-portal-spawn",
+  loadPortal: "mkmd-portal-load",
   openFilePortal: "mkmd-portal-file",
   focusPortal: "mkmd-portal-focus",
 };
@@ -54,6 +56,14 @@ export class CustomVaultChangeEvent extends Event {
     file: TFile;
     changeType: VaultChange;
     oldPath: string;
+  };
+}
+
+export class LoadPortalEvent extends Event {
+  detail: {
+    el: HTMLElement;
+    view: EditorView;
+    id: string;
   };
 }
 
