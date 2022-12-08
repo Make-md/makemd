@@ -1,51 +1,59 @@
+/**
+ * React Virtualized Auto Sizer
+ * https://github.com/bvaughn/react-virtualized-auto-sizer
+ * bvaughn
+ *
+ * Forked from version 1.0.7
+ * Fixes 0 height when out side of window
+ **/
 
-import * as React from 'react';
-import createDetectElementResize from './detectElementResize';
+import * as React from "react";
+import createDetectElementResize from "./detectElementResize";
 //fixed autosizer offscreen scroll bug
 type Size = {
-  height: number,
-  width: number,
+  height: number;
+  width: number;
 };
 
 type Props = {
   /** Function responsible for rendering children.*/
-  children: (size: Size) => JSX.Element,
+  children: (size: Size) => JSX.Element;
 
   /** Optional custom CSS class name to attach to root AutoSizer element.  */
-  className?: string,
+  className?: string;
 
   /** Default height to use for initial render; useful for SSR */
-  defaultHeight?: number,
+  defaultHeight?: number;
 
   /** Default width to use for initial render; useful for SSR */
-  defaultWidth?: number,
+  defaultWidth?: number;
 
   /** Disable dynamic :height property */
-  disableHeight: boolean,
+  disableHeight: boolean;
 
   /** Disable dynamic :width property */
-  disableWidth: boolean,
+  disableWidth: boolean;
 
   /** Nonce of the inlined stylesheet for Content Security Policy */
-  nonce?: string,
+  nonce?: string;
 
   /** Callback to be invoked on-resize */
-  onResize: (size: Size) => void,
+  onResize: (size: Size) => void;
 
   /** Optional inline style */
-  style?: React.CSSProperties,
+  style?: React.CSSProperties;
 };
 
 type State = {
-  height: number,
-  width: number,
+  height: number;
+  width: number;
 };
 
 type ResizeHandler = (element: HTMLElement, onResize: () => void) => void;
 
 type DetectElementResize = {
-  addResizeListener: ResizeHandler,
-  removeResizeListener: ResizeHandler,
+  addResizeListener: ResizeHandler;
+  removeResizeListener: ResizeHandler;
 };
 
 export default class AutoSizer extends React.PureComponent<Props, State> {
@@ -76,7 +84,9 @@ export default class AutoSizer extends React.PureComponent<Props, State> {
       const height = this._parentNode.offsetHeight || 0;
       const width = this._parentNode.offsetWidth || 0;
 
-      const style = window.getComputedStyle(this._parentNode) || {} as CSSStyleDeclaration;
+      const style =
+        window.getComputedStyle(this._parentNode) ||
+        ({} as CSSStyleDeclaration);
       const paddingLeft = parseInt(style.paddingLeft, 10) || 0;
       const paddingRight = parseInt(style.paddingRight, 10) || 0;
       const paddingTop = parseInt(style.paddingTop, 10) || 0;
@@ -142,19 +152,14 @@ export default class AutoSizer extends React.PureComponent<Props, State> {
   }
 
   render() {
-    const {
-      children,
-      className,
-      disableHeight,
-      disableWidth,
-      style,
-    } = this.props;
+    const { children, className, disableHeight, disableWidth, style } =
+      this.props;
     const { height, width } = this.state;
 
     // Outer div should not force width/height since that may prevent containers from shrinking.
     // Inner component should overflow and use calculated width/height.
     // See issue #68 for more information.
-    const outerStyle: React.CSSProperties = { overflow: 'visible' };
+    const outerStyle: React.CSSProperties = { overflow: "visible" };
     const childParams: Size = {} as Size;
 
     // Avoid rendering children before the initial measurements have been collected.
@@ -190,6 +195,4 @@ export default class AutoSizer extends React.PureComponent<Props, State> {
       </div>
     );
   }
-
-  
 }

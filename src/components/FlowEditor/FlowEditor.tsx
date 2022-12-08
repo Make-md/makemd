@@ -1,3 +1,10 @@
+/**
+ * Obsidian Hover Editor
+ * https://github.com/nothingislost/obsidian-hover-editor
+ * nothingislost
+ *
+ * Includes leaf loading and management strategies from project
+ **/
 
 import MakeMDPlugin from "main";
 import {
@@ -23,39 +30,40 @@ import {
 } from "obsidian";
 
 export function genId(size: number) {
-    const chars = [];
-    for (let n = 0; n < size; n++) chars.push(((16 * Math.random()) | 0).toString(16));
-    return chars.join("");
-  }
+  const chars = [];
+  for (let n = 0; n < size; n++)
+    chars.push(((16 * Math.random()) | 0).toString(16));
+  return chars.join("");
+}
 
-  
-import 'css/FlowEditor.css'
+import "css/FlowEditor.css";
 
 export interface FlowEditorParent {
-    flowEditor: FlowEditor | null;
-    containerEl?: HTMLElement;
-    view?: View;
-    dom?: HTMLElement;
-  }
+  flowEditor: FlowEditor | null;
+  containerEl?: HTMLElement;
+  view?: View;
+  dom?: HTMLElement;
+}
 const popovers = new WeakMap<Element, FlowEditor>();
-type ConstructableWorkspaceSplit = new (ws: Workspace, dir: "horizontal"|"vertical") => WorkspaceSplit;
+type ConstructableWorkspaceSplit = new (
+  ws: Workspace,
+  dir: "horizontal" | "vertical"
+) => WorkspaceSplit;
 
 let mouseCoords: MousePos = { x: 0, y: 0 };
 
 function nosuper<T>(base: new (...args: unknown[]) => T): new () => T {
   const derived = function () {
-    return Object.setPrototypeOf(new Component, new.target.prototype);
+    return Object.setPrototypeOf(new Component(), new.target.prototype);
   };
   derived.prototype = base.prototype;
   return Object.setPrototypeOf(derived, base);
 }
 
-
 export class FlowEditor extends nosuper(HoverPopover) {
   onTarget: boolean;
   setActive: (event: MouseEvent) => void;
   shownPos: MousePos | null;
-
 
   lockedOut: boolean;
 
@@ -65,7 +73,11 @@ export class FlowEditor extends nosuper(HoverPopover) {
 
   opening = false;
 
-  rootSplit: WorkspaceSplit = new (WorkspaceSplit as ConstructableWorkspaceSplit)(window.app.workspace, "vertical");
+  rootSplit: WorkspaceSplit =
+    new (WorkspaceSplit as ConstructableWorkspaceSplit)(
+      window.app.workspace,
+      "vertical"
+    );
 
   targetRect = this.targetEl?.getBoundingClientRect();
 
@@ -77,11 +89,10 @@ export class FlowEditor extends nosuper(HoverPopover) {
 
   hideNavBarEl: HTMLElement;
 
-
-
   oldPopover = this.parent?.flowEditor;
 
-  document: Document = this.targetEl?.ownerDocument ?? window.activeDocument ?? window.document;
+  document: Document =
+    this.targetEl?.ownerDocument ?? window.activeDocument ?? window.document;
 
   id = genId(8);
 
@@ -119,15 +130,20 @@ export class FlowEditor extends nosuper(HoverPopover) {
   }
 
   static popoversForWindow(win?: Window) {
-    return (Array.prototype.slice.call(win?.document?.body.querySelectorAll(".mk-hover-popover") ?? []) as HTMLElement[])
-    .map(el => popovers.get(el)!)
-    .filter(he => he);
+    return (
+      Array.prototype.slice.call(
+        win?.document?.body.querySelectorAll(".mk-hover-popover") ?? []
+      ) as HTMLElement[]
+    )
+      .map((el) => popovers.get(el)!)
+      .filter((he) => he);
   }
 
   static forLeaf(leaf: WorkspaceLeaf | undefined) {
     // leaf can be null such as when right clicking on an internal link
-    //@ts-ignore
-    const el = leaf && document.body.matchParent.call(leaf.containerEl, ".mk-hover-popover"); // work around matchParent race condition
+    const el =
+      leaf &&
+      document.body.matchParent.call(leaf.containerEl, ".mk-hover-popover"); // work around matchParent race condition
     return el ? popovers.get(el) : undefined;
   }
 
@@ -141,7 +157,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
     public targetEl: HTMLElement,
     public plugin: MakeMDPlugin,
     waitTime?: number,
-    public onShowCallback?: () => unknown,
+    public onShowCallback?: () => unknown
   ) {
     //
     super();
@@ -168,14 +184,12 @@ export class FlowEditor extends nosuper(HoverPopover) {
     this.hoverEl.addClass("hover-editor");
     this.containerEl = this.hoverEl.createDiv("popover-content");
     this.setTitleBar();
-    this.hoverEl.style.height = 'auto';
+    this.hoverEl.style.height = "auto";
     this.hoverEl.style.width = "100%";
-    
   }
 
   _setActive() {
-    this.plugin.app.workspace.setActiveLeaf(this.leaves()[0], {focus: true})
-
+    this.plugin.app.workspace.setActiveLeaf(this.leaves()[0], { focus: true });
   }
 
   getDefaultMode() {
@@ -184,12 +198,16 @@ export class FlowEditor extends nosuper(HoverPopover) {
   }
 
   updateLeaves() {
-    if (this.onTarget && this.targetEl && !this.document.contains(this.targetEl)) {
+    if (
+      this.onTarget &&
+      this.targetEl &&
+      !this.document.contains(this.targetEl)
+    ) {
       this.onTarget = false;
       this.transition();
     }
     let leafCount = 0;
-    this.plugin.app.workspace.iterateLeaves(leaf => {
+    this.plugin.app.workspace.iterateLeaves((leaf) => {
       leafCount++;
     }, this.rootSplit);
     if (leafCount === 0) {
@@ -199,47 +217,53 @@ export class FlowEditor extends nosuper(HoverPopover) {
     this.hoverEl.setAttribute("data-leaf-count", leafCount.toString());
   }
 
-  
   setTitleBar() {
     this.titleEl = this.document.defaultView!.createDiv("mk-flow-titlebar");
     this.containerEl.prepend(this.titleEl);
-    
   }
 
   attachLeaf(): WorkspaceLeaf {
-    //@ts-ignore
-    this.rootSplit.getRoot = () => this.plugin.app.workspace[this.document === document ? "rootSplit" : "floatingSplit"]!;
-    this.rootSplit.getContainer = () => FlowEditor.containerForDocument(this.document);
+    this.rootSplit.getRoot = () =>
+      this.plugin.app.workspace[
+        this.document === document ? "rootSplit" : "floatingSplit"
+      ]!;
+    this.rootSplit.getContainer = () =>
+      FlowEditor.containerForDocument(this.document);
 
     this.titleEl.insertAdjacentElement("afterend", this.rootSplit.containerEl);
-    const leaf = this.plugin.app.workspace.createLeafInParent(this.rootSplit, 0);
+    const leaf = this.plugin.app.workspace.createLeafInParent(
+      this.rootSplit,
+      0
+    );
     this.updateLeaves();
     return leaf;
   }
 
   onload(): void {
     super.onload();
-    this.registerEvent(this.plugin.app.workspace.on("layout-change", this.updateLeaves, this));
-    this.registerEvent(app.workspace.on("layout-change", () => {
-      // Ensure that top-level items in a popover are not tabbed
-      //@ts-ignore
-      this.rootSplit.children.forEach((item, index) => {
-        if (item instanceof WorkspaceTabs) {
-          //@ts-ignore
-          this.rootSplit.replaceChild(index, item.children[0]);
-        }
+    this.registerEvent(
+      this.plugin.app.workspace.on("layout-change", this.updateLeaves, this)
+    );
+    this.registerEvent(
+      app.workspace.on("layout-change", () => {
+        // Ensure that top-level items in a popover are not tabbed
+        this.rootSplit.children.forEach((item, index) => {
+          if (item instanceof WorkspaceTabs) {
+            //@ts-ignore
+            this.rootSplit.replaceChild(index, item.children[0]);
+          }
+        });
       })
-    }));
+    );
   }
 
   leaves() {
     const leaves: WorkspaceLeaf[] = [];
-    this.plugin.app.workspace.iterateLeaves(leaf => {
+    this.plugin.app.workspace.iterateLeaves((leaf) => {
       leaves.push(leaf);
     }, this.rootSplit);
     return leaves;
   }
-
 
   onShow() {
     const closeDelay = 600;
@@ -255,7 +279,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
       () => {
         this.hoverEl.toggleClass("is-new", false);
       },
-      { once: true, capture: true },
+      { once: true, capture: true }
     );
 
     if (this.parent) {
@@ -271,7 +295,6 @@ export class FlowEditor extends nosuper(HoverPopover) {
     this.onShowCallback?.();
     this.onShowCallback = undefined; // only call it once
   }
-
 
   transition() {
     if (this.shouldShow()) {
@@ -308,8 +331,12 @@ export class FlowEditor extends nosuper(HoverPopover) {
 
   shouldShowChild(): boolean {
     //@ts-ignore
-    return FlowEditor.activePopovers().some(popover => {
-      if (popover !== this && popover.targetEl && this.hoverEl.contains(popover.targetEl)) {
+    return FlowEditor.activePopovers().some((popover) => {
+      if (
+        popover !== this &&
+        popover.targetEl &&
+        this.hoverEl.contains(popover.targetEl)
+      ) {
         return popover.shouldShow();
       }
       return false;
@@ -322,8 +349,10 @@ export class FlowEditor extends nosuper(HoverPopover) {
       !!(
         this.onTarget ||
         //@ts-ignore
-        (this.state == PopoverState.Shown) ||
-        this.document.querySelector(`body>.modal-container, body > #he${this.id} ~ .menu, body > #he${this.id} ~ .suggestion-container`)
+        this.state == PopoverState.Shown ||
+        this.document.querySelector(
+          `body>.modal-container, body > #he${this.id} ~ .menu, body > #he${this.id} ~ .suggestion-container`
+        )
       )
     );
   }
@@ -357,7 +386,6 @@ export class FlowEditor extends nosuper(HoverPopover) {
 
     // in case we didn't ever call show()
 
-
     // A timer might be pending to call show() for the first time, make sure
     // it doesn't bring us back up after we close
     if (this.timer) {
@@ -381,7 +409,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
       // Detach all leaves before we unload the popover and remove it from the DOM.
       // Each leaf.detach() will trigger layout-changed and the updateLeaves()
       // method will then call hide() again when the last one is gone.
-      leaves.forEach(leaf => leaf.detach());
+      leaves.forEach((leaf) => leaf.detach());
     } else {
       this.parent = null;
       this.abortController?.unload();
@@ -392,7 +420,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
 
   nativeHide() {
     const { hoverEl, targetEl } = this;
-//@ts-ignore
+    //@ts-ignore
     this.state = PopoverState.Hidden;
 
     hoverEl.detach();
@@ -408,12 +436,20 @@ export class FlowEditor extends nosuper(HoverPopover) {
 
   resolveLink(linkText: string, sourcePath: string): TFile | null {
     const link = parseLinktext(linkText);
-    const tFile = link ? this.plugin.app.metadataCache.getFirstLinkpathDest(link.path, sourcePath) : null;
+    const tFile = link
+      ? this.plugin.app.metadataCache.getFirstLinkpathDest(
+          link.path,
+          sourcePath
+        )
+      : null;
     return tFile;
   }
 
-
-  async openFile(file: TFile, openState?: OpenViewState, useLeaf?: WorkspaceLeaf) {
+  async openFile(
+    file: TFile,
+    openState?: OpenViewState,
+    useLeaf?: WorkspaceLeaf
+  ) {
     if (this.detaching) return;
     const leaf = useLeaf ?? this.attachLeaf();
     this.opening = true;
@@ -426,14 +462,14 @@ export class FlowEditor extends nosuper(HoverPopover) {
       if (this.detaching) this.hide();
     }
     this.plugin.app.workspace.setActiveLeaf(leaf);
-    
+
     return leaf;
   }
 
   buildState(parentMode: string, eState?: EphemeralState) {
     return {
       active: false,
-      state: {  },
+      state: {},
       eState: eState,
     };
   }
@@ -443,10 +479,12 @@ export class FlowEditor extends nosuper(HoverPopover) {
     link?: {
       path: string;
       subpath: string;
-    },
+    }
   ) {
     const cache = this.plugin.app.metadataCache.getFileCache(file);
-    const subpath = cache ? resolveSubpath(cache, link?.subpath || "") : undefined;
+    const subpath = cache
+      ? resolveSubpath(cache, link?.subpath || "")
+      : undefined;
     const eState: EphemeralState = { subpath: link?.subpath };
     if (subpath) {
       eState.line = subpath.start.line;
@@ -456,4 +494,3 @@ export class FlowEditor extends nosuper(HoverPopover) {
     return eState;
   }
 }
-

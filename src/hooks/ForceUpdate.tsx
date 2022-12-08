@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 export default function useForceUpdate() {
-    const [value, setValue] = useState(0);
-    return () => setValue((value) => value + 1);
+  const [value, setValue] = useState(0);
+  return () => setValue((value) => value + 1);
 }
