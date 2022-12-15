@@ -6,7 +6,9 @@
   margin: 0;
   border-radius: var(--he-popover-border-radius);
   overflow: hidden;
-  height: 100%;
+}
+.mk-floweditor.hover-editor .popover-content .workspace-split {
+  display: none;
 }
 .mk-floweditor.hover-editor .workspace-leaf,
 .mk-floweditor.hover-editor .workspace-split {
@@ -107,7 +109,7 @@
   border: thin solid var(--color-base-20);
   margin-top: 4px;
 }
-.mk-flow-classic .markdown-embed {
+.mk-flow-classic .internal-embed.markdown-embed {
   margin-top: 24px;
 }
 .markdown-embed .markdown-rendered h1,
@@ -121,7 +123,7 @@
 .markdown-embed p {
   margin-bottom: 24px;
 }
-.mk-flow-seamless .markdown-embed {
+.mk-flow-seamless .internal-embed.markdown-embed {
   margin-top: 24px;
 }
 .mk-floweditor-container:not(.mk-floweditor-fix) > .mk-floweditor:hover {

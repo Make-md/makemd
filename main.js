@@ -8844,39 +8844,43 @@ var loadFlowEditorByDOM2 = (make, el, view, id) => {
     while (!dom.hasClass("mk-floweditor") && !dom.hasClass("workspace") && dom.parentElement) {
       dom = dom.parentElement;
     }
-    if (!dom.hasClass("mk-floweditor") && !dom.hasClass("workspace")) {
+    if (!dom.hasClass("mk-floweditor") && !dom.hasClass("workspace") && !(dom.nodeName == "HTML")) {
       return;
     }
     setTimeout(async () => {
-      let counter2 = 0;
-      while (!dom.parentElement && counter2++ <= 50)
-        await sleep(50);
-      if (!dom.parentElement)
-        return;
-      app.workspace.iterateLeaves((leaf) => {
-        var _a2;
-        const cm = (_a2 = leaf.view.editor) == null ? void 0 : _a2.cm;
-        if (cm && view.dom == cm.dom) {
-          loadFlowEditorsForLeafForID(cm, leaf, make, id);
+      var _a2;
+      let leafFound = false;
+      if (app.workspace.activeEditor) {
+        if (app.workspace.activeEditor.editMode.cm.dom == view.dom) {
+          leafFound = true;
+          loadFlowEditorsForLeafForID(app.workspace.activeEditor.editMode.cm, (_a2 = app.workspace.activeEditor.file) == null ? void 0 : _a2.path, make, id);
         }
-      }, app.workspace["rootSplit"]);
+      }
+      if (!leafFound) {
+        app.workspace.iterateLeaves((leaf) => {
+          var _a3, _b2;
+          const cm = (_a3 = leaf.view.editor) == null ? void 0 : _a3.cm;
+          if (cm && view.dom == cm.dom) {
+            leafFound = true;
+            loadFlowEditorsForLeafForID(cm, (_b2 = leaf.view.file) == null ? void 0 : _b2.path, make, id);
+          }
+        }, app.workspace["rootSplit"]);
+      }
     });
   });
 };
-var loadFlowEditorsForLeafForID = (cm, leaf, make, id) => {
+var loadFlowEditorsForLeafForID = (cm, source, make, id) => {
   const stateField = cm.state.field(flowEditorInfo, false);
   if (!stateField)
     return;
   const flowInfo = stateField.find((f4) => f4.id == id);
   if (flowInfo && flowInfo.expandedState == 2) {
-    loadFlowEditor(cm, flowInfo, leaf, make);
+    loadFlowEditor(cm, flowInfo, source, make);
   }
 };
-var loadFlowEditor = (cm, flowEditorInfo2, leaf, make) => {
-  var _a2;
+var loadFlowEditor = (cm, flowEditorInfo2, source, make) => {
   const dom = cm.dom.querySelector("#mk-flow-" + flowEditorInfo2.id);
   const [link, ref] = parseOutReferences(flowEditorInfo2.link);
-  const source = (_a2 = leaf.view.file) == null ? void 0 : _a2.path;
   const file = getFileFromString(link, source);
   if (dom) {
     if (file) {
@@ -8893,7 +8897,7 @@ var loadFlowEditor = (cm, flowEditorInfo2, leaf, make) => {
         e3.stopPropagation();
         e3.stopImmediatePropagation();
         await app.fileManager.createNewMarkdownFile(app.vault.getRoot(), link);
-        loadFlowEditor(cm, flowEditorInfo2, leaf, make);
+        loadFlowEditor(cm, flowEditorInfo2, source, make);
       };
       createDiv.setText(`"${link}" ` + i18n_default.labels.noFile);
       createDiv.addEventListener("click", createFile);
@@ -23896,7 +23900,7 @@ var replaceAllEmbed = (el, ctx) => {
             toggleState: false,
             toggleFlow: (e3) => {
               const cm = getCMFromElement(dom);
-              const pos = cm.posAtDOM(dom);
+              const pos = cm == null ? void 0 : cm.posAtDOM(dom);
               iterateTreeInSelection({ from: pos - 3, to: pos + 4 }, cm.state, {
                 enter: (node) => {
                   if (node.name.contains("hmd-internal-link")) {
