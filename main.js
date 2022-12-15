@@ -7358,7 +7358,7 @@ var FlowEditor = class extends nosuper(import_obsidian2.HoverPopover) {
     const sizer = this.hoverEl.querySelector(".workspace-leaf");
     this.hoverEl.appendChild(sizer);
     const inlineTitle = this.hoverEl.querySelector(".inline-title");
-    inlineTitle.remove();
+    inlineTitle == null ? void 0 : inlineTitle.remove();
     (_b2 = this.onShowCallback) == null ? void 0 : _b2.call(this);
     this.onShowCallback = void 0;
   }
@@ -8981,6 +8981,9 @@ var spawnNewPortal = async (plugin, evt) => {
   let portalFile = plugin.app.vault.getAbstractFileByPath(file);
   const newLeaf = spawnPortal(plugin, el, !from && portalFile.name);
   await newLeaf.openFile(portalFile);
+  if (!newLeaf.view.editor) {
+    return;
+  }
   const view = (_a2 = newLeaf.view.editor) == null ? void 0 : _a2.cm;
   view.dispatch({
     annotations: [
@@ -24179,10 +24182,10 @@ var MakeMDPlugin = class extends import_obsidian15.Plugin {
         removeAllFlowMarks(element);
         replaceAllEmbed(element, context);
       });
-      window.addEventListener(eventTypes.spawnPortal, this.spawnPortal);
-      window.addEventListener(eventTypes.loadPortal, this.loadPortal);
-      window.addEventListener(eventTypes.focusPortal, this.focusPortal);
-      window.addEventListener(eventTypes.openFilePortal, this.openFileFromPortal);
+      window.addEventListener(eventTypes.spawnPortal, this.spawnPortal.bind(this));
+      window.addEventListener(eventTypes.loadPortal, this.loadPortal.bind(this));
+      window.addEventListener(eventTypes.focusPortal, this.focusPortal.bind(this));
+      window.addEventListener(eventTypes.openFilePortal, this.openFileFromPortal.bind(this));
     }
   }
   loadMakerMode() {
