@@ -106,26 +106,35 @@
   border-left: var(--embed-border-left);
   padding: var(--embed-padding);
 }
+.mk-flow-seamless .internal-embed > .markdown-embed,
 .mk-flow-seamless .internal-embed.markdown-embed {
   padding: 8px;
   border-radius: 4px;
   border: thin solid var(--color-base-20);
   margin-top: 4px;
 }
+.mk-flow-classic .internal-embed > .markdown-embed,
 .mk-flow-classic .internal-embed.markdown-embed {
   margin-top: 24px;
 }
-.markdown-embed .markdown-rendered h1,
-.markdown-embed .markdown-rendered h2,
-.markdown-embed .markdown-rendered h3,
-.markdown-embed .markdown-rendered h4,
-.markdown-embed .markdown-rendered h5,
-.markdown-embed .markdown-rendered h6 {
+.internal-embed > .markdown-embed .markdown-rendered h1,
+.internal-embed > .markdown-embed .markdown-rendered h2,
+.internal-embed > .markdown-embed .markdown-rendered h3,
+.internal-embed > .markdown-embed .markdown-rendered h4,
+.internal-embed > .markdown-embed .markdown-rendered h5,
+.internal-embed > .markdown-embed .markdown-rendered h6,
+.internal-embed.markdown-embed .markdown-rendered h1,
+.internal-embed.markdown-embed .markdown-rendered h2,
+.internal-embed.markdown-embed .markdown-rendered h3,
+.internal-embed.markdown-embed .markdown-rendered h4,
+.internal-embed.markdown-embed .markdown-rendered h5,
+.internal-embed.markdown-embed .markdown-rendered h6 {
   margin: 0;
 }
 .markdown-embed p {
   margin-bottom: 24px;
 }
+.mk-flow-seamless .internal-embed > .markdown-embed,
 .mk-flow-seamless .internal-embed.markdown-embed {
   margin-top: 24px;
 }
@@ -156,12 +165,15 @@
 .cm-line:hover > .mk-floweditor-selector {
   visibility: visible;
 }
-.internal-embed.markdown-embed:hover .mk-floweditor-selector {
+.internal-embed.markdown-embed:hover .mk-floweditor-selector,
+.internal-embed > .markdown-embed:hover .mk-floweditor-selector {
   visibility: visible;
 }
+.mk-flow-classic .internal-embed > .markdown-embed > .mk-floweditor-selector,
 .mk-flow-classic .internal-embed.markdown-embed > .mk-floweditor-selector {
   top: 5px !important;
 }
+.mk-flow-seamless .internal-embed > .markdown-embed > .mk-floweditor-selector,
 .mk-flow-seamless .internal-embed.markdown-embed > .mk-floweditor-selector {
   top: -22px !important;
   right: 4px;

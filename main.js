@@ -9198,7 +9198,13 @@ function buildTree(flattenedItems) {
     })
   };
 }
+var getFolderPathFromString = (file) => {
+  return file.substring(0, file.lastIndexOf("/"));
+};
 var nodeIsAncestorOfTarget = (node, target) => {
+  const nodeFolder = node.isFolder ? getFolderPathFromString(node.path + "/") : getFolderPathFromString(node.path);
+  const targetFolder = target.isFolder ? getFolderPathFromString(target.path + "/") : getFolderPathFromString(target.path);
+  return targetFolder.contains(nodeFolder) && targetFolder != nodeFolder && nodeFolder != "" || targetFolder == node.path;
   let isAncestor = false;
   let condition = true;
   let _target = app.vault.getAbstractFileByPath(target.path);
