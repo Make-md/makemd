@@ -76,8 +76,8 @@ esbuild.build({
 		...(prod ? [copy({
 			resolveFrom: 'cwd',
 			assets: {
-			  from: ['./manifest.json'],
-			  to: [outputDir+'/manifest.json'],
+			  from: 'manifest.json',
+			  to: outputDir+'/manifest.json',
 			},
 		  })] : []),
 	],
