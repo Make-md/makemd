@@ -14747,6 +14747,7 @@ var ReactTags = bn.forwardRef((_props, ref) => {
   const [query, setQuery] = p2("");
   const [focused, setFocused] = p2(false);
   const [index, setIndex] = p2(0);
+  const onComposition = _2(false);
   h2(() => {
     if (ref) {
       ref.current = () => {
@@ -14775,6 +14776,16 @@ var ReactTags = bn.forwardRef((_props, ref) => {
   }, [query, props2.suggestions]);
   const container = _2(null);
   const onInput = (e4) => {
+    if (e4.type === "compositionstart") {
+      onComposition.current = true;
+      return;
+    }
+    if (e4.type === "compositionend") {
+      onComposition.current = false;
+    }
+    if (onComposition.current) {
+      return;
+    }
     const _query = e4.target.value;
     if (props2.onInput) {
       props2.onInput(_query);
@@ -14859,12 +14870,14 @@ var ReactTags = bn.forwardRef((_props, ref) => {
     inputRef.current.focus();
   };
   const inputEventHandlers = {
-    onChange: () => {
-    },
+    onChange: onInput,
     onBlur,
     onFocus,
-    onInput,
-    onKeyDown
+    onInput: () => {
+    },
+    onKeyDown,
+    onCompositionEnd: onInput,
+    onCompositionStart: onInput
   };
   const expanded = focused && query.length >= props2.minQueryLength;
   const classNames8 = Object.assign({}, CLASS_NAMES, props2.classNames);
@@ -19369,8 +19382,8 @@ var nodeIsAncestorOfTarget = (node, target) => {
     return false;
   return (_c2 = target.item) == null ? void 0 : _c2.path.contains(((_b2 = node.item) == null ? void 0 : _b2.path) + "/");
 };
-var excludeVaultItemPredicate = (plugin) => (f4, index, folder) => !(f4.folder != "true" && plugin.settings.hiddenExtensions.find((e4) => fileExtensionForFile(f4.path) == e4)) && !plugin.settings.hiddenFiles.find((e4) => e4 == f4.path) && (!plugin.settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !(f4.parent + "/" + folderPathToString(f4.parent) + ".md" == f4.path));
-var excludeFilePredicate = (plugin) => (f4, index, folder) => !(f4 instanceof import_obsidian2.TFile && plugin.settings.hiddenExtensions.find((e4) => f4.extension == e4)) && !plugin.settings.hiddenFiles.find((e4) => e4 == f4.path) && (!plugin.settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !(f4.parent.path + "/" + f4.parent.name + ".md" == f4.path));
+var excludeVaultItemPredicate = (plugin) => (f4, index, folder) => !(f4.folder != "true" && plugin.settings.hiddenExtensions.find((e4) => fileExtensionForFile(f4.path) == e4)) && !plugin.settings.hiddenFiles.find((e4) => e4 == f4.path) && (!plugin.settings.enableFolderNote || !plugin.settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !(f4.parent + "/" + folderPathToString(f4.parent) + ".md" == f4.path));
+var excludeFilePredicate = (plugin) => (f4, index, folder) => !(f4 instanceof import_obsidian2.TFile && plugin.settings.hiddenExtensions.find((e4) => f4.extension == e4)) && !plugin.settings.hiddenFiles.find((e4) => e4 == f4.path) && (!plugin.settings.enableFolderNote || !plugin.settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !(f4.parent.path + "/" + f4.parent.name + ".md" == f4.path));
 var folderChildren = (plugin, f4, exclusionList) => {
   var _a2;
   return (_a2 = f4 == null ? void 0 : f4.children.filter(excludeFilePredicate(plugin))) != null ? _a2 : [];
@@ -20078,7 +20091,7 @@ var updateDB = (db, tables, updateCol, updateRef) => {
     }, "");
     return rowsQuery;
   }).join("; ");
-  const test = db.exec(sqlstr);
+  db.exec(sqlstr);
 };
 var execQuery = (db, sqlstr) => {
   db.exec(sqlstr);
@@ -36454,7 +36467,6 @@ var onFileChanged2 = (plugin, oldPath, newPath) => {
 };
 var onFolderChanged2 = (plugin, oldPath, newPath) => {
   const newFolderPath = getFolderFromPath(app, newPath).parent.path;
-  console.log(newFolderPath, "new folder path");
   const db = plugin.spaceDBInstance();
   updateDB(db, {
     "vault": {
@@ -36723,12 +36735,13 @@ var renameSpace = (plugin, space, newName) => {
   updateDB(db, {
     spaces: {
       ...spaceSchema,
+      cols: ["name"],
       rows: [{ oldName: space, name: newName }]
     }
   }, "name", "oldName");
   updateDB(db, {
     spaceItems: {
-      ...spaceSchema,
+      ...spaceItemsSchema,
       rows: [{ oldSpace: space, space: newName }]
     }
   }, "space", "oldSpace");
@@ -37270,18 +37283,17 @@ var triggerFileMenu = (plugin, file, isFolder, e4) => {
     const itemExists = (_a2 = spaceItems[f4.name]) == null ? void 0 : _a2.some((g4) => g4.path == file.path);
     fileMenu.addItem((menuItem) => {
       var _a3;
-      menuItem.setIcon("pin");
-      if (itemExists) {
-        menuItem.setIcon("checkmark");
-        menuItem.setTitle(f4.name);
-      } else {
-        menuItem.setTitle(f4.name);
-      }
       if (((_a3 = f4.def) == null ? void 0 : _a3.length) > 0) {
         menuItem.setDisabled(true);
         menuItem.setIcon("folder");
       } else {
-        menuItem.setIcon("plus");
+        if (itemExists) {
+          menuItem.setIcon("checkmark");
+          menuItem.setTitle(f4.name);
+        } else {
+          menuItem.setIcon("plus");
+          menuItem.setTitle(f4.name);
+        }
         menuItem.onClick((ev) => {
           if (!itemExists) {
             insertSpaceItemAtIndex(plugin, f4.name, file.path, 0);
@@ -39598,7 +39610,7 @@ var FolderContextViewComponent = (props2) => {
     className: "mk-folder-header"
   }, /* @__PURE__ */ bn.createElement("div", {
     className: "inline-title"
-  }, props2.folder.name)), /* @__PURE__ */ bn.createElement(MDBProvider, {
+  }, props2.folder.name)), props2.plugin.settings.enableFolderNote ? /* @__PURE__ */ bn.createElement(MDBProvider, {
     plugin: props2.plugin,
     dbPath: path,
     folder
@@ -39612,6 +39624,14 @@ var FolderContextViewComponent = (props2) => {
   }), flowOpen && /* @__PURE__ */ bn.createElement("div", {
     className: "mk-flowspace-editor mk-foldernote",
     ref
+  })) : /* @__PURE__ */ bn.createElement(MDBProvider, {
+    plugin: props2.plugin,
+    dbPath: path,
+    tag: props2.tag
+  }, /* @__PURE__ */ bn.createElement(FilterBar, {
+    plugin: props2.plugin
+  }), /* @__PURE__ */ bn.createElement(ContextListView, {
+    plugin: props2.plugin
   })));
 };
 
@@ -41428,7 +41448,8 @@ var FileExplorerComponent = (props2) => {
     if (selectedFiles2.length <= 1) {
       if (!selectedFiles2[0] || selectedFiles2[0].item.path != activeFile2)
         setSelectedFiles([]);
-      revealFile(getAbstractFileAtPath(app, activeFile2));
+      if (plugin.settings.revealActiveFile)
+        revealFile(getAbstractFileAtPath(app, activeFile2));
     }
     window.addEventListener(eventTypes.activeFileChange, changeActiveFile);
     return () => {
@@ -41960,6 +41981,8 @@ var DEFAULT_SETTINGS = {
   editorFlowStyle: "seamless",
   spacesEnabled: true,
   spacesPerformance: false,
+  enableFolderNote: true,
+  revealActiveFile: false,
   spacesStickers: true,
   spacesDisablePatch: false,
   folderNoteInsideFolder: true,
@@ -42033,6 +42056,18 @@ var MakeMDPluginSettingsTab = class extends import_obsidian30.PluginSettingTab {
         this.plugin.settings.spacesStickers = value;
         this.plugin.saveSettings();
         this.refreshView();
+      })
+    );
+    new import_obsidian30.Setting(containerEl).setName("Enable Folder Note").setDesc("Access the folder note in the folder page and hide the folder note from spaces").addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.enableFolderNote).onChange((value) => {
+        this.plugin.settings.enableFolderNote = value;
+        this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian30.Setting(containerEl).setName("Reveal Active File").setDesc("Automatically reveal the active file in Spaces").addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.revealActiveFile).onChange((value) => {
+        this.plugin.settings.revealActiveFile = value;
+        this.plugin.saveSettings();
       })
     );
     containerEl.createEl("h2", { text: i18n_default.settings.sectionFlow });
