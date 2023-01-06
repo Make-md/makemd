@@ -40523,7 +40523,7 @@ var SectionItem = k3(
       var _a3;
       let vaultChangeModal = new VaultChangeModal(
         plugin,
-        ((_a3 = space.def) == null ? void 0 : _a3.length) > 0 ? getFolderFromPath(app, space.def) : defaultNoteFolder(plugin, activeFile2),
+        ((_a3 = space == null ? void 0 : space.def) == null ? void 0 : _a3.length) > 0 ? getFolderFromPath(app, space.def) : defaultNoteFolder(plugin, activeFile2),
         "create folder",
         data.space
       );
@@ -40533,7 +40533,7 @@ var SectionItem = k3(
       var _a3;
       const newFile = await createNewMarkdownFile(
         plugin.app,
-        ((_a3 = space.def) == null ? void 0 : _a3.length) > 0 ? getFolderFromPath(app, space.def) : defaultNoteFolder(plugin, activeFile2),
+        ((_a3 = space == null ? void 0 : space.def) == null ? void 0 : _a3.length) > 0 ? getFolderFromPath(app, space.def) : defaultNoteFolder(plugin, activeFile2),
         ""
       );
       if (data.space != "/")
