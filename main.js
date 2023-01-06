@@ -36843,8 +36843,6 @@ var migrateIndex = async (plugin) => {
   mergeSpaces(db, plugin.settings.spaces);
   plugin.saveSpacesDB();
   dispatchSpaceDatabaseFileChanged("vault");
-  await app.vault.adapter.remove((0, import_obsidian13.normalizePath)(app.vault.configDir + "/plugins/make-md/data-old.json"));
-  await app.vault.adapter.copy((0, import_obsidian13.normalizePath)(app.vault.configDir + "/plugins/make-md/data.json"), (0, import_obsidian13.normalizePath)(app.vault.configDir + "/plugins/make-md/data-old.json"));
   plugin.settings.folderRank = null;
   plugin.settings.fileIcons = null;
   plugin.settings.spaces = null;
