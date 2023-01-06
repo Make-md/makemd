@@ -20103,9 +20103,9 @@ var insertIntoDB = (db, tables) => {
 var replaceDB = (db, tables) => {
   const sqlstr = Object.keys(tables).map((t4) => {
     const tableFields = tables[t4].cols;
-    const fieldQuery = uniq(tableFields).map((f4) => `'${f4}' char`).join(", ");
+    const fieldQuery = uniq(tableFields).map((f4) => `'${sanitizeSQLStatement(f4)}' char`).join(", ");
     const rowsQuery = tables[t4].rows.reduce((prev, curr) => {
-      return `${prev} INSERT INTO ${t4} VALUES (${tableFields.map((c4) => {
+      return `${prev} REPLACE INTO ${t4} VALUES (${tableFields.map((c4) => {
         var _a2;
         return `'${(_a2 = sanitizeSQLStatement(curr == null ? void 0 : curr[c4])) != null ? _a2 : ""}'`;
       }).join(", ")});`;
@@ -20744,7 +20744,12 @@ var MDBProvider = (props2) => {
     const newFields = oldFieldIndex == -1 ? [...mdbtable.cols, column] : mdbtable.cols.map((f4, i4) => i4 == oldFieldIndex ? column : f4);
     const newTable = {
       ...mdbtable,
-      cols: newFields
+      cols: newFields,
+      rows: mdbtable.rows.map((f4) => oldColumn ? {
+        ...f4,
+        [column.name]: f4[oldColumn.name],
+        oldColumn: void 0
+      } : f4)
     };
     if (table == "") {
       syncAllMetadata(newTable);
@@ -20989,6 +20994,9 @@ var TagSelector = (props2) => {
     const importYAML = (files2, fmKeys) => {
       return files2.map((f4) => getAbstractFileAtPath(app, f4)).filter((f4) => f4).reduce((p3, c4) => {
         const fm = frontMatterForFile(c4);
+        if (!fm) {
+          return p3;
+        }
         return {
           uniques: [],
           cols: (0, import_lodash2.uniq)([...p3.cols, ...fmKeys]),
