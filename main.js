@@ -20260,6 +20260,7 @@ var createNewRow = (mdb, row) => {
 };
 var consolidateFilesToTable = async (plugin, path, table, files, tag) => {
   const sqlJS = await plugin.sqlJS();
+  const isTag = tag ? true : false;
   let db = new sqlJS.Database();
   ;
   if (getAbstractFileAtPath(app, path)) {
@@ -20268,25 +20269,35 @@ var consolidateFilesToTable = async (plugin, path, table, files, tag) => {
   } else {
     await createDefaultDB(plugin, path, false);
   }
-  const mdbTable = await getMDBTable(plugin, table, path, tag);
-  const missingFiles = files.filter((f4) => !mdbTable.rows.some((g4) => g4.File == f4 && (g4._source == "folder" || g4._source == "tag"))).map((f4) => ({ File: f4 }));
+  const mdbTable = await getMDBTable(plugin, table, path, isTag);
+  const missingFiles = files.filter((f4) => !mdbTable.rows.some((g4) => g4.File == f4 && g4._source != "")).map((f4) => ({ File: f4 }));
   const mergeDuplicates = (rows, tag2) => {
     const mergeFields = (row, row2) => {
       return { ...row, ...row2 };
     };
     return rows.reduce((p3, c4) => {
-      const findIndex2 = p3.findIndex((f4) => (f4._source == "folder" || f4._source == "tag") && f4.File == c4.File);
+      const findIndex2 = p3.findIndex((f4) => f4._source != "" && f4.File == c4.File);
       if (findIndex2 != -1) {
         return p3.map((f4, i4) => i4 == findIndex2 ? mergeFields(f4, c4) : f4);
       }
       return [...p3, c4];
     }, []);
   };
-  const nonLinkedRows = mdbTable.rows.filter((f4) => f4._source != "folder" && f4._source != "tag" && !missingFiles.some((g4) => f4.File == g4.File));
-  const newRows = [...nonLinkedRows, ...[...mergeDuplicates(mdbTable.rows.filter((f4) => (f4._source == "folder" || f4._source == "tag" || missingFiles.some((g4) => f4.File == g4.File)) && files.some((g4) => g4 == f4.File)), tag), ...missingFiles].map((f4) => rowWithID(f4, tag))];
+  let linkedFolderContexts = [""];
+  if (tag) {
+    const contexts = uniq(mdbTable.rows.map((f4) => f4._source).filter((f4) => f4 != "" && f4 != "tag"));
+    const promises = contexts.map((context) => getMDBTable(plugin, "files", context, false).then((f4) => [f4, context]));
+    const results = await Promise.all(promises);
+    linkedFolderContexts.push(...results.filter(([f4, g4]) => {
+      var _a2, _b2;
+      return (_b2 = (_a2 = f4 == null ? void 0 : f4.schema) == null ? void 0 : _a2.def) == null ? void 0 : _b2.split("&").some((h5) => h5 == tag);
+    }).map(([f4, g4]) => g4));
+  }
+  const nonLinkedRows = mdbTable.rows.filter((f4) => linkedFolderContexts.some((g4) => g4 == f4._source) && !missingFiles.some((g4) => f4.File == g4.File));
+  const newRows = [...nonLinkedRows, ...[...mergeDuplicates(mdbTable.rows.filter((f4) => (f4._source != "" || missingFiles.some((g4) => f4.File == g4.File)) && files.some((g4) => g4 == f4.File)), isTag), ...missingFiles].map((f4) => rowWithID(f4, isTag))];
   const newMDBTable = {
     ...mdbTable,
-    cols: [...(tag ? defaultTagFields : defaultFolderFields).rows, ...mdbTable.cols].filter(onlyUniqueProp("name")),
+    cols: [...(isTag ? defaultTagFields : defaultFolderFields).rows, ...mdbTable.cols].filter(onlyUniqueProp("name")),
     rows: newRows
   };
   await saveMDBToPath(plugin, path, newMDBTable);
@@ -20619,7 +20630,7 @@ var MDBProvider = (props2) => {
     let files;
     if (props2.folder) {
       files = folderChildren(props2.plugin, getAbstractFileAtPath(props2.plugin.app, props2.folder));
-      consolidateFilesToTable(props2.plugin, dbPath, dbSchema.id, files.map((f4) => f4.path), false).then((f4) => {
+      consolidateFilesToTable(props2.plugin, dbPath, dbSchema.id, files.map((f4) => f4.path)).then((f4) => {
         for (let c4 of tagContexts) {
           loadTagContext(c4, f4.rows);
         }
@@ -20628,7 +20639,7 @@ var MDBProvider = (props2) => {
       }).then((f4) => syncAllMetadata(f4));
     } else if (props2.tag) {
       files = getAllFilesForTag(props2.tag).map((f4) => getAbstractFileAtPath(app, f4)).filter((f4) => f4);
-      consolidateFilesToTable(props2.plugin, dbPath, dbSchema.id, files.map((f4) => f4.path), true).then((f4) => {
+      consolidateFilesToTable(props2.plugin, dbPath, dbSchema.id, files.map((f4) => f4.path), props2.tag).then((f4) => {
         for (let c4 of tagContexts) {
           loadTagContext(c4, f4.rows);
         }
@@ -37283,16 +37294,15 @@ var triggerFileMenu = (plugin, file, isFolder, e4) => {
     const itemExists = (_a2 = spaceItems[f4.name]) == null ? void 0 : _a2.some((g4) => g4.path == file.path);
     fileMenu.addItem((menuItem) => {
       var _a3;
+      menuItem.setTitle(f4.name);
       if (((_a3 = f4.def) == null ? void 0 : _a3.length) > 0) {
         menuItem.setDisabled(true);
         menuItem.setIcon("folder");
       } else {
         if (itemExists) {
           menuItem.setIcon("checkmark");
-          menuItem.setTitle(f4.name);
         } else {
           menuItem.setIcon("plus");
-          menuItem.setTitle(f4.name);
         }
         menuItem.onClick((ev) => {
           if (!itemExists) {
@@ -37719,16 +37729,16 @@ var ImageCell = (props2) => {
   bn.useEffect(() => {
     setValue(initialValue);
   }, [initialValue]);
-  return /* @__PURE__ */ bn.createElement("div", null, " ", props2.editMode >= 2 && /* @__PURE__ */ bn.createElement("input", {
+  return /* @__PURE__ */ bn.createElement(bn.Fragment, null, " ", props2.editMode >= 2 && /* @__PURE__ */ bn.createElement("div", null, /* @__PURE__ */ bn.createElement("input", {
     className: "mk-cell-text",
     type: "text",
     ref,
     value,
     onKeyDown,
     onBlur
-  }), props2.editMode > 0 && /* @__PURE__ */ bn.createElement("img", {
+  })), props2.editMode > 0 && /* @__PURE__ */ bn.createElement("div", null, /* @__PURE__ */ bn.createElement("img", {
     src: file ? app.vault.getResourcePath(file) : value
-  }));
+  })));
 };
 
 // src/components/ContextView/DataTypeView/TagCell.tsx
@@ -39627,7 +39637,7 @@ var FolderContextViewComponent = (props2) => {
   })) : /* @__PURE__ */ bn.createElement(MDBProvider, {
     plugin: props2.plugin,
     dbPath: path,
-    tag: props2.tag
+    folder
   }, /* @__PURE__ */ bn.createElement(FilterBar, {
     plugin: props2.plugin
   }), /* @__PURE__ */ bn.createElement(ContextListView, {
@@ -40317,20 +40327,59 @@ var HiddenFiles = (props2) => {
   }, "+ Add File")));
 };
 
+// src/recoil/pluginState.ts
+var activeFile = Recoil_index_4({
+  key: "spacesActiveFile",
+  default: null,
+  dangerouslyAllowMutability: true
+});
+var selectedFiles = Recoil_index_4({
+  key: "spacesSelectedFiles",
+  default: [],
+  dangerouslyAllowMutability: true
+});
+var activeView = Recoil_index_4({
+  key: "spacesActiveView",
+  default: "root",
+  dangerouslyAllowMutability: true
+});
+var activeViewSpace = Recoil_index_4({
+  key: "spacesActiveSpace",
+  default: "",
+  dangerouslyAllowMutability: true
+});
+var spaces = Recoil_index_4({
+  key: "spaces",
+  default: [],
+  dangerouslyAllowMutability: true
+});
+var expandedFolders = Recoil_index_4({
+  key: "expandedFolders",
+  default: {}
+});
+
 // src/components/Spaces/MainMenu.tsx
 var replaceMobileMainMenu = (plugin) => {
   if (platformIsMobile()) {
     const header = app.workspace.containerEl.querySelector(
       ".workspace-drawer.mod-left .workspace-drawer-header-left"
     );
-    const reactEl = createRoot(header);
-    reactEl.render(/* @__PURE__ */ bn.createElement(MainMenu, {
-      plugin
-    }));
+    header.empty();
+    if (!plugin.settings.spacesCompactMode) {
+      const reactEl = createRoot(header);
+      reactEl.render(/* @__PURE__ */ bn.createElement(Recoil_index_2, null, /* @__PURE__ */ bn.createElement(MainMenu, {
+        plugin
+      })));
+    }
   }
 };
 var MainMenu = (props2) => {
+  var _a2;
   const { plugin } = props2;
+  const [activeView2, setActiveView] = Recoil_index_14(activeView);
+  const [spaces2, setSpaces] = Recoil_index_14(spaces);
+  const [activeViewSpace2, setActiveViewSpace] = Recoil_index_14(activeViewSpace);
+  const activeSpace = spaces2.find((f4) => f4.name == activeViewSpace2);
   const ref = _2();
   const toggleSections = (collapse) => {
     const newSections = plugin.settings.spaces.map((s5) => {
@@ -40373,6 +40422,31 @@ var MainMenu = (props2) => {
         }
       });
     });
+    if (plugin.settings.spacesCompactMode) {
+      menu.addItem((menuItem) => {
+        menuItem.setTitle("Spaces");
+        menuItem.onClick((ev) => {
+          setActiveView("root");
+        });
+      });
+      menu.addItem((menuItem) => {
+        menuItem.setTitle("Tags");
+        menuItem.onClick((ev) => {
+          setActiveView("tags");
+        });
+      });
+      menu.addSeparator();
+      spaces2.filter((f4) => f4.pinned == "true").forEach((space) => {
+        menu.addItem((menuItem) => {
+          menuItem.setTitle(space.name);
+          menuItem.onClick((ev) => {
+            setActiveView("space");
+            setActiveViewSpace(space.name);
+          });
+        });
+      });
+      menu.addSeparator();
+    }
     menu.addItem((menuItem) => {
       menuItem.setIcon("plus");
       menuItem.setTitle(i18n_default.menu.newSpace);
@@ -40438,13 +40512,17 @@ var MainMenu = (props2) => {
     const offset = ref.current.getBoundingClientRect();
     menu.showAtPosition({ x: offset.left, y: offset.top + 30 });
   };
+  const currentViewName = activeView2 == "root" ? "Spaces" : activeView2 == "tags" ? "Tags" : activeViewSpace2;
+  const currentViewIcon = activeView2 == "root" ? uiIconSet["mk-ui-spaces"] : activeView2 == "tags" ? uiIconSet["mk-ui-tags"] : ((_a2 = activeSpace == null ? void 0 : activeSpace.sticker) == null ? void 0 : _a2.length) > 0 ? unifiedToNative(activeSpace.sticker) : activeSpace == null ? void 0 : activeSpace.name.charAt(0);
   return /* @__PURE__ */ bn.createElement("div", {
     className: "mk-main-menu-container"
   }, /* @__PURE__ */ bn.createElement("div", {
     className: "mk-main-menu-button",
     ref,
     onClick: (e4) => showMenu(e4)
-  }, plugin.app.vault.getName(), /* @__PURE__ */ bn.createElement("div", {
+  }, plugin.settings.spacesCompactMode ? /* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement("div", {
+    dangerouslySetInnerHTML: { __html: currentViewIcon }
+  }), currentViewName) : plugin.app.vault.getName(), /* @__PURE__ */ bn.createElement("div", {
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-expand"] }
   })));
 };
@@ -40457,37 +40535,6 @@ function useForceUpdate() {
 
 // src/components/Spaces/TreeView/FileExplorerVirtualized.tsx
 var import_obsidian28 = require("obsidian");
-
-// src/recoil/pluginState.ts
-var activeFile = Recoil_index_4({
-  key: "spacesActiveFile",
-  default: null,
-  dangerouslyAllowMutability: true
-});
-var selectedFiles = Recoil_index_4({
-  key: "spacesSelectedFiles",
-  default: [],
-  dangerouslyAllowMutability: true
-});
-var activeView = Recoil_index_4({
-  key: "spacesActiveView",
-  default: "root",
-  dangerouslyAllowMutability: true
-});
-var activeViewSpace = Recoil_index_4({
-  key: "spacesActiveSpace",
-  default: "",
-  dangerouslyAllowMutability: true
-});
-var spaces = Recoil_index_4({
-  key: "spaces",
-  default: [],
-  dangerouslyAllowMutability: true
-});
-var expandedFolders = Recoil_index_4({
-  key: "expandedFolders",
-  default: {}
-});
 
 // src/components/Spaces/TreeView/FolderTreeView.tsx
 var import_obsidian27 = require("obsidian");
@@ -41331,7 +41378,7 @@ var VirtualizedList = bn.memo(
   (props2) => {
     const { flattenedTree, projected, vRef, selectedFiles: selectedFiles2, activeFile: activeFile2, selectRange: selectRange2, handleCollapse, plugin, indentationWidth } = props2;
     const parentRef = bn.useRef(null);
-    const rowHeight = (index) => platformIsMobile() ? flattenedTree[index].parentId == null ? 60 : 40 : flattenedTree[index].parentId == null ? 44 : 29;
+    const rowHeight = (index) => platformIsMobile() ? flattenedTree[index].parentId == null ? 56 : 40 : flattenedTree[index].parentId == null ? 40 : 29;
     const rowVirtualizer = useVirtual({
       size: flattenedTree.length,
       paddingEnd: 24,
@@ -41775,8 +41822,11 @@ var TagContextList = (props2) => {
   }, f4))));
 };
 
-// src/components/Spaces/NewNote.tsx
-var NewNotes = (props2) => {
+// src/components/Spaces/SpaceSwitcher/SpaceSwitcher.tsx
+var import_classnames6 = __toESM(require_classnames());
+var SpaceSwitcher = (props2) => {
+  const [activeView2, setActiveView] = Recoil_index_14(activeView);
+  const [spaces2, setSpaces] = Recoil_index_14(spaces);
   const [activeFile2, setActiveFile] = Recoil_index_14(
     activeFile
   );
@@ -41785,7 +41835,31 @@ var NewNotes = (props2) => {
   const newFile = async () => {
     await createNewMarkdownFile(props2.plugin.app, folder, "", "");
   };
-  return /* @__PURE__ */ bn.createElement("div", {
+  const pinnedSpaces = F(() => spaces2.filter((f4) => f4.pinned == "true"), [spaces2]);
+  const [activeViewSpace2, setActiveViewSpace] = Recoil_index_14(activeViewSpace);
+  const newSection = () => {
+    let vaultChangeModal = new SectionChangeModal(props2.plugin, "", "create");
+    vaultChangeModal.open();
+  };
+  return props2.plugin.settings.spacesCompactMode ? /* @__PURE__ */ bn.createElement("div", {
+    className: "mk-flow-bar-compact"
+  }, /* @__PURE__ */ bn.createElement(MainMenu, {
+    plugin: props2.plugin
+  }), /* @__PURE__ */ bn.createElement("button", {
+    "aria-label": i18n_default.buttons.newNote,
+    className: "mk-inline-button",
+    onClick: () => newFile()
+  }, /* @__PURE__ */ bn.createElement("div", {
+    className: "mk-icon-small",
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-new-note"] }
+  })), /* @__PURE__ */ bn.createElement("button", {
+    "aria-label": "Blink",
+    className: "mk-inline-button",
+    onClick: () => props2.plugin.quickOpen()
+  }, /* @__PURE__ */ bn.createElement("div", {
+    className: "mk-icon-small",
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-blink"] }
+  }))) : /* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement("div", {
     className: "mk-flow-bar"
   }, /* @__PURE__ */ bn.createElement("button", {
     "aria-label": i18n_default.buttons.newNote,
@@ -41799,21 +41873,7 @@ var NewNotes = (props2) => {
     onClick: () => props2.plugin.quickOpen()
   }, /* @__PURE__ */ bn.createElement("div", {
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-blink"] }
-  })));
-};
-
-// src/components/Spaces/SpaceSwitcher/SpaceSwitcher.tsx
-var import_classnames6 = __toESM(require_classnames());
-var SpaceSwitcher = (props2) => {
-  const [activeView2, setActiveView] = Recoil_index_14(activeView);
-  const [spaces2, setSpaces] = Recoil_index_14(spaces);
-  const pinnedSpaces = F(() => spaces2.filter((f4) => f4.pinned == "true"), [spaces2]);
-  const [activeViewSpace2, setActiveViewSpace] = Recoil_index_14(activeViewSpace);
-  const newSection = () => {
-    let vaultChangeModal = new SectionChangeModal(props2.plugin, "", "create");
-    vaultChangeModal.open();
-  };
-  return /* @__PURE__ */ bn.createElement("div", {
+  }))), /* @__PURE__ */ bn.createElement("div", {
     className: "mk-sidebar-switcher"
   }, /* @__PURE__ */ bn.createElement("div", {
     className: (0, import_classnames6.default)("mk-sidebar-item", pinnedSpaces.length == 0 && "mk-sidebar-expanded", activeView2 == "root" && "mk-sidebar-item-active"),
@@ -41843,7 +41903,7 @@ var SpaceSwitcher = (props2) => {
   }, /* @__PURE__ */ bn.createElement("div", {
     className: "mk-icon-small",
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-new-space"] }
-  }, " ")));
+  }, " "))));
 };
 
 // src/components/Spaces/MainList.tsx
@@ -41897,9 +41957,7 @@ var MainList = (props2) => {
     sensors,
     collisionDetection: closestCenter,
     measuring
-  }, /* @__PURE__ */ bn.createElement(NewNotes, {
-    plugin: props2.plugin
-  }), /* @__PURE__ */ bn.createElement(SpaceSwitcher, {
+  }, /* @__PURE__ */ bn.createElement(SpaceSwitcher, {
     plugin: props2.plugin
   }), viewForState(activeView2, activeViewSpace2));
 };
@@ -41959,7 +42017,7 @@ var FileTreeView = class extends import_obsidian29.ItemView {
     this.root.render(
       /* @__PURE__ */ bn.createElement("div", {
         className: "mk-sidebar"
-      }, /* @__PURE__ */ bn.createElement(Recoil_index_2, null, !platformIsMobile() ? /* @__PURE__ */ bn.createElement(MainMenu, {
+      }, /* @__PURE__ */ bn.createElement(Recoil_index_2, null, !platformIsMobile() && !this.plugin.settings.spacesCompactMode ? /* @__PURE__ */ bn.createElement(MainMenu, {
         plugin: this.plugin
       }) : null, /* @__PURE__ */ bn.createElement(MainList, {
         plugin: this.plugin
@@ -41979,6 +42037,8 @@ var DEFAULT_SETTINGS = {
   inlineStylerColors: false,
   editorFlow: true,
   editorFlowStyle: "seamless",
+  autoOpenFileContext: false,
+  spacesCompactMode: false,
   spacesEnabled: true,
   spacesPerformance: false,
   enableFolderNote: true,
@@ -42038,6 +42098,12 @@ var MakeMDPluginSettingsTab = class extends import_obsidian30.PluginSettingTab {
         document.body.classList.toggle("mk-hide-ribbon", !value);
       })
     );
+    new import_obsidian30.Setting(containerEl).setName("Compact Mode").setDesc("Display the Spaces menu in a more compact format").addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.spacesCompactMode).onChange((value) => {
+        this.plugin.settings.spacesCompactMode = value;
+        this.plugin.saveSettings();
+      })
+    );
     containerEl.createEl("h2", { text: i18n_default.settings.sectionSidebar });
     new import_obsidian30.Setting(containerEl).setName(i18n_default.settings.spaces.name).setDesc(i18n_default.settings.spaces.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.spacesEnabled).onChange((value) => {
@@ -42067,6 +42133,13 @@ var MakeMDPluginSettingsTab = class extends import_obsidian30.PluginSettingTab {
     new import_obsidian30.Setting(containerEl).setName("Reveal Active File").setDesc("Automatically reveal the active file in Spaces").addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.revealActiveFile).onChange((value) => {
         this.plugin.settings.revealActiveFile = value;
+        this.plugin.saveSettings();
+      })
+    );
+    containerEl.createEl("h2", { text: "Context" });
+    new import_obsidian30.Setting(containerEl).setName("Auto Open File Context").setDesc("Automatically open file context panel in the right panel").addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.autoOpenFileContext).onChange((value) => {
+        this.plugin.settings.autoOpenFileContext = value;
         this.plugin.saveSettings();
       })
     );
@@ -44076,7 +44149,6 @@ var MakeMDPlugin = class extends import_obsidian39.Plugin {
       });
     }
     this.registerEvent(app.workspace.on("active-leaf-change", () => this.activeFileChange()));
-    this.registerEvent(app.workspace.on("editor-change", (0, import_obsidian39.debounce)(() => this.activeFileChange(), 180, true)));
   }
   activeFileChange() {
     let filePath = null;
@@ -44085,7 +44157,7 @@ var MakeMDPlugin = class extends import_obsidian39.Plugin {
       let file = getAbstractFileAtPath(app, activeLeaf.view.getState().folder);
       if (file)
         filePath = file.path;
-    } else {
+    } else if ((activeLeaf == null ? void 0 : activeLeaf.view.getViewType()) == "markdown") {
       const view = app.workspace.getActiveViewOfType(import_obsidian39.MarkdownView);
       if (view instanceof import_obsidian39.MarkdownView) {
         filePath = view.file.path;
@@ -44119,7 +44191,9 @@ var MakeMDPlugin = class extends import_obsidian39.Plugin {
     });
     this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
     this.app.workspace.onLayoutReady(async () => {
-      await this.openFileContextLeaf();
+      if (this.settings.autoOpenFileContext) {
+        await this.openFileContextLeaf();
+      }
       setTimeout(() => this.activeFileChange(), 2e3);
     });
   }
@@ -44129,6 +44203,11 @@ var MakeMDPlugin = class extends import_obsidian39.Plugin {
       "mk-flow-" + this.settings.editorFlowStyle,
       true
     );
+    this.addCommand({
+      id: "mk-open-file-context",
+      name: "Open File Context",
+      callback: () => this.openFileContextLeaf()
+    });
     this.addCommand({
       id: "mk-open-flow",
       name: i18n_default.commandPalette.openFlow,

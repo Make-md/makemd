@@ -23,6 +23,9 @@
 .is-mobile .workspace-drawer.mod-left .workspace-drawer-active-tab-header {
   display: none;
 }
+.is-mobile .workspace-drawer.mod-left .workspace-drawer-inner .mod-settings {
+  display: none;
+}
 .is-mobile .workspace-drawer.mod-left .workspace-drawer-header-left {
 }
 .is-mobile .mk-sidebar button:not(.clickable-icon) {
@@ -56,7 +59,6 @@ body.is-mobile .sidebar-toggle-button {
   height: 100%;
 }
 .is-mobile .mk-sidebar {
-  flex-direction: column-reverse;
 }
 .mk-file-tree {
   flex: 1;
@@ -66,7 +68,7 @@ body.is-mobile .sidebar-toggle-button {
 /* src/css/MainMenu.css */
 .mk-main-menu-container {
   display: flex;
-  padding: 12px 8px;
+  padding: 12px 8px 0px 8px;
 }
 .mk-main-menu-button {
   text-align: left;
@@ -76,9 +78,19 @@ body.is-mobile .sidebar-toggle-button {
   display: flex;
   width: calc(100% - 50px);
 }
+.mk-flow-bar-compact .mk-main-menu-container {
+  flex-grow: 1;
+  padding: 0;
+}
+.mk-flow-bar-compact .mk-main-menu-button {
+  width: 100%;
+  padding: 4px;
+  gap: 4px;
+}
 .is-mobile .mk-main-menu-button {
   font-size: var(--font-ui-medium);
   font-weight: var(--font-medium);
+  gap: 4px;
 }
 .mk-main-menu-button > div {
   display: flex;
@@ -1708,12 +1720,13 @@ body:not(.is-mobile) .mk-tree-wrapper:not(.mk-section-wrapper):not(.mk-disable-i
   display: flex;
   padding: 4px;
   padding-left: 16px;
-  margin-top: 12px;
+  margin-top: 8px;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
   width: 100%;
   justify-content: space-between;
   margin-left: 0;
+  padding-left: 4px !important;
 }
 body:not(.is-mobile) .mk-section-title:hover {
   background: var(--nav-item-background-hover);
@@ -1756,9 +1769,20 @@ body:not(.is-mobile) .mk-section-title:hover .mk-collapse {
   gap: 12px;
   align-items: center;
 }
-.is-mobile .mk-sidebar-switcher {
-  border-top: thin solid var(--divider-color);
-  padding-top: 8px;
+.mk-flow-bar-compact {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+}
+.is-tablet .mk-flow-bar-compact {
+  margin-right: 50px;
+  margin-top: 5px;
+  gap: 24px;
+}
+.is-phone .mk-flow-bar-compact {
+  margin-top: 5px;
+  gap: 24px;
 }
 .mk-new-note {
   flex-grow: 1;
