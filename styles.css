@@ -78,6 +78,17 @@ body.is-mobile .sidebar-toggle-button {
   display: flex;
   width: calc(100% - 50px);
 }
+.mk-main-menu-icon {
+  background: var(--nav-item-background-hover);
+  padding: 2px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  justify-content: center;
+  margin-right: 4px;
+}
 .mk-flow-bar-compact .mk-main-menu-container {
   flex-grow: 1;
   padding: 0;
@@ -235,7 +246,10 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   padding: 12px 0px;
 }
 .mk-flowspace-editor.mk-foldernote {
-  padding: var(--context-padding);
+  padding: var(--context-padding) !important;
+}
+.mk-foldernote .mk-floweditor {
+  height: 100% !important;
 }
 .mk-flowspace-container {
 }
@@ -699,12 +713,33 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   padding-left: var(--context-padding);
   gap: 16px;
   min-height: 48px;
+  max-width: 100%;
+  overflow-x: auto;
 }
-.mk-table-selector button {
+.mk-table-selector::-webkit-scrollbar {
+  display: none;
+}
+.mk-table-selector > div > .mk-collapse {
+  padding-right: 8px;
+  padding-left: 0px;
+}
+.mk-table-selector .mk-collapse.mk-icon-xsmall svg {
+  color: unset;
+}
+.mk-table-selector > div > button:not(:last-child) {
+  padding-right: 0px;
+}
+.mk-table-selector > div,
+.mk-table-selector > button {
   border-radius: 0;
   margin: 4px -8px;
-  margin-bottom: 1 !important;
+  display: flex;
+  align-items: center;
+  border-bottom: thin solid transparent;
   height: 100%;
+}
+.mk-table-selector .mk-is-active button {
+  color: var(--text-normal);
 }
 .mk-table-selector .mk-is-active {
   border-bottom: thin solid var(--text-normal);
@@ -715,7 +750,7 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   background: none;
   border: none;
   box-shadow: none;
-  color: unset !important;
+  color: var(--text-faint);
 }
 .mk-view-selector button:hover {
   color: var(--text-normal);
@@ -733,29 +768,30 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   border: none;
   flex-grow: 1;
 }
+.is-phone .mk-view-selector {
+  flex-wrap: wrap;
+}
 .is-phone .mk-view-selector button {
   width: unset;
 }
 .mk-view-search {
   background: var(--background-modifier-form-field);
+  border: var(--input-border-width) solid var(--background-modifier-border);
   display: flex;
   border-radius: 8px;
   align-items: center;
+  flex-grow: 1;
 }
 .mk-view-search button:hover {
   background: unset !important;
 }
 .mk-view-search button {
   margin: 0 !important;
-  padding: var(--size-4-1) var(--size-4-3) !important;
+  padding: var(--size-4-1) var(--size-4-2) !important;
 }
 .is-phone .mk-view-options {
-  flex-grow: 1;
   margin-top: 8px;
   margin-bottom: 8px;
-}
-.is-phone .mk-view-search {
-  flex-grow: 1;
 }
 .mk-view-options {
   display: flex;
@@ -763,9 +799,10 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   color: var(--text-normal) !important;
   min-height: 48px;
   padding-left: var(--context-padding);
+  flex-grow: 1;
 }
 .mk-view-selector span {
-  flex-grow: 1;
+  flex-grow: 10;
 }
 .mk-view-selector svg {
   width: 14px;
@@ -778,6 +815,9 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   width: 100%;
   border-bottom: 1px solid var(--divider-color);
 }
+.mk-filter-bar span {
+  flex-grow: 1;
+}
 .mk-table-selector .mk-is-active {
   color: var(--text-normal) !important;
 }
@@ -785,13 +825,31 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   display: flex;
   font-size: var(--font-ui-small);
   color: var(--text-muted);
-  border-radius: 4px;
-  padding: 0px 6px;
+  padding: 0px;
+}
+.mk-filter > span,
+.mk-filter > div {
   background: var(--interactive-normal);
+}
+.mk-filter > span:hover,
+.mk-filter > div:hover {
+  background: var(--interactive-hover);
+}
+.mk-filter > *:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  padding-left: 10px;
+}
+.mk-filter > *:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  padding-right: 6px;
 }
 .mk-filter span {
   border-right: thin solid var(--background-primary);
   padding: 4px 8px;
+  display: flex;
+  align-items: center;
 }
 .mk-filter div {
   display: flex;
@@ -808,11 +866,19 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   gap: 4px;
 }
 .mk-filter-add {
-  border: thin solid var(--divider-color);
+  border: thin solid var(--divider-color) !important;
   border-radius: 4px;
+  box-shadow: none !important;
+  background: none !important;
+  display: flex;
+  align-items: center;
   padding: 4px;
   font-size: var(--font-ui-small);
   color: var(--text-muted);
+  gap: 4px;
+}
+.mk-filter-add div {
+  display: flex;
 }
 .mk-search-bar {
 }
@@ -919,14 +985,16 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   gap: 8px;
   align-items: center;
 }
-.mk-flow-seamless .mk-floweditor-container:not(.mk-floweditor-fix) > .mk-floweditor {
+.mk-flow-minimal .mk-floweditor-container:not(.mk-floweditor-fix) > .mk-floweditor {
   padding: 8px;
   border-radius: 4px;
   border: thin solid var(--divider-color);
 }
+.mk-flow-minimal .markdown-embed-title,
 .mk-flow-seamless .markdown-embed-title {
   display: none;
 }
+.mk-flow-minimal .mk-flow-titlebar,
 .mk-flow-seamless .mk-flow-titlebar {
   display: none;
 }
@@ -950,11 +1018,15 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   border-left: var(--embed-border-left);
   padding: var(--embed-padding);
 }
-.mk-flow-seamless .internal-embed > .markdown-embed,
-.mk-flow-seamless .internal-embed.markdown-embed {
+.mk-flow-minimal .internal-embed > .markdown-embed,
+.mk-flow-minimal .internal-embed.markdown-embed {
   padding: 8px;
   border-radius: 4px;
   border: thin solid var(--color-base-20);
+  margin-top: 4px;
+}
+.mk-flow-seamless .internal-embed > .markdown-embed,
+.mk-flow-seamless .internal-embed.markdown-embed {
   margin-top: 4px;
 }
 .mk-flow-classic .internal-embed > .markdown-embed,
@@ -978,7 +1050,9 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 .markdown-embed p {
   margin-bottom: 24px;
 }
-.mk-flow-seamless .internal-embed > .markdown-embed,
+.mk-flow-minimal .internal-embed > .markdown-embed,
+.mk-flow-minimal .internal-embed > .markdown-embed,
+.mk-flow-seamless .internal-embed.markdown-embed,
 .mk-flow-seamless .internal-embed.markdown-embed {
   margin-top: 24px;
 }
@@ -987,7 +1061,7 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 .mk-floweditor-container {
   min-height: var(--flow-height);
 }
-.mk-floweditor-container > .mk-floweditor:hover {
+.mk-flow-minimal .mk-floweditor-container > .mk-floweditor:hover {
   box-shadow:
     0px 1px 2px rgba(0, 0, 0, 0.06),
     0px 3.4px 6.7px rgba(0, 0, 0, 0.06),
@@ -1017,11 +1091,14 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 .mk-flow-classic .internal-embed.markdown-embed > .mk-floweditor-selector {
   top: 5px !important;
 }
+.mk-flow-minimal .internal-embed > .markdown-embed > .mk-floweditor-selector,
+.mk-flow-minimal .internal-embed.markdown-embed > .mk-floweditor-selector,
 .mk-flow-seamless .internal-embed > .markdown-embed > .mk-floweditor-selector,
 .mk-flow-seamless .internal-embed.markdown-embed > .mk-floweditor-selector {
   top: -22px !important;
   right: 4px;
 }
+.mk-flow-minimal .cm-line > .mk-floweditor-selector,
 .mk-flow-seamless .cm-line > .mk-floweditor-selector {
   top: 3px !important;
 }
@@ -1052,10 +1129,16 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 /* src/css/Table.css */
 .mk-folder-view {
   height: 100%;
+}
+body {
   --context-padding: var(--size-4-6);
 }
 .mk-th {
   position: relative;
+}
+.is-mobile .mk-resizer {
+  width: 8px;
+  opacity: 0.05;
 }
 .mk-resizer {
   position: absolute;
@@ -1067,6 +1150,7 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   cursor: col-resize;
   user-select: none;
   touch-action: none;
+  opacity: 0;
 }
 .mk-resizer.mk-resizer-active {
   opacity: 1;
@@ -1074,9 +1158,6 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 .mk-resizer.isResizing {
   background: var(--interactive-hover);
   opacity: 1;
-}
-.mk-resizer {
-  opacity: 0;
 }
 .mk-resizer:hover {
   opacity: 1;
@@ -1132,11 +1213,16 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 }
 .mk-table table {
   border-spacing: 0;
-  min-width: 100%;
+}
+.mk-table table th:last-child {
+  width: 100%;
+}
+.mk-table th:hover {
+  background: var(--interactive-hover);
 }
 .mk-table tr th:first-child .mk-col-header,
 .mk-table tr td:first-child {
-  padding-left: var(--context-padding);
+  padding-left: max(var(--context-padding), 0.75rem);
 }
 .mk-cell-empty {
   color: var(--text-faint);
@@ -1219,11 +1305,14 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 .mk-cell-file-new .mk-file-icon svg {
   color: var(--text-faint);
 }
-.mk-table .mk-is-active {
+.mk-table:focus .mk-is-active {
   background: var(--background-modifier-active-hover) !important;
 }
-.mk-is-active .mk-selected-cell {
-  box-shadow: 0 0 0 2px var(--interactive-accent) !important;
+.mk-floweditor .mk-table:not(:focus) .mk-is-active {
+  background: none !important;
+}
+.mk-table:focus .mk-is-active .mk-selected-cell {
+  outline: solid 2px var(--interactive-accent);
 }
 .mk-cell-file-new .mk-file-icon:hover {
   background: var(--interactive-hover);
@@ -1773,7 +1862,7 @@ body:not(.is-mobile) .mk-section-title:hover .mk-collapse {
   display: flex;
   gap: 12px;
   align-items: center;
-  padding: 8px 12px;
+  padding: 8px;
 }
 .is-tablet .mk-flow-bar-compact {
   margin-right: 50px;
@@ -2045,7 +2134,7 @@ mark {
 .mk-file-context-component {
   display: flex;
   flex-direction: column;
-  padding: 0.15rem 8px;
+  padding: 0.15rem 4px;
   gap: 4px;
   margin-top: 4px;
   margin-bottom: 12px;

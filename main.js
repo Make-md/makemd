@@ -3479,7 +3479,7 @@ var require_lodash = __commonJS({
           comparator = typeof comparator == "function" ? comparator : undefined2;
           return baseUniq(baseFlatten(arrays, 1, isArrayLikeObject, true), undefined2, comparator);
         });
-        function uniq7(array) {
+        function uniq6(array) {
           return array && array.length ? baseUniq(array) : [];
         }
         function uniqBy(array, iteratee2) {
@@ -5141,7 +5141,7 @@ var require_lodash = __commonJS({
         lodash.union = union;
         lodash.unionBy = unionBy;
         lodash.unionWith = unionWith;
-        lodash.uniq = uniq7;
+        lodash.uniq = uniq6;
         lodash.uniqBy = uniqBy;
         lodash.uniqWith = uniqWith;
         lodash.unset = unset;
@@ -14297,6 +14297,7 @@ var T4 = class {
           note: "Link to Note",
           link: "Web Link",
           callout: "Callout",
+          table: "Table",
           codeblock: "Code Block",
           emoji: "Emoji",
           image: "Image",
@@ -18825,6 +18826,9 @@ var stringSort = (value, filterValue) => simpleSort(value, filterValue);
 var numSort = (value, filterValue) => simpleSort(parseFloat(value), parseFloat(filterValue));
 var boolSort = (value, filterValue) => simpleSort(value == "true" ? 1 : 0, filterValue == "true" ? 1 : 0);
 var countSort = (value, filterValue) => simpleSort(splitString(value).length, splitString(filterValue).length);
+var normalizedSortForType = (type, desc) => {
+  return Object.keys(sortFnTypes).find((f4) => sortFnTypes[f4].type.some((g4) => g4 == type) && sortFnTypes[f4].desc == desc);
+};
 var sortFnTypes = {
   "alphabetical": {
     type: ["text", "file", "link", "context"],
@@ -19025,7 +19029,7 @@ var showSelectMenu = (point, optionProps) => {
   menu.setUseNativeMenu(false);
   const frag = document.createDocumentFragment();
   const div = frag.createDiv("mk-options-container");
-  div.style.minHeight = "200px";
+  div.style.minHeight = Math.min(200, (optionProps.options.length + (optionProps.searchable ? 1 : 0)) * 28).toString() + "px";
   div.addEventListener("click", (e4) => {
     e4.stopImmediatePropagation();
   });
@@ -19203,6 +19207,10 @@ var uiIconSet = {
   "mk-ui-sync": `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
 </svg>
+`,
+  "mk-ui-stack": `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+<path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3" />
+</svg>
 `
 };
 var makeIconSet = {
@@ -19291,6 +19299,12 @@ var makeIconSet = {
   "mk-make-tag": `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M7.81747 13L9.48792 2.81818H10.6811L9.01065 13H7.81747ZM3.2088 10.2756L3.40269 9.08239H11.1186L10.9247 10.2756H3.2088ZM4.23792 13L5.90838 2.81818H7.10156L5.4311 13H4.23792ZM3.80042 6.7358L3.99431 5.54261H11.7102L11.5163 6.7358H3.80042Z" fill="currentColor"/>
   </svg>
+  `,
+  "mk-make-table": `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3H4C3.44772 3 3 3.44772 3 4V12C3 12.5523 3.44772 13 4 13H12C12.5523 13 13 12.5523 13 12V4C13 3.44772 12.5523 3 12 3ZM4 2C2.89543 2 2 2.89543 2 4V12C2 13.1046 2.89543 14 4 14H12C13.1046 14 14 13.1046 14 12V4C14 2.89543 13.1046 2 12 2H4Z" fill="currentColor"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M14 6H2V5H14V6Z" fill="currentColor"/>
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M7 2L7 13L6 13L6 2L7 2Z" fill="currentColor"/>
+  </svg>
   `
 };
 var mkLogo = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" fill="currentColor" viewBox="0 0 100 100">
@@ -19361,6 +19375,17 @@ var markIconSet = {
 var import_obsidian2 = require("obsidian");
 var uniq = (a5) => [...new Set(a5)];
 var uniqCaseInsensitive = (a5) => [...new Map(a5.map((s5) => [s5.toLowerCase(), s5])).values()];
+var uniqueNameFromString = (name, cols) => {
+  let newName = name;
+  if (cols.includes(newName)) {
+    let append = 1;
+    while (cols.includes(newName)) {
+      newName = name + append.toString();
+      append += 1;
+    }
+  }
+  return newName;
+};
 var onlyUniqueProp = (prop) => (value, index, self2) => {
   return self2.findIndex((v3) => value[prop] == v3[prop]) === index;
 };
@@ -19385,8 +19410,8 @@ var nodeIsAncestorOfTarget = (node, target) => {
 var excludeVaultItemPredicate = (plugin) => (f4, index, folder) => !(f4.folder != "true" && plugin.settings.hiddenExtensions.find((e4) => fileExtensionForFile(f4.path) == e4)) && !plugin.settings.hiddenFiles.find((e4) => e4 == f4.path) && (!plugin.settings.enableFolderNote || !plugin.settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !(f4.parent + "/" + folderPathToString(f4.parent) + ".md" == f4.path));
 var excludeFilePredicate = (plugin) => (f4, index, folder) => !(f4 instanceof import_obsidian2.TFile && plugin.settings.hiddenExtensions.find((e4) => f4.extension == e4)) && !plugin.settings.hiddenFiles.find((e4) => e4 == f4.path) && (!plugin.settings.enableFolderNote || !plugin.settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !(f4.parent.path + "/" + f4.parent.name + ".md" == f4.path));
 var folderChildren = (plugin, f4, exclusionList) => {
-  var _a2;
-  return (_a2 = f4 == null ? void 0 : f4.children.filter(excludeFilePredicate(plugin))) != null ? _a2 : [];
+  var _a2, _b2;
+  return (_b2 = (_a2 = f4 == null ? void 0 : f4.children) == null ? void 0 : _a2.filter(excludeFilePredicate(plugin))) != null ? _b2 : [];
 };
 var compareByField = (field, dir) => (_a2, _b2) => {
   const a5 = dir ? _a2 : _b2;
@@ -19552,6 +19577,13 @@ var defaultFolderFields = {
     }
   ]
 };
+var defaultTableFields = [
+  {
+    name: "Name",
+    schemaId: "",
+    type: "text"
+  }
+];
 var defaultTagFields = {
   ...fieldSchema,
   rows: [
@@ -19760,11 +19792,11 @@ var guestimateTypes = (_files, dv) => {
   }, {});
   return guessedTypes;
 };
-var saveFrontmatterValue = (path, key2, value, type) => {
+var saveFrontmatterValue = (path, key2, value, type, forceSave) => {
   const afile = getAbstractFileAtPath(app, path);
   if (afile && app.fileManager.processFrontMatter) {
     app.fileManager.processFrontMatter(afile, (frontmatter) => {
-      if (key2 in frontmatter) {
+      if (key2 in frontmatter || forceSave) {
         if (type == "number") {
           frontmatter[key2] = parseInt(value);
         } else if (type == "boolean")
@@ -20031,6 +20063,12 @@ var onFolderDeleted = async (oldPath) => {
 var import_obsidian6 = require("obsidian");
 
 // src/utils/sanitize.ts
+var sanitizeTableName = (name) => {
+  return name == null ? void 0 : name.replace(/[^a-z0-9+]+/gi, "");
+};
+var sanitizeColumnName = (name) => {
+  return name == null ? void 0 : name.replace(/'/g, `''`).replace(/[^\w ]/g, "");
+};
 var sanitizeSQLStatement = (name) => {
   return name == null ? void 0 : name.replace(/'/g, `''`);
 };
@@ -20067,8 +20105,9 @@ var dbResultsToDBTables = (res) => {
     }
   ], []);
 };
-var selectDB = (db, table, condition) => {
-  const sqlstr = condition ? `SELECT * FROM ${table} WHERE ${condition};` : `SELECT * FROM ${table};`;
+var selectDB = (db, table, condition, fields) => {
+  const fieldsStr = fields != null ? fields : "*";
+  const sqlstr = condition ? `SELECT ${fieldsStr} FROM "${table}" WHERE ${condition};` : `SELECT ${fieldsStr} FROM ${table};`;
   let tables;
   try {
     tables = dbResultsToDBTables(db.exec(sqlstr));
@@ -20084,7 +20123,7 @@ var updateDB = (db, tables, updateCol, updateRef) => {
     const tableFields = tables[t4].cols.filter((f4) => f4 != updateRef);
     const rowsQuery = tables[t4].rows.reduce((prev, curr) => {
       var _a2;
-      return `${prev} UPDATE ${t4} SET ${tableFields.map((c4) => {
+      return `${prev} UPDATE "${t4}" SET ${tableFields.map((c4) => {
         var _a3;
         return `${c4}='${(_a3 = sanitizeSQLStatement(curr == null ? void 0 : curr[c4])) != null ? _a3 : ""}'`;
       }).join(", ")} WHERE ${updateCol}='${(_a2 = sanitizeSQLStatement(curr == null ? void 0 : curr[updateRef])) != null ? _a2 : ""}';`;
@@ -20097,14 +20136,18 @@ var execQuery = (db, sqlstr) => {
   db.exec(sqlstr);
 };
 var deleteFromDB = (db, table, condition) => {
-  const sqlstr = `DELETE FROM ${table} WHERE ${condition};`;
+  const sqlstr = `DELETE FROM "${table}" WHERE ${condition};`;
+  db.exec(sqlstr);
+};
+var dropTable = (db, table) => {
+  const sqlstr = `DROP TABLE IF EXISTS "${table}";`;
   db.exec(sqlstr);
 };
 var insertIntoDB = (db, tables) => {
   const sqlstr = Object.keys(tables).map((t4) => {
     const tableFields = tables[t4].cols;
     const rowsQuery = tables[t4].rows.reduce((prev, curr) => {
-      return `${prev} INSERT INTO ${t4} VALUES (${tableFields.map((c4) => {
+      return `${prev} INSERT INTO "${t4}" VALUES (${tableFields.map((c4) => {
         var _a2;
         return `'${(_a2 = sanitizeSQLStatement(curr == null ? void 0 : curr[c4])) != null ? _a2 : ""}'`;
       }).join(", ")});`;
@@ -20118,7 +20161,7 @@ var replaceDB = (db, tables) => {
     const tableFields = tables[t4].cols;
     const fieldQuery = uniq(tableFields).map((f4) => `'${sanitizeSQLStatement(f4)}' char`).join(", ");
     const rowsQuery = tables[t4].rows.reduce((prev, curr) => {
-      return `${prev} REPLACE INTO ${t4} VALUES (${tableFields.map((c4) => {
+      return `${prev} REPLACE INTO "${t4}" VALUES (${tableFields.map((c4) => {
         var _a2;
         return `'${(_a2 = sanitizeSQLStatement(curr == null ? void 0 : curr[c4])) != null ? _a2 : ""}'`;
       }).join(", ")});`;
@@ -20126,7 +20169,7 @@ var replaceDB = (db, tables) => {
     const idxQuery = tables[t4].uniques.filter((f4) => f4).reduce((p3, c4) => {
       return `${p3} CREATE UNIQUE INDEX IF NOT EXISTS idx_${t4}_${c4.replace(/,/g, "_")} ON ${t4}(${c4});`;
     }, "");
-    return `DROP TABLE IF EXISTS ${t4}; CREATE TABLE IF NOT EXISTS ${t4} (${fieldQuery}); ${idxQuery} BEGIN TRANSACTION; ${rowsQuery} COMMIT;`;
+    return `DROP TABLE IF EXISTS "${t4}"; CREATE TABLE IF NOT EXISTS "${t4}" (${fieldQuery}); ${idxQuery} BEGIN TRANSACTION; ${rowsQuery} COMMIT;`;
   }).join("; ");
   db.exec(sqlstr);
 };
@@ -20179,13 +20222,32 @@ var getMDBTable = async (plugin, table, path, tag) => {
   } catch (e4) {
     return null;
   }
-  if (fieldsTables.length < 1) {
-    return null;
+  if (fieldsTables.length == 0) {
+    return {
+      schema,
+      cols: [],
+      rows: []
+    };
   }
   const fields = fieldsTables[0].rows.filter((f4) => f4.name.length > 0);
-  const dbTable = dbResultsToDBTables(db.exec(`SELECT ${fields.reduce((p3, c4) => [...p3, `"${c4.name}"`], []).join(", ")} FROM ${table}`));
+  const dbTable = dbResultsToDBTables(db.exec(`SELECT ${fields.reduce((p3, c4) => [...p3, `"${c4.name}"`], []).join(", ")} FROM "${table}"`));
   db.close();
-  return dbTableToMDBTable(dbTable[0], schema, updateFieldsToSchema(fields, tag));
+  return dbTableToMDBTable(dbTable[0], schema, schema.primary ? updateFieldsToSchema(fields, tag) : fields);
+};
+var deleteMDBTable = async (plugin, path, mdb) => {
+  const sqlJS = await plugin.sqlJS();
+  const buf = await getDBFile(path);
+  if (!buf) {
+    return false;
+  }
+  const db = new sqlJS.Database(new Uint8Array(buf));
+  deleteFromDB(db, "m_schema", `id = '${sanitizeSQLStatement(mdb)}'`);
+  deleteFromDB(db, "m_schema", `def = '${sanitizeSQLStatement(mdb)}'`);
+  deleteFromDB(db, "m_fields", `schemaId = '${sanitizeSQLStatement(mdb)}'`);
+  dropTable(db, mdb);
+  await saveDBFile(path, db.export().buffer);
+  db.close();
+  return true;
 };
 var getMDBTableSchemas = async (plugin, path, tag) => {
   const sqlJS = await plugin.sqlJS();
@@ -20365,6 +20427,7 @@ var MDBContext = B({
   delColumn: () => {
   },
   saveSchema: () => null,
+  deleteSchema: () => null,
   tagContexts: [],
   dbFileExists: false,
   searchString: "",
@@ -20409,7 +20472,8 @@ var MDBProvider = (props2) => {
   const data = F(() => {
     var _a3;
     return (_a3 = tableData == null ? void 0 : tableData.rows.map((r3, index) => ({
-      ...{ ...appendFileMetadataForRow(r3, tableData.cols), "_index": index.toString() },
+      "_index": index.toString(),
+      ...dbSchema.primary ? { ...appendFileMetadataForRow(r3, tableData.cols) } : r3,
       ...tagContexts.reduce((p3, c4) => {
         var _a4, _b3, _c3, _d2;
         const contextRowIndexByFile = (_b3 = (_a4 = contextTable[c4]) == null ? void 0 : _a4.rows.findIndex((f4) => f4.File == r3.File)) != null ? _b3 : -1;
@@ -20432,6 +20496,21 @@ var MDBProvider = (props2) => {
     }),
     [predicate, data, cols, searchString]
   );
+  const deleteSchema = async (table) => {
+    if (table.primary)
+      return;
+    const deleteResult = await deleteMDBTable(props2.plugin, dbPath, table.id);
+    if (deleteResult) {
+      const newSchemaTable = {
+        ...schemaTable,
+        rows: schemaTable.rows.filter((f4) => f4.id != table.id && f4.def != table.id)
+      };
+      setSchemaTable(newSchemaTable);
+      if (dbSchema.id == table.id) {
+        setDBSchema(newSchemaTable.rows.find((g4) => g4.type == "db"));
+      }
+    }
+  };
   const saveSchema = async (table) => {
     const newSchema = schemaTable.rows.find((f4) => f4.id == table.id) ? true : false;
     const newSchemaTable = newSchema ? {
@@ -20442,13 +20521,11 @@ var MDBProvider = (props2) => {
       rows: [...schemaTable.rows, table]
     };
     await saveDBToPath(props2.plugin, dbPath, { m_schema: newSchemaTable });
-    if (table.id == dbSchema.id) {
-      setDBSchema(table);
-    }
-    if (table.id == schema.id) {
+    if (table.id == (schema == null ? void 0 : schema.id)) {
       setSchema(table);
     }
-    if (table.id == dbSchema.id) {
+    if (table.id == (dbSchema == null ? void 0 : dbSchema.id)) {
+      setDBSchema(table);
       setTableData((f4) => ({
         ...f4,
         schema: table
@@ -20493,6 +20570,35 @@ var MDBProvider = (props2) => {
       })
     });
   };
+  h2(() => {
+    if (props2.schema && schemaTable && (dbSchema == null ? void 0 : dbSchema.id) != props2.schema) {
+      const preselectSchema = schemaTable.rows.find((g4) => g4.id == props2.schema);
+      if (preselectSchema) {
+        if (preselectSchema.type == "db") {
+          setDBSchema(preselectSchema);
+          return;
+        } else {
+          const preselectDBSchema = schemaTable.rows.find((g4) => g4.id == preselectSchema.def);
+          if (preselectDBSchema) {
+            setDBSchema(preselectDBSchema);
+            return;
+          }
+        }
+      } else {
+        const newSchema = {
+          id: uniqueNameFromString(sanitizeTableName(props2.schema), schemaTable.rows.map((g4) => g4.id)),
+          name: props2.schema,
+          type: "db"
+        };
+        setDBSchema(newSchema);
+        saveSchema(newSchema).then((f4) => saveDB2({
+          schema: newSchema,
+          cols: defaultTableFields.map((g4) => ({ ...g4, schemaId: newSchema.id })),
+          rows: []
+        }));
+      }
+    }
+  }, [schemaTable]);
   const loadTables = async () => {
     if (getAbstractFileAtPath(app, props2.dbPath)) {
       setDBFileExists(true);
@@ -20501,24 +20607,40 @@ var MDBProvider = (props2) => {
           ...defaultSchema,
           rows: f4
         });
-        setDBSchema(f4 == null ? void 0 : f4.find((g4) => g4.type == "db"));
+        if (!props2.schema)
+          setDBSchema(f4 == null ? void 0 : f4.find((g4) => g4.type == "db"));
       });
     } else {
-      setSchemaTable(defaultSchema);
-      setDBSchema(defaultFileDBSchema);
+      if (props2.schema) {
+        saveDB2(props2.tag ? defaultTagMDBTable : defaultFolderMDBTable).then((f4) => {
+          setSchemaTable(defaultSchema);
+        });
+      } else {
+        setSchemaTable(defaultSchema);
+        setDBSchema(defaultFileDBSchema);
+      }
     }
   };
   const refreshTags = async (evt) => {
     if (!dbFileExists) {
       loadDefaultTableData();
     } else {
-      runDef();
+      if (dbSchema.primary) {
+        runDef();
+      } else {
+        getMDBData();
+      }
     }
   };
   const refreshSpace = async (evt) => {
     if (!dbFileExists) {
       loadDefaultTableData();
     }
+  };
+  const getMDBData = () => {
+    getMDBTable(props2.plugin, dbSchema.id, dbPath, !isFolderContext).then(
+      (f4) => setTableData(f4)
+    );
   };
   const refreshMDB = async (evt) => {
     if (!dbFileExists) {
@@ -20571,7 +20693,7 @@ var MDBProvider = (props2) => {
         f4 ? setTableData(newTable) : new import_obsidian7.Notice("DB ERROR");
       });
     } else {
-      saveMDBToPath(props2.plugin, dbPath, newTable).then((f4) => {
+      await saveMDBToPath(props2.plugin, dbPath, newTable).then((f4) => {
         setDBFileExists(true);
         f4 ? setTableData(newTable) : new import_obsidian7.Notice("DB ERROR");
       });
@@ -20581,11 +20703,20 @@ var MDBProvider = (props2) => {
     var _a3;
     if (!schemaTable || !dbSchema)
       return;
-    const _schema = (schema == null ? void 0 : schema.def) == dbSchema.id ? schema : (_a3 = schemaTable.rows.find((f4) => f4.type != "db")) != null ? _a3 : defaultFileTableSchema;
+    const _schema = (schema == null ? void 0 : schema.def) == dbSchema.id ? schema : (_a3 = schemaTable.rows.find((f4) => f4.def == dbSchema.id)) != null ? _a3 : {
+      ...dbSchema,
+      id: uniqueNameFromString(dbSchema.id + "View", schemaTable.rows.map((f4) => f4.id)),
+      type: "table",
+      def: dbSchema.id
+    };
     if (_schema) {
       setSchema(_schema);
       if (dbFileExists) {
-        runDef();
+        if (dbSchema.primary) {
+          runDef();
+        } else {
+          getMDBData();
+        }
       } else {
         loadDefaultTableData();
       }
@@ -20665,7 +20796,7 @@ var MDBProvider = (props2) => {
     );
   };
   const loadContextFields = async (tag) => {
-    getMDBTable(props2.plugin, dbSchema.id, tagContextFromTag(props2.plugin, tag), true).then((f4) => {
+    getMDBTable(props2.plugin, "files", tagContextFromTag(props2.plugin, tag), true).then((f4) => {
       setContextTable((t4) => ({
         ...t4,
         [tag]: f4
@@ -20748,7 +20879,7 @@ var MDBProvider = (props2) => {
     let mdbtable;
     const column = {
       ...newColumn2,
-      name: newColumn2.name.replace(/[^\w ]/g, "")
+      name: sanitizeColumnName(newColumn2.name)
     };
     const table = column.table;
     if (table == "") {
@@ -20775,6 +20906,19 @@ var MDBProvider = (props2) => {
         oldColumn: void 0
       } : f4)
     };
+    if (oldColumn)
+      savePredicate({
+        filters: predicate.filters.map((f4) => f4.field == oldColumn.name + oldColumn.table ? { ...f4, field: newColumn2.name + newColumn2.table } : f4),
+        sort: predicate.sort.map((f4) => f4.field == oldColumn.name + oldColumn.table ? { ...f4, field: newColumn2.name + newColumn2.table } : f4),
+        groupBy: predicate.groupBy.map((f4) => f4 == oldColumn.name + oldColumn.table ? newColumn2.name + newColumn2.table : f4),
+        colsHidden: predicate.colsHidden.map((f4) => f4 == oldColumn.name + oldColumn.table ? newColumn2.name + newColumn2.table : f4),
+        colsOrder: predicate.colsOrder.map((f4) => f4 == oldColumn.name + oldColumn.table ? newColumn2.name + newColumn2.table : f4),
+        colsSize: {
+          ...predicate.colsSize,
+          [newColumn2.name + newColumn2.table]: predicate.colsSize[oldColumn.name + oldColumn.table],
+          [oldColumn.name + oldColumn.table]: void 0
+        }
+      });
     if (table == "") {
       syncAllMetadata(newTable);
     } else if (contextTable[table]) {
@@ -20807,6 +20951,7 @@ var MDBProvider = (props2) => {
       tables,
       setSchema,
       saveSchema,
+      deleteSchema,
       dbFileExists,
       dbSchema,
       searchString,
@@ -21092,11 +21237,16 @@ var TagSelector = (props2) => {
   }), !dbFileExists && "Sync Fields"));
 };
 
+// src/hooks/useLongPress.tsx
+function isMouseEvent(e4) {
+  return e4 && "screenX" in e4;
+}
+
 // src/components/ContextView/FilterBar/FilterBar.tsx
 var FilterBar = (props2) => {
   const { folderNoteOpen, viewFolderNote } = props2;
   const ctxRef = _2(null);
-  const { tables, data, setDBSchema, loadContextFields, cols, isFolderContext, saveSchema, saveDB: saveDB2, saveContextDB, setSchema, setSearchString, predicate, tagContexts, savePredicate, schema, dbSchema, dbPath, contextTable, tableData } = q2(MDBContext);
+  const { tables, data, setDBSchema, loadContextFields, cols, isFolderContext, deleteSchema, saveSchema, saveDB: saveDB2, saveContextDB, setSchema, setSearchString, predicate, tagContexts, savePredicate, schema, dbSchema, dbPath, contextTable, tableData } = q2(MDBContext);
   const filteredCols = cols.filter((f4) => f4.hidden != "true");
   const dataViewAPI = (0, import_obsidian_dataview2.getAPI)();
   const saveViewType = (type) => {
@@ -21110,16 +21260,17 @@ var FilterBar = (props2) => {
     setDBSchema(_dbschema);
     value && setSchema(tables.find((f4) => f4.id == value));
   };
-  const showViewMenu = (e4, _dbschema) => {
+  const openView = (e4, _dbschema) => {
     const views = tables.filter((f4) => f4.type != "db" && f4.def == _dbschema.id);
     if (views.length == 0) {
       selectView(_dbschema);
       return;
     }
-    if (views.length == 1) {
-      selectView(_dbschema, views[0].id);
-      return;
-    }
+    selectView(_dbschema, views[0].id);
+    return;
+  };
+  const showViewMenu = (e4, _dbschema) => {
+    const views = tables.filter((f4) => f4.type != "db" && f4.def == _dbschema.id);
     const offset = e4.target.getBoundingClientRect();
     showSelectMenu(
       { x: offset.left, y: offset.top + 30 },
@@ -21130,7 +21281,7 @@ var FilterBar = (props2) => {
         options: views.map((m5) => ({ name: m5.name, value: m5.id })),
         saveOptions: (_5, value) => selectView(_dbschema, value[0]),
         placeholder: "Select View",
-        searchable: true,
+        searchable: false,
         showAll: true
       }
     );
@@ -21442,8 +21593,8 @@ var FilterBar = (props2) => {
       };
       const yamlTableData = dataViewAPI ? importDV(files) : importYAML(files);
       const yamlTypes = guestimateTypes(files, dataViewAPI ? true : false);
-      const newTable = mergeTableData(table, yamlTableData, yamlTypes);
-      saveDB2(newTable);
+      const newTable2 = mergeTableData(table, yamlTableData, yamlTypes);
+      saveDB2(newTable2);
     };
     const menu = new import_obsidian10.Menu();
     if (dataViewAPI) {
@@ -21510,7 +21661,7 @@ var FilterBar = (props2) => {
     vaultChangeModal.open();
   };
   const showSaveViewModal = () => {
-    let vaultChangeModal = new SaveViewModal(schema, saveSchema);
+    let vaultChangeModal = new SaveViewModal(schema, saveSchema, "new view");
     vaultChangeModal.open();
   };
   const selectFilterValue = (e4, filter) => {
@@ -21601,6 +21752,47 @@ var FilterBar = (props2) => {
         break;
     }
   };
+  const saveNewSchemas = (_schema) => {
+    const newSchema = {
+      ..._schema,
+      id: uniqueNameFromString(sanitizeTableName(_schema.id), tables.map((f4) => f4.id))
+    };
+    saveSchema(newSchema).then((f4) => saveDB2({
+      schema: newSchema,
+      cols: defaultTableFields.map((f5) => ({ ...f5, schemaId: newSchema.id })),
+      rows: []
+    }));
+  };
+  const newTable = (e4) => {
+    let vaultChangeModal = new SaveViewModal({
+      id: "",
+      name: "",
+      type: "db"
+    }, saveNewSchemas, "new table");
+    vaultChangeModal.open();
+  };
+  const viewContextMenu = (e4, _schema) => {
+    const fileMenu = new import_obsidian10.Menu();
+    fileMenu.addSeparator();
+    fileMenu.addItem((menuItem) => {
+      menuItem.setTitle("Rename Table");
+      menuItem.onClick(() => {
+        let vaultChangeModal = new SaveViewModal(_schema, (s5) => saveSchema(s5), "rename table");
+        vaultChangeModal.open();
+      });
+    });
+    fileMenu.addItem((menuItem) => {
+      menuItem.setTitle("Delete Table");
+      menuItem.onClick(() => {
+        deleteSchema(_schema);
+      });
+    });
+    if (isMouseEvent(e4)) {
+      fileMenu.showAtPosition({ x: e4.pageX, y: e4.pageY });
+    } else {
+      fileMenu.showAtPosition({ x: e4.nativeEvent.locationX, y: e4.nativeEvent.locationY });
+    }
+  };
   return /* @__PURE__ */ bn.createElement(bn.Fragment, null, isFolderContext && /* @__PURE__ */ bn.createElement(TagSelector, {
     plugin: props2.plugin
   }), /* @__PURE__ */ bn.createElement("div", {
@@ -21610,10 +21802,18 @@ var FilterBar = (props2) => {
   }, viewFolderNote && /* @__PURE__ */ bn.createElement("button", {
     className: `mk-folder-note ${folderNoteOpen ? "mk-is-active" : ""}`,
     onClick: () => viewFolderNote(true)
-  }, props2.folderNoteName), tables.filter((f4) => f4.type == "db").map((f4) => /* @__PURE__ */ bn.createElement("button", {
+  }, props2.folderNoteName), tables.filter((f4) => f4.type == "db").map((f4) => /* @__PURE__ */ bn.createElement("div", {
     className: `${!folderNoteOpen && (dbSchema == null ? void 0 : dbSchema.id) == f4.id ? "mk-is-active" : ""}`,
-    onClick: (e4) => showViewMenu(e4, f4)
-  }, schema == null ? void 0 : schema.name))), /* @__PURE__ */ bn.createElement("span", null), !props2.folderNoteOpen && /* @__PURE__ */ bn.createElement("div", {
+    onContextMenu: (e4) => !f4.primary && viewContextMenu(e4, f4)
+  }, /* @__PURE__ */ bn.createElement("button", {
+    onClick: (e4) => openView(e4, f4)
+  }, f4.name), tables.filter((g4) => g4.type != "db" && g4.def == f4.id).length > 1 && /* @__PURE__ */ bn.createElement("button", {
+    className: "mk-icon-xsmall mk-collapse",
+    onClick: (e4) => showViewMenu(e4, f4),
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-collapse"] }
+  }))), isFolderContext && /* @__PURE__ */ bn.createElement("button", {
+    onClick: (e4) => newTable(e4)
+  }, "+ Table")), /* @__PURE__ */ bn.createElement("span", null), !props2.folderNoteOpen && /* @__PURE__ */ bn.createElement("div", {
     className: "mk-view-options"
   }, /* @__PURE__ */ bn.createElement(SearchBar, {
     setSearchString
@@ -21623,7 +21823,7 @@ var FilterBar = (props2) => {
   }), /* @__PURE__ */ bn.createElement("button", {
     onClick: (e4) => showFMMenu(e4),
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-options"] }
-  }))), (predicate.filters.length > 0 || predicate.sort.length > 0 || predicate.groupBy.length > 0) && /* @__PURE__ */ bn.createElement("div", {
+  }))), (predicate.filters.length > 0 || predicate.sort.length > 0 || predicate.groupBy.length > 0) && !folderNoteOpen && /* @__PURE__ */ bn.createElement("div", {
     className: "mk-filter-bar"
   }, predicate.groupBy.length > 0 && /* @__PURE__ */ bn.createElement("div", {
     className: "mk-filter"
@@ -21650,10 +21850,12 @@ var FilterBar = (props2) => {
   }), /* @__PURE__ */ bn.createElement("div", {
     onClick: () => removeFilter(f4),
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-close"] }
-  }))), /* @__PURE__ */ bn.createElement("span", null), /* @__PURE__ */ bn.createElement("div", {
-    className: "mk-filter-add",
+  }))), /* @__PURE__ */ bn.createElement("span", null), /* @__PURE__ */ bn.createElement("button", {
+    className: "mk-filter-add mk-icon-small",
     onClick: () => showSaveViewModal()
-  }, "Save View")));
+  }, /* @__PURE__ */ bn.createElement("div", {
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-stack"] }
+  }), "Save View")));
 };
 var FilterValueSpan = (props2) => {
   var _a2;
@@ -22420,9 +22622,9 @@ var closeHoverTooltipEffect = import_state2.StateEffect.define();
 var closeHoverTooltips = closeHoverTooltipEffect.of(null);
 
 // src/dispatch/flowDispatch.ts
-var createFlowEditorInElement = (id2, el, type, file, from, to) => {
+var createFlowEditorInElement = (id2, el, type, file, ref, from, to) => {
   let evt = new CustomEvent(eventTypes.spawnPortal, {
-    detail: { id: id2, el, file, from, to, type }
+    detail: { id: id2, el, file, from, to, ref, type }
   });
   activeWindow.dispatchEvent(evt);
 };
@@ -22453,7 +22655,7 @@ var openFileFlowEditor = (file, source) => {
 
 // src/components/FlowEditor/FlowEditorHover.tsx
 var FlowEditorHover = (props2) => {
-  return /* @__PURE__ */ bn.createElement(bn.Fragment, null, props2.toggle && /* @__PURE__ */ bn.createElement("div", {
+  return props2.type == "file" ? /* @__PURE__ */ bn.createElement(bn.Fragment, null, props2.toggle && /* @__PURE__ */ bn.createElement("div", {
     "aria-label": i18n_default.buttons.toggleFlow,
     onClick: props2.toggleFlow,
     className: props2.toggleState ? "mk-toggle-on" : "",
@@ -22462,7 +22664,12 @@ var FlowEditorHover = (props2) => {
     "aria-label": i18n_default.buttons.openLink,
     onClick: props2.openLink,
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-open-link"] }
-  }));
+  })) : /* @__PURE__ */ bn.createElement("div", {
+    "aria-label": "Delete Table",
+    onClick: props2.deleteTable,
+    className: "mk-icon-xsmall",
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-close"] }
+  });
 };
 
 // src/cm-extensions/flowEditor/flowEditor.tsx
@@ -22490,6 +22697,26 @@ var preloadFlowEditor = import_state3.EditorState.transactionFilter.of(
     return [tr, ...newTrans];
   }
 );
+var internalLinkToggle = import_view3.ViewPlugin.fromClass(class {
+  constructor(view) {
+  }
+}, {
+  eventHandlers: {
+    mousedown: (e4, view) => {
+      let pos = view.posAtDOM(e4.target);
+      let { from: lineFrom, to: lineTo, text: text2 } = view.state.doc.lineAt(pos);
+      for (let match2 of text2.matchAll(/(?<!\!)\[\[([^\]]+)\]\]/g)) {
+        const stateField = view.state.field(flowEditorInfo, false);
+        const info = stateField.find((f4) => f4.to == match2.index + match2[1].length + 2);
+        if (info) {
+          view.dispatch({
+            annotations: toggleFlowEditor.of([info.id, 2])
+          });
+        }
+      }
+    }
+  }
+});
 var internalLinkHover = hoverTooltip((view, pos, side) => {
   let { from: lineFrom, to: lineTo, text: text2 } = view.state.doc.lineAt(pos);
   let hovObject = null;
@@ -22533,65 +22760,78 @@ var internalLinkHover = hoverTooltip((view, pos, side) => {
   });
   return hovObject;
 });
-var findFullInternalLink = (posA, posB, state) => {
-  let { text: text2, from, length } = state.doc.lineAt(posA);
-  let start = posA - from + 1, end = posB - from - 1;
-  while (start > 0) {
-    let prev = start - 1;
-    if (text2.slice(prev, start) == "[")
-      break;
-    start = prev;
-  }
-  while (end < length) {
-    let next = end + 1;
-    if (text2.slice(end, next) == "]")
-      break;
-    end = next;
-  }
-  return start == end ? null : import_state3.EditorSelection.range(start + from, end + from);
-};
 var flowEditorInfo = import_state3.StateField.define({
   create() {
     return [];
   },
   update(value, tr) {
+    var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k, _l;
     let newValues = [];
     const previous = value;
     let usedContainers = [];
-    let nameContainers = [];
-    iterateTreeInDocument(tr.state, {
-      enter: ({ name, from, to }) => {
-        var _a2, _b2, _c2, _d2;
-        if (name.contains("hmd-internal-link")) {
-          nameContainers.push(name);
-          const fullRange = findFullInternalLink(from, to, tr.state);
-          const link = tr.state.sliceDoc(fullRange.from, fullRange.to);
-          const existingLinks = previous.filter((f4) => f4.link == link);
-          const offset = usedContainers.filter((f4) => f4 == link).length;
-          const existingInfo = existingLinks[offset];
-          const id2 = existingInfo ? existingInfo.id : genId2();
-          let listEmbed = false;
-          const embedOverride = tr.state.sliceDoc(fullRange.from - 4, fullRange.from - 3) == "!";
-          const embedType = name.contains("hmd-embed") ? embedOverride ? 1 : 2 : 0;
-          const reverseExpandedState = (state) => {
-            const news = state != 2 ? 2 : 0;
-            return news;
-          };
-          usedContainers.push(link);
-          const info = {
-            id: id2,
-            link: tr.state.sliceDoc(fullRange.from, fullRange.to),
-            startOfLineFix: listEmbed,
-            from: fullRange.from,
-            to: fullRange.to,
-            embed: embedType,
-            height: existingInfo ? ((_a2 = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _a2[0]) == id2 && ((_b2 = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _b2[1]) != 0 ? (_c2 = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _c2[1] : existingInfo.height : -1,
-            expandedState: existingInfo ? ((_d2 = tr.annotation(toggleFlowEditor)) == null ? void 0 : _d2[0]) == id2 ? reverseExpandedState(existingInfo.expandedState) : existingInfo.expandedState : embedType >= 1 ? 1 : 0
-          };
-          newValues.push(info);
-        }
-      }
-    });
+    let str = tr.newDoc.sliceString(0);
+    const reverseExpandedState = (state) => {
+      const news = state != 2 ? 2 : 0;
+      return news;
+    };
+    for (let match2 of str.matchAll(/(?:!\[!\[|!!\[\[)([^\]]+)\]\]/g)) {
+      const link = match2[1];
+      const existingLinks = previous.filter((f4) => f4.link == link);
+      const offset = usedContainers.filter((f4) => f4 == link).length;
+      const existingInfo = existingLinks[offset];
+      const id2 = existingInfo ? existingInfo.id : genId2();
+      usedContainers.push(link);
+      const info = {
+        id: id2,
+        link: match2[1],
+        startOfLineFix: false,
+        from: match2.index + 4,
+        to: match2.index + 4 + match2[1].length,
+        embed: 1,
+        height: existingInfo ? ((_a2 = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _a2[0]) == id2 && ((_b2 = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _b2[1]) != 0 ? (_c2 = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _c2[1] : existingInfo.height : -1,
+        expandedState: existingInfo ? ((_d2 = tr.annotation(toggleFlowEditor)) == null ? void 0 : _d2[0]) == id2 ? reverseExpandedState(existingInfo.expandedState) : existingInfo.expandedState : 1
+      };
+      newValues.push(info);
+    }
+    for (let match2 of str.matchAll(/(?<!\!)\[\[([^\]]+)\]\]/g)) {
+      const link = match2[1];
+      const existingLinks = previous.filter((f4) => f4.link == link);
+      const offset = usedContainers.filter((f4) => f4 == link).length;
+      const existingInfo = existingLinks[offset];
+      const id2 = existingInfo ? existingInfo.id : genId2();
+      usedContainers.push(link);
+      const info = {
+        id: id2,
+        link: match2[1],
+        startOfLineFix: false,
+        from: match2.index + 2,
+        to: match2.index + 2 + match2[1].length,
+        embed: 0,
+        height: existingInfo ? ((_e2 = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _e2[0]) == id2 && ((_f = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _f[1]) != 0 ? (_g = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _g[1] : existingInfo.height : -1,
+        expandedState: existingInfo ? ((_h = tr.annotation(toggleFlowEditor)) == null ? void 0 : _h[0]) == id2 ? reverseExpandedState(existingInfo.expandedState) : existingInfo.expandedState : 0
+      };
+      newValues.push(info);
+    }
+    for (let match2 of str.matchAll(/(?<!\!)\!\[\[([^\]]+)\]\]/g)) {
+      const link = match2[1];
+      const existingLinks = previous.filter((f4) => f4.link == link);
+      const offset = usedContainers.filter((f4) => f4 == link).length;
+      const existingInfo = existingLinks[offset];
+      const id2 = existingInfo ? existingInfo.id : genId2();
+      usedContainers.push(link);
+      const info = {
+        id: id2,
+        link: match2[1],
+        startOfLineFix: false,
+        from: match2.index + 3,
+        to: match2.index + 3 + match2[1].length,
+        embed: 2,
+        height: existingInfo ? ((_i = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _i[0]) == id2 && ((_j = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _j[1]) != 0 ? (_k = tr.annotation(cacheFlowEditorHeight)) == null ? void 0 : _k[1] : existingInfo.height : -1,
+        expandedState: existingInfo ? ((_l = tr.annotation(toggleFlowEditor)) == null ? void 0 : _l[0]) == id2 ? reverseExpandedState(existingInfo.expandedState) : existingInfo.expandedState : 1
+      };
+      newValues.push(info);
+    }
+    newValues.sort(compareByField("from", true));
     return newValues;
   }
 });
@@ -22654,6 +22894,7 @@ var FlowEditorSelector = class extends import_view3.WidgetType {
   constructor(info) {
     super();
     this.info = info;
+    this.flowInfo = info;
   }
   eq(other) {
     return false;
@@ -22662,26 +22903,24 @@ var FlowEditorSelector = class extends import_view3.WidgetType {
     const div = document.createElement("div");
     div.toggleClass("mk-floweditor-selector", true);
     const reactEl = createRoot(div);
+    const type = this.info.link.contains("/#^") ? "table" : "file";
     reactEl.render(
       /* @__PURE__ */ bn.createElement(FlowEditorHover, {
         toggle: true,
+        type,
         toggleState: true,
+        deleteTable: () => {
+          view.dispatch({
+            changes: { from: this.info.from - 4, to: this.info.to + 2 }
+          });
+        },
         toggleFlow: () => {
           view.dispatch({
             changes: { from: this.info.from - 4, to: this.info.from - 3 }
           });
         },
         openLink: () => {
-          app.workspace.iterateLeaves((leaf) => {
-            var _a2, _b2;
-            const cm = (_a2 = leaf.view.editor) == null ? void 0 : _a2.cm;
-            if (cm && view.dom == cm.dom) {
-              openFileFlowEditor(
-                this.info.link,
-                (_b2 = leaf.view.file) == null ? void 0 : _b2.path
-              );
-            }
-          }, app.workspace["rootSplit"]);
+          openFileFlowEditor(this.flowInfo.link, "/");
         }
       })
     );
@@ -30720,7 +30959,6 @@ function useCombinedRefs2(...refs) {
 }
 
 // src/components/ContextView/TableView/ColumnHeader.tsx
-var import_lodash4 = __toESM(require_lodash());
 var import_obsidian12 = require("obsidian");
 var filePropTypes = [
   {
@@ -30786,8 +31024,10 @@ var ColumnHeader = (props2) => {
   }, [field]);
   const saveMenu = (menu) => {
     setTimeout(() => {
-      if (menuRef.current == menu)
+      if (menuRef.current == menu) {
+        menuRef.current.hide();
         menuRef.current = null;
+      }
     }, 100);
     setSaveHook(true);
   };
@@ -30821,7 +31061,7 @@ var ColumnHeader = (props2) => {
     const fmFields = files.reduce((p3, c4) => {
       const fm = frontMatterForFile(c4);
       const fmKeys = uniqCaseInsensitive(frontMatterKeys(fm));
-      return (0, import_lodash4.uniq)([...p3, ...fmKeys]);
+      return uniq([...p3, ...fmKeys]);
     }, []).filter((f4) => !cols.some((g4) => g4.name == f4));
     const allTypes = [...fmFields.map((f4) => ({
       name: f4,
@@ -30830,26 +31070,15 @@ var ColumnHeader = (props2) => {
     })), ...fieldTypes.filter((f4) => f4.restricted != true).map((f4) => ({
       name: f4.label,
       description: "New Field",
-      value: "type." + f4.type
+      value: "type." + f4.type + "." + f4.label
     }))];
-    const uniqueNameFromString = (name, cols2) => {
-      let newName = name;
-      if (cols2.includes(newName)) {
-        let append = 1;
-        while (cols2.includes(newName)) {
-          newName = name + append.toString();
-          append += 1;
-        }
-      }
-      return newName;
-    };
     const saveOptions = (_5, values) => {
       const newValue = values[0];
       const newType = newValue.split(".");
       if (newType[0] == "fm") {
         newColumn({ name: uniqueNameFromString(newType[1], tableData.cols.map((f4) => f4.name)), schemaId: tableData.schema.id, table: "", type: newType[2] });
       } else if (newType[0] == "type") {
-        newColumn({ name: uniqueNameFromString(newType[1], tableData.cols.map((f4) => f4.name)), schemaId: tableData.schema.id, table: "", type: newType[1] });
+        newColumn({ name: uniqueNameFromString(newType[2], tableData.cols.map((f4) => f4.name)), schemaId: tableData.schema.id, table: "", type: newType[1] });
       }
     };
     showSelectMenu({ x: offset.left, y: offset.top + 30 }, {
@@ -30957,7 +31186,28 @@ var ColumnHeader = (props2) => {
         menu.addSeparator();
       }
     }
-    if (!props2.isNew) {
+    const sortableString = normalizedSortForType(props2.column.type, false);
+    if (!props2.isNew && sortableString) {
+      menu.addItem((menuItem) => {
+        menuItem.setTitle("Sort Ascending");
+        menuItem.setIcon("sort-asc");
+        menuItem.onClick(() => {
+          props2.sort({
+            field: props2.column.name + props2.column.table,
+            type: normalizedSortForType(props2.column.type, false)
+          });
+        });
+      });
+      menu.addItem((menuItem) => {
+        menuItem.setTitle("Sort Descending");
+        menuItem.setIcon("sort-desc");
+        menuItem.onClick(() => {
+          props2.sort({
+            field: props2.column.name + props2.column.table,
+            type: normalizedSortForType(props2.column.type, true)
+          });
+        });
+      });
     } else {
       menu.addSeparator();
       menu.addItem((menuItem) => {
@@ -31004,11 +31254,6 @@ var ColumnHeader = (props2) => {
 
 // src/components/ContextView/DataTypeView/FileCell.tsx
 var import_obsidian16 = require("obsidian");
-
-// src/hooks/useLongPress.tsx
-function isMouseEvent(e4) {
-  return e4 && "screenX" in e4;
-}
 
 // src/components/ui/menus/fileMenu.tsx
 var import_obsidian15 = require("obsidian");
@@ -36753,10 +36998,13 @@ var renameSpace = (plugin, space, newName) => {
   updateDB(db, {
     spaceItems: {
       ...spaceItemsSchema,
+      cols: ["space"],
       rows: [{ oldSpace: space, space: newName }]
     }
   }, "space", "oldSpace");
   plugin.saveSpacesDB();
+  plugin.settings.expandedSpaces = plugin.settings.expandedSpaces.map((f4) => f4 == space ? newName : f4);
+  plugin.saveSettings();
   dispatchSpaceDatabaseFileChanged("space");
 };
 var removeSpace = (plugin, space) => {
@@ -37621,7 +37869,7 @@ var LinkCell = (props2) => {
     props2.saveValue(newValues.map((f4) => f4.value).join(","));
   };
   const saveOptions = (_5, _value) => {
-    if (!props2.multi) {
+    if (props2.multi) {
       setValue(resolveLinks(stringValueToLink(_value)));
       props2.saveValue(_value.join(","));
     } else {
@@ -37671,7 +37919,7 @@ var LinkCell = (props2) => {
 };
 
 // src/components/ContextView/TableView/TableView.tsx
-var import_lodash5 = __toESM(require_lodash());
+var import_lodash4 = __toESM(require_lodash());
 var import_obsidian17 = require("obsidian");
 
 // src/utils/ui/selection.ts
@@ -37818,11 +38066,11 @@ var TableView = (props2) => {
     debouncedSavePredicate(newColSize);
   };
   const debouncedSavePredicate = T2(
-    (0, import_lodash5.debounce)((nextValue) => savePredicate({
+    (0, import_lodash4.debounce)((nextValue) => savePredicate({
       ...predicate,
       colsSize: nextValue
     }), 1e3),
-    []
+    [predicate]
   );
   const newRow = () => {
     saveDB2(createNewRow(tableData, { File: "" }));
@@ -38015,7 +38263,7 @@ var TableView = (props2) => {
     state: {
       columnVisibility: predicate.colsHidden.reduce((p3, c4) => ({ ...p3, [c4]: false }), {}),
       columnOrder: predicate.colsOrder,
-      columnSizing: { ...columns.reduce((p3, c4) => ({ ...p3, [c4.accessorKey]: 50 }), {}), ...colsSize },
+      columnSizing: { ...columns.reduce((p3, c4) => ({ ...p3, [c4.accessorKey]: 150 }), {}), ...colsSize },
       grouping: groupBy2,
       expanded: true
     },
@@ -38119,7 +38367,7 @@ var TableView = (props2) => {
   const saveSort = (sort) => {
     savePredicate({
       ...predicate,
-      sort: [...predicate.sort.filter((s5) => s5.field != sort.field), sort]
+      sort: [sort]
     });
   };
   const hideCol = (col) => {
@@ -38181,32 +38429,38 @@ var TableView = (props2) => {
     ...{}
   }, /* @__PURE__ */ bn.createElement("thead", null, table.getHeaderGroups().map((headerGroup) => /* @__PURE__ */ bn.createElement("tr", {
     key: headerGroup.id
-  }, headerGroup.headers.map((header) => /* @__PURE__ */ bn.createElement("th", {
-    className: "mk-th",
-    key: header.id
-  }, header.isPlaceholder ? null : header.column.columnDef.header != "+" ? header.column.getIsGrouped() ? /* @__PURE__ */ bn.createElement(bn.Fragment, null) : /* @__PURE__ */ bn.createElement(ColumnHeader, {
-    plugin: props2.plugin,
-    editable: header.column.columnDef.meta.editable,
-    column: cols.find((f4) => f4.name == header.column.columnDef.header && f4.table == header.column.columnDef.meta.table),
-    saveColumn,
-    deleteColumn: delColumn,
-    hide: hideCol,
-    filter: saveFilter,
-    sort: saveSort
-  }) : /* @__PURE__ */ bn.createElement(ColumnHeader, {
-    plugin: props2.plugin,
-    isNew: true,
-    editable: true,
-    column: { name: "", schemaId: header.column.columnDef.meta.schemaId, type: "text", table: "" },
-    saveColumn: newColumn,
-    deleteColumn: delColumn
-  }), /* @__PURE__ */ bn.createElement("div", {
-    ...{
-      onMouseDown: header.getResizeHandler(),
-      onTouchStart: header.getResizeHandler(),
-      className: `mk-resizer ${header.column.getIsResizing() ? "isResizing" : ""}`
-    }
-  })))))), /* @__PURE__ */ bn.createElement("tbody", null, table.getRowModel().rows.map((row) => /* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement("tr", {
+  }, headerGroup.headers.map((header) => {
+    var _a2;
+    return /* @__PURE__ */ bn.createElement("th", {
+      className: "mk-th",
+      key: header.id,
+      style: {
+        minWidth: header.column.getIsGrouped() ? "0px" : (_a2 = colsSize[header.column.columnDef.accessorKey]) != null ? _a2 : "150px"
+      }
+    }, header.isPlaceholder ? null : header.column.columnDef.header != "+" ? header.column.getIsGrouped() ? /* @__PURE__ */ bn.createElement(bn.Fragment, null) : /* @__PURE__ */ bn.createElement(ColumnHeader, {
+      plugin: props2.plugin,
+      editable: header.column.columnDef.meta.editable,
+      column: cols.find((f4) => f4.name == header.column.columnDef.header && f4.table == header.column.columnDef.meta.table),
+      saveColumn,
+      deleteColumn: delColumn,
+      hide: hideCol,
+      filter: saveFilter,
+      sort: saveSort
+    }) : /* @__PURE__ */ bn.createElement(ColumnHeader, {
+      plugin: props2.plugin,
+      isNew: true,
+      editable: true,
+      column: { name: "", schemaId: header.column.columnDef.meta.schemaId, type: "text", table: "" },
+      saveColumn: newColumn,
+      deleteColumn: delColumn
+    }), /* @__PURE__ */ bn.createElement("div", {
+      ...{
+        onMouseDown: header.getResizeHandler(),
+        onTouchStart: header.getResizeHandler(),
+        className: `mk-resizer ${header.column.getIsResizing() ? "isResizing" : ""}`
+      }
+    }));
+  })))), /* @__PURE__ */ bn.createElement("tbody", null, table.getRowModel().rows.map((row) => /* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement("tr", {
     className: (selectedRows == null ? void 0 : selectedRows.some((f4) => f4 == data[row.index]["_index"])) && "mk-is-active",
     onContextMenu: (e4) => {
       const rowIndex = parseInt(data[row.index]["_index"]);
@@ -38576,7 +38830,9 @@ var FlowView = (props2) => {
   const ref = _2(null);
   const loadFile = () => {
     const div = ref.current;
-    spawnLeafFromFile(props2.plugin, props2.path, div);
+    const type = viewTypeByString(props2.path);
+    const portalType = type == "tag" || type == "folder" ? "context" : "doc";
+    spawnLeafFromFile(props2.plugin, props2.path, div, portalType);
   };
   const toggleFlow = () => {
     if (props2.load) {
@@ -39226,7 +39482,8 @@ var InlineContextViewComponent = (props2) => {
     plugin: props2.plugin,
     dbPath: path,
     folder,
-    tag
+    tag,
+    schema: props2.schema
   }, path && /* @__PURE__ */ bn.createElement(ContextListView, {
     plugin: props2.plugin
   }));
@@ -39259,6 +39516,7 @@ var InlineContextView = class extends import_obsidian19.ItemView {
   async setState(state, result) {
     var _a2, _b2;
     this.file = state.file;
+    this.ref = state.ref ? state.ref.substring(1, state.ref.length) : null;
     this.constructInlineContext(this.file);
     await super.setState(state, result);
     const type = viewTypeByString(this.file);
@@ -39282,7 +39540,8 @@ var InlineContextView = class extends import_obsidian19.ItemView {
     this.root.render(
       /* @__PURE__ */ bn.createElement("div", null, /* @__PURE__ */ bn.createElement(InlineContextViewComponent, {
         plugin: this.plugin,
-        path: this.file
+        path: this.file,
+        schema: this.ref
       }))
     );
   }
@@ -39390,6 +39649,20 @@ var loadFlowEditor = (cm, flowEditorInfo2, source, make) => {
       }
       return;
     }
+    if (link.charAt(link.length - 1) == "/") {
+      const folder = getAbstractFileAtPath(app, link.substring(0, link.length - 1));
+      if (!dom.hasAttribute("ready") && folder) {
+        dom.setAttribute("ready", "");
+        createFlowEditorInElement(
+          flowEditorInfo2.id,
+          dom,
+          "context",
+          folder.path,
+          ref
+        );
+        return;
+      }
+    }
     const file = getFileFromString(link, source);
     const aFile = getAbstractFileAtPath(app, link);
     if (file) {
@@ -39401,6 +39674,7 @@ var loadFlowEditor = (cm, flowEditorInfo2, source, make) => {
           dom,
           ref ? "block" : "flow",
           file.path,
+          ref,
           selectiveRange[0],
           selectiveRange[1]
         );
@@ -39503,26 +39777,23 @@ var openFileFromPortal = (plugin, evt) => {
   const file = getFileFromString(link, source);
   openFile2({ ...file, isFolder: false }, plugin.app, false);
 };
-var spawnLeafFromFile = async (plugin, file, el) => {
-  const type = viewTypeByString(file);
-  if (type == "tag") {
+var spawnLeafFromFile = async (plugin, file, el, type, ref) => {
+  if (type == "context") {
     const newLeaf2 = spawnPortal2(plugin, el);
-    newLeaf2.setViewState({ type: INLINE_CONTEXT_VIEW_TYPE, state: { file } });
+    newLeaf2.setViewState({ type: INLINE_CONTEXT_VIEW_TYPE, state: { file, ref } });
     return newLeaf2;
   }
   let portalFile = plugin.app.vault.getAbstractFileByPath(file);
-  if (type == "folder") {
-    const newLeaf2 = spawnPortal2(plugin, el);
-    newLeaf2.setViewState({ type: INLINE_CONTEXT_VIEW_TYPE, state: { file } });
-    return newLeaf2;
-  }
   const newLeaf = spawnPortal2(plugin, el, portalFile.name);
   await newLeaf.openFile(portalFile);
+  if (newLeaf.view.setMode)
+    newLeaf.view.setMode(newLeaf.view.editMode);
+  return newLeaf;
 };
 var spawnNewPortal = async (plugin, evt) => {
   var _a2, _b2, _c2;
-  const { file, el, from, to } = evt.detail;
-  const newLeaf = await spawnLeafFromFile(plugin, file, el);
+  const { file, el, ref, from, to, type } = evt.detail;
+  const newLeaf = await spawnLeafFromFile(plugin, file, el, type, ref);
   if (!((_a2 = newLeaf == null ? void 0 : newLeaf.view) == null ? void 0 : _a2.editor)) {
     return;
   }
@@ -39764,7 +40035,10 @@ var ContextView = class extends import_obsidian21.ItemView {
 };
 
 // src/utils/file.ts
-var defaultNoteFolder = (plugin, activeFile2) => plugin.settings.newFileLocation == "folder" ? getFolderFromPath(app, plugin.settings.newFileFolderPath) : plugin.settings.newFileLocation == "current" && activeFile2 ? getFolderFromPath(app, activeFile2) : plugin.app.vault.getRoot();
+var defaultNoteFolder = (plugin, activeFile2) => {
+  var _a2;
+  return (_a2 = plugin.settings.newFileLocation == "folder" ? getFolderFromPath(app, plugin.settings.newFileFolderPath) : plugin.settings.newFileLocation == "current" && activeFile2 ? getFolderFromPath(app, activeFile2) : plugin.app.vault.getRoot()) != null ? _a2 : plugin.app.vault.getRoot();
+};
 var defaultConfigFile = async (app2) => {
   return await app2.vault.adapter.read((0, import_obsidian22.normalizePath)(app2.vault.configDir + "/app.json"));
 };
@@ -39828,6 +40102,8 @@ function getAllAbstractFilesInVault(plugin, app2) {
   return files;
 }
 var getFolderFromPath = (app2, path) => {
+  if (!path)
+    return null;
   const file = path.slice(-1) == "/" ? path.substring(0, path.length - 1) : path;
   const afile = getAbstractFileAtPath(app2, file);
   if (!afile)
@@ -39925,21 +40201,38 @@ var newFileInFolder = async (plugin, data) => {
 
 // src/components/ui/modals/modals.ts
 var SaveViewModal = class extends import_obsidian23.Modal {
-  constructor(schema, saveSchema) {
+  constructor(schema, saveSchema, action) {
     super(app);
     this.schema = schema;
     this.saveSchema = saveSchema;
+    this.action = action;
   }
   onOpen() {
     let { contentEl } = this;
     let myModal = this;
-    let headerText = "Save View";
+    let headerText;
+    if (this.action == "new view")
+      headerText = "Save View";
+    if (this.action == "new table")
+      headerText = "Save Table";
+    if (this.action == "rename view")
+      headerText = "Rename View";
+    if (this.action == "rename table")
+      headerText = "Rename Table";
     const headerEl = contentEl.createEl("div", { text: headerText });
     headerEl.addClass("modal-title");
     const inputEl = contentEl.createEl("input");
     inputEl.style.cssText = "width: 100%; height: 2.5em; margin-bottom: 15px;";
     inputEl.focus();
-    let changeButtonText = "Save View";
+    let changeButtonText;
+    if (this.action == "new view")
+      changeButtonText = "Save View";
+    if (this.action == "new table")
+      changeButtonText = "Save Table";
+    if (this.action == "rename view")
+      changeButtonText = "Rename View";
+    if (this.action == "rename table")
+      changeButtonText = "Rename Table";
     const changeButton = contentEl.createEl("button", { text: changeButtonText });
     const cancelButton = contentEl.createEl("button", { text: i18n_default.buttons.cancel });
     cancelButton.style.cssText = "float: right;";
@@ -39948,7 +40241,11 @@ var SaveViewModal = class extends import_obsidian23.Modal {
     });
     const onClickAction = async () => {
       let newName = inputEl.value;
-      this.saveSchema({ ...this.schema, id: newName, name: newName });
+      if (this.action == "new view" || this.action == "new table") {
+        this.saveSchema({ ...this.schema, id: newName, name: newName });
+      } else {
+        this.saveSchema({ ...this.schema, name: newName });
+      }
       myModal.close();
     };
     changeButton.addEventListener("click", onClickAction);
@@ -40070,7 +40367,7 @@ var VaultChangeModal = class extends import_obsidian23.Modal {
           this.file.parent.path == "/" ? newName : this.file.parent.path + "/" + newName
         );
       } else if (this.action === "create folder") {
-        const path = this.file.path == "/" ? newName : this.file.path + "/" + newName;
+        const path = !this.file || this.file.path == "/" ? newName : this.file.path + "/" + newName;
         this.app.vault.createFolder(path);
         if (this.space != "/")
           addPathsToSpace(this.plugin, this.space, [path]);
@@ -40521,6 +40818,7 @@ var MainMenu = (props2) => {
     ref,
     onClick: (e4) => showMenu(e4)
   }, plugin.settings.spacesCompactMode ? /* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement("div", {
+    className: "mk-main-menu-icon",
     dangerouslySetInnerHTML: { __html: currentViewIcon }
   }), currentViewName) : plugin.app.vault.getName(), /* @__PURE__ */ bn.createElement("div", {
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-expand"] }
@@ -40879,13 +41177,14 @@ var TreeItem = k3(
       ...handleProps
     }), /* @__PURE__ */ bn.createElement("div", {
       className: (0, import_classnames5.default)(
-        `mk-tree-item nav-file-title ${active && "is-active"} ${selected && "is-selected"}`
+        `mk-tree-item ${data.item.folder == "true" ? "nav-folder-title" : "nav-file-title"} ${active && "is-active"} ${selected && "is-selected"}`
       ),
       ref,
       style: {
         "--spacing": `${indentationWidth * depth - 28}px`
       },
       onClick: (e4) => openFileAtTarget(data, e4),
+      "data-path": data.item.path,
       onContextMenu: (e4) => selectedFiles2.length > 1 && selectedFiles2.some((f4) => f4.id == data.id) ? triggerMultiFileMenu(plugin, selectedFiles2, e4) : triggerFileMenu(plugin, data.file, data.item.folder == "true", e4),
       ...innerProps
     }, data.item.folder == "true" && /* @__PURE__ */ bn.createElement("button", {
@@ -40900,7 +41199,7 @@ var TreeItem = k3(
       plugin,
       filePath: data.item.path
     }), /* @__PURE__ */ bn.createElement("div", {
-      className: `mk-tree-text nav-file-title-content`
+      className: `mk-tree-text ${data.item.folder == "true" ? "nav-folder-title-content" : "nav-file-title-content"}`
     }, data.file ? data.item.folder == "true" ? data.file.name : fileNameToString(data.file.name) : "", data.item.folder == "false" && data.file && data.file.extension != "md" && /* @__PURE__ */ bn.createElement("span", {
       className: "nav-file-tag"
     }, (_a2 = data.file) == null ? void 0 : _a2.extension)), !clone ? /* @__PURE__ */ bn.createElement("div", {
@@ -41373,12 +41672,12 @@ function calculateRange(_ref4) {
 }
 
 // src/components/Spaces/TreeView/FileExplorerVirtualized.tsx
-var import_lodash6 = __toESM(require_lodash());
+var import_lodash5 = __toESM(require_lodash());
 var VirtualizedList = bn.memo(
   (props2) => {
     const { flattenedTree, projected, vRef, selectedFiles: selectedFiles2, activeFile: activeFile2, selectRange: selectRange2, handleCollapse, plugin, indentationWidth } = props2;
     const parentRef = bn.useRef(null);
-    const rowHeight = (index) => platformIsMobile() ? flattenedTree[index].parentId == null ? 56 : 40 : flattenedTree[index].parentId == null ? 40 : 29;
+    const rowHeight = (index) => platformIsMobile() ? flattenedTree[index].parentId == null ? 52 : 40 : flattenedTree[index].parentId == null ? 40 : 29;
     const rowVirtualizer = useVirtual({
       size: flattenedTree.length,
       paddingEnd: 24,
@@ -41567,7 +41866,7 @@ var FileExplorerComponent = (props2) => {
     const newFolders = flatFolders;
     retrieveData(newFolders);
   }, [flatFolders]);
-  const refreshVault = T2((0, import_lodash6.debounce)(() => retrieveData(flatFolders), 100, { leading: true, trailing: true }), []);
+  const refreshVault = T2((0, import_lodash5.debounce)(() => retrieveData(flatFolders), 100, { leading: true, trailing: true }), []);
   const spaceChangeEvent = (evt) => {
     if (evt.detail.changeType == "vault" || evt.detail.changeType == "space") {
       refreshVault();
@@ -42036,6 +42335,8 @@ var DEFAULT_SETTINGS = {
   inlineStyler: true,
   inlineStylerColors: false,
   editorFlow: true,
+  internalLinkClickFlow: true,
+  saveAllContextToFrontmatter: false,
   editorFlowStyle: "seamless",
   autoOpenFileContext: false,
   spacesCompactMode: false,
@@ -42143,7 +42444,20 @@ var MakeMDPluginSettingsTab = class extends import_obsidian30.PluginSettingTab {
         this.plugin.saveSettings();
       })
     );
+    new import_obsidian30.Setting(containerEl).setName("Save All Context Fields to Frontmatter").setDesc("Turn on to automatically save all context fields to frontmatter fields, not just existing frontmatter fields.").addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.autoOpenFileContext).onChange((value) => {
+        this.plugin.settings.autoOpenFileContext = value;
+        this.plugin.saveSettings();
+      })
+    );
     containerEl.createEl("h2", { text: i18n_default.settings.sectionFlow });
+    new import_obsidian30.Setting(containerEl).setName("Open Flow Editor on Internal Link Click").setDesc("Turn on to toggle Flow Editor directly by clicking on internal links, otherwise a tooltip will be shown").addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.internalLinkClickFlow).onChange((value) => {
+        this.plugin.settings.internalLinkClickFlow = value;
+        this.plugin.saveSettings();
+        this.refreshView();
+      })
+    );
     new import_obsidian30.Setting(containerEl).setName(i18n_default.settings.editorFlowReplace.name).setDesc(i18n_default.settings.editorFlowReplace.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.editorFlow).onChange((value) => {
         this.plugin.settings.editorFlow = value;
@@ -42154,14 +42468,18 @@ var MakeMDPluginSettingsTab = class extends import_obsidian30.PluginSettingTab {
     new import_obsidian30.Setting(containerEl).setName(i18n_default.settings.editorFlowStyle.name).setDesc(i18n_default.settings.editorFlowStyle.desc).addDropdown((dropdown) => {
       dropdown.addOption("classic", i18n_default.settings.editorFlowStyle.classic);
       dropdown.addOption("seamless", i18n_default.settings.editorFlowStyle.seamless);
+      dropdown.addOption("minimal", "Minimal");
       dropdown.setValue(this.plugin.settings.editorFlowStyle).onChange(async (value) => {
         this.plugin.settings.editorFlowStyle = value;
         document.body.classList.toggle("mk-flow-classic", false);
         document.body.classList.toggle("mk-flow-seamless", false);
+        document.body.classList.toggle("mk-flow-minimal", false);
         if (value == "seamless")
           document.body.classList.toggle("mk-flow-seamless", true);
         if (value == "classic")
           document.body.classList.toggle("mk-flow-classic", true);
+        if (value == "minimal")
+          document.body.classList.toggle("mk-flow-minimal", true);
       });
     });
     containerEl.createEl("h2", { text: i18n_default.settings.sectionEditor });
@@ -42335,6 +42653,11 @@ Type/Paste Your Code
     icon: "mk-make-note"
   },
   {
+    label: "table",
+    value: "table",
+    icon: "mk-make-table"
+  },
+  {
     label: "flow",
     value: `!![[Note Name]]`,
     offset: [-2, 4],
@@ -42368,6 +42691,7 @@ var MakeMenu = class extends import_obsidian31.EditorSuggest {
   onTrigger(cursor, editor, _file) {
     const currentLine = editor.getLine(cursor.line).slice(0, cursor.ch);
     const triggerCharLength = this.plugin.settings.menuTriggerChar.length;
+    this.file = _file;
     if (!this.inCmd && currentLine.slice(0, triggerCharLength) !== this.plugin.settings.menuTriggerChar && currentLine.slice(-2 - triggerCharLength) !== "- " + this.plugin.settings.menuTriggerChar) {
       this.resetInfos();
       return null;
@@ -42394,6 +42718,10 @@ var MakeMenu = class extends import_obsidian31.EditorSuggest {
     return suggestions.length > 0 ? suggestions : [{ label: i18n_default.commandsSuggest.noResult, value: "", icon: "" }];
   }
   renderSuggestion(value, el) {
+    if (value.value == "") {
+      el.setText(i18n_default.commandsSuggest.noResult);
+      return;
+    }
     const div = el.createDiv("mk-slash-item");
     const icon = div.createDiv("mk-slash-icon");
     icon.innerHTML = makeIconSet[value.icon];
@@ -42403,22 +42731,37 @@ var MakeMenu = class extends import_obsidian31.EditorSuggest {
   selectSuggestion(cmd, _evt) {
     if (cmd.label === i18n_default.commandsSuggest.noResult)
       return;
-    this.context.editor.replaceRange(
-      cmd.value,
-      { ...this.context.start, ch: this.cmdStartCh },
-      this.context.end
-    );
-    if (cmd.offset) {
-      this.context.editor.setSelection(
-        { ...this.context.start, ch: this.cmdStartCh + cmd.offset[1] },
-        {
-          ...this.context.end,
-          ch: this.cmdStartCh + cmd.value.length + cmd.offset[0]
-        }
+    if (cmd.value == "table") {
+      this.plugin.createTable(this.file.parent.path).then((f4) => {
+        this.context.editor.replaceRange(
+          `![![${this.file.parent.path}/#^${f4}]]`,
+          { ...this.context.start, ch: this.cmdStartCh },
+          this.context.end
+        );
+        this.context.editor.setSelection(
+          { line: this.context.start.line, ch: 0 }
+        );
+        this.resetInfos();
+        this.close();
+      });
+    } else {
+      this.context.editor.replaceRange(
+        cmd.value,
+        { ...this.context.start, ch: this.cmdStartCh },
+        this.context.end
       );
+      if (cmd.offset) {
+        this.context.editor.setSelection(
+          { ...this.context.start, ch: this.cmdStartCh + cmd.offset[1] },
+          {
+            ...this.context.end,
+            ch: this.cmdStartCh + cmd.value.length + cmd.offset[0]
+          }
+        );
+      }
+      this.resetInfos();
+      this.close();
     }
-    this.resetInfos();
-    this.close();
   }
 };
 
@@ -43283,9 +43626,13 @@ var cmExtensions = (plugin, mobile) => {
       flowEditorField,
       flowEditorInfo,
       flowIDStateField,
-      internalLinkHover,
       flowViewUpdates
     );
+  }
+  if (plugin.settings.internalLinkClickFlow) {
+    extensions.push(internalLinkToggle);
+  } else {
+    extensions.push(internalLinkHover);
   }
   return extensions;
 };
@@ -43331,6 +43678,7 @@ var replaceAllEmbed = (el, ctx) => {
           reactEl.render(
             /* @__PURE__ */ bn.createElement(FlowEditorHover, {
               toggle: true,
+              type: "file",
               toggleState: false,
               toggleFlow: (e4) => {
                 const cm = getCMFromElement(dom);
@@ -43513,7 +43861,7 @@ var import_obsidian35 = require("obsidian");
 
 // src/components/FileContextView/FileContextList.tsx
 var import_obsidian34 = require("obsidian");
-var import_lodash7 = __toESM(require_lodash());
+var import_lodash6 = __toESM(require_lodash());
 var FileContextList = (props2) => {
   const { path } = props2;
   const { tableData, newColumn, tagContexts, contextTable, folderPath, isFolderContext, setContextTable, saveDB: saveDB2, saveContextDB, dbPath } = q2(MDBContext);
@@ -43548,7 +43896,7 @@ var FileContextList = (props2) => {
     const fmFields = files.reduce((p3, c4) => {
       const fm = frontMatterForFile(c4);
       const fmKeys = uniqCaseInsensitive(frontMatterKeys(fm));
-      return (0, import_lodash7.uniq)([...p3, ...fmKeys]);
+      return (0, import_lodash6.uniq)([...p3, ...fmKeys]);
     }, []).filter((f4) => !tableData.cols.some((g4) => g4.name == f4));
     const allTypes = [...fmFields.map((f4) => ({
       name: f4,
@@ -43559,7 +43907,7 @@ var FileContextList = (props2) => {
       description: "New Field",
       value: "type." + f4.type
     }))];
-    const uniqueNameFromString = (name, cols) => {
+    const uniqueNameFromString2 = (name, cols) => {
       let newName = name;
       if (cols.includes(newName)) {
         let append = 1;
@@ -43574,9 +43922,9 @@ var FileContextList = (props2) => {
       const newValue = values[0];
       const newType = newValue.split(".");
       if (newType[0] == "fm") {
-        newColumn({ name: uniqueNameFromString(newType[1], tableData.cols.map((f4) => f4.name)), schemaId: tableData.schema.id, table: "", type: newType[2] });
+        newColumn({ name: uniqueNameFromString2(newType[1], tableData.cols.map((f4) => f4.name)), schemaId: tableData.schema.id, table: "", type: newType[2] });
       } else if (newType[0] == "type") {
-        newColumn({ name: uniqueNameFromString(newType[1], tableData.cols.map((f4) => f4.name)), schemaId: tableData.schema.id, table: "", type: newType[1] });
+        newColumn({ name: uniqueNameFromString2(newType[1], tableData.cols.map((f4) => f4.name)), schemaId: tableData.schema.id, table: "", type: newType[1] });
       }
     };
     showSelectMenu({ x: offset.left, y: offset.top + 30 }, {
@@ -43965,6 +44313,13 @@ var MakeMDPlugin = class extends import_obsidian39.Plugin {
   constructor() {
     super(...arguments);
     this.saveSpacesDB = (0, import_obsidian39.debounce)(() => saveDBAndKeepAlive(this.spaceDBInstance(), this.spacesDBPath), 1e3, true);
+    this.createTable = async (path) => {
+      const dbPath = folderContextFromFolder(this, path);
+      const schemas = await getMDBTableSchemas(this, dbPath, false);
+      if (schemas)
+        return uniqueNameFromString("Table", schemas.map((f4) => f4.id));
+      return "Table";
+    };
     this.triggerVaultChangeEvent = (file, changeType, oldPath) => {
       let event = new CustomEvent(eventTypes.vaultChange, {
         detail: {
@@ -44125,6 +44480,11 @@ var MakeMDPlugin = class extends import_obsidian39.Plugin {
       return new ContextView(leaf, this, CONTEXT_VIEW_TYPE);
     });
     if (this.settings.spacesEnabled) {
+      this.addCommand({
+        id: "mk-spaces",
+        name: "Open Spaces",
+        callback: () => this.openFileTreeLeaf(true)
+      });
       if (!this.settings.spacesDisablePatch)
         patchFileExplorer(this);
       this.registerView(FILE_TREE_VIEW_TYPE, (leaf) => {
@@ -44169,17 +44529,6 @@ var MakeMDPlugin = class extends import_obsidian39.Plugin {
     }
   }
   loadContext() {
-    this.addCommand({
-      id: "mk-blink",
-      name: "Blink",
-      callback: () => this.quickOpen(),
-      hotkeys: [
-        {
-          modifiers: ["Mod"],
-          key: "o"
-        }
-      ]
-    });
     this.registerView(FILE_CONTEXT_VIEW_TYPE, (leaf) => {
       return new FileContextLeafView(leaf, this);
     });
@@ -44198,11 +44547,23 @@ var MakeMDPlugin = class extends import_obsidian39.Plugin {
     });
   }
   loadFlowEditor() {
+    this.addCommand({
+      id: "mk-blink",
+      name: "Blink",
+      callback: () => this.quickOpen(),
+      hotkeys: [
+        {
+          modifiers: ["Mod"],
+          key: "o"
+        }
+      ]
+    });
     document.body.classList.toggle("mk-flow-replace", this.settings.editorFlow);
     document.body.classList.toggle(
       "mk-flow-" + this.settings.editorFlowStyle,
       true
     );
+    console.log(this.app);
     this.addCommand({
       id: "mk-open-file-context",
       name: "Open File Context",
