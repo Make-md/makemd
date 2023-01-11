@@ -1,24 +1,9 @@
 import {
-  Range,
-  EditorState,
-  Transaction,
-  EditorSelection,
-  TransactionSpec,
-  StateField,
-  RangeSetBuilder,
+  EditorSelection, EditorState,
+  Transaction, TransactionSpec
 } from "@codemirror/state";
 import {
-  Decoration,
-  DecorationSet,
-  EditorView,
-  ViewPlugin,
-  ViewUpdate,
-} from "@codemirror/view";
-import {
-  checkRangeOverlap,
-  iterateTreeInDocument,
-  iterateTreeInSelection,
-  iterateTreeInVisibleRanges,
+  iterateTreeInSelection
 } from "utils/codemirror";
 import { hrResetFix } from "./hr";
 
@@ -75,7 +60,7 @@ const pointDeletion = (
   to: number,
   pos: number
 ): TransactionSpec =>
-  checkMarkMiddle(from, to, pos) ? deleteMark(tr, from, pos) : {};
+  checkMarkMiddle(from, to, pos) ? deleteMark(tr, from, pos) : null;
 const deleteMark = (
   tr: Transaction,
   from: number,
@@ -120,7 +105,7 @@ const pointSelection = (
     ? left && checkMarkMiddleRightMost(from, to, pos)
       ? selectPreviousLine(from, pos)
       : selectLineStart(to)
-    : {};
+    : null;
 
 const checkLineStart = (from: number, pos: number): boolean => from == pos;
 const checkMarkMiddle = (from: number, to: number, pos: number): boolean =>
@@ -218,7 +203,7 @@ const rangeSelection = (
     const newSel = changeSelectionToMark(to, maxTo);
     return minFrom == head ? newSel : reverseSel(newSel);
   }
-  return {};
+  return null;
 };
 
 const hasReset = (state: EditorState, from: number, to: number): boolean => {
@@ -242,8 +227,8 @@ export const makerSelect = EditorState.transactionFilter.of(
         const mark = positionMarkOffset(type.name, from, to, tr.state);
 
         if (mark) {
-          if (!hasReset(tr.state, from, to))
-            newTrans.push(
+          if (!hasReset(tr.state, from, to)) {
+            const newSel =
               selection.from != selection.to
                 ? rangeSelection(
                     mark.from,
@@ -256,8 +241,9 @@ export const makerSelect = EditorState.transactionFilter.of(
                     mark.to,
                     selection.from,
                     tr.startState.selection.main.from == selection.from + 1
-                  )
-            );
+                  );
+            if (newSel) newTrans.push(newSel);
+          }
         }
       },
     });

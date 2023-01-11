@@ -1,0 +1,363 @@
+.mk-folder-view {
+  height: 100%;
+}
+body {
+  --context-padding: var(--size-4-6);
+}
+.mk-th {
+  position: relative;
+}
+
+.is-mobile .mk-resizer {
+  width: 8px;
+  opacity: 0.05;
+}
+.mk-resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: var(--divider-color);
+  cursor: col-resize;
+  user-select: none;
+  touch-action: none;
+  opacity: 0;
+}
+
+.mk-resizer.mk-resizer-active {
+  opacity: 1;
+}
+
+.mk-resizer.isResizing {
+  background: var(--interactive-hover);
+  opacity: 1;
+}
+
+.mk-resizer:hover {
+  opacity: 1;
+}
+
+.mk-col-header {
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  font-size: var(--font-smaller);
+  font-weight: var(--font-normal);
+  color: var(--text-muted);
+}
+
+.mk-col-header-context {
+  margin-left: 4px;
+  color: var(--text-faint);
+}
+
+.mk-td {
+  padding: 0.5rem;
+  vertical-align: top;
+}
+
+.mk-td > div {
+  min-height: 28px;
+}
+
+.mk-td-group {
+  background-color: var(--background-primary);
+  padding: 0.5rem;
+  border-top: 0.5px solid var(--divider-color);
+  font-size: var(--font-ui-small);
+  font-weight: var(--bold-weight);
+}
+.mk-td-group .mk-cell-option {
+  width: unset;
+}
+.mk-td-group .mk-cell-option-item {
+  background: none;
+}
+.mk-td-group .mk-cell-option-item div:hover {
+  background: none;
+}
+.mk-td-empty {
+  padding: 0 !important;
+}
+
+.mk-td input[type="text"],
+.mk-td input[type="number"] {
+  display: table-cell;
+  width: 100%;
+  border: 0;
+  outline: 0;
+}
+.mk-table {
+  width: 100%;
+  overflow-x: scroll;
+  padding-bottom: 60px;
+}
+
+.mk-table table {
+  border-spacing: 0;
+  border-bottom: 0.5px solid var(--divider-color);
+}
+
+.mk-table table th:last-child {
+  width: 100%;
+}
+
+.mk-table th:hover {
+  background: var(--interactive-hover);
+}
+
+.mk-table tr th:first-child .mk-col-header,
+.mk-table tr td:first-child {
+  padding-left: calc(var(--context-padding) - 0.75rem);
+}
+
+.mk-cell-empty {
+  color: var(--text-faint);
+}
+
+.mk-td img {
+  max-height: 45px;
+}
+
+.mk-table tr td:first-child.mk-td-empty {
+  padding-left: calc(var(--context-padding) - 0.75rem) !important;
+}
+
+.mk-table td {
+  border-top: 0.5px solid var(--background-modifier-border);
+  font-size: var(--font-ui-small);
+}
+
+.mk-table .mk-td:not(:last-child) {
+  border-right: 0.5px solid var(--background-modifier-border);
+}
+
+.mk-cell-text {
+  padding: 4px;
+}
+.mk-cell-number {
+  padding: 4px;
+  text-align: right;
+}
+.mk-cell-text:not(:focus) {
+  background: unset !important;
+}
+
+.mk-cell-date {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+}
+.mk-cell-date-value {
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.mk-cell-date-value:hover {
+  background: var(--interactive-hover);
+}
+.mk-cell-option {
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 0px;
+  gap: 4px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.mk-cell-option-item {
+  background: rgba(var(--mono-rgb-100), 0.025);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mk-cell-option-item input {
+  margin: 0;
+}
+
+.mk-cell-option-item div {
+  padding: 2px 4px;
+  height: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.mk-cell-option-item div:hover {
+  background: var(--interactive-hover);
+}
+
+.mk-cell-fileprop {
+  padding: 4px;
+  color: var(--text-muted);
+}
+.mk-cell-file {
+  display: flex;
+  align-items: center;
+}
+
+.mk-cell-file-title {
+  font-size: var(--font-ui-medium);
+  margin-bottom: 8px;
+}
+
+.mk-cell-file-new {
+  display: flex;
+  align-items: center;
+}
+.mk-cell-file-new .mk-file-icon svg {
+  color: var(--text-faint);
+}
+
+.mk-table:focus .mk-is-active {
+  background: var(--background-modifier-active-hover) !important;
+}
+
+.mk-floweditor .mk-table:not(:focus) .mk-is-active {
+  background: none !important;
+}
+
+.mk-table:focus .mk-is-active .mk-selected-cell {
+  outline: solid 2px var(--interactive-accent);
+}
+
+.mk-cell-file-new .mk-file-icon:hover {
+  background: var(--interactive-hover);
+}
+
+.mk-cell-file-item {
+  display: flex;
+  align-items: center;
+}
+.mk-cell-file-item .mk-file-icon:hover {
+  background: var(--interactive-hover);
+}
+
+.mk-cell-file-item .mk-cell-file-name {
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.mk-cell-file-item .mk-cell-file-name:hover {
+  background: var(--interactive-hover);
+}
+
+.mk-cell-file .mk-file-icon {
+  margin-right: 4px;
+  align-items: center;
+  display: flex;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.mk-cell-file-new .mk-cell-file-name {
+  padding: 4px !important;
+  background: none !important;
+}
+
+.is-phone .mk-cell-file-flow {
+  display: none;
+}
+
+.mk-list-item .mk-cell-file-flow {
+  visibility: hidden;
+  margin-left: 4px;
+  padding: 2px 4px;
+}
+
+.mk-list-item:hover .mk-cell-file-flow {
+  visibility: visible;
+}
+
+.is-phone .mk-list-item .mk-cell-file-flow {
+  width: unset;
+  visibility: unset;
+}
+
+.mk-list-item .mk-cell-file-flow:hover {
+  border-radius: 4px;
+  background: var(--interactive-hover);
+}
+
+.mk-row-new {
+  text-align: left;
+  border-top: 0.5px solid var(--divider-color);
+  padding: 8px var(--context-padding);
+  font-weight: normal;
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+}
+
+.mk-row-new:hover {
+  background: var(--background-modifier-hover);
+}
+
+.mk-icon-small svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+}
+
+.mk-icon-small,
+.mk-icon-xsmall {
+  display: flex;
+  align-items: center;
+}
+
+.mk-icon-xxsmall svg {
+  width: 10px;
+  height: 10px;
+  color: var(--text-muted);
+}
+
+.mk-icon-xsmall svg {
+  width: 12px;
+  height: 12px;
+  color: var(--text-muted);
+}
+
+.mk-icon-rotated svg {
+  transform: rotate(90deg);
+}
+
+.mk-cell-link-item {
+  color: var(--link-color);
+}
+.mk-cell-option span {
+  flex-grow: 1;
+}
+.mk-cell-option-select {
+  display: flex;
+  align-items: center;
+}
+
+.mk-cell-option-new {
+  visibility: hidden;
+  background: rgba(var(--mono-rgb-100), 0.025);
+  padding: 2px;
+  display: flex;
+  border-radius: 4px;
+}
+
+.mk-cell-option:hover .mk-cell-option-new {
+  visibility: visible;
+}
+
+.mk-cell-link-unresolved {
+  color: var(--link-unresolved-color);
+  opacity: var(--link-unresolved-opacity);
+  filter: var(--link-unresolved-filter);
+}
+
+.mk-cell-link-unresolved:hover {
+  color: var(--link-unresolved-color);
+  opacity: var(--link-unresolved-opacity);
+  filter: var(--link-unresolved-filter);
+}

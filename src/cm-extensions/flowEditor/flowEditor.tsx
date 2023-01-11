@@ -1,38 +1,28 @@
 import {
-  Decoration,
-  WidgetType,
-  DecorationSet,
-  EditorView,
-} from "@codemirror/view";
-import {
-  StateField,
-  RangeSetBuilder,
   Annotation,
-  EditorState,
-  Transaction,
-  TransactionSpec,
-  EditorSelection,
-  SelectionRange,
+  EditorState, RangeSetBuilder, StateField, Transaction,
+  TransactionSpec
 } from "@codemirror/state";
-import { syntaxTree } from "@codemirror/language";
 import {
-  iterateTreeInDocument,
-  iterateTreeInSelection,
-} from "utils/codemirror";
-import { genId } from "components/FlowEditor/FlowEditor";
-import { flowTypeStateField } from "../markSans/callout";
-import { Tooltip, hoverTooltip } from "cm-extensions/tooltip";
+  Decoration, DecorationSet,
+  EditorView,
+  ViewPlugin, WidgetType
+} from "@codemirror/view";
+import { hoverTooltip } from "cm-extensions/tooltip";
 import React from "react";
-import ReactDOM from "react-dom";
 import { createRoot } from "react-dom/client";
+import {
+  iterateTreeInSelection
+} from "utils/codemirror";
+import { flowTypeStateField } from "../markSans/callout";
 
-import { info } from "console";
-import { openFile } from "utils/utils";
-import { loadFlowEditorByDOM, openFileFlowEditor } from "dispatch/flowDispatch";
+
 import { FlowEditorHover } from "components/FlowEditor/FlowEditorHover";
-import { MarkdownView } from "obsidian";
+import { loadFlowEditorByDOM, openFileFlowEditor } from "dispatch/flowDispatch";
 import t from "i18n";
 import { uiIconSet } from "utils/icons";
+import { compareByField } from "utils/tree";
+import { genId } from "utils/uuid";
 
 //flow editor
 
@@ -74,6 +64,33 @@ export const preloadFlowEditor = EditorState.transactionFilter.of(
       );
     }
     return [tr, ...newTrans];
+  }
+);
+
+export const internalLinkToggle = ViewPlugin.fromClass(
+  class {
+    constructor(view: EditorView) {}
+  },
+  {
+    eventHandlers: {
+      mousedown: (e: MouseEvent, view) => {
+        
+        let pos = view.posAtDOM(e.target as Node);
+        let { from: lineFrom, to: lineTo, text } = view.state.doc.lineAt(pos);
+        for (let match of text.matchAll(/(?!\!)\[\[([^\]]+)\]\]/g)) {
+          const stateField = view.state.field(flowEditorInfo, false);
+          const info = stateField.find(
+            (f) => f.to == lineFrom + match.index + match[1].length + 2
+          );
+          if (info) {
+            e.preventDefault();
+            view.dispatch({
+              annotations: toggleFlowEditor.of([info.id, 2]),
+            });
+          }
+        }
+      },
+    },
   }
 );
 
@@ -126,26 +143,6 @@ export const internalLinkHover = hoverTooltip((view, pos, side) => {
   return hovObject;
 });
 
-const findFullInternalLink = (
-  posA: number,
-  posB: number,
-  state: EditorState
-): SelectionRange | null => {
-  let { text, from, length } = state.doc.lineAt(posA);
-  let start = posA - from + 1,
-    end = posB - from - 1;
-  while (start > 0) {
-    let prev = start - 1;
-    if (text.slice(prev, start) == "[") break;
-    start = prev;
-  }
-  while (end < length) {
-    let next = end + 1;
-    if (text.slice(end, next) == "]") break;
-    end = next;
-  }
-  return start == end ? null : EditorSelection.range(start + from, end + from);
-};
 export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
   create() {
     return [];
@@ -154,67 +151,101 @@ export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
     let newValues = [] as FlowEditorInfo[];
     const previous = value;
     let usedContainers: string[] = [];
-    let nameContainers: string[] = [];
-    iterateTreeInDocument(tr.state, {
-      enter: ({ name, from, to }) => {
-        if (name.contains("hmd-internal-link")) {
-          nameContainers.push(name);
-          const fullRange = findFullInternalLink(from, to, tr.state);
-          const link = tr.state.sliceDoc(fullRange.from, fullRange.to);
-          const existingLinks = previous.filter((f) => f.link == link);
-          const offset = usedContainers.filter((f) => f == link).length;
-          const existingInfo = existingLinks[offset];
 
-          const id = existingInfo ? existingInfo.id : genId(8);
+    let str = tr.newDoc.sliceString(0);
 
-          let listEmbed = false;
-          const embedOverride =
-            tr.state.sliceDoc(fullRange.from - 4, fullRange.from - 3) == "!";
-          const embedType = name.contains("hmd-embed")
-            ? embedOverride
-              ? 1
-              : 2
-            : 0;
-          // if (embedType == 1) {
-          //   iterateTreeInSelection({from: fullRange.from-5, to: fullRange.from-5}, tr.state, {enter:
-          //     (node) => {
-          //       if (node.name.contains('formatting-task') || node.name.contains('formatting-list')) {
-          //         listEmbed = true;
-          //       }
-          //     }
-          //   })
-          // }
-          const reverseExpandedState = (state: number) => {
-            const news = state != 2 ? 2 : 0;
-            return news;
-          };
+    const reverseExpandedState = (state: number) => {
+      const news = state != 2 ? 2 : 0;
+      return news;
+    };
 
-          usedContainers.push(link);
-          const info = {
-            id: id,
-            link: tr.state.sliceDoc(fullRange.from, fullRange.to),
-            startOfLineFix: listEmbed,
-            from: fullRange.from,
-            to: fullRange.to,
-            embed: embedType,
-            height: existingInfo
-              ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
-                tr.annotation(cacheFlowEditorHeight)?.[1] != 0
-                ? tr.annotation(cacheFlowEditorHeight)?.[1]
-                : existingInfo.height
-              : -1,
-            expandedState: existingInfo
-              ? tr.annotation(toggleFlowEditor)?.[0] == id
-                ? reverseExpandedState(existingInfo.expandedState)
-                : existingInfo.expandedState
-              : embedType >= 1
-              ? 1
-              : 0,
-          };
-          newValues.push(info);
-        }
-      },
-    });
+    for (let match of str.matchAll(/(?:!\[!\[|!!\[\[)([^\]]+)\]\]/g)) {
+      const link = match[1];
+      const existingLinks = previous.filter((f) => f.link == link);
+      const offset = usedContainers.filter((f) => f == link).length;
+      const existingInfo = existingLinks[offset];
+      const id = existingInfo ? existingInfo.id : genId();
+      usedContainers.push(link);
+      const info = {
+        id: id,
+        link: match[1],
+        startOfLineFix: false,
+        from: match.index + 4,
+        to: match.index + 4 + match[1].length,
+        embed: 1,
+        height: existingInfo
+          ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
+            tr.annotation(cacheFlowEditorHeight)?.[1] != 0
+            ? tr.annotation(cacheFlowEditorHeight)?.[1]
+            : existingInfo.height
+          : -1,
+        expandedState: existingInfo
+          ? tr.annotation(toggleFlowEditor)?.[0] == id
+            ? reverseExpandedState(existingInfo.expandedState)
+            : existingInfo.expandedState
+          : 1,
+      };
+      newValues.push(info);
+    }
+
+    for (let match of str.matchAll(/(?!\!)\[\[([^\]]+)\]\]/g)) {
+      const link = match[1];
+      const existingLinks = previous.filter((f) => f.link == link);
+      const offset = usedContainers.filter((f) => f == link).length;
+      const existingInfo = existingLinks[offset];
+      const id = existingInfo ? existingInfo.id : genId();
+      usedContainers.push(link);
+      const info = {
+        id: id,
+        link: match[1],
+        startOfLineFix: false,
+        from: match.index + 2,
+        to: match.index + 2 + match[1].length,
+        embed: 0,
+        height: existingInfo
+          ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
+            tr.annotation(cacheFlowEditorHeight)?.[1] != 0
+            ? tr.annotation(cacheFlowEditorHeight)?.[1]
+            : existingInfo.height
+          : -1,
+        expandedState: existingInfo
+          ? tr.annotation(toggleFlowEditor)?.[0] == id
+            ? reverseExpandedState(existingInfo.expandedState)
+            : existingInfo.expandedState
+          : 0,
+      };
+      newValues.push(info);
+    }
+
+    for (let match of str.matchAll(/(?!\!)\!\[\[([^\]]+)\]\]/g)) {
+      const link = match[1];
+      const existingLinks = previous.filter((f) => f.link == link);
+      const offset = usedContainers.filter((f) => f == link).length;
+      const existingInfo = existingLinks[offset];
+      const id = existingInfo ? existingInfo.id : genId();
+      usedContainers.push(link);
+      const info = {
+        id: id,
+        link: match[1],
+        startOfLineFix: false,
+        from: match.index + 3,
+        to: match.index + 3 + match[1].length,
+        embed: 2,
+        height: existingInfo
+          ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
+            tr.annotation(cacheFlowEditorHeight)?.[1] != 0
+            ? tr.annotation(cacheFlowEditorHeight)?.[1]
+            : existingInfo.height
+          : -1,
+        expandedState: existingInfo
+          ? tr.annotation(toggleFlowEditor)?.[0] == id
+            ? reverseExpandedState(existingInfo.expandedState)
+            : existingInfo.expandedState
+          : 1,
+      };
+      newValues.push(info);
+    }
+    newValues.sort(compareByField("from", true));
     return newValues;
   },
 });
@@ -290,8 +321,10 @@ class FlowEditorWidget extends WidgetType {
 }
 
 class FlowEditorSelector extends WidgetType {
+  flowInfo: FlowEditorInfo;
   constructor(readonly info: FlowEditorInfo) {
     super();
+    this.flowInfo = info;
   }
 
   eq(other: WidgetType) {
@@ -302,26 +335,30 @@ class FlowEditorSelector extends WidgetType {
     const div = document.createElement("div");
     div.toggleClass("mk-floweditor-selector", true);
     const reactEl = createRoot(div);
+    const type = this.info.link.contains("/#^") ? "table" : "file";
     reactEl.render(
       <FlowEditorHover
         toggle={true}
+        type={type}
         toggleState={true}
+        cutTable={() => {
+          navigator.clipboard.writeText(`![![${this.info.link}]]`)
+          view.dispatch({
+            changes: { from: this.info.from - 4, to: this.info.to + 2 },
+          });
+        }}
+        deleteTable={() => {
+          view.dispatch({
+            changes: { from: this.info.from - 4, to: this.info.to + 2 },
+          });
+        }}
         toggleFlow={() => {
           view.dispatch({
             changes: { from: this.info.from - 4, to: this.info.from - 3 },
           });
         }}
         openLink={() => {
-          app.workspace.iterateLeaves((leaf) => {
-            const cm = (leaf.view as MarkdownView).editor?.cm as EditorView;
-            if (cm && view.dom == cm.dom) {
-              openFileFlowEditor(
-                this.info.link,
-                (leaf.view as MarkdownView).file?.path
-              );
-              // return true;
-            }
-          }, app.workspace["rootSplit"]!);
+          openFileFlowEditor(this.flowInfo.link, "/");
         }}
       ></FlowEditorHover>
     );

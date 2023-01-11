@@ -1,14 +1,11 @@
+import { EditorState, RangeSetBuilder, StateField } from "@codemirror/state";
 import {
-  Decoration,
-  WidgetType,
-  DecorationSet,
-  EditorView,
+  Decoration, DecorationSet,
+  EditorView, WidgetType
 } from "@codemirror/view";
-import { StateField, RangeSetBuilder, EditorState } from "@codemirror/state";
-import { syntaxTree } from "@codemirror/language";
 import {
   iterateTreeInDocument,
-  iterateTreeInSelection,
+  iterateTreeInSelection
 } from "utils/codemirror";
 
 export const resetLine = Decoration.line({ class: "mk-reset" });

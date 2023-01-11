@@ -1,24 +1,15 @@
 import {
-  Range,
   EditorState,
-  Transaction,
-  EditorSelection,
-  TransactionSpec,
-  StateField,
-  RangeSetBuilder,
+  Transaction, TransactionSpec
 } from "@codemirror/state";
 import {
   expandRange,
   rangeIsMark,
-  transactionChangesForMark,
+  transactionChangesForMark
 } from "cm-extensions/inlineStylerView/marks";
 import { TransactionRange } from "types/types";
 import {
-  checkRangeOverlap,
-  iterateTreeAtPos,
-  iterateTreeInDocument,
-  iterateTreeInSelection,
-  iterateTreeInVisibleRanges,
+  iterateTreeInSelection
 } from "utils/codemirror";
 import { oMarks } from "./obsidianSyntax";
 

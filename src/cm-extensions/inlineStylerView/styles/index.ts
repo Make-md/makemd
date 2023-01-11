@@ -1,4 +1,3 @@
-import MakeMDPlugin from "main";
 import defaultStyles from "./default";
 
 export type InlineStyle = {

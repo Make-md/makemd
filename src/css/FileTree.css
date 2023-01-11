@@ -5,6 +5,30 @@
   visibility: hidden;
 }
 
+.is-mobile.mk-hide-ribbon .workspace-drawer.mod-left .workspace-drawer-inner {
+  padding-left: 0 !important;
+}
+
+.mk-hide-ribbon .workspace-ribbon {
+  display: none;
+}
+
+.mk-hide-ribbon.is-hidden-frameless:not(.is-fullscreen)
+  .workspace-tabs.mod-top-left-space
+  .workspace-tab-header-container:before {
+  width: calc(var(--frame-left-space) + var(--ribbon-width));
+}
+
+.mk-hide-ribbon.is-hidden-frameless:not(.is-fullscreen)
+  .workspace-tabs.mod-top-left-space
+  .workspace-tab-header-container {
+  padding-left: calc(var(--frame-left-space) + var(--ribbon-width));
+}
+
+.is-mobile.mk-hide-ribbon .workspace-drawer-ribbon {
+  display: none;
+}
+
 .is-mobile
   .workspace-drawer.mod-left
   .workspace-drawer-inner
@@ -13,6 +37,10 @@
 }
 
 .is-mobile .workspace-drawer.mod-left .workspace-drawer-active-tab-header {
+  display: none;
+}
+
+.is-mobile .workspace-drawer.mod-left .workspace-drawer-inner .mod-settings {
   display: none;
 }
 .is-mobile .workspace-drawer.mod-left .workspace-drawer-header-left {
@@ -24,6 +52,9 @@
 
 .is-mobile .mk-sidebar .mk-file-icon button {
   font-size: 16px;
+  margin: 0;
+  height: 24px;
+  width: 24px;
 }
 
 body.is-mobile .sidebar-toggle-button {
@@ -52,7 +83,7 @@ body.is-mobile .sidebar-toggle-button {
 }
 
 .is-mobile .mk-sidebar {
-  flex-direction: column-reverse;
+  /* flex-direction: column-reverse; */
 }
 
 .mk-file-tree {

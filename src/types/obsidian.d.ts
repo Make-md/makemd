@@ -60,7 +60,7 @@ declare module "obsidian" {
     currentTab: number;
     children: WorkspaceLeaf[];
   }
-  
+
   interface HoverPopover {
     parent: FlowEditorParent | null;
     targetEl: HTMLElement;
@@ -74,6 +74,7 @@ declare module "obsidian" {
     transition(): void;
   }
   interface Workspace {
+    activeEditor: any;
     recordHistory(leaf: WorkspaceLeaf, pushHistory: boolean): void;
     iterateLeaves(
       callback: (item: WorkspaceLeaf) => boolean | void,
@@ -110,7 +111,16 @@ declare module "obsidian" {
   interface View {
     headerEl: HTMLDivElement;
   }
-
+  interface MenuItem {
+    dom: HTMLElement;
+  }
+  interface Menu {
+    dom: HTMLElement;
+    scope: Scope;
+  }
+  interface Scope {
+    keys: KeymapEventHandler[];
+  }
   interface EditorSuggest<T> {
     suggestEl: HTMLElement;
   }

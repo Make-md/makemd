@@ -1,6 +1,6 @@
 import React from "react";
 import t from "i18n";
-import { platformIsMobile } from "utils/utils";
+import { platformIsMobile } from "utils/file";
 import { InlineStyle } from "./styles";
 import { markIconSet } from "utils/icons";
 export const Mark = (props: {
@@ -10,7 +10,7 @@ export const Mark = (props: {
   toggleMarkAction: (e: React.MouseEvent, s: InlineStyle) => void;
 }) => {
   const { i, style, active, toggleMarkAction } = props;
-  
+
   return (
     <div
       key={i}

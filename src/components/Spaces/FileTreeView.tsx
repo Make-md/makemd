@@ -1,27 +1,23 @@
+import "css/FileTree.css";
 import {
   ItemView,
-  TAbstractFile,
-  TFile,
-  TFolder,
-  WorkspaceLeaf,
+  TAbstractFile, TFolder,
+  WorkspaceLeaf
 } from "obsidian";
-import React, { cloneElement, useEffect, useRef } from "react";
-import ReactDOM from "react-dom";
+import React from "react";
 import { createRoot, Root } from "react-dom/client";
-import MakeMDPlugin from "../../main";
 import { RecoilRoot } from "recoil";
-import { FileExplorerComponent as VirtualizedFileExplorer } from "components/Spaces/FileExplorerVirtualized";
-import { NewNotes } from "components/Spaces/NewNote";
-import "css/FileTree.css";
+import MakeMDPlugin from "../../main";
 export const FILE_TREE_VIEW_TYPE = "mk-file-view";
 export const SETS_VIEW_TYPE = "mk-sets-view";
 export const VIEW_DISPLAY_TEXT = "Spaces";
 export const ICON = "layout-grid";
 
+import { CONTEXT_VIEW_TYPE } from "components/ContextView/ContextView";
 import { MainMenu } from "components/Spaces/MainMenu";
-import { FOLDER_VIEW_TYPE } from "components/FlowView/FlowView";
-import { platformIsMobile } from "utils/utils";
 import { eventTypes } from "types/types";
+import { platformIsMobile } from "utils/file";
+import { MainList } from "./MainList";
 
 export class FileTreeView extends ItemView {
   plugin: MakeMDPlugin;
@@ -37,8 +33,8 @@ export class FileTreeView extends ItemView {
   revealInFolder(file: TAbstractFile) {
     if (file instanceof TFolder) {
       this.plugin.app.workspace.activeLeaf.setViewState({
-        type: FOLDER_VIEW_TYPE,
-        state: { folder: file.path },
+        type: CONTEXT_VIEW_TYPE,
+        state: { type: "folder", folder: file.path },
       });
       this.plugin.app.workspace.requestSaveLayout();
     } else {
@@ -84,11 +80,11 @@ export class FileTreeView extends ItemView {
     this.root.render(
       <div className="mk-sidebar">
         <RecoilRoot>
-          {!platformIsMobile() ? (
+          {!platformIsMobile() && !this.plugin.settings.spacesCompactMode ? (
             <MainMenu plugin={this.plugin}></MainMenu>
           ) : null}
-          <NewNotes plugin={this.plugin} />
-          <VirtualizedFileExplorer fileTreeView={this} plugin={this.plugin} />
+
+          <MainList plugin={this.plugin}></MainList>
         </RecoilRoot>
       </div>
     );

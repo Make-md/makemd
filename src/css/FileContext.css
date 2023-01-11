@@ -1,0 +1,72 @@
+.mk-file-context button {
+  box-shadow: unset !important;
+  color: var(--text-faint);
+}
+
+.mk-file-context button:hover {
+  background: var(--interactive-hover) !important;
+}
+.mk-file-context {
+  padding: var(--size-4-3) var(--size-4-3) var(--size-4-8);
+  margin-bottom: 12px;
+}
+
+.mk-file-context-component {
+  display: flex;
+  flex-direction: column;
+  padding: 0.15rem 4px;
+  gap: 4px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.mk-file-context-section {
+  display: flex;
+  flex-direction: column;
+  padding: 0.15rem 4px;
+  gap: 4px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.mk-file-context-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.mk-file-context-row .mk-cell-option {
+  flex-direction: column;
+  width: unset;
+  align-items: flex-start;
+}
+
+.mk-file-context-field-new {
+  min-width: 100px;
+  font-size: var(--font-ui-small);
+  color: var(--text-faint);
+  padding-top: 4px;
+}
+.mk-file-context-field {
+  min-width: 100px;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  padding-top: 4px;
+}
+.mk-file-context-value {
+  font-size: var(--font-ui-small);
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+.mk-file-context-value input[type="text"],
+.mk-file-context-value input[type="number"] {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.mk-file-context-title {
+  font-size: var(--font-ui-small);
+  color: var(--text-faint);
+}

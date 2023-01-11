@@ -1,9 +1,6 @@
-import MakeMDPlugin from "main";
-import { renderToStaticMarkup } from "react-dom/server";
-import React from "react";
 import "css/StickerMenu.css";
-import ReactDOM from "react-dom";
-import { createRoot } from "react-dom/client";
+import t from "i18n";
+import MakeMDPlugin from "main";
 import {
   App,
   Editor,
@@ -11,12 +8,13 @@ import {
   EditorSuggest,
   EditorSuggestContext,
   EditorSuggestTriggerInfo,
-  TFile,
+  TFile
 } from "obsidian";
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { unifiedToNative } from "utils/emoji";
 import { Emoji, EmojiData } from "./emojis";
-import t from "i18n";
 import { emojis } from "./emojis/default";
-import { unifiedToNative } from "utils/utils";
 
 export default class StickerMenu extends EditorSuggest<Emoji> {
   inCmd = false;

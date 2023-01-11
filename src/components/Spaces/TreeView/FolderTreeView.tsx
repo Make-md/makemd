@@ -1,43 +1,34 @@
 import MakeMDPlugin from "main";
 import {
-  addIcon,
-  ButtonComponent,
-  Component,
-  Menu,
-  SearchComponent,
-  TAbstractFile,
   TFile,
-  TFolder,
+  TFolder
 } from "obsidian";
 import React, {
-  useState,
-  useMemo,
-  useEffect,
-  forwardRef,
-  HTMLAttributes,
-  useRef,
-  CSSProperties,
+  CSSProperties, forwardRef, useMemo
 } from "react";
-import ReactDOM from "react-dom";
 import { useRecoilState } from "recoil";
-import { FlattenedTreeNode, FolderTree, SectionTree } from "types/types";
-import * as Util from "utils/utils";
-import * as recoilState from "recoil/pluginState";
-import { AnimateLayoutChanges, useSortable } from "@dnd-kit/sortable";
+import * as tree from "utils/tree";
+
 import { UniqueIdentifier } from "@dnd-kit/core";
-import "css/FolderTreeView.css";
+import { AnimateLayoutChanges, useSortable } from "@dnd-kit/sortable";
 import classNames from "classnames";
-import {
-  MoveSuggestionModal,
-  SectionChangeModal,
-  VaultChangeModal,
-} from "components/Spaces/modals";
-import { isMouseEvent } from "hooks/useLongPress";
+import { FileSticker } from "components/FileSticker/FileSticker";
 import { SectionItem } from "components/Spaces/TreeView/SectionView";
-import { StickerModal } from "../FileStickerMenu/FileStickerMenu";
+import {
+  triggerFileMenu,
+  triggerMultiFileMenu
+} from "components/ui/menus/fileMenu";
+import "css/FolderTreeView.css";
 import t from "i18n";
-import { usePopper } from "react-popper";
+import * as recoilState from "recoil/pluginState";
+import {
+  getAbstractFileAtPath,
+  newFileInFolder,
+  openAFile, platformIsMobile
+} from "utils/file";
 import { uiIconSet } from "utils/icons";
+import { TreeNode } from "utils/spaces/spaces";
+import i18n from "i18n";
 
 export enum IndicatorState {
   None,
@@ -135,14 +126,17 @@ export interface TreeItemProps {
   disableInteraction?: boolean;
   disableSelection?: boolean;
   disabled: boolean;
+  active: boolean;
   ghost?: boolean;
   handleProps?: any;
+  selected: boolean;
+  onSelectRange?(id: string): void;
   indicator: Indicator;
   indentationWidth: number;
-  data: FlattenedTreeNode;
+  data: TreeNode;
   plugin: MakeMDPlugin;
   style: CSSProperties;
-  onCollapse?(folder: TFolder): void;
+  onCollapse?(node: TreeNode): void;
   wrapperRef?(node: HTMLDivElement): void;
 }
 
@@ -157,10 +151,13 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
       disableInteraction,
       ghost,
       handleProps,
+      active,
       indentationWidth,
       indicator,
       collapsed,
+      selected,
       onCollapse,
+      onSelectRange,
       wrapperRef,
       style,
       plugin,
@@ -169,239 +166,71 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
     ref
   ) => {
     const [activeFile, setActiveFile] = useRecoilState(recoilState.activeFile);
-    const [sections, setSections] = useRecoilState(recoilState.sections);
-    const [fileIcons, setFileIcons] = useRecoilState(recoilState.fileIcons);
-    const [referenceElement, setReferenceElement] = React.useState(null);
-    const [popperElement, setPopperElement] = useState(null);
-    const { styles, attributes } = usePopper(referenceElement, popperElement);
+    const [selectedFiles, setSelectedFiles] = useRecoilState(
+      recoilState.selectedFiles
+    );
 
-    const openFile = (file: FlattenedTreeNode, e: React.MouseEvent) => {
-      Util.openFile(file, plugin.app, e.ctrlKey || e.metaKey);
-      setActiveFile(file.path);
-    };
-
-    const updateSections = (sections: SectionTree[]) => {
-      plugin.settings.spaces = sections;
-      plugin.saveSettings();
-    };
-
-    const triggerStickerMenu = (e: React.MouseEvent | React.TouchEvent) => {
-      e.stopPropagation();
-      let vaultChangeModal = new StickerModal(plugin.app, (emoji) =>
-        saveFileIcon(emoji)
+    const openFileAtTarget = (file: TreeNode, e: React.MouseEvent) => {
+      if (e.shiftKey) {
+        onSelectRange(file.id as string);
+        return;
+      }
+      openAFile(
+        getAbstractFileAtPath(app, file.item.path),
+        plugin,
+        e.ctrlKey || e.metaKey
       );
-      vaultChangeModal.open();
+      setActiveFile(file.item.path as string);
+      setSelectedFiles([file]);
     };
-    const triggerContextMenu = (
-      file: TAbstractFile,
-      isFolder: boolean,
-      e: React.MouseEvent | React.TouchEvent
-    ) => {
-      const fileMenu = new Menu();
-      if (isFolder) {
-        fileMenu.addSeparator();
-        fileMenu.addItem((menuItem) => {
-          menuItem.setIcon("edit");
-          menuItem.setTitle(t.buttons.createNote);
-          menuItem.onClick((ev: MouseEvent) => {
-            newFileInFolder();
-          });
+
+    const dragStarted = (e: React.DragEvent<HTMLDivElement>) => {
+      if (selectedFiles.length > 1) {
+        const files = selectedFiles.map((f) => f.file).filter((f) => f);
+        //@ts-ignore
+        app.dragManager.onDragStart(e, {
+          icon: "lucide-files",
+          source: undefined,
+          title: i18n.labels.filesCount.replace('{$1}', files.length.toString()),
+          type: "files",
+          files: files,
         });
-        fileMenu.addItem((menuItem) => {
-          menuItem.setIcon("folder-plus");
-          menuItem.setTitle(t.buttons.createFolder);
-          menuItem.onClick((ev: MouseEvent) => {
-            let vaultChangeModal = new VaultChangeModal(
-              plugin,
-              data,
-              "create folder",
-              -1
-            );
-            vaultChangeModal.open();
-          });
-        });
+        //@ts-ignore
+        app.dragManager.dragFiles(e, files, true);
+        return;
       }
-
-      // Pin - Unpin Item
-      fileMenu.addSeparator();
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(t.menu.spaceTitle);
-        menuItem.setDisabled(true);
-      });
-      sections.map((f, i) => {
-        fileMenu.addItem((menuItem) => {
-          menuItem.setIcon("pin");
-          if (f.children.contains(file.path)) {
-            menuItem.setIcon("checkmark");
-            menuItem.setTitle(f.section);
-          } else {
-            menuItem.setTitle(f.section);
-            menuItem.setIcon("plus");
-          }
-          menuItem.onClick((ev: MouseEvent) => {
-            updateSections(
-              !sections[i].children.contains(file.path)
-                ? sections.map((s, k) => {
-                    return k == i
-                      ? {
-                          ...s,
-                          children: [file.path, ...s.children],
-                        }
-                      : s;
-                  })
-                : sections.map((s, k) => {
-                    return k == i
-                      ? {
-                          ...s,
-                          children: s.children.filter((g) => g != file.path),
-                        }
-                      : s;
-                  })
-            );
-            //   const newPinnedFiles = (pinnedFiles.contains(file)) ?pinnedFiles.filter((pinnedFile) => pinnedFile !== file) : [...pinnedFiles, file];
-            //   setPinnedFiles(newPinnedFiles);
-            //   plugin.settings.sections = newPinnedFiles.map(f => f.path);
-            // plugin.saveSettings();
-          });
+      const file = getAbstractFileAtPath(app, data.item.path);
+      if (file instanceof TFolder) {
+        //@ts-ignore
+        app.dragManager.onDragStart(e, {
+          icon: "lucide-folder",
+          source: undefined,
+          title: file.name,
+          type: "folder",
+          file: file,
         });
-      });
-      if (plugin.settings.spacesStickers) {
-        fileMenu.addSeparator();
-        // Rename Item
-        fileMenu.addItem((menuItem) => {
-          menuItem.setTitle(t.buttons.changeIcon);
-          menuItem.setIcon("lucide-sticker");
-          menuItem.onClick((ev: MouseEvent) => {
-            let vaultChangeModal = new StickerModal(plugin.app, (emoji) =>
-              saveFileIcon(emoji)
-            );
-            vaultChangeModal.open();
-          });
-        });
-
-        fileMenu.addItem((menuItem) => {
-          menuItem.setTitle(t.buttons.removeIcon);
-          menuItem.setIcon("lucide-file-minus");
-          menuItem.onClick((ev: MouseEvent) => {
-            removeFileIcon();
-          });
-        });
+        //@ts-ignore
+        app.dragManager.dragFolder(e, file, true);
+        return;
       }
-
-      fileMenu.addSeparator();
-      // Rename Item
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(t.menu.rename);
-        menuItem.setIcon("pencil");
-        menuItem.onClick((ev: MouseEvent) => {
-          let vaultChangeModal = new VaultChangeModal(plugin, file, "rename");
-          vaultChangeModal.open();
-        });
+      //@ts-ignore
+      app.dragManager.onDragStart(e, {
+        icon: "lucide-file",
+        source: undefined,
+        title: file.name,
+        type: "file",
+        file: file,
       });
-
-      // Delete Item
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle("Delete");
-        menuItem.setIcon("trash");
-        menuItem.onClick((ev: MouseEvent) => {
-          let deleteOption = plugin.settings.deleteFileOption;
-          if (deleteOption === "permanent") {
-            plugin.app.vault.delete(file, true);
-          } else if (deleteOption === "system-trash") {
-            plugin.app.vault.trash(file, true);
-          } else if (deleteOption === "trash") {
-            plugin.app.vault.trash(file, false);
-          }
-        });
-      });
-
-      // Open in a New Pane
-      fileMenu.addItem((menuItem) => {
-        menuItem.setIcon("go-to-file");
-        menuItem.setTitle(t.menu.openFilePane);
-        menuItem.onClick((ev: MouseEvent) => {
-          // @ts-ignore
-          Util.openFileInNewPane(plugin, { ...file, isFolder: isFolder });
-        });
-      });
-
-      // Make a Copy Item
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(t.menu.duplicate);
-        menuItem.setIcon("documents");
-        menuItem.onClick((ev: MouseEvent) => {
-          if ((file as TFile).basename && (file as TFile).extension)
-            plugin.app.vault.copy(
-              file as TFile,
-              `${file.parent.path}/${(file as TFile).basename} 1.${
-                (file as TFile).extension
-              }`
-            );
-        });
-      });
-
-      // Move Item
-      if (!Util.internalPluginLoaded("file-explorer", plugin.app)) {
-        fileMenu.addItem((menuItem) => {
-          menuItem.setTitle(t.menu.moveFile);
-          menuItem.setIcon("paper-plane");
-          menuItem.onClick((ev: MouseEvent) => {
-            let fileMoveSuggester = new MoveSuggestionModal(
-              plugin.app,
-              file as TFile
-            );
-            fileMoveSuggester.open();
-          });
-        });
-      }
-      // Trigger
-      plugin.app.workspace.trigger(
-        "file-menu",
-        fileMenu,
-        file,
-        "file-explorer"
-      );
-      if (isMouseEvent(e)) {
-        fileMenu.showAtPosition({ x: e.pageX, y: e.pageY });
-      } else {
-        fileMenu.showAtPosition({
-          // @ts-ignore
-          x: e.nativeEvent.locationX,
-          // @ts-ignore
-          y: e.nativeEvent.locationY,
-        });
-      }
-      return false;
+      //@ts-ignore
+      app.dragManager.dragFile(e, file, true);
     };
 
-    const newFileInFolder = async () => {
-      await Util.createNewMarkdownFile(
-        plugin.app,
-        data.parent.children.find((f) => f.name == data.name) as TFolder,
-        "",
-        ""
-      );
-    };
-
-    const fileIcon = fileIcons.find(([path, icon]) => path == data.path);
-    const saveFileIcon = (icon: string) => {
-      const newFileIcons = [
-        ...fileIcons.filter((f) => f[0] != data.path),
-        [data.path, icon],
-      ] as [string, string][];
-      plugin.settings.fileIcons = newFileIcons;
-      plugin.saveSettings();
-    };
-
-    const removeFileIcon = () => {
-      const newFileIcons = [...fileIcons.filter((f) => f[0] != data.path)] as [
-        string,
-        string
-      ][];
-      plugin.settings.fileIcons = newFileIcons;
-      plugin.saveSettings();
-    };
-
+    const innerProps = !platformIsMobile()
+      ? {
+          draggable: true,
+          onDragStart: dragStarted,
+        }
+      : handleProps;
     return (
       <>
         <div
@@ -410,8 +239,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
             clone && "mk-clone",
             ghost && "mk-ghost",
             disableSelection && "mk-disable-selection",
-            disableInteraction && "mk-disable-interaction",
-            activeFile === data.path && " mk-is-active"
+            disableInteraction && "mk-disable-interaction"
           )}
           ref={wrapperRef}
           style={style}
@@ -420,6 +248,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
             className={
               indicator &&
               classNames(
+                "nav-file",
                 indicator.state == IndicatorState.Bottom
                   ? "mk-indicator-bottom"
                   : indicator.state == IndicatorState.Top
@@ -432,30 +261,49 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
             style={
               indicator
                 ? ({
-                    "--spacing": `${indentationWidth * indicator.depth - 12}px`,
+                    "--spacing": `${indentationWidth * indicator.depth}px`,
                   } as React.CSSProperties)
                 : {}
             }
-            {...handleProps}
+            //
           >
+            {!platformIsMobile() && (
+              <div
+                className="mk-drag-handle"
+                dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-handle"] }}
+                {...handleProps}
+              />
+            )}
             <div
-              className={classNames(`mk-tree-item`)}
+              className={classNames(
+                `mk-tree-item ${
+                  data.item.folder == "true"
+                    ? "nav-folder-title"
+                    : "nav-file-title"
+                } ${active && "is-active"} ${selected && "is-selected"}`
+              )}
               ref={ref}
               style={
                 {
-                  "--spacing": `${indentationWidth * depth - 12}px`,
+                  "--spacing": `${indentationWidth * depth - 28}px`,
                 } as React.CSSProperties
               }
-              onClick={(e) => openFile(data, e)}
+              onClick={(e) => openFileAtTarget(data, e)}
+              data-path={data.item.path}
               onContextMenu={(e) =>
-                triggerContextMenu(
-                  plugin.app.vault.getAbstractFileByPath(data.path),
-                  data.isFolder,
-                  e
-                )
+                selectedFiles.length > 1 &&
+                selectedFiles.some((f) => f.id == (data.id as string))
+                  ? triggerMultiFileMenu(plugin, selectedFiles, e)
+                  : triggerFileMenu(
+                      plugin,
+                      data.file,
+                      data.item.folder == "true",
+                      e
+                    )
               }
+              {...innerProps}
             >
-              {data.isFolder && (
+              {data.item.folder == "true" && (
                 <button
                   aria-label={`${
                     collapsed ? t.labels.expand : t.labels.collapse
@@ -471,60 +319,66 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                 ></button>
               )}
               {plugin.settings.spacesStickers && (
-                <div className="mk-file-icon">
-                  <button
-                    aria-label={t.buttons.changeIcon}
-                    ref={setReferenceElement}
-                    dangerouslySetInnerHTML={
-                      fileIcon
-                        ? { __html: Util.unifiedToNative(fileIcon[1]) }
-                        : data.isFolder
-                        ? { __html: uiIconSet["mk-ui-folder"] }
-                        : { __html: uiIconSet["mk-ui-file"] }
-                    }
-                    onClick={(e) => triggerStickerMenu(e)}
-                  ></button>
-                </div>
+                <FileSticker
+                  plugin={plugin}
+                  filePath={data.item.path}
+                ></FileSticker>
               )}
-              <div className={`mk-tree-text `}>
-                {data.isFolder
-                  ? data.name
-                  : data.name.substring(0, data.name.lastIndexOf(".")) ||
-                    data.name}
+              <div
+                className={`mk-tree-text ${
+                  data.item.folder == "true"
+                    ? "nav-folder-title-content"
+                    : "nav-file-title-content"
+                }`}
+              >
+                {data.file
+                  ? data.item.folder == "true"
+                    ? data.file.name
+                    : tree.fileNameToString(data.file.name)
+                  : ""}
+                {data.item.folder == "false" &&
+                  data.file &&
+                  (data.file as TFile).extension != "md" && (
+                    <span className="nav-file-tag">
+                      {(data.file as TFile)?.extension}
+                    </span>
+                  )}
               </div>
-            </div>
-            {!clone ? (
-              <div className="mk-folder-buttons">
-                <button
-                  aria-label={t.buttons.moreOptions}
-                  onClick={(e) => {
-                    triggerContextMenu(
-                      plugin.app.vault.getAbstractFileByPath(data.path),
-                      data.isFolder,
-                      e
-                    );
-                    e.stopPropagation();
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: uiIconSet["mk-ui-options"],
-                  }}
-                ></button>
-                {data.isFolder && (
+              {!clone ? (
+                <div className="mk-folder-buttons">
                   <button
-                    aria-label={t.buttons.newNote}
+                    aria-label={t.buttons.moreOptions}
                     onClick={(e) => {
-                      newFileInFolder();
+                      triggerFileMenu(
+                        plugin,
+                        data.file,
+                        data.item.folder == "true",
+                        e
+                      );
                       e.stopPropagation();
                     }}
                     dangerouslySetInnerHTML={{
-                      __html: uiIconSet["mk-ui-plus"],
+                      __html: uiIconSet["mk-ui-options"],
                     }}
                   ></button>
-                )}
-              </div>
-            ) : (
-              <></>
-            )}
+                  {data.item.folder == "true" && (
+                    <button
+                      aria-label={t.buttons.newNote}
+                      onClick={(e) => {
+                        //@ts-ignore
+                        newFileInFolder(plugin, data.file);
+                        e.stopPropagation();
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: uiIconSet["mk-ui-plus"],
+                      }}
+                    ></button>
+                  )}
+                </div>
+              ) : (
+                <></>
+              )}
+            </div>
           </div>
         </div>
         {/* {data.isFolder && !collapsed && data.children.length == 0 && 

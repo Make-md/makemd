@@ -1,41 +1,107 @@
 .mk-flow-bar {
-display: flex;
+  display: flex;
+  margin: 8px 12px;
+  gap: 12px;
+  align-items: center;
 }
-.is-mobile .mk-flow-bar {
-    border-top: thin solid var(--divider-color);
-}
-.mk-new-note {
-flex-grow:1;
-    padding: 8px 12px;
-    font-size: var(--font-ui-smaller);
-    margin:4px 12px;
-    display:flex;
-    align-items: center;
+.mk-flow-bar-compact {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px;
 }
 
-.is-mobile .mk-new-note {
-    margin: 8px 12px;
+.is-tablet .mk-flow-bar-compact {
+  margin-right: 50px;
+  margin-top: 5px;
+  gap: 24px;
+}
+.is-phone .mk-flow-bar-compact {
+  margin-top: 5px;
+  gap: 24px;
+}
+
+.mk-new-note {
+  flex-grow: 1;
+  padding: 8px 12px;
+  font-size: var(--font-ui-smaller);
+  display: flex;
+  align-items: center;
+}
+
+.tag-container {
+  flex: 1;
+}
+
+.mk-button-blink {
+  padding: 8px 12px !important;
 }
 
 .mk-new-note p {
-    margin:0;
-    margin-left: 8px;
-    padding:0;
+  margin: 0;
+  margin-left: 8px;
+  padding: 0;
 }
 
 .mk-new-note svg {
-width: 16px;
-height: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .mk-search {
-    display: flex;
-    padding: 8px 8px;
-    margin:4px 12px;
-    margin-left: 0px;
-    }
+  display: flex;
+  padding: 8px 8px;
+  margin: 4px 12px;
+  margin-left: 0px;
+}
 
 .mk-search svg {
-width: 16px;
-height: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.mk-sidebar-switcher {
+  display: flex;
+  margin: 8px 12px;
+  gap: 8px;
+}
+
+.mk-sidebar-spaces .mk-sidebar-item {
+  display: flex;
+  justify-content: center;
+}
+
+.mk-sidebar-spaces {
+  border-left: thin solid var(--divider-color);
+  display: flex;
+  overflow: auto;
+  flex-grow: 1;
+  padding-left: 4px;
+}
+
+.mk-sidebar-expanded {
+  flex-grow: 1;
+}
+
+.mk-sidebar-item {
+  height: 32px;
+  min-width: 32px;
+  padding: 8px;
+  margin: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  font-size: var(--font-ui-smaller);
+  color: var(--tab-text-color);
+  transition: transform 250ms ease;
+}
+
+.mk-sidebar-item-active {
+  background: var(--background-primary);
+  color: var(--text-normal) !important;
+}
+.mk-sidebar-item-active svg {
+  color: var(--text-normal) !important;
 }

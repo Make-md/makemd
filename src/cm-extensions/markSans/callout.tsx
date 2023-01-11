@@ -1,20 +1,10 @@
-import { Decoration, WidgetType, EditorView } from "@codemirror/view";
 import { syntaxTree } from "@codemirror/language";
-import { ViewUpdate, ViewPlugin, DecorationSet } from "@codemirror/view";
 import {
-  StateField,
-  RangeSetBuilder,
-  EditorState,
-  Annotation,
+  Annotation, RangeSetBuilder, StateField
 } from "@codemirror/state";
-import { Editor } from "obsidian";
-import { SyntaxNodeRef } from "@lezer/common";
-import { iterateTreeInDocument } from "utils/codemirror";
-import React from "react";
-import ReactDOM from "react-dom";
-import { createFlowEditorInElement } from "dispatch/flowDispatch";
-import { genId } from "components/FlowEditor/FlowEditor";
+import { Decoration, DecorationSet, EditorView, WidgetType } from "@codemirror/view";
 import { PortalType } from "types/types";
+import { genId } from "utils/uuid";
 
 export const portalTypeAnnotation = Annotation.define<PortalType>();
 export const flowIDAnnotation = Annotation.define<string>();
@@ -93,7 +83,7 @@ export const calloutField = StateField.define<DecorationSet>({
             calloutBlock(
               { from: lineStart, to: lineEnd },
               tr.state.sliceDoc(from, endQuote),
-              genId(8)
+              genId()
             )
           );
         }

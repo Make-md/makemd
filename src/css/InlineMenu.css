@@ -1,68 +1,66 @@
 body:not(.is-mobile) .mk-style-menu {
-    margin-left: -80px;
+  margin-left: -80px;
 }
 
-
-
 .mk-style-menu {
-    display: flex;
-    padding: 0;
-    margin-top: -50px;
+  display: flex;
+  padding: 0;
+  margin-top: -50px;
 }
 
 .is-mobile .mk-style-menu svg {
-    width: 32px;
-    height: 32px;
+  width: 32px;
+  height: 32px;
 }
 
 .is-mobile .mk-style-menu {
-    --mobile-toolbar-height: 48px;
-    border-radius: 0;
-    width:100%;
-    margin-top: 0;
-    overflow-x: auto;
-    justify-content: center;
-    height: var(--mobile-toolbar-height);
-    border-top: var(--divider-width) solid var(--divider-color);
+  --mobile-toolbar-height: 48px;
+  border-radius: 0;
+  width: 100%;
+  margin-top: 0;
+  overflow-x: auto;
+  justify-content: center;
+  height: var(--mobile-toolbar-height);
+  border-top: var(--divider-width) solid var(--divider-color);
 }
 
 .mk-style-menu .mk-mark {
-    margin: 4px;
-    padding: 4px;
-    border-radius: 4px;
-    display:flex;
+  margin: 4px;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
 }
 
 .mk-style-menu .mk-mark:hover {
-    background: var(--background-modifier-hover);
+  background: var(--background-modifier-hover);
 }
 
 .mk-style-menu .mk-mark-active {
-    background: var(--background-modifier-hover);
+  background: var(--background-modifier-hover);
 }
 
 .mk-style-menu svg {
-    color: var(--text-muted)
+  color: var(--text-muted);
 }
 
 .mk-divider {
-    border-left: thin solid var(--background-modifier-hover);
-    width: 1px;
+  border-left: thin solid var(--background-modifier-hover);
+  width: 1px;
 }
 
 .mk-color {
-    width: 24px;
-    height: 24px;
-    border-radius: 12px;
-    margin: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  margin: 8px;
 }
 .mk-color:hover {
-    opacity: 0.8
+  opacity: 0.8;
 }
 
 mark {
-    color: unset;
-    border-radius: 2px;
-    margin: 0px 2px;
-    padding: 0px 2px;
+  color: unset;
+  border-radius: 2px;
+  margin: 0px 2px;
+  padding: 0px 2px;
 }

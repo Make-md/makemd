@@ -1,0 +1,186 @@
+.mk-suggestion {
+  display: flex;
+  flex-direction: column;
+}
+
+.mk-menu {
+  padding: 0;
+}
+
+.mk-menu .menu-item {
+  padding: 0;
+  background-color: unset !important;
+  gap: 0;
+}
+
+.menu-item-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mk-menu-input.selected {
+  background-color: unset !important;
+}
+
+.mk-menu-input input {
+  padding: 4px;
+  border: 0;
+  outline: 0;
+  border-radius: 4px;
+}
+
+.is-phone .mk-options-container {
+  width: 100%;
+}
+
+.is-phone .mk-options-menu {
+  width: 100%;
+}
+
+.menu-item-title input {
+  flex: 1;
+}
+.mk-options-menu {
+  position: relative;
+  width: 180px;
+  /* shared font styles */
+  font-size: 1em;
+  line-height: 1.2;
+  display: flex;
+  flex-wrap: wrap;
+  /* clicking anywhere will focus the input */
+  cursor: text;
+}
+
+.mk-options-menu__selected-tag {
+  display: inline-block;
+  box-sizing: border-box;
+  margin: 0 6px 6px 0;
+  padding: 6px 8px;
+  border-radius: 2px;
+  box-shadow: unset !important;
+  /* match the font styles */
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.mk-options-menu__selected-tag:after {
+  content: "\2715";
+  color: #aaa;
+  margin-left: 8px;
+}
+
+.mk-options-menu__selected-tag:hover,
+.mk-options-menu__selected-tag:focus {
+  border-color: #b1b1b1;
+}
+
+.mk-options-menu__selected {
+  width: 100%;
+  display: inline-block;
+  white-space: normal;
+  padding: 0px 10px;
+  margin-top: 4px;
+  border-bottom: thin solid var(--divider-color);
+}
+
+.mk-options-menu__search {
+  display: inline-block;
+
+  /* match tag layout */
+  padding: 7px 2px;
+
+  /* prevent autoresize overflowing the container */
+  max-width: 100%;
+}
+
+@media screen and (min-width: 30em) {
+  .mk-options-menu__search {
+    /* this will become the offsetParent for suggestions */
+    position: relative;
+  }
+}
+
+.mk-options-menu__search-input {
+  /* prevent autoresize overflowing the container */
+  max-width: 100%;
+  background: unset !important;
+  /* remove styles and layout from this element */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+
+  /* match the font styles */
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.mk-options-menu__search-input::-ms-clear {
+  display: none;
+}
+
+.mk-options-menu__suggestions {
+  width: 100%;
+  max-height: 180px;
+  overflow: auto;
+}
+
+@media screen and (min-width: 30em) {
+  .mk-options-menu__suggestions {
+    width: 240px;
+  }
+}
+
+.mk-options-menu__suggestions ul {
+  margin: 4px -1px;
+  padding: 0;
+  list-style: none;
+}
+
+.is-phone .mk-options-menu__suggestions li {
+  padding: var(--size-4-3) var(--size-4-3);
+}
+
+.mk-options-menu__suggestions li {
+  margin: 0px 6px;
+  padding: 6px 8px;
+  border-radius: var(--radius-s);
+  display: flex;
+  flex-direction: column;
+}
+
+.mk-options-menu__suggestions li .mk-description {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.mk-options-menu__suggestions li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mk-options-menu__suggestions li mark {
+  text-decoration: underline;
+  background: none;
+  font-weight: 600;
+  border-radius: unset;
+  margin: unset;
+  padding: unset;
+}
+
+.mk-options-menu__suggestions li:hover {
+  cursor: pointer;
+  background: var(--background-modifier-hover);
+}
+
+.mk-options-menu__suggestions li.is-active {
+  background: var(--background-modifier-hover);
+}
+
+.mk-options-menu__suggestions li.is-disabled {
+  opacity: 0.5;
+  cursor: auto;
+}

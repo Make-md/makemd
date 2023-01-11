@@ -1,11 +1,6 @@
-import { syntaxTree } from "@codemirror/language";
 import {
-  Annotation,
-  EditorState,
-  Transaction,
-  SelectionRange,
-  TransactionSpec,
-  ChangeSpec,
+  Annotation, ChangeSpec, EditorState,
+  Transaction, TransactionSpec
 } from "@codemirror/state";
 import { TransactionRange } from "types/types";
 import { iterateTreeAtPos, iterateTreeInSelection } from "utils/codemirror";

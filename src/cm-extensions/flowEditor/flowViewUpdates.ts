@@ -1,15 +1,13 @@
-import { ViewUpdate, EditorView } from "@codemirror/view";
+import { EditorView, ViewUpdate } from "@codemirror/view";
 import {
   flowIDStateField,
   flowTypeStateField,
-  portalTypeAnnotation,
+  portalTypeAnnotation
 } from "cm-extensions/markSans/callout";
 import { MarkdownView } from "obsidian";
-import { loadFlowEditorsForLeaf } from "utils/flowEditor";
 import {
   cacheFlowEditorHeight,
-  flowEditorInfo,
-  toggleFlowEditor,
+  flowEditorInfo
 } from "./flowEditor";
 
 //flow view editor viewupdates

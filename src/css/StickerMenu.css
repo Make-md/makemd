@@ -1,32 +1,32 @@
 .mk-sticker-menu .suggestion {
-    width:240px;
-    height: 240px;
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    flex-direction: row;
+  width: 240px;
+  height: 240px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  flex-direction: row;
 }
 .mk-sticker-modal {
-    display: flex;
-    flex-wrap: wrap;
+  display: flex;
+  flex-wrap: wrap;
 }
 .mk-sticker-menu .suggestion-item {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    font-size:20px;
-    align-items: center;
-    padding: 0;
-    text-align:center;
-    justify-content: center;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  font-size: 20px;
+  align-items: center;
+  padding: 0;
+  text-align: center;
+  justify-content: center;
 }
 .mk-sticker-filter {
-    border: none;
-    background: none;
-    border-bottom: thin solid var(--background-modifier-hover);
-    width: 100%;
-    padding: 8px 12px;
+  border: none;
+  background: none;
+  border-bottom: thin solid var(--background-modifier-hover);
+  width: 100%;
+  padding: 8px 12px;
 }
 .mk-sticker-menu .suggestion-item:hover {
-    background: var(--background-modifier-hover)
+  background: var(--background-modifier-hover);
 }

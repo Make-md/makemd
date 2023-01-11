@@ -231,7 +231,7 @@ const tooltipPlugin = ViewPlugin.fromClass(
 
     measureSoon() {
       if (this.measureTimeout < 0)
-      //@ts-ignore
+        //@ts-ignore
         this.measureTimeout = setTimeout(() => {
           this.measureTimeout = -1;
           this.maybeMeasure();
@@ -713,7 +713,7 @@ class HoverPlugin {
       time: Date.now(),
     };
     if (this.hoverTimeout < 0)
-    //@ts-ignore
+      //@ts-ignore
       this.hoverTimeout = setTimeout(this.checkHover, this.hoverTime);
     let tooltip = this.active;
     if ((tooltip && !isInTooltip(this.lastMove.target)) || this.pending) {

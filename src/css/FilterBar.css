@@ -1,0 +1,222 @@
+.mk-table-selector {
+  margin-right: 0;
+  display: flex;
+  align-items: center;
+  padding-left: var(--context-padding);
+  gap: 16px;
+  min-height: 48px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.mk-table-selector::-webkit-scrollbar {
+  display: none;
+}
+.mk-table-selector > div > .mk-collapse {
+  padding-right: 8px;
+  padding-left: 0px;
+}
+.mk-table-selector .mk-collapse.mk-icon-xsmall svg {
+  color: unset;
+}
+.mk-table-selector > div > button:not(:last-child) {
+  padding-right: 0px;
+}
+.mk-table-selector > div,
+.mk-table-selector > button {
+  border-radius: 0;
+  margin: 4px -8px;
+  display: flex;
+  align-items: center;
+  border-bottom: thin solid transparent;
+  height: 100%;
+}
+
+.mk-table-selector .mk-is-active button {
+  color: var(--text-normal);
+}
+.mk-table-selector .mk-is-active {
+  border-bottom: thin solid var(--text-normal);
+  color: var(--text-normal);
+  background: none !important;
+}
+
+.mk-view-selector button {
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--text-faint);
+}
+
+.mk-view-selector button:hover {
+  color: var(--text-normal);
+}
+
+.mk-view-selector {
+  width: 100%;
+  display: flex;
+  color: var(--text-faint);
+  align-items: stretch;
+  border-bottom: 1px solid var(--divider-color);
+  flex-wrap: wrap;
+}
+
+.mk-view-selector input {
+  background: none;
+  border: none;
+  flex-grow: 1;
+}
+
+.is-phone .mk-view-selector {
+  flex-wrap: wrap;
+}
+.is-phone .mk-view-selector button {
+  width: unset;
+}
+
+.mk-view-search {
+  background: var(--background-modifier-form-field);
+  border: var(--input-border-width) solid var(--background-modifier-border);
+  display: flex;
+  border-radius: 8px;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.mk-view-search button:hover {
+  background: unset !important;
+}
+.mk-view-search button {
+  margin: 0 !important;
+  padding: var(--size-4-1) var(--size-4-2) !important;
+}
+
+.is-phone .mk-view-options {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.mk-view-options {
+  display: flex;
+  align-items: center;
+  color: var(--text-normal) !important;
+  min-height: 48px;
+  padding-left: var(--context-padding);
+  flex-grow: 1;
+}
+.mk-view-selector span {
+  flex-grow: 10;
+}
+
+.mk-view-selector svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mk-filter-bar {
+  display: flex;
+  padding: 8px var(--context-padding);
+  gap: 8px;
+  width: 100%;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.mk-filter-bar span {
+  flex-grow: 1;
+}
+.mk-table-selector .mk-is-active {
+  color: var(--text-normal) !important;
+}
+
+.mk-filter {
+  display: flex;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  padding: 0px;
+}
+.mk-filter > span,
+.mk-filter > div {
+  background: var(--interactive-normal);
+}
+.mk-filter > span:hover,
+.mk-filter > div:hover {
+  background: var(--interactive-hover);
+}
+.mk-filter > *:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  padding-left: 10px;
+}
+.mk-filter > *:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  padding-right: 6px;
+}
+.mk-filter span {
+  border-right: thin solid var(--background-primary);
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+}
+
+.mk-filter div {
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+}
+.mk-filter div svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mk-folder-note {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mk-filter-add {
+  border: thin solid var(--divider-color) !important;
+  border-radius: 4px;
+  box-shadow: none !important;
+  background: none !important;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  font-size: var(--font-ui-small);
+  color: var(--text-muted);
+  gap: 4px;
+}
+
+.mk-filter-add div {
+  display: flex;
+}
+
+.mk-search-bar {
+}
+
+.mk-tag-selector {
+  padding: 0 var(--context-padding);
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.mk-tag-selector button div {
+  margin-right: 4px;
+  margin-left: 4px;
+}
+.mk-tag-selector svg {
+  color: var(--tag-color) !important;
+}
+.mk-tag-selector button {
+  color: var(--tag-color);
+  background-color: var(--tag-background);
+  border: var(--tag-border-width) solid var(--tag-border-color);
+  font-size: var(--tag-size);
+  vertical-align: baseline;
+  border-left: none;
+  border-right: none;
+  padding-top: var(--tag-padding-y);
+  padding-bottom: var(--tag-padding-y);
+  box-shadow: none !important;
+  height: unset !important;
+}

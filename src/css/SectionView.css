@@ -1,48 +1,45 @@
-
 .mk-section {
-    display: flex;
-    padding: 4px 0px;
-    padding-left: 12px;
-    margin-top: 12px;
+  display: flex;
+  padding: 4px;
+  padding-left: 16px;
+  margin-top: 8px;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
-  width:100%;
+  width: 100%;
   justify-content: space-between;
-  }
-  
+  margin-left: 0;
+  padding-left: 4px !important;
+}
 
-  body:not(.is-mobile) .mk-section .mk-section-title:hover {
+body:not(.is-mobile) .mk-section-title:hover {
   background: var(--nav-item-background-hover);
 }
 
-.mk-section .mk-section-title {
+.mk-section-title {
   height: 24px;
-border-radius:4px;
-display: flex;
-min-width:0;
-align-items: center;
+  border-radius: 4px;
+  padding-left: 4px;
+  display: flex;
+  min-width: 0;
+  align-items: center;
 }
 
-.mk-section .mk-tree-text {
+.mk-section-title .mk-tree-text {
   padding: 0.25rem 0rem 0.3rem 0.25rem;
 }
 
-body:not(.is-mobile) .mk-section .mk-collapse
- {
-  display:none;
- }
-.mk-section .mk-collapse
-{
-display: flex;
+body:not(.is-mobile) .mk-section .mk-collapse {
+  display: none;
+}
+.mk-section-title .mk-collapse {
+  display: flex;
 }
 
-body:not(.is-mobile) .mk-section:hover .mk-collapse {
- display: flex
- }
-.mk-section .mk-collapse svg {
-margin-left:4px;
+body:not(.is-mobile) .mk-section-title:hover .mk-collapse {
+  display: flex;
+}
+.mk-section-title .mk-collapse svg {
+  margin-left: 4px;
   width: 10px;
   height: 10px;
 }
-  
-  

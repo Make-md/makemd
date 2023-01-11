@@ -78,6 +78,11 @@ Type/Paste Your Code
     icon: "mk-make-note",
   },
   {
+    label: "table",
+    value: "table",
+    icon: "mk-make-table",
+  },
+  {
     label: "flow",
     value: `!![[Note Name]]`,
     offset: [-2, 4],

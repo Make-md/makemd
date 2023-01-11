@@ -1,21 +1,30 @@
+import classNames from "classnames";
+import {
+  VaultChangeModal
+} from "components/ui/modals/vaultChangeModals";
+import "css/SectionView.css";
 import { Menu } from "obsidian";
 import React, { forwardRef } from "react";
 import { useRecoilState } from "recoil";
-import { SectionTree } from "types/types";
-import * as Util from "utils/utils";
 import * as recoilState from "recoil/pluginState";
-import "css/SectionView.css";
-import classNames from "classnames";
-import { SectionChangeModal, VaultChangeModal } from "components/Spaces/modals";
+import { eventTypes } from "types/types";
 
-import path from "path";
 import {
   IndicatorState,
-  TreeItemProps,
+  TreeItemProps
 } from "components/Spaces/TreeView/FolderTreeView";
-import t from "i18n";
+import { triggerSectionMenu } from "components/ui/menus/fileMenu";
 import { isMouseEvent } from "hooks/useLongPress";
+import t from "i18n";
+import { unifiedToNative } from "utils/emoji";
+import {
+  createNewMarkdownFile,
+  defaultNoteFolder,
+  getFolderFromPath
+} from "utils/file";
 import { uiIconSet } from "utils/icons";
+import { addPathsToSpace } from "utils/spaces/spaces";
+import i18n from "i18n";
 
 export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
   (
@@ -39,98 +48,143 @@ export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
     },
     ref
   ) => {
-    const [sections, setSections] = useRecoilState(recoilState.sections);
-    const [focusedFolder, setFocusedFolder] = useRecoilState(
-      recoilState.focusedFolder
-    );
-    const section = sections.find((s, i) => {
-      return i == data.section;
-    });
+    const [activeFile, setActiveFile] = useRecoilState(recoilState.activeFile);
+    const [spaces, setSpaces] = useRecoilState(recoilState.spaces);
+    const space = spaces.find((f) => f.name == data.space);
     const newFolderInSection = () => {
       let vaultChangeModal = new VaultChangeModal(
         plugin,
-        focusedFolder,
+        space?.def?.length > 0
+          ? getFolderFromPath(app, space.def)
+          : defaultNoteFolder(plugin, activeFile),
         "create folder",
-        data.section
+        data.space
       );
       vaultChangeModal.open();
     };
     const newFileInSection = async () => {
-      const newFile = await Util.createNewMarkdownFile(
-        plugin.app,
-        focusedFolder,
+      const newFile = await createNewMarkdownFile(
+        plugin,
+        space?.def?.length > 0
+          ? getFolderFromPath(app, space.def)
+          : defaultNoteFolder(plugin, activeFile),
         ""
       );
-      if (data.section != -1)
-        updateSections(
-          sections.map((f, i) => {
-            return i == data.section
-              ? {
-                  ...f,
-                  children: [newFile.path, ...f.children],
-                }
-              : f;
-          })
-        );
-    };
-    const updateSections = (sections: SectionTree[]) => {
-      plugin.settings.spaces = sections;
-      plugin.saveSettings();
+      if (data.space != "/")
+        addPathsToSpace(plugin, data.space, [newFile.path]);
     };
 
     const triggerMenu = (e: React.MouseEvent | React.TouchEvent) => {
-      data.section == -1
+      data.space == "/"
         ? triggerVaultMenu(e)
-        : triggerSectionMenu(data.name, data.index, e);
+        : triggerSectionMenu(plugin, data.space, spaces, e);
     };
-    const triggerSectionMenu = (
-      section: string,
-      index: number,
-      e: React.MouseEvent | React.TouchEvent
-    ) => {
+
+    const triggerVaultMenu = (e: React.MouseEvent | React.TouchEvent) => {
+      const refreshFileList = () => {
+        let event = new CustomEvent(eventTypes.vaultChange);
+        window.dispatchEvent(event);
+      };
+
       const fileMenu = new Menu();
-
-      //     fileMenu.addItem((menuItem) => {
-      //       menuItem.setTitle(t.menu.collapseAllFolders);
-      //       menuItem.setIcon('lucide-chevrons-down-up');
-      //       menuItem.onClick((ev: MouseEvent) => {
-
-      //       });
-      //   });
-
-      //   fileMenu.addItem((menuItem) => {
-      //     menuItem.setTitle(t.menu.expandAllFolders);
-      //     menuItem.setIcon('lucide-chevrons-down-dow ');
-      //     menuItem.onClick((ev: MouseEvent) => {
-
-      //     });
-      // });
 
       // Rename Item
       fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(t.menu.edit);
-        menuItem.setIcon("pencil");
+        menuItem.setTitle(i18n.menu.collapseAll);
+        menuItem.setIcon("lucide-chevrons-down-up");
         menuItem.onClick((ev: MouseEvent) => {
-          let vaultChangeModal = new SectionChangeModal(
-            plugin,
-            section,
-            index,
-            "rename"
-          );
-          vaultChangeModal.open();
+          plugin.settings.expandedFolders = {
+            ...plugin.settings.expandedFolders,
+            "/": [],
+          };
+          plugin.saveSettings();
+        });
+      });
+      fileMenu.addSeparator();
+
+      fileMenu.addItem((menuItem) => {
+        menuItem.setTitle(i18n.menu.customSort);
+        menuItem.setChecked(plugin.settings.vaultSort[0] == "rank");
+        menuItem.onClick((ev: MouseEvent) => {
+          plugin.settings.vaultSort = ["rank", true];
+          plugin.saveSettings();
+          refreshFileList();
+        });
+      });
+      fileMenu.addSeparator();
+
+      fileMenu.addItem((menuItem) => {
+        menuItem.setTitle(i18n.menu.fileNameSortAlphaAsc);
+        menuItem.setChecked(
+          plugin.settings.vaultSort[0] == "path" &&
+            plugin.settings.vaultSort[1] == true
+        );
+        menuItem.onClick((ev: MouseEvent) => {
+          plugin.settings.vaultSort = ["path", true];
+          plugin.saveSettings();
+          refreshFileList();
         });
       });
 
-      // Delete Item
       fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(t.menu.delete);
-        menuItem.setIcon("trash");
+        menuItem.setTitle(i18n.menu.fileNameSortAlphaDesc);
+        menuItem.setChecked(
+          plugin.settings.vaultSort[0] == "path" &&
+            plugin.settings.vaultSort[1] == false
+        );
         menuItem.onClick((ev: MouseEvent) => {
-          updateSections(
-            sections.filter((s, i) => {
-              return i != index;
-            })
-          );
+          plugin.settings.vaultSort = ["path", false];
+          plugin.saveSettings();
+          refreshFileList();
+        });
+      });
+      fileMenu.addSeparator();
+
+      // fileMenu.addItem((menuItem) => {
+      //   menuItem.setTitle('Modified Time (new to old)');
+      //   menuItem.setChecked(plugin.settings.vaultSort[0] == 'mtime' && plugin.settings.vaultSort[1] == true)
+      //   menuItem.onClick((ev: MouseEvent) => {
+      //     plugin.settings.vaultSort = ['mtime', true];
+      //     plugin.saveSettings();
+      //     refreshFileList();
+      //   });
+      // });
+
+      // fileMenu.addItem((menuItem) => {
+      //   menuItem.setTitle('Modified Time (old to new)');
+      //   menuItem.setChecked(plugin.settings.vaultSort[0] == 'mtime' && plugin.settings.vaultSort[1] == false)
+      //   menuItem.onClick((ev: MouseEvent) => {
+      //     plugin.settings.vaultSort = ['mtime', false];
+      //     plugin.saveSettings();
+      //     refreshFileList();
+      //   });
+      // });
+
+      // fileMenu.addSeparator();
+
+      fileMenu.addItem((menuItem) => {
+        menuItem.setTitle(i18n.menu.createdTimeSortAsc);
+        menuItem.setChecked(
+          plugin.settings.vaultSort[0] == "created" &&
+            plugin.settings.vaultSort[1] == false
+        );
+        menuItem.onClick((ev: MouseEvent) => {
+          plugin.settings.vaultSort = ["created", false];
+          plugin.saveSettings();
+          refreshFileList();
+        });
+      });
+
+      fileMenu.addItem((menuItem) => {
+        menuItem.setTitle(i18n.menu.createdTimeSortDesc);
+        menuItem.setChecked(
+          plugin.settings.vaultSort[0] == "created" &&
+            plugin.settings.vaultSort[1] == true
+        );
+        menuItem.onClick((ev: MouseEvent) => {
+          plugin.settings.vaultSort = ["created", true];
+          plugin.saveSettings();
+          refreshFileList();
         });
       });
 
@@ -145,36 +199,6 @@ export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
         });
       }
       return false;
-    };
-
-    const triggerVaultMenu = (e: React.MouseEvent | React.TouchEvent) => {
-      const fileMenu = new Menu();
-
-      // Rename Item
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(t.menu.newSpace);
-        menuItem.setIcon("plus");
-        menuItem.onClick((ev: MouseEvent) => {
-          let vaultChangeModal = new SectionChangeModal(
-            plugin,
-            "",
-            0,
-            "create"
-          );
-          vaultChangeModal.open();
-        });
-        if (isMouseEvent(e)) {
-          fileMenu.showAtPosition({ x: e.pageX, y: e.pageY });
-        } else {
-          fileMenu.showAtPosition({
-            // @ts-ignore
-            x: e.nativeEvent.locationX,
-            // @ts-ignore
-            y: e.nativeEvent.locationY,
-          });
-        }
-        return false;
-      });
     };
     return (
       <>
@@ -198,6 +222,7 @@ export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
           }
         >
           <div
+            onContextMenu={(e) => triggerMenu(e)}
             className={classNames(
               "mk-section",
               indicator
@@ -213,13 +238,22 @@ export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
           >
             <div
               className="mk-section-title"
-              onContextMenu={(e) => triggerMenu(e)}
+              //@ts-ignore
               onClick={(e) => onCollapse(data)}
               ref={ref}
               {...handleProps}
             >
+              {data.spaceItem?.sticker ? (
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: unifiedToNative(data.spaceItem?.sticker),
+                  }}
+                ></div>
+              ) : (
+                <></>
+              )}
               <div className="mk-tree-text">
-                {data.id == "/" ? plugin.app.vault.getName() : data.name}
+                {data.id == "/" ? plugin.app.vault.getName() : data.space}
               </div>
               <div
                 className={`mk-collapse ${collapsed ? "mk-collapsed" : ""}`}
@@ -249,8 +283,7 @@ export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
               ></button>
             </div>
           </div>
-        </div>
-        {section && !collapsed && section.children.length == 0 && (
+          {/* {section && !collapsed && section.children.length == 0 && (
           <div
             className="mk-tree-empty"
             style={
@@ -261,7 +294,8 @@ export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
           >
             No Notes Inside
           </div>
-        )}
+        )} */}
+        </div>
       </>
     );
   }

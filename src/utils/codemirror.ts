@@ -1,15 +1,15 @@
-import { Decoration, EditorView } from "@codemirror/view";
+import { syntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
-import { foldedRanges, syntaxTree } from "@codemirror/language";
+import { EditorView } from "@codemirror/view";
 import { SyntaxNodeRef } from "@lezer/common";
+import { MarkdownView } from "obsidian";
 import { TransactionRange } from "types/types";
-import { MarkdownView, WorkspaceLeaf } from "obsidian";
 
 export const getActiveCM = (): EditorView | undefined => {
   let rcm: EditorView;
   app.workspace.iterateLeaves((leaf) => {
     const cm = (leaf.view as MarkdownView).editor?.cm;
-    if (cm.hasFocus) {
+    if (cm?.hasFocus) {
       rcm = cm;
       return true;
     }
@@ -17,11 +17,23 @@ export const getActiveCM = (): EditorView | undefined => {
   return rcm;
 };
 
+export const getFilePathForCM = (cmView: EditorView): string | undefined => {
+  let rs: string;
+  app.workspace.iterateLeaves((leaf) => {
+    const cm = (leaf.view as MarkdownView).editor?.cm;
+    if (cm == cmView) {
+      rs = (leaf.view as MarkdownView).file.path;
+      return true;
+    }
+  }, app.workspace["rootSplit"]!);
+  return rs;
+};
+
 export const getActiveMarkdownView = (): MarkdownView | undefined => {
   let rv: MarkdownView;
   app.workspace.iterateLeaves((leaf) => {
     const cm = (leaf.view as MarkdownView).editor?.cm;
-    if (cm.hasFocus) {
+    if (cm?.hasFocus) {
       rv = leaf.view as MarkdownView;
       return true;
     }

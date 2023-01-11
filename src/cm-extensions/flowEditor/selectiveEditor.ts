@@ -1,12 +1,7 @@
 import {
-  EditorState,
-  Extension,
-  Transaction,
-  Annotation,
-  StateField,
-  RangeSetBuilder,
+  Annotation, EditorState, RangeSetBuilder, StateField, Transaction
 } from "@codemirror/state";
-import { EditorView, Decoration, DecorationSet } from "@codemirror/view";
+import { Decoration, DecorationSet, EditorView } from "@codemirror/view";
 import { getAvailableRanges } from "range-analyzer";
 
 export const editableRange =

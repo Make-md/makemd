@@ -1,7 +1,11 @@
-import MakeMDPlugin from "./main";
-import { PluginSettingTab, Setting, App, DropdownComponent } from "obsidian";
-import { eventTypes, SectionTree, StringTree } from "types/types";
 import t from "i18n";
+import {
+  App,
+  DropdownComponent, PluginSettingTab,
+  Setting
+} from "obsidian";
+import { eventTypes, SectionTree, StringTree } from "types/types";
+import MakeMDPlugin from "./main";
 export type DeleteFileOption = "trash" | "permanent" | "system-trash";
 
 export interface MakeMDPluginSettings {
@@ -12,37 +16,66 @@ export interface MakeMDPluginSettings {
   mobileMakeBar: boolean;
   inlineStylerColors: boolean;
   editorFlow: boolean;
+  internalLinkClickFlow: boolean;
   editorFlowStyle: string;
   spacesEnabled: boolean;
   spacesDisablePatch: boolean;
   spacesPerformance: boolean;
   spacesStickers: boolean;
   sidebarTabs: boolean;
+  showRibbon: boolean;
   deleteFileOption: DeleteFileOption;
+  autoOpenFileContext: boolean;
+  expandedFolders: Record<string, string[]>;
+  expandedSpaces: string[];
+  saveAllContextToFrontmatter: boolean;
   folderRank: StringTree;
   openFolders: string[];
   fileIcons: [string, string][];
   spaces: SectionTree[];
-  vaultCollapsed: boolean;
+  pinnedSpaces: string[];
+
+  tagContextFolder: string;
+  folderContextFile: string;
+  folderNoteInsideFolder: boolean;
+  enableFolderNote: boolean;
+  revealActiveFile: boolean;
+  spacesCompactMode: boolean;
   menuTriggerChar: string;
   emojiTriggerChar: string;
+
+  hiddenFiles: string[];
+  hiddenExtensions: string[];
+  vaultSort: [string, boolean];
+  newFileLocation: string;
+  newFileFolderPath: string;
 }
 
 export const DEFAULT_SETTINGS: MakeMDPluginSettings = {
   filePreviewOnHover: false,
-  markSans: true,
+  markSans: false,
   makeMenuPlaceholder: true,
   mobileMakeBar: true,
   inlineStyler: true,
   inlineStylerColors: false,
   editorFlow: true,
+  internalLinkClickFlow: true,
+  saveAllContextToFrontmatter: false,
   editorFlowStyle: "seamless",
+  autoOpenFileContext: false,
+  spacesCompactMode: false,
   spacesEnabled: true,
   spacesPerformance: false,
+  enableFolderNote: true,
+  revealActiveFile: false,
   spacesStickers: true,
   spacesDisablePatch: false,
-  sidebarTabs: false,
+  folderNoteInsideFolder: true,
+  sidebarTabs: true,
+  showRibbon: true,
   deleteFileOption: "trash",
+  expandedFolders: {},
+  expandedSpaces: ["/"],
   folderRank: {
     node: "root",
     children: [],
@@ -51,9 +84,16 @@ export const DEFAULT_SETTINGS: MakeMDPluginSettings = {
   openFolders: [],
   fileIcons: [],
   spaces: [],
-  vaultCollapsed: false,
+  pinnedSpaces: [],
   menuTriggerChar: "/",
   emojiTriggerChar: ":",
+  folderContextFile: "context",
+  tagContextFolder: "Context",
+  hiddenFiles: ["Context"],
+  hiddenExtensions: ["mdb"],
+  vaultSort: ["rank", true],
+  newFileLocation: "root",
+  newFileFolderPath: "",
 };
 
 export class MakeMDPluginSettingsTab extends PluginSettingTab {
@@ -72,6 +112,42 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
   display(): void {
     let { containerEl } = this;
     containerEl.empty();
+
+    containerEl.createEl("h2", { text: t.settings.sectionAppearance });
+    new Setting(containerEl)
+      .setName(t.settings.sidebarTabs.name)
+      .setDesc(t.settings.sidebarTabs.desc)
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.sidebarTabs).onChange((value) => {
+          this.plugin.settings.sidebarTabs = value;
+          this.plugin.saveSettings();
+          document.body.classList.toggle("mk-hide-tabs", !value);
+        })
+      );
+    new Setting(containerEl)
+      .setName(t.settings.hideRibbon.name)
+      .setDesc(t.settings.hideRibbon.desc)
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.settings.showRibbon).onChange((value) => {
+          this.plugin.settings.showRibbon = value;
+          this.plugin.saveSettings();
+          document.body.classList.toggle("mk-hide-ribbon", !value);
+        })
+      );
+
+    new Setting(containerEl)
+      .setName(t.settings.compactMode.name)
+      .setDesc(t.settings.compactMode.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.spacesCompactMode)
+          .onChange((value) => {
+            this.plugin.settings.spacesCompactMode = value;
+            this.plugin.detachFileTreeLeafs();
+            // this.plugin.openFileTreeLeaf(true);
+            this.plugin.saveSettings();
+          })
+      );
 
     containerEl.createEl("h2", { text: t.settings.sectionSidebar });
     new Setting(containerEl)
@@ -104,8 +180,67 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           })
       );
 
-    containerEl.createEl("h2", { text: t.settings.sectionFlow });
+    new Setting(containerEl)
+      .setName(t.settings.folderNote.name)
+      .setDesc(t.settings.folderNote.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.enableFolderNote)
+          .onChange((value) => {
+            this.plugin.settings.enableFolderNote = value;
+            this.plugin.saveSettings();
+          })
+      );
+    new Setting(containerEl)
+      .setName(t.settings.activeFile.name)
+      .setDesc(t.settings.activeFile.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.revealActiveFile)
+          .onChange((value) => {
+            this.plugin.settings.revealActiveFile = value;
+            this.plugin.saveSettings();
+          })
+      );
+    containerEl.createEl("h2", { text: "Context" });
 
+    new Setting(containerEl)
+      .setName(t.settings.openFileContext.name)
+      .setDesc(t.settings.openFileContext.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.autoOpenFileContext)
+          .onChange((value) => {
+            this.plugin.settings.autoOpenFileContext = value;
+            this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t.settings.syncContextToFrontmatter.name)
+      .setDesc(t.settings.syncContextToFrontmatter.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.autoOpenFileContext)
+          .onChange((value) => {
+            this.plugin.settings.autoOpenFileContext = value;
+            this.plugin.saveSettings();
+          })
+      );
+
+    containerEl.createEl("h2", { text: t.settings.sectionFlow });
+    new Setting(containerEl)
+      .setName(t.settings.internalLinkFlowEditor.name)
+      .setDesc(t.settings.internalLinkFlowEditor.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.internalLinkClickFlow)
+          .onChange((value) => {
+            this.plugin.settings.internalLinkClickFlow = value;
+            this.plugin.saveSettings();
+            this.refreshView();
+          })
+      );
     new Setting(containerEl)
       .setName(t.settings.editorFlowReplace.name)
       .setDesc(t.settings.editorFlowReplace.desc)
@@ -122,16 +257,20 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       .addDropdown((dropdown: DropdownComponent) => {
         dropdown.addOption("classic", t.settings.editorFlowStyle.classic);
         dropdown.addOption("seamless", t.settings.editorFlowStyle.seamless);
+        dropdown.addOption("minimal", "Minimal");
         dropdown
           .setValue(this.plugin.settings.editorFlowStyle)
           .onChange(async (value) => {
             this.plugin.settings.editorFlowStyle = value;
             document.body.classList.toggle("mk-flow-classic", false);
             document.body.classList.toggle("mk-flow-seamless", false);
+            document.body.classList.toggle("mk-flow-minimal", false);
             if (value == "seamless")
               document.body.classList.toggle("mk-flow-seamless", true);
             if (value == "classic")
               document.body.classList.toggle("mk-flow-classic", true);
+            if (value == "minimal")
+              document.body.classList.toggle("mk-flow-minimal", true);
           });
       });
 
@@ -202,17 +341,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
 
     containerEl.createEl("h2", { text: t.settings.sectionAdvanced });
 
-    
-    new Setting(containerEl)
-      .setName(t.settings.sidebarTabs.name)
-      .setDesc(t.settings.sidebarTabs.desc)
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.sidebarTabs).onChange((value) => {
-          this.plugin.settings.sidebarTabs = value;
-          this.plugin.saveSettings();
-          document.body.classList.toggle("mk-hide-tabs", !value);
-        })
-      );
     new Setting(containerEl)
       .setName(t.settings.spacesFileExplorerDual.name)
       .setDesc(t.settings.spacesFileExplorerDual.desc)
@@ -221,6 +349,17 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           .setValue(this.plugin.settings.spacesDisablePatch)
           .onChange((value) => {
             this.plugin.settings.spacesDisablePatch = value;
+            this.plugin.saveSettings();
+          })
+      );
+    new Setting(containerEl)
+      .setName(t.settings.folderNoteLocation.name)
+      .setDesc(t.settings.folderNoteLocation.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.folderNoteInsideFolder)
+          .onChange((value) => {
+            this.plugin.settings.folderNoteInsideFolder = value;
             this.plugin.saveSettings();
           })
       );
@@ -255,6 +394,19 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           this.plugin.saveSettings();
         });
       });
+
+    // new Setting(containerEl)
+    // .setName('Tag Context Folder')
+    // .setDesc('Store context data for tags in this folder.')
+    // .addText((text) => {
+    //   text
+    //     .setValue(this.plugin.settings.tagContextFolder)
+    //     .onChange(async (value) => {
+    //       text.setValue(value);
+    //       this.plugin.settings.tagContextFolder = value;
+    //       await this.plugin.saveSettings();
+    //     });
+    // });
 
     new Setting(containerEl)
       .setName(t.settings.inlineStylerColor.name)

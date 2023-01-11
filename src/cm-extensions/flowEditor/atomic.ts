@@ -1,18 +1,10 @@
 import {
-  Range,
-  EditorState,
-  Transaction,
-  EditorSelection,
-  TransactionSpec,
-  StateField,
-  RangeSetBuilder,
-  Annotation,
+  Annotation, EditorSelection, EditorState,
+  Transaction
 } from "@codemirror/state";
-import { keymap, EditorView } from "@codemirror/view";
-import { info } from "console";
 import { focusFlowEditor, focusFlowEditorParent } from "dispatch/flowDispatch";
 import { flowIDStateField } from "../markSans/callout";
-import { flowEditorField, flowEditorInfo } from "./flowEditor";
+import { flowEditorInfo } from "./flowEditor";
 import { lineRangeToPosRange, selectiveLinesFacet } from "./selectiveEditor";
 
 //Handle selection and keyboard events for floweditor

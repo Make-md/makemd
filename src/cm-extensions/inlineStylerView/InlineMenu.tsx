@@ -1,25 +1,30 @@
-import MakeMDPlugin from "main";
-import { renderToStaticMarkup } from "react-dom/server";
-import * as ReactDOM from "react-dom";
-import React, { useEffect, useMemo, useState } from "react";
 import { EditorView } from "@codemirror/view";
+import classNames from "classnames";
+import { toggleMark } from "cm-extensions/inlineStylerView/marks";
 import "css/InlineMenu.css";
 import t from "i18n";
-import { resolveStyles, InlineStyle } from "./styles";
-import { toggleMark } from "cm-extensions/inlineStylerView/marks";
+import MakeMDPlugin from "main";
+import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { getActiveCM, getActiveMarkdownView } from "utils/codemirror";
-import { platformIsMobile } from "utils/utils";
-import { Mark } from "./Mark";
+import { colors } from "utils/color";
+import { platformIsMobile } from "utils/file";
 import { markIconSet, uiIconSet } from "utils/icons";
-import MakeMenu from "components/MakeMenu/MakeMenu";
-import classNames from "classnames";
+import { Mark } from "./Mark";
+import { InlineStyle, resolveStyles } from "./styles";
 
-export const loadStylerIntoContainer = (el: HTMLElement, plugin: MakeMDPlugin) => {
+export const loadStylerIntoContainer = (
+  el: HTMLElement,
+  plugin: MakeMDPlugin
+) => {
   // el.removeChild(el.querySelector('.mobile-toolbar-options-container'))
   const root = createRoot(el);
   root.render(
-    <InlineMenuComponent mobile={true} activeMarks={[]} plugin={plugin}></InlineMenuComponent>
+    <InlineMenuComponent
+      mobile={true}
+      activeMarks={[]}
+      plugin={plugin}
+    ></InlineMenuComponent>
   );
 };
 
@@ -27,7 +32,7 @@ export const InlineMenuComponent: React.FC<{
   cm?: EditorView;
   activeMarks: string[];
   mobile: boolean;
-  plugin: MakeMDPlugin
+  plugin: MakeMDPlugin;
 }> = (props) => {
   const [mode, setMode] = useState(props.mobile ? 0 : 1);
   const [colorMode, setColorMode] = useState<{
@@ -36,17 +41,6 @@ export const InlineMenuComponent: React.FC<{
     closeTag: string;
   } | null>(null);
 
-  const colors = [
-    "#eb3b5a",
-    "#fa8231",
-    "#f7b731",
-    "#20bf6b",
-    "#0fb9b1",
-    "#2d98da",
-    "#3867d6",
-    "#8854d0",
-    "#4b6584",
-  ];
   const makeMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     const cm = props.cm ?? getActiveCM();
@@ -186,7 +180,7 @@ export const InlineMenuComponent: React.FC<{
                 to: selection.to,
                 insert:
                   colorMode.prefix +
-                  c +
+                  c[1] +
                   colorMode.suffix +
                   selectedText +
                   colorMode.closeTag,
@@ -194,7 +188,7 @@ export const InlineMenuComponent: React.FC<{
             });
           }}
           className="mk-color"
-          style={{ background: c }}
+          style={{ background: c[1] }}
         ></div>
       ))}
     </>
