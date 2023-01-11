@@ -257,7 +257,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       .addDropdown((dropdown: DropdownComponent) => {
         dropdown.addOption("classic", t.settings.editorFlowStyle.classic);
         dropdown.addOption("seamless", t.settings.editorFlowStyle.seamless);
-        dropdown.addOption("minimal", "Minimal");
+        dropdown.addOption("minimal", t.settings.editorFlowStyle.minimal);
         dropdown
           .setValue(this.plugin.settings.editorFlowStyle)
           .onChange(async (value) => {

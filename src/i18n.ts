@@ -368,6 +368,7 @@ class T {
           desc: "Select a theme for your flow editors",
           seamless: "Seamless",
           classic: "Classic",
+          minimal: "Minimal",
         },
       },
     },
