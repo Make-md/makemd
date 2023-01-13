@@ -21199,7 +21199,6 @@ var OptionCell = (props2) => {
     );
   };
   const saveOptions = (_options, _value) => {
-    console.log(_options, _value);
     if (!props2.multi) {
       setOptions(
         _options.filter((f4) => f4.length > 0).map((t4) => ({ name: t4, value: t4 }))
@@ -33203,7 +33202,6 @@ var TableView = (props2) => {
               };
               const saveFieldValue = (fieldValue, value) => {
                 var _a3;
-                console.log(fieldValue, value);
                 (_a3 = table2.options.meta) == null ? void 0 : _a3.updateFieldValue(
                   f4.name,
                   fieldValue,
