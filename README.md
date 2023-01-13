@@ -1,24 +1,28 @@
-# Make.md gives makers the ultimate experience on Obsidian
+# Make.md gives makers the ultimate experience on Obsidian.
 
 [Discord](https://make.md/community)
 
-## Key Features
+Experience a combination of intuitive and powerful features that helps you keep track and stay focused. Dive right into make.md or see a preview below.
 
-### ✍️ Spaces
+### 🍱 Spaces
 
-Create Spaces to keep notes organized in a way that fits your current focus.
+Customizable workspaces that organizes your projects and notes so you can quickly find the information you need.
 
-### ⏳ Flow Editor
+### 🧩 Contexts
 
-Use the Flow Editor to directly create flows between notes and edit them in the same context.
+Use simple tables or powerful databases to connect your data across your notes and visualize them in different ways to gain deeper insights into your knowledge.
 
-### 🚀 Maker Mode
+### 🤩 Blink
 
-Don't let markdown stop you from making. Use the Make menu (/) and the inline styler for all your styling needs.
+Make edits to your notes in the blink of your eye, quickly open and directly edit anything in your workspace from anywhere.
 
-### 📱 Streamlined Mobile Experience
+### ⌛ Flow
 
-We've streamlined the way the Obsidian mobile app works to be more intuitive and easier to use.
+Stay in the flow while writing, edit your notes, canvas or context directly inline.
+
+### 🧠 Maker Mode
+
+Create without learning markdown, just type slash to create a new block or select some text to style.
 
 ---
 
@@ -32,6 +36,9 @@ Thank you for everyone in the Obsidian community that have contributed to testin
 
 Parts of the Flow Editor is based on Hover Editor
 https://github.com/nothingislost/obsidian-hover-editor
+
+Dataview syncing adapted with the help of Metadata Menu
+https://github.com/mdelobelle/metadatamenu
 
 Some of our inspiration came from the following projects
 https://github.com/chetachiezikeuzor/cMenu-Plugin
