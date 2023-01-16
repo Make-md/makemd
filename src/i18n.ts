@@ -290,6 +290,10 @@ class T {
           name:"Enable Folder Note",
           desc:"Access the folder note in the folder page and hide the folder note from spaces"
         },
+        folderNoteOpenDefault: {
+          name: 'Open Folder Note by Default',
+          desc: 'When accessing a folder, open the folder note by default.',
+        },
         activeFile: {
           name: "Reveal Active File",
           desc: "Automatically reveal the active file in Spaces"

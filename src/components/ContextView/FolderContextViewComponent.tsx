@@ -22,7 +22,10 @@ export const FolderContextViewComponent = (
   const folder = props.folder?.path;
   const path = folderContextFromFolder(props.plugin, folder);
   const ref = useRef<HTMLDivElement>(null);
-  const [flowOpen, setFlowOpen] = useState(false);
+  const [flowOpen, setFlowOpen] = useState(
+    props.plugin.settings.enableFolderNote &&
+      props.plugin.settings.folderNoteOpenDefault
+  );
   const folderNotePath = props.plugin.settings.folderNoteInsideFolder
     ? `${props.folder.path}/${props.folder.name}.md`
     : props.folder && props.folder.parent.path == "/"
