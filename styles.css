@@ -382,7 +382,7 @@ body {
 .mk-td-group {
   background-color: var(--background-primary);
   padding: 0.5rem;
-  border-top: 0.5px solid var(--divider-color);
+  border-top: 0.5px solid var(--divider-color) !important;
   font-size: var(--font-ui-small);
   font-weight: var(--bold-weight);
 }
@@ -412,7 +412,7 @@ body {
 }
 .mk-table table {
   border-spacing: 0;
-  border-bottom: 0.5px solid var(--divider-color);
+  border-bottom: 0.5px solid var(--divider-color) !important;
 }
 .mk-table table th:last-child {
   width: 100%;
@@ -434,11 +434,11 @@ body {
   padding-left: calc(var(--context-padding) - 0.75rem) !important;
 }
 .mk-table td {
-  border-top: 0.5px solid var(--background-modifier-border);
+  border-top: 0.5px solid var(--background-modifier-border) !important;
   font-size: var(--font-ui-small);
 }
 .mk-table .mk-td:not(:last-child) {
-  border-right: 0.5px solid var(--background-modifier-border);
+  border-right: 0.5px solid var(--background-modifier-border) !important;
 }
 .mk-cell-text {
   padding: 4px;
@@ -570,11 +570,15 @@ body {
 }
 .mk-row-new {
   text-align: left;
-  border-top: 0.5px solid var(--divider-color);
-  padding: 8px var(--context-padding);
-  font-weight: normal;
-  color: var(--text-faint);
-  font-size: var(--font-ui-small);
+  border-top: 0.5px solid var(--divider-color) !important;
+  padding: 8px var(--context-padding) !important;
+  font-weight: normal !important;
+  color: var(--text-faint) !important;
+  font-size: var(--font-ui-small) !important;
+}
+.markdown-rendered .mk-table td,
+.markdown-rendered .mk-table th {
+  border: unset;
 }
 .mk-row-new:hover {
   background: var(--background-modifier-hover);
@@ -604,6 +608,7 @@ body {
 }
 .mk-cell-link-item {
   color: var(--link-color);
+  display: flex;
 }
 .mk-cell-option span {
   flex-grow: 1;
@@ -1138,6 +1143,7 @@ body {
 }
 .mk-flow-hover {
   margin-top: -34px;
+  margin-left: -34px;
 }
 .mk-flow-hover > div {
   display: flex;
@@ -2334,4 +2340,8 @@ body:not(.is-mobile) .mk-tree-wrapper:not(.mk-section-wrapper):not(.mk-disable-i
 }
 .mk-file-context .mk-tag-selector {
   padding: 0 !important;
+}
+.mk-file-context-backlink {
+  border: thin solid var(--divider-color);
+  padding: 0px 8px;
 }
