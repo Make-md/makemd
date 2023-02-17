@@ -11100,6 +11100,12 @@ var fieldTypes = [
     multiType: "context-multi"
   },
   {
+    type: "object",
+    label: i18n_default.properties.context.label,
+    restricted: true,
+    metadata: true
+  },
+  {
     type: "image",
     label: i18n_default.properties.image.label,
     multi: true,
@@ -13605,7 +13611,7 @@ var saveContextToFile = (file, cols, context, plugin) => {
         frontmatter[f4] = valueForFrontmatter(col.type, context[f4]);
         if (plugin.dataViewAPI()) {
           if (plugin.dataViewAPI().page(file.path)[f4] && !frontmatter[f4]) {
-            replaceValues(plugin, file.path, f4, context[f4]);
+            replaceValues(plugin, file.path, f4, valueForDataview(col.type, context[f4]));
           } else {
             frontmatter[f4] = valueForFrontmatter(col.type, context[f4]);
           }
@@ -13628,6 +13634,9 @@ var frontMatterKeys = (fm) => {
 };
 var yamlTypeToMDBType = (YAMLtype) => {
   switch (YAMLtype) {
+    case "object":
+      return "text";
+      break;
     case "duration":
       return "text";
       break;
@@ -13679,6 +13688,8 @@ var detectYAMLType = (value, key2) => {
     return "duration";
   } else if (value.type == "file") {
     return "link";
+  } else if (typeof value === "object" && !Array.isArray(value) && value !== null) {
+    return "object";
   }
   return "text";
 };
@@ -13694,7 +13705,7 @@ var mergeTableData = (mdb, yamlmdb, types) => {
         schemaId: mdb.schema.id,
         type: yamlTypeToMDBType(types[f4])
       }))
-    ].filter(onlyUniqueProp("name")),
+    ].filter(onlyUniquePropCaseInsensitive("name")),
     rows: mdb.rows.map((r3) => {
       const fmRow = yamlmdb.rows.find((f4) => f4.File == r3.File);
       if (fmRow) {
@@ -13749,6 +13760,12 @@ var valueForFrontmatter = (type, value) => {
   } else if (type.contains("multi")) {
     return splitString(value).map((f4) => valueForFrontmatter(type.replace("-multi", ""), f4));
   } else if (type.contains("link") || type.contains("context")) {
+    return `[[${value}]]`;
+  }
+  return value;
+};
+var valueForDataview = (type, value) => {
+  if (type.contains("link") || type.contains("context")) {
     return `[[${value}]]`;
   }
   return value;
@@ -13830,7 +13847,7 @@ var saveFrontmatterValue = (plugin, path, key2, value, type, forceSave) => {
       app.fileManager.processFrontMatter(afile, (frontmatter) => {
         if (plugin.dataViewAPI()) {
           if (plugin.dataViewAPI().page(path)[key2] && !frontmatter[key2]) {
-            replaceValues(plugin, path, key2, value);
+            replaceValues(plugin, path, key2, valueForDataview(type, value));
           } else {
             if (key2 in frontmatter || forceSave) {
               frontmatter[key2] = valueForFrontmatter(type, value);
@@ -13848,6 +13865,9 @@ var saveFrontmatterValue = (plugin, path, key2, value, type, forceSave) => {
 var parseFrontMatter = (field, value, dv) => {
   const YAMLtype = detectYAMLType(value, field);
   switch (YAMLtype) {
+    case "object":
+      return JSON.stringify(value);
+      break;
     case "number":
       return value.toString();
       break;
@@ -13876,7 +13896,9 @@ var parseFrontMatter = (field, value, dv) => {
       if (typeof value === "string") {
         return value;
       }
-      return value.join(",");
+      return value.map((v3) => {
+        return typeof v3 === "string" ? v3 : JSON.stringify(v3);
+      }).join(",");
       break;
     case "link":
       {
@@ -14660,7 +14682,7 @@ var consolidateFilesToTable = async (plugin, path, table, files, tag) => {
   const newCols = [
     ...(isTag ? defaultTagFields : defaultFolderFields).rows,
     ...mdbTable.cols
-  ].filter(onlyUniqueProp("name"));
+  ].filter(onlyUniqueProp2("name"));
   const newMDBTable = {
     ...mdbTable,
     cols: newCols,
@@ -14698,7 +14720,7 @@ var consolidateRowsToTag = async (plugin, path, table, source, rows) => {
   const newMDBTable = {
     ...mdbTable,
     cols: [...defaultTagFields.rows, ...mdbTable.cols].filter(
-      onlyUniqueProp("name")
+      onlyUniqueProp2("name")
     ),
     rows: newRows
   };
@@ -14722,6 +14744,7 @@ var deleteTagContext = async (plugin, tag) => {
   window.dispatchEvent(event);
 };
 var connectContext = async (plugin, tag, source) => {
+  var _a2;
   const dbPath = tagContextFromTag(plugin, tag);
   if (getAbstractFileAtPath(app, dbPath)) {
     const sqlJS = await plugin.sqlJS();
@@ -14730,7 +14753,7 @@ var connectContext = async (plugin, tag, source) => {
     if (!table) {
       execQuery(db, `CREATE TABLE IF NOT EXISTS "m_context" (source);`);
     }
-    const contextExists = selectDB(db, "m_context", `source='${source}'`).rows.length > 0;
+    const contextExists = ((_a2 = selectDB(db, "m_context", `source='${source}'`)) == null ? void 0 : _a2.rows.length) > 0;
     if (!contextExists) {
       insertIntoDB(db, { m_context: { ...table, rows: [{ source }] } }, true);
       saveAndCloseDB(db, dbPath);
@@ -20303,7 +20326,7 @@ var MDBProvider = (props2) => {
     }));
   }, [cols]);
   const parsePredicate = (predicateStr) => {
-    const newPredicate = safelyParseJSON(predicateStr);
+    const newPredicate = safelyParseJSON2(predicateStr);
     setPredicate(validatePredicate(newPredicate));
   };
   const delColumn = (column) => {
@@ -24039,7 +24062,7 @@ var OptionCell = (props2) => {
   const initialOptions = [
     ...(_b2 = splitString(props2.options).filter((f4) => f4).map((t4) => ({ name: t4, value: t4 }))) != null ? _b2 : [],
     ...initialValue.map((f4) => ({ name: f4, value: f4 }))
-  ].filter(onlyUniqueProp("value"));
+  ].filter(onlyUniqueProp2("value"));
   const [options, setOptions] = p2(initialOptions);
   const [value, setValue] = p2(initialValue);
   h2(() => {
@@ -32237,7 +32260,7 @@ var mergeSpaces = (db, sectionTrees) => {
 var newFolderInVault = (plugin, activeFile2) => {
   let vaultChangeModal = new VaultChangeModal(
     plugin,
-    defaultNoteFolder(plugin, activeFile2),
+    plugin.app.vault.getRoot(),
     "create folder",
     "/"
   );
@@ -32248,13 +32271,13 @@ var newFileInVault = async (plugin, activeFile2, canvas) => {
   if (canvas) {
     newFile = await createNewCanvasFile(
       plugin,
-      defaultNoteFolder(plugin, activeFile2),
+      plugin.app.vault.getRoot(),
       ""
     );
   } else {
     newFile = await createNewMarkdownFile(
       plugin,
-      defaultNoteFolder(plugin, activeFile2),
+      plugin.app.vault.getRoot(),
       ""
     );
   }
@@ -33577,7 +33600,7 @@ var NewPropertyMenuComponent = (props2) => {
         name: fieldName,
         type: fieldType,
         value: fieldValue,
-        schemaId: "files"
+        schemaId: props2.schemaId
       }
     );
     props2.hide();
@@ -33637,7 +33660,7 @@ var NewPropertyMenuComponent = (props2) => {
     onClick: (e4) => props2.hide()
   }, /* @__PURE__ */ bn.createElement("span", null, "Cancel")));
 };
-var showNewPropertyMenu = (plugin, position, tags, fields, saveField, folder, fileMetadata) => {
+var showNewPropertyMenu = (plugin, position, tags, fields, saveField, schemaId, folder, fileMetadata) => {
   const menu = new import_obsidian17.Menu();
   menu.setUseNativeMenu(false);
   const frag = document.createDocumentFragment();
@@ -33652,6 +33675,7 @@ var showNewPropertyMenu = (plugin, position, tags, fields, saveField, folder, fi
     /* @__PURE__ */ bn.createElement(bn.Fragment, null, /* @__PURE__ */ bn.createElement(NewPropertyMenuComponent, {
       plugin,
       tags,
+      schemaId,
       folder,
       fields,
       hide: () => menu.hide(),
@@ -33771,7 +33795,7 @@ var ColumnHeader = (props2) => {
   };
   const showNewMenu = (e4) => {
     const offset = ref.current.getBoundingClientRect();
-    showNewPropertyMenu(props2.plugin, { x: offset.left, y: offset.top + 30 }, isFolderContext ? tagContexts : [folderPath], cols, (source, field2) => newColumn({ ...field2, table: source }), isFolderContext ? folderPathToString(folderPath) : null, false);
+    showNewPropertyMenu(props2.plugin, { x: offset.left, y: offset.top + 30 }, isFolderContext ? tagContexts : [folderPath], cols, (source, field2) => newColumn({ ...field2, table: source }), tableData.schema.id, isFolderContext ? folderPathToString(folderPath) : null, false);
     return;
     const files = tableData.rows.map((f4) => getAbstractFileAtPath(app, f4.File)).filter((f4) => f4 instanceof import_obsidian18.TFile);
     const types = guestimateTypes(
@@ -34707,6 +34731,48 @@ var BooleanCell = (props2) => {
   }));
 };
 
+// src/components/ContextView/DataTypeView/ObjectCell.tsx
+var ObjectCell = (props2) => {
+  const { initialValue, saveValue } = props2;
+  const [value, setValue] = bn.useState(safelyParseJSON2(initialValue));
+  const saveKey = (key2, newKey) => {
+    if (key2 != newKey)
+      saveValue({
+        ...value,
+        [newKey]: value[key2],
+        [key2]: void 0
+      });
+  };
+  const saveVal = (key2, val) => {
+    saveValue({
+      ...value,
+      [key2]: val
+    });
+  };
+  bn.useEffect(() => {
+    setValue(safelyParseJSON2(initialValue));
+  }, [initialValue]);
+  return /* @__PURE__ */ bn.createElement("div", {
+    className: "mk-cell-object"
+  }, Object.keys(value).map(
+    (f4) => /* @__PURE__ */ bn.createElement("div", {
+      className: "mk-cell-object-row"
+    }, /* @__PURE__ */ bn.createElement("input", {
+      onClick: (e4) => e4.stopPropagation(),
+      className: "mk-cell-text",
+      type: "text",
+      value: f4,
+      onBlur: (e4) => saveKey(f4, e4.target.value)
+    }), /* @__PURE__ */ bn.createElement("input", {
+      onClick: (e4) => e4.stopPropagation(),
+      className: "mk-cell-text",
+      type: "text",
+      value: value[f4],
+      onBlur: (e4) => saveVal(f4, e4.target.value)
+    }))
+  ));
+};
+
 // src/components/ContextView/DataTypeView/PreviewCell.tsx
 var PreviewCell = (props2) => {
   const [vaultItem, setVaultItem] = p2(null);
@@ -34735,6 +34801,7 @@ var PreviewCell = (props2) => {
     className: "mk-file-preview",
     style: {
       backgroundSize: "cover",
+      backgroundPositionY: "50%",
       backgroundImage: `url(${previewFile ? app.vault.getResourcePath(previewFile) : previewImage})`
     }
   }) : /* @__PURE__ */ bn.createElement("div", {
@@ -34832,6 +34899,10 @@ var DataTypeView = (props2) => {
     });
   } else if (fieldType.type == "image") {
     return /* @__PURE__ */ bn.createElement(ImageCell, {
+      ...viewProps
+    });
+  } else if (fieldType.type == "object") {
+    return /* @__PURE__ */ bn.createElement(ObjectCell, {
       ...viewProps
     });
   }
@@ -36732,7 +36803,7 @@ var TagSelector = (props2) => {
       const dvTypes = guestimateTypes(files, props2.plugin, true);
       yamlTableData = {
         uniques: (0, import_lodash7.uniq)([...yamlTableData.uniques, ...dvTableData.uniques]),
-        cols: (0, import_lodash7.uniq)([...yamlTableData.cols, ...dvTableData.cols]),
+        cols: uniqCaseInsensitive([...yamlTableData.cols, ...dvTableData.cols]),
         rows: files.map((file) => {
           var _a2, _b2;
           return { ...(_a2 = yamlTableData.rows.find((r3) => r3.File == file)) != null ? _a2 : {}, ...(_b2 = dvTableData.rows.find((r3) => r3.File == file)) != null ? _b2 : {} };
@@ -37955,8 +38026,11 @@ var uniqueNameFromString = (name, cols) => {
   }
   return newName;
 };
-var onlyUniqueProp = (prop) => (value, index, self2) => {
+var onlyUniqueProp2 = (prop) => (value, index, self2) => {
   return self2.findIndex((v3) => value[prop] == v3[prop]) === index;
+};
+var onlyUniquePropCaseInsensitive = (prop) => (value, index, self2) => {
+  return self2.findIndex((v3) => value[prop].toLowerCase() == v3[prop].toLowerCase()) === index;
 };
 var fileNameToString3 = (filename) => filename.substring(0, filename.lastIndexOf(".")) || filename;
 var removeLeadingSlash = (path) => path.charAt(0) == "/" ? path.substring(1) : path;
@@ -37972,7 +38046,7 @@ var filePathToString = (filename) => {
   return filename;
 };
 var folderPathToString = (filename) => removeLeadingSlash(filename.substring(filename.lastIndexOf("/"))) || filename;
-var safelyParseJSON = (json) => {
+var safelyParseJSON2 = (json) => {
   var parsed;
   try {
     parsed = JSON.parse(json);
@@ -39004,13 +39078,14 @@ var showFMMenu = (plugin, position, property, deleteProperty, syncProperty, rena
     });
     menuItem.setIcon("list");
   });
-  menu.addItem((menuItem) => {
-    menuItem.setTitle("Sync to Context");
-    menuItem.onClick(() => {
-      syncProperty(property);
+  if (property.type != "object")
+    menu.addItem((menuItem) => {
+      menuItem.setTitle("Sync to Context");
+      menuItem.onClick(() => {
+        syncProperty(property);
+      });
+      menuItem.setIcon("sync");
     });
-    menuItem.setIcon("sync");
-  });
   menu.addItem((menuItem) => {
     menuItem.setTitle(i18n_default.menu.deleteProperty);
     menuItem.onClick(() => {
@@ -39433,7 +39508,7 @@ var InlineFileContextView = (props2) => {
   };
   const newProperty = (e4) => {
     const offset = e4.target.getBoundingClientRect();
-    showNewPropertyMenu(props2.plugin, { x: offset.left, y: offset.top + 30 }, tags, [], saveField, folderPath, true);
+    showNewPropertyMenu(props2.plugin, { x: offset.left, y: offset.top + 30 }, tags, [], saveField, "files", folderPath, true);
   };
   const onBlur = (e4) => {
     const newValue = e4.target.innerText;
@@ -39441,8 +39516,22 @@ var InlineFileContextView = (props2) => {
       renameFile(file, newValue + ".md");
     }
   };
+  const onKeyPress = (e4) => {
+    e4.stopPropagation();
+  };
+  const onKeyUp = (e4) => {
+    e4.stopPropagation();
+  };
   const onKeyDown = (e4) => {
     e4.stopPropagation();
+    if (e4.key == "a" && e4.metaKey) {
+      e4.preventDefault();
+      var selection = window.getSelection();
+      var range = document.createRange();
+      range.selectNodeContents(e4.target);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
     if (e4.key == "Enter") {
       e4.target.blur();
     }
@@ -39455,6 +39544,11 @@ var InlineFileContextView = (props2) => {
     var _a2;
     (_a2 = props2.editorView) == null ? void 0 : _a2.requestMeasure();
   }, []);
+  h2(() => {
+    if (file == null ? void 0 : file.name.startsWith("Untitled")) {
+      selectElementContents(fileNameRef.current);
+    }
+  }, [fileNameRef]);
   return /* @__PURE__ */ bn.createElement(bn.Fragment, null, props2.showHeader && /* @__PURE__ */ bn.createElement(NoteBannerView, {
     plugin: props2.plugin,
     file: props2.file
@@ -39470,11 +39564,13 @@ var InlineFileContextView = (props2) => {
     plugin: props2.plugin,
     filePath: file.path
   }) : /* @__PURE__ */ bn.createElement(bn.Fragment, null), /* @__PURE__ */ bn.createElement("div", {
-    className: "inline-title",
+    className: "mk-inline-title inline-title",
     ref: fileNameRef,
     contentEditable: true,
     onBlur,
-    onKeyDown
+    onKeyDown,
+    onKeyPress,
+    onKeyUp
   }, fileNameToString3(file.name))), /* @__PURE__ */ bn.createElement("div", {
     className: `mk-collapse mk-icon-xsmall mk-file-context-collapse ${collapsed ? "mk-collapsed" : ""}`,
     dangerouslySetInnerHTML: {
@@ -42446,9 +42542,9 @@ var {
 var {
   useCallback,
   useContext: useContext3,
-  useEffect,
+  useEffect: useEffect2,
   useMemo: useMemo2,
-  useRef: useRef3,
+  useRef: useRef4,
   useState
 } = bn;
 function notInAContext() {
@@ -42565,12 +42661,12 @@ function Batcher({
   const storeRef = useStoreRef();
   const [_7, setState] = useState([]);
   setNotifyBatcherOfChange(() => setState({}));
-  useEffect(() => {
+  useEffect2(() => {
     Recoil_Queue.enqueueExecution("Batcher", () => {
       endBatch(storeRef);
     });
   });
-  useEffect(() => {
+  useEffect2(() => {
     return () => {
       setNotifyBatcherOfChange(() => {
       });
@@ -42696,7 +42792,7 @@ function RecoilRoot_INTERNAL({
     }
     Recoil_nullthrows(notifyBatcherOfChange.current)();
   };
-  const notifyBatcherOfChange = useRef3(null);
+  const notifyBatcherOfChange = useRef4(null);
   const setNotifyBatcherOfChange = useCallback((x5) => {
     notifyBatcherOfChange.current = x5;
   }, [notifyBatcherOfChange]);
@@ -42708,10 +42804,10 @@ function RecoilRoot_INTERNAL({
     subscribeToTransactions,
     addTransactionMetadata
   };
-  const storeRef = useRef3(store);
-  storeState = useRef3(initializeState_DEPRECATED != null ? initialStoreState_DEPRECATED(store, initializeState_DEPRECATED) : initializeState != null ? initialStoreState(initializeState) : makeEmptyStoreState$2());
+  const storeRef = useRef4(store);
+  storeState = useRef4(initializeState_DEPRECATED != null ? initialStoreState_DEPRECATED(store, initializeState_DEPRECATED) : initializeState != null ? initialStoreState(initializeState) : makeEmptyStoreState$2());
   const mutableSource = useMemo2(() => createMutableSource ? createMutableSource(storeState, () => storeState.current.currentTree.version) : null, [createMutableSource, storeState]);
-  useEffect(() => () => {
+  useEffect2(() => () => {
     for (const atomKey of storeRef.current.getState().knownAtoms) {
       cleanUpNode$2(storeRef.current, atomKey);
     }
@@ -46710,7 +46806,7 @@ var FileExplorerComponent = (props2) => {
     var _a2, _b2;
     let tree = [];
     const spaceCollapsed = !expandedSpaces.includes(space.name);
-    const spaceSort = (_a2 = safelyParseJSON(space.sort)) != null ? _a2 : ["rank", true];
+    const spaceSort = (_a2 = safelyParseJSON2(space.sort)) != null ? _a2 : ["rank", true];
     tree.push(spaceItemToTreeNode(space, spaceCollapsed, spaceSort));
     if (!spaceCollapsed)
       ((_b2 = vaultItems[space.name + "/"]) != null ? _b2 : []).sort(folderSortFn(spaceSort[0], spaceSort[1])).forEach((item) => {
@@ -48890,7 +48986,7 @@ var MakeMDPlugin = class extends import_obsidian53.Plugin {
   }
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-    const userConfig = safelyParseJSON(await defaultConfigFile(this.app));
+    const userConfig = safelyParseJSON2(await defaultConfigFile(this.app));
     this.settings.newFileFolderPath = userConfig.newFileFolderPath;
     this.settings.newFileLocation = userConfig.newFileLocation;
     this.saveSettings();
