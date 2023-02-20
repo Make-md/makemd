@@ -1523,7 +1523,7 @@ body {
 }
 .mk-tag-selector div {
   cursor: var(--cursor-link);
-  font-size: var(--font-normal);
+  font-size: var(--font-ui-medium);
   display: flex;
 }
 .mk-tag-selector button {
@@ -1630,8 +1630,9 @@ mark {
   border-radius: 8px;
   padding: 8px !important;
 }
-.mk-file-context-file > .inline-title {
+.markdown-source-view.mod-cm6.is-readable-line-width .mk-file-context-file > .mk-inline-title.inline-title {
   padding-bottom: 0;
+  display: flex !important;
   margin-left: 0 !important;
   margin-top: 0;
   padding-top: 0;
@@ -2299,7 +2300,8 @@ body:not(.is-mobile) .mk-section-title:hover .mk-collapse {
   opacity: 0.5;
 }
 .mk-tree-item {
-  margin-left: var(--spacing);
+  margin-left: var(--spacing) !important;
+  flex-direction: row !important;
   --vertical-padding: 2px;
   flex-grow: 1;
   position: relative;
