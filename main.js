@@ -10756,7 +10756,7 @@ var import_obsidian33 = require("obsidian");
 var import_obsidian29 = require("obsidian");
 
 // src/utils/regex.ts
-var urlRegex = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+var urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
 
 // src/utils/contexts/predicate/filter.ts
 var stringEqual = (value, filterValue) => {
@@ -14666,7 +14666,7 @@ var consolidateFilesToTable = async (plugin, context, table, files) => {
       mdbTable.rows.map((f4) => f4._source).filter((f4) => f4 != "" && f4 != "tag")
     );
     const promises = contexts.map(
-      (c4) => getMDBTable(plugin, context, "files").then((f4) => [f4, c4])
+      (c4) => getMDBTable(plugin, mdbContextByDBPath(plugin, c4), "files").then((f4) => [f4, c4])
     );
     const results = await Promise.all(promises);
     linkedFolderContexts.push(
@@ -14763,6 +14763,7 @@ var connectContext = async (plugin, tag, source) => {
     let table = selectDB(db, "m_context");
     if (!table) {
       execQuery(db, `CREATE TABLE IF NOT EXISTS "m_context" (source);`);
+      table = { uniques: [], cols: ["source"], rows: [] };
     }
     const contextExists = ((_a2 = selectDB(db, "m_context", `source='${source}'`)) == null ? void 0 : _a2.rows.length) > 0;
     if (!contextExists) {
@@ -15133,7 +15134,7 @@ var remoteContextFromURL = (plugin, url) => {
     dbPath: url
   };
 };
-var mdbContextByContextPath = (plugin, contextPath) => {
+var mdbContextByContextPath2 = (plugin, contextPath) => {
   if (!contextPath)
     return;
   if (contextPath.match(urlRegex)) {
@@ -35618,7 +35619,7 @@ var ContextListView = (props2) => {
 
 // src/components/ContextView/InlineContextViewComponent.tsx
 var InlineContextViewComponent = (props2) => {
-  const context = mdbContextByContextPath(props2.plugin, props2.path);
+  const context = mdbContextByContextPath2(props2.plugin, props2.path);
   return /* @__PURE__ */ bn.createElement(MDBProvider, {
     plugin: props2.plugin,
     context,
@@ -37690,7 +37691,7 @@ var ContextView = class extends import_obsidian29.ItemView {
   }
   async setState(state, result) {
     this.contextPath = state.contextPath;
-    this.context = mdbContextByContextPath(this.plugin, this.contextPath);
+    this.context = mdbContextByContextPath2(this.plugin, this.contextPath);
     if (!this.context)
       return;
     this.constructContext(this.context);
@@ -48843,7 +48844,7 @@ var MakeMDPlugin = class extends import_obsidian54.Plugin {
     let filePath = null;
     const activeLeaf = app.workspace.activeLeaf;
     if ((activeLeaf == null ? void 0 : activeLeaf.view.getViewType()) == CONTEXT_VIEW_TYPE) {
-      const context = mdbContextByContextPath(this, activeLeaf == null ? void 0 : activeLeaf.view.getState().contextPath);
+      const context = mdbContextByContextPath2(this, activeLeaf == null ? void 0 : activeLeaf.view.getState().contextPath);
       if ((context == null ? void 0 : context.type) == "folder") {
         let file = getAbstractFileAtPath(app, context.contextPath);
         if (file)
