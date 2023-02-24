@@ -13650,9 +13650,6 @@ var frontMatterKeys = (fm) => {
 };
 var yamlTypeToMDBType = (YAMLtype) => {
   switch (YAMLtype) {
-    case "object":
-      return "text";
-      break;
     case "duration":
       return "text";
       break;
@@ -13909,7 +13906,6 @@ var parseFrontMatter = (field, value, dv) => {
       break;
     case "option-multi":
     case "link-multi":
-      console.log(value);
       if (typeof value === "string") {
         return value;
       }
