@@ -508,6 +508,11 @@ body {
   display: flex;
   flex-wrap: wrap;
 }
+.mk-cell-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
 .mk-cell-option-item {
   background: rgba(var(--mono-rgb-100), 0.025);
   border-radius: 4px;
@@ -1630,7 +1635,7 @@ mark {
   border-radius: 8px;
   padding: 8px !important;
 }
-.markdown-source-view.mod-cm6.is-readable-line-width .mk-file-context-file > .mk-inline-title.inline-title {
+.mk-file-context-file > .mk-inline-title.inline-title {
   padding-bottom: 0;
   display: flex !important;
   margin-left: 0 !important;
@@ -1815,10 +1820,13 @@ mark {
 .mk-header:hover .mk-file-context-collapse {
   opacity: 1;
 }
-.markdown-source-view.mod-cm6 .cm-content > .cm-line.has-banner {
+.markdown-source-view.mod-cm6 .cm-content > .cm-line.mk-has-banner {
   position: inherit !important;
 }
-.markdown-source-view.mod-cm6 .cm-content > .cm-line.has-banner .cm-fold-indicator {
+.markdown-source-view.mod-cm6 .mk-has-backlinks img.cm-widgetBuffer {
+  display: none !important;
+}
+.markdown-source-view.mod-cm6 .cm-content > .cm-line.mk-has-banner .cm-fold-indicator {
   display: none;
 }
 .mk-header .mk-file-context-component {
@@ -1850,6 +1858,9 @@ mark {
 .mk-header-title.mk-header-has-banner {
   margin-top: -34px;
 }
+.workspace-leaf-content[data-type=make-file-view] .view-content {
+  padding: 0;
+}
 .markdown-source-view.mod-cm6 .cm-content > .mk-header {
   --header-height: 0px;
   gap: 16px;
@@ -1859,6 +1870,12 @@ mark {
   contain: unset !important;
   position: inherit;
 }
+.mk-inline-context-enabled .markdown-reading-view .mod-header,
+.mk-inline-context-enabled .markdown-reading-view .frontmatter,
+.mk-inline-context-enabled .markdown-reading-view .frontmatter-container {
+  display: none;
+}
+.markdown-reading-view .mk-file-context-component .mk-spacer,
 .markdown-source-view.mod-cm6 .cm-content > .mk-header .mk-spacer {
   height: var(--header-height) !important;
   pointer-events: none;
