@@ -1635,7 +1635,8 @@ mark {
   border-radius: 8px;
   padding: 8px !important;
 }
-.mk-file-context-file > .mk-inline-title.inline-title {
+.markdown-reading-view .mk-file-context-file > .mk-inline-title.inline-title,
+.markdown-source-view.mod-cm6.is-readable-line-width .mk-file-context-file > .mk-inline-title.inline-title {
   padding-bottom: 0;
   display: flex !important;
   margin-left: 0 !important;
@@ -1870,7 +1871,7 @@ mark {
   contain: unset !important;
   position: inherit;
 }
-.mk-inline-context-enabled .markdown-reading-view .mod-header,
+.mk-inline-context-enabled .markdown-reading-view .mod-header > .inline-title,
 .mk-inline-context-enabled .markdown-reading-view .frontmatter,
 .mk-inline-context-enabled .markdown-reading-view .frontmatter-container {
   display: none;
