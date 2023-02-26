@@ -40419,6 +40419,8 @@ var StatefulDecorationSet = class {
     if (!state.field(import_obsidian38.editorInfoField))
       return null;
     const infoField = state.field(import_obsidian38.editorInfoField);
+    if (!infoField.editor.cm)
+      return null;
     const file = infoField.file;
     const contentEl = infoField.editor.cm.contentDOM;
     const decorations = [];
@@ -40447,7 +40449,7 @@ var StatefulDecorationSet = class {
   }
   async updateAsyncDecorations(state, show) {
     const decorations = await this.computeAsyncDecorations(state, show);
-    if (decorations || this.editor.state.field(statefulDecorations.field).size) {
+    if (decorations || this.editor.state.field(statefulDecorations.field, false).size) {
       this.editor.dispatch({
         effects: statefulDecorations.update.of(decorations || import_view7.Decoration.none)
       });
@@ -40491,10 +40493,10 @@ var headerViewPlugin = (plugin) => import_view7.ViewPlugin.fromClass(
       this.flowTypeState = view.state.field(flowTypeStateField, false);
       if (this.flowTypeState == "doc" || !this.flowTypeState)
         this.statefulDecorationsSet.updateAsyncDecorations(view.state, true);
-      this.livePreview = view.state.field(import_obsidian38.editorLivePreviewField);
+      this.livePreview = view.state.field(import_obsidian38.editorLivePreviewField, false);
     }
     showHeader(view) {
-      if ((view.state.field(flowTypeStateField, false) == "doc" || view.state.field(flowTypeStateField, false) == null) && view.state.field(import_obsidian38.editorLivePreviewField)) {
+      if ((view.state.field(flowTypeStateField, false) == "doc" || view.state.field(flowTypeStateField, false) == null) && view.state.field(import_obsidian38.editorLivePreviewField, false)) {
         if (!this.headerEnabled) {
           this.statefulDecorationsSet.updateAsyncDecorations(view.state, true);
           this.headerEnabled = true;
@@ -40506,11 +40508,11 @@ var headerViewPlugin = (plugin) => import_view7.ViewPlugin.fromClass(
     }
     update(update) {
       var _a2, _b2;
-      const infoField = update.state.field(import_obsidian38.editorInfoField);
-      if (update.docChanged || update.state.field(flowTypeStateField) != this.flowTypeState || this.filePath != ((_a2 = infoField.file) == null ? void 0 : _a2.path) || this.livePreview != update.state.field(import_obsidian38.editorLivePreviewField)) {
+      const infoField = update.state.field(import_obsidian38.editorInfoField, false);
+      if (update.docChanged || update.state.field(flowTypeStateField, false) != this.flowTypeState || this.filePath != ((_a2 = infoField.file) == null ? void 0 : _a2.path) || this.livePreview != update.state.field(import_obsidian38.editorLivePreviewField, false)) {
         this.filePath = (_b2 = infoField.file) == null ? void 0 : _b2.path;
-        this.livePreview = update.state.field(import_obsidian38.editorLivePreviewField);
-        this.flowTypeState = update.state.field(flowTypeStateField);
+        this.livePreview = update.state.field(import_obsidian38.editorLivePreviewField, false);
+        this.flowTypeState = update.state.field(flowTypeStateField, false);
         this.showHeader(update.view);
       }
     }
@@ -49172,6 +49174,29 @@ var FileHeaderContextView = (props2) => {
   })))))))) : /* @__PURE__ */ bn.createElement(bn.Fragment, null));
 };
 
+// src/components/FileContextView/ReadingModeHeader.tsx
+var ReadingModeHeader = (props2) => {
+  const [path, setPath] = p2(props2.filePath);
+  h2(() => {
+    setPath(props2.filePath);
+  }, [props2.filePath]);
+  const changeActiveFile = (evt) => {
+    setPath(evt.detail.filePath);
+  };
+  h2(() => {
+    window.addEventListener(eventTypes.activeFileChange, changeActiveFile);
+    return () => {
+      window.removeEventListener(eventTypes.activeFileChange, changeActiveFile);
+    };
+  }, [path]);
+  return /* @__PURE__ */ bn.createElement(InlineFileContextView, {
+    plugin: props2.plugin,
+    file: getAbstractFileAtPath(app, path),
+    showHeader: true,
+    editable: false
+  });
+};
+
 // src/utils/contexts/markdownPost.tsx
 var import_obsidian53 = require("obsidian");
 var replaceInlineContext = (plugin, el, ctx) => {
@@ -49179,6 +49204,7 @@ var replaceInlineContext = (plugin, el, ctx) => {
     let element = dom.querySelector(".mod-header");
     if (element) {
       if (!element.hasClass("mk-header") || element.getAttribute("data-path") != ctx.sourcePath) {
+        element.innerHTML = "";
         element.setAttribute("data-path", ctx.sourcePath);
         element.toggleClass("mk-header", true);
         const reactEl = createRoot(element);
@@ -49193,11 +49219,9 @@ var replaceInlineContext = (plugin, el, ctx) => {
           );
         } else {
           reactEl.render(
-            /* @__PURE__ */ bn.createElement(InlineFileContextView, {
+            /* @__PURE__ */ bn.createElement(ReadingModeHeader, {
               plugin,
-              file: getAbstractFileAtPath(app, ctx.sourcePath),
-              showHeader: true,
-              editable: false
+              filePath: ctx.sourcePath
             })
           );
         }
