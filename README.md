@@ -18,11 +18,7 @@ Make edits to your notes in the blink of your eye, quickly open and directly edi
 
 ### ⌛ Flow
 
-Stay in the flow while writing, edit your notes, canvas or context directly inline.
-
-### 🧠 Maker Mode
-
-Create without learning markdown, just type slash to create a new block or select some text to style.
+An editor experience that helps you stay in the flow while writing, editing your notes, canvas or context directly inline.
 
 ---
 
