@@ -41095,7 +41095,6 @@ var ContextViewComponent = (props2) => {
   const [folderCache, setFolderCache] = h2(null);
   const refreshCache = () => {
     if (props2.context.type == "folder") {
-      console.log(props2.plugin.index.files.get(props2.context.contextPath));
       setFolderCache(props2.plugin.index.files.get(props2.context.contextPath));
       return;
     }
@@ -41139,7 +41138,6 @@ var ContextViewComponent = (props2) => {
   };
   const cacheChanged = (evt) => {
     if (evt.detail.type == "file" && evt.detail.name == context.contextPath) {
-      console.log(evt.detail);
       refreshCache();
     }
   };
@@ -53012,7 +53010,6 @@ var Superstate = class extends import_obsidian59.Component {
       fileCache = this.files.get(folderNotePath);
       afile = getAbstractFileAtPath(app, fileCache.path);
     }
-    console.log(fileCache);
     if (fileCache) {
       const allContextsWithFile = fileCache.contexts.map((f4) => {
         var _a2;
@@ -53044,7 +53041,6 @@ var Superstate = class extends import_obsidian59.Component {
     if (oldParentPath != newParentPath) {
       const newFolderPath = getFolderPathFromString(newPath);
       const newFolderContext = this.contextsCache.get(newFolderPath);
-      console.log(fileCache.fileTags);
       const newTags = uniq([...fileCache.fileTags, ...(_b2 = newFolderContext == null ? void 0 : newFolderContext.contexts) != null ? _b2 : []]);
       const sameContexts = allContextsWithFile.filter((f4) => newTags.includes(f4));
       if (sameContexts.length > 0)
