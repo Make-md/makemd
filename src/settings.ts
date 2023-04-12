@@ -27,6 +27,7 @@ export interface MakeMDPluginSettings {
   deleteFileOption: DeleteFileOption;
   autoOpenFileContext: boolean;
   expandedFolders: Record<string, string[]>;
+  folderNoteOpenDefault: boolean;
   expandedSpaces: string[];
   saveAllContextToFrontmatter: boolean;
   folderRank: StringTree;
@@ -61,7 +62,7 @@ export const DEFAULT_SETTINGS: MakeMDPluginSettings = {
   editorFlow: true,
   internalLinkClickFlow: true,
   saveAllContextToFrontmatter: false,
-  editorFlowStyle: "seamless",
+  editorFlowStyle: 'seamless',
   autoOpenFileContext: false,
   spacesCompactMode: false,
   spacesEnabled: true,
@@ -71,13 +72,14 @@ export const DEFAULT_SETTINGS: MakeMDPluginSettings = {
   spacesStickers: true,
   spacesDisablePatch: false,
   folderNoteInsideFolder: true,
+  folderNoteOpenDefault: false,
   sidebarTabs: true,
   showRibbon: true,
-  deleteFileOption: "trash",
+  deleteFileOption: 'trash',
   expandedFolders: {},
-  expandedSpaces: ["/"],
+  expandedSpaces: ['/'],
   folderRank: {
-    node: "root",
+    node: 'root',
     children: [],
     isFolder: true,
   },
@@ -85,15 +87,15 @@ export const DEFAULT_SETTINGS: MakeMDPluginSettings = {
   fileIcons: [],
   spaces: [],
   pinnedSpaces: [],
-  menuTriggerChar: "/",
-  emojiTriggerChar: ":",
-  folderContextFile: "context",
-  tagContextFolder: "Context",
-  hiddenFiles: ["Context"],
-  hiddenExtensions: ["mdb"],
-  vaultSort: ["rank", true],
-  newFileLocation: "root",
-  newFileFolderPath: "",
+  menuTriggerChar: '/',
+  emojiTriggerChar: ':',
+  folderContextFile: 'context',
+  tagContextFolder: 'Context',
+  hiddenFiles: ['Context'],
+  hiddenExtensions: ['mdb'],
+  vaultSort: ['rank', true],
+  newFileLocation: 'root',
+  newFileFolderPath: '',
 };
 
 export class MakeMDPluginSettingsTab extends PluginSettingTab {
@@ -113,7 +115,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
     let { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: t.settings.sectionAppearance });
+    containerEl.createEl('h2', { text: t.settings.sectionAppearance });
     new Setting(containerEl)
       .setName(t.settings.sidebarTabs.name)
       .setDesc(t.settings.sidebarTabs.desc)
@@ -121,7 +123,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         toggle.setValue(this.plugin.settings.sidebarTabs).onChange((value) => {
           this.plugin.settings.sidebarTabs = value;
           this.plugin.saveSettings();
-          document.body.classList.toggle("mk-hide-tabs", !value);
+          document.body.classList.toggle('mk-hide-tabs', !value);
         })
       );
     new Setting(containerEl)
@@ -131,7 +133,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         toggle.setValue(this.plugin.settings.showRibbon).onChange((value) => {
           this.plugin.settings.showRibbon = value;
           this.plugin.saveSettings();
-          document.body.classList.toggle("mk-hide-ribbon", !value);
+          document.body.classList.toggle('mk-hide-ribbon', !value);
         })
       );
 
@@ -149,7 +151,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           })
       );
 
-    containerEl.createEl("h2", { text: t.settings.sectionSidebar });
+    containerEl.createEl('h2', { text: t.settings.sectionSidebar });
     new Setting(containerEl)
       .setName(t.settings.spaces.name)
       .setDesc(t.settings.spaces.desc)
@@ -191,6 +193,18 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
             this.plugin.saveSettings();
           })
       );
+
+    new Setting(containerEl)
+      .setName(t.settings.folderNoteOpenDefault.name)
+      .setDesc(t.settings.folderNoteOpenDefault.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.folderNoteOpenDefault)
+          .onChange((value) => {
+            this.plugin.settings.folderNoteOpenDefault = value;
+            this.plugin.saveSettings();
+          })
+      );
     new Setting(containerEl)
       .setName(t.settings.activeFile.name)
       .setDesc(t.settings.activeFile.desc)
@@ -202,7 +216,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
             this.plugin.saveSettings();
           })
       );
-    containerEl.createEl("h2", { text: "Context" });
+    containerEl.createEl('h2', { text: 'Context' });
 
     new Setting(containerEl)
       .setName(t.settings.openFileContext.name)
@@ -228,7 +242,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           })
       );
 
-    containerEl.createEl("h2", { text: t.settings.sectionFlow });
+    containerEl.createEl('h2', { text: t.settings.sectionFlow });
     new Setting(containerEl)
       .setName(t.settings.internalLinkFlowEditor.name)
       .setDesc(t.settings.internalLinkFlowEditor.desc)
@@ -255,26 +269,26 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       .setName(t.settings.editorFlowStyle.name)
       .setDesc(t.settings.editorFlowStyle.desc)
       .addDropdown((dropdown: DropdownComponent) => {
-        dropdown.addOption("classic", t.settings.editorFlowStyle.classic);
-        dropdown.addOption("seamless", t.settings.editorFlowStyle.seamless);
-        dropdown.addOption("minimal", t.settings.editorFlowStyle.minimal);
+        dropdown.addOption('classic', t.settings.editorFlowStyle.classic);
+        dropdown.addOption('seamless', t.settings.editorFlowStyle.seamless);
+        dropdown.addOption('minimal', t.settings.editorFlowStyle.minimal);
         dropdown
           .setValue(this.plugin.settings.editorFlowStyle)
           .onChange(async (value) => {
             this.plugin.settings.editorFlowStyle = value;
-            document.body.classList.toggle("mk-flow-classic", false);
-            document.body.classList.toggle("mk-flow-seamless", false);
-            document.body.classList.toggle("mk-flow-minimal", false);
-            if (value == "seamless")
-              document.body.classList.toggle("mk-flow-seamless", true);
-            if (value == "classic")
-              document.body.classList.toggle("mk-flow-classic", true);
-            if (value == "minimal")
-              document.body.classList.toggle("mk-flow-minimal", true);
+            document.body.classList.toggle('mk-flow-classic', false);
+            document.body.classList.toggle('mk-flow-seamless', false);
+            document.body.classList.toggle('mk-flow-minimal', false);
+            if (value == 'seamless')
+              document.body.classList.toggle('mk-flow-seamless', true);
+            if (value == 'classic')
+              document.body.classList.toggle('mk-flow-classic', true);
+            if (value == 'minimal')
+              document.body.classList.toggle('mk-flow-minimal', true);
           });
       });
 
-    containerEl.createEl("h2", { text: t.settings.sectionEditor });
+    containerEl.createEl('h2', { text: t.settings.sectionEditor });
 
     new Setting(containerEl)
       .setName(t.settings.makeChar.name)
@@ -291,7 +305,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
             let char = value[0];
 
             if (value.trim().length === 2) {
-              char = value.replace(this.plugin.settings.menuTriggerChar, "");
+              char = value.replace(this.plugin.settings.menuTriggerChar, '');
             }
 
             text.setValue(char);
@@ -339,7 +353,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         })
       );
 
-    containerEl.createEl("h2", { text: t.settings.sectionAdvanced });
+    containerEl.createEl('h2', { text: t.settings.sectionAdvanced });
 
     new Setting(containerEl)
       .setName(t.settings.spacesFileExplorerDual.name)
@@ -380,13 +394,13 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       .setDesc(t.settings.spacesDeleteOption.desc)
       .addDropdown((dropdown) => {
         dropdown.addOption(
-          "permanent",
+          'permanent',
           t.settings.spacesDeleteOptions.permanant
         );
-        dropdown.addOption("trash", t.settings.spacesDeleteOptions.trash);
+        dropdown.addOption('trash', t.settings.spacesDeleteOptions.trash);
         dropdown.addOption(
-          "system-trash",
-          t.settings.spacesDeleteOptions["system-trash"]
+          'system-trash',
+          t.settings.spacesDeleteOptions['system-trash']
         );
         dropdown.setValue(this.plugin.settings.deleteFileOption);
         dropdown.onChange((option: DeleteFileOption) => {

@@ -22,12 +22,22 @@ export const FolderContextViewComponent = (
   const folder = props.folder?.path;
   const path = folderContextFromFolder(props.plugin, folder);
   const ref = useRef<HTMLDivElement>(null);
-  const [flowOpen, setFlowOpen] = useState(false);
+
+
   const folderNotePath = props.plugin.settings.folderNoteInsideFolder
     ? `${props.folder.path}/${props.folder.name}.md`
     : props.folder && props.folder.parent.path == "/"
     ? `${props.folder.name}.md`
     : `${props.folder.parent.path}/${props.folder.name}.md`;
+
+  const folderNote = getAbstractFileAtPath(app, folderNotePath);
+
+  const [flowOpen, setFlowOpen] = useState(
+    props.plugin.settings.enableFolderNote &&
+      props.plugin.settings.folderNoteOpenDefault &&
+      folderNote
+  );
+
   const loadFile = async () => {
     const folderNote = getAbstractFileAtPath(app, folderNotePath);
     if (folderNote) {
