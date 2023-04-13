@@ -41436,6 +41436,7 @@ var FileLinkView = class extends import_obsidian36.ItemView {
 // src/utils/file.ts
 var import_obsidian37 = require("obsidian");
 var tFileToAFile = (file) => {
+  var _a2, _b2;
   if (!file)
     return null;
   if (file instanceof import_obsidian37.TFile && file.stat) {
@@ -41452,7 +41453,7 @@ var tFileToAFile = (file) => {
     isFolder: true,
     name: file.name,
     path: file.path,
-    parent: file.parent.path
+    parent: (_b2 = (_a2 = file.parent) == null ? void 0 : _a2.path) != null ? _b2 : "/"
   };
 };
 var defaultNoteFolder = (plugin, activeFile2) => {
@@ -41556,7 +41557,7 @@ var deleteFiles = (plugin, files) => {
   });
 };
 var deleteFile = (plugin, file) => {
-  let deleteOption = plugin.settings.deleteFileOption;
+  const deleteOption = plugin.settings.deleteFileOption;
   if (deleteOption === "permanent") {
     return plugin.app.vault.delete(file, true);
   } else if (deleteOption === "system-trash") {
@@ -41571,7 +41572,7 @@ var openFile = async (file, plugin, newLeaf) => {
 var openSpace = async (spaceName, plugin, newLeaf) => {
   if (!plugin.settings.contextEnabled)
     return;
-  let leaf = app.workspace.getLeaf(newLeaf);
+  const leaf = app.workspace.getLeaf(newLeaf);
   const viewType = CONTEXT_VIEW_TYPE;
   app.workspace.setActiveLeaf(leaf, { focus: true });
   await leaf.setViewState({
@@ -41582,13 +41583,13 @@ var openSpace = async (spaceName, plugin, newLeaf) => {
   if (platformIsMobile()) {
     app.workspace.leftSplit.collapse();
   }
-  let evt = new CustomEvent(eventTypes.activePathChange, {
+  const evt = new CustomEvent(eventTypes.activePathChange, {
     detail: { path: pathByString(plugin, spaceContextPathFromName(spaceName)) }
   });
   window.dispatchEvent(evt);
 };
 var openURL = async (url) => {
-  let leaf = app.workspace.getLeaf(false);
+  const leaf = app.workspace.getLeaf(false);
   if (url.endsWith(".md")) {
     const viewType = FILE_VIEW_TYPE;
     app.workspace.setActiveLeaf(leaf, { focus: true });
