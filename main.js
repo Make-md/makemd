@@ -22930,7 +22930,7 @@ var rebuildIndex = async (plugin, save) => {
   console.time("Make.md Vault Index");
   const newTables = indexCurrentFileTree(plugin, (_a2 = plugin.index.vaultDBCache) != null ? _a2 : [], (_b2 = plugin.index.spacesItemsDBCache) != null ? _b2 : []);
   if (save && (!import_lodash3.default.isEqual(newTables.vault.rows, plugin.index.vaultDBCache) || !import_lodash3.default.isEqual(newTables.spaceItems.rows, plugin.index.spacesItemsDBCache))) {
-    plugin.index.saveSpacesDatabaseToDisk(newTables, save);
+    await plugin.index.saveSpacesDatabaseToDisk(newTables, save);
   }
   plugin.index.initialize();
   console.timeEnd("Make.md Vault Index");
@@ -23019,10 +23019,10 @@ var vaultItemForPath = (plugin, path) => {
     return null;
   return plugin.index.vaultDBCache.find((f4) => f4.path == path);
 };
-var saveFileSticker = (plugin, path, sticker) => {
+var saveFileSticker = async (plugin, path, sticker) => {
   if (plugin.settings.spacesEnabled) {
     const newVaultDB = plugin.index.vaultDBCache.map((f4) => f4.path == path ? { ...f4, sticker } : f4);
-    plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultDB } });
+    await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultDB } });
   }
   saveFrontmatterValue(
     plugin,
@@ -23034,17 +23034,17 @@ var saveFileSticker = (plugin, path, sticker) => {
   );
   plugin.index.reloadFile(getAbstractFileAtPath(app, path)).then((f4) => plugin.index.broadcast("space"));
 };
-var saveFolderSort = (plugin, path, sort) => {
+var saveFolderSort = async (plugin, path, sort) => {
   if (plugin.settings.spacesEnabled) {
     const newVaultDB = plugin.index.vaultDBCache.map((f4) => f4.path == path ? { ...f4, folder: sort } : f4);
-    plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultDB } });
+    await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultDB } });
     plugin.index.reloadFile(getAbstractFileAtPath(app, path)).then((f4) => plugin.index.broadcast("vault"));
   }
 };
-var saveFileColor = (plugin, path, color) => {
+var saveFileColor = async (plugin, path, color) => {
   if (plugin.settings.spacesEnabled) {
     const newVaultDB = plugin.index.vaultDBCache.map((f4) => f4.path == path ? { ...f4, color } : f4);
-    plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultDB } });
+    await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultDB } });
   }
   saveFrontmatterValue(
     plugin,
@@ -23056,9 +23056,9 @@ var saveFileColor = (plugin, path, color) => {
   );
   plugin.index.reloadFile(getAbstractFileAtPath(app, path)).then((f4) => plugin.index.broadcast("space"));
 };
-var saveSpaceSticker = (plugin, name, sticker) => {
+var saveSpaceSticker = async (plugin, name, sticker) => {
   const newSpaceDB = plugin.index.spacesDBCache.map((f4) => f4.name == name ? { ...f4, sticker } : f4);
-  plugin.index.saveSpacesDatabaseToDisk({ spaces: { ...spaceSchema, rows: newSpaceDB } });
+  await plugin.index.saveSpacesDatabaseToDisk({ spaces: { ...spaceSchema, rows: newSpaceDB } });
   plugin.index.reloadSpace(name);
 };
 var updateFileRank = async (plugin, item, rank) => {
@@ -23079,7 +23079,7 @@ var updateFileRank = async (plugin, item, rank) => {
     }
     return f4;
   });
-  plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultDB } });
+  await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultDB } });
   const promises = newItems.map((f4) => plugin.index.reloadFile(getAbstractFileAtPath(app, f4.path)));
   await Promise.all(promises);
   plugin.index.broadcast("space");
@@ -23112,14 +23112,14 @@ var moveAFileToNewParentAtIndex = async (plugin, item, newParent, index) => {
     }
     return f4;
   });
-  plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultTable } });
+  await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultTable } });
   const afile = getAbstractFileAtPath(app, item.path);
   await moveFile(getAbstractFileAtPath(app, newParent), afile);
   const promises = rows.map((f4) => plugin.index.reloadFile(getAbstractFileAtPath(app, f4.path)));
   await Promise.all(promises);
   plugin.index.broadcast("space");
 };
-var insertSpaceAtIndex = (plugin, newSpace, rank) => {
+var insertSpaceAtIndex = async (plugin, newSpace, rank) => {
   const spaces2 = plugin.index.allSpaces();
   const spaceExists = spaces2.find((f4) => f4.name == newSpace.name);
   let fixedRank = rank;
@@ -23148,7 +23148,7 @@ var insertSpaceAtIndex = (plugin, newSpace, rank) => {
     }
     return f4;
   });
-  plugin.index.saveSpacesDatabaseToDisk({ spaces: { ...spaceSchema, rows: newSpaceRows } });
+  await plugin.index.saveSpacesDatabaseToDisk({ spaces: { ...spaceSchema, rows: newSpaceRows } });
   plugin.index.initializeSpaces().then((f4) => plugin.index.initalizeFiles());
 };
 var insertSpaceItemAtIndex = async (plugin, spaceName, path, rank) => {
@@ -23193,16 +23193,16 @@ var insertSpaceItemAtIndex = async (plugin, spaceName, path, rank) => {
     }
     return f4;
   });
-  plugin.index.saveSpacesDatabaseToDisk({ spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
+  await plugin.index.saveSpacesDatabaseToDisk({ spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
   await plugin.index.reloadSpace(space.name);
   const promises = newSpaceItemsRows.map((f4) => plugin.index.reloadFile(getAbstractFileAtPath(app, f4.path)));
   await Promise.all(promises);
   plugin.index.broadcast("vault");
 };
-var saveSpace = (plugin, space, newSpace) => {
+var saveSpace = async (plugin, space, newSpace) => {
   const newSpaceRows = plugin.index.spacesDBCache.map((f4) => f4.name == space ? serializeSpace(newSpace) : f4);
   const newSpaceItemsRows = plugin.index.spacesItemsDBCache.map((f4) => f4.space == space ? { ...f4, space: newSpace.name } : f4);
-  plugin.index.saveSpacesDatabaseToDisk({ spaces: { ...spaceSchema, rows: newSpaceRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
+  await plugin.index.saveSpacesDatabaseToDisk({ spaces: { ...spaceSchema, rows: newSpaceRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
   plugin.settings.expandedSpaces = plugin.settings.expandedSpaces.map(
     (f4) => f4 == space ? newSpace.name : f4
   );
@@ -23214,10 +23214,10 @@ var saveSpace = (plugin, space, newSpace) => {
   plugin.index.reloadSpace(space);
   plugin.index.initalizeFiles();
 };
-var removeSpace = (plugin, space) => {
+var removeSpace = async (plugin, space) => {
   const newSpaceRows = plugin.index.spacesDBCache.filter((f4) => f4.name != space);
   const newSpaceItemsRows = plugin.index.spacesItemsDBCache.filter((f4) => f4.space != space);
-  plugin.index.saveSpacesDatabaseToDisk({ spaces: { ...spaceSchema, rows: newSpaceRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
+  await plugin.index.saveSpacesDatabaseToDisk({ spaces: { ...spaceSchema, rows: newSpaceRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
   deleteSpaceContext(plugin, space);
   plugin.index.deleteSpace(space);
 };
@@ -23241,7 +23241,7 @@ var toggleSpacePin = (plugin, spaceName, type) => {
 };
 var addPathsToSpace = async (plugin, space, paths) => {
   const newSpaceItemsRows = [...plugin.index.spacesItemsDBCache, ...paths.map((p3) => ({ space, path: p3 }))];
-  plugin.index.saveSpacesDatabaseToDisk({ spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
+  await plugin.index.saveSpacesDatabaseToDisk({ spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
   await plugin.index.reloadSpace(space);
   const promises = paths.map((f4) => plugin.index.reloadFile(getAbstractFileAtPath(app, f4)));
   await Promise.all(promises);
@@ -23249,7 +23249,7 @@ var addPathsToSpace = async (plugin, space, paths) => {
 };
 var removePathsFromSpace = async (plugin, space, paths) => {
   const newSpaceItemsRows = plugin.index.spacesItemsDBCache.filter((f4) => !(f4.space == space && paths.includes(f4.path)));
-  plugin.index.saveSpacesDatabaseToDisk({ spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
+  await plugin.index.saveSpacesDatabaseToDisk({ spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
   await plugin.index.reloadSpace(space);
   const promises = paths.map((f4) => plugin.index.reloadFile(getAbstractFileAtPath(app, f4)));
   await Promise.all(promises);
@@ -52468,7 +52468,7 @@ var dispatchSpaceDatabaseFileChanged = (type, action, name, newName) => {
 var onFileCreated = async (plugin, newPath, folder) => {
   var _a2;
   const parent = (_a2 = getAbstractFileAtPath(app, newPath).parent) == null ? void 0 : _a2.path;
-  plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: [...plugin.index.vaultDBCache, {
+  await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: [...plugin.index.vaultDBCache, {
     path: newPath,
     parent,
     created: Math.trunc(Date.now() / 1e3).toString(),
@@ -52476,13 +52476,13 @@ var onFileCreated = async (plugin, newPath, folder) => {
   }] } });
   plugin.index.createFile(newPath);
 };
-var onFileDeleted = (plugin, oldPath) => {
+var onFileDeleted = async (plugin, oldPath) => {
   const newVaultRows = plugin.index.vaultDBCache.filter((f4) => f4.path != oldPath);
   const newSpaceItemsRows = plugin.index.spacesItemsDBCache.filter((f4) => f4.path != oldPath);
-  plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
+  await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
   plugin.index.deleteFile(oldPath);
 };
-var onFileChanged = (plugin, oldPath, newPath) => {
+var onFileChanged = async (plugin, oldPath, newPath) => {
   const newFolderPath = getFolderPathFromString(newPath);
   const newVaultRows = plugin.index.vaultDBCache.map((f4) => f4.path == oldPath ? {
     ...f4,
@@ -52493,10 +52493,10 @@ var onFileChanged = (plugin, oldPath, newPath) => {
     ...f4,
     path: newPath
   } : f4);
-  plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
+  await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
   plugin.index.renameFile(oldPath, newPath);
 };
-var onFolderChanged = (plugin, oldPath, newPath) => {
+var onFolderChanged = async (plugin, oldPath, newPath) => {
   const newFolderPath = getFolderFromPath(app, newPath).parent.path;
   const allChildren = retrieveAllRecursiveChildren(plugin.index.vaultDBCache, plugin.settings, oldPath);
   const newVaultRows = plugin.index.vaultDBCache.map((f4) => f4.path == oldPath ? {
@@ -52515,7 +52515,7 @@ var onFolderChanged = (plugin, oldPath, newPath) => {
     ...f4,
     path: f4.path.replace(oldPath, newPath)
   } : f4);
-  plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
+  await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
   plugin.index.renameFile(oldPath, newPath);
   if (plugin.settings.enableFolderNote && !plugin.settings.folderNoteInsideFolder) {
     const file = getAbstractFileAtPath(app, oldPath + ".md");
@@ -52524,11 +52524,11 @@ var onFolderChanged = (plugin, oldPath, newPath) => {
   }
   allChildren.forEach((f4) => plugin.index.renameFile(f4.path, f4.path.replace(oldPath, newPath)));
 };
-var onFolderDeleted = (plugin, oldPath) => {
+var onFolderDeleted = async (plugin, oldPath) => {
   const allChildren = retrieveAllRecursiveChildren(plugin.index.vaultDBCache, plugin.settings, oldPath);
   const newVaultRows = plugin.index.vaultDBCache.filter((f4) => f4.path != oldPath && !f4.parent.startsWith(oldPath));
-  const newSpaceItemsRows = plugin.index.vaultDBCache.filter((f4) => f4.path != oldPath && !f4.parent.startsWith(oldPath));
-  plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
+  const newSpaceItemsRows = plugin.index.spacesItemsDBCache.filter((f4) => f4.path != oldPath && !f4.parent.startsWith(oldPath));
+  await plugin.index.saveSpacesDatabaseToDisk({ vault: { ...vaultSchema, rows: newVaultRows }, spaceItems: { ...spaceItemsSchema, rows: newSpaceItemsRows } });
   allChildren.forEach((f4) => plugin.index.deleteFile(f4.path));
   plugin.index.deleteFile(oldPath);
 };
@@ -52679,15 +52679,15 @@ var LocalStorageCache = class {
     this.persister = import_localforage.default.createInstance({
       name: "superstate/" + appId,
       driver: [import_localforage.default.INDEXEDDB],
-      description: "Cache metadata about files and sections in the dataview index."
+      description: "Superstate Index"
     });
   }
   async recreate() {
-    await import_localforage.default.dropInstance({ name: "dataview/cache/" + this.appId });
+    await import_localforage.default.dropInstance({ name: "superstate/" + this.appId });
     this.persister = import_localforage.default.createInstance({
       name: "superstate/" + this.appId,
       driver: [import_localforage.default.INDEXEDDB],
-      description: "Cache metadata about files and sections in the dataview index."
+      description: "Superstate Index"
     });
   }
   async loadFile(path) {
@@ -52926,7 +52926,7 @@ var Superstate = class extends import_obsidian59.Component {
     return new Superstate(app2, indexVersion, onChange, plugin);
   }
   async initializeIndex() {
-    await this.loadFromCache();
+    await Promise.race([new Promise((resolve) => setTimeout(resolve, 1e3)), this.loadFromCache()]);
     this.loadSpacesDatabaseFromDisk();
   }
   addToContextStoreQueue(operation) {
@@ -52986,7 +52986,8 @@ var Superstate = class extends import_obsidian59.Component {
       this.spacesItemsDBCache = (_d2 = (_c2 = selectDB(db, "spaceItems")) == null ? void 0 : _c2.rows) != null ? _d2 : [];
       this.spacesDBCache = (_f = (_e2 = selectDB(db, "spaces")) == null ? void 0 : _e2.rows) != null ? _f : [];
       db.close();
-      if (!this.plugin.settings.precreateVaultSpace) {
+      this.spacesDBLoaded = true;
+      if (!this.plugin.settings.precreateVaultSpace || this.spacesDBCache.length == 0) {
         insertSpaceAtIndex(
           this.plugin,
           {
@@ -52999,6 +53000,7 @@ var Superstate = class extends import_obsidian59.Component {
         this.plugin.settings.precreateVaultSpace = true;
         this.plugin.saveSettings();
       }
+      this.spacesDBCache.forEach((f4) => this.reloadSpace(f4.name, false));
     }
     rebuildIndex(this.plugin, true);
   }
@@ -53018,6 +53020,10 @@ var Superstate = class extends import_obsidian59.Component {
     }
   }
   async saveSpacesDatabaseToDisk(tables, save = true) {
+    if (await app.vault.adapter.exists((0, import_obsidian59.normalizePath)(this.plugin.spacesDBPath)) && !this.spacesDBLoaded) {
+      return;
+    }
+    this.spacesDBLoaded = true;
     if (tables.vault)
       this.vaultDBCache = tables.vault.rows;
     if (tables.spaceItems)
@@ -53029,7 +53035,6 @@ var Superstate = class extends import_obsidian59.Component {
     }
   }
   async initialize() {
-    await this.loadFromCache();
     const start = Date.now();
     if (this.plugin.settings.spacesEnabled)
       await this.initializeSpaces();
@@ -53040,7 +53045,7 @@ var Superstate = class extends import_obsidian59.Component {
   }
   async initializeSpaces() {
     this.spacesIndex = /* @__PURE__ */ new Map();
-    const promises = this.spacesDBCache.map((f4) => this.reloadSpace(f4.name));
+    const promises = this.spacesDBCache.map((f4) => this.reloadSpace(f4.name, true));
     await Promise.all(promises);
   }
   async initializeContexts() {
@@ -53060,15 +53065,6 @@ var Superstate = class extends import_obsidian59.Component {
     });
   }
   async loadFromCache() {
-    const allSpaces = this.plugin.settings.cachedSpaces;
-    const cacheSpacePromises = allSpaces.map((s5) => this.persister.loadFile(s5 + "//").then((serializedSpace) => {
-      const space = safelyParseJSON(serializedSpace);
-      if (space) {
-        this.spacesIndex.set(s5, space);
-        this.broadcast("space", "change", s5);
-      }
-    }));
-    await Promise.all(cacheSpacePromises);
     const allFiles = getAllAbstractFilesInVault(this.plugin, app);
     const cachePromises = allFiles.map((file) => this.persister.loadFile(file.path).then((f4) => {
       if (!f4)
@@ -53079,9 +53075,17 @@ var Superstate = class extends import_obsidian59.Component {
       this.contextsMap.set(file.path, new Set(cache.contexts));
       this.spacesMap.set(file.path, new Set(cache.spaces));
       this.broadcast("file", "change", file.path);
-      this.fileReloaded(file.path);
     }));
     await Promise.all(cachePromises);
+    const allSpaces = this.plugin.settings.cachedSpaces;
+    const cacheSpacePromises = allSpaces.map((s5) => this.persister.loadFile(s5 + "//").then((serializedSpace) => {
+      const space = safelyParseJSON(serializedSpace);
+      if (space) {
+        this.spacesIndex.set(s5, space);
+        this.broadcast("space", "change", s5);
+      }
+    }));
+    await Promise.all(cacheSpacePromises);
     this.broadcast("vault");
   }
   async initalizeFiles() {
@@ -53358,7 +53362,7 @@ var Superstate = class extends import_obsidian59.Component {
       this.loadSpacesDatabaseFromDisk();
     }
   }
-  reloadSpace(spaceName) {
+  reloadSpace(spaceName, initialized = true) {
     const spaceDB = this.spacesDBCache.find((f4) => f4.name == spaceName);
     if (spaceDB) {
       const space = parseSpace(spaceDB);
@@ -53366,9 +53370,11 @@ var Superstate = class extends import_obsidian59.Component {
       const cache = parseSpaceCache(space, spaceItems);
       this.spacesIndex.set(spaceName, cache);
       this.persister.storeFile(spaceName + "//", JSON.stringify(cache));
-      this.plugin.settings.cachedSpaces = this.allSpaces().map((f4) => f4.name);
-      this.plugin.saveSettings();
-      this.broadcast("space", "change", spaceName);
+      if (initialized) {
+        this.plugin.settings.cachedSpaces = this.allSpaces().map((f4) => f4.name);
+        this.plugin.saveSettings();
+        this.broadcast("space", "change", spaceName);
+      }
     }
   }
   async reloadFile(file, force) {
@@ -53684,7 +53690,8 @@ var patchWorkspace = (plugin) => {
     },
     getActiveViewOfType(old) {
       return function getActiveViewOfType(type) {
-        if (type.prototype.getViewType() == "markdown") {
+        var _a2;
+        if (((_a2 = type.prototype) == null ? void 0 : _a2.getViewType) && type.prototype.getViewType() == "markdown") {
           if (this.activeEditor)
             return this.activeEditor;
         }
@@ -53732,12 +53739,12 @@ var MakeMDPlugin = class extends import_obsidian62.Plugin {
     this.metadataChange = (file) => {
       this.index.metadataChange(file);
     };
-    this.onCreate = (file) => {
+    this.onCreate = async (file) => {
       if (!file)
         return;
       onFileCreated(this, file.path, file instanceof import_obsidian62.TFolder);
     };
-    this.onDelete = (file) => {
+    this.onDelete = async (file) => {
       if (file instanceof import_obsidian62.TFile && file.extension != "mdb") {
         onFileDeleted(this, file.path);
       } else if (file instanceof import_obsidian62.TFolder) {
@@ -53745,7 +53752,7 @@ var MakeMDPlugin = class extends import_obsidian62.Plugin {
       }
       this.activeFileChange();
     };
-    this.onModify = (file) => {
+    this.onModify = async (file) => {
       if (file.path == this.settings.spacesSyncLastUpdated) {
         this.index.spacesSynced();
       }
@@ -53753,11 +53760,11 @@ var MakeMDPlugin = class extends import_obsidian62.Plugin {
         this.index.reloadContext(mdbContextByDBPath(this, file.path));
       }
     };
-    this.onRename = (file, oldPath) => {
+    this.onRename = async (file, oldPath) => {
       if (file instanceof import_obsidian62.TFile && file.extension != "mdb") {
-        onFileChanged(this, oldPath, file.path);
+        await onFileChanged(this, oldPath, file.path);
       } else if (file instanceof import_obsidian62.TFolder) {
-        onFolderChanged(this, oldPath, file.path);
+        await onFolderChanged(this, oldPath, file.path);
       }
       this.activeFileChange();
     };
@@ -53881,6 +53888,7 @@ var MakeMDPlugin = class extends import_obsidian62.Plugin {
         await this.index.initializeIndex();
         this.openFileTreeLeaf(true);
       } else {
+        await this.index.loadFromCache();
         this.index.initialize();
       }
       this.registerEvent(this.app.vault.on("create", this.onCreate));
@@ -54194,7 +54202,7 @@ var MakeMDPlugin = class extends import_obsidian62.Plugin {
     (0, import_obsidian62.addIcon)("mk-logo", mkLogo);
     await this.loadSettings();
     this.index = this.addChild(
-      Superstate.create(this.app, "0.7", () => {
+      Superstate.create(this.app, "0.8", () => {
         this.debouncedRefresh();
       }, this)
     );
