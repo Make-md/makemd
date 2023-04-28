@@ -19,9 +19,12 @@
   max-width: var(--file-line-width);
   width: 100%;
 }
-.mk-folder-outer {
+.markdown-source-view.mod-cm6.is-readable-line-width .mk-folder-outer {
   padding: 0 var(--file-margins);
+  max-width: 100%;
   width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 .mk-folder-header {
   margin-left: auto;
@@ -1783,7 +1786,7 @@ mark {
 }
 .mk-file-context-file.mk-file-context-file-horizontal {
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
 }
 .markdown-source-view.mod-cm6 .cm-content .mk-header {
   padding-inline-start: 0 !important;
@@ -2045,7 +2048,7 @@ c .mk-section-title,
 }
 .markdown-reading-view .mk-file-context-component .mk-spacer,
 .markdown-source-view.mod-cm6 .cm-content > .mk-header .mk-spacer,
-.mk-folder-view .mk-header .mk-spacer {
+.mk-folder-view .mk-folder-header .mk-spacer {
   height: var(--header-height) !important;
   pointer-events: none;
 }
@@ -2059,22 +2062,28 @@ c .mk-section-title,
 .mk-file-context-component .mk-file-context-field-new:hover {
   opacity: 1;
 }
+.mk-folder-header .mk-file-context-file .mk-file-icon,
 .mk-header .mk-file-context-file .mk-file-icon {
   width: 48px;
   height: 48px;
   margin-bottom: 8px;
 }
+.mk-folder-header .mk-file-context-file.mk-file-context-file-horizontal .mk-file-icon,
 .mk-header .mk-file-context-file.mk-file-context-file-horizontal .mk-file-icon {
   width: 32px;
   height: 32px;
   margin-bottom: 0px;
 }
+.mk-folder-header .mk-file-context-file-horizontal .mk-file-icon svg,
+.mk-folder-header .mk-file-context-file-horizontal .mk-file-icon button,
 .mk-header .mk-file-context-file-horizontal .mk-file-icon svg,
 .mk-header .mk-file-context-file-horizontal .mk-file-icon button {
   width: 32px;
   height: 32px;
   font-size: 28px;
 }
+.mk-folder-header .mk-file-icon svg,
+.mk-folder-header .mk-file-icon button,
 .mk-header .mk-file-icon svg,
 .mk-header .mk-file-icon button {
   width: 48px;

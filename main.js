@@ -41294,7 +41294,7 @@ var ContextViewComponent = (props2) => {
     setFlowOpen(open);
   };
   return /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-folder-scroller"
+    className: "mk-folder-scroller markdown-source-view mod-cm6 is-readable-line-width"
   }, props2.plugin.settings.enableFolderNote && props2.context.type == "folder" ? /* @__PURE__ */ Cn.createElement(MDBProvider, {
     plugin: props2.plugin,
     context
@@ -41302,7 +41302,7 @@ var ContextViewComponent = (props2) => {
     plugin: props2.plugin,
     link: folderCache.banner
   }), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-folder-outer mk-header"
+    className: "mk-folder-outer cm-line"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-folder-header"
   }, folderCache && /* @__PURE__ */ Cn.createElement("div", {
@@ -41317,7 +41317,7 @@ var ContextViewComponent = (props2) => {
     plugin: props2.plugin,
     fileCache: folderCache
   }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), /* @__PURE__ */ Cn.createElement("div", {
-    className: "inline-title"
+    className: "inline-title mk-inline-title"
   }, name)), /* @__PURE__ */ Cn.createElement(TableSelector, {
     plugin: props2.plugin,
     folderNoteName: (_b2 = getFolderFromPath(app, props2.context.contextPath)) == null ? void 0 : _b2.name,
@@ -41336,7 +41336,7 @@ var ContextViewComponent = (props2) => {
   })), flowOpen && /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-folder-outer"
   }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-flowspace-editor mk-foldernote",
+    className: "mk-flowspace-editor mk-foldernote cm-sizer",
     ref
   }))) : /* @__PURE__ */ Cn.createElement(MDBProvider, {
     plugin: props2.plugin,
@@ -41344,7 +41344,7 @@ var ContextViewComponent = (props2) => {
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-context-header"
   }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "inline-title"
+    className: "inline-title mk-inline-title"
   }, name), props2.context.type == "folder" && /* @__PURE__ */ Cn.createElement(TableSelector, {
     plugin: props2.plugin
   })), /* @__PURE__ */ Cn.createElement(FilterBar, {
@@ -53677,8 +53677,8 @@ var patchWorkspace = (plugin) => {
           this.activeEditor = leaf.view;
           if (leaf.view.file) {
             this._["file-open"].forEach((cb) => {
-              var _a2, _b2;
-              if ((cb == null ? void 0 : cb.fn) && ((_b2 = (_a2 = cb.ctx) == null ? void 0 : _a2.leaf) == null ? void 0 : _b2.file)) {
+              var _a2;
+              if ((cb == null ? void 0 : cb.fn) && ((_a2 = cb.ctx) == null ? void 0 : _a2.leaf)) {
                 const bound = cb.fn.bind(cb.ctx);
                 bound(leaf.view.file);
               }
@@ -53983,6 +53983,13 @@ var MakeMDPlugin = class extends import_obsidian62.Plugin {
   }
   loadCommands() {
     if (this.settings.spacesEnabled) {
+      this.addCommand({
+        id: "mk-log",
+        name: "log",
+        callback: () => {
+          console.log(app.workspace.getActiveViewOfType(import_obsidian62.MarkdownView));
+        }
+      });
       this.addCommand({
         id: "mk-collapse-folders",
         name: i18n_default.commandPalette.collapseAllFolders,
