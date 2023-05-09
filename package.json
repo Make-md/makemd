@@ -1,6 +1,6 @@
 {
     "name": "make-md",
-    "version": "0.6.9",
+    "version": "0.7.14",
     "description": "make.md",
     "main": "main.js",
     "scripts": {
