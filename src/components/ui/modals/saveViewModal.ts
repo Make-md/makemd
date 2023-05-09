@@ -4,6 +4,21 @@ import { MDBSchema } from "types/mdb";
 import i18n from "i18n";
 
 type ViewAction = "rename table" | "rename view" | "new view" | "new table";
+
+const buttonTexts: Record<ViewAction, string> = {
+  "new table": i18n.buttons.saveTable,
+  "new view": i18n.buttons.saveView,
+  "rename view": i18n.buttons.renameView,
+  "rename table": i18n.buttons.renameTable,
+};
+
+const headerTexts: Record<ViewAction, string> = {
+  "new table": i18n.labels.saveTable,
+  "new view": i18n.labels.saveView,
+  "rename view": i18n.labels.renameView,
+  "rename table": i18n.labels.renameTable,
+};
+
 export class SaveViewModal extends Modal {
   schema: MDBSchema;
   saveSchema: (schema: MDBSchema) => void;
@@ -24,37 +39,17 @@ export class SaveViewModal extends Modal {
     let { contentEl } = this;
     let myModal = this;
 
-    // Header
-    let headerText;
-    if (this.action == "new view")
-      headerText = i18n.labels.saveView;
-    if (this.action == "new table")
-      headerText = i18n.labels.saveTable;
-    if (this.action == "rename view")
-      headerText = i18n.labels.renameView;
-    if (this.action == "rename table")
-      headerText = i18n.labels.renameTable;
-
+    const headerText = headerTexts[this.action];
     const headerEl = contentEl.createEl("div", { text: headerText });
     headerEl.addClass("modal-title");
 
-    // Input El
-    const inputEl = contentEl.createEl("input");
-
+    const inputEl = contentEl.createEl("input", {
+      value: this.schema.name,
+    });
     inputEl.style.cssText = "width: 100%; height: 2.5em; margin-bottom: 15px;";
     inputEl.focus();
 
-    // Buttons
-    let changeButtonText;
-    if (this.action == "new view")
-      changeButtonText = i18n.buttons.saveView;
-    if (this.action == "new table")
-      changeButtonText = i18n.buttons.saveTable;
-    if (this.action == "rename view")
-      changeButtonText = i18n.buttons.renameView;
-    if (this.action == "rename table")
-      changeButtonText = i18n.buttons.renameTable;
-
+    const changeButtonText = buttonTexts[this.action];
     const changeButton = contentEl.createEl("button", {
       text: changeButtonText,
     });
@@ -68,7 +63,7 @@ export class SaveViewModal extends Modal {
     });
 
     const onClickAction = async () => {
-      let newName = inputEl.value;
+      const newName = inputEl.value;
       if (this.action == "new view" || this.action == "new table") {
         this.saveSchema({ ...this.schema, id: newName, name: newName });
       } else {
