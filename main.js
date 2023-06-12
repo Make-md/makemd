@@ -22692,7 +22692,7 @@ var combinedRangeFacets = (rangeA, rangeB) => {
 };
 var editableRange = import_state3.Annotation.define();
 var contentRange = import_state3.Annotation.define();
-var hiddenLine = import_view3.Decoration.replace({ inclusive: true });
+var hiddenLine = import_view3.Decoration.replace({ inclusive: true, block: true });
 var hideLine = import_state3.StateField.define({
   create() {
     return import_view3.Decoration.none;
@@ -22707,16 +22707,17 @@ var hideLine = import_state3.StateField.define({
       );
       builder.add(
         tr.state.doc.line(1).from,
-        tr.state.doc.line(starterLine).from,
+        tr.state.doc.line(starterLine).from - 1,
         hiddenLine
       );
-      builder.add(
-        tr.state.doc.line(
-          Math.min(tr.newDoc.lines, betterFacet[1])
-        ).to,
-        tr.state.doc.line(tr.newDoc.lines).to,
-        hiddenLine
-      );
+      if (tr.newDoc.lines != betterFacet[1])
+        builder.add(
+          tr.state.doc.line(
+            Math.min(tr.newDoc.lines, betterFacet[1])
+          ).to,
+          tr.state.doc.line(tr.newDoc.lines).to,
+          hiddenLine
+        );
     }
     const dec = builder.finish();
     return dec;
@@ -22761,7 +22762,7 @@ var lineRangeToPosRange = (state, range) => {
 };
 var smartDelete = import_state3.EditorState.transactionFilter.of(
   (tr) => {
-    if (tr.isUserEvent("delete") && !tr.isUserEvent("delete.smart")) {
+    if (tr.isUserEvent("delete") && !tr.annotation(import_state3.Transaction.userEvent).endsWith(".smart")) {
       const initialSelections = tr.startState.selection.ranges.map((range) => ({
         from: range.from,
         to: range.to
@@ -22772,17 +22773,19 @@ var smartDelete = import_state3.EditorState.transactionFilter.of(
           tr.startState,
           betterFacet
         );
-        const minFrom = Math.max(posRange.from, initialSelections[0].from);
-        const minTo = Math.min(posRange.to, initialSelections[0].to);
-        tr.startState.update({
-          changes: {
-            from: Math.min(minFrom, minTo),
-            to: Math.max(minFrom, minTo)
-          },
-          annotations: import_state3.Transaction.userEvent.of(
-            `${tr.annotation(import_state3.Transaction.userEvent)}.smart`
-          )
-        });
+        if (tr.changes.touchesRange(0, posRange.from - 1)) {
+          const minFrom = Math.max(posRange.from, initialSelections[0].from);
+          const minTo = Math.min(posRange.to, initialSelections[0].to);
+          return [{
+            changes: {
+              from: Math.min(minFrom, minTo),
+              to: Math.max(minFrom, minTo)
+            },
+            annotations: import_state3.Transaction.userEvent.of(
+              `${tr.annotation(import_state3.Transaction.userEvent)}.smart`
+            )
+          }];
+        }
       }
     }
     return tr;
@@ -22792,14 +22795,16 @@ var preventModifyTargetRanges = import_state3.EditorState.transactionFilter.of(
   (tr) => {
     let newTrans = [];
     try {
-      const selectiveLines = combinedRangeFacets(tr.startState.field(selectiveLinesFacet, false), tr.startState.field(frontmatterFacet, false));
+      const editableLines = tr.startState.field(selectiveLinesFacet, false);
+      const contentLines = tr.startState.field(frontmatterFacet, false);
+      const selectiveLines = combinedRangeFacets(editableLines, contentLines);
       if (tr.isUserEvent("input") || tr.isUserEvent("delete") || tr.isUserEvent("move")) {
         if (selectiveLines == null ? void 0 : selectiveLines[0]) {
           const posRange = lineRangeToPosRange(
             tr.startState,
             selectiveLines
           );
-          if (tr.changes.touchesRange(0, posRange.from - 1) || !tr.changes.touchesRange(posRange.from, posRange.to)) {
+          if (!tr.changes.touchesRange(posRange.from, posRange.to)) {
             return [];
           }
         }
@@ -22812,22 +22817,38 @@ var preventModifyTargetRanges = import_state3.EditorState.transactionFilter.of(
             selectiveLines
           );
           if (tr.changes.touchesRange(0, posRange.from - 1)) {
+            const newAnnotations = [];
+            if (editableLines[0]) {
+              newAnnotations.push(editableRange.of([
+                editableLines[0] + numberNewLines,
+                editableLines[1] + numberNewLines
+              ]));
+            }
+            if (contentLines[0]) {
+              newAnnotations.push(contentRange.of([
+                contentLines[0] + numberNewLines,
+                contentLines[1] + numberNewLines
+              ]));
+            }
             newTrans.push({
-              annotations: [
-                editableRange.of([
-                  selectiveLines[0] + numberNewLines,
-                  selectiveLines[1] + numberNewLines
-                ])
-              ]
+              annotations: newAnnotations
             });
           } else if (tr.changes.touchesRange(posRange.from - 1, posRange.to)) {
+            const newAnnotations = [];
+            if (editableLines[0]) {
+              newAnnotations.push(editableRange.of([
+                editableLines[0],
+                editableLines[1] + numberNewLines
+              ]));
+            }
+            if (contentLines[0]) {
+              newAnnotations.push(contentRange.of([
+                contentLines[0],
+                contentLines[1] + numberNewLines
+              ]));
+            }
             newTrans.push({
-              annotations: [
-                editableRange.of([
-                  selectiveLines[0],
-                  selectiveLines[1] + numberNewLines
-                ])
-              ]
+              annotations: newAnnotations
             });
           }
         }
@@ -41037,6 +41058,7 @@ var FlowEditor = class extends nosuper(import_obsidian31.HoverPopover) {
     this.rootSplit.getContainer = () => FlowEditor.containerForDocument(this.document);
     this.titleEl.insertAdjacentElement("afterend", this.rootSplit.containerEl);
     let leaf = this.plugin.app.workspace.createLeafInParent(this.rootSplit, 0);
+    leaf.isFlowBlock = true;
     this.updateLeaves();
     return leaf;
   }
@@ -41204,7 +41226,6 @@ var FlowEditor = class extends nosuper(import_obsidian31.HoverPopover) {
       if (this.detaching)
         this.hide();
     }
-    this.plugin.app.workspace.setActiveLeaf(leaf);
     return leaf;
   }
   async openFile(file, openState, useLeaf) {
@@ -41221,7 +41242,6 @@ var FlowEditor = class extends nosuper(import_obsidian31.HoverPopover) {
       if (this.detaching)
         this.hide();
     }
-    this.plugin.app.workspace.setActiveLeaf(leaf);
     return leaf;
   }
   buildState(parentMode, eState) {
@@ -43015,7 +43035,6 @@ var renameContext = (plugin, context, newName) => {
     renameTag(plugin, tagPathToTag(context.contextPath), newName);
   } else if (context.type == "space") {
     const space = (_a2 = plugin.index.spacesIndex.get(spaceNameFromContextPath(context.contextPath))) == null ? void 0 : _a2.space;
-    console.log(space, context);
     if (space) {
       saveSpace(plugin, space.name, { ...space, name: newName });
     }
@@ -45035,7 +45054,7 @@ var frontmatterHider = (plugin) => import_state10.EditorState.transactionFilter.
     }
   });
   const livePreview = tr.state.field(import_obsidian44.editorLivePreviewField);
-  if (fmStart > 1 && fmStart < tr.state.doc.lines && plugin.settings.hideFrontmatter && livePreview) {
+  if (fmStart > 1 && fmStart <= tr.state.doc.lines && plugin.settings.hideFrontmatter && livePreview) {
     newTrans.push({
       annotations: [contentRange.of([fmStart, fmEnd])]
     });
@@ -53368,24 +53387,6 @@ var MakeMDPluginSettingsTab = class extends import_obsidian54.PluginSettingTab {
         })
       );
     }
-    new import_obsidian54.Setting(containerEl).setName(i18n_default.settings.defaultDateFormat.name).setDesc(i18n_default.settings.defaultDateFormat.desc).addText((text2) => {
-      text2.setValue(this.plugin.settings.defaultDateFormat).onChange(async (value) => {
-        this.plugin.settings.defaultDateFormat = value;
-        await this.plugin.saveSettings();
-      });
-    });
-    new import_obsidian54.Setting(containerEl).setName(i18n_default.settings.defaultDateFormat.name).setDesc(i18n_default.settings.defaultDateFormat.desc).addText((text2) => {
-      text2.setValue(this.plugin.settings.defaultDateFormat).onChange(async (value) => {
-        this.plugin.settings.defaultDateFormat = value;
-        await this.plugin.saveSettings();
-      });
-    });
-    new import_obsidian54.Setting(containerEl).setName(i18n_default.settings.defaultDateFormat.name).setDesc(i18n_default.settings.defaultDateFormat.desc).addText((text2) => {
-      text2.setValue(this.plugin.settings.defaultDateFormat).onChange(async (value) => {
-        this.plugin.settings.defaultDateFormat = value;
-        await this.plugin.saveSettings();
-      });
-    });
   }
 };
 
@@ -55200,22 +55201,22 @@ var MakeMDPlugin = class extends import_obsidian63.Plugin {
   }
   getActiveFile() {
     let filePath = null;
-    const activeLeaf = app.workspace.activeLeaf;
-    if ((activeLeaf == null ? void 0 : activeLeaf.view.getViewType()) == CONTEXT_VIEW_TYPE) {
+    const leaf = app.workspace.getLeaf(false);
+    const activeView2 = leaf.view;
+    if (!activeView2 || leaf.isFlowBlock)
+      return null;
+    if (activeView2.getViewType() == CONTEXT_VIEW_TYPE) {
       const context = mdbContextByPath(
         this,
-        activeLeaf == null ? void 0 : activeLeaf.view.getState().contextPath
+        activeView2.getState().contextPath
       );
       if ((context == null ? void 0 : context.type) == "folder") {
         const file = getAbstractFileAtPath(app, context.contextPath);
         if (file)
           filePath = file.path;
       }
-    } else if ((activeLeaf == null ? void 0 : activeLeaf.view.getViewType()) == "markdown") {
-      const view = app.workspace.getActiveViewOfType(import_obsidian63.MarkdownView);
-      if (view instanceof import_obsidian63.MarkdownView) {
-        filePath = view.file.path;
-      }
+    } else if (activeView2.getViewType() == "markdown") {
+      filePath = activeView2.file.path;
     }
     return filePath;
   }
