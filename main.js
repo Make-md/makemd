@@ -12108,7 +12108,7 @@ var calloutField = import_state2.StateField.define({
     return import_view2.Decoration.none;
   },
   update(value, tr) {
-    if (tr.state.field(flowTypeStateField) != "doc") {
+    if (tr.state.field(flowTypeStateField, false) != "doc") {
       return value;
     }
     let builder = new import_state2.RangeSetBuilder();
@@ -22699,7 +22699,7 @@ var hideLine = import_state3.StateField.define({
   },
   update(value, tr) {
     let builder = new import_state3.RangeSetBuilder();
-    const betterFacet = combinedRangeFacets(tr.state.field(selectiveLinesFacet), tr.state.field(frontmatterFacet));
+    const betterFacet = combinedRangeFacets(tr.state.field(selectiveLinesFacet, false), tr.state.field(frontmatterFacet, false));
     if ((betterFacet == null ? void 0 : betterFacet[0]) != null) {
       const starterLine = Math.min(
         tr.state.doc.lines,
@@ -22766,7 +22766,7 @@ var smartDelete = import_state3.EditorState.transactionFilter.of(
         from: range.from,
         to: range.to
       }));
-      const betterFacet = combinedRangeFacets(tr.startState.field(selectiveLinesFacet), tr.startState.field(frontmatterFacet));
+      const betterFacet = combinedRangeFacets(tr.startState.field(selectiveLinesFacet, false), tr.startState.field(frontmatterFacet, false));
       if (initialSelections.length > 0 && (betterFacet == null ? void 0 : betterFacet[0])) {
         const posRange = lineRangeToPosRange(
           tr.startState,
@@ -22792,7 +22792,7 @@ var preventModifyTargetRanges = import_state3.EditorState.transactionFilter.of(
   (tr) => {
     let newTrans = [];
     try {
-      const selectiveLines = combinedRangeFacets(tr.startState.field(selectiveLinesFacet), tr.startState.field(frontmatterFacet));
+      const selectiveLines = combinedRangeFacets(tr.startState.field(selectiveLinesFacet, false), tr.startState.field(frontmatterFacet, false));
       if (tr.isUserEvent("input") || tr.isUserEvent("delete") || tr.isUserEvent("move")) {
         if (selectiveLines == null ? void 0 : selectiveLines[0]) {
           const posRange = lineRangeToPosRange(
@@ -43168,7 +43168,7 @@ var preloadFlowEditor = import_state6.EditorState.transactionFilter.of(
     if (value && !tr.annotation(toggleFlowEditor)) {
       newTrans.push(
         ...value.filter((f4) => f4.expandedState == 1).map((f4) => {
-          if (tr.state.field(flowTypeStateField) == "doc") {
+          if (tr.state.field(flowTypeStateField, false) == "doc") {
             return {
               annotations: toggleFlowEditor.of([f4.id, 2])
             };
@@ -43333,7 +43333,7 @@ var flowEditorInfo = import_state6.StateField.define({
 });
 var flowEditorRangeset = (state, plugin) => {
   let builder = new import_state6.RangeSetBuilder();
-  const infoFields = state.field(flowEditorInfo);
+  const infoFields = state.field(flowEditorInfo, false);
   for (let info of infoFields) {
     const { from, to, embed: embedType, expandedState } = info;
     const lineFix = from - 3 == state.doc.lineAt(from).from && to + 2 == state.doc.lineAt(from).to;
@@ -43400,8 +43400,8 @@ var FlowEditorSelector = class extends import_view4.WidgetType {
     const div = document.createElement("div");
     div.toggleClass("mk-floweditor-selector", true);
     const reactEl = createRoot(div);
-    if (this.info.link && view.state.field(import_obsidian40.editorInfoField)) {
-      const infoField = view.state.field(import_obsidian40.editorInfoField);
+    if (this.info.link && view.state.field(import_obsidian40.editorInfoField, false)) {
+      const infoField = view.state.field(import_obsidian40.editorInfoField, false);
       const file = infoField.file;
       const path = pathByString(this.info.link, file.path);
       reactEl.render(
@@ -44976,7 +44976,7 @@ var StatefulDecorationSet = class {
     var _a2;
     if (!show)
       return import_view7.Decoration.none;
-    if (!state.field(import_obsidian44.editorInfoField))
+    if (!state.field(import_obsidian44.editorInfoField, false))
       return null;
     const infoField = state.field(import_obsidian44.editorInfoField);
     if (!((_a2 = infoField.editor) == null ? void 0 : _a2.cm))
@@ -45019,8 +45019,6 @@ var StatefulDecorationSet = class {
 };
 var frontmatterHider = (plugin) => import_state10.EditorState.transactionFilter.of((tr) => {
   let newTrans = [];
-  const selectiveLines = tr.startState.field(selectiveLinesFacet);
-  let builder = new import_state10.RangeSetBuilder();
   const isFM = (typeString) => {
     if (typeString.contains("hmd-frontmatter")) {
       return true;
@@ -45114,7 +45112,7 @@ var lineNumberExtension = (plugin) => (0, import_view8.lineNumbers)({
 
 // src/cm-extensions/cmExtensions.ts
 var cmExtensions = (plugin, mobile) => {
-  let extensions = [];
+  const extensions = [...editBlockExtensions()];
   if (plugin.settings.makerMode) {
     if (plugin.settings.inlineContext && plugin.settings.lineNumbers) {
       extensions.push(lineNumberExtension(plugin));
@@ -45132,7 +45130,6 @@ var cmExtensions = (plugin, mobile) => {
     if (plugin.settings.editorFlow) {
       extensions.push(
         flowTypeStateField,
-        editBlockExtensions(),
         preloadFlowEditor,
         flowEditorField(plugin),
         flowEditorInfo,
