@@ -2449,6 +2449,9 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 }
 
 /* src/css/FolderTreeView.css */
+.workspace .mod-root .workspace-tab-header[data-type=markdown] .workspace-tab-header-inner-icon {
+  display: flex;
+}
 .mk-tree-wrapper {
   box-sizing: border-box;
   margin-bottom: 1px;

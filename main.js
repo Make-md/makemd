@@ -3460,7 +3460,7 @@ var require_lodash = __commonJS({
           comparator = typeof comparator == "function" ? comparator : undefined2;
           return baseUniq(baseFlatten(arrays, 1, isArrayLikeObject, true), undefined2, comparator);
         });
-        function uniq3(array) {
+        function uniq4(array) {
           return array && array.length ? baseUniq(array) : [];
         }
         function uniqBy(array, iteratee2) {
@@ -5122,7 +5122,7 @@ var require_lodash = __commonJS({
         lodash.union = union;
         lodash.unionBy = unionBy;
         lodash.unionWith = unionWith;
-        lodash.uniq = uniq3;
+        lodash.uniq = uniq4;
         lodash.uniqBy = uniqBy;
         lodash.uniqWith = uniqWith;
         lodash.unset = unset;
@@ -10605,6 +10605,15 @@ var TooltipViewManager = class {
     this.tooltipViews = this.tooltips.map(createTooltipView);
   }
   update(update) {
+    if (update.focusChanged && !update.view.hasFocus) {
+      let input2 = update.state.facet(this.facet);
+      for (let t4 of this.tooltipViews)
+        t4.dom.remove();
+      this.input = input2;
+      this.tooltips = [];
+      this.tooltipViews = [];
+      return true;
+    }
     let input = update.state.facet(this.facet);
     let tooltips2 = input.filter((x5) => x5);
     if (input === this.input) {
@@ -33280,10 +33289,8 @@ var SelectMenu = Cn.forwardRef(
         const newTags = tags.filter((f4) => f4.value != removeTag);
         setSuggestions(newSuggestions);
         setTags(newTags);
-        props2.saveOptions(
-          newSuggestions.map((f4) => f4.value),
-          newTags.map((f4) => f4.value)
-        );
+        if (props2.removeOption)
+          props2.removeOption(removeTag);
         props2.hide();
       },
       [tags, suggestions, props2]
@@ -33451,6 +33458,7 @@ var disclosureMenuItem = (menuItem, multi, editable, title, value, options, save
 };
 
 // src/components/ContextView/DataTypeView/OptionCell.tsx
+var import_lodash5 = __toESM(require_lodash());
 var OptionCell = (props2) => {
   var _a2, _b2;
   const initialValue = (props2.multi ? (_a2 = parseMultiString(props2.initialValue)) != null ? _a2 : [] : [props2.initialValue]).filter((f4) => f4);
@@ -33474,6 +33482,16 @@ var OptionCell = (props2) => {
       serializeMultiString(newValues)
     );
   };
+  const removeOption = (option) => {
+    const newOptions = options.filter((f4) => f4.value != option);
+    const newValues = value.filter((f4) => f4 != option);
+    setOptions(newOptions);
+    setValue(newValues);
+    props2.saveOptions(
+      serializeMultiString(newOptions.map((f4) => f4.value)),
+      serializeMultiString(newValues)
+    );
+  };
   const saveOptions = (_options, _value) => {
     if (!props2.multi) {
       setOptions(
@@ -33485,7 +33503,7 @@ var OptionCell = (props2) => {
         serializeMultiString(_value)
       );
     } else {
-      const newValues = _value;
+      const newValues = (0, import_lodash5.uniq)([...value, _value[0]]);
       setOptions(
         _options.map((t4) => ({ name: t4, value: t4, removeable: true }))
       );
@@ -33502,6 +33520,7 @@ var OptionCell = (props2) => {
     value,
     options: !props2.multi ? [{ name: i18n_default.menu.none, value: "" }, ...options] : options,
     saveOptions,
+    removeOption,
     placeholder: i18n_default.labels.optionItemSelectPlaceholder,
     searchable: true,
     showAll: true,
@@ -39095,7 +39114,7 @@ var TextCell = (props2) => {
 };
 
 // src/components/ContextView/TableView/TableView.tsx
-var import_lodash5 = __toESM(require_lodash());
+var import_lodash6 = __toESM(require_lodash());
 var import_obsidian28 = require("obsidian");
 
 // src/components/ContextView/DataTypeView/ImageCell.tsx
@@ -39332,7 +39351,7 @@ var TableView = (props2) => {
     debouncedSavePredicate(newColSize);
   };
   const debouncedSavePredicate = T2(
-    (0, import_lodash5.debounce)(
+    (0, import_lodash6.debounce)(
       (nextValue) => savePredicate({
         ...predicate,
         colsSize: nextValue
@@ -42251,6 +42270,11 @@ var openTFile = async (file, plugin, newLeaf) => {
   let leaf = app.workspace.getLeaf(newLeaf);
   app.workspace.setActiveLeaf(leaf, { focus: true });
   await leaf.openFile(file, { eState: { focus: true } });
+  const fileCache = plugin.index.filesIndex.get(file.path);
+  if ((fileCache == null ? void 0 : fileCache.sticker) && leaf.tabHeaderInnerIconEl) {
+    const icon = stickerFromString(fileCache.sticker, plugin);
+    leaf.tabHeaderInnerIconEl.innerHTML = icon;
+  }
 };
 var openTFolder = async (file, plugin, newLeaf) => {
   if (!plugin.settings.contextEnabled)
@@ -42262,6 +42286,11 @@ var openTFolder = async (file, plugin, newLeaf) => {
     type: viewType,
     state: { contextPath: file.path }
   });
+  const fileCache = plugin.index.filesIndex.get(file.path);
+  if ((fileCache == null ? void 0 : fileCache.sticker) && leaf.tabHeaderInnerIconEl) {
+    const icon = stickerFromString(fileCache.sticker, plugin);
+    leaf.tabHeaderInnerIconEl.innerHTML = icon;
+  }
   await app.workspace.requestSaveLayout();
   if (platformIsMobile()) {
     app.workspace.leftSplit.collapse();
@@ -42537,7 +42566,7 @@ var RemoveFromSpaceModal = class extends import_obsidian38.FuzzySuggestModal {
 };
 
 // src/superstate/spacesStore/spaces.ts
-var import_lodash7 = __toESM(require_lodash());
+var import_lodash8 = __toESM(require_lodash());
 var import_obsidian39 = require("obsidian");
 
 // src/schemas/spaces.ts
@@ -42558,7 +42587,7 @@ var spaceItemsSchema = {
 };
 
 // src/superstate/cacheParsers.ts
-var import_lodash6 = __toESM(require_lodash());
+var import_lodash7 = __toESM(require_lodash());
 var fileMetadataToVaultItem = (cache) => {
   var _a2, _b2;
   return {
@@ -42584,7 +42613,7 @@ var rebuildIndex = async (plugin, save) => {
   var _a2, _b2;
   console.time("Make.md Vault Index");
   const newTables = indexCurrentFileTree(plugin, (_a2 = plugin.index.vaultDBCache) != null ? _a2 : [], (_b2 = plugin.index.spacesItemsDBCache) != null ? _b2 : []);
-  if (save && (!import_lodash7.default.isEqual(newTables.vault.rows, plugin.index.vaultDBCache) || !import_lodash7.default.isEqual(newTables.spaceItems.rows, plugin.index.spacesItemsDBCache))) {
+  if (save && (!import_lodash8.default.isEqual(newTables.vault.rows, plugin.index.vaultDBCache) || !import_lodash8.default.isEqual(newTables.spaceItems.rows, plugin.index.spacesItemsDBCache))) {
     await plugin.index.saveSpacesDatabaseToDisk(newTables, save);
   }
   plugin.index.initialize();
@@ -44130,10 +44159,11 @@ var Backlinks = (props2) => {
     dangerouslySetInnerHTML: {
       __html: uiIconSet["mk-ui-collapse-sm"]
     }
-  })), /* @__PURE__ */ Cn.createElement("div", null, !collapsed && backlinks.map((f4) => {
+  })), /* @__PURE__ */ Cn.createElement("div", null, !collapsed && backlinks.map((f4, i4) => {
     var _a2;
     return /* @__PURE__ */ Cn.createElement(BacklinkItem, {
       path: f4,
+      key: i4,
       plugin: props2.plugin,
       source: (_a2 = props2.file) == null ? void 0 : _a2.path
     });
@@ -45021,7 +45051,7 @@ var StatefulDecorationSet = class {
         import_view7.Decoration.widget({
           widget: new BacklinksWidget(this.plugin, file, contentEl),
           side: 1,
-          block: true
+          block: false
         }).range(state.doc.length)
       );
     }
@@ -52671,7 +52701,7 @@ var TagChangeModal = class extends import_obsidian51.Modal {
 };
 
 // src/components/Spaces/TagContextList/TagContextList.tsx
-var import_lodash8 = __toESM(require_lodash());
+var import_lodash9 = __toESM(require_lodash());
 var import_obsidian52 = require("obsidian");
 var TagContextList = (props2) => {
   const [allTags, setAllTags] = h2([]);
@@ -52728,14 +52758,14 @@ var TagContextList = (props2) => {
       (f5) => f5 instanceof import_obsidian52.TFile && f5.extension == "mdb" && f5.name.charAt(0) == "#"
     ).map((f5) => tagPathToTag(fileNameToString(f5.name)))) != null ? _a2 : [];
     setAllTags(
-      (0, import_lodash8.uniq)([...f4.filter((g4) => g4), ...Object.keys(app.metadataCache.getTags())])
+      (0, import_lodash9.uniq)([...f4.filter((g4) => g4), ...Object.keys(app.metadataCache.getTags())])
     );
   };
   p2(() => {
     refreshData();
   }, []);
   const tags = F2(() => {
-    return (0, import_lodash8.uniq)(
+    return (0, import_lodash9.uniq)(
       allTags.reduce((p3, c4) => {
         const r3 = c4.split("/");
         const allSubTags = r3.reduce((a5, b4, i4, array) => {
@@ -53769,7 +53799,7 @@ var onFolderDeleted = async (plugin, oldPath) => {
 var import_obsidian_dataview = __toESM(require_lib());
 
 // src/superstate/superstate.ts
-var import_lodash9 = __toESM(require_lodash());
+var import_lodash10 = __toESM(require_lodash());
 var import_obsidian60 = require("obsidian");
 
 // src/types/indexMap.ts
@@ -54124,7 +54154,7 @@ var Superstate = class extends import_obsidian60.Component {
     this.app = app2;
     this.indexVersion = indexVersion;
     this.onChange = onChange;
-    this.debounceSaveSpaceDatabase = (0, import_lodash9.debounce)(
+    this.debounceSaveSpaceDatabase = (0, import_lodash10.debounce)(
       (tables) => {
         saveDBToPath(this.plugin, this.plugin.spacesDBPath, tables).then((f4) => {
           this.updateSpaceLastUpdated();
@@ -54634,7 +54664,7 @@ var Superstate = class extends import_obsidian60.Component {
       this.tagsMap.set(file.path, new Set(cache.tags));
       this.contextsMap.set(file.path, new Set(cache.contexts));
       this.linksMap.set(file.path, new Set(cache.outlinks));
-      if (!import_lodash9.default.isEqual(cache.spaces, Array.from(this.spacesMap.get(file.path)))) {
+      if (!import_lodash10.default.isEqual(cache.spaces, Array.from(this.spacesMap.get(file.path)))) {
         this.spacesMap.set(file.path, new Set(cache.spaces));
         this.broadcast("space");
       }
@@ -55028,7 +55058,7 @@ var MakeMDPlugin = class extends import_obsidian63.Plugin {
         if (showAfterAttach && !app.workspace.leftSplit.collapsed)
           this.app.workspace.revealLeaf(leaf);
       } else {
-        if (!app.workspace.leftSplit.collapsed)
+        if (!app.workspace.leftSplit.collapsed && showAfterAttach)
           leafs.forEach((leaf) => this.app.workspace.revealLeaf(leaf));
       }
       if (platformIsMobile()) {
