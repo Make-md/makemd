@@ -1,5 +1,7 @@
 import {
-  Annotation, EditorSelection, EditorState,
+  Annotation,
+  EditorSelection,
+  EditorState,
   Transaction
 } from "@codemirror/state";
 import { focusFlowEditor, focusFlowEditorParent } from "dispatch/flowDispatch";

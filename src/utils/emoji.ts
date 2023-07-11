@@ -3,15 +3,10 @@ import { TAbstractFile } from "obsidian";
 import {
   saveFileColor,
   saveFileSticker,
-  saveSpaceSticker,
-} from "./spaces/spaces";
+  saveSpaceSticker
+} from "../superstate/spacesStore/spaces";
 
-export const unifiedToNative = (unified: string) => {
-  let unicodes = unified.split("-");
-  let codePoints = unicodes.map((u) => `0x${u}`);
-  // @ts-ignore
-  return String.fromCodePoint(...codePoints);
-};
+
 
 export const saveFileIcons = (
   plugin: MakeMDPlugin,

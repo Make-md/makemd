@@ -63,7 +63,7 @@
 .mk-sidebar-switcher {
   display: flex;
   margin: 8px 12px;
-  gap: 8px;
+  gap: 4px;
 }
 
 .mk-sidebar-spaces .mk-sidebar-item {
@@ -72,7 +72,6 @@
 }
 
 .mk-sidebar-spaces {
-  border-left: thin solid var(--divider-color);
   display: flex;
   overflow: auto;
   flex-grow: 1;

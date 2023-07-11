@@ -1,22 +1,21 @@
 import MakeMDPlugin from "main";
-import { VaultItem, vaultSchema } from "schemas/spaces";
-import { eventTypes, SpaceChange } from "types/types";
-import {
-  deleteFromDB,
-  execQuery,
-  insertIntoDB, updateDB
-} from "utils/db/db";
+import { spaceItemsSchema, vaultSchema } from "schemas/spaces";
+import { retrieveAllRecursiveChildren } from "superstate/spacesStore/spaces";
+import { SpaceChange, eventTypes } from "types/types";
 import {
   getAbstractFileAtPath,
   getFolderFromPath,
-  getFolderPathFromString
+  getFolderPathFromString,
+  renameFile
 } from "utils/file";
-import { sanitizeSQLStatement } from "utils/sanitize";
 
-export const dispatchSpaceDatabaseFileChanged = (type: SpaceChange) => {
+export const dispatchSpaceDatabaseFileChanged = (type: SpaceChange, action?: string, name?: string, newName?: string) => {
   let evt = new CustomEvent(eventTypes.spacesChange, {
     detail: {
-      changeType: type,
+      type: type,
+      action, 
+      name,
+      newName
     },
   });
   window.dispatchEvent(evt);
@@ -28,128 +27,88 @@ export const onFileCreated = async (
   folder: boolean
 ) => {
   const parent = getAbstractFileAtPath(app, newPath).parent?.path;
-  const db = plugin.spaceDBInstance();
-  insertIntoDB(db, {
-    vault: {
-      ...vaultSchema,
-      rows: [
-        {
-          path: newPath,
-          parent: parent,
-          created: Math.trunc(Date.now() / 1000).toString(),
-          folder: folder ? "true" : "false",
-        } as VaultItem,
-      ],
-    },
-  });
-  plugin.saveSpacesDB();
-  dispatchSpaceDatabaseFileChanged("vault");
+  await plugin.index.saveSpacesDatabaseToDisk({vault: { ...vaultSchema, rows: [...plugin.index.vaultDBCache, {
+    path: newPath,
+    parent: parent,
+    created: Math.trunc(Date.now() / 1000).toString(),
+    folder: folder ? "true" : "false",
+  }]}})
+  plugin.index.createFile(newPath)
+  
 };
 
-export const onFileDeleted = (plugin: MakeMDPlugin, oldPath: string) => {
-  const db = plugin.spaceDBInstance();
-  deleteFromDB(db, "vault", `path = '${sanitizeSQLStatement(oldPath)}'`);
-  deleteFromDB(db, "spaceItems", `path = '${sanitizeSQLStatement(oldPath)}'`);
-  plugin.saveSpacesDB();
-  dispatchSpaceDatabaseFileChanged("vault");
+export const onFileDeleted = async (plugin: MakeMDPlugin, oldPath: string) => {
+  const newVaultRows = plugin.index.vaultDBCache.filter(f => f.path != oldPath);
+  const newSpaceItemsRows = plugin.index.spacesItemsDBCache.filter(f => f.path != oldPath);
+  await plugin.index.saveSpacesDatabaseToDisk({ vault: {...vaultSchema, rows: newVaultRows}, spaceItems: {...spaceItemsSchema, rows: newSpaceItemsRows} });
+  plugin.index.deleteFile(oldPath)
 };
 
-export const onFileChanged = (
+export const onFileChanged = async (
   plugin: MakeMDPlugin,
   oldPath: string,
   newPath: string
 ) => {
+  
   const newFolderPath = getFolderPathFromString(newPath);
-  const db = plugin.spaceDBInstance();
-  updateDB(
-    db,
-    {
-      vault: {
-        uniques: [],
-        cols: ["path", "parent"],
-        rows: [{ path: newPath, oldPath: oldPath, parent: newFolderPath }],
-      },
-    },
-    "path",
-    "oldPath"
-  );
-  updateDB(
-    db,
-    {
-      spaceItems: {
-        uniques: [],
-        cols: ["path"],
-        rows: [{ path: newPath, oldPath: oldPath }],
-      },
-    },
-    "path",
-    "oldPath"
-  );
-  plugin.saveSpacesDB();
-  dispatchSpaceDatabaseFileChanged("vault");
+  const newVaultRows = plugin.index.vaultDBCache.map(f => f.path == oldPath ?
+       {
+        ...f,
+        path: newPath,
+        parent: newFolderPath
+      } : f);
+      const newSpaceItemsRows = plugin.index.spacesItemsDBCache.map(f => f.path == oldPath ?
+        {
+         ...f,
+         path: newPath,
+       } : f);
+       await plugin.index.saveSpacesDatabaseToDisk({ vault: {...vaultSchema, rows: newVaultRows}, spaceItems: {...spaceItemsSchema, rows: newSpaceItemsRows} });
+  plugin.index.renameFile(oldPath, newPath)
 };
 
-export const onFolderChanged = (
+export const onFolderChanged = async (
   plugin: MakeMDPlugin,
   oldPath: string,
   newPath: string
 ) => {
   const newFolderPath = getFolderFromPath(app, newPath).parent.path;
-  const db = plugin.spaceDBInstance();
-  updateDB(
-    db,
+  const allChildren = retrieveAllRecursiveChildren(plugin.index.vaultDBCache, plugin.settings, oldPath)
+  const newVaultRows = plugin.index.vaultDBCache.map(f => f.path == oldPath ?
     {
-      vault: {
-        uniques: [],
-        cols: ["path", "parent"],
-        rows: [{ path: newPath, oldPath: oldPath, parent: newFolderPath }],
-      },
-    },
-    "path",
-    "oldPath"
-  );
-  execQuery(
-    db,
-    `UPDATE vault SET parent=REPLACE(parent,'${sanitizeSQLStatement(
-      oldPath
-    )}','${sanitizeSQLStatement(
-      newPath
-    )}') WHERE parent LIKE '${sanitizeSQLStatement(oldPath)}%';`
-  );
-  execQuery(
-    db,
-    `UPDATE vault SET path=REPLACE(path,'${sanitizeSQLStatement(
-      oldPath
-    )}','${sanitizeSQLStatement(
-      newPath
-    )}') WHERE path LIKE '${sanitizeSQLStatement(oldPath)}%/';`
-  );
-  updateDB(
-    db,
+     ...f,
+     path: newPath,
+     parent: newFolderPath
+   } : f.parent.startsWith(oldPath) || f.path.startsWith(oldPath) ? {
+    ...f,
+    path: f.path.replace(oldPath, newPath),
+    parent: f.parent.replace(oldPath, newPath),
+   } : f);
+   const newSpaceItemsRows = plugin.index.spacesItemsDBCache.map(f => f.path == oldPath ?
     {
-      spaceItems: {
-        uniques: [],
-        cols: ["path"],
-        rows: [{ path: newPath, oldPath: oldPath }],
-      },
-    },
-    "path",
-    "oldPath"
-  );
-  plugin.saveSpacesDB();
-  dispatchSpaceDatabaseFileChanged("vault");
+     ...f,
+     path: newPath,
+   } : f.path.startsWith(oldPath) ? {
+    ...f,
+    path: f.path.replace(oldPath, newPath),
+   } : f);
+  
+  
+   await plugin.index.saveSpacesDatabaseToDisk({ vault: {...vaultSchema, rows: newVaultRows}, spaceItems: {...spaceItemsSchema, rows: newSpaceItemsRows} });
+  plugin.index.renameFile(oldPath, newPath)
+  if (plugin.settings.enableFolderNote && !plugin.settings.folderNoteInsideFolder) {
+    const file = getAbstractFileAtPath(app, oldPath+'.md')
+    if (file)
+    renameFile(plugin, file, newPath+'.md');
+  }
+  allChildren.forEach(f => plugin.index.renameFile(f.path, f.path.replace(oldPath, newPath)))
 };
 
-export const onFolderDeleted = (plugin: MakeMDPlugin, oldPath: string) => {
-  const db = plugin.spaceDBInstance();
-  deleteFromDB(
-    db,
-    "vault",
-    `path = '${sanitizeSQLStatement(
-      oldPath
-    )}' OR parent LIKE '${sanitizeSQLStatement(oldPath)}%'`
-  );
-  deleteFromDB(db, "spaceItems", `path = '${sanitizeSQLStatement(oldPath)}'`);
-  plugin.saveSpacesDB();
-  dispatchSpaceDatabaseFileChanged("vault");
+export const onFolderDeleted = async (plugin: MakeMDPlugin, oldPath: string) => {
+  const allChildren = retrieveAllRecursiveChildren(plugin.index.vaultDBCache, plugin.settings, oldPath)
+  const newVaultRows = plugin.index.vaultDBCache.filter(f => f.path != oldPath && !f.parent.startsWith(oldPath));
+  const newSpaceItemsRows = plugin.index.spacesItemsDBCache.filter(f => f.path != oldPath && !f.path.startsWith(oldPath));
+  await plugin.index.saveSpacesDatabaseToDisk({ vault: {...vaultSchema, rows: newVaultRows}, spaceItems: {...spaceItemsSchema, rows: newSpaceItemsRows} });
+  allChildren.forEach(f => plugin.index.deleteFile(f.path))
+  plugin.index.deleteFile(oldPath)
+  
 };

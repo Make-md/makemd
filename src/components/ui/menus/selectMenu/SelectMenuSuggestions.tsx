@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
-import { matchAny } from "./concerns/matchers";
 import { SelectOption } from "components/ui/menus/selectMenu";
+import React, { useEffect, useRef } from "react";
+import { uiIconSet } from "utils/icons";
+import { matchAny } from "./concerns/matchers";
 
 function markIt(name: string, query: string) {
   const regexp = matchAny(query);
@@ -11,6 +12,7 @@ const SelectMenuSuggestionsComponent = (props: {
   item: SelectOption;
   query: string;
   active: boolean;
+  onDeleteOption?: (value: string) => void;
 }) => {
   const ref = useRef(null);
   useEffect(() => {
@@ -20,23 +22,35 @@ const SelectMenuSuggestionsComponent = (props: {
   }, [props.active]);
   return (
     <>
-      {props.item.onToggle && <div>Toggle</div>}
-      <span
-        ref={ref}
-        dangerouslySetInnerHTML={{
-          __html: markIt(props.item.name, props.query),
-        }}
-      />
-      {props.item.description && (
+      <div className="mk-options-menu-inner">
+        {props.item.onToggle && <div>Toggle</div>}
         <span
-          className="mk-description"
           ref={ref}
           dangerouslySetInnerHTML={{
-            __html: markIt(props.item.description, props.query),
+            __html: markIt(props.item.name, props.query),
           }}
         />
+        {props.item.description && (
+          <span
+            className="mk-description"
+            ref={ref}
+            dangerouslySetInnerHTML={{
+              __html: markIt(props.item.description, props.query),
+            }}
+          />
+        )}
+      </div>
+      {props.item.removeable && (
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            props.onDeleteOption(props.item.value);
+          }}
+          className="mk-icon-small"
+          dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
+        ></div>
       )}
-      {props.item.removeable && <div>Remove</div>}
     </>
   );
 };
@@ -47,10 +61,12 @@ const SelectMenuSuggestions = (props: {
   options: SelectOption[];
   query: string;
   addTag: (item: SelectOption) => void;
+  deleteOption?: (option: string) => void;
   id: string;
   classNames: Record<string, string>;
   index: number;
   setIndex: (index: number) => void;
+  allowNew: boolean;
 }) => {
   const timer = useRef(null);
   const mouseOver = (e: React.MouseEvent, index: number) => {
@@ -88,6 +104,7 @@ const SelectMenuSuggestions = (props: {
           item={item}
           query={props.query}
           active={index == props.index}
+          onDeleteOption={props.deleteOption}
         />
       </li>
     );
@@ -97,6 +114,16 @@ const SelectMenuSuggestions = (props: {
     <div className={props.classNames.suggestions}>
       <ul role="listbox" id={props.id}>
         {options}
+        {props.query && props.allowNew && (
+          <li
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() =>
+              props.addTag({ name: props.query, value: props.query })
+            }
+          >
+            Add {props.query}
+          </li>
+        )}
       </ul>
     </div>
   );

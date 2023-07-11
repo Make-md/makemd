@@ -1,15 +1,29 @@
-import { StickerModal } from "components/Spaces/TreeView/FileStickerMenu/FileStickerMenu";
-import {
-  MoveSuggestionModal,
-  VaultChangeModal
-} from "components/ui/modals/vaultChangeModals";
 import { EditSpaceModal } from "components/ui/modals/editSpaceModal";
+import { stickerModal } from "components/ui/modals/stickerModal";
+import {
+  AddToSpaceModal,
+  MoveSuggestionModal,
+  RemoveFromSpaceModal,
+  VaultChangeModal,
+} from "components/ui/modals/vaultChangeModals";
 import { isMouseEvent } from "hooks/useLongPress";
-import i18n from "i18n";
-import t from "i18n";
+import { default as i18n, default as t } from "i18n";
 import MakeMDPlugin from "main";
 import { Menu, TAbstractFile, TFile, TFolder } from "obsidian";
 import { Space } from "schemas/spaces";
+import {
+  TreeNode,
+  insertSpaceAtIndex,
+  newFileInSpace,
+  newFolderInSpace,
+  removeSpace,
+  retrieveSpaceItems,
+  saveFileColor,
+  saveFolderSort,
+  toggleSpacePin,
+  updateSpaceSort,
+} from "superstate/spacesStore/spaces";
+import { Path } from "types/types";
 import { colors } from "utils/color";
 import {
   removeFileIcon,
@@ -18,44 +32,139 @@ import {
   saveFileColors,
   saveFileIcon,
   saveFileIcons,
-  saveSpaceIcon
+  saveSpaceIcon,
 } from "utils/emoji";
 import {
-  deleteFiles, getAbstractFileAtPath, newFileInFolder, openAFile, openFileInNewPane
+  createNewCanvasFile,
+  deleteFiles,
+  getAbstractFileAtPath,
+  newFileInFolder,
+  noteToFolderNote,
+  openAFile,
+  openFileInNewPane,
 } from "utils/file";
-import {
-  addPathsToSpace,
-  insertSpaceAtIndex,
-  insertSpaceItemAtIndex,
-  removePathsFromSpace,
-  removeSpace,
-  retrieveSpaceItems,
-  retrieveSpaces,
-  saveFileColor, toggleSpacePin,
-  TreeNode,
-  updateSpaceSort
-} from "utils/spaces/spaces";
 import { internalPluginLoaded } from "utils/tree";
 import { disclosureMenuItem } from "./menuItems";
 
-export const triggerSectionMenu = (
+export const triggerSectionAddMenu = (
   plugin: MakeMDPlugin,
-  spaceName: string,
-  spaces: Space[],
   e: React.MouseEvent | React.TouchEvent
 ) => {
   const fileMenu = new Menu();
-  const space = spaces.find((f) => f.name == spaceName);
   fileMenu.addItem((menuItem) => {
-    const pinned = spaces.find((f) => f.name == spaceName)?.pinned == "true";
-    if (pinned) {
-      menuItem.setTitle(i18n.menu.unpinSpace);
-    } else {
-      menuItem.setTitle(i18n.menu.pinSpace);
-    }
-    menuItem.setIcon("pin");
+    menuItem.setIcon("plus");
+    menuItem.setTitle(t.buttons.createSection);
     menuItem.onClick((ev: MouseEvent) => {
-      toggleSpacePin(plugin, spaceName, !pinned);
+      let vaultChangeModal = new EditSpaceModal(
+        plugin,
+        {
+          name: "",
+          def: {
+            type: "focus",
+            folder: "",
+            filters: [],
+          },
+        },
+        "create"
+      );
+      vaultChangeModal.open();
+    });
+  });
+  fileMenu.addItem((menuItem) => {
+    menuItem.setIcon("plus");
+    menuItem.setTitle(t.buttons.createSectionSmart);
+    menuItem.onClick((ev: MouseEvent) => {
+      let vaultChangeModal = new EditSpaceModal(
+        plugin,
+        {
+          name: "",
+          def: {
+            type: "smart",
+            folder: "",
+            filters: [],
+          },
+        },
+        "create"
+      );
+      vaultChangeModal.open();
+    });
+  });
+
+  if (isMouseEvent(e)) {
+    fileMenu.showAtPosition({ x: e.pageX, y: e.pageY });
+  } else {
+    fileMenu.showAtPosition({
+      // @ts-ignore
+      x: e.nativeEvent.locationX,
+      // @ts-ignore
+      y: e.nativeEvent.locationY,
+    });
+  }
+  return false;
+};
+
+export const triggerSectionMenu = (
+  plugin: MakeMDPlugin,
+  space: Space,
+  spaces: Space[],
+  e: React.MouseEvent | React.TouchEvent,
+  activeFile: Path
+) => {
+  if (!space) return;
+  const fileMenu = new Menu();
+  const spaceName = space.name;
+
+  fileMenu.addItem((menuItem) => {
+    menuItem.setIcon("edit");
+    menuItem.setTitle(t.buttons.createNote);
+    menuItem.onClick((ev: MouseEvent) => {
+      newFileInSpace(plugin, space, activeFile);
+    });
+  });
+  fileMenu.addItem((menuItem) => {
+    menuItem.setIcon("layout-dashboard");
+    menuItem.setTitle(t.buttons.createCanvas);
+    menuItem.onClick((ev: MouseEvent) => {
+      newFileInSpace(plugin, space, activeFile, true);
+    });
+  });
+
+  fileMenu.addItem((menuItem) => {
+    menuItem.setIcon("folder-plus");
+    menuItem.setTitle(t.buttons.createFolder);
+    menuItem.onClick((ev: MouseEvent) => {
+      newFolderInSpace(plugin, space, activeFile);
+    });
+  });
+
+  fileMenu.addSeparator();
+  fileMenu.addItem((menuItem) => {
+    const pinned = space?.pinned == "false" || space?.pinned == "home";
+    menuItem.setTitle(i18n.menu.homeSpace);
+    menuItem.setIcon("home");
+    menuItem.setChecked(pinned);
+    menuItem.onClick((ev: MouseEvent) => {
+      toggleSpacePin(plugin, spaceName, "home");
+    });
+  });
+
+  fileMenu.addItem((menuItem) => {
+    const pinned = space?.pinned == "true" || space?.pinned == "pinned";
+    menuItem.setTitle(i18n.menu.pinSpace);
+    menuItem.setIcon("pin");
+    menuItem.setChecked(pinned);
+    menuItem.onClick((ev: MouseEvent) => {
+      toggleSpacePin(plugin, spaceName, "pinned");
+    });
+  });
+
+  fileMenu.addItem((menuItem) => {
+    const space = spaces.find((f) => f.name == spaceName);
+    const pinned = space?.pinned == "none";
+    menuItem.setTitle(i18n.menu.unpinSpace);
+    menuItem.setIcon("pin-off");
+    menuItem.onClick((ev: MouseEvent) => {
+      toggleSpacePin(plugin, spaceName, "none");
     });
   });
 
@@ -66,7 +175,7 @@ export const triggerSectionMenu = (
       menuItem.setTitle(t.buttons.changeIcon);
       menuItem.setIcon("lucide-sticker");
       menuItem.onClick((ev: MouseEvent) => {
-        let vaultChangeModal = new StickerModal(plugin.app, (emoji) =>
+        const vaultChangeModal = new stickerModal(plugin.app, plugin, (emoji) =>
           saveSpaceIcon(plugin, spaceName, emoji)
         );
         vaultChangeModal.open();
@@ -94,66 +203,83 @@ export const triggerSectionMenu = (
     });
   });
   fileMenu.addSeparator();
+  if (space.def.type == "focus") {
+    fileMenu.addItem((menuItem) => {
+      const sortOption: [string, boolean] = ["rank", true];
+      menuItem.setIcon("arrow-up-down");
+      menuItem.setTitle(i18n.menu.customSort);
+      menuItem.setChecked(
+        space.sort == JSON.stringify(sortOption) || space.sort == ""
+      );
+      menuItem.onClick((ev: MouseEvent) => {
+        updateSpaceSort(plugin, spaceName, sortOption);
+      });
+    });
+  }
 
   fileMenu.addItem((menuItem) => {
-    const sortOption: [string, boolean] = ["rank", true];
-    menuItem.setTitle(i18n.menu.customSort);
-    menuItem.setChecked(
-      space.sort == JSON.stringify(sortOption) || space.sort == ""
-    );
+    menuItem.setTitle(i18n.menu.sortBy);
+    menuItem.setIcon("sort-desc");
     menuItem.onClick((ev: MouseEvent) => {
-      updateSpaceSort(plugin, spaceName, sortOption);
-    });
-  });
-  fileMenu.addSeparator();
+      const sortMenu = new Menu();
 
-  fileMenu.addItem((menuItem) => {
-    const sortOption: [string, boolean] = ["path", true];
-    menuItem.setTitle(i18n.menu.fileNameSortAlphaAsc);
-    menuItem.setChecked(space.sort == JSON.stringify(sortOption));
-    menuItem.onClick((ev: MouseEvent) => {
-      updateSpaceSort(plugin, spaceName, sortOption);
+      sortMenu.addItem((menuItem) => {
+        const sortOption: [string, boolean] = ["path", true];
+        menuItem.setTitle(i18n.menu.fileNameSortAlphaAsc);
+        menuItem.setChecked(space.sort == JSON.stringify(sortOption));
+        menuItem.onClick((ev: MouseEvent) => {
+          updateSpaceSort(plugin, spaceName, sortOption);
+        });
+      });
+
+      sortMenu.addItem((menuItem) => {
+        const sortOption: [string, boolean] = ["path", false];
+        menuItem.setTitle(i18n.menu.fileNameSortAlphaDesc);
+        menuItem.setChecked(space.sort == JSON.stringify(sortOption));
+        menuItem.onClick((ev: MouseEvent) => {
+          updateSpaceSort(plugin, spaceName, sortOption);
+        });
+      });
+      sortMenu.addSeparator();
+
+      sortMenu.addItem((menuItem) => {
+        const sortOption: [string, boolean] = ["ctime", false];
+        menuItem.setTitle(i18n.menu.createdTimeSortAsc);
+        menuItem.setChecked(space.sort == JSON.stringify(sortOption));
+        menuItem.onClick((ev: MouseEvent) => {
+          updateSpaceSort(plugin, spaceName, sortOption);
+        });
+      });
+
+      sortMenu.addItem((menuItem) => {
+        const sortOption: [string, boolean] = ["ctime", true];
+        menuItem.setTitle(i18n.menu.createdTimeSortDesc);
+        menuItem.setChecked(space.sort == JSON.stringify(sortOption));
+        menuItem.onClick((ev: MouseEvent) => {
+          updateSpaceSort(plugin, spaceName, sortOption);
+        });
+      });
+      const offset = (e.target as HTMLElement).getBoundingClientRect();
+      if (isMouseEvent(e)) {
+        sortMenu.showAtPosition({ x: offset.left, y: offset.top + 30 });
+      } else {
+        sortMenu.showAtPosition({
+          // @ts-ignore
+          x: e.nativeEvent.locationX,
+          // @ts-ignore
+          y: e.nativeEvent.locationY,
+        });
+      }
     });
   });
 
-  fileMenu.addItem((menuItem) => {
-    const sortOption: [string, boolean] = ["path", false];
-    menuItem.setTitle(i18n.menu.fileNameSortAlphaDesc);
-    menuItem.setChecked(space.sort == JSON.stringify(sortOption));
-    menuItem.onClick((ev: MouseEvent) => {
-      updateSpaceSort(plugin, spaceName, sortOption);
-    });
-  });
-  fileMenu.addSeparator();
-
-  fileMenu.addItem((menuItem) => {
-    const sortOption: [string, boolean] = ["created", false];
-    menuItem.setTitle(i18n.menu.createdTimeSortAsc);
-    menuItem.setChecked(space.sort == JSON.stringify(sortOption));
-    menuItem.onClick((ev: MouseEvent) => {
-      updateSpaceSort(plugin, spaceName, sortOption);
-    });
-  });
-
-  fileMenu.addItem((menuItem) => {
-    const sortOption: [string, boolean] = ["created", true];
-    menuItem.setTitle(i18n.menu.createdTimeSortDesc);
-    menuItem.setChecked(space.sort == JSON.stringify(sortOption));
-    menuItem.onClick((ev: MouseEvent) => {
-      updateSpaceSort(plugin, spaceName, sortOption);
-    });
-  });
   fileMenu.addSeparator();
   // Rename Item
   fileMenu.addItem((menuItem) => {
     menuItem.setTitle(t.menu.edit);
     menuItem.setIcon("pencil");
     menuItem.onClick((ev: MouseEvent) => {
-      let vaultChangeModal = new EditSpaceModal(
-        plugin,
-        space.name,
-        "rename"
-      );
+      let vaultChangeModal = new EditSpaceModal(plugin, space, "rename");
       vaultChangeModal.open();
     });
   });
@@ -186,39 +312,23 @@ export const triggerMultiFileMenu = (
   e: React.MouseEvent | React.TouchEvent
 ) => {
   const files = selectedFiles.map((s) => s.item.path);
-  const spaces = retrieveSpaces(plugin);
+  const spaces = plugin.index.allSpaces();
   const spaceItems = retrieveSpaceItems(plugin, spaces);
 
   const fileMenu = new Menu();
 
   // Pin - Unpin Item
   fileMenu.addSeparator();
-  fileMenu.addItem((menuItem) => {
-    menuItem.setTitle(t.menu.spaceTitle);
-    menuItem.setDisabled(true);
-  });
-  spaces.map((f) => {
-    fileMenu.addItem((menuItem) => {
-      // const truncPaths = files.map(f => "/"+f.name+'/'+g.path);
-      const allIn = files.reduce(
-        (p, c) => (p ? spaceItems[f.name]?.some((g) => g.path == c) : p),
-        true
-      );
-      if (allIn) {
-        menuItem.setIcon("checkmark");
-        menuItem.setTitle(f.name);
-      } else {
-        menuItem.setTitle(f.name);
-        menuItem.setIcon("plus");
-      }
 
-      menuItem.onClick((ev: MouseEvent) => {
-        if (allIn) {
-          removePathsFromSpace(plugin, f.name, files);
-        } else {
-          addPathsToSpace(plugin, f.name, files);
-        }
-      });
+  fileMenu.addItem((menuItem) => {
+    menuItem.setIcon("plus");
+    menuItem.setTitle("Add to Space");
+    menuItem.onClick((ev: MouseEvent) => {
+      let vaultChangeModal = new AddToSpaceModal(
+        plugin,
+        selectedFiles.map((f) => f.path)
+      );
+      vaultChangeModal.open();
     });
   });
 
@@ -246,7 +356,7 @@ export const triggerMultiFileMenu = (
       menuItem.setTitle(t.buttons.changeIcon);
       menuItem.setIcon("lucide-sticker");
       menuItem.onClick((ev: MouseEvent) => {
-        let vaultChangeModal = new StickerModal(plugin.app, (emoji) =>
+        const vaultChangeModal = new stickerModal(plugin.app, plugin, (emoji) =>
           saveFileIcons(plugin, files, emoji)
         );
         vaultChangeModal.open();
@@ -313,11 +423,12 @@ export const triggerFileMenu = (
   plugin: MakeMDPlugin,
   file: TAbstractFile,
   isFolder: boolean,
-  e: React.MouseEvent | React.TouchEvent
+  e: React.MouseEvent | React.TouchEvent,
+  source = "file-explorer"
 ) => {
-  const spaces = retrieveSpaces(plugin);
+  const spaces = plugin.index.allSpaces();
   const spaceItems = retrieveSpaceItems(plugin, spaces);
-
+  const cache = plugin.index.filesIndex.get(file.path);
   const fileMenu = new Menu();
   if (isFolder) {
     fileMenu.addSeparator();
@@ -328,6 +439,14 @@ export const triggerFileMenu = (
         newFileInFolder(plugin, file as TFolder);
       });
     });
+    fileMenu.addItem((menuItem) => {
+      menuItem.setIcon("layout-dashboard");
+      menuItem.setTitle(t.buttons.createCanvas);
+      menuItem.onClick((ev: MouseEvent) => {
+        createNewCanvasFile(plugin, file as TFolder, "");
+      });
+    });
+
     fileMenu.addItem((menuItem) => {
       menuItem.setIcon("folder-plus");
       menuItem.setTitle(t.buttons.createFolder);
@@ -346,46 +465,117 @@ export const triggerFileMenu = (
   // Pin - Unpin Item
   fileMenu.addSeparator();
   fileMenu.addItem((menuItem) => {
-    menuItem.setTitle(t.menu.spaceTitle);
-    menuItem.setDisabled(true);
+    menuItem.setIcon("plus-square");
+    menuItem.setTitle("Add to Space");
+    menuItem.onClick((ev: MouseEvent) => {
+      let vaultChangeModal = new AddToSpaceModal(plugin, [file.path]);
+      vaultChangeModal.open();
+    });
   });
-  spaces.map((f, i) => {
-    const itemExists = spaceItems[f.name]?.some((g) => g.path == file.path);
-    fileMenu.addItem((menuItem) => {
-      menuItem.setTitle(f.name);
-
-      if (f.def?.length > 0) {
-        menuItem.setDisabled(true);
-        menuItem.setIcon("folder");
-      } else {
-        if (itemExists) {
-          menuItem.setIcon("checkmark");
-        } else {
-          menuItem.setIcon("plus");
-        }
-
-        menuItem.onClick((ev: MouseEvent) => {
-          if (!itemExists) {
-            insertSpaceItemAtIndex(plugin, f.name, file.path, 0);
-          } else {
-            removePathsFromSpace(plugin, f.name, [file.path]);
-          }
-        });
-      }
+  fileMenu.addItem((menuItem) => {
+    menuItem.setIcon("minus-square");
+    menuItem.setTitle("Remove from Space");
+    menuItem.onClick((ev: MouseEvent) => {
+      let vaultChangeModal = new RemoveFromSpaceModal(plugin, file.path);
+      vaultChangeModal.open();
     });
   });
   if (isFolder) {
-    fileMenu.addSeparator();
     // Rename Item
     fileMenu.addItem((menuItem) => {
       menuItem.setTitle(i18n.menu.createFolderSpace);
-      menuItem.setIcon("plus-square");
+      menuItem.setIcon("folder-plus");
       menuItem.onClick((ev: MouseEvent) => {
-        insertSpaceAtIndex(plugin, file.name, false, 0, file.path);
+        insertSpaceAtIndex(
+          plugin,
+          {
+            name: file.name,
+            pinned: "home",
+            def: { type: "focus", folder: file.path, filters: [] },
+          },
+          0
+        );
       });
     });
   }
 
+  if (isFolder && cache) {
+    fileMenu.addSeparator();
+    fileMenu.addItem((menuItem) => {
+      menuItem.setTitle(i18n.menu.customSort);
+      menuItem.setIcon("arrow-up-down");
+      menuItem.setChecked(cache.folderSort == "");
+      menuItem.onClick((ev: MouseEvent) => {
+        saveFolderSort(plugin, file.path, "");
+      });
+    });
+    fileMenu.addItem((menuItem) => {
+      menuItem.setTitle(i18n.menu.sortBy);
+      menuItem.setIcon("sort-desc");
+      menuItem.onClick((ev: MouseEvent) => {
+        const sortMenu = new Menu();
+
+        sortMenu.addItem((menuItem) => {
+          menuItem.setTitle(i18n.menu.fileNameSortAlphaAsc);
+          menuItem.setChecked(cache.folderSort == "path_asc");
+          menuItem.onClick((ev: MouseEvent) => {
+            saveFolderSort(plugin, file.path, "path_asc");
+          });
+        });
+
+        sortMenu.addItem((menuItem) => {
+          menuItem.setTitle(i18n.menu.fileNameSortAlphaDesc);
+          menuItem.setChecked(cache.folderSort == "path_desc");
+          menuItem.onClick((ev: MouseEvent) => {
+            saveFolderSort(plugin, file.path, "path_desc");
+          });
+        });
+        sortMenu.addSeparator();
+        sortMenu.addItem((menuItem) => {
+          menuItem.setTitle(i18n.menu.createdTimeSortAsc);
+          menuItem.setChecked(cache.folderSort == "ctime_asc");
+          menuItem.onClick((ev: MouseEvent) => {
+            saveFolderSort(plugin, file.path, "ctime_asc");
+          });
+        });
+
+        sortMenu.addItem((menuItem) => {
+          menuItem.setTitle(i18n.menu.createdTimeSortDesc);
+          menuItem.setChecked(cache.folderSort == "ctime_desc");
+          menuItem.onClick((ev: MouseEvent) => {
+            saveFolderSort(plugin, file.path, "ctime_desc");
+          });
+        });
+        sortMenu.addSeparator();
+        sortMenu.addItem((menuItem) => {
+          menuItem.setTitle(i18n.menu.modifiedTimeSortAsc);
+          menuItem.setChecked(cache.folderSort == "mtime_asc");
+          menuItem.onClick((ev: MouseEvent) => {
+            saveFolderSort(plugin, file.path, "mtime_asc");
+          });
+        });
+
+        sortMenu.addItem((menuItem) => {
+          menuItem.setTitle(i18n.menu.modifiedTimeSortDesc);
+          menuItem.setChecked(cache.folderSort == "mtime_desc");
+          menuItem.onClick((ev: MouseEvent) => {
+            saveFolderSort(plugin, file.path, "mtime_desc");
+          });
+        });
+        const offset = (e.target as HTMLElement).getBoundingClientRect();
+        if (isMouseEvent(e)) {
+          sortMenu.showAtPosition({ x: offset.left, y: offset.top + 30 });
+        } else {
+          sortMenu.showAtPosition({
+            // @ts-ignore
+            x: e.nativeEvent.locationX,
+            // @ts-ignore
+            y: e.nativeEvent.locationY,
+          });
+        }
+      });
+    });
+  }
   if (plugin.settings.spacesStickers) {
     fileMenu.addSeparator();
     fileMenu.addItem((menuItem) => {
@@ -410,7 +600,7 @@ export const triggerFileMenu = (
       menuItem.setTitle(t.buttons.changeIcon);
       menuItem.setIcon("lucide-sticker");
       menuItem.onClick((ev: MouseEvent) => {
-        let vaultChangeModal = new StickerModal(plugin.app, (emoji) =>
+        const vaultChangeModal = new stickerModal(plugin.app, plugin, (emoji) =>
           saveFileIcon(plugin, file, emoji)
         );
         vaultChangeModal.open();
@@ -452,7 +642,15 @@ export const triggerFileMenu = (
       }
     });
   });
-
+  if (!isFolder) {
+    fileMenu.addItem((menuItem) => {
+      menuItem.setTitle(t.menu.changeToFolderNote);
+      menuItem.setIcon("file-plus-2");
+      menuItem.onClick((ev: MouseEvent) => {
+        if (file instanceof TFile) noteToFolderNote(plugin, file, true);
+      });
+    });
+  }
   // Open in a New Pane
   fileMenu.addItem((menuItem) => {
     menuItem.setIcon("go-to-file");
@@ -492,7 +690,7 @@ export const triggerFileMenu = (
     });
   }
   // Trigger
-  plugin.app.workspace.trigger("file-menu", fileMenu, file, "file-explorer");
+  plugin.app.workspace.trigger("file-menu", fileMenu, file, source);
   if (isMouseEvent(e)) {
     fileMenu.showAtPosition({ x: e.pageX, y: e.pageY });
   } else {

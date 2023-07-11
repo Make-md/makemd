@@ -3,10 +3,10 @@ import MakeMDPlugin from "main";
 import { Modal } from "obsidian";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { eventTypes, SectionTree } from "types/types";
+import { eventTypes } from "types/types";
 import { getAllAbstractFilesInVault } from "utils/file";
 import { uiIconSet } from "utils/icons";
-import { fileNameToString } from "utils/tree";
+import { fileNameToString } from "utils/strings";
 import { showSelectMenu } from "../menus/menuItems";
 
 export class HiddenItemsModal extends Modal {
@@ -52,8 +52,7 @@ export class HiddenItemsModal extends Modal {
 
   onClose() {
     let { contentEl } = this;
-    let event = new CustomEvent(eventTypes.vaultChange);
-    window.dispatchEvent(event);
+
     contentEl.empty();
   }
 }
@@ -149,7 +148,11 @@ export const HiddenFiles = (props: { plugin: MakeMDPlugin }) => {
         ))}
       </div>
       <div className="setting-item">
-        <input placeholder={i18n.labels.addExtension} type="text" ref={ref}></input>
+        <input
+          placeholder={i18n.labels.addExtension}
+          type="text"
+          ref={ref}
+        ></input>
         <button onClick={(e) => addExtension()}>+ Add</button>
       </div>
 

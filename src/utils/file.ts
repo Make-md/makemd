@@ -1,22 +1,51 @@
 import { CONTEXT_VIEW_TYPE } from "components/ContextView/ContextView";
+import { FILE_VIEW_TYPE } from "components/FileView/FileView";
 import { VaultChangeModal } from "components/ui/modals/vaultChangeModals";
-import i18n from "i18n";
 import MakeMDPlugin from "main";
 import {
   App,
-  Keymap, normalizePath, Platform,
-  TAbstractFile, TFile,
+  Keymap,
+  normalizePath,
+  Platform,
+  TAbstractFile,
+  TFile,
   TFolder
 } from "obsidian";
-import { DBRow, MDBField } from "types/mdb";
-import { eventTypes, FlattenedTreeNode, FolderTree } from "types/types";
+import { AFile } from "schemas/spaces";
+import { FileMetadataCache, FolderNoteCache } from "types/cache";
+import { ActivePathEvent, eventTypes, FlattenedTreeNode, FolderTree, Path } from "types/types";
+import { parseMultiString } from "./parser";
+import { pathByString } from "./path";
+import { serializeMultiDisplayString, serializeMultiString } from "./serializer";
+import { stickerFromString } from "./sticker";
+import { fileNameToString, folderNotePathFromAFile, folderPathFromFolderNoteFile, spaceContextPathFromName } from "./strings";
 import { folderChildren, selectElementContents } from "./tree";
 
-export const defaultNoteFolder = (plugin: MakeMDPlugin, activeFile: string) =>
+export const tFileToAFile = (file: TAbstractFile | TFile) : AFile => {
+  if (!file) return null;
+  if (file instanceof TFile && file.stat) {
+      return {
+        isFolder: false,
+          name: file.basename,
+          path: file.path,
+          parent: file.parent.path,
+          stat: file.stat,
+          extension: file.extension
+      }
+  }
+  return {
+    isFolder: true,
+      name: file.name,
+      path: file.path,
+      parent: file.parent?.path ?? '/',
+  }
+}
+
+export const defaultNoteFolder = (plugin: MakeMDPlugin, activeFile: Path) =>
   (plugin.settings.newFileLocation == "folder"
     ? getFolderFromPath(app, plugin.settings.newFileFolderPath)
     : plugin.settings.newFileLocation == "current" && activeFile
-    ? getFolderFromPath(app, activeFile)
+    ? getFolderFromPath(app, activeFile.path)
     : plugin.app.vault.getRoot()) ?? plugin.app.vault.getRoot();
 
 export const defaultConfigFile = async (app: App) => {
@@ -25,71 +54,74 @@ export const defaultConfigFile = async (app: App) => {
   );
 };
 
-export const fileExtensionForFile = (path: string) => path.split(".").pop();
+export const fileExtensionForFile = (path: string) => path?.split(".").pop();
 
-export const appendFileMetadataForRow = (row: DBRow, fields: MDBField[]) => {
-  const file = getAbstractFileAtPath(app, row.File);
-  if (!file) {
-    return row;
-  }
-  return {
-    ...row,
-    ...fields
-      .filter((f) => f.type == "fileprop")
-      .reduce(
-        (p, c) => ({ ...p, [c.name]: appendFileMetaData(c.value, file) }),
-        {}
-      ),
-  };
+export const appendFilesMetaData = (plugin: MakeMDPlugin, propType: string, filesString: string) => {
+  const files = parseMultiString(filesString)
+    .map((f) => plugin.index.filesIndex.get(f))
+    .filter((f) => f);
+  return serializeMultiString(files.map((f) => appendFileMetaData(propType, f)));
 };
 
-export const appendFileMetaData = (propType: string, file: TAbstractFile) => {
+export const appendFileMetaData = (propType: string, file: FileMetadataCache) => {
   let value = "";
   if (file) {
     if (propType == "folder") {
-      value = file.parent.path;
-    }
-    if (file instanceof TFile) {
-      if (propType == "ctime") {
-        value = file.stat.ctime.toString();
+      value = file.parent;
+    } else  if (propType == "ctime") {
+        value = file.ctime?.toString();
       } else if (propType == "mtime") {
-        value = file.stat.mtime.toString();
+        value = file.mtime?.toString();
       } else if (propType == "extension") {
         value = file.extension;
       } else if (propType == "size") {
-        value = file.stat.size.toString();
-      }
-    } else if (propType == "extension") {
-      value = i18n.menu.folder;
+        value = file.size?.toString();
+      } else if (propType == "inlinks") {
+        value = serializeMultiDisplayString(file.inlinks);
+      }else if (propType == "outlinks") {
+        value = serializeMultiDisplayString(file.outlinks);
+      } else if (propType == "tags") {
+        value = serializeMultiDisplayString(file.tags);
+    } else if (propType == 'spaces') {
+      value = serializeMultiDisplayString(file.spaces);
     }
   }
   return value;
 };
 
-export const viewTypeByString = (file: string) => {
-  if (file.charAt(0) == "#") {
-    return "tag";
-  }
-  const portalFile = app.vault.getAbstractFileByPath(file);
-  if (portalFile instanceof TFolder) {
-    return "folder";
-  }
-  if (portalFile instanceof TFile) {
-    return "file";
-  }
-  return null;
+export const moveFile = async (folder: TFolder, file: TAbstractFile) => {
+  await app.vault.rename(file, folder.path + "/" + file.name);
 };
+
+export const renameFile = async (plugin: MakeMDPlugin, file: TAbstractFile, newName: string) => {
+  const afile = tFileToAFile(file);
+  await app.fileManager.renameFile(
+    file,
+    file.parent.path == "/" ? newName : file.parent.path + "/" + newName
+  );
+  if (afile.isFolder && plugin.settings.enableFolderNote) {
+    const folderNotePath = folderNotePathFromAFile(plugin.settings, afile)
+    const folderNote = getAbstractFileAtPath(app, folderNotePath)
+    if (folderNote)
+    await app.fileManager.renameFile(
+      folderNote,
+      folderNotePathFromAFile(plugin.settings, tFileToAFile(file))
+    );
+  }
+};
+
+
 
 export function getAllAbstractFilesInVault(
   plugin: MakeMDPlugin,
   app: App
 ): TAbstractFile[] {
-  let files: TAbstractFile[] = [];
-  let rootFolder = app.vault.getRoot();
+  const files: TAbstractFile[] = [];
+  const rootFolder = app.vault.getRoot();
   function recursiveFx(folder: TFolder) {
-    for (let child of folderChildren(plugin, folder)) {
+    for (const child of folderChildren(plugin, folder)) {
       if (child instanceof TFolder) {
-        let childFolder: TFolder = child as TFolder;
+        const childFolder: TFolder = child as TFolder;
         if (childFolder.children) recursiveFx(childFolder);
       }
       files.push(child);
@@ -109,11 +141,16 @@ export const getFileFromSpaceItem = (app: App, nodeId: string): string => {
   return file;
 };
 
+export const removeTrailingSlashFromFolder = (path: string) =>
+  path == "/"
+    ? path
+    : path.slice(-1) == "/"
+    ? path.substring(0, path.length - 1)
+    : path;
+
 export const getFolderFromPath = (app: App, path: string): TFolder => {
   if (!path) return null;
-  const file =
-    path.slice(-1) == "/" ? path.substring(0, path.length - 1) : path;
-  const afile = getAbstractFileAtPath(app, file);
+  const afile = getAbstractFileAtPath(app, removeTrailingSlashFromFolder(path));
   if (!afile) return null;
   return afile instanceof TFolder ? afile : afile.parent;
 };
@@ -121,10 +158,17 @@ export const getFolderFromPath = (app: App, path: string): TFolder => {
 export const getFolderPathFromString = (file: string) =>
   getFolderFromPath(app, file)?.path;
 
+  export const getParentPathFromString = (file: string) => {
+    const indexOfLastSlash = file.lastIndexOf("/");
+    if (indexOfLastSlash == -1) {
+      return '/'
+    }
+    return file.substring(0,indexOfLastSlash+1);
+  }
 // Files out of Md should be listed with extension badge - Md without extension
 
 export const getFileNameAndExtension = (fullName: string) => {
-  var index = fullName.lastIndexOf(".");
+  const index = fullName.lastIndexOf(".");
   return {
     fileName: fullName.substring(0, index),
     extension: fullName.substring(index + 1),
@@ -132,8 +176,8 @@ export const getFileNameAndExtension = (fullName: string) => {
 };
 
 export const hasChildFolder = (folder: TFolder): boolean => {
-  let children = folder.children;
-  for (let child of children) {
+  const children = folder.children;
+  for (const child of children) {
     if (child instanceof TFolder) return true;
   }
   return false;
@@ -147,13 +191,13 @@ export const deleteFiles = (plugin: MakeMDPlugin, files: string[]) => {
 };
 
 export const deleteFile = (plugin: MakeMDPlugin, file: TAbstractFile) => {
-  let deleteOption = plugin.settings.deleteFileOption;
+  const deleteOption = plugin.settings.deleteFileOption;
   if (deleteOption === "permanent") {
-    plugin.app.vault.delete(file, true);
+    return plugin.app.vault.delete(file, true);
   } else if (deleteOption === "system-trash") {
-    plugin.app.vault.trash(file, true);
+    return plugin.app.vault.trash(file, true);
   } else if (deleteOption === "trash") {
-    plugin.app.vault.trash(file, false);
+    return plugin.app.vault.trash(file, false);
   }
 };
 
@@ -161,16 +205,16 @@ export const deleteFile = (plugin: MakeMDPlugin, file: TAbstractFile) => {
 
 export const getFolderName = (folderPath: string, app: App) => {
   if (folderPath === "/") return app.vault.getName();
-  let index = folderPath.lastIndexOf("/");
+  const index = folderPath.lastIndexOf("/");
   if (index !== -1) return folderPath.substring(index + 1);
   return folderPath;
 };
 // Returns all parent folder paths
 
 export const getParentFolderPaths = (file: TFile): string[] => {
-  let folderPaths: string[] = ["/"];
-  let parts: string[] = file.parent.path.split("/");
-  let current: string = "";
+  const folderPaths: string[] = ["/"];
+  const parts: string[] = file.parent.path.split("/");
+  let current = "";
   for (let i = 0; i < parts.length; i++) {
     current += `${i === 0 ? "" : "/"}` + parts[i];
     folderPaths.push(current);
@@ -186,6 +230,72 @@ export const openFile = async (
   openAFile(getAbstractFileAtPath(plugin.app, file.path), plugin, newLeaf);
 };
 
+export const openSpace = async (
+  spaceName: string,
+  plugin: MakeMDPlugin,
+  newLeaf: boolean
+) => {
+  if (!plugin.settings.contextEnabled) return;
+  const leaf = app.workspace.getLeaf(newLeaf);
+  const viewType = CONTEXT_VIEW_TYPE;
+  app.workspace.setActiveLeaf(leaf, { focus: true });
+  await leaf.setViewState({
+    type: viewType,
+    state: { contextPath: spaceContextPathFromName(spaceName) },
+  });
+  await app.workspace.requestSaveLayout();
+  if (platformIsMobile()) {
+    app.workspace.leftSplit.collapse();
+  }
+  const evt = new CustomEvent<ActivePathEvent>(eventTypes.activePathChange, {
+    detail: { path: pathByString(spaceContextPathFromName(spaceName)) },
+  });
+  window.dispatchEvent(evt);
+}
+
+export const openURL = async (url: string) => {
+  const leaf = app.workspace.getLeaf(false);
+  if (url.endsWith(".md")) {
+    const viewType = FILE_VIEW_TYPE;
+    app.workspace.setActiveLeaf(leaf, { focus: true });
+    await leaf.setViewState({
+      type: viewType,
+      state: { path: url },
+    });
+    await app.workspace.requestSaveLayout();
+  } else if (url.endsWith(".mdb")) {
+    const viewType = CONTEXT_VIEW_TYPE;
+    app.workspace.setActiveLeaf(leaf, { focus: true });
+    await leaf.setViewState({
+      type: viewType,
+      state: { contextPath: url },
+    });
+    await app.workspace.requestSaveLayout();
+  }
+
+  if (platformIsMobile()) {
+    app.workspace.leftSplit.collapse();
+  }
+};
+
+export function getAllFoldersInVault(app: App): TFolder[] {
+  const folders: TFolder[] = [];
+  const rootFolder = app.vault.getRoot();
+  folders.push(rootFolder);
+  function recursiveFx(folder: TFolder) {
+    for (const child of folder.children) {
+      if (child instanceof TFolder) {
+        const childFolder: TFolder = child as TFolder;
+        folders.push(childFolder);
+        if (childFolder.children) recursiveFx(childFolder);
+      }
+    }
+  }
+  recursiveFx(rootFolder);
+  return folders;
+}
+
+
 export const openAFile = async (
   file: TAbstractFile,
   plugin: MakeMDPlugin,
@@ -196,16 +306,30 @@ export const openAFile = async (
   } else if (file instanceof TFile) {
     openTFile(file, plugin, newLeaf);
   }
-  let evt = new CustomEvent(eventTypes.activeFileChange, {
-    detail: { filePath: file.path },
+  let evt = new CustomEvent<ActivePathEvent>(eventTypes.activePathChange, {
+    detail: { path: pathByString(file.path) },
   });
   window.dispatchEvent(evt);
 };
 
-export const openTFile = async (file: TFile, plugin: MakeMDPlugin, newLeaf: boolean) => {
+
+export const openTFile = async (
+  file: TFile,
+  plugin: MakeMDPlugin,
+  newLeaf: boolean
+) => {
+  
   let leaf = app.workspace.getLeaf(newLeaf);
+  
+  
   app.workspace.setActiveLeaf(leaf, { focus: true });
+  
   await leaf.openFile(file, { eState: { focus: true } });
+  const fileCache = plugin.index.filesIndex.get(file.path);
+  if (fileCache?.sticker && leaf.tabHeaderInnerIconEl) {
+    const icon = stickerFromString(fileCache.sticker, plugin)
+    leaf.tabHeaderInnerIconEl.innerHTML = icon
+  }
 };
 
 export const openTFolder = async (
@@ -213,32 +337,50 @@ export const openTFolder = async (
   plugin: MakeMDPlugin,
   newLeaf: boolean
 ) => {
+  if (!plugin.settings.contextEnabled) return;
   let leaf = app.workspace.getLeaf(newLeaf);
   const viewType = CONTEXT_VIEW_TYPE;
   app.workspace.setActiveLeaf(leaf, { focus: true });
   await leaf.setViewState({
     type: viewType,
-    state: { type: "folder", folder: file.path },
+    state: { contextPath: file.path },
   });
+  const fileCache = plugin.index.filesIndex.get(file.path);
+  if (fileCache?.sticker && leaf.tabHeaderInnerIconEl) {
+    const icon = stickerFromString(fileCache.sticker, plugin)
+    leaf.tabHeaderInnerIconEl.innerHTML = icon
+  }
   await app.workspace.requestSaveLayout();
   if (platformIsMobile()) {
     app.workspace.leftSplit.collapse();
   }
 };
 
-export const openTag = async (tag: string, plugin: MakeMDPlugin, newLeaf: boolean) => {
+export const openTagContext = async (
+  tag: string,
+  plugin: MakeMDPlugin,
+  newLeaf: boolean
+) => {
   let leaf = app.workspace.getLeaf(newLeaf);
   const viewType = CONTEXT_VIEW_TYPE;
   app.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.setViewState({ type: viewType, state: { type: "tag", tag: tag } });
+  await leaf.setViewState({ type: viewType, state: { contextPath: tag } });
   await app.workspace.requestSaveLayout();
   if (platformIsMobile()) {
     app.workspace.leftSplit.collapse();
   }
+  const evt = new CustomEvent<ActivePathEvent>(eventTypes.activePathChange, {
+    detail: { path: pathByString(tag) },
+  });
+  window.dispatchEvent(evt);
 };
 
 export const getAbstractFileAtPath = (app: App, path: string) => {
   return app.vault.getAbstractFileByPath(path);
+};
+
+export const abstractFileAtPathExists = (app: App, path: string) => {
+  return app.vault.getAbstractFileByPath(path) ? true : false;
 };
 
 export const openInternalLink = (
@@ -260,21 +402,49 @@ export const openFileInNewPane = (
 ) => {
   openFile(file, plugin, true);
 };
+export const createNewCanvasFile = async (
+  plugin: MakeMDPlugin,
+  folder: TFolder,
+  newFileName: string,
+  dontOpen?: boolean
+): Promise<TFile> => {
+  const newFile = await app.fileManager.createNewMarkdownFile(
+    folder,
+    newFileName
+  );
+  await app.vault.modify(newFile, "{}");
+  await renameFile(plugin, 
+    newFile,
+    newFile.name.substring(0, newFile.name.lastIndexOf(".")) + ".canvas"
+  );
+  if (dontOpen) {
+    return newFile;
+  }
+  await openAFile(newFile, plugin, false);
+  const evt = new CustomEvent<ActivePathEvent>(eventTypes.activePathChange, {
+    detail: { path: pathByString(newFile.path) },
+  });
+  window.dispatchEvent(evt);
+  return newFile;
+};
 
 export const createNewMarkdownFile = async (
   plugin: MakeMDPlugin,
   folder: TFolder,
   newFileName: string,
-  content?: string
+  content?: string,
+  dontOpen?: boolean
 ): Promise<TFile> => {
-  // @ts-ignore
   const newFile = await app.fileManager.createNewMarkdownFile(
     folder,
     newFileName
   );
   if (content && content !== "") await app.vault.modify(newFile, content);
 
-  await openFile(newFile, plugin, false);
+  if (dontOpen) {
+    return newFile;
+  }
+  await openAFile(newFile, plugin, false);
   const titleEl = app.workspace.activeLeaf.view.containerEl.querySelector(
     ".inline-title"
   ) as HTMLDivElement;
@@ -282,8 +452,8 @@ export const createNewMarkdownFile = async (
     titleEl.focus();
     selectElementContents(titleEl);
   }
-  let evt = new CustomEvent(eventTypes.activeFileChange, {
-    detail: { filePath: newFile.path },
+  const evt = new CustomEvent<ActivePathEvent>(eventTypes.activePathChange, {
+    detail: { path: pathByString(newFile.path) },
   });
   window.dispatchEvent(evt);
   return newFile;
@@ -298,17 +468,67 @@ export const createNewFile = async (
   folderPath: string,
   plugin: MakeMDPlugin
 ) => {
-  let targetFolder = getAbstractFileAtPath(plugin.app, folderPath);
+  const targetFolder = getAbstractFileAtPath(plugin.app, folderPath);
   if (!targetFolder) return;
-  let modal = new VaultChangeModal(plugin, targetFolder, "create note");
+  const modal = new VaultChangeModal(plugin, targetFolder, "create note");
   modal.open();
 };
 
-export const newFileInFolder = async (plugin: MakeMDPlugin, data: TFolder) => {
+export const newFileInFolder = async (
+  plugin: MakeMDPlugin,
+  data: TFolder,
+  dontOpen?: boolean
+) => {
   await createNewMarkdownFile(
     plugin,
     data.parent.children.find((f) => f.name == data.name) as TFolder,
     "",
-    ""
+    "",
+    dontOpen
   );
 };
+
+export const noteToFolderNote = async (
+  plugin: MakeMDPlugin,
+  file: TFile,
+  open?: boolean
+) => {
+  const folderPath = fileNameToString(file.path);
+  const folder = getAbstractFileAtPath(app, folderPath)
+  if (folder && folder instanceof TFolder) {
+    if (open) {
+      openTFolder(folder, plugin, false)
+    }
+    return;
+  }
+  await app.vault.createFolder(folderPath);
+  plugin.index.filesIndex.delete(file.path);
+   const newFolderNotePath = folderNotePathFromAFile(plugin.settings, tFileToAFile(getAbstractFileAtPath(app, folderPath)))
+  if (newFolderNotePath != file.path) {
+    await app.vault.rename(file, newFolderNotePath);
+  }
+  if (open) {
+    openTFolder(getAbstractFileAtPath(app, folderPath) as TFolder, plugin, false)
+  }
+}
+
+export const folderNoteCache = (plugin: MakeMDPlugin, file: AFile) : FolderNoteCache => {
+  if (!file.extension || file.extension.length == 0) {
+      const folderNotePath = folderNotePathFromAFile(plugin.settings, file);
+      if (abstractFileAtPathExists(app, folderNotePath)) {
+          return {
+              folderNotePath: folderNotePath,
+              folderPath: file.path
+          }
+      }
+  } else if (file.extension == 'md') {
+      const folderPath = getAbstractFileAtPath(app, folderPathFromFolderNoteFile(plugin.settings, file));
+      if ((folderPath instanceof TFolder) && folderPath.name == file.name) {
+          return {
+              folderNotePath: file.path,
+              folderPath: folderPath.path
+          }
+      }
+  }
+  return null;
+}

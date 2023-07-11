@@ -1,20 +1,25 @@
-import { HiddenItemsModal } from "components/ui/modals/hiddenFilesModal";
 import { EditSpaceModal } from "components/ui/modals/editSpaceModal";
+import { HiddenItemsModal } from "components/ui/modals/hiddenFilesModal";
 import "css/MainMenu.css";
-import i18n from "i18n";
-import t from "i18n";
+import { default as i18n, default as t } from "i18n";
 import MakeMDPlugin from "main";
-import { Menu, WorkspaceLeaf, WorkspaceMobileDrawer } from "obsidian";
-import React, { useEffect, useRef } from "react";
+import { Menu, TFolder, WorkspaceLeaf, WorkspaceMobileDrawer } from "obsidian";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { RecoilRoot, useRecoilState } from "recoil";
 import * as recoilState from "recoil/pluginState";
-import { unifiedToNative } from "utils/emoji";
-import { platformIsMobile } from "utils/file";
+import { eventTypes } from "types/types";
+import {
+  createNewMarkdownFile,
+  defaultNoteFolder,
+  platformIsMobile,
+} from "utils/file";
 import { uiIconSet } from "utils/icons";
+import { stickerFromString } from "utils/sticker";
 import { FILE_TREE_VIEW_TYPE } from "./FileTreeView";
 interface MainMenuComponentProps {
   plugin: MakeMDPlugin;
+  compactMode: boolean;
 }
 export const replaceMobileMainMenu = (plugin: MakeMDPlugin) => {
   if (platformIsMobile()) {
@@ -22,37 +27,47 @@ export const replaceMobileMainMenu = (plugin: MakeMDPlugin) => {
       ".workspace-drawer.mod-left .workspace-drawer-header-left"
     );
     header.empty();
-    if (!plugin.settings.spacesCompactMode) {
-      const reactEl = createRoot(header);
-      reactEl.render(
-        <RecoilRoot>
-          <MainMenu plugin={plugin}></MainMenu>
-        </RecoilRoot>
-      );
-    }
+    const reactEl = createRoot(header);
+    reactEl.render(
+      <RecoilRoot>
+        <MainMenu
+          plugin={plugin}
+          compactMode={plugin.settings.spacesCompactMode}
+        ></MainMenu>
+      </RecoilRoot>
+    );
   }
 };
 
 export const MainMenu = (props: MainMenuComponentProps) => {
   const { plugin } = props;
   const [activeView, setActiveView] = useRecoilState(recoilState.activeView);
-  const [spaces, setSpaces] = useRecoilState(recoilState.spaces);
+  const [spaces, setSpaces] = useState(props.plugin.index.allSpaces());
+  const [activeFile, setActiveFile] = useRecoilState(recoilState.activeFile);
+  const folder: TFolder = defaultNoteFolder(props.plugin, activeFile);
   const [activeViewSpace, setActiveViewSpace] = useRecoilState(
     recoilState.activeViewSpace
   );
   const activeSpace = spaces.find((f) => f.name == activeViewSpace);
   const ref = useRef<HTMLDivElement>();
   const toggleSections = (collapse: boolean) => {
-    const newSections = collapse ? [] : ["/", ...spaces.map((f) => f.name)];
+    const newSections = collapse ? [] : spaces.map((f) => f.name);
     plugin.settings.expandedSpaces = newSections;
     plugin.saveSettings();
   };
-
-  const newSection = () => {
-    let vaultChangeModal = new EditSpaceModal(plugin, "", "create");
-    vaultChangeModal.open();
+  const newFile = async () => {
+    await createNewMarkdownFile(props.plugin, folder, "", "");
   };
 
+  const loadCachedSpaces = () => {
+    setSpaces([...plugin.index.allSpaces()]);
+  };
+  useEffect(() => {
+    window.addEventListener(eventTypes.spacesChange, loadCachedSpaces);
+    return () => {
+      window.removeEventListener(eventTypes.spacesChange, loadCachedSpaces);
+    };
+  }, [loadCachedSpaces]);
   useEffect(() => {
     refreshLeafs();
   }, []);
@@ -60,7 +75,7 @@ export const MainMenu = (props: MainMenuComponentProps) => {
   const refreshLeafs = () => {
     // plugin.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE)
 
-    let leafs = [];
+    const leafs = [];
     let spaceActive = true;
     if (plugin.app.workspace.leftSplit && platformIsMobile()) {
       const mobileDrawer = plugin.app.workspace
@@ -95,20 +110,27 @@ export const MainMenu = (props: MainMenuComponentProps) => {
 
     if (plugin.settings.spacesCompactMode) {
       menu.addItem((menuItem) => {
-        menuItem.setTitle(i18n.menu.spaces);
+        menuItem.setTitle(i18n.menu.home);
         menuItem.onClick((ev: MouseEvent) => {
           setActiveView("root");
         });
       });
+
       menu.addItem((menuItem) => {
         menuItem.setTitle(i18n.menu.tags);
         menuItem.onClick((ev: MouseEvent) => {
           setActiveView("tags");
         });
       });
+      menu.addItem((menuItem) => {
+        menuItem.setTitle("All Spaces");
+        menuItem.onClick((ev: MouseEvent) => {
+          setActiveView("all");
+        });
+      });
       menu.addSeparator();
       spaces
-        .filter((f) => f.pinned == "true")
+        .filter((f) => f.pinned == "true" || f.pinned == "pinned")
         .forEach((space) => {
           menu.addItem((menuItem) => {
             menuItem.setTitle(space.name);
@@ -123,9 +145,48 @@ export const MainMenu = (props: MainMenuComponentProps) => {
 
     menu.addItem((menuItem) => {
       menuItem.setIcon("plus");
-      menuItem.setTitle(t.menu.newSpace);
+      menuItem.setTitle(t.buttons.createSection);
       menuItem.onClick((ev: MouseEvent) => {
-        newSection();
+        const vaultChangeModal = new EditSpaceModal(
+          plugin,
+          {
+            name: "",
+            def: {
+              type: "focus",
+              folder: "",
+              filters: [],
+            },
+          },
+          "create"
+        );
+        vaultChangeModal.open();
+      });
+    });
+    menu.addItem((menuItem) => {
+      menuItem.setIcon("plus");
+      menuItem.setTitle(t.buttons.createSectionSmart);
+      menuItem.onClick((ev: MouseEvent) => {
+        const vaultChangeModal = new EditSpaceModal(
+          plugin,
+          {
+            name: "",
+            def: {
+              type: "smart",
+              folder: "",
+              filters: [],
+            },
+          },
+          "create"
+        );
+        vaultChangeModal.open();
+      });
+    });
+    menu.addSeparator();
+    menu.addItem((menuItem) => {
+      menuItem.setIcon("sync");
+      menuItem.setTitle("Reload Spaces");
+      menuItem.onClick((ev: MouseEvent) => {
+        plugin.index.loadSpacesDatabaseFromDisk();
       });
     });
 
@@ -150,7 +211,7 @@ export const MainMenu = (props: MainMenuComponentProps) => {
       menuItem.setIcon("eye-off");
       menuItem.setTitle(i18n.menu.manageHiddenFiles);
       menuItem.onClick((ev: MouseEvent) => {
-        let vaultChangeModal = new HiddenItemsModal(plugin);
+        const vaultChangeModal = new HiddenItemsModal(plugin);
         vaultChangeModal.open();
       });
     });
@@ -197,19 +258,23 @@ export const MainMenu = (props: MainMenuComponentProps) => {
   };
   const currentViewName =
     activeView == "root"
-      ? "Spaces"
+      ? "Home"
+      : activeView == "all"
+      ? "All Spaces"
       : activeView == "tags"
       ? "Tags"
       : activeViewSpace;
   const currentViewIcon =
     activeView == "root"
+      ? uiIconSet["mk-ui-home"]
+      : activeView == "all"
       ? uiIconSet["mk-ui-spaces"]
       : activeView == "tags"
       ? uiIconSet["mk-ui-tags"]
       : activeSpace?.sticker?.length > 0
-      ? unifiedToNative(activeSpace.sticker)
+      ? stickerFromString(activeSpace.sticker, props.plugin)
       : activeSpace?.name.charAt(0);
-  return (
+  const menuComponent = () => (
     <div className="mk-main-menu-container">
       <div
         className="mk-main-menu-button"
@@ -232,5 +297,35 @@ export const MainMenu = (props: MainMenuComponentProps) => {
         ></div>
       </div>
     </div>
+  );
+  return props.compactMode ? (
+    <div className="mk-flow-bar-compact">
+      {" "}
+      {menuComponent()}
+      <button
+        aria-label={t.buttons.newNote}
+        className="mk-inline-button"
+        onClick={() => newFile()}
+      >
+        <div
+          className="mk-icon-small"
+          dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-new-note"] }}
+        ></div>
+      </button>
+      {props.plugin.settings.blinkEnabled && (
+        <button
+          aria-label={i18n.buttons.blink}
+          className="mk-inline-button"
+          onClick={() => props.plugin.quickOpen()}
+        >
+          <div
+            className="mk-icon-small"
+            dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-blink"] }}
+          ></div>
+        </button>
+      )}
+    </div>
+  ) : (
+    menuComponent()
   );
 };

@@ -1,10 +1,10 @@
 import {
-  EditorSelection, EditorState,
-  Transaction, TransactionSpec
+  EditorSelection,
+  EditorState,
+  Transaction,
+  TransactionSpec,
 } from "@codemirror/state";
-import {
-  iterateTreeInSelection
-} from "utils/codemirror";
+import { iterateTreeInSelection } from "utils/codemirror";
 import { hrResetFix } from "./hr";
 
 export const makerDelete = EditorState.transactionFilter.of(

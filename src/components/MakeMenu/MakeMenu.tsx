@@ -1,3 +1,5 @@
+import "css/MakeMenu.css";
+import t from "i18n";
 import MakeMDPlugin from "main";
 import {
   App,
@@ -8,10 +10,12 @@ import {
   EditorSuggestTriggerInfo,
   TFile,
 } from "obsidian";
-import "css/MakeMenu.css";
-import { resolveCommands, Command } from "./commands";
-import t from "i18n";
-import { makeIconSet, markIconSet } from "utils/icons";
+import {
+  contextEmbedStringFromContext,
+  folderContextFromFolder,
+} from "utils/contexts/contexts";
+import { uiIconSet } from "utils/icons";
+import { Command, resolveCommands } from "./commands";
 
 export default class MakeMenu extends EditorSuggest<Command> {
   inCmd = false;
@@ -92,7 +96,7 @@ export default class MakeMenu extends EditorSuggest<Command> {
     }
     const div = el.createDiv("mk-slash-item");
     const icon = div.createDiv("mk-slash-icon");
-    icon.innerHTML = makeIconSet[value.icon];
+    icon.innerHTML = uiIconSet[value.icon];
     const title = div.createDiv();
     //@ts-ignore
     title.setText(t.commands[value.label]);
@@ -102,9 +106,12 @@ export default class MakeMenu extends EditorSuggest<Command> {
     if (cmd.label === t.commandsSuggest.noResult) return;
 
     if (cmd.value == "table") {
-      this.plugin.createTable(this.file.parent.path).then((f) => {
+      this.plugin.createInlineTable(this.file.parent.path).then((f) => {
         this.context.editor.replaceRange(
-          `![![${this.file.parent.path}/#^${f}]]`,
+          contextEmbedStringFromContext(
+            folderContextFromFolder(this.plugin, this.file.parent.path),
+            f
+          ),
           { ...this.context.start, ch: this.cmdStartCh },
           this.context.end
         );

@@ -1,25 +1,34 @@
+import { CONTEXT_VIEW_TYPE } from "components/ContextView/ContextView";
 import MakeMDPlugin from "main";
+import { TAbstractFile, TFolder } from "obsidian";
 import { Database } from "sql.js";
 import {
-    DBRow,
-    DBRows,
-    DBTable, MDBField,
-    MDBSchema,
-    MDBTable
+  DBRow, DBTable,
+  MDBField,
+  MDBSchema,
+  MDBTable
 } from "types/mdb";
+
 import { insert } from "utils/array";
 import { sanitizeSQLStatement } from "utils/sanitize";
+import { serializeSQLFieldNames } from "utils/serializer";
+import { spaceContextPathFromName } from "utils/strings";
+import { folderChildren } from "utils/tree";
 import {
-    defaultFolderFields, defaultFolderTables, defaultTagFields, defaultTagTables, fieldSchema
+  defaultFieldsForContext, defaultMDBTableForContext, defaultTablesForContext, fieldSchema
 } from "../../schemas/mdb";
+import { ContextInfo } from "../../types/contextInfo";
+import { uniq } from "../array";
 import {
-    dbResultsToDBTables, deleteFromDB,
-    dropTable, getDBFile, saveDBFile, saveDBToPath
+  dbResultsToDBTables,
+  deleteFromDB,
+  dropTable, getDBFile, saveDBFile,
+  saveDBToPath
 } from "../db/db";
-import { getAbstractFileAtPath } from "../file";
-import { onlyUniqueProp, uniq } from "../tree";
-import { genId } from "../uuid";
-import { splitString } from "./predicate/predicate";
+import { deleteFile, getAbstractFileAtPath, renameFile } from "../file";
+import { getAllFilesForTag, tagToTagPath } from "../metadata/tags";
+import { parseMultiString } from "../parser";
+import { spaceContextFromSpace, tagContextFromTag } from "./contexts";
 
 const dbTableToMDBTable = (
   table: DBTable,
@@ -33,18 +42,11 @@ const dbTableToMDBTable = (
   };
 };
 
-const updateFieldsToSchema = (fields: MDBField[], tag: boolean) => {
-  if (tag) {
-    return [
-      ...fields,
-      ...(defaultTagFields.rows.filter(
-        (f) => !fields.some((g) => g.name == f.name && g.schemaId == f.schemaId)
-      ) as MDBField[]),
-    ];
-  }
+const updateFieldsToSchema = (fields: MDBField[], context: ContextInfo) => {
+  const defaultFields = defaultFieldsForContext(context);
   return [
     ...fields,
-    ...(defaultFolderFields.rows.filter(
+    ...(defaultFields.rows.filter(
       (f) => !fields.some((g) => g.name == f.name && g.schemaId == f.schemaId)
     ) as MDBField[]),
   ];
@@ -52,19 +54,20 @@ const updateFieldsToSchema = (fields: MDBField[], tag: boolean) => {
 
 export const getMDBTable = async (
   plugin: MakeMDPlugin,
-  table: string,
-  path: string,
-  tag: boolean
+  context: ContextInfo,
+  table: string
 ): Promise<MDBTable> => {
+  if (!context)
+  return null;
   const sqlJS = await plugin.sqlJS();
-  const buf = await getDBFile(path);
+  const buf = await getDBFile(context.dbPath, context.isRemote);
   if (!buf) {
     return null;
   }
 
   const db = new sqlJS.Database(new Uint8Array(buf));
 
-  await sanitizeTableSchema(plugin, db, path, tag);
+  await sanitizeTableSchema(plugin, db, context);
   let fieldsTables;
   let schema;
   try {
@@ -75,9 +78,11 @@ export const getMDBTable = async (
       db.exec(`SELECT * FROM m_schema WHERE id = '${table}'`)
     )[0].rows[0] as MDBSchema;
   } catch (e) {
+    db.close();
     return null;
   }
   if (fieldsTables.length == 0) {
+    db.close();
     return {
       schema: schema,
       cols: [],
@@ -91,9 +96,9 @@ export const getMDBTable = async (
 
   const dbTable = dbResultsToDBTables(
     db.exec(
-      `SELECT ${fields
+      `SELECT ${serializeSQLFieldNames(fields
         .reduce((p, c) => [...p, `"${c.name}"`], [])
-        .join(", ")} FROM "${table}"`
+        )} FROM "${table}"`
     )
   );
 
@@ -101,26 +106,27 @@ export const getMDBTable = async (
   return dbTableToMDBTable(
     dbTable[0],
     schema,
-    schema.primary ? updateFieldsToSchema(fields, tag) : fields
+    schema.primary ? updateFieldsToSchema(fields, context) : fields
   );
 };
 
 export const deleteMDBTable = async (
   plugin: MakeMDPlugin,
-  path: string,
-  mdb: string
+  context: ContextInfo,
+  table: string
 ): Promise<boolean> => {
+  if (context.readOnly) return false;
   const sqlJS = await plugin.sqlJS();
-  const buf = await getDBFile(path);
+  const buf = await getDBFile(context.dbPath, context.isRemote);
   if (!buf) {
     return false;
   }
   const db = new sqlJS.Database(new Uint8Array(buf));
-  deleteFromDB(db, "m_schema", `id = '${sanitizeSQLStatement(mdb)}'`);
-  deleteFromDB(db, "m_schema", `def = '${sanitizeSQLStatement(mdb)}'`);
-  deleteFromDB(db, "m_fields", `schemaId = '${sanitizeSQLStatement(mdb)}'`);
-  dropTable(db, mdb);
-  await saveDBFile(path, db.export().buffer);
+  deleteFromDB(db, "m_schema", `id = '${sanitizeSQLStatement(table)}'`);
+  deleteFromDB(db, "m_schema", `def = '${sanitizeSQLStatement(table)}'`);
+  deleteFromDB(db, "m_fields", `schemaId = '${sanitizeSQLStatement(table)}'`);
+  dropTable(db, table);
+  await saveDBFile(context.dbPath, db.export().buffer);
   db.close();
   //https://github.com/typeorm/typeorm/issues/1197 CHECK THIS
   //https://news.ycombinator.com/item?id=28157686
@@ -129,16 +135,15 @@ export const deleteMDBTable = async (
 
 export const getMDBTableSchemas = async (
   plugin: MakeMDPlugin,
-  path: string,
-  tag: boolean
+  context: ContextInfo
 ): Promise<MDBSchema[]> => {
   const sqlJS = await plugin.sqlJS();
-  const buf = await getDBFile(path);
+  const buf = await getDBFile(context.dbPath, context.isRemote);
   if (!buf) {
     return null;
   }
   const db = new sqlJS.Database(new Uint8Array(buf));
-  await sanitizeTableSchema(plugin, db, path, tag);
+  await sanitizeTableSchema(plugin, db, context);
   const tables = db.exec(`SELECT * FROM m_schema`);
   db.close();
   return tables[0].values.map((f) => {
@@ -147,14 +152,40 @@ export const getMDBTableSchemas = async (
   });
 };
 
+export const getMDBSchema = async (
+  plugin: MakeMDPlugin,
+  context: ContextInfo,
+  schema: string
+): Promise<MDBSchema> => {
+  const sqlJS = await plugin.sqlJS();
+  const buf = await getDBFile(context.dbPath, context.isRemote);
+  if (!buf) {
+    return null;
+  }
+  const db = new sqlJS.Database(new Uint8Array(buf));
+  const tables = db.exec(
+    `SELECT * FROM m_schema WHERE id='${sanitizeSQLStatement(schema)}'`
+  );
+  db.close();
+  if (!tables[0] || !tables[0].values[0]) {
+    return null;
+  }
+  return tables[0].values.map((f) => {
+    const [id, name, type, def, predicate, primary] = f as string[];
+    return { id, name, type, def, predicate, primary };
+  })[0];
+};
+
+
 export const saveMDBToPath = async (
   plugin: MakeMDPlugin,
-  path: string,
+  context: ContextInfo,
   mdb: MDBTable
 ): Promise<boolean> => {
+  if (context.readOnly) return;
   const sqlJS = await plugin.sqlJS();
 
-  const buf = await getDBFile(path);
+  const buf = await getDBFile(context.dbPath, context.isRemote);
   if (!buf) {
     return null;
   }
@@ -170,38 +201,105 @@ export const saveMDBToPath = async (
       rows: [...(fieldsTables[0]?.rows ?? []), ...mdb.cols],
     },
     [mdb.schema.id]: {
-      uniques: mdb.cols.filter((c) => c.unique == "true").map((c) => c.name),
+      uniques: [] as string[],
       cols: mdb.cols.map((c) => c.name),
       rows: mdb.rows,
     },
   };
-  return saveDBToPath(plugin, path, tables);
+  db.close();
+  return saveDBToPath(plugin, context.dbPath, tables);
 };
 
 export const optionValuesForColumn = (column: string, table: MDBTable) => {
   return uniq(
     table?.rows.reduce((p, c) => {
-      return [...p, ...splitString(c[column])];
+      return [...p, ...parseMultiString(c[column])];
     }, []) ?? []
   );
 };
 
+export const defaultTableDataForContext = (plugin: MakeMDPlugin, contextInfo: ContextInfo) : MDBTable => {
+  let files: TAbstractFile[];
+  if (contextInfo.type == "folder") {
+    files = folderChildren(
+      plugin,
+      getAbstractFileAtPath(
+        plugin.app,
+        contextInfo.contextPath
+      ) as TFolder
+    );
+    return {
+      ...defaultMDBTableForContext(contextInfo),
+      rows: files.map((f) => ({ File: f.path })),
+    }
+  } else if (contextInfo.type == "tag") {
+    files = getAllFilesForTag(contextInfo.contextPath)
+      .map((f) => getAbstractFileAtPath(app, f))
+      .filter((f) => f);
+    return {
+      ...defaultMDBTableForContext(contextInfo),
+      rows: files.map((f) => ({ File: f.path })),
+    }
+  } else if (contextInfo.type == "space") {
+    files = [
+      ...(plugin.index.spacesMap?.getInverse(
+        contextInfo.contextPath.substring(
+          0,
+          contextInfo.contextPath.length - 2
+        )
+      ) ?? []),
+    ]
+      .map((f) => getAbstractFileAtPath(app, f))
+      .filter((f) => f);
+    return {
+      ...defaultMDBTableForContext(contextInfo),
+      rows: files.map((f) => ({ File: f.path })),
+    }
+  }
+  return null;
+};
+
 export const createDefaultDB = async (
   plugin: MakeMDPlugin,
-  path: string,
-  tag: boolean
+  context: ContextInfo
 ) => {
-  const sqlJS = await plugin.sqlJS();
+
   //try to merge existing
-  const table = tag ? defaultTagTables : defaultFolderTables;
-  return saveDBToPath(plugin, path, table);
+  const table = defaultTableDataForContext(plugin, context);
+  if (table)
+    {const defaultFields = defaultFieldsForContext(context);
+      const defaultTable = defaultTablesForContext(context);
+      const dbField = {
+        ...defaultTable,
+        m_fields: {
+          uniques: defaultFields.uniques,
+          cols: defaultFields.cols,
+          rows: [...(defaultFields.rows ?? []), ...table.cols],
+        },
+        [table.schema.id]: {
+          uniques: table.cols
+            .filter((c) => c.unique == "true")
+            .map((c) => c.name),
+          cols: table.cols.map((c) => c.name),
+          rows: table.rows,
+        },
+      };
+
+      const result = await saveDBToPath(plugin, context.dbPath, dbField)
+      if (result) {
+        await plugin.index.reloadContext(context);
+        table.rows.map(f => getAbstractFileAtPath(app, f.File)).forEach(f => f && plugin.index.reloadFile(f, true));
+        return true;
+      }
+      return false;
+    }
+  return false;
 };
 
 const sanitizeTableSchema = async (
   plugin: MakeMDPlugin,
   db: Database,
-  path: string,
-  tag: boolean
+  context: ContextInfo
 ) => {
   const sqlJS = await plugin.sqlJS();
   //If for some reason we lose the table structure due to file corruption, unhandled error or user error, recreate the default structure
@@ -214,158 +312,147 @@ const sanitizeTableSchema = async (
     !tableRes[0].values.some((f) => f[0] == "m_fields") ||
     !tableRes[0].values.some((f) => f[0] == "files")
   ) {
-    await createDefaultDB(plugin, path, tag);
+    await createDefaultDB(plugin, context);
   }
 };
 
-export const newRowByDBRow = (row: DBRow) => ({
-  _id: genId(),
-  ...row,
-});
 
-const rowWithID = (row: DBRow, tag: boolean) => {
-  return row._id && row._id.length > 0
-    ? row
-    : {
-        ...newRowByDBRow({ ...row, _source: tag ? "tag" : "folder" }),
-      };
-};
+
 
 export const createNewRow = (mdb: MDBTable, row: DBRow, index?: number) => {
-    if (index) {
-        return {
-            ...mdb,
-            rows: insert(mdb.rows, index, newRowByDBRow(row))
-        }
-    }
+  if (index) {
+    return {
+      ...mdb,
+      rows: insert(mdb.rows, index, row),
+    };
+  }
   return {
     ...mdb,
-    rows: [...mdb.rows, newRowByDBRow(row)],
+    rows: [...mdb.rows, row],
   };
 };
 
-export const consolidateFilesToTable = async (
-  plugin: MakeMDPlugin,
-  path: string,
-  table: string,
-  files: string[],
-  tag?: string
-): Promise<MDBTable> => {
-  const sqlJS = await plugin.sqlJS();
-  const isTag = tag ? true : false;
-  let db = new sqlJS.Database();
-  if (getAbstractFileAtPath(app, path)) {
-    const buf = await getDBFile(path);
-    db = new sqlJS.Database(new Uint8Array(buf));
-  } else {
-    await createDefaultDB(plugin, path, false);
+export const deleteTagContext = async (plugin: MakeMDPlugin, tag: string) => {
+  const context = tagContextFromTag(plugin, tag);
+  if (getAbstractFileAtPath(app, context.dbPath)) {
+    await deleteFile(plugin, getAbstractFileAtPath(app, context.dbPath));
   }
-  const mdbTable = await getMDBTable(plugin, table, path, isTag);
-  const missingFiles = files
-    .filter((f) => !mdbTable.rows.some((g) => g.File == f && g._source != ""))
-    .map((f) => ({ File: f }));
-  const mergeDuplicates = (rows: DBRows, tag: boolean): DBRows => {
-    const mergeFields = (row: DBRow, row2: DBRow) => {
-      return { ...row, ...row2 };
-    };
-    return rows.reduce((p, c) => {
-      const findIndex = p.findIndex((f) => f._source != "" && f.File == c.File);
-      if (findIndex != -1) {
-        return p.map((f, i) => (i == findIndex ? mergeFields(f, c) : f));
-      }
-      return [...p, c];
-    }, []);
-  };
-  let linkedFolderContexts = [""];
-  if (tag) {
-    const contexts: string[] = uniq(
-      mdbTable.rows.map((f) => f._source).filter((f) => f != "" && f != "tag")
-    );
-    const promises: Promise<[MDBTable, string]>[] = contexts.map((context) =>
-      getMDBTable(plugin, "files", context, false).then((f) => [f, context])
-    );
-    const results = await Promise.all(promises);
-    linkedFolderContexts.push(
-      ...results
-        .filter(([f, g]) => f?.schema?.def?.split("&").some((h) => h == tag))
-        .map(([f, g]) => g)
-    );
-  }
-  const nonLinkedRows = mdbTable.rows.filter(
-    (f) =>
-      linkedFolderContexts.some((g) => g == f._source) &&
-      !missingFiles.some((g) => f.File == g.File)
-  );
-  const newRows = [
-    ...nonLinkedRows,
-    ...[
-      ...mergeDuplicates(
-        mdbTable.rows.filter(
-          (f) =>
-            (f._source != "" || missingFiles.some((g) => f.File == g.File)) &&
-            files.some((g) => g == f.File)
-        ),
-        isTag
-      ),
-      ...missingFiles,
-    ].map((f) => rowWithID(f, isTag)),
-  ];
-  const newMDBTable = {
-    ...mdbTable,
-    cols: [
-      ...((isTag ? defaultTagFields : defaultFolderFields).rows as MDBField[]),
-      ...mdbTable.cols,
-    ].filter(onlyUniqueProp("name")),
-    rows: newRows,
-  };
-  await saveMDBToPath(plugin, path, newMDBTable);
-  return newMDBTable;
+  app.workspace.iterateLeaves((leaf) => {
+    if (
+      leaf.view.getViewType() == CONTEXT_VIEW_TYPE &&
+      leaf.view.getState().contextPath == tag
+    ) {
+      leaf.setViewState({ type: "empty" });
+    }
+  }, app.workspace["rootSplit"]!);
+  plugin.index.deleteTag(tag);
 };
 
-export const consolidateRowsToTag = async (
-  plugin: MakeMDPlugin,
-  path: string,
-  table: string,
-  source: string,
-  rows: DBRows
-): Promise<MDBTable> => {
-  const sqlJS = await plugin.sqlJS();
-  let db = new sqlJS.Database();
-  if (getAbstractFileAtPath(app, path)) {
-    const buf = await getDBFile(path);
-    db = new sqlJS.Database(new Uint8Array(buf));
-  } else {
-    await createDefaultDB(plugin, path, true);
+export const deleteSpaceContext = async (plugin: MakeMDPlugin, space: string) => {
+  const context = spaceContextFromSpace(plugin, spaceContextPathFromName(space));
+  if (getAbstractFileAtPath(app, context.dbPath)) {
+    await deleteFile(plugin, getAbstractFileAtPath(app, context.dbPath));
   }
-  const mdbTable = await getMDBTable(plugin, table, path, true);
-  const prevRows = mdbTable.rows
-    .map((f) => {
-      if (f._source != source) {
-        return f;
-      }
-      const row = rows.find((g) => g._id == f._sourceId);
-      return row ? { ...f, File: row["File"] } : f;
-    })
-    .filter(
-      (f) => f._source != source || rows.some((g) => g._id == f._sourceId)
-    );
+  app.workspace.iterateLeaves((leaf) => {
+    if (
+      leaf.view.getViewType() == CONTEXT_VIEW_TYPE &&
+      leaf.view.getState().contextPath == context.contextPath
+    ) {
+      leaf.setViewState({ type: "empty" });
+    }
+  }, app.workspace["rootSplit"]!);
+};
 
-  const missingRows = rows
-    .filter(
-      (f) =>
-        !mdbTable.rows.some((g) => g._source == source && g._sourceId == f._id)
-    )
-    .map((f) =>
-      newRowByDBRow({ File: f.File, _source: source, _sourceId: f._id })
-    );
-  const newRows = [...prevRows, ...missingRows];
-  const newMDBTable = {
-    ...mdbTable,
-    cols: [...(defaultTagFields.rows as MDBField[]), ...mdbTable.cols].filter(
-      onlyUniqueProp("name")
-    ),
-    rows: newRows,
-  };
-  await saveMDBToPath(plugin, path, newMDBTable);
-  return newMDBTable;
+export const connectContext = async (
+  plugin: MakeMDPlugin,
+  tag: string,
+  source: string
+) => {
+  
+};
+
+export const disconnectContext = async (
+  plugin: MakeMDPlugin,
+  tag: string,
+  source: string
+) => {
+  
+};
+
+export const renameSpaceContextFile = async (
+  plugin: MakeMDPlugin,
+  space: string,
+  newSpace: string,
+) => {
+  const context = spaceContextFromSpace(plugin, spaceContextPathFromName(space));
+  if (getAbstractFileAtPath(app, context.dbPath)) {
+    const newSpaceDBPath = newSpace + ".mdb";
+    if (
+      !getAbstractFileAtPath(
+        app,
+        getAbstractFileAtPath(app, context.dbPath).parent.path +
+          "/" + newSpaceDBPath
+      )
+    ) {
+      await renameFile(plugin, 
+        getAbstractFileAtPath(app, context.dbPath),
+        newSpaceDBPath
+      );
+    } else {
+      await deleteFile(plugin, getAbstractFileAtPath(app, context.dbPath));
+    }
+  }
+    app.workspace.iterateLeaves((leaf) => {
+      if (
+        leaf.view.getViewType() == CONTEXT_VIEW_TYPE &&
+        leaf.view.getState().contextPath == context.contextPath
+      ) {
+        leaf.setViewState({
+          type: CONTEXT_VIEW_TYPE,
+          state: { contextPath: spaceContextPathFromName(newSpace) },
+        });
+      }
+    }, app.workspace["rootSplit"]!);
+  
+};
+
+
+export const renameTagContextFile = async (
+  plugin: MakeMDPlugin,
+  tag: string,
+  newTag: string,
+) => {
+  const context = tagContextFromTag(plugin, tag);
+  if (getAbstractFileAtPath(app, context.dbPath)) {
+    const newTagDBPath = tagToTagPath(newTag) + ".mdb";
+    if (
+      !getAbstractFileAtPath(
+        app,
+        getAbstractFileAtPath(app, context.dbPath).parent.path +
+          "/" +
+          tagToTagPath(newTag) +
+          ".mdb"
+      )
+    ) {
+      await renameFile(plugin, 
+        getAbstractFileAtPath(app, context.dbPath),
+        tagToTagPath(newTag) + ".mdb"
+      );
+    } else {
+      await deleteFile(plugin, getAbstractFileAtPath(app, context.dbPath));
+    }
+  }
+    plugin.index.renameTag(tag, newTag);
+    app.workspace.iterateLeaves((leaf) => {
+      if (
+        leaf.view.getViewType() == CONTEXT_VIEW_TYPE &&
+        leaf.view.getState().contextPath == tag
+      ) {
+        leaf.setViewState({
+          type: CONTEXT_VIEW_TYPE,
+          state: { contextPath: newTag },
+        });
+      }
+    }, app.workspace["rootSplit"]!);
+  
 };

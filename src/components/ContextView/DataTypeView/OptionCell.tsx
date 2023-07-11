@@ -1,12 +1,12 @@
-import {
-   showSelectMenu
-} from "components/ui/menus/menuItems";
-import { SelectOption, SelectMenuProps } from "components/ui/menus/selectMenu";
+import { showSelectMenu } from "components/ui/menus/menuItems";
+import { SelectMenuProps, SelectOption } from "components/ui/menus/selectMenu";
 import i18n from "i18n";
+import { uniq } from "lodash";
 import React, { useEffect, useRef, useState } from "react";
-import { splitString } from "utils/contexts/predicate/predicate";
+import { onlyUniqueProp } from "utils/array";
 import { uiIconSet } from "utils/icons";
-import { onlyUniqueProp } from "utils/tree";
+import { parseMultiString } from "utils/parser";
+import { serializeMultiString } from "utils/serializer";
 import { CellEditMode, TableCellMultiProp } from "../TableView/TableView";
 
 export const OptionCell = (
@@ -16,23 +16,26 @@ export const OptionCell = (
   }
 ) => {
   const initialValue = (
-    props.multi ? splitString(props.initialValue) ?? [] : [props.initialValue]
+    props.multi
+      ? parseMultiString(props.initialValue) ?? []
+      : [props.initialValue]
   ).filter((f) => f);
 
   const initialOptions = [
-    ...(splitString(props.options)
+    ...(parseMultiString(props.options)
       .filter((f) => f)
-      .map((t) => ({ name: t, value: t })) ?? []),
-    ...initialValue.map((f) => ({ name: f, value: f })),
-  ].filter(onlyUniqueProp("value"));
+      .map((t) => ({ name: t, value: t, removeable: true })) ?? []),
+    ...initialValue.map((f) => ({ name: f, value: f, removeable: true })),
+  ]
+    .filter(onlyUniqueProp("value"))
+    .filter((f) => f.value.length > 0);
 
   const [options, setOptions] = useState<SelectOption[]>(initialOptions);
   const [value, setValue] = useState<string[]>(initialValue);
-  const [saveState, setSaveState] = useState(false);
   useEffect(() => {
     setValue(
       (props.multi
-        ? splitString(props.initialValue) ?? []
+        ? parseMultiString(props.initialValue) ?? []
         : [props.initialValue]
       ).filter((f) => f)
     );
@@ -42,50 +45,62 @@ export const OptionCell = (
     const newValues = value.filter((f) => f != v);
     setValue(newValues);
     props.saveOptions(
-      options.map((f) => f.value).join(","),
-      newValues.join(",")
+      serializeMultiString(options.map((f) => f.value)),
+      serializeMultiString(newValues)
     );
   };
-
+  const removeOption = (option: string) => {
+    const newOptions = options.filter((f) => f.value != option);
+    const newValues = value.filter((f) => f != option);
+    setOptions(newOptions);
+    setValue(newValues);
+    props.saveOptions(
+      serializeMultiString(newOptions.map((f) => f.value)),
+      serializeMultiString(newValues)
+    );
+  };
   const saveOptions = (_options: string[], _value: string[]) => {
     if (!props.multi) {
       setOptions(
-        _options.filter((f) => f.length > 0).map((t) => ({ name: t, value: t }))
+        _options
+          .filter((f) => f.length > 0)
+          .map((t) => ({ name: t, value: t, removeable: true }))
       );
       setValue(_value);
+      props.saveOptions(
+        serializeMultiString(_options.filter((f) => f.length > 0)),
+        serializeMultiString(_value)
+      );
     } else {
-      setOptions(_options.map((t) => ({ name: t, value: t })));
-      setValue(_value);
+      const newValues = uniq([...value, _value[0]]);
+      setOptions(
+        _options.map((t) => ({ name: t, value: t, removeable: true }))
+      );
+      setValue(newValues);
+      props.saveOptions(
+        serializeMultiString(_options.filter((f) => f.length > 0)),
+        serializeMultiString(newValues)
+      );
     }
   };
-  useEffect(() => {
-    if (saveState) {
-      props.saveOptions(
-        options
-          .filter((f) => f.value.length > 0)
-          .map((f) => f.value)
-          .join(","),
-        value.join(",")
-      );
-      props.setEditMode(null);
-      setSaveState(false);
-    }
-  }, [saveState]);
+
   const menuProps = (): SelectMenuProps => ({
-    multi: props.multi,
+    multi: false,
     editable: true,
     value: value,
-    options: !props.multi ? [{ name: i18n.menu.none, value: "" }, ...options] : options,
+    options: !props.multi
+      ? [{ name: i18n.menu.none, value: "" }, ...options]
+      : options,
     saveOptions,
+    removeOption,
     placeholder: i18n.labels.optionItemSelectPlaceholder,
     searchable: true,
     showAll: true,
-    onHide: () => {
-      setSaveState(true);
-    },
+    onHide: () => props.setEditMode(null),
   });
   return (
     <OptionCellBase
+      baseClass="mk-cell-option"
       value={value}
       menuProps={menuProps}
       multi={props.multi}
@@ -97,6 +112,7 @@ export const OptionCell = (
 
 export const OptionCellBase = (props: {
   value: any[];
+  baseClass: string;
   menuProps: () => SelectMenuProps;
   valueClass?: (value: any) => string;
   getLabelString?: (value: any) => string;
@@ -129,7 +145,7 @@ export const OptionCellBase = (props: {
   };
   const editable = props.editMode > 0;
   return (
-    <div className="mk-cell-option" ref={ref}>
+    <div className={props.baseClass} ref={ref}>
       {value.length > 0 ? (
         value.map((o) => (
           <div className="mk-cell-option-item">
@@ -174,7 +190,9 @@ export const OptionCellBase = (props: {
         ))
       ) : editable && !props.multi ? (
         <div className="mk-cell-option-item">
-          <div onClick={(e) => !props.multi && showMenu()}>{i18n.labels.select}</div>
+          <div onClick={(e) => !props.multi && showMenu()}>
+            {i18n.labels.select}
+          </div>
         </div>
       ) : props.editMode == -1 ? (
         <div className="mk-cell-option-item mk-cell-empty">

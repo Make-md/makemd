@@ -1,9 +1,9 @@
-import { EditorView, Decoration, DecorationSet } from "@codemirror/view";
+import { RangeSetBuilder, StateField } from "@codemirror/state";
+import { Decoration, DecorationSet, EditorView } from "@codemirror/view";
 import t from "i18n";
-import { StateField, RangeSetBuilder } from "@codemirror/state";
 const placeholderLine = Decoration.line({
   attributes: { "data-ph": t.labels.placeholder },
-  class: "cm-placeholder",
+  class: "mk-placeholder",
 });
 
 export const placeholder = StateField.define<DecorationSet>({

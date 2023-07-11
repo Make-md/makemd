@@ -8,11 +8,11 @@ import {
   EditorSuggest,
   EditorSuggestContext,
   EditorSuggestTriggerInfo,
-  TFile
+  TFile,
 } from "obsidian";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { unifiedToNative } from "utils/emoji";
+import { stickerFromString } from "utils/sticker";
 import { Emoji, EmojiData } from "./emojis";
 import { emojis } from "./emojis/default";
 
@@ -99,7 +99,7 @@ export default class StickerMenu extends EditorSuggest<Emoji> {
     reactElement.render(
       <>
         {value.unicode.length > 0
-          ? unifiedToNative(value.unicode)
+          ? stickerFromString(value.unicode, this.plugin)
           : t.commandsSuggest.noResult}
       </>
     );
@@ -110,7 +110,7 @@ export default class StickerMenu extends EditorSuggest<Emoji> {
     if (cmd.label === t.commandsSuggest.noResult) return;
 
     this.context.editor.replaceRange(
-      unifiedToNative(cmd.unicode),
+      stickerFromString(cmd.unicode, this.plugin),
       { ...this.context.start, ch: this.cmdStartCh },
       this.context.end
     );

@@ -1,34 +1,37 @@
 import i18n from "i18n";
-import React, { useRef, useState } from "react";
-import { loadTags, stringFromTag } from "utils/contexts/contexts";
-import { splitString } from "utils/contexts/predicate/predicate";
-import { uniq } from "utils/tree";
+import React, { useEffect, useState } from "react";
+import { uniq } from "utils/array";
+import { loadTags } from "utils/metadata/tags";
+import { parseMultiString } from "utils/parser";
+import { serializeMultiString } from "utils/serializer";
 import { TableCellMultiProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
 
 export const TagCell = (props: TableCellMultiProp) => {
-  const initialValue = (
-    props.multi ? splitString(props.initialValue) ?? [] : [props.initialValue]
-  ).filter((f) => f?.length > 0);
-  const ref = useRef(null);
+  const initialValue = (parseMultiString(props.initialValue) ?? []).filter(
+    (f) => f?.length > 0
+  );
 
   const [value, setValue] = useState<string[]>(initialValue);
+  useEffect(() => {
+    setValue(parseMultiString(props.initialValue) ?? []);
+  }, [props.initialValue]);
   const removeValue = (v: string) => {
     const newValues = value.filter((f) => f != v);
     setValue(newValues);
-    props.saveValue(newValues.join(","));
+    props.saveValue(serializeMultiString(newValues));
   };
 
   const saveOptions = (_options: string[], _value: string[]) => {
     if (!props.multi) {
       setValue(_value);
-      props.saveValue(_value.join(","));
+      props.saveValue(serializeMultiString(_value));
     } else {
       const newValue = _value[0];
       if (newValue) {
         const newValues = uniq([...value, newValue]);
         setValue(newValues);
-        props.saveValue(newValues.join(","));
+        props.saveValue(serializeMultiString(newValues));
       }
     }
   };
@@ -36,7 +39,7 @@ export const TagCell = (props: TableCellMultiProp) => {
   const menuProps = () => {
     const options = loadTags(props.plugin).map((f) => ({
       name: f,
-      value: stringFromTag(f),
+      value: f,
     }));
     const _options = !props.multi
       ? [{ name: i18n.menu.none, value: "" }, ...options]
@@ -55,6 +58,7 @@ export const TagCell = (props: TableCellMultiProp) => {
   };
   return (
     <OptionCellBase
+      baseClass="mk-cell-tag"
       menuProps={menuProps}
       value={value}
       multi={props.multi}

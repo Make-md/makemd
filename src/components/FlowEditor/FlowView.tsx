@@ -1,21 +1,33 @@
 import MakeMDPlugin from "main";
 import React, { useEffect, useRef } from "react";
-import { viewTypeByString } from "utils/file";
 import { spawnLeafFromFile } from "utils/flow/flowEditor";
+import { pathByString } from "utils/path";
 
 interface FlowViewProps {
   plugin: MakeMDPlugin;
   path: string;
   load: boolean;
+  from?: number;
+  to?: number;
 }
 
 export const FlowView = (props: FlowViewProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const loadFile = () => {
+  const loadFile = async () => {
     const div = ref.current;
-    const type = viewTypeByString(props.path);
+
+    const { path: link, ref: refStr, type } = pathByString(props.path);
+
     const portalType = type == "tag" || type == "folder" ? "context" : "doc";
-    spawnLeafFromFile(props.plugin, props.path, div, portalType);
+    await spawnLeafFromFile(
+      props.plugin,
+      link,
+      div,
+      portalType,
+      refStr,
+      props.from,
+      props.to
+    );
   };
 
   const toggleFlow = () => {
@@ -27,7 +39,7 @@ export const FlowView = (props: FlowViewProps) => {
   };
   useEffect(() => {
     toggleFlow();
-  }, [props.load, props.path]);
+  }, [props.load, props.path, props.from, props.to]);
 
   return <div className="mk-flowspace-editor" ref={ref}></div>;
 };

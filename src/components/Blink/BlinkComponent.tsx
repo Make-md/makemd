@@ -1,19 +1,16 @@
 import { FlowView } from "components/FlowEditor/FlowView";
-import { SelectOption, SelectMenuProps } from "components/ui/menus/selectMenu";
-import { SelectMenu } from "components/ui/menus/selectMenu";
+import SelectMenu, {
+  SelectMenuProps,
+  SelectOption,
+} from "components/ui/menus/selectMenu";
 import t from "i18n";
 import MakeMDPlugin from "main";
 import React, { useEffect, useMemo, useState } from "react";
-import { loadTags } from "utils/contexts/contexts";
-import {
-  getAbstractFileAtPath,
-  getAllAbstractFilesInVault,
-  openAFile,
-  openTag,
-  viewTypeByString
-} from "utils/file";
-import { fileNameToString, filePathToString } from "utils/tree";
-export const BlinkComponent = React.forwardRef(
+import { getAbstractFileAtPath, getAllAbstractFilesInVault } from "utils/file";
+import { loadTags } from "utils/metadata/tags";
+import { openPath, pathByString } from "utils/path";
+import { fileNameToString, filePathToString } from "utils/strings";
+const BlinkComponent = React.forwardRef(
   (props: { plugin: MakeMDPlugin; hide: () => void }, ref: any) => {
     const [previewPath, setPreviewPath] = useState<string>(null);
     const [allItems, setAllItems] = useState([]);
@@ -56,18 +53,12 @@ export const BlinkComponent = React.forwardRef(
 
     const selectItem = (item: string) => {
       if (!item) return;
-      const type = viewTypeByString(item);
-      if (type == "file" || type == "folder") {
-        openAFile(getAbstractFileAtPath(app, item), props.plugin, false);
-      }
-      if (type == "tag") {
-        openTag(item, props.plugin, false);
-      }
+      openPath(props.plugin, pathByString(item));
     };
 
     const optionProps: SelectMenuProps = {
       multi: false,
-      editable: false,
+      editable: true,
       onHover: hoverItem,
       value: [],
       options: allItems,
@@ -100,3 +91,7 @@ export const BlinkComponent = React.forwardRef(
     );
   }
 );
+
+BlinkComponent.displayName = "BlinkComponent";
+
+export default BlinkComponent;

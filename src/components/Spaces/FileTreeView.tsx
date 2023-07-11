@@ -1,15 +1,10 @@
 import "css/FileTree.css";
-import {
-  ItemView,
-  TAbstractFile, TFolder,
-  WorkspaceLeaf
-} from "obsidian";
+import { ItemView, TAbstractFile, TFolder, WorkspaceLeaf } from "obsidian";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
 import { RecoilRoot } from "recoil";
 import MakeMDPlugin from "../../main";
 export const FILE_TREE_VIEW_TYPE = "mk-file-view";
-export const SETS_VIEW_TYPE = "mk-sets-view";
 export const VIEW_DISPLAY_TEXT = "Spaces";
 export const ICON = "layout-grid";
 
@@ -34,7 +29,7 @@ export class FileTreeView extends ItemView {
     if (file instanceof TFolder) {
       this.plugin.app.workspace.activeLeaf.setViewState({
         type: CONTEXT_VIEW_TYPE,
-        state: { type: "folder", folder: file.path },
+        state: { contextPath: file.path },
       });
       this.plugin.app.workspace.requestSaveLayout();
     } else {
@@ -81,7 +76,7 @@ export class FileTreeView extends ItemView {
       <div className="mk-sidebar">
         <RecoilRoot>
           {!platformIsMobile() && !this.plugin.settings.spacesCompactMode ? (
-            <MainMenu plugin={this.plugin}></MainMenu>
+            <MainMenu plugin={this.plugin} compactMode={false}></MainMenu>
           ) : null}
 
           <MainList plugin={this.plugin}></MainList>

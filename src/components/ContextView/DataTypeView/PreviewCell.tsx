@@ -1,22 +1,21 @@
 import { TFile } from "obsidian";
 import React, { CSSProperties, useEffect, useMemo, useState } from "react";
-import { VaultItem } from "schemas/spaces";
+import { FileMetadataCache } from "types/cache";
 import { DBRow, MDBColumn } from "types/mdb";
 import { eventTypes } from "types/types";
-import { unifiedToNative } from "utils/emoji";
-import {
-  getAbstractFileAtPath
-} from "utils/file";
+import { getAbstractFileAtPath } from "utils/file";
 import { uiIconSet } from "utils/icons";
-import { vaultItemForPath } from "utils/spaces/spaces";
+import { stickerFromString } from "utils/sticker";
 import { TableCellProp } from "../TableView/TableView";
 
 export const PreviewCell = (
   props: TableCellProp & { file: string; row?: DBRow; columns?: MDBColumn[] }
 ) => {
-  const [vaultItem, setVaultItem] = useState<VaultItem>(null);
+  const [vaultItem, setVaultItem] = useState<FileMetadataCache>(null);
 
   const previewImage = useMemo(() => {
+    if (vaultItem?.banner) return vaultItem.banner;
+    if (props.initialValue) return props.initialValue;
     if (!props.row || !props.columns) return null;
     const imageCol = props.columns.find((f) => f.type == "image");
     if (!imageCol) return null;
@@ -28,7 +27,7 @@ export const PreviewCell = (
   }, [previewImage]);
 
   const loadIcon = () => {
-    setVaultItem(vaultItemForPath(props.plugin, props.file));
+    setVaultItem(props.plugin.index.filesIndex.get(props.file));
   };
   useEffect(() => {
     loadIcon();
@@ -43,6 +42,7 @@ export const PreviewCell = (
       className="mk-file-preview"
       style={{
         backgroundSize: "cover",
+        backgroundPositionY: "50%",
         backgroundImage: `url(${
           previewFile
             ? app.vault.getResourcePath(previewFile as TFile)
@@ -54,7 +54,7 @@ export const PreviewCell = (
     <div
       className="mk-file-preview"
       style={
-        vaultItem?.color.length > 0
+        vaultItem?.color?.length > 0
           ? ({
               "--label-color": `${vaultItem.color}`,
               "--icon-color": `#ffffff`,
@@ -69,8 +69,8 @@ export const PreviewCell = (
         className="mk-file-icon"
         dangerouslySetInnerHTML={
           vaultItem?.sticker
-            ? { __html: unifiedToNative(vaultItem.sticker) }
-            : vaultItem?.folder == "true"
+            ? { __html: stickerFromString(vaultItem.sticker, props.plugin) }
+            : vaultItem?.isFolder
             ? { __html: uiIconSet["mk-ui-folder"] }
             : { __html: uiIconSet["mk-ui-file"] }
         }

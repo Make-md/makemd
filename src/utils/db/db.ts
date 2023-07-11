@@ -1,12 +1,15 @@
-import { dispatchDatabaseFileChanged } from "dispatch/mdb";
 import MakeMDPlugin from "main";
 import { FileSystemAdapter, normalizePath } from "obsidian";
 import { Database, QueryExecResult, SqlJsStatic } from "sql.js";
 import { DBTable, DBTables } from "types/mdb";
 import { sanitizeSQLStatement } from "utils/sanitize";
-import { uniq } from "../tree";
+import { serializeSQLFieldNames, serializeSQLStatements, serializeSQLValues } from "utils/serializer";
+import { uniq } from "../array";
 
-export const getDBFile = async (path: string) => {
+export const getDBFile = async (path: string, isRemote: boolean) => {
+  if (isRemote) {
+    return fetch(path).then((res) => res.arrayBuffer());
+  }
   if (!(await app.vault.adapter.exists(normalizePath(path)))) {
     return null;
   }
@@ -16,8 +19,12 @@ export const getDBFile = async (path: string) => {
   return file;
 };
 
-export const getDB = async (sqlJS: SqlJsStatic, path: string) => {
-  const buf = await getDBFile(path);
+export const getDB = async (
+  sqlJS: SqlJsStatic,
+  path: string,
+  isRemote?: boolean
+) => {
+  const buf = await getDBFile(path, isRemote);
   if (buf) {
     return new sqlJS.Database(new Uint8Array(buf));
   }
@@ -53,7 +60,8 @@ export const getAllTables = async (
       "SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
     );
   } catch (e) {
-    console.log(e)
+    console.log(e);
+    db.close();
     return null;
   }
   const tableNames: string[] = tables[0].values.map((a) => a[0]) as string[];
@@ -85,22 +93,22 @@ export const updateDBConditionally = (
   tables: DBTables,
   condition: string
 ) => {
-  const sqlstr = Object.keys(tables)
+  const sqlstr = serializeSQLStatements(Object.keys(tables)
     .map((t) => {
       const tableFields = tables[t].cols;
       const rowsQuery = tables[t].rows.reduce((prev, curr) => {
-        return `${prev}\ UPDATE "${t}" SET ${tableFields
+        return `${prev}\ UPDATE "${t}" SET ${serializeSQLValues(tableFields
           .map((c) => `${c}='${sanitizeSQLStatement(curr?.[c]) ?? ""}'`)
-          .join(", ")} WHERE ${condition};`;
+          )} WHERE ${condition};`;
       }, "");
       return rowsQuery;
     })
-    .join("; ");
-   // Run the query without returning anything
-   try {
+    );
+  // Run the query without returning anything
+  try {
     db.exec(sqlstr);
   } catch (e) {
-    console.log(e)
+    console.log(e);
   }
 };
 
@@ -130,34 +138,34 @@ export const updateDB = (
   updateCol: string,
   updateRef: string
 ) => {
-  const sqlstr = Object.keys(tables)
+  const sqlstr = serializeSQLStatements(Object.keys(tables)
     .map((t) => {
       const tableFields = tables[t].cols.filter((f) => f != updateRef);
       const rowsQuery = tables[t].rows.reduce((prev, curr) => {
-        return `${prev}\ UPDATE "${t}" SET ${tableFields
+        return `${prev}\ UPDATE "${t}" SET ${serializeSQLValues(tableFields
           .map((c) => `${c}='${sanitizeSQLStatement(curr?.[c]) ?? ""}'`)
-          .join(", ")} WHERE ${updateCol}='${
+          )} WHERE ${updateCol}='${
           sanitizeSQLStatement(curr?.[updateRef]) ?? ""
         }';`;
       }, "");
       return rowsQuery;
     })
-    .join("; ");
-    try {
-      db.exec(sqlstr);
-    } catch (e) {
-      console.log(e)
-    }
+    );
+  try {
+    db.exec(sqlstr);
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 export const execQuery = (db: Database, sqlstr: string) => {
   //Fastest, but doesn't handle errors
-   // Run the query without returning anything
+  // Run the query without returning anything
   try {
-      db.exec(sqlstr);
-    } catch (e) {
-      console.log(e)
-    }
+    db.exec(sqlstr);
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 export const deleteFromDB = (
@@ -166,12 +174,12 @@ export const deleteFromDB = (
   condition: string
 ) => {
   const sqlstr = `DELETE FROM "${table}" WHERE ${condition};`;
- // Run the query without returning anything
- try {
-  db.exec(sqlstr);
-} catch (e) {
-  console.log(e)
-}
+  // Run the query without returning anything
+  try {
+    db.exec(sqlstr);
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 export const dropTable = (db: Database, table: string) => {
@@ -180,41 +188,45 @@ export const dropTable = (db: Database, table: string) => {
   try {
     db.exec(sqlstr);
   } catch (e) {
-    console.log(e)
+    console.log(e);
   }
 };
 
-export const insertIntoDB = (db: Database, tables: DBTables) => {
-  const sqlstr = Object.keys(tables)
+export const insertIntoDB = (
+  db: Database,
+  tables: DBTables,
+  replace?: boolean
+) => {
+  const sqlstr = serializeSQLStatements(Object.keys(tables)
     .map((t) => {
       const tableFields = tables[t].cols;
       const rowsQuery = tables[t].rows.reduce((prev, curr) => {
-        return `${prev}\ INSERT INTO "${t}" VALUES (${tableFields
+        return `${prev}\ ${
+          replace ? "REPLACE" : "INSERT"
+        } INTO "${t}" VALUES (${serializeSQLValues(tableFields
           .map((c) => `'${sanitizeSQLStatement(curr?.[c]) ?? ""}'`)
-          .join(", ")});`;
+          )});`;
       }, "");
       return rowsQuery;
     })
-    .join("; ");
-    try {
-      db.exec(`BEGIN TRANSACTION; ${sqlstr} COMMIT;`);
-    } catch (e) {
-      console.log(e)
-    }
+    );
+  try {
+    db.exec(`BEGIN TRANSACTION; ${sqlstr} COMMIT;`);
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 export const replaceDB = (db: Database, tables: DBTables) => {
   //rewrite the entire table, useful for storing ranks and col order, not good for performance
-  const sqlstr = Object.keys(tables)
+  const sqlstr = serializeSQLStatements(Object.keys(tables)
     .map((t) => {
       const tableFields = tables[t].cols;
-      const fieldQuery = uniq(tableFields)
-        .map((f) => `'${sanitizeSQLStatement(f)}' char`)
-        .join(", ");
+      const fieldQuery = serializeSQLFieldNames(uniq(tableFields)
+        .map((f) => `'${sanitizeSQLStatement(f)}' char`));
       const rowsQuery = tables[t].rows.reduce((prev, curr) => {
-        return `${prev}\ REPLACE INTO "${t}" VALUES (${tableFields
-          .map((c) => `'${sanitizeSQLStatement(curr?.[c]) ?? ""}'`)
-          .join(", ")});`;
+        return `${prev}\ REPLACE INTO "${t}" VALUES (${serializeSQLValues(tableFields
+          .map((c) => `'${sanitizeSQLStatement(curr?.[c]) ?? ""}'`))});`;
       }, "");
       const idxQuery = tables[t].uniques
         .filter((f) => f)
@@ -224,15 +236,16 @@ export const replaceDB = (db: Database, tables: DBTables) => {
             "_"
           )} ON ${t}(${c});`;
         }, "");
-        const insertQuery = `CREATE TABLE IF NOT EXISTS "${t}" (${fieldQuery}); ${idxQuery} BEGIN TRANSACTION; ${rowsQuery} COMMIT;`
-      return `DROP TABLE IF EXISTS "${t}"; ${fieldQuery.length > 0 ? insertQuery : ''}`;
-    })
-    .join("; ");
+      const insertQuery = `CREATE TABLE IF NOT EXISTS "${t}" (${fieldQuery}); ${idxQuery} BEGIN TRANSACTION; ${rowsQuery} COMMIT;`;
+      return `DROP INDEX IF EXISTS idx_${t}__id; DROP TABLE IF EXISTS "${t}"; ${
+        fieldQuery.length > 0 ? insertQuery : ""
+      }`;
+    }));
   // Run the query without returning anything
   try {
     db.exec(sqlstr);
   } catch (e) {
-    console.log(e)
+    console.log(e);
   }
 };
 
@@ -244,9 +257,13 @@ export const saveDBToPath = async (
   const sqlJS = await plugin.sqlJS();
   //rewrite the entire table, useful for storing ranks and col order, not good for performance
   let db = await getDB(sqlJS, path);
+  if (!db) {
+    db.close()
+    return false;
+  }
   replaceDB(db, tables);
+  
   await saveDBFile(path, db.export().buffer);
-  dispatchDatabaseFileChanged(path);
   db.close();
   return true;
 };

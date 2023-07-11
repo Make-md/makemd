@@ -1,20 +1,21 @@
 import { FileSticker } from "components/FileSticker/FileSticker";
 import { triggerFileMenu } from "components/ui/menus/fileMenu";
 import i18n from "i18n";
-import { Notice, TAbstractFile, TFile, TFolder } from "obsidian";
-import React, { useEffect, useRef, useState } from "react";
-import { splitString } from "utils/contexts/predicate/predicate";
+import { Notice, TFolder } from "obsidian";
+import React, { useEffect, useMemo, useRef } from "react";
+import { FileMetadataCache } from "types/cache";
 import {
   createNewMarkdownFile,
   getAbstractFileAtPath,
-  openFile
+  openAFile,
 } from "utils/file";
 import { uiIconSet } from "utils/icons";
-import { fileNameToString } from "utils/tree";
+import { parseMultiString } from "utils/parser";
+import { filePathToString } from "utils/strings";
 import { TableCellMultiProp } from "../TableView/TableView";
 type FileCellObject = {
   path: string;
-  file?: TAbstractFile;
+  fileCache?: FileMetadataCache;
 };
 
 export const FileCell = (
@@ -22,7 +23,7 @@ export const FileCell = (
     folder?: string;
     isFolder: boolean;
     deleteRow?: () => void;
-    openFlow?: () => void;
+    openFlow?: (e: React.MouseEvent) => void;
   }
 ) => {
   const fileOrCleanPath = (f: string): FileCellObject => {
@@ -30,21 +31,19 @@ export const FileCell = (
       return {
         path: "",
       };
-    const isInFolder = !props.isFolder || f.includes(props.folder);
-    const fileExists: TAbstractFile = getAbstractFileAtPath(app, f);
-    const cleanPath = (path: string) =>
-      path.replace(props.folder + "/", "").replace(".md", "");
-    return isInFolder
-      ? fileExists
-        ? { path: f, file: fileExists }
-        : { path: cleanPath(f) }
-      : { path: f };
-  };
 
-  const initialValue = (
-    props.multi ? splitString(props.initialValue) ?? [] : [props.initialValue]
-  ).map((f) => fileOrCleanPath(f));
-  const [value, setValue] = useState<FileCellObject[]>(initialValue);
+    const fileCache: FileMetadataCache = props.plugin.index.filesIndex.get(f);
+    return fileCache ? { path: f, fileCache } : { path: f };
+  };
+  const value = useMemo(
+    () =>
+      (props.multi
+        ? parseMultiString(props.initialValue) ?? []
+        : [props.initialValue]
+      ).map((f) => fileOrCleanPath(f)),
+    [props.initialValue]
+  );
+
   const ref = useRef(null);
   const onKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
@@ -53,9 +52,7 @@ export const FileCell = (
 
   const fileExists = (name: string) => {
     if (!name) return false;
-    return getAbstractFileAtPath(app, `${props.folder}/${name}.md`)
-      ? true
-      : false;
+    return getAbstractFileAtPath(app, name) ? true : false;
   };
   const onBlur = () => {
     if (!ref.current) return;
@@ -99,18 +96,14 @@ export const FileCell = (
     <div className="mk-cell-file">
       {value.map((v, i) => {
         if (props.editMode == 0) {
-          if (v.file) {
+          if (v.fileCache) {
             return (
-              <div className="mk-cell-file-title">
-                {v
-                  ? v.file instanceof TFile
-                    ? fileNameToString(v.file.name)
-                    : v.file.name
-                  : ""}
-                {v?.file instanceof TFile &&
-                  (v.file as TFile).extension != "md" && (
+              <div key={i} className="mk-cell-file-title">
+                {v && v.fileCache ? v.fileCache.name : ""}
+                {v.fileCache.extension?.length > 0 &&
+                  v.fileCache.extension != "md" && (
                     <span className="nav-file-tag">
-                      {(v.file as TFile)?.extension}
+                      {v.fileCache.extension}
                     </span>
                   )}
                 <button
@@ -119,15 +112,24 @@ export const FileCell = (
                   dangerouslySetInnerHTML={{
                     __html: uiIconSet["mk-ui-flow-hover"],
                   }}
-                  onClick={() => props.openFlow && props.openFlow()}
+                  onClick={(e) => {
+                    if (props.openFlow) {
+                      props.openFlow(e);
+                      e.stopPropagation();
+                    }
+                  }}
                 ></button>
               </div>
             );
           } else {
-            return <div className="mk-cell-file-title">{v.path}</div>;
+            return (
+              <div key={i} className="mk-cell-file-title">
+                {v.path}
+              </div>
+            );
           }
         }
-        if (v.file) {
+        if (v.fileCache) {
           return (
             <>
               <div
@@ -135,31 +137,27 @@ export const FileCell = (
                 onContextMenu={(e) =>
                   triggerFileMenu(
                     props.plugin,
-                    v.file,
-                    v.file instanceof TFolder,
+                    getAbstractFileAtPath(app, v.fileCache.path),
+                    v.fileCache.isFolder,
                     e
                   )
                 }
               >
                 <FileSticker
                   plugin={props.plugin}
-                  filePath={v.file.path}
+                  fileCache={v.fileCache}
                 ></FileSticker>
                 <div
                   className="mk-cell-file-name"
                   onClick={(e) =>
-                    openFile(
-                      { ...v.file, isFolder: v.file instanceof TFolder },
+                    openAFile(
+                      getAbstractFileAtPath(app, v.fileCache.path),
                       props.plugin,
                       e.ctrlKey || e.metaKey
                     )
                   }
                 >
-                  {v
-                    ? v.file instanceof TFile
-                      ? fileNameToString(v.file.name)
-                      : v.file.name
-                    : ""}
+                  {v && v.fileCache ? filePathToString(v.fileCache.name) : ""}
                 </div>
               </div>
             </>

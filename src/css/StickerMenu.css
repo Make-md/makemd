@@ -1,3 +1,12 @@
+@font-face {
+  font-family: emoji;
+
+  src: local("Apple Color Emoji"), local("Android Emoji"), local("Segoe UI"),
+    local(EmojiSymbols), local(Symbola),
+  /* Emoji unicode blocks */
+  unicode-range: U+1F300-1F5FF, U+1F600-1F64F, U+1F680-1F6FF, U+2600-26FF;
+}
+
 .mk-sticker-menu .suggestion {
   width: 240px;
   height: 240px;
@@ -5,20 +14,23 @@
   flex-wrap: wrap;
   align-content: flex-start;
   flex-direction: row;
+  
 }
 .mk-sticker-modal {
   display: flex;
   flex-wrap: wrap;
 }
-.mk-sticker-menu .suggestion-item {
+.mk-sticker-modal .suggestion-item {
   width: 30px;
   height: 30px;
   display: flex;
   font-size: 20px;
+  gap: 4px;
   align-items: center;
   padding: 0;
   text-align: center;
   justify-content: center;
+  font-family: emoji;
 }
 .mk-sticker-filter {
   border: none;
@@ -29,4 +41,8 @@
 }
 .mk-sticker-menu .suggestion-item:hover {
   background: var(--background-modifier-hover);
+}
+.mk-image-modal {
+  display: flex;
+  flex-wrap: wrap;
 }

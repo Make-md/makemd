@@ -1,6 +1,4 @@
-import React, {
-  useContext, useMemo
-} from "react";
+import React, { useContext, useMemo } from "react";
 
 import MakeMDPlugin from "main";
 
@@ -8,13 +6,11 @@ import { FlowView } from "components/FlowEditor/FlowView";
 import "css/Table.css";
 import { TFile } from "obsidian";
 import { getAbstractFileAtPath } from "utils/file";
-import { fileNameToString } from "utils/tree";
+import { fileNameToString } from "utils/strings";
 import { MDBContext } from "../MDBContext";
 
 export const FlowListView = (props: { plugin: MakeMDPlugin }) => {
-  const {
-    filteredData: data,
-  } = useContext(MDBContext);
+  const { filteredData: data } = useContext(MDBContext);
 
   const flowItems = useMemo(() => {
     return data

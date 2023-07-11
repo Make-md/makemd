@@ -1,26 +1,34 @@
 import {
   Annotation,
-  EditorState, RangeSetBuilder, StateField, Transaction,
-  TransactionSpec
+  EditorState,
+  RangeSetBuilder,
+  StateField,
+  Transaction,
+  TransactionSpec,
 } from "@codemirror/state";
 import {
-  Decoration, DecorationSet,
+  Decoration,
+  DecorationSet,
   EditorView,
-  ViewPlugin, WidgetType
+  ViewPlugin,
+  WidgetType,
 } from "@codemirror/view";
 import { hoverTooltip } from "cm-extensions/tooltip";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import {
-  iterateTreeInSelection
-} from "utils/codemirror";
+import { iterateTreeInSelection } from "utils/codemirror";
 import { flowTypeStateField } from "../markSans/callout";
-
 
 import { FlowEditorHover } from "components/FlowEditor/FlowEditorHover";
 import { loadFlowEditorByDOM, openFileFlowEditor } from "dispatch/flowDispatch";
 import t from "i18n";
+import MakeMDPlugin from "main";
+import { editorInfoField } from "obsidian";
+import { mdbContextByPath } from "utils/contexts/contexts";
+import { getMDBTable } from "utils/contexts/mdb";
+import { createTable } from "utils/contexts/mdtable";
 import { uiIconSet } from "utils/icons";
+import { pathByString } from "utils/path";
 import { compareByField } from "utils/tree";
 import { genId } from "utils/uuid";
 
@@ -51,7 +59,7 @@ export const preloadFlowEditor = EditorState.transactionFilter.of(
         ...value
           .filter((f) => f.expandedState == 1)
           .map((f) => {
-            if (tr.state.field(flowTypeStateField) == "doc") {
+            if (tr.state.field(flowTypeStateField, false) == "doc") {
               return {
                 annotations: toggleFlowEditor.of([f.id, 2]),
               };
@@ -74,14 +82,20 @@ export const internalLinkToggle = ViewPlugin.fromClass(
   {
     eventHandlers: {
       mousedown: (e: MouseEvent, view) => {
-        
+        if (!e.shiftKey) {
+          return;
+        }
         let pos = view.posAtDOM(e.target as Node);
         let { from: lineFrom, to: lineTo, text } = view.state.doc.lineAt(pos);
         for (let match of text.matchAll(/(?!\!)\[\[([^\]]+)\]\]/g)) {
           const stateField = view.state.field(flowEditorInfo, false);
           const info = stateField.find(
-            (f) => f.to == lineFrom + match.index + match[1].length + 2
+            (f) =>
+              f.to == lineFrom + match.index + match[1].length + 2 &&
+              pos >= f.from &&
+              pos <= f.to
           );
+
           if (info) {
             e.preventDefault();
             view.dispatch({
@@ -104,7 +118,7 @@ export const internalLinkHover = hoverTooltip((view, pos, side) => {
         const info = stateField.find((f) => f.to == to);
         if (info) {
           hovObject = {
-            pos: pos - 5,
+            pos: pos,
             end: to,
             above: true,
             create(view: EditorView) {
@@ -188,71 +202,72 @@ export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
       newValues.push(info);
     }
 
-    for (let match of str.matchAll(/(?!\!)\[\[([^\]]+)\]\]/g)) {
-      const link = match[1];
-      const existingLinks = previous.filter((f) => f.link == link);
-      const offset = usedContainers.filter((f) => f == link).length;
-      const existingInfo = existingLinks[offset];
-      const id = existingInfo ? existingInfo.id : genId();
-      usedContainers.push(link);
-      const info = {
-        id: id,
-        link: match[1],
-        startOfLineFix: false,
-        from: match.index + 2,
-        to: match.index + 2 + match[1].length,
-        embed: 0,
-        height: existingInfo
-          ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
-            tr.annotation(cacheFlowEditorHeight)?.[1] != 0
-            ? tr.annotation(cacheFlowEditorHeight)?.[1]
-            : existingInfo.height
-          : -1,
-        expandedState: existingInfo
-          ? tr.annotation(toggleFlowEditor)?.[0] == id
-            ? reverseExpandedState(existingInfo.expandedState)
-            : existingInfo.expandedState
-          : 0,
-      };
-      newValues.push(info);
+    for (let match of str.matchAll(/\[\[([^\]]+)\]\]/g)) {
+      if (str.charAt(match.index - 1) != "!") {
+        const link = match[1];
+        const existingLinks = previous.filter((f) => f.link == link);
+        const offset = usedContainers.filter((f) => f == link).length;
+        const existingInfo = existingLinks[offset];
+        const id = existingInfo ? existingInfo.id : genId();
+        usedContainers.push(link);
+        const info = {
+          id: id,
+          link: match[1],
+          startOfLineFix: false,
+          from: match.index + 2,
+          to: match.index + 2 + match[1].length,
+          embed: 0,
+          height: existingInfo
+            ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
+              tr.annotation(cacheFlowEditorHeight)?.[1] != 0
+              ? tr.annotation(cacheFlowEditorHeight)?.[1]
+              : existingInfo.height
+            : -1,
+          expandedState: existingInfo
+            ? tr.annotation(toggleFlowEditor)?.[0] == id
+              ? reverseExpandedState(existingInfo.expandedState)
+              : existingInfo.expandedState
+            : 0,
+        };
+        newValues.push(info);
+      } else if (str.charAt(match.index - 2) != "!") {
+        const link = match[1];
+        const existingLinks = previous.filter((f) => f.link == link);
+        const offset = usedContainers.filter((f) => f == link).length;
+        const existingInfo = existingLinks[offset];
+        const id = existingInfo ? existingInfo.id : genId();
+        usedContainers.push(link);
+        const info = {
+          id: id,
+          link: match[1],
+          startOfLineFix: false,
+          from: match.index + 3,
+          to: match.index + 3 + match[1].length,
+          embed: 2,
+          height: existingInfo
+            ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
+              tr.annotation(cacheFlowEditorHeight)?.[1] != 0
+              ? tr.annotation(cacheFlowEditorHeight)?.[1]
+              : existingInfo.height
+            : -1,
+          expandedState: existingInfo
+            ? tr.annotation(toggleFlowEditor)?.[0] == id
+              ? reverseExpandedState(existingInfo.expandedState)
+              : existingInfo.expandedState
+            : 1,
+        };
+        newValues.push(info);
+      }
     }
 
-    for (let match of str.matchAll(/(?!\!)\!\[\[([^\]]+)\]\]/g)) {
-      const link = match[1];
-      const existingLinks = previous.filter((f) => f.link == link);
-      const offset = usedContainers.filter((f) => f == link).length;
-      const existingInfo = existingLinks[offset];
-      const id = existingInfo ? existingInfo.id : genId();
-      usedContainers.push(link);
-      const info = {
-        id: id,
-        link: match[1],
-        startOfLineFix: false,
-        from: match.index + 3,
-        to: match.index + 3 + match[1].length,
-        embed: 2,
-        height: existingInfo
-          ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
-            tr.annotation(cacheFlowEditorHeight)?.[1] != 0
-            ? tr.annotation(cacheFlowEditorHeight)?.[1]
-            : existingInfo.height
-          : -1,
-        expandedState: existingInfo
-          ? tr.annotation(toggleFlowEditor)?.[0] == id
-            ? reverseExpandedState(existingInfo.expandedState)
-            : existingInfo.expandedState
-          : 1,
-      };
-      newValues.push(info);
-    }
     newValues.sort(compareByField("from", true));
     return newValues;
   },
 });
 
-const flowEditorRangeset = (state: EditorState) => {
+const flowEditorRangeset = (state: EditorState, plugin: MakeMDPlugin) => {
   let builder = new RangeSetBuilder<Decoration>();
-  const infoFields = state.field(flowEditorInfo);
+  const infoFields = state.field(flowEditorInfo, false);
   for (let info of infoFields) {
     const { from, to, embed: embedType, expandedState } = info;
     const lineFix =
@@ -268,7 +283,7 @@ const flowEditorRangeset = (state: EditorState) => {
               state.selection.main.to <= to + 1)
           )
         ) {
-          builder.add(from - 4, from - 3, flowEditorSelector(info));
+          builder.add(from - 4, from - 3, flowEditorSelector(info, plugin));
           if (lineFix) {
             builder.add(from - 3, to + 2, flowEditorWidgetDecoration(info));
           } else {
@@ -286,15 +301,16 @@ const flowEditorRangeset = (state: EditorState) => {
   return dec;
 };
 
-export const flowEditorField = StateField.define<DecorationSet>({
-  create(state) {
-    return flowEditorRangeset(state);
-  },
-  update(value, tr) {
-    return flowEditorRangeset(tr.state);
-  },
-  provide: (f) => EditorView.decorations.from(f),
-});
+export const flowEditorField = (plugin: MakeMDPlugin) =>
+  StateField.define<DecorationSet>({
+    create(state) {
+      return flowEditorRangeset(state, plugin);
+    },
+    update(value, tr) {
+      return flowEditorRangeset(tr.state, plugin);
+    },
+    provide: (f) => EditorView.decorations.from(f),
+  });
 
 class FlowEditorWidget extends WidgetType {
   constructor(readonly info: FlowEditorInfo) {
@@ -322,9 +338,11 @@ class FlowEditorWidget extends WidgetType {
 
 class FlowEditorSelector extends WidgetType {
   flowInfo: FlowEditorInfo;
-  constructor(readonly info: FlowEditorInfo) {
+  plugin: MakeMDPlugin;
+  constructor(readonly info: FlowEditorInfo, plugin: MakeMDPlugin) {
     super();
     this.flowInfo = info;
+    this.plugin = plugin;
   }
 
   eq(other: WidgetType) {
@@ -335,40 +353,65 @@ class FlowEditorSelector extends WidgetType {
     const div = document.createElement("div");
     div.toggleClass("mk-floweditor-selector", true);
     const reactEl = createRoot(div);
-    const type = this.info.link.contains("/#^") ? "table" : "file";
-    reactEl.render(
-      <FlowEditorHover
-        toggle={true}
-        type={type}
-        toggleState={true}
-        cutTable={() => {
-          navigator.clipboard.writeText(`![![${this.info.link}]]`)
-          view.dispatch({
-            changes: { from: this.info.from - 4, to: this.info.to + 2 },
-          });
-        }}
-        deleteTable={() => {
-          view.dispatch({
-            changes: { from: this.info.from - 4, to: this.info.to + 2 },
-          });
-        }}
-        toggleFlow={() => {
-          view.dispatch({
-            changes: { from: this.info.from - 4, to: this.info.from - 3 },
-          });
-        }}
-        openLink={() => {
-          openFileFlowEditor(this.flowInfo.link, "/");
-        }}
-      ></FlowEditorHover>
-    );
+    if (this.info.link && view.state.field(editorInfoField, false)) {
+      const infoField = view.state.field(editorInfoField, false);
+      const file = infoField.file;
+      const path = pathByString(this.info.link, file.path);
+      reactEl.render(
+        <FlowEditorHover
+          toggle={true}
+          path={path.path}
+          type={path.type}
+          toggleState={true}
+          convertTable={() => {
+            const context = mdbContextByPath(this.plugin, path.path);
+            getMDBTable(
+              this.plugin,
+              context,
+              path.ref.substring(1, path.ref.length)
+            ).then((mdbTable) => {
+              const markdown = createTable(mdbTable.rows, mdbTable.cols);
+              view.dispatch({
+                changes: {
+                  from: this.info.from - 4,
+                  to: this.info.to + 2,
+                  insert: markdown,
+                },
+              });
+            });
+          }}
+          cutTable={() => {
+            navigator.clipboard.writeText(`![![${this.info.link}]]`);
+            view.dispatch({
+              changes: { from: this.info.from - 4, to: this.info.to + 2 },
+            });
+          }}
+          deleteTable={() => {
+            view.dispatch({
+              changes: { from: this.info.from - 4, to: this.info.to + 2 },
+            });
+          }}
+          toggleFlow={() => {
+            view.dispatch({
+              changes: { from: this.info.from - 4, to: this.info.from - 3 },
+            });
+          }}
+          openLink={() => {
+            openFileFlowEditor(this.flowInfo.link, "/");
+          }}
+        ></FlowEditorHover>
+      );
+    }
     return div;
   }
 }
 
-export const flowEditorSelector = (info: FlowEditorInfo) =>
+export const flowEditorSelector = (
+  info: FlowEditorInfo,
+  plugin: MakeMDPlugin
+) =>
   Decoration.replace({
-    widget: new FlowEditorSelector(info),
+    widget: new FlowEditorSelector(info, plugin),
     inclusive: true,
     block: false,
   });

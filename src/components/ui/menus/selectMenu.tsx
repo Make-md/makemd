@@ -21,6 +21,7 @@ export type SelectMenuProps = {
   options: SelectOption[];
   defaultOptions?: SelectOption[];
   saveOptions: (options: string[], value: string[]) => void;
+  removeOption?: (option: string) => void;
   placeholder?: string;
   detail?: boolean;
   searchable: boolean;
@@ -30,8 +31,8 @@ export type SelectMenuProps = {
   onHide?: () => void;
 };
 
-export const SelectMenu = React.forwardRef(
-  (props: SelectMenuProps & { hide: () => void; }, ref: any) => {
+const SelectMenu = React.forwardRef(
+  (props: SelectMenuProps & { hide: () => void }, ref: any) => {
     const initialOptions: SelectOption[] = props.options.map((o, i) => {
       return {
         ...o,
@@ -51,11 +52,12 @@ export const SelectMenu = React.forwardRef(
     const [suggestions, setSuggestions] = useState(initialOptions);
     const [tags, setTags] = useState(
       props.value.map(
-        (v) => initialOptions.find((f) => f.value == v) ?? {
-          id: 0,
-          name: v,
-          value: v,
-        }
+        (v) =>
+          initialOptions.find((f) => f.value == v) ?? {
+            id: 0,
+            name: v,
+            value: v,
+          }
       )
     );
 
@@ -68,9 +70,20 @@ export const SelectMenu = React.forwardRef(
           newTags.map((f) => f.value)
         );
       },
-      [suggestions, tags]
+      [suggestions, tags, props]
     );
 
+    const onDeleteOption = useCallback(
+      (removeTag: string) => {
+        const newSuggestions = suggestions.filter((f) => f.value != removeTag);
+        const newTags = tags.filter((f) => f.value != removeTag);
+        setSuggestions(newSuggestions);
+        setTags(newTags);
+        if (props.removeOption) props.removeOption(removeTag);
+        props.hide();
+      },
+      [tags, suggestions, props]
+    );
     const onAddition = useCallback(
       (newTag: SelectOption) => {
         let tag = newTag;
@@ -106,8 +119,10 @@ export const SelectMenu = React.forwardRef(
     );
     const onValidation = useCallback(
       (newTag) => {
-        if (!props.editable &&
-          !suggestions.find((s) => s.value == newTag.value)) {
+        if (
+          !props.editable &&
+          !suggestions.find((s) => s.value == newTag.value)
+        ) {
           return false;
         }
         if (newTag.name.length == 0) {
@@ -125,6 +140,7 @@ export const SelectMenu = React.forwardRef(
         suggestions={suggestions}
         ref={ref}
         onDelete={onDelete}
+        onDeleteOption={onDeleteOption}
         onAddition={onAddition}
         onValidate={onValidation}
         defaultSuggestions={props.defaultOptions}
@@ -132,10 +148,17 @@ export const SelectMenu = React.forwardRef(
         minQueryLength={0}
         onHover={props.onHover}
         hoverSelect={props.onHover ? true : false}
-        maxSuggestionsLength={props.showAll ? Math.min(50, props.options.length) : 8}
+        maxSuggestionsLength={
+          props.showAll ? Math.min(50, props.options.length) : 8
+        }
         suggestionsOnly={!props.searchable && !props.editable}
         allowNew={props.editable}
-        previewComponent={props.previewComponent} />
+        previewComponent={props.previewComponent}
+      />
     );
   }
 );
+
+SelectMenu.displayName = "SelectMenu";
+
+export default SelectMenu;

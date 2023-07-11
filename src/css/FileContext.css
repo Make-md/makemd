@@ -1,72 +1,371 @@
-.mk-file-context button {
-  box-shadow: unset !important;
-  color: var(--text-faint);
+.mk-file-context {
+  margin-bottom: 12px;
+  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  --file-context-spacing: 4px;
 }
 
-.mk-file-context button:hover {
-  background: var(--interactive-hover) !important;
+.mk-file-context-file {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  position: relative;
 }
-.mk-file-context {
-  padding: var(--size-4-3) var(--size-4-3) var(--size-4-8);
-  margin-bottom: 12px;
+.mk-header .mk-file-context-file.mk-file-context-file-horizontal {
+  gap: 12px;
+}
+.mk-file-context-file.mk-file-context-file-horizontal {
+  flex-direction: row;
+  align-items: center;
+}
+.markdown-source-view.mod-cm6 .cm-content .mk-header {
+  padding-inline-start: 0 !important;
+  text-indent: 0 !important;
+}
+
+.mk-folder-header .mk-file-icon-placeholder button,
+.mk-header .mk-file-context-component .mk-file-icon-placeholder button {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 8px !important;
+}
+.mod-right-split .mk-header {
+  display: none;
+}
+.mod-left-split .mk-header {
+  display: none;
+}
+
+.markdown-reading-view .mk-file-context-file > .mk-inline-title.inline-title,
+.markdown-source-view.mod-cm6.is-readable-line-width .mk-file-context-file > .mk-inline-title.inline-title {
+  padding-bottom: 0;
+  margin-left: 0 !important;
+  margin-top: 0;
+  padding-top: 0;
+  margin-bottom: 0;
+}
+
+.mk-file-context-component .mk-tag-selector {
+  margin-top: 4px;
+  margin-bottom: 0;
+  padding: 0;
 }
 
 .mk-file-context-component {
   display: flex;
   flex-direction: column;
-  padding: 0.15rem 4px;
-  gap: 4px;
-  margin-top: 4px;
-  margin-bottom: 12px;
+  padding: 0.15rem var(--file-context-spacing);
+  gap: 8px;
 }
 
 .mk-file-context-section {
   display: flex;
   flex-direction: column;
-  padding: 0.15rem 4px;
+  padding: 0.15rem var(--file-context-spacing);
   gap: 4px;
-  margin-top: 4px;
-  margin-bottom: 12px;
 }
 
 .mk-file-context-row {
   display: flex;
   align-items: flex-start;
+  gap: 2px;
 }
 
 .mk-file-context-row .mk-cell-option {
-  flex-direction: column;
   width: unset;
   align-items: flex-start;
+  padding: 2px 4px;
 }
 
 .mk-file-context-field-new {
-  min-width: 100px;
   font-size: var(--font-ui-small);
-  color: var(--text-faint);
-  padding-top: 4px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
+.mk-file-context-field-new:hover {
+  color: var(--text-normal);
+}
+
+.mk-file-context-field-new button {
+  background: none !important;
+  box-shadow: none !important;
+  color: var(--text-faint) !important;
+  padding: 0 4px !important;
+  display: flex;
+  gap: 4px;
+  height: 20px;
+  border: none !important;
+}
+
+.mk-file-context-field-new button svg {
+  color: var(--text-faint) !important;
+}
+.mk-file-context-field-new button:hover {
+  color: var(--text-normal) !important;
+}
+
 .mk-file-context-field {
   min-width: 100px;
+  width: 100px;
   font-size: var(--font-ui-small);
-  color: var(--text-muted);
-  padding-top: 4px;
+  color: var(--text-faint);
+  min-height: 24px;
+  display: flex;
+  border-radius: 4px;
+  align-items: center;
+}
+.mk-bullet {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 8px 5px;
+}
+.mk-bullet::after {
+  display: block;
+  content: " ";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--bullet-color);
+  transition: transform 75ms ease-out;
 }
 .mk-file-context-value {
   font-size: var(--font-ui-small);
   flex-grow: 1;
   display: flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 24px;
+}
+.mk-file-context-field:hover {
+  color: var(--text-normal);
+}
+.mk-file-context-value .mk-cell-text:hover {
+  background: var(--interactive-hover) !important;
+  border-radius: 4px;
+}
+
+.mk-file-context-value .mk-cell-option-new {
+  visibility: visible !important;
 }
 
 .mk-file-context-value input[type="text"],
 .mk-file-context-value input[type="number"] {
   width: 100%;
-  margin-bottom: 4px;
+  border: none;
+  border-radius: 0px;
+  height: 24px;
 }
-
+.mk-file-context-value input[type="text"]:focus,
+.mk-file-context-value input[type="number"]:focus {
+  box-shadow: none !important;
+}
+c
+.mk-section-title,
 .mk-file-context-title {
   font-size: var(--font-ui-small);
+  font-weight: var(--bold-weight);
+  color: var(--text-muted);
+}
+.mk-file-context-title {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  gap: 4px;
+}
+.mk-file-context-title:hover {
+  color: var(--text-normal);
+}
+.mk-file-context-title .mk-inline-button svg {
   color: var(--text-faint);
+}
+.mk-file-context-title .mk-collapse:hover {
+  background: none !important;
+}
+.mk-file-context-title .mk-collapse {
+  width: 10px;
+  height: 10px;
+}
+
+.mk-file-context-title .mk-collapse svg {
+  margin: 0 !important;
+}
+
+.mk-file-context-folder {
+  padding: 0 !important;
+  color: var(--color-accent-1);
+  background: none !important;
+  box-shadow: none !important;
+  height: unset !important;
+}
+
+.mk-file-context .mk-tag-selector {
+  padding: 0 !important;
+}
+
+.mk-file-context-backlink {
+  border: thin solid var(--divider-color);
+  padding: 0px 8px;
+}
+
+.mk-file-context-backlink .cm-content {
+  padding-bottom: 0 !important;
+}
+
+.mk-note-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  user-select: none;
+}
+
+.mk-note-header img {
+  height: 200px;
+  width: 100%;
+  object-fit: cover;
+  opacity: 1 !important;
+}
+.mk-file-context-collapse {
+  opacity: 1;
+  position: absolute;
+  left: -24px;
+  bottom: 0px;
+  opacity: 0;
+}
+
+.mk-file-context-file-horizontal .mk-file-context-collapse {
+  bottom: 8px;
+}
+
+.mk-header .mk-file-context-collapse.mk-collapsed {
+  opacity: 1;
+  color: var(--collapse-icon-color-collapsed);
+}
+.mk-header .mk-file-context-collapse.mk-collapsed svg {
+  color: var(--collapse-icon-color-collapsed);
+}
+.mk-header:hover .mk-file-context-collapse {
+  opacity: 1;
+}
+
+.markdown-source-view.mod-cm6 .cm-content > .cm-line.mk-has-banner {
+  position: inherit !important;
+}
+
+.markdown-source-view.mod-cm6 .mk-has-backlinks img.cm-widgetBuffer {
+  display: none !important;
+}
+
+
+.mk-header .mk-file-context-component {
+  z-index: 1;
+  pointer-events: none;
+  gap: 8px;
+}
+.markdown-source-view.mod-cm6 .cm-content .mk-note-footer {
+  margin: 16px 0 !important;
+  padding-top: 16px;
+  border-top: thin solid var(--divider-color);
+}
+
+.mk-header .mk-file-context-component div {
+  pointer-events: all;
+}
+
+.mk-inline-context-enabled
+  .markdown-source-view.is-live-preview
+  > .cm-editor
+  > .cm-scroller
+  > .cm-sizer
+  > .inline-title {
+  display: none;
+}
+
+.mk-note-header .inline-title {
+  display: flex !important;
+}
+
+.mk-header-title {
+  max-width: var(--file-line-width);
+  padding: 0 var(--file-margins);
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 20px;
+}
+
+.mk-header-title.mk-header-has-banner {
+  margin-top: -34px;
+}
+
+.workspace-leaf-content[data-type="make-folder-view"] .view-content,
+.workspace-leaf-content[data-type="make-file-view"] .view-content {
+  padding: 0;
+}
+.markdown-source-view.mod-cm6 .cm-content > .mk-header {
+  --header-height: 0px;
+  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-ui-medium);
+  contain: unset !important;
+  position: inherit;
+}
+.mk-inline-context-enabled .markdown-reading-view .mod-header > .inline-title,
+.mk-inline-context-enabled .markdown-reading-view .frontmatter,
+.mk-inline-context-enabled .markdown-reading-view .frontmatter-container {
+  display: none;
+}
+.markdown-reading-view .mk-file-context-component .mk-spacer,
+.markdown-source-view.mod-cm6 .cm-content > .mk-header .mk-spacer,
+.mk-folder-view .mk-folder-header .mk-spacer{
+  height: var(--header-height) !important;
+  pointer-events: none;
+}
+
+.mk-file-context .inline-title {
+  font-size: 18px;
+}
+.mk-file-context-component .mk-file-context-field-new {
+  opacity: 0.5;
+  position: relative;
+}
+
+.mk-file-context-component .mk-file-context-field-new:hover {
+  opacity: 1;
+}
+
+.mk-folder-header .mk-file-context-file .mk-file-icon,
+.mk-header .mk-file-context-file .mk-file-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 8px;
+}
+
+.mk-folder-header .mk-file-context-file.mk-file-context-file-horizontal .mk-file-icon,
+.mk-header .mk-file-context-file.mk-file-context-file-horizontal .mk-file-icon {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 0px;
+}
+.mk-folder-header .mk-file-context-file-horizontal .mk-file-icon svg,
+.mk-folder-header .mk-file-context-file-horizontal .mk-file-icon button,
+.mk-header .mk-file-context-file-horizontal .mk-file-icon svg,
+.mk-header .mk-file-context-file-horizontal .mk-file-icon button {
+  width: 32px;
+  height: 32px;
+  font-size: 28px;
+}
+
+.mk-folder-header .mk-file-icon svg,
+.mk-folder-header .mk-file-icon button,
+.mk-header .mk-file-icon svg,
+.mk-header .mk-file-icon button {
+  width: 48px;
+  height: 48px;
+  font-size: 40px;
 }

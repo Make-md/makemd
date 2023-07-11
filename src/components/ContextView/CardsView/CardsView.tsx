@@ -1,40 +1,45 @@
 import {
   CancelDrop,
-  closestCenter, DndContext,
-  DragOverlay, KeyboardSensor, MeasuringStrategy, Modifiers, MouseSensor,
-  TouchSensor, UniqueIdentifier, useSensor, useSensors
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MeasuringStrategy,
+  Modifiers,
+  MouseSensor,
+  TouchSensor,
+  UniqueIdentifier,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import {
-  AnimateLayoutChanges, defaultAnimateLayoutChanges, horizontalListSortingStrategy, SortableContext, sortableKeyboardCoordinates, SortingStrategy, useSortable, verticalListSortingStrategy
+  AnimateLayoutChanges,
+  defaultAnimateLayoutChanges,
+  horizontalListSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  SortingStrategy,
+  useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import classNames from "classnames";
 import "css/CardsView.css";
 import MakeMDPlugin from "main";
-import React, {
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { DBRow, MDBColumn } from "types/mdb";
-import { saveFrontmatterValue } from "utils/contexts/fm";
-import { splitString } from "utils/contexts/predicate/predicate";
-import {
-  getAbstractFileAtPath,
-  openAFile, platformIsMobile
-} from "utils/file";
-import { uniq } from "utils/tree";
+import { uniq } from "utils/array";
+import { getAbstractFileAtPath, openAFile, platformIsMobile } from "utils/file";
+import { parseMultiString } from "utils/parser";
 import {
   selectNextIndex,
   selectPrevIndex,
-  selectRange
+  selectRange,
 } from "utils/ui/selection";
 import { MDBContext } from "../MDBContext";
+import { CardColumnProps, CardColumnView } from "./CardColumnView";
 import { CardView } from "./CardView";
-import { CardColumnView, CardColumnProps } from "./CardColumnView";
 
 const animateLayoutChanges: AnimateLayoutChanges = (args) =>
   args.isSorting || args.wasDragging ? defaultAnimateLayoutChanges(args) : true;
@@ -154,7 +159,7 @@ export const CardsView = ({
     selectRows,
     sortedColumns: cols,
     predicate,
-    tagContexts,
+    updateValue,
     contextTable,
     schema,
     saveDB,
@@ -174,7 +179,7 @@ export const CardsView = ({
     if (groupBy) {
       const options: string[] = uniq([
         "",
-        ...(splitString(groupBy.value) ?? []),
+        ...(parseMultiString(groupBy.value) ?? []),
         ...filteredData.reduce(
           (p, c) => [...p, c[groupBy.name + groupBy.table] ?? ""],
           []
@@ -263,82 +268,6 @@ export const CardsView = ({
       recentlyMovedToNewContainer.current = false;
     });
   }, [items]);
-
-  const saveFieldValue = (
-    table: string,
-    fieldValue: string,
-    column: string
-  ) => {
-    if (table == "") {
-      const newTable = {
-        ...tableData,
-        cols: tableData.cols.map((m) =>
-          m.name == column
-            ? {
-                ...m,
-                value: fieldValue,
-              }
-            : m
-        ),
-      };
-      saveDB(newTable);
-    } else if (contextTable[table]) {
-      saveContextDB(
-        {
-          ...contextTable[table],
-          cols: contextTable[table].cols.map((m) =>
-            m.name == column
-              ? {
-                  ...m,
-                  value: fieldValue,
-                }
-              : m
-          ),
-        },
-        table
-      );
-    }
-  };
-
-  const saveValue = (
-    table: string,
-    value: string,
-    index: number,
-    column: string
-  ) => {
-    const col = cols.find((f) => f.table == table && f.name == column);
-    saveFrontmatterValue(tableData.rows[index]?.File, column, value, col.type);
-
-    if (table == "") {
-      const newTable = {
-        ...tableData,
-        rows: tableData.rows.map((r, i) =>
-          i == index
-            ? {
-                ...r,
-                [column]: value,
-              }
-            : r
-        ),
-      };
-      saveDB(newTable);
-    } else if (contextTable[table]) {
-      saveContextDB(
-        {
-          ...contextTable[table],
-          rows: contextTable[table].rows.map((r, i) =>
-            i == index
-              ? {
-                  ...r,
-                  [column]: value,
-                }
-              : r
-          ),
-        },
-        table
-      );
-    }
-  };
 
   const selectItem = (modifier: number, index: string) => {
     if (platformIsMobile()) {
@@ -464,9 +393,10 @@ export const CardsView = ({
             Object.keys(items)[parseInt(overContainer) * -1]
           ].indexOf(overId as string);
           if (activeContainer != overContainer) {
-            saveValue(
-              groupBy.table,
+            updateValue(
+              groupBy.name,
               Object.keys(items)[parseInt(overContainer) * -1],
+              groupBy.table,
               groupBy.table == ""
                 ? parseInt(activeId)
                 : parseInt(
@@ -474,7 +404,7 @@ export const CardsView = ({
                       "_index" + groupBy.table
                     ]
                   ),
-              groupBy.name
+              ""
             );
           }
         }

@@ -1,8 +1,8 @@
-import React from "react";
 import t from "i18n";
+import React from "react";
 import { platformIsMobile } from "utils/file";
+import { uiIconSet } from "utils/icons";
 import { InlineStyle } from "./styles";
-import { markIconSet } from "utils/icons";
 export const Mark = (props: {
   i: number;
   style: InlineStyle;
@@ -17,7 +17,7 @@ export const Mark = (props: {
       //@ts-ignore
       aria-label={!platformIsMobile() ? t.styles[style.label] : undefined}
       className={`mk-mark ${style.mark && active ? "mk-mark-active" : ""}`}
-      dangerouslySetInnerHTML={{ __html: markIconSet[style.icon] }}
+      dangerouslySetInnerHTML={{ __html: uiIconSet[style.icon] }}
       onMouseDown={(e) => toggleMarkAction(e, style)}
     ></div>
   );

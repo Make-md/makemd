@@ -1,11 +1,9 @@
 import "css/Blink.css";
 import MakeMDPlugin from "main";
-import {
-  App, Modal
-} from "obsidian";
+import { App, Modal } from "obsidian";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
-import { BlinkComponent } from "./BlinkComponent";
+import BlinkComponent from "./BlinkComponent";
 
 export class Blink extends Modal {
   plugin: MakeMDPlugin;

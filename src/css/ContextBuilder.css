@@ -1,0 +1,62 @@
+.is-phone .mk-context-maker {
+  max-height: 100vh;
+}
+.mk-context-maker-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.mk-context-maker .modal-content {
+  height: var(--dialog-max-height);
+}
+.mk-context-maker-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 16px;
+    padding: var(--size-4-4);
+    flex-grow: 1;
+    overflow: scroll;
+    padding-bottom: 0;
+
+  }
+  .mk-context-maker-item {
+    background: rgba(var(--mono-rgb-100), 0.025);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  padding: 8px;
+  }
+  .mk-context-maker-selector {
+    font-size: var(--font-ui-small);
+    height: 240px;
+    overflow-y: scroll;
+    background: rgba(var(--mono-rgb-100), 0.025);
+    padding: var(--size-4-4);
+    border-radius: 4px;
+    
+  }
+  .mk-context-maker-selector .mk-cell-option {
+    margin-bottom: 8px;
+  }
+  .mk-context-maker-builder {
+    min-height: 60px;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 8px;
+    gap: 4px;
+  }
+  .mk-context-maker {
+    padding: 0;
+  }
+  .mk-context-maker-layout > div > div { 
+    border-bottom: thin solid var(--divider-color);
+    padding: 4px;
+  }
+  .mk-context-maker-layout > div {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }

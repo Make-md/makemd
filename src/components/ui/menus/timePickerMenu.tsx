@@ -2,7 +2,6 @@ import { Menu, Point } from "obsidian";
 import React from "react";
 import { createRoot } from "react-dom/client";
 
-
 export const showTimePickerMenu = (
   point: Point,
   value: string,
@@ -23,7 +22,7 @@ export const showTimePickerMenu = (
   div.addEventListener("mouseup", (e) => {
     e.stopImmediatePropagation();
   });
-  div.addEventListener("keydown", (e) => { });
+  div.addEventListener("keydown", (e) => {});
 
   const setTime = (time: string) => {
     setValue(time);

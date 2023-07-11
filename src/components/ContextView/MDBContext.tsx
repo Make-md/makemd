@@ -1,60 +1,59 @@
 import { matchAny } from "components/ui/menus/selectMenu/concerns/matchers";
 import i18n from "i18n";
+import _, { isEqual } from "lodash";
 import MakeMDPlugin from "main";
-import {
-  CachedMetadata,
-  getAllTags,
-  Notice,
-  TAbstractFile, TFolder
-} from "obsidian";
+import { FrontMatterCache, Notice, TAbstractFile } from "obsidian";
 import React, { createContext, useEffect, useMemo, useState } from "react";
 import {
-  defaultFileDBSchema, defaultFolderFields,
-  defaultFolderMDBTable,
+  defaultFieldsForContext,
+  defaultFileDBSchema,
   defaultFolderSchema,
-  defaultFolderTables, defaultTableFields, defaultTagFields,
-  defaultTagMDBTable,
-  defaultTagSchema, defaultTagTables
+  defaultTableFields,
+  defaultTablesForContext,
+  defaultTagSchema,
 } from "schemas/mdb";
+import { ContextDef, FilePropertyName } from "types/context";
+import { ContextInfo } from "types/contextInfo";
 import {
   DBRow,
   DBRows,
-  DBTable, MDBColumn, MDBField,
+  DBTable,
+  MDBColumn,
+  MDBField,
   MDBSchema,
   MDBTable,
-  MDBTables
+  MDBTables,
 } from "types/mdb";
-import { eventTypes } from "types/types";
-import { tagContextFromTag } from "utils/contexts/contexts";
+import { Predicate, Sort } from "types/predicate";
+import { ActivePathEvent, eventTypes, SpaceChangeEvent } from "types/types";
+import { uniq, uniqueNameFromString } from "utils/array";
+import { linkContextRow, tagContextFromTag } from "utils/contexts/contexts";
 import {
-  frontMatterForFile, parseFrontMatter
-} from "utils/contexts/fm";
-import {
-  consolidateFilesToTable,
-  consolidateRowsToTag,
+  defaultTableDataForContext,
   deleteMDBTable,
   getMDBTable,
   getMDBTableSchemas,
-  newRowByDBRow,
-  saveMDBToPath
+  saveMDBToPath,
 } from "utils/contexts/mdb";
 import { filterReturnForCol } from "utils/contexts/predicate/filter";
 import { sortReturnForCol } from "utils/contexts/predicate/sort";
 import { saveDBToPath } from "utils/db/db";
-import { appendFileMetadataForRow, getAbstractFileAtPath } from "utils/file";
+import { getAbstractFileAtPath } from "utils/file";
+import { safelyParseJSON } from "utils/json";
+import {
+  frontMatterForFile,
+  saveFrontmatterValue,
+} from "utils/metadata/frontmatter/fm";
+import { parseFrontMatter } from "utils/metadata/frontmatter/parseFrontMatter";
+import { parseContextDefString } from "utils/parser";
+import { pathByString } from "utils/path";
 import { sanitizeColumnName, sanitizeTableName } from "utils/sanitize";
 import {
-  folderChildren,
-  safelyParseJSON,
-  uniq,
-  uniqueNameFromString
-} from "utils/tree";
-import {
   defaultPredicate,
-  Predicate,
-  validatePredicate
+  validatePredicate,
 } from "../../utils/contexts/predicate/predicate";
 type MDBContextProps = {
+  def: ContextDef[];
   tables: MDBSchema[];
   cols: MDBColumn[];
   sortedColumns: MDBColumn[];
@@ -73,9 +72,8 @@ type MDBContextProps = {
   setDBSchema: (schema: MDBSchema) => void;
   schema: MDBSchema;
   setSchema: (schema: MDBSchema) => void;
-  dbPath: string | null;
-  isFolderContext: boolean;
-  folderPath: string;
+  hideColumn: (column: MDBColumn, hidden: boolean) => void;
+  sortColumn: (sort: Sort) => void;
   saveColumn: (column: MDBColumn, oldColumn?: MDBColumn) => boolean;
   newColumn: (column: MDBColumn) => boolean;
   delColumn: (column: MDBColumn) => void;
@@ -84,11 +82,29 @@ type MDBContextProps = {
   tagContexts: string[];
   dbFileExists: boolean;
   searchString: string;
+  contextInfo: ContextInfo | null;
+  readMode: boolean;
   setSearchString: React.Dispatch<React.SetStateAction<string>>;
   loadContextFields: (tag: string) => void;
+  updateValue: (
+    column: string,
+    value: string,
+    table: string,
+    index: number,
+    file: string
+  ) => void;
+  updateFieldValue: (
+    column: string,
+    fieldValue: string,
+    value: string,
+    table: string,
+    index: number,
+    file: string
+  ) => void;
 };
 
 export const MDBContext = createContext<MDBContextProps>({
+  def: [],
   tables: [],
   cols: [],
   sortedColumns: [],
@@ -107,31 +123,33 @@ export const MDBContext = createContext<MDBContextProps>({
   dbSchema: null,
   setSchema: () => {},
   setDBSchema: () => {},
-  dbPath: null,
-  isFolderContext: false,
-  folderPath: "",
+  hideColumn: () => {},
   saveColumn: () => false,
   newColumn: () => false,
+  sortColumn: () => {},
   delColumn: () => {},
   saveSchema: () => null,
   deleteSchema: () => null,
   tagContexts: [],
+  contextInfo: null,
   dbFileExists: false,
+  readMode: false,
   searchString: "",
   setSearchString: () => {},
   loadContextFields: () => {},
+  updateValue: () => {},
+  updateFieldValue: () => {},
 });
 
 export const MDBProvider: React.FC<
   React.PropsWithChildren<{
     plugin: MakeMDPlugin;
-    dbPath: string;
-    folder?: string;
-    tag?: string;
+    context: ContextInfo;
     schema?: string;
+    file?: string;
   }>
 > = (props) => {
-  const { dbPath } = props;
+  const [readMode, setReadMode] = useState(props.context.readOnly);
   const [dbFileExists, setDBFileExists] = useState<boolean>(false);
   const [schema, setSchema] = useState<MDBSchema>(null);
   const [searchString, setSearchString] = useState<string>(null);
@@ -141,62 +159,80 @@ export const MDBProvider: React.FC<
   const [dbSchema, setDBSchema] = useState<MDBSchema>(null);
   const [contextTable, setContextTable] = useState<MDBTables>({});
   const [predicate, setPredicate] = useState<Predicate>(defaultPredicate);
+  const def = useMemo(() => parseContextDefString(dbSchema?.def), [dbSchema]);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
-  const defaultSchema = props.tag ? defaultTagSchema : defaultFolderSchema;
-  const folderPath = props.folder ?? props.tag ?? "";
-  const isFolderContext = props.folder ? true : false;
+  const [metadataCache, setMetadataCache] = useState<FrontMatterCache>(null);
+  const defaultSchema =
+    props.context.type == "tag" ? defaultTagSchema : defaultFolderSchema;
+  const contextInfo: ContextInfo = useMemo(() => {
+    return props.context;
+  }, [props.context]);
   const tagContexts = useMemo(
-    () => (dbSchema?.def?.length > 0 ? dbSchema?.def?.split("&") ?? [] : []),
-    [dbSchema]
+    () => def.filter((f) => f.type == "tag").map((f) => f.value),
+    [def]
   );
   const cols: MDBColumn[] = useMemo(
-    () => [
-      ...(tableData?.cols.map((f) => ({ ...f, table: "" })) ?? []),
-      ...tagContexts.reduce(
-        (p, c) => [
-          ...p,
-          ...(contextTable[c]?.cols
-            .filter((f) => f.name != "File" && f.type != "fileprop")
-            .map((f) => ({ ...f, table: c })) ?? []),
-        ],
-        []
-      ),
-    ],
+    () =>
+      tableData
+        ? [
+            ...(tableData.cols.map((f) => ({ ...f, table: "" })) ?? []),
+            ...tagContexts.reduce(
+              (p, c) => [
+                ...p,
+                ...(contextTable[c]?.cols
+                  .filter(
+                    (f) => f.name != FilePropertyName && f.type != "fileprop"
+                  )
+                  .map((f) => ({ ...f, table: c })) ?? []),
+              ],
+              []
+            ),
+          ]
+        : [],
     [tableData, schema, contextTable, tagContexts]
   );
   const data: DBRows = useMemo(
     () =>
-      tableData?.rows.map((r, index) => ({
-        _index: index.toString(),
-        ...(dbSchema?.primary
-          ? { ...appendFileMetadataForRow(r, tableData.cols) }
-          : r),
-        ...tagContexts.reduce((p, c) => {
-          const contextRowIndexByFile: number =
-            contextTable[c]?.rows.findIndex((f) => f.File == r.File) ?? -1;
-          const contextRowsByFile: DBRow =
-            contextTable[c]?.rows[contextRowIndexByFile] ?? {};
-          const contextRowsWithKeysAppended: DBRow = Object.keys(
-            contextRowsByFile
-          ).reduce((pa, ca) => ({ ...pa, [ca + c]: contextRowsByFile[ca] }), {
-            ["_index" + c]: contextRowIndexByFile.toString(),
-          });
-          return { ...p, ...contextRowsWithKeysAppended };
-        }, {}),
-      })) ?? [],
+      tableData?.rows.map((r, index) =>
+        linkContextRow(
+          props.plugin,
+          {
+            _index: index.toString(),
+            ...r,
+            ...tagContexts.reduce((p, c) => {
+              const contextRowIndexByFile: number =
+                contextTable[c]?.rows.findIndex((f) => f.File == r.File) ?? -1;
+              const contextRowsByFile: DBRow =
+                contextTable[c]?.rows[contextRowIndexByFile] ?? {};
+              const contextRowsWithKeysAppended: DBRow = Object.keys(
+                contextRowsByFile
+              ).reduce(
+                (pa, ca) => ({ ...pa, [ca + c]: contextRowsByFile[ca] }),
+                {
+                  ["_index" + c]: contextRowIndexByFile.toString(),
+                }
+              );
+              return { ...p, ...contextRowsWithKeysAppended };
+            }, {}),
+          },
+          cols
+        )
+      ) ?? [],
     [tableData, schema, contextTable]
   );
-  const sortedColumns = useMemo(
-    () =>
-      cols
-        .filter((f) => f.hidden != "true")
-        .sort(
-          (a, b) =>
-            predicate.colsOrder.findIndex((x) => x == a.name + a.table) -
-            predicate.colsOrder.findIndex((x) => x == b.name + b.table)
-        ),
-    [cols, predicate]
-  );
+  const sortedColumns = useMemo(() => {
+    return cols
+      .filter(
+        (f) =>
+          f.hidden != "true" &&
+          !predicate.colsHidden.some((c) => c == f.name + f.table)
+      )
+      .sort(
+        (a, b) =>
+          predicate.colsOrder.findIndex((x) => x == a.name + a.table) -
+          predicate.colsOrder.findIndex((x) => x == b.name + b.table)
+      );
+  }, [cols, predicate]);
   const filteredData = useMemo(
     () =>
       data
@@ -239,7 +275,11 @@ export const MDBProvider: React.FC<
   const deleteSchema = async (table: MDBSchema) => {
     if (table.primary) return;
 
-    const deleteResult = await deleteMDBTable(props.plugin, dbPath, table.id);
+    const deleteResult = await deleteMDBTable(
+      props.plugin,
+      contextInfo,
+      table.id
+    );
     if (deleteResult) {
       const newSchemaTable = {
         ...schemaTable,
@@ -269,7 +309,16 @@ export const MDBProvider: React.FC<
           ...schemaTable,
           rows: [...schemaTable.rows, table],
         };
-    await saveDBToPath(props.plugin, dbPath, { m_schema: newSchemaTable });
+
+    if (!contextInfo.readOnly) {
+      await saveDBToPath(props.plugin, contextInfo.dbPath, {
+        m_schema: newSchemaTable,
+      });
+      if (!dbFileExists) {
+        saveDB(tableData);
+      }
+    }
+
     if (table.id == schema?.id) {
       setSchema(table);
     }
@@ -282,8 +331,139 @@ export const MDBProvider: React.FC<
     }
     setSchemaTable(newSchemaTable);
   };
+
+  const updateValue = (
+    column: string,
+    value: string,
+    table: string,
+    index: number,
+    file: string
+  ) => {
+    const col = (table == "" ? tableData : contextTable[table])?.cols.find(
+      (f) => f.name == column
+    );
+    if (col)
+      saveFrontmatterValue(
+        props.plugin,
+        file ?? tableData.rows[index]?.File,
+        column,
+        value,
+        col.type,
+        props.plugin.settings.saveAllContextToFrontmatter
+      );
+    if (table == "") {
+      saveDB({
+        ...tableData,
+        rows: tableData.rows.map((r, i) =>
+          i == index
+            ? {
+                ...r,
+                [column]: value,
+              }
+            : r
+        ),
+      });
+    } else if (contextTable[table]) {
+      saveContextDB(
+        {
+          ...contextTable[table],
+          rows: contextTable[table].rows.map((r, i) =>
+            i == index
+              ? {
+                  ...r,
+                  [column]: value,
+                }
+              : r
+          ),
+        },
+        table
+      );
+    }
+  };
+  const sortColumn = (sort: Sort) => {
+    savePredicate({
+      ...predicate,
+      sort: [sort],
+    });
+  };
+
+  const hideColumn = (col: MDBColumn, hidden: true) => {
+    savePredicate({
+      ...predicate,
+      colsHidden: hidden
+        ? [
+            ...predicate.colsHidden.filter((s) => s != col.name + col.table),
+            col.name + col.table,
+          ]
+        : predicate.colsHidden.filter((s) => s != col.name + col.table),
+    });
+  };
+  const updateFieldValue = (
+    column: string,
+    fieldValue: string,
+    value: string,
+    table: string,
+    index: number,
+    file: string
+  ) => {
+    const col = tableData.cols.find((f) => f.name == column);
+    saveFrontmatterValue(
+      props.plugin,
+      file ?? tableData.rows[index]?.File,
+      column,
+      value,
+      col.type,
+      props.plugin.settings.saveAllContextToFrontmatter
+    );
+    if (table == "") {
+      const newTable = {
+        ...tableData,
+        cols: tableData.cols.map((m) =>
+          m.name == column
+            ? {
+                ...m,
+                value: fieldValue,
+              }
+            : m
+        ),
+        rows: tableData.rows.map((r, i) =>
+          i == index
+            ? {
+                ...r,
+                [column]: value,
+              }
+            : r
+        ),
+      };
+      saveDB(newTable);
+    } else if (contextTable[table]) {
+      saveContextDB(
+        {
+          ...contextTable[table],
+          cols: contextTable[table].cols.map((m) =>
+            m.name == column
+              ? {
+                  ...m,
+                  value: fieldValue,
+                }
+              : m
+          ),
+          rows: contextTable[table].rows.map((r, i) =>
+            i == index
+              ? {
+                  ...r,
+                  [column]: value,
+                }
+              : r
+          ),
+        },
+        table
+      );
+    }
+  };
   const syncAllMetadata = (f: MDBTable) => {
     const files = f.rows.map((f) => f.File);
+
     const importYAML = (files: string[], fmKeys: string[]): DBTable => {
       return files
         .map((f) => getAbstractFileAtPath(app, f))
@@ -300,7 +480,7 @@ export const MDBProvider: React.FC<
                 {
                   File: c.path,
                   ...fmKeys.reduce((p, c) => {
-                    const value = parseFrontMatter(c, fm[c], false);
+                    const value = parseFrontMatter(c, fm[c]);
                     if (value?.length > 0) return { ...p, [c]: value };
                     return p;
                   }, {}),
@@ -316,93 +496,111 @@ export const MDBProvider: React.FC<
       files,
       f.cols.filter((f) => !f.type.contains("file")).map((f) => f.name)
     );
-    saveDB({
-      ...f,
-      rows: f.rows.map((r) => {
-        const fmRow = yamlTableData.rows.find((f) => f.File == r.File);
-        if (fmRow) {
-          return {
-            ...r,
-            ...fmRow,
-          };
-        }
-        return r;
-      }),
+    const newRows = f.rows.map((r) => {
+      const fmRow = yamlTableData.rows.find((f) => f.File == r.File);
+      if (fmRow) {
+        return {
+          ...r,
+          ...fmRow,
+        };
+      }
+      return r;
     });
+    const rowsChanged = !_.isEqual(newRows, tableData?.rows);
+    const colsChanged = !_.isEqual(tableData?.cols, f.cols);
+    if (rowsChanged || colsChanged) {
+      saveDB({
+        ...f,
+        rows: newRows,
+      });
+    }
   };
   useEffect(() => {
-    if (props.schema && schemaTable && dbSchema?.id != props.schema) {
-      const preselectSchema = schemaTable.rows.find(
-        (g) => g.id == props.schema
-      ) as MDBSchema;
-      if (preselectSchema) {
-        if (preselectSchema.type == "db") {
-          setDBSchema(preselectSchema);
-          return;
-        } else {
-          const preselectDBSchema = schemaTable.rows.find(
-            (g) => g.id == preselectSchema.def
+    if (schemaTable) {
+      if (props.schema) {
+        if (dbSchema?.id != props.schema) {
+          const preselectSchema = schemaTable.rows.find(
+            (g) => g.id == props.schema
           ) as MDBSchema;
-          if (preselectDBSchema) {
-            setDBSchema(preselectDBSchema);
-            return;
+          if (preselectSchema) {
+            if (preselectSchema.type == "db") {
+              setDBSchema(preselectSchema);
+              return;
+            } else {
+              const preselectDBSchema = schemaTable.rows.find(
+                (g) => g.id == preselectSchema.def
+              ) as MDBSchema;
+              if (preselectDBSchema) {
+                setDBSchema(preselectDBSchema);
+                return;
+              }
+            }
+          } else {
+            const newSchema = {
+              id: uniqueNameFromString(
+                sanitizeTableName(props.schema),
+                schemaTable.rows.map((g) => g.id)
+              ),
+              name: props.schema,
+              type: "db",
+            };
+            setDBSchema(newSchema);
+            saveSchema(newSchema).then((f) => {
+              saveDB({
+                schema: newSchema,
+                cols: defaultTableFields.map((g) => ({
+                  ...g,
+                  schemaId: newSchema.id,
+                })),
+                rows: [],
+              });
+            });
           }
         }
       } else {
-        const newSchema = {
-          id: uniqueNameFromString(
-            sanitizeTableName(props.schema),
-            schemaTable.rows.map((g) => g.id)
-          ),
-          name: props.schema,
-          type: "db",
-        };
-        setDBSchema(newSchema);
-        saveSchema(newSchema).then((f) =>
-          saveDB({
-            schema: newSchema,
-            cols: defaultTableFields.map((g) => ({
-              ...g,
-              schemaId: newSchema.id,
-            })),
-            rows: [],
-          })
-        );
+        if (!dbSchema) {
+          setDBSchema(
+            schemaTable.rows?.find((g) => g.type == "db") as MDBSchema
+          );
+        } else {
+          setDBSchema(
+            schemaTable.rows?.find((g) => g.id == dbSchema.id) as MDBSchema
+          );
+        }
       }
     }
   }, [schemaTable]);
   const loadTables = async () => {
-    if (getAbstractFileAtPath(app, props.dbPath)) {
+    if (
+      getAbstractFileAtPath(app, contextInfo.dbPath) ||
+      contextInfo.isRemote
+    ) {
       setDBFileExists(true);
-      getMDBTableSchemas(
-        props.plugin,
-        props.dbPath,
-        props.tag ? true : false
-      ).then((f) => {
-        setSchemaTable({
+      getMDBTableSchemas(props.plugin, contextInfo).then((f) => {
+        setSchemaTable((prev) => ({
           ...defaultSchema,
           rows: f,
-        });
-        if (!props.schema) setDBSchema(f?.find((g) => g.type == "db"));
+        }));
       });
     } else {
       if (props.schema) {
-        saveDB(props.tag ? defaultTagMDBTable : defaultFolderMDBTable).then(
+        saveDB(defaultTableDataForContext(props.plugin, contextInfo)).then(
           (f) => {
-            setSchemaTable(defaultSchema);
+            setSchemaTable((prev) => defaultSchema);
           }
         );
       } else {
-        setSchemaTable(defaultSchema);
-        setDBSchema(defaultFileDBSchema);
+        setSchemaTable((prev) => defaultSchema);
+        setDBSchema((prev) => defaultFileDBSchema);
       }
     }
   };
 
-  const refreshTags = async (evt: CustomEvent) => {
-    if (!dbFileExists) {
-      loadDefaultTableData();
-    } else {
+  const refreshFile = async (file: TAbstractFile) => {
+    if (file.path == props.file && dbSchema) {
+      const fCache = app.metadataCache.getCache(file.path)?.frontmatter;
+      if (isEqual(fCache, metadataCache)) return;
+      setMetadataCache(fCache);
       if (dbSchema.primary) {
         runDef();
       } else {
@@ -411,58 +609,80 @@ export const MDBProvider: React.FC<
     }
   };
 
-  const refreshSpace = async (evt: CustomEvent) => {
-    if (!dbFileExists) {
-      loadDefaultTableData();
+  const refreshTags = async (tags: string[]) => {
+    if (tagContexts.some((f) => tags.some((g) => g == f)))
+      if (dbSchema.primary) {
+        runDef();
+      } else {
+        getMDBData();
+      }
+  };
+
+  const refreshSpace = async (evt: SpaceChangeEvent) => {
+    if (evt.detail.type == "context") {
+      refreshMDB(evt.detail.name);
+      return;
+    }
+    if (evt.detail.type == "file") {
+      refreshFile(getAbstractFileAtPath(app, evt.detail.name));
+      return;
+    }
+    // if (evt.detail?.tags?.length > 0) {
+    //   refreshTags(evt.detail.tags);
+    //   return;
+    // }
+    if (
+      (evt.detail.type == "space" || evt.detail.type == "vault") &&
+      !dbFileExists
+    ) {
+      const defaultTable = defaultTableDataForContext(
+        props.plugin,
+        contextInfo
+      );
+      if (defaultTable) setTableData(defaultTable);
+    } else if (evt.detail.type == "vault") {
+      refreshMDB(contextInfo.contextPath);
     }
   };
 
   const getMDBData = () => {
-    getMDBTable(props.plugin, dbSchema.id, dbPath, !isFolderContext).then((f) =>
-      setTableData(f)
-    );
+    getMDBTable(props.plugin, contextInfo, dbSchema.id).then((f) => {
+      setTableData(f);
+    });
   };
 
-  const refreshMDB = async (evt: CustomEvent) => {
-    if (!dbFileExists || dbSchema?.primary != 'true') {
+  const refreshMDB = async (contextPath: string) => {
+    if (!dbFileExists || dbSchema?.primary != "true") {
       return;
     }
 
-    if (evt.detail.dbPath == dbPath) {
-      if (dbSchema)
-        getMDBTable(props.plugin, dbSchema.id, dbPath, !isFolderContext).then(
-          (f) => setTableData(f)
-        );
+    if (contextPath == contextInfo.contextPath) {
+      if (dbSchema) {
+        loadTables();
+      }
     } else {
       const tag = Object.keys(contextTable).find(
-        (t) => tagContextFromTag(props.plugin, t) == evt.detail.dbPath
+        (t) => tagContextFromTag(props.plugin, t).contextPath == contextPath
       );
       if (tag) loadContextFields(tag);
     }
   };
 
   useEffect(() => {
-    window.addEventListener(eventTypes.mdbChange, refreshMDB);
     window.addEventListener(eventTypes.spacesChange, refreshSpace);
-    window.addEventListener(eventTypes.tagsChange, refreshTags);
-
     return () => {
-      window.removeEventListener(eventTypes.mdbChange, refreshMDB);
       window.removeEventListener(eventTypes.spacesChange, refreshSpace);
-      window.removeEventListener(eventTypes.tagsChange, refreshTags);
     };
-  }, [contextTable, dbSchema, dbPath]);
+  }, [refreshSpace]);
+
   useEffect(() => {
     loadTables();
-  }, [dbPath]);
+  }, [contextInfo]);
   const saveDB = async (newTable: MDBTable) => {
+    if (contextInfo.readOnly) return;
     if (!dbFileExists) {
-      const defaultFields = isFolderContext
-        ? defaultFolderFields
-        : defaultTagFields;
-      const defaultTable = isFolderContext
-        ? defaultFolderTables
-        : defaultTagTables;
+      const defaultFields = defaultFieldsForContext(contextInfo);
+      const defaultTable = defaultTablesForContext(contextInfo);
       const dbField = {
         ...defaultTable,
         m_fields: {
@@ -478,12 +698,15 @@ export const MDBProvider: React.FC<
           rows: newTable.rows,
         },
       };
-      await saveDBToPath(props.plugin, dbPath, dbField).then((f) => {
-        setDBFileExists(true);
-        f ? setTableData(newTable) : new Notice("DB ERROR");
-      });
+
+      await saveDBToPath(props.plugin, contextInfo.dbPath, dbField).then(
+        (f) => {
+          setDBFileExists(true);
+          f ? setTableData(newTable) : new Notice("DB ERROR");
+        }
+      );
     } else {
-      await saveMDBToPath(props.plugin, dbPath, newTable).then((f) => {
+      await saveMDBToPath(props.plugin, contextInfo, newTable).then((f) => {
         setDBFileExists(true);
         f ? setTableData(newTable) : new Notice("DB ERROR");
       });
@@ -494,7 +717,7 @@ export const MDBProvider: React.FC<
     if (!schemaTable || !dbSchema) return;
     const _schema =
       schema?.def == dbSchema.id
-        ? schema
+        ? schemaTable.rows.find((f) => f.id == schema.id)
         : schemaTable.rows.find((f) => f.def == dbSchema.id) ?? {
             ...dbSchema,
             id: uniqueNameFromString(
@@ -514,57 +737,53 @@ export const MDBProvider: React.FC<
           getMDBData();
         }
       } else {
-        loadDefaultTableData();
+        const defaultTable = defaultTableDataForContext(
+          props.plugin,
+          contextInfo
+        );
+        if (defaultTable) setTableData(defaultTable);
       }
     }
   }, [dbSchema]);
 
   useEffect(() => {
-    if (dbFileExists) parsePredicate(schema.predicate);
+    if (dbFileExists && schema) {
+      parsePredicate(schema.predicate);
+    }
   }, [schema]);
 
   useEffect(() => {
     if (dbFileExists && tableData) getContextTags(tableData);
   }, [tableData]);
   const selectRows = (lastSelected: string, rows: string[]) => {
+    setSelectedRows(rows);
+    if (!(dbSchema?.primary == "true")) return;
     if (lastSelected) {
       const path = tableData.rows[parseInt(lastSelected)].File;
-      let evt = new CustomEvent(eventTypes.selectedFileChange, {
-        detail: { filePath: path },
+      let evt = new CustomEvent<ActivePathEvent>(eventTypes.activePathChange, {
+        detail: {
+          selection: path,
+          path: {
+            ...pathByString(contextInfo.contextPath),
+            ref: schema?.id,
+          },
+        },
       });
       window.dispatchEvent(evt);
     } else {
-      let evt = new CustomEvent(eventTypes.selectedFileChange, {
-        detail: { filePath: null },
+      let evt = new CustomEvent<ActivePathEvent>(eventTypes.activePathChange, {
+        detail: {
+          path: {
+            ...pathByString(contextInfo.contextPath),
+            ref: schema?.id,
+          },
+          selection: null,
+        },
       });
       window.dispatchEvent(evt);
     }
-    setSelectedRows(rows);
   };
 
-  const loadDefaultTableData = () => {
-    let files: TAbstractFile[];
-    if (props.folder) {
-      files = folderChildren(
-        props.plugin,
-        getAbstractFileAtPath(props.plugin.app, props.folder) as TFolder
-      );
-      setTableData({
-        ...(isFolderContext ? defaultFolderMDBTable : defaultTagMDBTable),
-        rows: files.map((f) =>
-          newRowByDBRow({ _source: "folder", File: f.path })
-        ),
-      });
-    } else if (props.tag) {
-      files = getAllFilesForTag(props.tag)
-        .map((f) => getAbstractFileAtPath(app, f))
-        .filter((f) => f);
-      setTableData({
-        ...(isFolderContext ? defaultFolderMDBTable : defaultTagMDBTable),
-        rows: files.map((f) => newRowByDBRow({ _source: "tag", File: f.path })),
-      });
-    }
-  };
   const getContextTags = async (_tableData: MDBTable) => {
     //load contextfields
     const contextFields = _tableData.cols
@@ -575,56 +794,41 @@ export const MDBProvider: React.FC<
       loadContextFields(c);
     }
   };
+
   const runDef = async () => {
-    let files: TAbstractFile[];
-    if (props.folder) {
-      files = folderChildren(
-        props.plugin,
-        getAbstractFileAtPath(props.plugin.app, props.folder) as TFolder
+    if (contextInfo.type == "folder") {
+      getMDBTable(props.plugin, contextInfo, "files").then((f) => {
+        for (let c of tagContexts) {
+          loadTagContext(c, f.rows);
+        }
+        setTableData(f);
+        return f;
+      });
+    } else if (contextInfo.type == "tag") {
+      getMDBTable(props.plugin, contextInfo, "files").then((f) => {
+        for (let c of tagContexts) {
+          loadTagContext(c, f.rows);
+        }
+        setTableData(f);
+        return f;
+      });
+    } else if (contextInfo.type == "space") {
+      getMDBTable(props.plugin, contextInfo, "files").then((f) => {
+        setTableData(f);
+        return f;
+      });
+    } else {
+      getMDBTable(props.plugin, contextInfo, dbSchema.id).then((f) =>
+        setTableData(f)
       );
-      consolidateFilesToTable(
-        props.plugin,
-        dbPath,
-        dbSchema.id,
-        files.map((f) => f.path)
-      )
-        .then((f) => {
-          for (let c of tagContexts) {
-            loadTagContext(c, f.rows);
-          }
-          setTableData(f);
-          return f;
-        })
-        .then((f) => syncAllMetadata(f));
-    } else if (props.tag) {
-      files = getAllFilesForTag(props.tag)
-        .map((f) => getAbstractFileAtPath(app, f))
-        .filter((f) => f);
-      consolidateFilesToTable(
-        props.plugin,
-        dbPath,
-        dbSchema.id,
-        files.map((f) => f.path),
-        props.tag
-      )
-        .then((f) => {
-          for (let c of tagContexts) {
-            loadTagContext(c, f.rows);
-          }
-          setTableData(f);
-          return f;
-        })
-        .then((f) => syncAllMetadata(f));
     }
   };
 
   const loadTagContext = async (tag: string, files: DBRows) => {
-    consolidateRowsToTag(
+    getMDBTable(
       props.plugin,
       tagContextFromTag(props.plugin, tag),
-      dbSchema.id,
-      dbPath,
-      files
+      "files"
     ).then((f) => {
       if (f) {
         const contextFields = f.cols
@@ -644,9 +848,8 @@ export const MDBProvider: React.FC<
   const loadContextFields = async (tag: string) => {
     getMDBTable(
       props.plugin,
-      "files",
       tagContextFromTag(props.plugin, tag),
-      true
+      "files"
     ).then((f) => {
       setContextTable((t) => ({
         ...t,
@@ -655,51 +858,20 @@ export const MDBProvider: React.FC<
     });
   };
 
-  const tagExists = (
-    currentCache: CachedMetadata,
-    findTag: string
-  ): boolean => {
-    let currentTags: string[] = [];
-    if (getAllTags(currentCache)) {
-      //@ts-ignore
-      currentTags = getAllTags(currentCache);
-    }
-    return currentTags.find((tag) => tag.toLowerCase() == findTag.toLowerCase())
-      ? true
-      : false;
-  };
-
-  const getAllFilesForTag = (tag: string) => {
-    let tagsCache: string[] = [];
-
-    (() => {
-      app.vault.getMarkdownFiles().forEach((tfile) => {
-        let currentCache!: CachedMetadata;
-        if (app.metadataCache.getFileCache(tfile) !== null) {
-          //@ts-ignore
-          currentCache = app.metadataCache.getFileCache(tfile);
-        }
-        let relativePath: string = tfile.path;
-        const hasTag: boolean = tagExists(currentCache, tag);
-        if (hasTag) {
-          tagsCache.push(relativePath);
-        }
-      });
-    })();
-    return tagsCache;
-  };
-
-  const saveContextDB = async (newTable: MDBTable, context: string) => {
-    const dbPath = tagContextFromTag(props.plugin, context);
-    await saveMDBToPath(props.plugin, dbPath, newTable).then((f) =>
-      f && setContextTable((t) => ({
-            ...t,
-            [context]: newTable,
-          }))
+  const saveContextDB = async (newTable: MDBTable, tag: string) => {
+    const context = tagContextFromTag(props.plugin, tag);
+    await saveMDBToPath(props.plugin, context, newTable).then(
+      (f) =>
+        f &&
+        setContextTable((t) => ({
+          ...t,
+          [tag]: newTable,
+        }))
     );
   };
   const savePredicate = (newPredicate: Predicate) => {
     const cleanedPredicate = validatePredicate(newPredicate);
+
     saveSchema({
       ...schema,
       predicate: JSON.stringify(cleanedPredicate),
@@ -804,32 +976,26 @@ export const MDBProvider: React.FC<
       savePredicate({
         filters: predicate.filters.map((f) =>
           f.field == oldColumn.name + oldColumn.table
-            ? { ...f, field: newColumn.name + newColumn.table }
+            ? { ...f, field: column.name + column.table }
             : f
         ),
         sort: predicate.sort.map((f) =>
           f.field == oldColumn.name + oldColumn.table
-            ? { ...f, field: newColumn.name + newColumn.table }
+            ? { ...f, field: column.name + column.table }
             : f
         ),
         groupBy: predicate.groupBy.map((f) =>
-          f == oldColumn.name + oldColumn.table
-            ? newColumn.name + newColumn.table
-            : f
+          f == oldColumn.name + oldColumn.table ? column.name + column.table : f
         ),
         colsHidden: predicate.colsHidden.map((f) =>
-          f == oldColumn.name + oldColumn.table
-            ? newColumn.name + newColumn.table
-            : f
+          f == oldColumn.name + oldColumn.table ? column.name + column.table : f
         ),
         colsOrder: predicate.colsOrder.map((f) =>
-          f == oldColumn.name + oldColumn.table
-            ? newColumn.name + newColumn.table
-            : f
+          f == oldColumn.name + oldColumn.table ? column.name + column.table : f
         ),
         colsSize: {
           ...predicate.colsSize,
-          [newColumn.name + newColumn.table]:
+          [column.name + column.table]:
             predicate.colsSize[oldColumn.name + oldColumn.table],
           [oldColumn.name + oldColumn.table]: undefined,
         },
@@ -846,6 +1012,9 @@ export const MDBProvider: React.FC<
   return (
     <MDBContext.Provider
       value={{
+        def,
+        readMode,
+        contextInfo,
         data,
         filteredData,
         loadContextFields,
@@ -861,8 +1030,9 @@ export const MDBProvider: React.FC<
         saveDB,
         saveContextDB,
         schema,
-        dbPath,
         saveColumn,
+        hideColumn,
+        sortColumn,
         delColumn,
         newColumn,
         tagContexts,
@@ -874,9 +1044,9 @@ export const MDBProvider: React.FC<
         dbSchema,
         searchString,
         setSearchString,
-        folderPath,
-        isFolderContext,
         setDBSchema,
+        updateValue,
+        updateFieldValue,
       }}
     >
       {props.children}

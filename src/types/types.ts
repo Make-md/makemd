@@ -34,11 +34,12 @@ export interface FlattenedTreeNode extends FolderTree {
 }
 
 export const eventTypes = {
-  selectedFileChange: "mkmd-selected-file-change",
-  activeFileChange: "mkmd-active-file-change",
+  activePathChange: "mkmd-active-path",
   refreshView: "mkmd-refresh-view",
   revealFile: "mkmd-reveal-file",
-  tagsChange: "mkmd-tags-change",
+  collapseFolders: "mkmd-collapse-folders",
+  toggleBacklinks: "mkmd-toggle-backlinks",
+  metadataChange: "mkmd-tags-change",
   vaultChange: "mkmd-vault-change",
   mdbChange: "mkmd-mdb-change",
   spacesChange: "mkmd-spaces-change",
@@ -60,14 +61,33 @@ export type PortalType =
   | "none"
   | "doc"
   | "block"
-  | "callout"
+  | "foldernote"
   | "flow"
   | "context";
-export type SpaceChange = "sticker" | "space" | "vault";
+export type SpaceChange = "sticker" | "space" | "vault" | "sync" | "file" | "context";
+export type PathTypes = "file" | "folder" | "tag" | "space" | "url" | "unknown";
+
+export type Path = {
+  path: string,
+  type: PathTypes,
+  fullPath: string,
+  alias?: string,
+  ref?: string
+}
+
+export class ActivePathEvent {
+    path: Path;
+    selection?: string;
+    selectionType?: 'view' | 'row'
+}
 
 export class SpaceChangeEvent extends Event {
   detail: {
-    changeType: SpaceChange;
+    type: SpaceChange;
+    action?: string,
+    name?: string, 
+    newName?: string
+
   };
 }
 

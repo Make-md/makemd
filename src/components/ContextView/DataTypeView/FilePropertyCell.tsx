@@ -1,31 +1,40 @@
 import { formatDistance } from "date-fns";
 import { TFolder } from "obsidian";
 import React, { useState } from "react";
-import {
-  appendFileMetaData,
-  getAbstractFileAtPath, openTFolder
-} from "utils/file";
-import { folderPathToString } from "utils/tree";
+import { parsePropString } from "utils/contexts/parsers";
+import { getAbstractFileAtPath, openTFolder } from "utils/file";
+import { folderPathToString } from "utils/strings";
 import { TableCellProp } from "../TableView/TableView";
 
-export const FilePropertyCell = (
-  props: TableCellProp & { property: string; file: string }
-) => {
-  const { property } = props;
+//https://stackoverflow.com/questions/10420352/converting-file-size-in-bytes-to-human-readable-string
+const humanFileSize = (bytes: number, si = false, dp = 1) => {
+  const thresh = si ? 1000 : 1024;
 
-  const file = getAbstractFileAtPath(app, props.file);
+  if (Math.abs(bytes) < thresh) {
+    return bytes + " B";
+  }
+
+  const units = si
+    ? ["kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
+    : ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
+  let u = -1;
+  const r = 10 ** dp;
+
+  do {
+    bytes /= thresh;
+    ++u;
+  } while (
+    Math.round(Math.abs(bytes) * r) / r >= thresh &&
+    u < units.length - 1
+  );
+
+  return bytes.toFixed(dp) + " " + units[u];
+};
+
+export const LookUpCell = (props: TableCellProp & { file: string }) => {
   const [cache, setCache] = useState(null);
-  const initialValue = file ? appendFileMetaData(property, file) : "";
-  /*if (property == 'preview') {
-        const setFileC = async (file: TFile) => {
-          const fc = stripFrontmatterFromString(await app.vault.cachedRead(file));
-          setCache(fc);
-        };
-        if (file instanceof TFile && !cache) {
-          setFileC(file);
-        }
-        return <div className='mk-cell-file-preview'>{cache}</div>
-      }*/
+  const initialValue = props.initialValue;
+  const { field, property } = parsePropString(props.propertyValue);
   if (property == "folder") {
     return (
       <div
@@ -54,9 +63,13 @@ export const FilePropertyCell = (
           formatDistance(new Date(date), new Date(), { addSuffix: true })}
       </div>
     );
-  } else if (property == "size") {
-    return <div className="mk-cell-fileprop">{initialValue}</div>;
+  } else if (property == "size" || property == "File.size") {
+    return (
+      <div className="mk-cell-fileprop">
+        {humanFileSize(parseInt(initialValue))}
+      </div>
+    );
   }
 
-  return <div className="mk-cell-fileprop"></div>;
+  return <div className="mk-cell-fileprop">{initialValue}</div>;
 };

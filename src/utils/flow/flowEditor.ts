@@ -12,36 +12,34 @@ import {
 } from "cm-extensions/flowEditor/selectiveEditor";
 import {
   flowIDAnnotation,
-  flowIDStateField, portalTypeAnnotation
+  flowIDStateField,
+  portalTypeAnnotation
 } from "cm-extensions/markSans/callout";
-import { INLINE_CONTEXT_VIEW_TYPE } from "components/ContextView/InlineContextView";
+import { EMBED_CONTEXT_VIEW_TYPE } from "components/ContextView/EmbedContextView";
 import { FlowEditor, FlowEditorParent } from "components/FlowEditor/FlowEditor";
 import { createFlowEditorInElement } from "dispatch/flowDispatch";
 import t from "i18n";
 import MakeMDPlugin from "main";
-import {
-  MarkdownView,
-  TFile,
-  TFolder, WorkspaceLeaf
-} from "obsidian";
+import { MarkdownView, TFile, TFolder, WorkspaceLeaf } from "obsidian";
 import {
   FocusPortalEvent,
   OpenFilePortalEvent,
   PortalType,
   SpawnPortalEvent
 } from "types/types";
+import { mdbContextByPath } from "utils/contexts/contexts";
 import {
   getAbstractFileAtPath,
-  openAFile,
-  openFile
+  openAFile
 } from "../file";
+import { pathByString } from "../path";
 
 export const parseOutReferences = (
   ostr: string
 ): [string, string | undefined] => {
   const str = ostr.split("|")[0];
   const refIndex = str.lastIndexOf("#");
-  return refIndex != -1
+  return refIndex > 0
     ? [str.substring(0, refIndex), str.substring(refIndex + 1)]
     : [str, undefined];
 };
@@ -99,7 +97,6 @@ export const loadFlowEditorByDOM = (
     let counter = 0;
     while (!el.parentElement && counter++ <= 50) await sleep(50);
     if (!el.parentElement) return;
-
     let dom: HTMLElement = el;
     while (
       !dom.hasClass("mk-floweditor") &&
@@ -121,10 +118,10 @@ export const loadFlowEditorByDOM = (
 
       let leafFound = false;
       if (app.workspace.activeEditor) {
-        if (app.workspace.activeEditor.editMode.cm.dom == view.dom) {
+        if (app.workspace.activeEditor?.editor?.cm.dom == view.dom) {
           leafFound = true;
           loadFlowEditorsForLeafForID(
-            app.workspace.activeEditor.editMode.cm,
+            app.workspace.activeEditor.editor.cm,
             app.workspace.activeEditor.file?.path,
             make,
             id
@@ -133,7 +130,6 @@ export const loadFlowEditorByDOM = (
       }
       if (!leafFound) {
         app.workspace.iterateLeaves((leaf) => {
-          //@ts-ignore
           const cm = leaf.view.editor?.cm as EditorView;
           if (cm && view.dom == cm.dom) {
             leafFound = true;
@@ -172,9 +168,14 @@ const loadFlowEditor = (
   const dom = cm.dom.querySelector(
     "#mk-flow-" + flowEditorInfo.id
   ) as HTMLElement;
-  const [link, ref] = parseOutReferences(flowEditorInfo.link);
+  const { path, type, ref } = pathByString(flowEditorInfo.link, source);
   if (dom) {
-    if (link.charAt(0) == "#") {
+    
+    if (type == 'folder' || type == 'tag' || type == 'space') {
+      const context = mdbContextByPath(
+        make,
+        path
+      );
       if (!dom.hasAttribute("ready")) {
         // dom.empty();
         dom.setAttribute("ready", "");
@@ -182,33 +183,15 @@ const loadFlowEditor = (
         createFlowEditorInElement(
           flowEditorInfo.id,
           dom,
-          ref ? "block" : "flow",
-          link
-        );
-      }
-      return;
-    }
-    if (link.charAt(link.length - 1) == "/") {
-      const folder = getAbstractFileAtPath(
-        app,
-        link.substring(0, link.length - 1)
-      );
-      if (!dom.hasAttribute("ready") && folder) {
-        // dom.empty();
-        dom.setAttribute("ready", "");
-
-        createFlowEditorInElement(
-          flowEditorInfo.id,
-          dom,
           "context",
-          folder.path,
+          context.contextPath,
           ref
         );
         return;
       }
-    }
-    const file = getFileFromString(link, source);
-    const aFile = getAbstractFileAtPath(app, link);
+    } else if (type == 'file') {
+    const file = getFileFromString(path, source);
+    const aFile = getAbstractFileAtPath(app, path);
     if (file) {
       const selectiveRange = getLineRangeFromRef(file, ref, make);
       if (!dom.hasAttribute("ready")) {
@@ -235,7 +218,7 @@ const loadFlowEditor = (
             flowEditorInfo.id,
             dom,
             ref ? "block" : "flow",
-            link
+            path
           );
         }
         return;
@@ -246,13 +229,14 @@ const loadFlowEditor = (
       const createFile = async (e: MouseEvent) => {
         e.stopPropagation();
         e.stopImmediatePropagation();
-        //@ts-ignore
-        await app.fileManager.createNewMarkdownFile(app.vault.getRoot(), link);
+
+        await app.fileManager.createNewMarkdownFile(app.vault.getRoot(), path);
         loadFlowEditor(cm, flowEditorInfo, source, make);
       };
-      createDiv.setText(`"${link}" ` + t.labels.noFile);
+      createDiv.setText(`"${path}" ` + t.labels.noFile);
       createDiv.addEventListener("click", createFile);
     }
+  }
   }
 };
 
@@ -263,7 +247,6 @@ export const focusPortal = async (
   const { id, parent, top } = evt.detail;
   if (parent) {
     app.workspace.iterateLeaves((leaf) => {
-      //@ts-ignore
       const cm = leaf.view.editor?.cm as EditorView;
       if (cm) {
         const stateField = cm.state.field(flowEditorInfo, false);
@@ -302,7 +285,6 @@ export const focusPortal = async (
     }, app.workspace["rootSplit"]!);
   } else {
     app.workspace.iterateLeaves((leaf) => {
-      //@ts-ignore
       const cm = leaf.view.editor?.cm as EditorView;
       if (cm) {
         const stateField = cm.state.field(flowIDStateField, false);
@@ -343,24 +325,44 @@ export const spawnLeafFromFile = async (
   file: string,
   el: HTMLElement,
   type: PortalType,
-  ref?: string
+  ref?: string,
+  from?: number,
+  to?: number,
+  onLeafAttachCallback?:(leaf: WorkspaceLeaf) => unknown
 ): Promise<WorkspaceLeaf> => {
   if (type == "context") {
-    const newLeaf = spawnPortal(plugin, el);
-    newLeaf.setViewState({
-      type: INLINE_CONTEXT_VIEW_TYPE,
-      state: { file: file, ref: ref },
+    spawnPortal(plugin, el, null, async (editor) => {
+      const newLeaf = editor.attachLeaf();
+      await newLeaf.setViewState({
+        type: EMBED_CONTEXT_VIEW_TYPE,
+        state: { contextPath: file, ref: ref },
+      });
+      if (onLeafAttachCallback)
+      onLeafAttachCallback(newLeaf);
     });
-    return newLeaf;
+    
   }
-  let portalFile = plugin.app.vault.getAbstractFileByPath(file);
-  const newLeaf = spawnPortal(plugin, el, portalFile.name);
-  await newLeaf.openFile(portalFile as TFile, { active:false });
-  //@ts-ignore
-  if (newLeaf.view.setMode)
-    //@ts-ignore
+  const portalFile = plugin.app.vault.getAbstractFileByPath(file) as TFile;
+  if (
+    !portalFile ||
+    !Object.keys(app.embedRegistry.embedByExtension).some(
+      (f) => f == portalFile.extension
+    )
+  )
+    return null;
+  spawnPortal(plugin, el, portalFile.name, async (editor) => {
+    return editor.openFile(portalFile as TFile, { active: false }).then(newLeaf => {
+      if (newLeaf.view.setMode)
     newLeaf.view.setMode(newLeaf.view.editMode);
-  return newLeaf;
+  if (from && to) {
+    newLeaf.view.editor?.cm.dispatch({
+      annotations: [editableRange.of([from, to])],
+    });
+    if (onLeafAttachCallback)
+    onLeafAttachCallback(newLeaf);
+    }});
+    
+  });
 };
 
 export const spawnNewPortal = async (
@@ -368,59 +370,56 @@ export const spawnNewPortal = async (
   evt: SpawnPortalEvent
 ) => {
   const { file, el, ref, from, to, type } = evt.detail;
-  const newLeaf = await spawnLeafFromFile(plugin, file, el, type, ref);
-
-  //@ts-ignore
-  if (!newLeaf?.view?.editor) {
-    return;
-  }
-
-  //@ts-ignore
-  const view = newLeaf.view.editor?.cm as EditorView;
-  view.dispatch({
-    annotations: [
-      portalTypeAnnotation.of(evt.detail.type),
-      flowIDAnnotation.of(evt.detail.id),
-    ],
-  });
-  view.dom.addEventListener("keydown", (e) => {
-    if (e.key == "ArrowUp") {
-      if (e.metaKey == true) {
-        view.dispatch({
-          annotations: arrowKeyAnnotation.of(3),
-        });
-      } else {
-        view.dispatch({
-          annotations: arrowKeyAnnotation.of(1),
-        });
-      }
+  spawnLeafFromFile(plugin, file, el, type, ref, from, to, (newLeaf) => {
+if (!newLeaf?.view?.editor) {
+  return;
+}
+const view = newLeaf.view.editor?.cm as EditorView;
+view.dispatch({
+  annotations: [
+    portalTypeAnnotation.of(evt.detail.type),
+    flowIDAnnotation.of(evt.detail.id),
+  ],
+});
+view.dom.addEventListener("keydown", (e) => {
+  if (e.key == "ArrowUp") {
+    if (e.metaKey == true) {
+      view.dispatch({
+        annotations: arrowKeyAnnotation.of(3),
+      });
+    } else {
+      view.dispatch({
+        annotations: arrowKeyAnnotation.of(1),
+      });
     }
-    if (e.key == "ArrowDown") {
-      if (e.metaKey == true) {
-        view.dispatch({
-          annotations: arrowKeyAnnotation.of(4),
-        });
-      } else {
-        view.dispatch({
-          annotations: arrowKeyAnnotation.of(2),
-        });
-      }
-    }
-  });
-  if (from && to) {
-    //@ts-ignore
-    newLeaf.view.editor?.cm.dispatch({
-      annotations: [editableRange.of([from, to])],
-    });
   }
+  if (e.key == "ArrowDown") {
+    if (e.metaKey == true) {
+      view.dispatch({
+        annotations: arrowKeyAnnotation.of(4),
+      });
+    } else {
+      view.dispatch({
+        annotations: arrowKeyAnnotation.of(2),
+      });
+    }
+  }
+});
+if (from && to) {
+  newLeaf.view.editor?.cm.dispatch({
+    annotations: [editableRange.of([from, to])],
+  });
+}
+  });
+  
 };
 
 export const spawnPortal = (
   plugin: MakeMDPlugin,
   initiatingEl?: HTMLElement,
   fileName?: string,
-  onShowCallback?: () => unknown
-): WorkspaceLeaf => {
+  onShowCallback?: (leaf: FlowEditor) => Promise<unknown>
+) => {
   const parent = plugin.app.workspace.activeLeaf as unknown as FlowEditorParent;
   if (!initiatingEl) initiatingEl = parent.containerEl;
   const hoverPopover = new FlowEditor(
@@ -437,5 +436,4 @@ export const spawnPortal = (
       0,
       fileName.lastIndexOf(".")
     );
-  return hoverPopover.attachLeaf();
 };

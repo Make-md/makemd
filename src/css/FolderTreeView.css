@@ -1,3 +1,7 @@
+.workspace .mod-root .workspace-tab-header[data-type="markdown"] .workspace-tab-header-inner-icon {
+display: flex;
+}
+
 .mk-tree-wrapper {
   box-sizing: border-box;
 
@@ -8,12 +12,19 @@
   position: relative;
 }
 
+.nav-file {
+  overflow-y: inherit !important;
+}
+
 .is-mobile .mk-tree-wrapper {
   padding-top: 6px;
   padding-bottom: 6px;
 }
 .is-mobile .mk-tree-wrapper > div {
-  padding-left: 8px;
+  padding-left: 24px;
+}
+.is-mobile .mk-tree-wrapper > .mk-section {
+  padding-left: 4px;
 }
 
 .mk-tree-wrapper > div {
@@ -46,6 +57,18 @@
   top: 0%;
 }
 
+.mk-folder-lines .mk-tree-item.nav-folder-title::before {
+  display: block;
+  content: " ";
+  width: 1px;
+  height: var(--childrenCount);
+  border-left: var(--nav-indentation-guide-width) solid
+    var(--nav-indentation-guide-color);
+  position: absolute;
+  top: 34px;
+  left: 13px;
+}
+
 .mk-tree-wrapper .mk-indicator-row {
   background: #dde8f6;
 }
@@ -68,7 +91,8 @@
 }
 
 .mk-tree-item {
-  margin-left: var(--spacing);
+  margin-left: var(--spacing) !important;
+  flex-direction: row !important;
   --vertical-padding: 2px;
   flex-grow: 1;
   position: relative;
@@ -77,7 +101,7 @@
   padding: var(--vertical-padding) 2px;
   min-width: 0;
   margin-right: 4px;
-  height: 28px;
+  height: var(--spaceRowHeight);
 }
 .is-mobile .mk-tree-item {
   height: 38px;
@@ -87,6 +111,10 @@
   background-color: unset !important;
 }
 .workspace-leaf:not(.mod-active) .is-selected {
+  background: var(--nav-item-background-active) !important;
+}
+
+.workspace-leaf.mod-active .is-highlighted {
   background: var(--nav-item-background-active) !important;
 }
 /* 
@@ -138,6 +166,7 @@ body:not(.is-mobile) .mk-tree-wrapper button:hover {
 .mk-file-icon {
   width: 24px;
   height: 24px;
+  font-family: emoji;
 }
 .mk-file-icon svg {
   width: 16px;
@@ -184,8 +213,6 @@ body:not(.is-mobile) .mk-tree-wrapper:hover .mk-folder-buttons {
 }
 
 .is-mobile .mk-tree-wrapper svg {
-  width: 20px;
-  height: 20px;
   color: var(--text-faint);
 }
 
@@ -201,7 +228,7 @@ body:not(.is-mobile) .mk-tree-wrapper:hover .mk-folder-buttons {
   text-overflow: ellipsis;
   overflow: hidden;
   font-size: var(--font-ui-small);
-  flex-grow: 1;
+  flex-grow: 1 !important;
 }
 
 .mk-disable-interaction {
@@ -213,7 +240,7 @@ body:not(.is-mobile) .mk-tree-wrapper:hover .mk-folder-buttons {
   user-select: none;
   -webkit-user-select: none;
 }
-.view-content {
+.workspace-leaf-content[data-type="mk-file-view"] > .view-content {
   padding: 0 !important;
 }
 .mk-collapse svg {

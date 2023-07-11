@@ -1,14 +1,18 @@
-import { FlowEditorParent } from "components/FlowEditor/FlowEditor";
 import { EditorView } from "@codemirror/view";
+import { FlowEditorParent } from "components/FlowEditor/FlowEditor";
 
 declare module "obsidian" {
   interface App {
+    dragManager: any;
     commands: {
       listCommands(): Command[];
       findCommand(id: string): Command;
       removeCommand(id: string): void;
       executeCommandById(id: string): void;
       commands: Record<string, Command>;
+    };
+    embedRegistry: {
+      embedByExtension: Record<string, any>;
     };
     mobileToolbar: {
       containerEl: HTMLElement;
@@ -20,6 +24,14 @@ declare module "obsidian" {
     internalPlugins: {
       getPluginById(id: string): { instance: { options: { pinned: [] } } };
     };
+  }
+
+  interface FileManager {
+    processFrontMatter: (
+      file: TFile,
+      callback: (FrontMatterCache) => void
+    ) => void;
+    createNewMarkdownFile: (folder: TFolder, name: string) => Promise<TFile>;
   }
 
   interface MetadataCache {
@@ -103,6 +115,7 @@ declare module "obsidian" {
   interface WorkspaceLeaf {
     containerEl: HTMLElement;
     tabHeaderInnerTitleEl: HTMLElement;
+    tabHeaderInnerIconEl: HTMLElement;
   }
   interface Editor {
     cm: EditorView;
@@ -110,6 +123,10 @@ declare module "obsidian" {
 
   interface View {
     headerEl: HTMLDivElement;
+    editor?: Editor,
+    setMode?: (unknown) => unknown,
+    editMode?: unknown,
+    file?: TAbstractFile,
   }
   interface MenuItem {
     dom: HTMLElement;

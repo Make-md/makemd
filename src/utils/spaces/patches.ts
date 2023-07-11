@@ -1,14 +1,13 @@
-import { FILE_TREE_VIEW_TYPE } from "components/Spaces/FileTreeView";
 import { FlowEditor } from "components/FlowEditor/FlowEditor";
+import { FILE_TREE_VIEW_TYPE } from "components/Spaces/FileTreeView";
 import MakeMDPlugin from "main";
 import { around } from "monkey-around";
 import {
-  EphemeralState,
-  ViewState,
+  EphemeralState, ViewState,
   Workspace,
   WorkspaceContainer,
   WorkspaceItem,
-  WorkspaceLeaf,
+  WorkspaceLeaf
 } from "obsidian";
 
 export const patchFileExplorer = (plugin: MakeMDPlugin) => {
@@ -73,6 +72,32 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
         return false;
       };
     },
+    setActiveLeaf(old) {
+    return function setActiveLeaf(leaf, params) {
+      if (leaf.view.getViewType() == 'markdown') {
+        this.activeEditor = leaf.view;
+        if (leaf.view.file)
+      {this._['file-open'].forEach((cb: any) => {
+        if (cb?.fn && cb.ctx?.leaf)
+      {
+        const bound = cb.fn.bind(cb.ctx)
+        bound(leaf.view.file)
+      }
+      });}
+    }
+      old.call(this, leaf, params);
+    }
+    },
+    getActiveViewOfType(old) {
+      return function getActiveViewOfType(type) {
+if (type.prototype?.getViewType && type.prototype.getViewType() == 'markdown')
+{
+  if (this.activeEditor)
+  return this.activeEditor
+}
+        return old.call(this, type);
+      }
+      },
     getDropLocation(old) {
       return function getDropLocation(event: MouseEvent) {
         for (const popover of FlowEditor.activePopovers()) {

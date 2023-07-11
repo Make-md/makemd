@@ -1,180 +1,189 @@
 import {
-  Active, DragEndEvent,
+  DragEndEvent,
   DragMoveEvent,
   DragOverEvent,
   DragOverlay,
-  DragStartEvent, Modifier, Over, UniqueIdentifier,
-  useDndMonitor
+  DragStartEvent,
+  Modifier,
+  UniqueIdentifier,
+  useDndMonitor,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  verticalListSortingStrategy
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useVirtual } from "@tanstack/react-virtual";
 import {
   IndicatorState,
-  SortableTreeItem
+  SortableTreeItem,
 } from "components/Spaces/TreeView/FolderTreeView";
 import useForceUpdate from "hooks/ForceUpdate";
-import t from "i18n";
-import { debounce } from "lodash";
 import MakeMDPlugin from "main";
-import { Notice, TAbstractFile } from "obsidian";
 import React, {
   useCallback,
   useEffect,
   useMemo,
   useRef,
-  useState
+  useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { useRecoilState } from "recoil";
 import * as recoilState from "recoil/pluginState";
-import { Space, VaultItem } from "schemas/spaces";
+import { Space } from "schemas/spaces";
 import {
-  CustomVaultChangeEvent,
-  eventTypes, SpaceChangeEvent
-} from "types/types";
-import {
-  getAbstractFileAtPath, platformIsMobile
-} from "utils/file";
-import {
+  TreeNode,
   flattenedTreeFromVaultItems,
   folderSortFn,
-  insertSpaceAtIndex,
-  insertSpaceItemAtIndex,
-  moveAFileToNewParentAtIndex,
   retrieveFolders,
-  retrieveSpaceItems,
-  retrieveSpaces,
-  spaceItemToTreeNode,
-  TreeNode,
-  updateFileRank,
+  spaceRowHeight,
+  spaceToTreeNode,
   vaulItemToTreeNode,
-  vaultItemForPath
-} from "utils/spaces/spaces";
-import { safelyParseJSON, uniq } from "utils/tree";
-import { getDragDepth, getProjection } from "utils/ui/dnd";
+} from "superstate/spacesStore/spaces";
+import { FileMetadataCache } from "types/cache";
+import {
+  ActivePathEvent,
+  CustomVaultChangeEvent,
+  Path,
+  SpaceChangeEvent,
+  eventTypes,
+} from "types/types";
+import { uniq } from "utils/array";
+import { getDragDepth, getProjection } from "utils/dnd/dragFile";
+import { dropFileInTree } from "utils/dnd/dropFile";
+import { getAbstractFileAtPath } from "utils/file";
+import { safelyParseJSON } from "utils/json";
+import { parseSortStrat } from "utils/parser";
+import { pathByString } from "utils/path";
 
 interface FileExplorerComponentProps {
   plugin: MakeMDPlugin;
+  viewType: "root" | "space" | "all";
   activeSpace?: string;
 }
 
-const VirtualizedList = React.memo(
-  (props: {
-    flattenedTree: TreeNode[];
-    projected: any;
-    handleCollapse: any;
-    plugin: MakeMDPlugin;
-    selectedFiles: TreeNode[];
-    vRef: any;
-    activeFile: string;
-    selectRange: any;
-    indentationWidth: any;
-  }) => {
-    const {
-      flattenedTree,
-      projected,
-      vRef,
-      selectedFiles,
-      activeFile,
-      selectRange,
-      handleCollapse,
-      plugin,
-      indentationWidth,
-    } = props;
-    const parentRef = React.useRef<HTMLDivElement>(null);
-    const rowHeight = (index: number) =>
-      platformIsMobile()
-        ? flattenedTree[index].parentId == null
-          ? 52
-          : 40
-        : flattenedTree[index].parentId == null
-        ? 40
-        : 29;
-    const rowVirtualizer = useVirtual({
-      size: flattenedTree.length,
-      paddingEnd: 24,
-      parentRef,
-      estimateSize: React.useCallback(
-        (index) => rowHeight(index),
-        [flattenedTree]
-      ), // This is just a best guess
-      overscan: plugin.settings.spacesPerformance ? 0 : 20,
-    });
-    vRef.current = rowVirtualizer;
-    rowVirtualizer.scrollToIndex;
-    return (
-      <div
-        ref={parentRef}
-        style={{
+const VirtualizedList = React.memo(function VirtualizedList(props: {
+  flattenedTree: TreeNode[];
+  projected: any;
+  handleCollapse: any;
+  plugin: MakeMDPlugin;
+  selectedFiles: TreeNode[];
+  vRef: any;
+  activeFile: Path;
+  selectRange: any;
+  indentationWidth: number;
+}) {
+  const {
+    flattenedTree,
+    projected,
+    vRef,
+    selectedFiles,
+    activeFile,
+    selectRange,
+    handleCollapse,
+    plugin,
+    indentationWidth,
+  } = props;
+  const parentRef = React.useRef<HTMLDivElement>(null);
+  const rowHeight = (index: number) =>
+    flattenedTree[index].parentId == null
+      ? spaceRowHeight(plugin) + 8
+      : spaceRowHeight(plugin);
+  const rowVirtualizer = useVirtual({
+    size: flattenedTree.length,
+    paddingEnd: 24,
+    parentRef,
+    estimateSize: React.useCallback(
+      (index) => rowHeight(index),
+      [flattenedTree]
+    ), // This is just a best guess
+    overscan: plugin.settings.spacesPerformance ? 0 : 20,
+  });
+  vRef.current = rowVirtualizer;
+  rowVirtualizer.scrollToIndex;
+  return (
+    <div
+      ref={parentRef}
+      style={
+        {
           width: `100%`,
           height: `100%`,
           overflow: "auto",
+          "--spaceRowHeight": spaceRowHeight(plugin),
+        } as React.CSSProperties
+      }
+    >
+      <div
+        style={{
+          height: `${rowVirtualizer.totalSize}px`,
+          width: "100%",
+          position: "relative",
         }}
       >
-        <div
-          style={{
-            height: `${rowVirtualizer.totalSize}px`,
-            width: "100%",
-            position: "relative",
-          }}
-        >
-          {rowVirtualizer.virtualItems.map((virtualRow) => (
-            <div
-              key={virtualRow.index}
-              ref={virtualRow.measureRef}
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: `${rowHeight(virtualRow.index)}px`,
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-            >
-              <SortableTreeItem
-                key={flattenedTree[virtualRow.index].id}
-                id={flattenedTree[virtualRow.index].id}
-                data={flattenedTree[virtualRow.index]}
-                disabled={false}
-                depth={flattenedTree[virtualRow.index].depth}
-                childCount={0}
-                indentationWidth={indentationWidth}
-                indicator={
-                  projected?.overId == flattenedTree[virtualRow.index].id
-                    ? flattenedTree[virtualRow.index].parentId == null &&
-                      projected.parentId == null
-                      ? { state: IndicatorState.Top, depth: projected.depth }
-                      : { state: IndicatorState.Bottom, depth: projected.depth }
-                    : null
-                }
-                plugin={plugin}
-                style={{}}
-                onSelectRange={selectRange}
-                active={
-                  activeFile == flattenedTree[virtualRow.index].item?.path
-                }
-                selected={(selectedFiles as TreeNode[]).some(
-                  (g) => g.id == flattenedTree[virtualRow.index].id
-                )}
-                collapsed={flattenedTree[virtualRow.index].collapsed}
-                onCollapse={handleCollapse}
-              ></SortableTreeItem>
-            </div>
-          ))}
-        </div>
+        {rowVirtualizer.virtualItems.map((virtualRow) => (
+          <div
+            key={virtualRow.index}
+            ref={virtualRow.measureRef}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: `${rowHeight(virtualRow.index)}px`,
+              transform: `translateY(${virtualRow.start}px)`,
+            }}
+          >
+            <SortableTreeItem
+              key={flattenedTree[virtualRow.index].id}
+              id={flattenedTree[virtualRow.index].id}
+              data={flattenedTree[virtualRow.index]}
+              disabled={false}
+              depth={flattenedTree[virtualRow.index].depth}
+              childCount={flattenedTree[virtualRow.index].childrenCount}
+              indentationWidth={indentationWidth}
+              indicator={
+                projected?.sortable &&
+                projected?.overId == flattenedTree[virtualRow.index].id
+                  ? flattenedTree[virtualRow.index].parentId == null &&
+                    projected.parentId == null
+                    ? { state: IndicatorState.Top, depth: projected.depth }
+                    : { state: IndicatorState.Bottom, depth: projected.depth }
+                  : null
+              }
+              plugin={plugin}
+              style={{}}
+              onSelectRange={selectRange}
+              active={
+                activeFile?.path ==
+                (flattenedTree[virtualRow.index].item
+                  ? flattenedTree[virtualRow.index].item.path
+                  : flattenedTree[virtualRow.index].space + "//")
+              }
+              highlighted={
+                projected &&
+                !projected.sortable &&
+                (projected.parentId ==
+                  flattenedTree[virtualRow.index].parentId ||
+                  projected.parentId == flattenedTree[virtualRow.index].id)
+              }
+              selected={(selectedFiles as TreeNode[]).some(
+                (g) => g.id == flattenedTree[virtualRow.index].id
+              )}
+              collapsed={flattenedTree[virtualRow.index].collapsed}
+              onCollapse={handleCollapse}
+            ></SortableTreeItem>
+          </div>
+        ))}
       </div>
-    );
-  }
-);
+    </div>
+  );
+});
 
 export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
   const { plugin } = props;
   const indentationWidth = 24;
-  const isMobile = platformIsMobile();
-  const [vaultItems, setVaultItems] = useState<Record<string, VaultItem[]>>({});
+  const [vaultItems, setVaultItems] = useState<
+    Record<string, FileMetadataCache[]>
+  >({});
   const [expandedFolders, setExpandedFolders] = useState<
     Record<string, string[]>
   >(plugin.settings.expandedFolders);
@@ -182,12 +191,7 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
     plugin.settings.expandedSpaces
   );
   const [activeFile, setActiveFile] = useRecoilState(recoilState.activeFile);
-  const [spaces, setSpaces] = useRecoilState(recoilState.spaces);
-  const [vaultSort, setVaultSort] = useState<[string, boolean]>(
-    plugin.settings.vaultSort.length == 2
-      ? plugin.settings.vaultSort
-      : ["rank", true]
-  );
+  const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedFiles, setSelectedFiles] = useRecoilState(
     recoilState.selectedFiles
   );
@@ -195,22 +199,23 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
 
   const activeSpaces = useMemo(
     () =>
-      props.activeSpace
+      props.viewType == "root"
+        ? spaces.filter((f) => f.pinned == "false" || f.pinned == "home")
+        : props.viewType == "space"
         ? spaces.filter((f) => f.name == props.activeSpace)
-        : spaces.filter((f) => f.pinned != "true"),
-    [spaces, props.activeSpace]
+        : spaces.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")),
+    [spaces, props.activeSpace, props.viewType]
   );
-
   // const [dropPlaceholderItem, setDropPlaceholderItem] = useState<[Record<string, string>, number] | null>(null);
   const [offsetLeft, setOffsetLeft] = useState(0);
 
   const listRef = useRef<{ scrollToIndex: (index: number) => void }>(null);
   const forceUpdate = useForceUpdate();
   const treeForSpace = (space: Space) => {
-    let tree: TreeNode[] = [];
+    const tree: TreeNode[] = [];
     const spaceCollapsed = !expandedSpaces.includes(space.name);
     const spaceSort = safelyParseJSON(space.sort) ?? ["rank", true];
-    tree.push(spaceItemToTreeNode(space, spaceCollapsed, spaceSort));
+    tree.push(spaceToTreeNode(space, spaceCollapsed, true));
     if (!spaceCollapsed)
       (vaultItems[space.name + "/"] ?? [])
         .sort(folderSortFn(spaceSort[0], spaceSort[1]))
@@ -218,7 +223,27 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
           const itemCollapsed = !expandedFolders[space.name]?.includes(
             item.path
           );
-          tree.push(
+          const items = [];
+          if (!itemCollapsed) {
+            const [sortStrat, dir] =
+              item.folderSort?.length > 0
+                ? parseSortStrat(item.folderSort)
+                : spaceSort;
+            items.push(
+              ...flattenedTreeFromVaultItems(
+                item.path,
+                space.name,
+                vaultItems,
+                expandedFolders[space.name] ?? [],
+                2,
+                sortStrat,
+                dir
+              )
+            );
+          }
+          items.splice(
+            0,
+            0,
             vaulItemToTreeNode(
               item,
               space.name,
@@ -226,55 +251,21 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
               1,
               0,
               itemCollapsed,
-              spaceSort[0] == "rank" || spaceSort[0] == ""
+              space.def.type == "focus" &&
+                (spaceSort[0] == "rank" || spaceSort[0] == ""),
+              items.length
             )
           );
-          if (!itemCollapsed)
-            tree.push(
-              ...flattenedTreeFromVaultItems(
-                item.path,
-                space.name,
-                vaultItems,
-                expandedFolders[space.name] ?? [],
-                2,
-                spaceSort[0],
-                spaceSort[1]
-              )
-            );
+          tree.push(...items);
         });
     return tree;
   };
   const flattenedTree = useMemo(() => {
-    let tree: TreeNode[] = [];
-
+    const tree: TreeNode[] = [];
     activeSpaces.forEach((space) => {
       tree.push(...treeForSpace(space));
     });
-    if (!props.activeSpace) {
-      const vaultCollapsed = !expandedSpaces.includes("/");
-      tree.push({
-        id: "/",
-        parentId: null,
-        depth: 0,
-        index: 0,
-        space: "/",
-        item: null,
-        collapsed: vaultCollapsed,
-        sortable: vaultSort[0] == "rank",
-      });
-      if (!vaultCollapsed)
-        tree.push(
-          ...flattenedTreeFromVaultItems(
-            "/",
-            "/",
-            vaultItems,
-            expandedFolders["/"] ?? [],
-            1,
-            vaultSort[0],
-            vaultSort[1]
-          )
-        );
-    }
+
     if (nextTreeScrollPath.current) {
       const index = tree.findIndex(
         (f) => f.item?.path == nextTreeScrollPath.current
@@ -290,39 +281,45 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
     activeSpaces,
     expandedSpaces,
     expandedFolders,
-    vaultSort,
     props.activeSpace,
   ]);
 
   useEffect(() => {
     if (selectedFiles.length <= 1) {
-      if (!selectedFiles[0] || selectedFiles[0].item.path != activeFile)
+      if (!selectedFiles[0] || selectedFiles[0].item.path != activeFile?.path)
         setSelectedFiles([]);
-      if (plugin.settings.revealActiveFile)
-        revealFile(getAbstractFileAtPath(app, activeFile));
+      if (plugin.settings.revealActiveFile) revealFile(activeFile);
     }
-    window.addEventListener(eventTypes.activeFileChange, changeActiveFile);
+    window.addEventListener(eventTypes.activePathChange, changeActiveFile);
     return () => {
-      window.removeEventListener(eventTypes.activeFileChange, changeActiveFile);
+      window.removeEventListener(eventTypes.activePathChange, changeActiveFile);
     };
   }, [activeFile]);
   // Persistant Settings
 
-  
-
   useEffect(() => {
     window.addEventListener(eventTypes.refreshView, forceUpdate);
     window.addEventListener(eventTypes.settingsChanged, settingsChanged);
-    window.addEventListener(eventTypes.revealFile, handleRevealFileEvent);
+
     return () => {
       window.removeEventListener(eventTypes.refreshView, forceUpdate);
       window.removeEventListener(eventTypes.settingsChanged, settingsChanged);
-      window.removeEventListener(eventTypes.revealFile, handleRevealFileEvent);
     };
   }, []);
 
-  const revealFile = (file: TAbstractFile) => {
-    if (!file) return;
+  useEffect(() => {
+    window.addEventListener(eventTypes.revealFile, handleRevealFileEvent);
+    return () => {
+      window.removeEventListener(eventTypes.revealFile, handleRevealFileEvent);
+    };
+  }, [activeSpaces]);
+
+  const revealFile = (path: Path) => {
+    const space = activeSpaces.find((f) => f.def.folder == "/");
+    if (!space || !path || (path.type != "file" && path.type != "folder"))
+      return;
+
+    const file = getAbstractFileAtPath(app, path.path);
     const folders = file.path.split("/");
     const openPaths = folders
       .reduce(
@@ -331,47 +328,45 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
       )
       .slice(0, -1);
     const newOpenFolders = [
-      ...(expandedFolders["/"]?.filter((f) => !openPaths.find((g) => g == f)) ??
-        []),
+      ...(expandedFolders[space.name]?.filter(
+        (f) => !openPaths.find((g) => g == f)
+      ) ?? []),
       ...openPaths,
     ];
     plugin.settings.expandedFolders = {
       ...expandedFolders,
-      "/": newOpenFolders,
+      [space.name]: newOpenFolders,
     };
     nextTreeScrollPath.current = file.path;
     plugin.saveSettings();
   };
   const handleRevealFileEvent = (evt: CustomVaultChangeEvent) => {
-    if (evt.detail) revealFile(evt.detail.file);
+    if (evt.detail) revealFile(pathByString(evt.detail.file.path));
   };
-
-  useEffect(() => {
-    const spaceItems = retrieveSpaceItems(plugin, spaces);
+  const retrieveData = async (folders: string[]) => {
+    setSpaces(plugin.index.allSpaces());
+    const spaceItems = plugin.index.spacesMap;
     setVaultItems((g) => ({
       ...g,
-      ...Object.keys(spaceItems).reduce(
+      ...[...plugin.index.spacesIndex.keys()].reduce(
         (p, c) => ({
           ...p,
-          [c + "/"]: spaceItems[c].map((f) => ({
-            ...(vaultItemForPath(plugin, f.path) ?? {}),
-            ...f,
-          })),
+          [c + "/"]: [...(spaceItems.getInverse(c) ?? [])]
+            .map((f) => {
+              const fileCache = plugin.index.filesIndex.get(f);
+              return { ...fileCache, rank: fileCache?.spaceRanks?.[c] };
+            })
+            .filter((f) => f),
         }),
         {}
       ),
     }));
-  }, [spaces]);
-  const retrieveData = async (folders: string[]) => {
-    setSpaces(retrieveSpaces(plugin));
     retrieveFolders(plugin, folders).then((f) =>
       setVaultItems((g) => ({ ...g, ...f }))
     );
   };
-
   const flatFolders = useMemo(() => {
-    let allFolders = [];
-    if (expandedSpaces.includes("/")) allFolders.push("/");
+    const allFolders: string[] = [];
     expandedSpaces.forEach((space) => {
       allFolders.push(...(expandedFolders[space] ?? []));
     });
@@ -384,22 +379,25 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
     window.addEventListener(eventTypes.spacesChange, spaceChangeEvent);
     return () => {
       window.removeEventListener(eventTypes.spacesChange, spaceChangeEvent);
-    }
+    };
   }, [flatFolders]);
 
   const spaceChangeEvent = (evt: SpaceChangeEvent) => {
-    if (evt.detail.changeType == "vault" || evt.detail.changeType == "space") {
-      retrieveData(flatFolders)
+    if (
+      evt.detail.type == "vault" ||
+      evt.detail.type == "space" ||
+      evt.detail.type == "sync"
+    ) {
+      retrieveData(flatFolders);
     }
   };
 
-  const changeActiveFile = (evt: CustomEvent) => {
-    let filePath: string = evt.detail.filePath;
-    setActiveFile(filePath);
+  const changeActiveFile = (evt: CustomEvent<ActivePathEvent>) => {
+    const path: Path = evt.detail.path;
+    setActiveFile(path);
   };
 
   const settingsChanged = () => {
-    setVaultSort(plugin.settings.vaultSort);
     setExpandedFolders(plugin.settings.expandedFolders);
     setExpandedSpaces(plugin.settings.expandedSpaces);
   };
@@ -487,7 +485,6 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
     } = event;
     const activeItem = flattenedTree.find(({ id }) => id === activeId);
     //Dont drag vault
-    if (activeItem.parentId == null && activeItem.space == "/") return;
     setActiveId(activeId);
     setOverId(activeId);
 
@@ -516,95 +513,16 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
 
   function handleDragEnd({ active, over }: DragEndEvent) {
     resetState();
-    moveFile(active, over);
+    dropFileInTree(
+      plugin,
+      active,
+      over,
+      projected,
+      flattenedTree,
+      activeSpaces
+    );
   }
-  const moveFile = async (active: Active, over: Over) => {
-    if (projected) {
-      const clonedItems: TreeNode[] = flattenedTree;
-      const overIndex = clonedItems.findIndex(({ id }) => id === over.id);
-      const overItem = clonedItems[overIndex];
-      const activeIndex = clonedItems.findIndex(({ id }) => id === active.id);
-      const activeTreeItem = clonedItems[activeIndex];
 
-      const activeIsSection = activeTreeItem.parentId == null;
-      const overIsSection = overItem.parentId == null;
-      const overSpace: Space = activeSpaces.find(
-        (f) => f.name == overItem.space
-      );
-      if (activeIsSection) {
-        if (overIsSection) {
-          insertSpaceAtIndex(
-            plugin,
-            activeTreeItem.space,
-            false,
-            overSpace ? parseInt(overSpace.rank) : spaces.length
-          );
-          return;
-        }
-      }
-      const { depth, overId, parentId } = projected;
-      const parentItem = clonedItems.find(({ id }) => id === parentId);
-
-      if (overItem.space != activeItem.space || overItem.space != "/") {
-        //item moved to or within a space
-        if (overItem.space == "/") {
-          return;
-        }
-        if (parentId != overItem.space + "//" && parentId != null) {
-          return;
-        }
-        if (activeItem.space != overItem.space && overSpace?.def?.length > 0) {
-          moveAFileToNewParentAtIndex(
-            plugin,
-            activeTreeItem.item,
-            overSpace.def,
-            vaultItems,
-            parseInt(overItem.item.rank)
-          );
-        } else {
-          insertSpaceItemAtIndex(
-            plugin,
-            overItem.space,
-            activeItem.item.path,
-            parseInt(overItem.item?.rank)
-          );
-        }
-        return;
-      }
-
-      //movement within vault
-      if (parentId != activeTreeItem.parentId) {
-        //directory move, assume projection already took care of ancestry check
-        const newParent = parentItem
-          ? parentItem.item.folder == "true"
-            ? parentItem.item.path
-            : parentItem.item.parent
-          : "/";
-        const newPath =
-          newParent == "/"
-            ? activeItem.file.name
-            : `${newParent}/${activeItem.file.name}`;
-        if (plugin.app.vault.getAbstractFileByPath(newPath)) {
-          new Notice(t.notice.duplicateFile);
-          return;
-        }
-        moveAFileToNewParentAtIndex(
-          plugin,
-          activeTreeItem.item,
-          newParent,
-          vaultItems,
-          parseInt(overItem.item.rank)
-        );
-      } else {
-        updateFileRank(
-          plugin,
-          activeTreeItem.item,
-          vaultItems,
-          parseInt(overItem.item.rank)
-        );
-      }
-    }
-  };
   const adjustTranslate: Modifier = ({ transform }) => {
     return {
       ...transform,
@@ -618,9 +536,9 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
   }
 
   const handleCollapse = useCallback(
-    (folder: TreeNode) => {
+    (folder: TreeNode, open: boolean) => {
       if (folder.parentId == null) {
-        if (plugin.settings.expandedSpaces.includes(folder.space))
+        if (plugin.settings.expandedSpaces.includes(folder.space) && !open)
           plugin.settings.expandedSpaces =
             plugin.settings.expandedSpaces.filter((f) => f != folder.space);
         else
@@ -632,11 +550,12 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
       } else {
         const openFolders = expandedFolders[folder.space] ?? [];
         const folderOpen = openFolders?.includes(folder.item.path);
-        const newOpenFolders: string[] = !folderOpen
-          ? ([...openFolders, folder.item.path] as string[])
-          : (openFolders.filter(
-              (openFolder) => folder.item.path !== openFolder
-            ) as string[]);
+        const newOpenFolders: string[] =
+          !folderOpen || open
+            ? ([...openFolders, folder.item.path] as string[])
+            : (openFolders.filter(
+                (openFolder) => folder.item.path !== openFolder
+              ) as string[]);
         plugin.settings.expandedFolders = {
           ...expandedFolders,
           [folder.space]: newOpenFolders,
@@ -691,6 +610,7 @@ export const FileExplorerComponent = (props: FileExplorerComponentProps) => {
                 disabled={false}
                 plugin={plugin}
                 selected={false}
+                highlighted={false}
                 active={false}
                 clone
                 childCount={0}

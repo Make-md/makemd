@@ -1,13 +1,17 @@
 import { insertContextItems } from "dispatch/mdb";
 import i18n from "i18n";
 import React, { useEffect, useRef, useState } from "react";
+import { FilePropertyName } from "types/context";
 import { MDBTable } from "types/mdb";
-import { splitString } from "utils/contexts/predicate/predicate";
+import { uniq } from "utils/array";
 import { getAbstractFileAtPath, openAFile } from "utils/file";
 import {
-  fileNameToString, folderPathToString,
-  uniq
-} from "utils/tree";
+  parseLinkDisplayString,
+  parseLinkString,
+  parseMultiString,
+} from "utils/parser";
+import { serializeMultiString } from "utils/serializer";
+import { fileNameToString, folderPathToString } from "utils/strings";
 import { TableCellMultiProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
 
@@ -19,37 +23,38 @@ type ContextObject = {
 export const ContextCell = (
   props: TableCellMultiProp & { contextTable: MDBTable; contextTag: string }
 ) => {
-  const initialValue = (
-    props.multi ? splitString(props.initialValue) ?? [] : [props.initialValue]
-  )
-    .filter((f) => f?.length > 0)
-    .map((f) => ({
-      path: f,
-      label: fileNameToString(folderPathToString(f)),
-    }));
+  const stringValueToLink = (strings: string[]) =>
+    strings.map((f) => {
+      return {
+        label: parseLinkDisplayString(f),
+        path: parseLinkString(f),
+      };
+    });
+  const initialValue = stringValueToLink(
+    props.multi
+      ? parseMultiString(props.initialValue) ?? []
+      : [props.initialValue]
+  );
   const ref = useRef(null);
-  const options =
-    props.contextTable?.rows.map((f) => ({
-      name: fileNameToString(folderPathToString(f["File"])),
-      value: f["File"],
-    })) ?? [];
+  const options = stringValueToLink(
+    props.contextTable?.rows.map((f) => f[FilePropertyName]) ?? []
+  ).map((f) => ({
+    name: f.label,
+    value: f.path,
+  }));
   const [value, setValue] = useState<ContextObject[]>(initialValue);
   const removeValue = (v: ContextObject) => {
     const newValues = value.filter((f) => f.path != v.path);
     setValue(newValues);
-    props.saveValue(newValues.map((f) => f.path).join(","));
+    props.saveValue(serializeMultiString(newValues.map((f) => f.path)));
   };
   useEffect(() => {
     setValue(
-      (props.multi
-        ? splitString(props.initialValue) ?? []
-        : [props.initialValue]
+      stringValueToLink(
+        props.multi
+          ? parseMultiString(props.initialValue) ?? []
+          : [props.initialValue]
       )
-        .filter((f) => f?.length > 0)
-        .map((f) => ({
-          path: f,
-          label: fileNameToString(folderPathToString(f)),
-        }))
     );
   }, [props.initialValue]);
 
@@ -62,7 +67,7 @@ export const ContextCell = (
           label: fileNameToString(folderPathToString(f)),
         }))
       );
-      props.saveValue(_value.join(","));
+      props.saveValue(serializeMultiString(_value));
     } else {
       const newValue = _value[0];
       if (newValue) {
@@ -73,7 +78,7 @@ export const ContextCell = (
             path: f,
           }))
         );
-        props.saveValue(newValues.join(","));
+        props.saveValue(serializeMultiString(newValues));
       }
     }
   };
@@ -101,6 +106,7 @@ export const ContextCell = (
   };
   return (
     <OptionCellBase
+      baseClass="mk-cell-context"
       menuProps={menuProps}
       openItem={openLink}
       getLabelString={(o) => o.label}

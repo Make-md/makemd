@@ -3,9 +3,11 @@ import type { Transform } from "@dnd-kit/utilities";
 import classNames from "classnames";
 import { FlowView } from "components/FlowEditor/FlowView";
 import MakeMDPlugin from "main";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import { FilePropertyName } from "types/context";
 import { DBRow, MDBColumn } from "types/mdb";
 import { DataTypeView } from "../DataTypeView/DataTypeView";
+import { MDBContext } from "../MDBContext";
 
 export interface CardViewProps {
   dragOverlay?: boolean;
@@ -85,7 +87,8 @@ export const CardView = React.memo(
           onSelect(3, value["_index"]);
         }
       };
-
+      const { updateValue, updateFieldValue, contextTable } =
+        useContext(MDBContext);
       useEffect(() => {
         if (!dragOverlay) {
           return;
@@ -155,8 +158,28 @@ export const CardView = React.memo(
                   initialValue={value[f.name + f.table]}
                   column={f}
                   index={parseInt(id)}
-                  file={value["File"]}
+                  file={value[FilePropertyName]}
                   editable={false}
+                  updateValue={(v) =>
+                    updateValue(
+                      f.name,
+                      v,
+                      f.table,
+                      parseInt(id),
+                      value[FilePropertyName]
+                    )
+                  }
+                  updateFieldValue={(v, fv) =>
+                    updateFieldValue(
+                      f.name,
+                      fv,
+                      v,
+                      f.table,
+                      parseInt(id),
+                      value[FilePropertyName]
+                    )
+                  }
+                  contextTable={contextTable}
                 ></DataTypeView>
               ))}
           <div className="mk-list-content">
@@ -177,16 +200,35 @@ export const CardView = React.memo(
             >
               {value &&
                 cols.map((f) => {
-                  return value[f.name + f.table]?.length > 0 ||
-                    f.type == "fileprop" ? (
+                  return value[f.name + f.table]?.length > 0 ? (
                     <DataTypeView
                       openFlow={() => setOpenFlow((o) => !o)}
                       plugin={plugin}
                       initialValue={value[f.name + f.table]}
                       column={f}
                       index={parseInt(id)}
-                      file={value["File"]}
+                      file={value[FilePropertyName]}
                       editable={false}
+                      updateValue={(v) =>
+                        updateValue(
+                          f.name,
+                          v,
+                          f.table,
+                          parseInt(id),
+                          value[FilePropertyName]
+                        )
+                      }
+                      updateFieldValue={(v, fv) =>
+                        updateFieldValue(
+                          f.name,
+                          fv,
+                          v,
+                          f.table,
+                          parseInt(id),
+                          value[FilePropertyName]
+                        )
+                      }
+                      contextTable={contextTable}
                     ></DataTypeView>
                   ) : (
                     <></>

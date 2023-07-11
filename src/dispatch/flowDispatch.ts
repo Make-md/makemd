@@ -10,7 +10,7 @@ export const createFlowEditorInElement = (
   from?: number,
   to?: number
 ) => {
-  let evt = new CustomEvent(eventTypes.spawnPortal, {
+  const evt = new CustomEvent(eventTypes.spawnPortal, {
     detail: { id, el, file, from, to, ref, type },
   });
   activeWindow.dispatchEvent(evt);
@@ -21,29 +21,28 @@ export const loadFlowEditorByDOM = (
   view: EditorView,
   id: string
 ) => {
-  let evt = new CustomEvent(eventTypes.loadPortal, {
+  const evt = new CustomEvent(eventTypes.loadPortal, {
     detail: { id, el, view },
   });
   activeWindow.dispatchEvent(evt);
 };
 
 export const focusFlowEditor = (id: string, top: boolean) => {
-  let evt = new CustomEvent(eventTypes.focusPortal, {
+  const evt = new CustomEvent(eventTypes.focusPortal, {
     detail: { id, parent: false, top },
   });
   activeWindow.dispatchEvent(evt);
 };
 
 export const focusFlowEditorParent = (id: string, top: boolean) => {
-  let evt = new CustomEvent(eventTypes.focusPortal, {
+  const evt = new CustomEvent(eventTypes.focusPortal, {
     detail: { id, parent: true, top },
   });
   activeWindow.dispatchEvent(evt);
 };
 
 export const openFileFlowEditor = (file: string, source: string) => {
-  console.log(file, source);
-  let evt = new CustomEvent(eventTypes.openFilePortal, {
+  const evt = new CustomEvent(eventTypes.openFilePortal, {
     detail: { file, source },
   });
   activeWindow.dispatchEvent(evt);

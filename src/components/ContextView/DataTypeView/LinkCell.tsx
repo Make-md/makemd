@@ -1,13 +1,20 @@
 import i18n from "i18n";
 import { TFile } from "obsidian";
-import React, { useRef, useState } from "react";
-import { splitString } from "utils/contexts/predicate/predicate";
+import React, { useEffect, useRef, useState } from "react";
+import { uniq } from "utils/array";
 import {
   getAllAbstractFilesInVault,
-  getFolderPathFromString, openTFile
+  getFolderPathFromString,
+  openTFile,
 } from "utils/file";
 import { getFileFromString } from "utils/flow/flowEditor";
-import { fileNameToString, filePathToString, uniq } from "utils/tree";
+import {
+  parseLinkDisplayString,
+  parseLinkString,
+  parseMultiString,
+} from "utils/parser";
+import { serializeMultiString } from "utils/serializer";
+import { fileNameToString, filePathToString } from "utils/strings";
 import { TableCellMultiProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
 
@@ -19,18 +26,28 @@ type LinkObject = {
 
 export const LinkCell = (props: TableCellMultiProp & { file: string }) => {
   const initialValue = (
-    props.multi ? splitString(props.initialValue) ?? [] : [props.initialValue]
+    props.multi
+      ? parseMultiString(props.initialValue) ?? []
+      : [props.initialValue]
   ).filter((f) => f);
   const stringValueToLink = (strings: string[]) =>
     strings.map((f) => {
-      const match = /\[\[(.*?)\]\]/g.exec(f);
-      const stringValue =
-        match?.length > 1 ? match[1].substring(0, match[1].indexOf("|")) : f;
       return {
-        label: filePathToString(stringValue),
-        value: stringValue,
+        label: parseLinkDisplayString(f),
+        value: parseLinkString(f),
       };
     });
+  useEffect(() => {
+    setValue(
+      resolveLinks(
+        stringValueToLink(
+          props.multi
+            ? parseMultiString(props.initialValue) ?? []
+            : [props.initialValue]
+        )
+      )
+    );
+  }, [props.initialValue]);
   const resolveLinks = (links: LinkObject[]) =>
     links.map((f) => ({
       value: f.value,
@@ -45,19 +62,19 @@ export const LinkCell = (props: TableCellMultiProp & { file: string }) => {
   const removeValue = (v: LinkObject) => {
     const newValues = value.filter((f) => f.value != v.value);
     setValue(newValues);
-    props.saveValue(newValues.map((f) => f.value).join(","));
+    props.saveValue(serializeMultiString(newValues.map((f) => f.value)));
   };
 
   const saveOptions = (_: string[], _value: string[]) => {
-    if (props.multi) {
+    if (!props.multi) {
       setValue(resolveLinks(stringValueToLink(_value)));
-      props.saveValue(_value.join(","));
+      props.saveValue(serializeMultiString(_value));
     } else {
       const newValue = _value[0];
       if (newValue) {
         const newValues = uniq([...value.map((f) => f.value), newValue]);
         setValue(resolveLinks(stringValueToLink(newValues)));
-        props.saveValue(newValues.join(","));
+        props.saveValue(serializeMultiString(newValues));
       }
     }
   };
@@ -65,20 +82,21 @@ export const LinkCell = (props: TableCellMultiProp & { file: string }) => {
     const options = getAllAbstractFilesInVault(props.plugin, app).map((f) => ({
       name: fileNameToString(f.name),
       value: f.path,
+      description: f.path,
     }));
     const _options = !props.multi
       ? [{ name: i18n.menu.none, value: "" }, ...options]
       : options;
     return {
       multi: false,
-      editable: false,
+      editable: true,
       value: value.map((f) => f.value),
       options: _options,
       saveOptions,
       placeholder: i18n.labels.linkItemSelectPlaceholder,
       detail: true,
       searchable: true,
-      onHide: () => props.setEditMode(null),
+      // onHide: () => props.setEditMode(null),
     };
   };
 
@@ -95,9 +113,9 @@ export const LinkCell = (props: TableCellMultiProp & { file: string }) => {
       setValue(resolveLinks(value));
     }
   };
-  const editable = props.editMode != 0;
   return (
     <OptionCellBase
+      baseClass="mk-cell-link"
       menuProps={menuProps}
       getLabelString={(o) => o.label}
       valueClass={(o) =>

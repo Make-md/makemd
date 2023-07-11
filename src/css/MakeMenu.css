@@ -10,7 +10,7 @@
   width: 16px;
   height: 16px;
 }
-.cm-active.cm-placeholder:before {
+.cm-active.mk-placeholder:before {
   content: attr(data-ph);
   color: var(--text-faint);
   position: absolute;

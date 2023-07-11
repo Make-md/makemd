@@ -1,17 +1,16 @@
 import MakeMDPlugin from "main";
-import React, { useContext } from "react";
-import { fieldTypes } from "schemas/mdb";
-import { DBRow, MDBColumn } from "types/mdb";
-import { saveFrontmatterValue } from "utils/contexts/fm";
-import { MDBContext } from "../MDBContext";
+import React from "react";
+import { fieldTypeForType } from "schemas/mdb";
+import { DBRow, MDBColumn, MDBTables } from "types/mdb";
 import { BooleanCell } from "./BooleanCell";
 import { ContextCell } from "./ContextCell";
 import { DateCell } from "./DateCell";
 import { FileCell } from "./FileCell";
-import { FilePropertyCell } from "./FilePropertyCell";
+import { LookUpCell } from "./FilePropertyCell";
 import { ImageCell } from "./ImageCell";
 import { LinkCell } from "./LinkCell";
 import { NumberCell } from "./NumberCell";
+import { ObjectCell } from "./ObjectCell";
 import { OptionCell } from "./OptionCell";
 import { PreviewCell } from "./PreviewCell";
 import { TagCell } from "./TagCell";
@@ -27,107 +26,21 @@ type DataTypeViewProps = {
   row?: DBRow;
   cols?: MDBColumn[];
   openFlow?: () => void;
+  updateValue?: (value: string) => void;
+  updateFieldValue?: (fieldValue: string, value: string) => void;
+  contextTable?: MDBTables;
 };
 
 export const DataTypeView: React.FC<DataTypeViewProps> = (
   props: DataTypeViewProps
 ) => {
   const { initialValue, index, column, file } = props;
-  const { tableData, saveDB, saveContextDB, contextTable } =
-    useContext(MDBContext);
-  const table = column.table;
-  const updateData = (column: string, value: string) => {
-    const col = (table == "" ? tableData : contextTable[table])?.cols.find(
-      (f) => f.name == column
-    );
-    if (col) saveFrontmatterValue(file, column, value, col.type);
-    if (table == "") {
-      saveDB({
-        ...tableData,
-        rows: tableData.rows.map((r, i) =>
-          i == index
-            ? {
-                ...r,
-                [column]: value,
-              }
-            : r
-        ),
-      });
-    } else if (contextTable[table]) {
-      saveContextDB(
-        {
-          ...contextTable[table],
-          rows: contextTable[table].rows.map((r, i) =>
-            i == index
-              ? {
-                  ...r,
-                  [column]: value,
-                }
-              : r
-          ),
-        },
-        table
-      );
-    }
-  };
-  const updateFieldValue = (
-    column: string,
-    fieldValue: string,
-    value: string
-  ) => {
-    const col = tableData.cols.find((f) => f.name == column);
-    saveFrontmatterValue(file, column, value, col.type);
-    if (table == "") {
-      const newTable = {
-        ...tableData,
-        cols: tableData.cols.map((m) =>
-          m.name == column
-            ? {
-                ...m,
-                value: fieldValue,
-              }
-            : m
-        ),
-        rows: tableData.rows.map((r, i) =>
-          i == index
-            ? {
-                ...r,
-                [column]: value,
-              }
-            : r
-        ),
-      };
-      saveDB(newTable);
-    } else if (contextTable[table]) {
-      saveContextDB(
-        {
-          ...contextTable[table],
-          cols: contextTable[table].cols.map((m) =>
-            m.name == column
-              ? {
-                  ...m,
-                  value: fieldValue,
-                }
-              : m
-          ),
-          rows: contextTable[table].rows.map((r, i) =>
-            i == index
-              ? {
-                  ...r,
-                  [column]: value,
-                }
-              : r
-          ),
-        },
-        table
-      );
-    }
-  };
+
   const saveValue = (value: string) => {
-    updateData(column.name, value);
+    props.updateValue(value);
   };
   const saveFieldValue = (fieldValue: string, value: string) => {
-    updateFieldValue(column.name, fieldValue, value);
+    props.updateFieldValue(fieldValue, value);
   };
   const viewProps = {
     initialValue: initialValue as string,
@@ -135,10 +48,10 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
     editMode: props.editable == true ? 3 : 0,
     setEditMode: () => {},
     plugin: props.plugin,
+    propertyValue: column.value,
   };
-  const fieldType =
-    fieldTypes.find((t) => column.type == t.type) ||
-    fieldTypes.find((t) => column.type == t.multiType);
+
+  const fieldType = fieldTypeForType(column.type);
   if (!fieldType) {
     return <></>;
   }
@@ -178,18 +91,12 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
       <ContextCell
         {...viewProps}
         multi={fieldType.multiType == column.type}
-        contextTable={contextTable[column.value]}
+        contextTable={props.contextTable[column.value]}
         contextTag={column.value}
       ></ContextCell>
     );
   } else if (fieldType.type == "fileprop") {
-    return (
-      <FilePropertyCell
-        {...viewProps}
-        property={column.value}
-        file={file}
-      ></FilePropertyCell>
-    );
+    return <LookUpCell {...viewProps} file={file}></LookUpCell>;
   } else if (fieldType.type == "number") {
     return <NumberCell {...viewProps}></NumberCell>;
   } else if (fieldType.type == "link") {
@@ -209,6 +116,8 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
     );
   } else if (fieldType.type == "image") {
     return <ImageCell {...viewProps}></ImageCell>;
+  } else if (fieldType.type == "object") {
+    return <ObjectCell {...viewProps}></ObjectCell>;
   }
   return <TextCell {...viewProps}></TextCell>;
 };

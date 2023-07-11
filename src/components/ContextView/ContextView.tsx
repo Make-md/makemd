@@ -1,20 +1,19 @@
-import { ItemView, TFolder, ViewStateResult, WorkspaceLeaf } from "obsidian";
+import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
-import { getAbstractFileAtPath } from "utils/file";
+import { ContextInfo } from "types/contextInfo";
+import { mdbContextByPath } from "utils/contexts/contexts";
+import { contextDisplayName } from "utils/strings";
 import MakeMDPlugin from "../../main";
-import { FolderContextViewComponent } from "./FolderContextViewComponent";
-import { TagContextViewComponent } from "./TagContextViewComponent";
+import { ContextViewComponent } from "./ContextViewComponent";
 export const CONTEXT_VIEW_TYPE = "make-folder-view";
 export const ICON = "sheets-in-box";
 
 export class ContextView extends ItemView {
   plugin: MakeMDPlugin;
-  currentFolderPath: string;
+  context: ContextInfo;
+  contextPath: string;
   navigation = true;
-  folder: TFolder;
-  tag: string;
-  type: "folder" | "tag";
   root: Root;
   viewType: string;
 
@@ -25,14 +24,11 @@ export class ContextView extends ItemView {
   }
 
   getViewType(): string {
-    return this.viewType;
+    return CONTEXT_VIEW_TYPE;
   }
 
   getDisplayText(): string {
-    if (this.type == "tag") {
-      return this.tag;
-    }
-    return this.folder?.name;
+    return contextDisplayName(this.context);
   }
 
   async onClose() {
@@ -48,43 +44,20 @@ export class ContextView extends ItemView {
   }
 
   async setState(state: any, result: ViewStateResult): Promise<void> {
-    this.type = state.type;
-    if (state.type == "folder") {
-      const folder = getAbstractFileAtPath(
-        this.plugin.app,
-        state.folder
-      ) as TFolder;
+    this.contextPath = state.contextPath;
+    this.context = mdbContextByPath(this.plugin, this.contextPath);
+    if (!this.context) return;
+    this.constructContext(this.context);
+    const displayName = contextDisplayName(this.context);
+    await super.setState(state, result);
 
-      if (!folder) {
-        return;
-      }
-      this.folder = folder;
-
-      this.constructFolderContext(folder);
-      await super.setState(state, result);
-
-      this.leaf.tabHeaderInnerTitleEl.innerText = folder.name;
+    this.leaf.tabHeaderInnerTitleEl.innerText = displayName;
+    //@ts-ignore
+    this.leaf.view.titleEl = displayName;
+    const headerEl = this.leaf.view.headerEl;
+    if (headerEl) {
       //@ts-ignore
-      this.leaf.view.titleEl = folder.name;
-      const headerEl = this.leaf.view.headerEl;
-      if (headerEl) {
-        //@ts-ignore
-        headerEl.querySelector(".view-header-title").innerText = folder.name;
-      }
-    } else if (state.type == "tag") {
-      this.tag = state.tag;
-
-      this.constructTagContext(this.tag);
-      await super.setState(state, result);
-
-      this.leaf.tabHeaderInnerTitleEl.innerText = this.tag;
-      //@ts-ignore
-      this.leaf.view.titleEl = this.tag;
-      const headerEl = this.leaf.view.headerEl;
-      if (headerEl) {
-        //@ts-ignore
-        headerEl.querySelector(".view-header-title").innerText = this.tag;
-      }
+      headerEl.querySelector(".view-header-title").innerText = displayName;
     }
     //@ts-ignore
     result.history = true;
@@ -92,44 +65,23 @@ export class ContextView extends ItemView {
   }
   getState(): any {
     let state = super.getState();
-    state.type = this.type;
-    if (state.type == "folder") {
-      state.folder = this.folder?.path;
-    } else {
-      state.tag = this.tag;
-    }
+    state.contextPath = this.contextPath;
 
     // Store information to the state, whenever the workspace changes (opening a new note,...), the view's `getState` will be called, and the resulting state will be saved in the 'workspace' file
 
     return state;
   }
 
-  constructTagContext(tag: string) {
+  constructContext(context: ContextInfo) {
     this.destroy();
-    this.root = createRoot(this.contentEl);
-    this.root.render(
-      <div className="mk-folder-view">
-        <TagContextViewComponent
-          type="tag"
-          tag={this.tag}
-          plugin={this.plugin}
-        ></TagContextViewComponent>
-      </div>
-    );
-  }
 
-  constructFolderContext(folder: TFolder) {
-    this.destroy();
     this.root = createRoot(this.contentEl);
     this.root.render(
       <div className="mk-folder-view">
-        {folder && (
-          <FolderContextViewComponent
-            type="folder"
-            folder={folder}
-            plugin={this.plugin}
-          ></FolderContextViewComponent>
-        )}
+        <ContextViewComponent
+          context={context}
+          plugin={this.plugin}
+        ></ContextViewComponent>
       </div>
     );
   }

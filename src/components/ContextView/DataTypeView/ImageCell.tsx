@@ -1,59 +1,60 @@
+import { imageModal } from "components/ui/modals/imageModal";
 import { TFile } from "obsidian";
 import React, { useEffect, useMemo, useRef } from "react";
 import { getAbstractFileAtPath } from "utils/file";
+import { uiIconSet } from "utils/icons";
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
 export const ImageCell = (props: TableCellProp) => {
   const { initialValue, saveValue } = props;
   const [value, setValue] = React.useState(initialValue);
-  const ref = useRef(null);
+  const menuRef = useRef(null);
   useEffect(() => {
     if (props.editMode == CellEditMode.EditModeActive) {
-      ref.current.focus();
+      if (!menuRef.current) showModal();
     }
   }, []);
-  const file = useMemo(() => getAbstractFileAtPath(app, value), [value]);
+  const file = useMemo(() => {
+    const f = getAbstractFileAtPath(app, value);
+    return f ? app.vault.getResourcePath(f as TFile) : value;
+  }, [value]);
   // When the input is blurred, we'll call our table meta's updateData function
-  const onBlur = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    if (initialValue != newValue) {
-      setValue(newValue);
-      saveValue(newValue);
-    }
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    e.stopPropagation();
-    if (e.key == "Enter" || e.key == "Escape") {
-      (e.target as HTMLInputElement).blur();
-      props.setEditMode(null);
-    }
-  };
 
   // If the initialValue is changed external, sync it up with our state
   React.useEffect(() => {
     setValue(initialValue);
   }, [initialValue]);
 
+  const showModal = () => {
+    let vaultChangeModal = new imageModal(
+      props.plugin,
+      props.plugin.app,
+      (image) => saveValue(image)
+    );
+    vaultChangeModal.open();
+    props.setEditMode(null);
+  };
   return (
-    <>
-      {props.editMode >= 2 && (
-        <div>
-          <input
-            className="mk-cell-text"
-            type="text"
-            ref={ref}
-            value={value as string}
-            onKeyDown={onKeyDown}
-            onBlur={onBlur}
-          />
+    <div className="mk-cell-image">
+      <img src={file} />
+      {props.editMode > 0 ? (
+        <div className="mk-image-selector">
+          <div
+            onClick={showModal}
+            className="mk-hover-button mk-icon-xsmall"
+            dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-edit"] }}
+          ></div>
+          {value?.length > 0 && (
+            <div
+              onClick={() => saveValue("")}
+              className={"mk-hover-button mk-icon-xsmall"}
+              dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
+            ></div>
+          )}
         </div>
+      ) : (
+        <></>
       )}
-      {props.editMode > 0 && (
-        <div>
-          <img src={file ? app.vault.getResourcePath(file as TFile) : value} />
-        </div>
-      )}
-    </>
+    </div>
   );
 };

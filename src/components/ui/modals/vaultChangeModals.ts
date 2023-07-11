@@ -1,13 +1,25 @@
 import MakeMDPlugin from "main";
 import {
-  App, FuzzySuggestModal, Modal, Notice, TAbstractFile, TFile, TFolder
+  App,
+  FuzzySuggestModal,
+  Modal,
+  Notice,
+  TAbstractFile,
+  TFile,
+  TFolder
 } from "obsidian";
 
-import t from "i18n";
-import { getAbstractFileAtPath } from "utils/file";
+import { default as i18n, default as t } from "i18n";
+import { Space } from "schemas/spaces";
 import {
-  addPathsToSpace} from "utils/spaces/spaces";
-import i18n from "i18n";
+  addPathsToSpace,
+  insertSpaceItemAtIndex,
+  moveAFileToNewParentAtIndex,
+  removePathsFromSpace
+} from "superstate/spacesStore/spaces";
+import { FileMetadataCache } from "types/cache";
+import { getAbstractFileAtPath, getAllFoldersInVault, renameFile } from "utils/file";
+import { indexOfCharElseEOS } from "utils/strings";
 type Action = "rename" | "create folder" | "create note";
 
 export type SectionAction = "rename" | "create";
@@ -32,8 +44,8 @@ export class VaultChangeModal extends Modal {
   }
 
   onOpen() {
-    let { contentEl } = this;
-    let myModal = this;
+    const { contentEl } = this;
+    const myModal = this;
 
     // Header
     let headerText: string;
@@ -54,14 +66,13 @@ export class VaultChangeModal extends Modal {
 
     inputEl.style.cssText = "width: 100%; height: 2.5em; margin-bottom: 15px;";
     if (this.action === "rename") {
-      // Manual Rename Handler For md Files
-      if (this.file.name.endsWith(".md")) {
-        inputEl.value = this.file.name.substring(
-          0,
-          this.file.name.lastIndexOf(".")
-        );
+      if (this.file instanceof TFolder) {
+        inputEl.value = this.file.name
       } else {
-        inputEl.value = this.file.name;
+      inputEl.value = this.file.name.substring(
+        0,
+        indexOfCharElseEOS(".", this.file.name)
+      );
       }
     }
 
@@ -94,23 +105,24 @@ export class VaultChangeModal extends Modal {
       let newName = inputEl.value;
       if (this.action === "rename") {
         // Manual Rename Handler For md Files
-        if (this.file.name.endsWith(".md")) newName = newName + ".md";
-        this.app.fileManager.renameFile(
-          this.file,
-          this.file.parent.path == "/"
+        if (this.file instanceof TFile) {
+        newName =
+          this.file.name.lastIndexOf(".") == -1
             ? newName
-            : this.file.parent.path + "/" + newName
-        );
+            : newName +
+              this.file.name.substring(this.file.name.lastIndexOf("."));
+        }
+        renameFile(this.plugin, this.file, newName);
       } else if (this.action === "create folder") {
         const path =
           !this.file || this.file.path == "/"
             ? newName
             : this.file.path + "/" + newName;
-          if (getAbstractFileAtPath(app, path)) {
-            new Notice(i18n.notice.folderExists)
-            return;
-          }
-            this.app.vault.createFolder(path);
+        if (getAbstractFileAtPath(app, path)) {
+          new Notice(i18n.notice.folderExists);
+          return;
+        }
+        this.app.vault.createFolder(path);
         if (this.space != "/") addPathsToSpace(this.plugin, this.space, [path]);
       }
       myModal.close();
@@ -124,7 +136,7 @@ export class VaultChangeModal extends Modal {
   }
 
   onClose() {
-    let { contentEl } = this;
+    const { contentEl } = this;
     contentEl.empty();
   }
 }
@@ -156,21 +168,60 @@ export class MoveSuggestionModal extends FuzzySuggestModal<TFolder> {
   }
 }
 
-function getAllFoldersInVault(app: App): TFolder[] {
-  let folders: TFolder[] = [];
-  let rootFolder = app.vault.getRoot();
-  folders.push(rootFolder);
-  function recursiveFx(folder: TFolder) {
-    for (let child of folder.children) {
-      if (child instanceof TFolder) {
-        let childFolder: TFolder = child as TFolder;
-        folders.push(childFolder);
-        if (childFolder.children) recursiveFx(childFolder);
-      }
-    }
+
+export class AddToSpaceModal extends FuzzySuggestModal<Space> {
+  plugin: MakeMDPlugin;
+  files: string[];
+
+  constructor(plugin: MakeMDPlugin, files: string[]) {
+    super(app);
+    this.plugin = plugin;
+    this.files = files;
   }
-  recursiveFx(rootFolder);
-  return folders;
+
+  getItemText(space: Space): string {
+    return space.name;
+  }
+
+  getItems(): Space[] {
+    return this.plugin.index.allSpaces().filter(f => f.def.type == 'focus');
+  }
+
+  onChooseItem(space: Space, evt: MouseEvent | KeyboardEvent) {
+    
+    this.files.forEach((f) => {
+      const file = this.plugin.index.filesIndex.get(f);
+      if (file) {
+        if (space.def.folder?.length > 0) {
+          moveAFileToNewParentAtIndex(this.plugin, file, space.def.folder, 0)
+        } else {
+          insertSpaceItemAtIndex(this.plugin, space.name, file.path, 0);
+        }
+        
+      }
+    });
+  }
 }
 
+export class RemoveFromSpaceModal extends FuzzySuggestModal<Space> {
+  plugin: MakeMDPlugin;
+  file: FileMetadataCache;
 
+  constructor(plugin: MakeMDPlugin, file: string) {
+    super(app);
+    this.plugin = plugin;
+    this.file = this.plugin.index.filesIndex.get(file);
+  }
+
+  getItemText(space: Space): string {
+    return space.name;
+  }
+
+  getItems(): Space[] {
+    return this.file ? this.plugin.index.allSpaces().filter(f => f.def.type == 'focus' && !(f.def.folder?.length > 0) && this.file.spaces.includes(f.name)) : [];
+  }
+
+  onChooseItem(space: Space, evt: MouseEvent | KeyboardEvent) {
+        removePathsFromSpace(this.plugin, space.name, [this.file.path]);
+  }
+}

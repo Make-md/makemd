@@ -2,7 +2,7 @@ import { EditorState, StateField } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { InlineMenuComponent } from "cm-extensions/inlineStylerView/InlineMenu";
 import { oMarks } from "cm-extensions/markSans/obsidianSyntax";
-import { showTooltip, Tooltip } from "cm-extensions/tooltip";
+import { Tooltip, showTooltip } from "cm-extensions/tooltip";
 import MakeMDPlugin from "main";
 import React from "react";
 import { createRoot } from "react-dom/client";

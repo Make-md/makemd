@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React from "react";
 
 export function isMouseEvent(
   e: React.TouchEvent | React.MouseEvent

@@ -8,12 +8,20 @@
 
 import MakeMDPlugin from "main";
 import {
-  Component, EphemeralState, HoverPopover, MousePos, OpenViewState,
-  parseLinktext, PopoverState, resolveSubpath, TFile,
+  Component,
+  EphemeralState,
+  HoverPopover,
+  MousePos,
+  OpenViewState,
+  parseLinktext,
+  PopoverState,
+  resolveSubpath,
+  TFile,
   View,
   Workspace,
   WorkspaceLeaf,
-  WorkspaceSplit, WorkspaceTabs
+  WorkspaceSplit,
+  WorkspaceTabs,
 } from "obsidian";
 
 import "css/FlowEditor.css";
@@ -84,7 +92,6 @@ export class FlowEditor extends nosuper(HoverPopover) {
   originalPath: string; // these are kept to avoid adopting targets w/a different link
   originalLinkText: string;
 
-
   static activeWindows() {
     const windows: Window[] = [window];
     const { floatingSplit } = app.workspace;
@@ -137,7 +144,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
     public targetEl: HTMLElement,
     public plugin: MakeMDPlugin,
     waitTime?: number,
-    public onShowCallback?: () => unknown
+    public onShowCallback?: (editor: FlowEditor) => Promise<unknown>
   ) {
     //
     super();
@@ -157,10 +164,12 @@ export class FlowEditor extends nosuper(HoverPopover) {
     this.setActive = this._setActive.bind(this);
     if (hoverEl) {
       hoverEl.addEventListener("mousedown", this.setActive);
+      hoverEl.addEventListener("mousedown", (e) => e.stopPropagation());
     }
     // custom logic begin
     popovers.set(this.hoverEl, this);
     this.hoverEl.addClass("hover-editor");
+
     this.containerEl = this.hoverEl.createDiv("popover-content");
     this.setTitleBar();
     this.hoverEl.style.height = "auto";
@@ -211,10 +220,9 @@ export class FlowEditor extends nosuper(HoverPopover) {
       FlowEditor.containerForDocument(this.document);
 
     this.titleEl.insertAdjacentElement("afterend", this.rootSplit.containerEl);
-    let leaf = this.plugin.app.workspace.createLeafInParent(
-      this.rootSplit,
-      0
-    );
+    let leaf = this.plugin.app.workspace.createLeafInParent(this.rootSplit, 0);
+    //@ts-ignore
+    leaf.isFlowBlock = true;
     this.updateLeaves();
     return leaf;
   }
@@ -246,7 +254,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
     return leaves;
   }
 
-  onShow() {
+  async onShow() {
     const closeDelay = 600;
     setTimeout(() => (this.waitTime = closeDelay), closeDelay);
 
@@ -266,15 +274,15 @@ export class FlowEditor extends nosuper(HoverPopover) {
     if (this.parent) {
       this.parent.flowEditor = this;
     }
+
+    await this.onShowCallback?.(this);
+    this.onShowCallback = undefined; // only call it once
     const viewHeaderEl = this.hoverEl.querySelector(".view-header");
     viewHeaderEl?.remove();
-
     const sizer = this.hoverEl.querySelector(".workspace-leaf");
-    this.hoverEl.appendChild(sizer);
+    if (sizer) this.hoverEl.appendChild(sizer);
     const inlineTitle = this.hoverEl.querySelector(".inline-title");
     inlineTitle?.remove();
-    this.onShowCallback?.();
-    this.onShowCallback = undefined; // only call it once
   }
 
   transition() {
@@ -426,6 +434,26 @@ export class FlowEditor extends nosuper(HoverPopover) {
     return tFile;
   }
 
+  async openContext(
+    file: TFile,
+    openState?: OpenViewState,
+    useLeaf?: WorkspaceLeaf
+  ) {
+    if (this.detaching) return;
+    const leaf = useLeaf ?? this.attachLeaf();
+    this.opening = true;
+    try {
+      await leaf.openFile(file, openState);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      this.opening = false;
+      if (this.detaching) this.hide();
+    }
+    // this.plugin.app.workspace.setActiveLeaf(leaf);
+
+    return leaf;
+  }
   async openFile(
     file: TFile,
     openState?: OpenViewState,
@@ -442,7 +470,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
       this.opening = false;
       if (this.detaching) this.hide();
     }
-    this.plugin.app.workspace.setActiveLeaf(leaf);
+    // this.plugin.app.workspace.setActiveLeaf(leaf);
 
     return leaf;
   }

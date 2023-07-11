@@ -1,16 +1,11 @@
-import {
-  EditorState,
-  Transaction, TransactionSpec
-} from "@codemirror/state";
+import { EditorState, Transaction, TransactionSpec } from "@codemirror/state";
 import {
   expandRange,
   rangeIsMark,
-  transactionChangesForMark
+  transactionChangesForMark,
 } from "cm-extensions/inlineStylerView/marks";
 import { TransactionRange } from "types/types";
-import {
-  iterateTreeInSelection
-} from "utils/codemirror";
+import { iterateTreeInSelection } from "utils/codemirror";
 import { oMarks } from "./obsidianSyntax";
 
 export const inlineMakerDelete = EditorState.transactionFilter.of(

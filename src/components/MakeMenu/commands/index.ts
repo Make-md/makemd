@@ -1,5 +1,4 @@
 import MakeMDPlugin from "main";
-import React from "react";
 import defaultCommands from "./default";
 
 export type Command = {

@@ -1,11 +1,11 @@
-import { KeymapEventHandler, Menu, MenuItem, Point, Scope } from "obsidian";
-import React, { useRef } from "react";
-import { createRoot } from "react-dom/client";
+import { SelectMenuProps, SelectOption } from "components/ui/menus/selectMenu";
 import "css/Menu.css";
+import { Menu, MenuItem, Point } from "obsidian";
+import React from "react";
 import "react-day-picker/dist/style.css";
-import { splitString } from "utils/contexts/predicate/predicate";
-import { SelectMenu } from "./selectMenu";
-import { SelectOption, SelectMenuProps } from "components/ui/menus/selectMenu";
+import { createRoot } from "react-dom/client";
+import { parseMultiString } from "utils/parser";
+import SelectMenu from "./selectMenu";
 
 export const inputMenuItem = (
   menuItem: MenuItem,
@@ -15,6 +15,7 @@ export const inputMenuItem = (
   const frag = document.createDocumentFragment();
   const spanEl = frag.createEl("span");
   const inputEl = frag.createEl("input");
+  inputEl.type = "text";
   inputEl.value = value;
   // setTimeout(() => {
   //     inputEl.focus();
@@ -37,8 +38,6 @@ export const inputMenuItem = (
   menuItem.setTitle(frag);
   return menuItem;
 };
-
-
 
 export const disclosureSelectMenuItem = (
   menuItem: MenuItem,
@@ -138,7 +137,7 @@ export const disclosureMenuItem = (
       {
         multi,
         editable,
-        value: splitString(value) ?? [],
+        value: parseMultiString(value) ?? [],
         options,
         saveOptions,
         searchable: true,

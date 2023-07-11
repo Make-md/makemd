@@ -1,8 +1,7 @@
 import { Menu, Point } from "obsidian";
 import React from "react";
-import { createRoot } from "react-dom/client";
 import { DayPicker } from "react-day-picker";
-
+import { createRoot } from "react-dom/client";
 
 export const showDatePickerMenu = (
   point: Point,
@@ -25,7 +24,7 @@ export const showDatePickerMenu = (
   div.addEventListener("mouseup", (e) => {
     e.stopImmediatePropagation();
   });
-  div.addEventListener("keydown", (e) => { });
+  div.addEventListener("keydown", (e) => {});
 
   const setDate = (date: Date) => {
     setValue(date);
@@ -35,7 +34,21 @@ export const showDatePickerMenu = (
   const root = createRoot(div);
   root.render(
     <>
-      <DayPicker mode="single" selected={value} onSelect={setDate} />
+      <DayPicker
+        defaultMonth={value}
+        mode="single"
+        selected={value}
+        labels={{
+          labelMonthDropdown: () => undefined,
+          labelYearDropdown: () => undefined,
+          labelNext: () => undefined,
+          labelPrevious: () => undefined,
+          labelDay: () => undefined,
+          labelWeekday: () => undefined,
+          labelWeekNumber: () => undefined,
+        }}
+        onSelect={setDate}
+      />
     </>
   );
   menu.addItem((item) => {

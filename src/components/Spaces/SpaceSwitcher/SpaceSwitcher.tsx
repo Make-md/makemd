@@ -1,63 +1,61 @@
 import classNames from "classnames";
-import { triggerSectionMenu } from "components/ui/menus/fileMenu";
-import { EditSpaceModal } from "components/ui/modals/editSpaceModal";
+import {
+  triggerSectionAddMenu,
+  triggerSectionMenu,
+} from "components/ui/menus/fileMenu";
 import "css/NewNote.css";
-import i18n from "i18n";
-import t from "i18n";
+import { default as i18n, default as t } from "i18n";
 import MakeMDPlugin from "main";
 import { TFolder } from "obsidian";
-import React, { useMemo } from "react";
+import { useEffect } from "preact/hooks";
+import React, { useMemo, useState } from "react";
 import { useRecoilState } from "recoil";
 import * as recoilState from "recoil/pluginState";
-import { unifiedToNative } from "utils/emoji";
+import { eventTypes } from "types/types";
 import { createNewMarkdownFile, defaultNoteFolder } from "utils/file";
 import { uiIconSet } from "utils/icons";
-import { MainMenu } from "../MainMenu";
+import { stickerFromString } from "utils/sticker";
 export const SpaceSwitcher = (props: { plugin: MakeMDPlugin }) => {
   const [activeView, setActiveView] = useRecoilState(recoilState.activeView);
-  const [spaces, setSpaces] = useRecoilState(recoilState.spaces);
+  const [spaces, setSpaces] = useState([]);
   const [activeFile, setActiveFile] = useRecoilState(recoilState.activeFile);
   const folder: TFolder = defaultNoteFolder(props.plugin, activeFile);
   const { plugin } = props;
+
   const newFile = async () => {
     await createNewMarkdownFile(props.plugin, folder, "", "");
   };
   const pinnedSpaces = useMemo(
-    () => spaces.filter((f) => f.pinned == "true"),
+    () => spaces.filter((f) => f.pinned == "true" || f.pinned == "pinned"),
     [spaces]
   );
   const [activeViewSpace, setActiveViewSpace] = useRecoilState(
     recoilState.activeViewSpace
   );
-  const newSection = () => {
-    let vaultChangeModal = new EditSpaceModal(props.plugin, "", "create");
-    vaultChangeModal.open();
+
+  useEffect(() => {
+    loadCachedSpaces();
+  }, []);
+
+  const loadCachedSpaces = () => {
+    setSpaces([...plugin.index.allSpaces()]);
+    setActiveView(plugin.settings.activeView);
+    setActiveViewSpace(plugin.settings.activeSpace);
   };
-  return props.plugin.settings.spacesCompactMode ? (
-    <div className="mk-flow-bar-compact">
-      <MainMenu plugin={props.plugin}></MainMenu>
-      <button
-        aria-label={t.buttons.newNote}
-        className="mk-inline-button"
-        onClick={() => newFile()}
-      >
-        <div
-          className="mk-icon-small"
-          dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-new-note"] }}
-        ></div>
-      </button>
-      <button
-        aria-label={"Blink"}
-        className="mk-inline-button"
-        onClick={() => props.plugin.quickOpen()}
-      >
-        <div
-          className="mk-icon-small"
-          dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-blink"] }}
-        ></div>
-      </button>
-    </div>
-  ) : (
+  useEffect(() => {
+    window.addEventListener(eventTypes.spacesChange, loadCachedSpaces);
+    return () => {
+      window.removeEventListener(eventTypes.spacesChange, loadCachedSpaces);
+    };
+  }, [loadCachedSpaces]);
+
+  useEffect(() => {
+    plugin.settings.activeSpace = activeViewSpace;
+    plugin.settings.activeView = activeView;
+    plugin.saveSettings();
+  }, [activeView, activeViewSpace]);
+
+  return (
     <>
       <div className="mk-flow-bar">
         <button
@@ -70,37 +68,34 @@ export const SpaceSwitcher = (props: { plugin: MakeMDPlugin }) => {
           ></div>
           <p>{t.buttons.newNote}</p>
         </button>
-        <button
-          aria-label={i18n.buttons.blink}
-          className="mk-button-blink"
-          onClick={() => props.plugin.quickOpen()}
-        >
-          <div
-            dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-blink"] }}
-          ></div>
-        </button>
+        {props.plugin.settings.blinkEnabled && (
+          <button
+            aria-label={i18n.buttons.blink}
+            className="mk-button-blink"
+            onClick={() => props.plugin.quickOpen()}
+          >
+            <div
+              dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-blink"] }}
+            ></div>
+          </button>
+        )}
       </div>
       <div className="mk-sidebar-switcher">
         <div
           className={classNames(
             "mk-sidebar-item",
-            pinnedSpaces.length == 0 && "mk-sidebar-expanded",
             activeView == "root" && "mk-sidebar-item-active"
           )}
           onClick={() => setActiveView("root")}
         >
           <div
             className="mk-icon-small"
-            dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-spaces"] }}
-          >
-            {" "}
-          </div>
-          {pinnedSpaces.length == 0 && <div>Spaces</div>}
+            dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-home"] }}
+          ></div>
         </div>
         <div
           className={classNames(
             "mk-sidebar-item",
-            pinnedSpaces.length == 0 && "mk-sidebar-expanded",
             activeView == "tags" && "mk-sidebar-item-active"
           )}
           onClick={() => setActiveView("tags")}
@@ -108,17 +103,27 @@ export const SpaceSwitcher = (props: { plugin: MakeMDPlugin }) => {
           <div
             className="mk-icon-small"
             dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-tags"] }}
-          >
-            {" "}
-          </div>{" "}
-          {pinnedSpaces.length == 0 && <div>Contexts</div>}
+          ></div>
+        </div>
+        <div
+          className={classNames(
+            "mk-sidebar-item",
+            activeView == "all" && "mk-sidebar-item-active"
+          )}
+          onClick={() => setActiveView("all")}
+        >
+          <div
+            className="mk-icon-small"
+            dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-spaces"] }}
+          ></div>
         </div>
         <div className="mk-sidebar-spaces">
-          {pinnedSpaces.map((pin) => {
+          {pinnedSpaces.map((pin, i) => {
             return (
               <div
+                key={i}
                 onContextMenu={(e) =>
-                  triggerSectionMenu(props.plugin, pin.name, spaces, e)
+                  triggerSectionMenu(props.plugin, pin, spaces, e, activeFile)
                 }
                 className={classNames(
                   "mk-sidebar-item mk-sidebar-space",
@@ -131,7 +136,7 @@ export const SpaceSwitcher = (props: { plugin: MakeMDPlugin }) => {
                 )}
                 dangerouslySetInnerHTML={
                   pin.sticker?.length > 0
-                    ? { __html: unifiedToNative(pin.sticker) }
+                    ? { __html: stickerFromString(pin.sticker, props.plugin) }
                     : null
                 }
               >
@@ -140,9 +145,10 @@ export const SpaceSwitcher = (props: { plugin: MakeMDPlugin }) => {
             );
           })}
         </div>
+
         <div
           className={classNames("mk-sidebar-item")}
-          onClick={() => newSection()}
+          onClick={(e) => triggerSectionAddMenu(plugin, e)}
         >
           <div
             className="mk-icon-small"

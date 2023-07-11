@@ -1,18 +1,16 @@
-import { SortingFn } from "@tanstack/react-table";
+
 import i18n from "i18n";
 import { DBRow, MDBColumn } from "types/mdb";
-import { Predicate, splitString } from "utils/contexts/predicate/predicate";
+import { Sort } from "types/predicate";
+import { parseMultiString } from "utils/parser";
 
-export type Sort = {
-  field: string;
-  type: string;
-};
+
 
 export type SortFunctionType = Record<
   string,
   { type: string[]; label: string; fn: SortFunction; desc: boolean }
 >;
-type SortFunction = (v: any, f: any) => SortResultType;
+export type SortFunction = (v: any, f: any) => SortResultType;
 
 type SortResultType = -1 | 0 | 1;
 
@@ -39,7 +37,7 @@ const countSort: SortFunction = (
   value: string,
   filterValue: string
 ): SortResultType =>
-  simpleSort(splitString(value).length, splitString(filterValue).length);
+  simpleSort(parseMultiString(value).length, parseMultiString(filterValue).length);
 
 export const normalizedSortForType = (type: string, desc: boolean) => {
   return Object.keys(sortFnTypes).find(
@@ -50,15 +48,27 @@ export const normalizedSortForType = (type: string, desc: boolean) => {
 
 export const sortFnTypes: SortFunctionType = {
   alphabetical: {
-    type: ["text", "file", "link", "context"],
+    type: ["text", "file", "link", "context", 'fileprop'],
     fn: stringSort,
     label: i18n.sortTypes.alphaAsc,
     desc: false,
   },
   reverseAlphabetical: {
-    type: ["text", "file", "link", "context"],
+    type: ["text", "file", "link", "context", 'fileprop'],
     fn: (v, f) => (stringSort(v, f) * -1) as SortResultType,
     label: i18n.sortTypes.alphaDesc,
+    desc: true,
+  },
+  earliest: {
+    type: ["date", 'fileprop'],
+    fn: stringSort,
+    label: i18n.sortTypes.earliest,
+    desc: false,
+  },
+  latest: {
+    type: ["date", 'fileprop'],
+    fn: (v, f) => (stringSort(v, f) * -1) as SortResultType,
+    label: i18n.sortTypes.latest,
     desc: true,
   },
   boolean: {
@@ -74,13 +84,13 @@ export const sortFnTypes: SortFunctionType = {
     desc: true,
   },
   number: {
-    type: ["number"],
+    type: ["number", 'fileprop'],
     fn: numSort,
     label: "1 → 9",
     desc: false,
   },
   reverseNumber: {
-    type: ["number"],
+    type: ["number", 'fileprop'],
     fn: (v, f) => (numSort(v, f) * -1) as SortResultType,
     label: "9 → 1",
     desc: true,
@@ -106,31 +116,10 @@ export const sortReturnForCol = (
   row2: DBRow
 ) => {
   if (!col) return 0;
-  const sortType = sortFnTypes[sort.type];
+  const sortType = sortFnTypes[sort.fn];
   if (sortType) {
     return sortType.fn(row[sort.field], row2[sort.field]);
   }
   return 0;
 };
 
-export const tableViewSortFn = (sortFn: SortFunction): SortingFn<any> => {
-  return (row, row2, columnId) => {
-    return sortFn(row.getValue(columnId), row2.getValue(columnId));
-  };
-};
-
-export const sortFnForCol = (
-  predicate: Predicate,
-  col: MDBColumn
-): SortingFn<any> => {
-  const { sort } = predicate;
-  const sortField = sort.find((f) => f.field == col.name + col.table);
-  if (!sortField || !sortField.type) {
-    return null;
-  }
-  const sortType = sortFnTypes[sortField.type];
-  if (sortType) {
-    return tableViewSortFn(sortType.fn);
-  }
-  return null;
-};

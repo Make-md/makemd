@@ -1,12 +1,27 @@
 import {
-  Annotation, EditorState, RangeSetBuilder, StateField, Transaction
+  Annotation,
+  EditorState,
+  RangeSetBuilder,
+  StateField,
+  Transaction
 } from "@codemirror/state";
 import { Decoration, DecorationSet, EditorView } from "@codemirror/view";
 import { getAvailableRanges } from "range-analyzer";
 
+type ContentRangeType  = [number | undefined, number | undefined];
+
+
+const combinedRangeFacets = (rangeA: ContentRangeType, rangeB: ContentRangeType ) : [number, number] => {
+  const startRange = !rangeA?.[0] ? rangeB[0] : !rangeB?.[0] ? rangeA[0] : Math.max(rangeA?.[0], rangeB?.[0])
+  const endRange = !rangeA?.[1] ? rangeB[1] : !rangeB?.[1] ? rangeA[1] : Math.min(rangeA?.[1], rangeB?.[1])
+  return [isNaN(startRange) ? null : startRange, isNaN(endRange) ? null : endRange]
+}
+
 export const editableRange =
-  Annotation.define<[number | undefined, number | undefined]>();
-export const hiddenLine = Decoration.replace({ inclusive: true });
+  Annotation.define<ContentRangeType>();
+  export const contentRange =
+  Annotation.define<ContentRangeType>();
+export const hiddenLine = Decoration.replace({ inclusive: true, block: true });
 
 //partial note editor
 
@@ -16,16 +31,21 @@ export const hideLine = StateField.define<DecorationSet>({
   },
   update(value, tr) {
     let builder = new RangeSetBuilder<Decoration>();
-
-    if (tr.state.field(selectiveLinesFacet)?.[0] != undefined) {
-      builder.add(
-        tr.state.doc.line(1).from,
-        tr.state.doc.line(tr.state.field(selectiveLinesFacet)[0]).from,
-        hiddenLine
+    const betterFacet = combinedRangeFacets(tr.state.field(selectiveLinesFacet, false), tr.state.field(frontmatterFacet, false));
+    if (betterFacet?.[0] != null) {
+      const starterLine = Math.min(
+        tr.state.doc.lines,
+        betterFacet[0]
       );
       builder.add(
+        tr.state.doc.line(1).from,
+        tr.state.doc.line(starterLine).from-1,
+        hiddenLine
+      );
+      if (tr.newDoc.lines != betterFacet[1])
+      builder.add(
         tr.state.doc.line(
-          Math.min(tr.newDoc.lines, tr.state.field(selectiveLinesFacet)[1])
+          Math.min(tr.newDoc.lines, betterFacet[1])
         ).to,
         tr.state.doc.line(tr.newDoc.lines).to,
         hiddenLine
@@ -35,6 +55,24 @@ export const hideLine = StateField.define<DecorationSet>({
     return dec;
   },
   provide: (f) => EditorView.decorations.from(f),
+});
+
+export const frontmatterFacet = StateField.define<
+  [number | undefined, number | undefined]
+>({
+  create: () => [undefined, undefined],
+  update(value, tr) {
+    if (tr.annotation(contentRange)) {
+      if (tr.annotation(contentRange)[0]) {
+        return [
+          tr.annotation(contentRange)[0],
+          Math.min(tr.state.doc.lines, tr.annotation(contentRange)[1]),
+        ];
+      }
+      return tr.annotation(contentRange);
+    }
+    return value;
+  },
 });
 
 export const selectiveLinesFacet = StateField.define<
@@ -65,33 +103,39 @@ export const lineRangeToPosRange = (
   };
 };
 
+
 export const smartDelete = EditorState.transactionFilter.of(
   (tr: Transaction) => {
-    if (tr.isUserEvent("delete") && !tr.isUserEvent("delete.smart")) {
+
+    if (tr.isUserEvent("delete") && !tr.annotation(Transaction.userEvent).endsWith('.smart')) {
       const initialSelections = tr.startState.selection.ranges.map((range) => ({
         from: range.from,
         to: range.to,
       }));
-
+      
+      const betterFacet = combinedRangeFacets(tr.startState.field(selectiveLinesFacet, false), tr.startState.field(frontmatterFacet, false));
       if (
         initialSelections.length > 0 &&
-        tr.startState.field(selectiveLinesFacet)?.[0]
+        betterFacet?.[0]
       ) {
         const posRange = lineRangeToPosRange(
           tr.startState,
-          tr.startState.field(selectiveLinesFacet)
+          betterFacet
         );
-        const minFrom = Math.max(posRange.from, initialSelections[0].from);
-        const minTo = Math.min(posRange.to, initialSelections[0].to);
-        tr.startState.update({
-          changes: {
-            from: Math.min(minFrom, minTo),
-            to: Math.max(minFrom, minTo),
-          },
-          annotations: Transaction.userEvent.of(
-            `${tr.annotation(Transaction.userEvent)}.smart`
-          ),
-        });
+        if (tr.changes.touchesRange(0, posRange.from-1)) {
+          const minFrom = Math.max(posRange.from, initialSelections[0].from);
+          const minTo = Math.min(posRange.to, initialSelections[0].to);
+          return [{
+            changes: {
+              from: Math.min(minFrom, minTo),
+              to: Math.max(minFrom, minTo),
+            },
+            annotations: Transaction.userEvent.of(
+              `${tr.annotation(Transaction.userEvent)}.smart`
+            ),
+          }];
+        }
+        
       }
     }
     return tr;
@@ -102,7 +146,9 @@ export const preventModifyTargetRanges = EditorState.transactionFilter.of(
   (tr: Transaction) => {
     let newTrans = [];
     try {
-      const selectiveLines = tr.startState.field(selectiveLinesFacet);
+      const editableLines = tr.startState.field(selectiveLinesFacet, false)
+      const contentLines = tr.startState.field(frontmatterFacet, false)
+      const selectiveLines = combinedRangeFacets(editableLines, contentLines);
 
       if (
         tr.isUserEvent("input") ||
@@ -112,10 +158,9 @@ export const preventModifyTargetRanges = EditorState.transactionFilter.of(
         if (selectiveLines?.[0]) {
           const posRange = lineRangeToPosRange(
             tr.startState,
-            tr.startState.field(selectiveLinesFacet)
+            selectiveLines
           );
           if (
-            tr.changes.touchesRange(0, posRange.from - 1) ||
             !tr.changes.touchesRange(posRange.from, posRange.to)
           ) {
             return [];
@@ -127,25 +172,46 @@ export const preventModifyTargetRanges = EditorState.transactionFilter.of(
         if (selectiveLines?.[0]) {
           const posRange = lineRangeToPosRange(
             tr.startState,
-            tr.startState.field(selectiveLinesFacet)
+            selectiveLines
           );
           if (tr.changes.touchesRange(0, posRange.from - 1)) {
+            const newAnnotations = [];
+            if (editableLines[0]) {
+              newAnnotations.push(editableRange.of([
+                editableLines[0] + numberNewLines,
+                editableLines[1] + numberNewLines,
+              ]))
+              
+            }
+            if (contentLines[0]) {
+              newAnnotations.push(contentRange.of([
+                contentLines[0] + numberNewLines,
+                contentLines[1] + numberNewLines,
+              ]))
+              
+            }
             newTrans.push({
-              annotations: [
-                editableRange.of([
-                  selectiveLines[0] + numberNewLines,
-                  selectiveLines[1] + numberNewLines,
-                ]),
-              ],
+              annotations: newAnnotations,
             });
+            
           } else if (tr.changes.touchesRange(posRange.from - 1, posRange.to)) {
+            const newAnnotations = [];
+            if (editableLines[0]) {
+              newAnnotations.push(editableRange.of([
+                editableLines[0],
+                editableLines[1] + numberNewLines,
+              ]))
+              
+            }
+            if (contentLines[0]) {
+              newAnnotations.push(contentRange.of([
+                contentLines[0],
+                contentLines[1] + numberNewLines,
+              ]))
+              
+            }
             newTrans.push({
-              annotations: [
-                editableRange.of([
-                  selectiveLines[0],
-                  selectiveLines[1] + numberNewLines,
-                ]),
-              ],
+              annotations: newAnnotations,
             });
           }
         }
@@ -198,5 +264,6 @@ export const editBlockExtensions = () => [
   readOnlyRangesExtension,
   hideLine,
   selectiveLinesFacet,
+  frontmatterFacet
 ];
 export default readOnlyRangesExtension;

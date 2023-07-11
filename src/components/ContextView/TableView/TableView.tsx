@@ -1,22 +1,26 @@
 import {
   closestCenter,
   DndContext,
-  DragEndEvent, DragOverEvent,
+  DragEndEvent,
+  DragOverEvent,
   DragOverlay,
   DragStartEvent,
   MeasuringStrategy,
   MouseSensor,
   TouchSensor,
   useSensor,
-  useSensors
+  useSensors,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import {
-  ColumnSizingState, flexRender,
+  ColumnSizingState,
+  flexRender,
   getCoreRowModel,
   getExpandedRowModel,
-  getGroupedRowModel, OnChangeFn,
-  RowData, useReactTable
+  getGroupedRowModel,
+  OnChangeFn,
+  RowData,
+  useReactTable,
 } from "@tanstack/react-table";
 import "css/Table.css";
 import MakeMDPlugin from "main";
@@ -26,22 +30,22 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useState
+  useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { DBRow } from "types/mdb";
+import { uniq } from "utils/array";
 import {
   deleteFile,
   getAbstractFileAtPath,
   openAFile,
-  platformIsMobile
+  platformIsMobile,
 } from "utils/file";
-import { uniq } from "utils/tree";
 import { BooleanCell } from "../DataTypeView/BooleanCell";
 import { ContextCell } from "../DataTypeView/ContextCell";
 import { DateCell } from "../DataTypeView/DateCell";
 import { FileCell } from "../DataTypeView/FileCell";
-import { FilePropertyCell } from "../DataTypeView/FilePropertyCell";
+import { LookUpCell } from "../DataTypeView/FilePropertyCell";
 import { NumberCell } from "../DataTypeView/NumberCell";
 import { OptionCell } from "../DataTypeView/OptionCell";
 import { TextCell } from "../DataTypeView/TextCell";
@@ -49,22 +53,21 @@ import { MDBContext } from "../MDBContext";
 import { ColumnHeader } from "./ColumnHeader";
 
 import { isMouseEvent } from "hooks/useLongPress";
+import i18n from "i18n";
 import { debounce } from "lodash";
 import { Menu } from "obsidian";
-import { fieldTypes } from "schemas/mdb";
-import { saveFrontmatterValue } from "utils/contexts/fm";
+import { fieldTypeForType } from "schemas/mdb";
+import { FilePropertyName } from "types/context";
+import { Filter } from "types/predicate";
 import { createNewRow } from "utils/contexts/mdb";
-import { Filter } from "utils/contexts/predicate/filter";
-import { Sort } from "utils/contexts/predicate/sort";
 import {
   selectNextIndex,
   selectPrevIndex,
-  selectRange
+  selectRange,
 } from "utils/ui/selection";
 import { ImageCell } from "../DataTypeView/ImageCell";
 import { LinkCell } from "../DataTypeView/LinkCell";
 import { TagCell } from "../DataTypeView/TagCell";
-import i18n from "i18n";
 
 declare module "@tanstack/table-core" {
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -88,6 +91,7 @@ export type TableCellProp = {
   editMode: CellEditMode;
   setEditMode: (editMode: [string, string]) => void;
   plugin: MakeMDPlugin;
+  propertyValue: string;
 };
 
 export type TableCellMultiProp = TableCellProp & {
@@ -101,23 +105,15 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
     tableData,
     sortedColumns: cols,
     filteredData: data,
-    tagContexts,
-    folderPath,
-    saveSchema,
-    searchString,
+    contextInfo,
+    readMode,
     dbSchema,
     contextTable,
-    setContextTable,
     predicate,
     savePredicate,
     saveDB,
-    saveContextDB,
-    schema,
-    dbPath,
-    saveColumn,
-    delColumn,
-    newColumn,
-    isFolderContext,
+    updateFieldValue,
+    updateValue,
   } = useContext(MDBContext);
   const [activeId, setActiveId] = useState(null);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<string>(null);
@@ -125,7 +121,6 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
   const [currentEdit, setCurrentEdit] = useState<[string, string]>(null);
   const [overId, setOverId] = useState(null);
   const [openFlows, setOpenFlows] = useState([]);
-  const [selectNewOnRefresh, setSelectNewOnRefresh] = useState(false);
   const [colsSize, setColsSize] = useState<ColumnSizingState>({});
   const ref = useRef(null);
   useEffect(() => {
@@ -167,7 +162,7 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
 
   const deleteRow = (rowIndex: number) => {
     const row = tableData.rows.find((f, i) => i == rowIndex);
-    if (row._source == "folder") {
+    if (getAbstractFileAtPath(app, row.File)) {
       deleteFile(props.plugin, getAbstractFileAtPath(app, row.File));
     }
     if (row) {
@@ -220,15 +215,23 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     const setCellValue = (value: string) => {
-      const columnTuple = selectedColumn.split('#');
-      updateData(parseInt(lastSelectedIndex), columnTuple[0], columnTuple[1] ?? '', value, '')
-    }
+      const columnTuple = selectedColumn.split("#");
+      updateValue(
+        columnTuple[0],
+        value,
+        columnTuple[1] ?? "",
+        parseInt(lastSelectedIndex),
+        ""
+      );
+    };
     const clearCell = () => {
-      setCellValue('')
-    }
+      setCellValue("");
+    };
     const copyCell = () => {
-      navigator.clipboard.writeText(tableData.rows[parseInt(lastSelectedIndex)][selectedColumn])
-    }
+      navigator.clipboard.writeText(
+        tableData.rows[parseInt(lastSelectedIndex)][selectedColumn]
+      );
+    };
     const nextRow = () => {
       const newIndex = selectNextIndex(
         lastSelectedIndex,
@@ -236,7 +239,7 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
       );
       selectRows(newIndex, [newIndex]);
       setLastSelectedIndex(newIndex);
-    }
+    };
     const lastRow = () => {
       const newIndex = selectPrevIndex(
         lastSelectedIndex,
@@ -244,34 +247,34 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
       );
       selectRows(newIndex, [newIndex]);
       setLastSelectedIndex(newIndex);
-    }
-    if (e.key == 'c' && e.metaKey) {
-      copyCell()
-    }
-    if (e.key == 'x' && e.metaKey) {
+    };
+    if (e.key == "c" && e.metaKey) {
       copyCell();
-      clearCell()
     }
-    if (e.key == 'v' && e.metaKey) {
-      navigator.clipboard.readText().then(f => setCellValue(f))
+    if (e.key == "x" && e.metaKey) {
+      copyCell();
+      clearCell();
+    }
+    if (e.key == "v" && e.metaKey) {
+      navigator.clipboard.readText().then((f) => setCellValue(f));
     }
     if (e.key == "Escape") {
       selectRows(null, []);
       setLastSelectedIndex(null);
     }
-    if (e.key == 'Backspace' || e.key == 'Delete') {
+    if (e.key == "Backspace" || e.key == "Delete") {
       clearCell();
     }
     if (e.key == "Enter") {
       if (selectedColumn && lastSelectedIndex) {
         if (e.shiftKey) {
-          newRow(parseInt(lastSelectedIndex)+1);
+          newRow(parseInt(lastSelectedIndex) + 1);
           nextRow();
         } else {
-        setCurrentEdit([selectedColumn, lastSelectedIndex]);
+          setCurrentEdit([selectedColumn, lastSelectedIndex]);
         }
       }
-        
+
       return;
     }
     if (e.key == "ArrowDown") {
@@ -297,7 +300,6 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
       setSelectedColumn(newIndex);
     }
   };
-
   const columns: any[] = useMemo(
     () => [
       ...(cols
@@ -318,7 +320,7 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
               // @ts-ignore
               row: { index },
               // @ts-ignore
-              column: { id },
+              column: { colId },
               // @ts-ignore
               cell,
               // @ts-ignore
@@ -326,34 +328,37 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
             }) => {
               const initialValue = getValue();
               // We need to keep and update the state of the cell normally
-              const rowIndex =
-                f.table == ""
-                  ? index
-                  : parseInt((data[index] as DBRow)["_index" + f.table]);
+              const rowIndex = parseInt(
+                (data[index] as DBRow)["_index" + f.table]
+              );
+              const tableIndex = parseInt((data[index] as DBRow)["_index"]);
               const saveValue = (value: string) => {
+                setCurrentEdit(null);
                 if (initialValue != value)
                   table.options.meta?.updateData(
-                    rowIndex,
                     f.name,
+                    value,
                     f.table,
-                    value
+                    rowIndex
                   );
               };
               const saveFieldValue = (fieldValue: string, value: string) => {
                 table.options.meta?.updateFieldValue(
-                  rowIndex,
                   f.name,
-                  f.table,
                   fieldValue,
-                  value
+                  value,
+                  f.table,
+                  rowIndex
                 );
               };
-              const editMode = !cell.getIsGrouped()
+              const editMode = readMode
+                ? CellEditMode.EditModeReadOnly
+                : !cell.getIsGrouped()
                 ? platformIsMobile()
                   ? CellEditMode.EditModeAlways
                   : currentEdit &&
                     currentEdit[0] == f.name + f.table &&
-                    currentEdit[1] == index
+                    currentEdit[1] == tableIndex.toString()
                   ? CellEditMode.EditModeActive
                   : CellEditMode.EditModeView
                 : CellEditMode.EditModeReadOnly;
@@ -363,10 +368,9 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                 plugin: props.plugin,
                 setEditMode: setCurrentEdit,
                 editMode,
+                propertyValue: f.value,
               };
-              const fieldType =
-                fieldTypes.find((t) => f.type == t.type) ||
-                fieldTypes.find((t) => f.type == t.multiType);
+              const fieldType = fieldTypeForType(f.type);
               if (!fieldType) {
                 return <>{initialValue}</>;
               }
@@ -375,8 +379,8 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                   <FileCell
                     {...cellProps}
                     multi={fieldType.multiType == f.type}
-                    folder={folderPath}
-                    isFolder={isFolderContext}
+                    folder={contextInfo.contextPath}
+                    isFolder={contextInfo.type == "folder"}
                     openFlow={() => toggleFlow(initialValue)}
                     deleteRow={() => deleteRow(index)}
                   ></FileCell>
@@ -405,11 +409,10 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                 );
               } else if (fieldType.type == "fileprop") {
                 return (
-                  <FilePropertyCell
+                  <LookUpCell
                     {...cellProps}
-                    property={f.value}
-                    file={data[index]["File"]}
-                  ></FilePropertyCell>
+                    file={data[index][FilePropertyName]}
+                  ></LookUpCell>
                 );
               } else if (fieldType.type == "tag") {
                 return (
@@ -425,7 +428,7 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                   <LinkCell
                     {...cellProps}
                     multi={fieldType.multiType == f.type}
-                    file={data[index]["File"]}
+                    file={data[index][FilePropertyName]}
                   ></LinkCell>
                 );
               } else if (fieldType.type == "image") {
@@ -436,60 +439,21 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
             },
           };
         }) ?? []),
-      {
-        header: "+",
-        meta: { schemaId: dbSchema?.id },
-        accessorKey: "+",
-        size: 20,
-        cell: () => <></>,
-      },
+      ...(readMode
+        ? []
+        : [
+            {
+              header: "+",
+              meta: { schemaId: dbSchema?.id },
+              accessorKey: "+",
+              size: 20,
+              cell: () => <></>,
+            },
+          ]),
     ],
     [cols, currentEdit, predicate, contextTable, toggleFlow, openFlows]
   );
-  const updateData = (
-    index: number,
-    column: string,
-    table: string,
-    value: string,
-    file: string
-  ) => {
-    const col = cols.find((f) => f.table == table && f.name == column);
-    saveFrontmatterValue(
-      tableData.rows[index]?.File,
-      column,
-      value,
-      col.type
-    );
 
-    if (table == "") {
-      saveDB({
-        ...tableData,
-        rows: tableData.rows.map((r, i) =>
-          i == index
-            ? {
-                ...r,
-                [column]: value,
-              }
-            : r
-        ),
-      });
-    } else if (contextTable[table]) {
-      saveContextDB(
-        {
-          ...contextTable[table],
-          rows: contextTable[table].rows.map((r, i) =>
-            i == index
-              ? {
-                  ...r,
-                  [column]: value,
-                }
-              : r
-          ),
-        },
-        table
-      );
-    }
-  }
   const groupBy = useMemo(
     () =>
       predicate.groupBy?.length > 0 &&
@@ -520,68 +484,8 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
     getExpandedRowModel: getExpandedRowModel(),
     getGroupedRowModel: getGroupedRowModel(),
     meta: {
-      updateData: updateData,
-      updateFieldValue: (
-        index: number,
-        column: string,
-        table: string,
-        fieldValue: string,
-        value: string
-      ) => {
-        const col = cols.find((f) => f.table == table && f.name == column);
-        saveFrontmatterValue(
-          tableData.rows[index]?.File,
-          column,
-          value,
-          col.type
-        );
-
-        if (table == "") {
-          const newTable = {
-            ...tableData,
-            cols: tableData.cols.map((m) =>
-              m.name == column
-                ? {
-                    ...m,
-                    value: fieldValue,
-                  }
-                : m
-            ),
-            rows: tableData.rows.map((r, i) =>
-              i == index
-                ? {
-                    ...r,
-                    [column]: value,
-                  }
-                : r
-            ),
-          };
-          saveDB(newTable);
-        } else if (contextTable[table]) {
-          saveContextDB(
-            {
-              ...contextTable[table],
-              cols: contextTable[table].cols.map((m) =>
-                m.name == column
-                  ? {
-                      ...m,
-                      value: fieldValue,
-                    }
-                  : m
-              ),
-              rows: contextTable[table].rows.map((r, i) =>
-                i == index
-                  ? {
-                      ...r,
-                      [column]: value,
-                    }
-                  : r
-              ),
-            },
-            table
-          );
-        }
-      },
+      updateData: updateValue,
+      updateFieldValue: updateFieldValue,
     },
   });
 
@@ -631,20 +535,6 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
     });
   };
 
-  const saveSort = (sort: Sort) => {
-    savePredicate({
-      ...predicate,
-      sort: [sort],
-    });
-  };
-
-  const hideCol = (col: string) => {
-    savePredicate({
-      ...predicate,
-      colsHidden: [...predicate.colsHidden.filter((s) => s != col), col],
-    });
-  };
-
   const selectCell = (e: React.MouseEvent, index: number, column: string) => {
     if (platformIsMobile() || column == "+") return;
     selectItem(0, (data[index] as DBRow)["_index"]);
@@ -661,7 +551,7 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
     e.preventDefault();
     const menu = new Menu();
     menu.addItem((item) => {
-      item.setIcon('trash');
+      item.setIcon("trash");
       item.setTitle(i18n.menu.deleteRow);
       item.onClick(() => {
         deleteRow(index);
@@ -724,7 +614,8 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
         >
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}><th></th>
+              <tr key={headerGroup.id}>
+                <th></th>
                 {headerGroup.headers.map((header) => (
                   <th
                     className="mk-th"
@@ -732,8 +623,8 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                     style={{
                       minWidth: header.column.getIsGrouped()
                         ? "0px"
-                        // @ts-ignore
-                        : colsSize[header.column.columnDef.accessorKey] ??
+                        : // @ts-ignore
+                          colsSize[header.column.columnDef.accessorKey] ??
                           "150px",
                     }}
                   >
@@ -750,11 +641,6 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                               f.name == header.column.columnDef.header &&
                               f.table == header.column.columnDef.meta.table
                           )}
-                          saveColumn={saveColumn}
-                          deleteColumn={delColumn}
-                          hide={hideCol}
-                          filter={saveFilter}
-                          sort={saveSort}
                         ></ColumnHeader>
                       )
                     ) : (
@@ -768,8 +654,6 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                           type: "text",
                           table: "",
                         }}
-                        saveColumn={newColumn}
-                        deleteColumn={delColumn}
                       ></ColumnHeader>
                     )}
                     <div
@@ -807,7 +691,10 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                   {row.getVisibleCells().map((cell) =>
                     cell.getIsGrouped() ? (
                       // If it's a grouped cell, add an expander and row count
-                      <td className="mk-td-group" colSpan={cols.length + 1}>
+                      <td
+                        className="mk-td-group"
+                        colSpan={cols.length + (readMode ? 0 : 1)}
+                      >
                         <div
                           {...{
                             onClick: row.getToggleExpandedHandler(),
@@ -855,8 +742,8 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                         style={{
                           minWidth: cell.getIsPlaceholder()
                             ? "0px"
-                            // @ts-ignore
-                            : colsSize[cell.column.columnDef.accessorKey] ??
+                            : // @ts-ignore
+                              colsSize[cell.column.columnDef.accessorKey] ??
                               "50px",
                         }}
                       >
@@ -874,11 +761,11 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
             ))}
           </tbody>
           <tfoot>
-            {isFolderContext ? (
+            {contextInfo.type == "folder" && !readMode ? (
               <tr>
                 <th
                   className="mk-row-new"
-                  colSpan={cols.length + 2}
+                  colSpan={cols.length + (readMode ? 1 : 2)}
                   onClick={() => {
                     newRow();
                   }}
@@ -889,20 +776,6 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
             ) : (
               <></>
             )}
-            {table.getFooterGroups().map((footerGroup) => (
-              <tr key={footerGroup.id}>
-                {footerGroup.headers.map((header) => (
-                  <th key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.footer,
-                          header.getContext()
-                        )}
-                  </th>
-                ))}
-              </tr>
-            ))}
           </tfoot>
         </table>
         {createPortal(
@@ -917,8 +790,6 @@ export const TableView = (props: { plugin: MakeMDPlugin }) => {
                   type: "text",
                   table: "",
                 }}
-                saveColumn={newColumn}
-                deleteColumn={delColumn}
               ></ColumnHeader>
             ) : null}
           </DragOverlay>,

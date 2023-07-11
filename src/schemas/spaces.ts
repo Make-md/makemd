@@ -1,4 +1,18 @@
 import { DBTable } from "types/mdb";
+import { SpaceDef } from "types/space";
+
+export type AFile = {
+  path: string;
+  name: string;
+  parent: string;
+  isFolder: boolean;
+  extension?: string;
+  stat?: {
+    ctime: number;
+    mtime: number;
+    size: number;
+  }
+}
 
 export type VaultItem = {
   path: string;
@@ -16,7 +30,7 @@ export type Space = {
   color?: string;
   pinned?: string;
   sort?: string;
-  def?: string;
+  def?: SpaceDef;
   rank?: string;
 };
 

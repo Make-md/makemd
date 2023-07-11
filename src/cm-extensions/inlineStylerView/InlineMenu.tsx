@@ -9,7 +9,7 @@ import { createRoot } from "react-dom/client";
 import { getActiveCM, getActiveMarkdownView } from "utils/codemirror";
 import { colors } from "utils/color";
 import { platformIsMobile } from "utils/file";
-import { markIconSet, uiIconSet } from "utils/icons";
+import { uiIconSet } from "utils/icons";
 import { Mark } from "./Mark";
 import { InlineStyle, resolveStyles } from "./styles";
 
@@ -116,7 +116,7 @@ export const InlineMenuComponent: React.FC<{
           makeMenu(e);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: markIconSet["mk-make-slash"] }}
+        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-slash"] }}
       ></div>
       <div
         aria-label={!platformIsMobile() ? t.commands.selectStyle : undefined}
@@ -124,7 +124,7 @@ export const InlineMenuComponent: React.FC<{
           setMode(1);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: markIconSet["mk-make-style"] }}
+        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-style"] }}
       ></div>
       <div
         aria-label={!platformIsMobile() ? t.commands.image : undefined}
@@ -135,7 +135,7 @@ export const InlineMenuComponent: React.FC<{
           ].editorCallback(view.editor, view);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: markIconSet["mk-make-attach"] }}
+        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-attach"] }}
       ></div>
       <div
         aria-label={!platformIsMobile() ? t.commands.toggleKeyboard : undefined}
@@ -146,7 +146,7 @@ export const InlineMenuComponent: React.FC<{
           ].editorCallback(view.editor, view);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: markIconSet["mk-make-keyboard"] }}
+        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-keyboard"] }}
       ></div>
     </>
   );
@@ -231,7 +231,7 @@ export const InlineMenuComponent: React.FC<{
               });
             }}
             className="mk-mark"
-            dangerouslySetInnerHTML={{ __html: markIconSet["mk-mark-color"] }}
+            dangerouslySetInnerHTML={{ __html: uiIconSet["mk-mark-color"] }}
           ></div>
           <div
             aria-label={!platformIsMobile() ? t.styles.highlight : undefined}
@@ -245,7 +245,7 @@ export const InlineMenuComponent: React.FC<{
             }}
             className="mk-mark"
             dangerouslySetInnerHTML={{
-              __html: markIconSet["mk-mark-highlight"],
+              __html: uiIconSet["mk-mark-highlight"],
             }}
           ></div>
         </>

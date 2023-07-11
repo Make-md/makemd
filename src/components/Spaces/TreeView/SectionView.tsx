@@ -1,30 +1,21 @@
 import classNames from "classnames";
-import {
-  VaultChangeModal
-} from "components/ui/modals/vaultChangeModals";
 import "css/SectionView.css";
-import { Menu } from "obsidian";
 import React, { forwardRef } from "react";
 import { useRecoilState } from "recoil";
 import * as recoilState from "recoil/pluginState";
-import { eventTypes } from "types/types";
 
 import {
   IndicatorState,
-  TreeItemProps
+  TreeItemProps,
 } from "components/Spaces/TreeView/FolderTreeView";
 import { triggerSectionMenu } from "components/ui/menus/fileMenu";
-import { isMouseEvent } from "hooks/useLongPress";
-import t from "i18n";
-import { unifiedToNative } from "utils/emoji";
-import {
-  createNewMarkdownFile,
-  defaultNoteFolder,
-  getFolderFromPath
-} from "utils/file";
+import { stickerModal } from "components/ui/modals/stickerModal";
+import { default as t } from "i18n";
+import { newFileInSpace } from "superstate/spacesStore/spaces";
+import { saveSpaceIcon } from "utils/emoji";
+import { openSpace } from "utils/file";
 import { uiIconSet } from "utils/icons";
-import { addPathsToSpace } from "utils/spaces/spaces";
-import i18n from "i18n";
+import { stickerFromString } from "utils/sticker";
 
 export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
   (
@@ -45,161 +36,23 @@ export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
       wrapperRef,
       plugin,
       disabled,
+      active,
     },
     ref
   ) => {
     const [activeFile, setActiveFile] = useRecoilState(recoilState.activeFile);
-    const [spaces, setSpaces] = useRecoilState(recoilState.spaces);
-    const space = spaces.find((f) => f.name == data.space);
-    const newFolderInSection = () => {
-      let vaultChangeModal = new VaultChangeModal(
-        plugin,
-        space?.def?.length > 0
-          ? getFolderFromPath(app, space.def)
-          : defaultNoteFolder(plugin, activeFile),
-        "create folder",
-        data.space
-      );
-      vaultChangeModal.open();
-    };
-    const newFileInSection = async () => {
-      const newFile = await createNewMarkdownFile(
-        plugin,
-        space?.def?.length > 0
-          ? getFolderFromPath(app, space.def)
-          : defaultNoteFolder(plugin, activeFile),
-        ""
-      );
-      if (data.space != "/")
-        addPathsToSpace(plugin, data.space, [newFile.path]);
-    };
+    const space = plugin.index.spacesIndex.get(data.space)?.space;
 
     const triggerMenu = (e: React.MouseEvent | React.TouchEvent) => {
-      data.space == "/"
-        ? triggerVaultMenu(e)
-        : triggerSectionMenu(plugin, data.space, spaces, e);
+      triggerSectionMenu(
+        plugin,
+        space,
+        [...plugin.index.allSpaces()],
+        e,
+        activeFile
+      );
     };
 
-    const triggerVaultMenu = (e: React.MouseEvent | React.TouchEvent) => {
-      const refreshFileList = () => {
-        let event = new CustomEvent(eventTypes.vaultChange);
-        window.dispatchEvent(event);
-      };
-
-      const fileMenu = new Menu();
-
-      // Rename Item
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(i18n.menu.collapseAll);
-        menuItem.setIcon("lucide-chevrons-down-up");
-        menuItem.onClick((ev: MouseEvent) => {
-          plugin.settings.expandedFolders = {
-            ...plugin.settings.expandedFolders,
-            "/": [],
-          };
-          plugin.saveSettings();
-        });
-      });
-      fileMenu.addSeparator();
-
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(i18n.menu.customSort);
-        menuItem.setChecked(plugin.settings.vaultSort[0] == "rank");
-        menuItem.onClick((ev: MouseEvent) => {
-          plugin.settings.vaultSort = ["rank", true];
-          plugin.saveSettings();
-          refreshFileList();
-        });
-      });
-      fileMenu.addSeparator();
-
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(i18n.menu.fileNameSortAlphaAsc);
-        menuItem.setChecked(
-          plugin.settings.vaultSort[0] == "path" &&
-            plugin.settings.vaultSort[1] == true
-        );
-        menuItem.onClick((ev: MouseEvent) => {
-          plugin.settings.vaultSort = ["path", true];
-          plugin.saveSettings();
-          refreshFileList();
-        });
-      });
-
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(i18n.menu.fileNameSortAlphaDesc);
-        menuItem.setChecked(
-          plugin.settings.vaultSort[0] == "path" &&
-            plugin.settings.vaultSort[1] == false
-        );
-        menuItem.onClick((ev: MouseEvent) => {
-          plugin.settings.vaultSort = ["path", false];
-          plugin.saveSettings();
-          refreshFileList();
-        });
-      });
-      fileMenu.addSeparator();
-
-      // fileMenu.addItem((menuItem) => {
-      //   menuItem.setTitle('Modified Time (new to old)');
-      //   menuItem.setChecked(plugin.settings.vaultSort[0] == 'mtime' && plugin.settings.vaultSort[1] == true)
-      //   menuItem.onClick((ev: MouseEvent) => {
-      //     plugin.settings.vaultSort = ['mtime', true];
-      //     plugin.saveSettings();
-      //     refreshFileList();
-      //   });
-      // });
-
-      // fileMenu.addItem((menuItem) => {
-      //   menuItem.setTitle('Modified Time (old to new)');
-      //   menuItem.setChecked(plugin.settings.vaultSort[0] == 'mtime' && plugin.settings.vaultSort[1] == false)
-      //   menuItem.onClick((ev: MouseEvent) => {
-      //     plugin.settings.vaultSort = ['mtime', false];
-      //     plugin.saveSettings();
-      //     refreshFileList();
-      //   });
-      // });
-
-      // fileMenu.addSeparator();
-
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(i18n.menu.createdTimeSortAsc);
-        menuItem.setChecked(
-          plugin.settings.vaultSort[0] == "created" &&
-            plugin.settings.vaultSort[1] == false
-        );
-        menuItem.onClick((ev: MouseEvent) => {
-          plugin.settings.vaultSort = ["created", false];
-          plugin.saveSettings();
-          refreshFileList();
-        });
-      });
-
-      fileMenu.addItem((menuItem) => {
-        menuItem.setTitle(i18n.menu.createdTimeSortDesc);
-        menuItem.setChecked(
-          plugin.settings.vaultSort[0] == "created" &&
-            plugin.settings.vaultSort[1] == true
-        );
-        menuItem.onClick((ev: MouseEvent) => {
-          plugin.settings.vaultSort = ["created", true];
-          plugin.saveSettings();
-          refreshFileList();
-        });
-      });
-
-      if (isMouseEvent(e)) {
-        fileMenu.showAtPosition({ x: e.pageX, y: e.pageY });
-      } else {
-        fileMenu.showAtPosition({
-          // @ts-ignore
-          x: e.nativeEvent.locationX,
-          // @ts-ignore
-          y: e.nativeEvent.locationY,
-        });
-      }
-      return false;
-    };
     return (
       <>
         <div
@@ -237,50 +90,75 @@ export const SectionItem = forwardRef<HTMLDivElement, TreeItemProps>(
             )}
           >
             <div
-              className="mk-section-title"
-              //@ts-ignore
-              onClick={(e) => onCollapse(data)}
+              className={`mk-collapse ${collapsed ? "mk-collapsed" : ""}`}
+              dangerouslySetInnerHTML={{
+                __html: uiIconSet["mk-ui-collapse-sm"],
+              }}
+              onClick={(e) => onCollapse(data, false)}
+            ></div>
+            <div
+              className={classNames(
+                "mk-tree-item",
+                "tree-item-self",
+                "nav-folder-title",
+                active && "is-selected"
+              )}
+              data-path={data.space}
               ref={ref}
               {...handleProps}
             >
-              {data.spaceItem?.sticker ? (
-                <div
+              <div className="mk-file-icon">
+                <button
                   dangerouslySetInnerHTML={{
-                    __html: unifiedToNative(data.spaceItem?.sticker),
+                    __html: space?.sticker
+                      ? stickerFromString(space?.sticker, plugin)
+                      : uiIconSet["mk-ui-spaces"],
                   }}
-                ></div>
-              ) : (
-                <></>
-              )}
-              <div className="mk-tree-text">
-                {data.id == "/" ? plugin.app.vault.getName() : data.space}
+                  onClick={() => {
+                    if (!space) return;
+                    const vaultChangeModal = new stickerModal(
+                      plugin.app,
+                      plugin,
+                      (emoji) => saveSpaceIcon(plugin, space.name, emoji)
+                    );
+                    vaultChangeModal.open();
+                  }}
+                ></button>
               </div>
               <div
-                className={`mk-collapse ${collapsed ? "mk-collapsed" : ""}`}
-                dangerouslySetInnerHTML={{
-                  __html: uiIconSet["mk-ui-collapse-sm"],
-                }}
-              ></div>
-            </div>
-            <div className="mk-folder-buttons">
-              <button
-                aria-label={t.buttons.createFolder}
-                onClick={() => {
-                  newFolderInSection();
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: uiIconSet["mk-ui-new-folder"],
-                }}
-              ></button>
-              <button
-                aria-label={t.buttons.newNote}
-                onClick={() => {
-                  newFileInSection();
-                }}
-                dangerouslySetInnerHTML={{
-                  __html: uiIconSet["mk-ui-new-note"],
-                }}
-              ></button>
+                className="mk-tree-text"
+                onClick={
+                  (e) => (space ? openSpace(space.name, plugin, false) : {})
+                  // (e) => onCollapse(data)
+                }
+              >
+                {data.space}
+              </div>
+              <div className="mk-folder-buttons">
+                <button
+                  aria-label={t.buttons.moreOptions}
+                  onClick={(e) => {
+                    triggerMenu(e);
+                    e.stopPropagation();
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: uiIconSet["mk-ui-options"],
+                  }}
+                ></button>
+                {space?.def?.type == "focus" ? (
+                  <button
+                    aria-label={t.buttons.newNote}
+                    onClick={() => {
+                      newFileInSpace(plugin, space, activeFile);
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: uiIconSet["mk-ui-plus"],
+                    }}
+                  ></button>
+                ) : (
+                  <></>
+                )}
+              </div>
             </div>
           </div>
           {/* {section && !collapsed && section.children.length == 0 && (

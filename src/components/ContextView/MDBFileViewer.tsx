@@ -1,17 +1,10 @@
-import {
-  FileView, TFile, ViewStateResult,
-  WorkspaceLeaf
-} from "obsidian";
+import { FileView, TFile, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
-import {
-  getAbstractFileAtPath,
-  getFolderFromPath
-} from "utils/file";
-import { filePathToString } from "utils/tree";
+import { mdbContextByDBPath } from "utils/contexts/contexts";
+import { getAbstractFileAtPath } from "utils/file";
 import MakeMDPlugin from "../../main";
-import { FolderContextViewComponent } from "./FolderContextViewComponent";
-import { TagContextViewComponent } from "./TagContextViewComponent";
+import { ContextViewComponent } from "./ContextViewComponent";
 export const MDB_FILE_VIEWER_TYPE = "make-mdb-viewer";
 export const ICON = "sheets-in-box";
 
@@ -71,36 +64,16 @@ export class MDBFileViewer extends FileView {
   }
 
   constructInlineContext() {
-    const mdbTypeByDBPath = (dbpath: string) => {
-      return dbpath.endsWith(this.plugin?.settings.folderContextFile + ".mdb")
-        ? "folder"
-        : "tag";
-    };
-    const type = mdbTypeByDBPath(this.file.path);
-    const folder =
-      type == "tag" ? null : getFolderFromPath(app, this.file.path);
-    const tag =
-      type == "tag"
-        ? filePathToString(this.file.path).replace(".mdb", "")
-        : null;
+    const context = mdbContextByDBPath(this.plugin, this.file.path);
 
     this.destroy();
     this.root = createRoot(this.contentEl);
     this.root.render(
       <div className="mk-folder-view">
-        {tag ? (
-          <TagContextViewComponent
-            type="tag"
-            tag={tag}
-            plugin={this.plugin}
-          ></TagContextViewComponent>
-        ) : (
-          <FolderContextViewComponent
-            type="folder"
-            folder={folder}
-            plugin={this.plugin}
-          ></FolderContextViewComponent>
-        )}
+        <ContextViewComponent
+          context={context}
+          plugin={this.plugin}
+        ></ContextViewComponent>
       </div>
     );
   }

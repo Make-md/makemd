@@ -1,29 +1,32 @@
+.mk-view-selector, 
 .mk-table-selector {
   margin-right: 0;
   display: flex;
   align-items: center;
-  padding-left: var(--context-padding);
   gap: 16px;
   min-height: 48px;
   max-width: 100%;
   overflow-x: auto;
 }
+.mk-view-selector {
+  margin-left: var(--file-margins)
+}
 
-.mk-table-selector::-webkit-scrollbar {
+.mk-view-selector::-webkit-scrollbar {
   display: none;
 }
-.mk-table-selector > div > .mk-collapse {
+.mk-view-selector > div > .mk-collapse {
   padding-right: 8px;
   padding-left: 0px;
 }
-.mk-table-selector .mk-collapse.mk-icon-xsmall svg {
+.mk-view-selector .mk-collapse.mk-icon-xsmall svg {
   color: unset;
 }
-.mk-table-selector > div > button:not(:last-child) {
+.mk-view-selector > div > button:not(:last-child) {
   padding-right: 0px;
 }
-.mk-table-selector > div,
-.mk-table-selector > button {
+.mk-view-selector > div,
+.mk-view-selector > button {
   border-radius: 0;
   margin: 4px -8px;
   display: flex;
@@ -32,27 +35,28 @@
   height: 100%;
 }
 
-.mk-table-selector .mk-is-active button {
+.mk-view-config .mk-is-active button {
   color: var(--text-normal);
 }
-.mk-table-selector .mk-is-active {
+.mk-view-config .mk-is-active {
   border-bottom: thin solid var(--text-normal);
   color: var(--text-normal);
   background: none !important;
 }
 
-.mk-view-selector button {
-  background: none;
+.mk-table-selector button,
+.mk-view-config button {
+  background: rgba(var(--nav-item-background-active), 0.3);
   border: none;
   box-shadow: none;
   color: var(--text-faint);
 }
 
-.mk-view-selector button:hover {
+.mk-view-config button:hover {
   color: var(--text-normal);
 }
 
-.mk-view-selector {
+.mk-view-config {
   width: 100%;
   display: flex;
   color: var(--text-faint);
@@ -61,16 +65,16 @@
   flex-wrap: wrap;
 }
 
-.mk-view-selector input {
+.mk-view-config input {
   background: none;
   border: none;
   flex-grow: 1;
 }
 
-.is-phone .mk-view-selector {
+.is-phone .mk-view-config {
   flex-wrap: wrap;
 }
-.is-phone .mk-view-selector button {
+.is-phone .mk-view-config button {
   width: unset;
 }
 
@@ -101,13 +105,14 @@
   color: var(--text-normal) !important;
   min-height: 48px;
   padding-left: var(--context-padding);
+  padding-right: var(--size-4-3);
   flex-grow: 1;
 }
-.mk-view-selector span {
+.mk-view-config span {
   flex-grow: 10;
 }
 
-.mk-view-selector svg {
+.mk-view-config svg {
   width: 14px;
   height: 14px;
 }
@@ -123,6 +128,7 @@
 .mk-filter-bar span {
   flex-grow: 1;
 }
+.mk-view-config .mk-is-active,
 .mk-table-selector .mk-is-active {
   color: var(--text-normal) !important;
 }
@@ -151,7 +157,7 @@
   border-bottom-right-radius: 4px;
   padding-right: 6px;
 }
-.mk-filter span {
+.mk-filter > span {
   border-right: thin solid var(--background-primary);
   padding: 4px 8px;
   display: flex;
@@ -167,7 +173,39 @@
   width: 14px;
   height: 14px;
 }
-
+.mk-query {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.mk-query-filters {
+  flex-direction: column;
+  padding: 0;
+  border-bottom: none;
+}
+.mk-query-filter, .mk-query-group-type {
+  display: flex;
+  width: 100%;
+}
+.mk-query-group-type {
+  padding-bottom: 4px;
+}
+.mk-query-group-type .mk-filter {
+  align-items: center;
+}
+.mk-query-group button {
+  background-color: unset;
+  box-shadow: none;
+width: unset;
+}
+.is-phone .mk-query-group button {
+  background-color: var(--interative-normal);
+}
+.mk-query-group-type > span, 
+.mk-query-filter > span {
+  flex-grow: 1;
+}
 .mk-folder-note {
   display: flex;
   align-items: center;
@@ -194,29 +232,32 @@
 }
 
 .mk-tag-selector {
-  padding: 0 var(--context-padding);
   display: flex;
   gap: 8px;
   margin-top: 8px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
 }
-.mk-tag-selector button div {
-  margin-right: 4px;
-  margin-left: 4px;
-}
+
 .mk-tag-selector svg {
   color: var(--tag-color) !important;
 }
+.mk-tag-selector div {
+  cursor: var(--cursor-link);
+  font-size: var(--font-ui-medium);
+  display: flex;
+}
 .mk-tag-selector button {
+  height: auto;
+  border-radius: var(--tag-radius);
   color: var(--tag-color);
   background-color: var(--tag-background);
   border: var(--tag-border-width) solid var(--tag-border-color);
+  box-shadow: none !important;
   font-size: var(--tag-size);
   vertical-align: baseline;
   border-left: none;
   border-right: none;
-  padding-top: var(--tag-padding-y);
-  padding-bottom: var(--tag-padding-y);
-  box-shadow: none !important;
-  height: unset !important;
+  padding-top: var(--tag-padding-y) !important;
+  padding-bottom: var(--tag-padding-y) !important;
 }

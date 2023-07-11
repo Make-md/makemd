@@ -1,6 +1,8 @@
 import { showDatePickerMenu } from "components/ui/menus/datePickerMenu";
 import { format } from "date-fns";
+import { useCallback } from "preact/hooks";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { formatDate } from "utils/date";
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
 export const DateCell = (props: TableCellProp) => {
@@ -30,16 +32,23 @@ export const DateCell = (props: TableCellProp) => {
       }
     }
   }, [props.editMode]);
-  const showPicker = (e?: React.MouseEvent) => {
-    const offset = e
-      ? (e.target as HTMLElement).getBoundingClientRect()
-      : ref.current.getBoundingClientRect();
-    menuRef.current = showDatePickerMenu(
-      { x: offset.left - 4, y: offset.bottom - 4 },
-      date,
-      saveValue
-    );
-  };
+
+  const showPicker = useCallback(
+    (e?: React.MouseEvent) => {
+      if (props.editMode <= 0) {
+        return;
+      }
+      const offset = e
+        ? (e.target as HTMLElement).getBoundingClientRect()
+        : ref.current.getBoundingClientRect();
+      menuRef.current = showDatePickerMenu(
+        { x: offset.left - 4, y: offset.bottom - 4 },
+        date,
+        saveValue
+      );
+    },
+    [date]
+  );
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
@@ -65,7 +74,7 @@ export const DateCell = (props: TableCellProp) => {
         />
       ) : (
         <div className="mk-cell-date-value" onClick={(e) => showPicker(e)}>
-          {date ? format(date, "MMM dd yyyy") : value}
+          {date ? formatDate(props.plugin, date, props.propertyValue) : value}
         </div>
       )}
     </div>

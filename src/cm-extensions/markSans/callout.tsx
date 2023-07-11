@@ -1,8 +1,11 @@
 import { syntaxTree } from "@codemirror/language";
+import { Annotation, RangeSetBuilder, StateField } from "@codemirror/state";
 import {
-  Annotation, RangeSetBuilder, StateField
-} from "@codemirror/state";
-import { Decoration, DecorationSet, EditorView, WidgetType } from "@codemirror/view";
+  Decoration,
+  DecorationSet,
+  EditorView,
+  WidgetType,
+} from "@codemirror/view";
 import { PortalType } from "types/types";
 import { genId } from "utils/uuid";
 
@@ -17,7 +20,7 @@ export const flowIDStateField = StateField.define<string | undefined>({
 });
 
 export const flowTypeStateField = StateField.define<PortalType>({
-  create: () => "none",
+  create: (state) => "none",
   update(value, tr) {
     if (tr.annotation(portalTypeAnnotation))
       return tr.annotation(portalTypeAnnotation);
@@ -30,7 +33,7 @@ export const calloutField = StateField.define<DecorationSet>({
     return Decoration.none;
   },
   update(value, tr) {
-    if (tr.state.field(flowTypeStateField) != "doc") {
+    if (tr.state.field(flowTypeStateField, false) != "doc") {
       return value;
     }
 

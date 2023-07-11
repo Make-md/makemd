@@ -30,7 +30,7 @@ export const BooleanCell = (props: TableCellProp & { column: MDBColumn }) => {
 
   if (props.editMode < CellEditMode.EditModeView) {
     return (
-      <div className="mk-cell-option-item">
+      <div className="mk-cell-boolean">
         <input type="checkbox" checked={value} onChange={onChange} />
         <div>{props.column.name}</div>
       </div>

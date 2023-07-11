@@ -1,21 +1,15 @@
 import { DataTypeView } from "components/ContextView/DataTypeView/DataTypeView";
-import { showSelectMenu } from "components/ui/menus/menuItems";
+import { showPropertyMenu } from "components/ui/menus/propertyMenu";
 import "css/FileContext.css";
-import i18n from "i18n";
-import { uniq } from "lodash";
+import { initiateContextIfNotExists, insertContextItems } from "dispatch/mdb";
 import MakeMDPlugin from "main";
-import { TFile } from "obsidian";
+import { useState } from "preact/hooks";
 import React, { useContext, useMemo } from "react";
-import { fieldTypes } from "schemas/mdb";
-import { DBRow, MDBField } from "types/mdb";
-import {
-  frontMatterForFile,
-  frontMatterKeys,
-  guestimateTypes,
-  yamlTypeToMDBType
-} from "utils/contexts/fm";
-import { getAbstractFileAtPath } from "utils/file";
-import { folderPathToString, uniqCaseInsensitive } from "utils/tree";
+import { FilePropertyName } from "types/context";
+import { DBRow, MDBColumn, MDBField } from "types/mdb";
+import { optionValuesForColumn } from "utils/contexts/mdb";
+import { uiIconSet } from "utils/icons";
+import { contextDisplayName } from "utils/strings";
 import { MDBContext } from "../ContextView/MDBContext";
 
 type FileContext = Record<
@@ -30,20 +24,28 @@ type FileContext = Record<
 export const FileContextList = (props: {
   plugin: MakeMDPlugin;
   path: string;
+  color: string;
 }) => {
   const { path } = props;
   const {
     tableData,
     newColumn,
+    cols,
     tagContexts,
     contextTable,
-    folderPath,
-    isFolderContext,
-    setContextTable,
-    saveDB,
-    saveContextDB,
-    dbPath,
+    contextInfo,
+    saveColumn,
+    hideColumn,
+    delColumn,
+    sortColumn,
+    updateFieldValue,
+    updateValue,
+    loadContextFields,
+    predicate,
   } = useContext(MDBContext);
+  const [collapsed, setCollapsed] = useState(
+    !props.plugin.settings.inlineContextSectionsExpanded
+  );
 
   const fileContext: FileContext = useMemo(() => {
     const td = tableData
@@ -51,8 +53,12 @@ export const FileContextList = (props: {
           folder: {
             cols: tableData.cols.filter(
               (f) =>
-                f.name != "File" &&
-                f.type != "fileprop" &&
+                f.name != FilePropertyName &&
+                !(
+                  f.type == "fileprop" &&
+                  (f.value.startsWith(FilePropertyName) ||
+                    f.value.indexOf(".") == -1)
+                ) &&
                 f.hidden != "true" &&
                 f.type != "preview"
             ),
@@ -69,7 +75,7 @@ export const FileContextList = (props: {
               [c]: {
                 cols: contextTable[c].cols.filter(
                   (f) =>
-                    f.name != "File" &&
+                    f.name != FilePropertyName &&
                     f.type != "fileprop" &&
                     f.hidden != "true" &&
                     f.type != "preview"
@@ -91,119 +97,148 @@ export const FileContextList = (props: {
       ...td,
     };
   }, [tableData, contextTable, tagContexts, path]);
-  const showNewMenu = (e: React.MouseEvent) => {
-    const offset = (e.target as HTMLElement).getBoundingClientRect();
-
-    const files = [path]
-      .map((f) => getAbstractFileAtPath(app, f))
-      .filter((f) => f instanceof TFile);
-    const types = guestimateTypes(
-      files.map((f) => f.path),
-      false
-    );
-
-    const fmFields = files
-      .reduce((p, c) => {
-        const fm = frontMatterForFile(c);
-        const fmKeys = uniqCaseInsensitive(frontMatterKeys(fm));
-        return uniq([...p, ...fmKeys]);
-      }, [] as string[])
-      .filter((f) => !tableData.cols.some((g) => g.name == f));
-    const allTypes = [
-      ...fmFields.map((f) => ({
-        name: f,
-        description: i18n.labels.syncFrontmatterProperty,
-        value: "fm." + f + "." + yamlTypeToMDBType(types[f]),
-      })),
-      ...fieldTypes
-        .filter((f) => f.restricted != true)
-        .map((f) => ({
-          name: f.label,
-          description: i18n.labels.newProperty,
-          value: "type." + f.type,
-        })),
-    ];
-
-    const uniqueNameFromString = (name: string, cols: string[]) => {
-      let newName = name;
-      if (cols.includes(newName)) {
-        let append = 1;
-        while (cols.includes(newName)) {
-          newName = name + append.toString();
-          append += 1;
+  const saveField = (field: MDBColumn, oldField: MDBColumn) => {
+    if (field.name.length > 0) {
+      if (
+        field.name != oldField.name ||
+        field.type != oldField.type ||
+        field.value != oldField.value ||
+        field.attrs != oldField.attrs
+      ) {
+        const saveResult = saveColumn(field, oldField);
+      }
+    }
+  };
+  const saveContext = (
+    field: MDBColumn,
+    oldField: MDBColumn,
+    value: string[]
+  ) => {
+    const newContext = value[0];
+    initiateContextIfNotExists(props.plugin, newContext)
+      .then((f) => {
+        if (f) {
+          return insertContextItems(
+            props.plugin,
+            optionValuesForColumn(
+              field.name,
+              field.table == "" ? tableData : contextTable[field.table]
+            ),
+            newContext
+          );
         }
-      }
-      return newName;
+      })
+      .then((f) => loadContextFields(newContext));
+    const newField = {
+      ...field,
+      value: newContext ?? "",
     };
-    const saveOptions = (_: string[], values: string[]) => {
-      const newValue = values[0];
-      const newType = newValue.split(".");
-      if (newType[0] == "fm") {
-        newColumn({
-          name: uniqueNameFromString(
-            newType[1],
-            tableData.cols.map((f) => f.name)
-          ),
-          schemaId: tableData.schema.id,
-          table: "",
-          type: newType[2],
-        });
-      } else if (newType[0] == "type") {
-        newColumn({
-          name: uniqueNameFromString(
-            newType[1],
-            tableData.cols.map((f) => f.name)
-          ),
-          schemaId: tableData.schema.id,
-          table: "",
-          type: newType[1],
-        });
-      }
-    };
-    showSelectMenu(
+    saveColumn(newField, oldField);
+  };
+  const showMenu = (e: React.MouseEvent, field: MDBColumn) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    const options = optionValuesForColumn(
+      field.name,
+      field.table == "" ? tableData : contextTable[field.table]
+    );
+    showPropertyMenu(
+      props.plugin,
       { x: offset.left, y: offset.top + 30 },
-      {
-        multi: false,
-        editable: false,
-        value: [],
-        saveOptions: saveOptions,
-        placeholder: i18n.labels.propertyItemSelectPlaceholder,
-        searchable: true,
-        options: allTypes,
-        showAll: true,
-      }
+      true,
+      options,
+      field,
+      cols,
+      contextInfo.contextPath,
+      (newField) => saveField(newField, field),
+      (newField, val) => saveContext(newField, field, val),
+      hideColumn,
+      delColumn,
+      sortColumn,
+      predicate.colsHidden.includes(field.name + field.table)
     );
   };
   return (
     <>
-      {fileContext.folder && fileContext.folder.data && (
-        <div className="mk-file-context-section">
-          <div className="mk-file-context-title">
-            {isFolderContext ? folderPathToString(folderPath) : folderPath}
-          </div>
-          {fileContext.folder.cols.map((f, i) => (
-            <div key={i} className="mk-file-context-row">
-              <div className="mk-file-context-field">{f.name}</div>
-              <div className="mk-file-context-value">
-                <DataTypeView
-                  plugin={props.plugin}
-                  initialValue={fileContext.folder.data[f.name]}
-                  index={fileContext.folder.dataIndex}
-                  file={fileContext.folder.data["File"]}
-                  column={{ ...f, table: "" }}
-                  editable={true}
-                ></DataTypeView>
-              </div>
+      {fileContext.folder &&
+        fileContext.folder.data &&
+        fileContext.folder.cols.length > 0 && (
+          <div className="mk-file-context-section">
+            <div
+              className="mk-file-context-title"
+              onClick={(e) => {
+                setCollapsed(!collapsed);
+                e.stopPropagation();
+              }}
+            >
+              <div
+                className={`mk-icon-xsmall`}
+                dangerouslySetInnerHTML={{
+                  __html:
+                    contextInfo.type == "folder"
+                      ? uiIconSet["mk-ui-folder"]
+                      : contextInfo.type == "space"
+                      ? uiIconSet["mk-ui-spaces"]
+                      : uiIconSet["mk-ui-tags"],
+                }}
+              ></div>
+              {contextDisplayName(contextInfo)}
+              <button
+                className={`mk-collapse mk-inline-button mk-icon-xxsmall ${
+                  collapsed ? "mk-collapsed" : ""
+                }`}
+                dangerouslySetInnerHTML={{
+                  __html: uiIconSet["mk-ui-collapse-sm"],
+                }}
+              ></button>
             </div>
-          ))}
-          <div
-            className="mk-file-context-field-new"
-            onClick={(e) => showNewMenu(e)}
-          >
-            + New Field
+            {!collapsed ? (
+              <>
+                {fileContext.folder.cols.map((f, i) => (
+                  <div key={i} className="mk-file-context-row">
+                    <div
+                      className="mk-file-context-field"
+                      onClick={(e) => showMenu(e, { ...f, table: "" })}
+                    >
+                      {f.name}
+                    </div>
+                    <div className="mk-file-context-value">
+                      <DataTypeView
+                        plugin={props.plugin}
+                        initialValue={fileContext.folder.data[f.name]}
+                        index={fileContext.folder.dataIndex}
+                        file={fileContext.folder.data[FilePropertyName]}
+                        column={{ ...f, table: "" }}
+                        editable={!contextInfo.readOnly}
+                        updateValue={(v) =>
+                          updateValue(
+                            f.name,
+                            v,
+                            "",
+                            fileContext.folder.dataIndex,
+                            fileContext.folder.data[FilePropertyName]
+                          )
+                        }
+                        updateFieldValue={(fv, v) =>
+                          updateFieldValue(
+                            f.name,
+                            fv,
+                            v,
+                            "",
+                            fileContext.folder.dataIndex,
+                            fileContext.folder.data[FilePropertyName]
+                          )
+                        }
+                        contextTable={contextTable}
+                      ></DataTypeView>
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <></>
+            )}
           </div>
-        </div>
-      )}
+        )}
     </>
   );
 };

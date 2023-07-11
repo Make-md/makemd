@@ -1,45 +1,55 @@
 .mk-section {
   display: flex;
-  padding: 4px;
-  padding-left: 16px;
-  margin-top: 8px;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
   width: 100%;
   justify-content: space-between;
   margin-left: 0;
-  padding-left: 4px !important;
 }
 
-body:not(.is-mobile) .mk-section-title:hover {
-  background: var(--nav-item-background-hover);
+.mk-section-wrapper {
+  padding-top: 8px !important;
+}
+
+
+.mk-section-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.mk-section-tabs .mk-is-active {
+  background: none;
+  font-weight: var(--bold-weight);
+  color: var(--text-normal);
+}
+
+.mk-section-tabs .mk-section-title {
+  font-weight: var(--normal-weight);
+  background: none;
+  flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 12px;
+    gap: 8px;
+    height: unset;
+    flex-direction: column;
 }
 
 .mk-section-title {
   height: 24px;
-  border-radius: 4px;
-  padding-left: 4px;
   display: flex;
   min-width: 0;
   align-items: center;
 }
 
 .mk-section-title .mk-tree-text {
-  padding: 0.25rem 0rem 0.3rem 0.25rem;
+  padding: 0.25rem 0.3rem;
 }
 
-body:not(.is-mobile) .mk-section .mk-collapse {
-  display: none;
-}
-.mk-section-title .mk-collapse {
-  display: flex;
-}
 
-body:not(.is-mobile) .mk-section-title:hover .mk-collapse {
-  display: flex;
-}
-.mk-section-title .mk-collapse svg {
-  margin-left: 4px;
-  width: 10px;
-  height: 10px;
+
+.mk-section .mk-collapse svg {
+  margin: 4px;
+  width: 8px;
+  height: 8px;
 }

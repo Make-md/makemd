@@ -1,8 +1,9 @@
-import React, { forwardRef } from "react";
 import classNames from "classnames";
+import MakeMDPlugin from "main";
+import React, { forwardRef, useContext } from "react";
 import { MDBColumn } from "types/mdb";
 import { DataTypeView } from "../DataTypeView/DataTypeView";
-import MakeMDPlugin from "main";
+import { MDBContext } from "../MDBContext";
 
 export interface CardColumnProps {
   id: string;
@@ -49,7 +50,8 @@ export const CardColumnView = forwardRef<HTMLDivElement, CardColumnProps>(
     ref
   ) => {
     const Component = "div";
-
+    const { updateValue, updateFieldValue, contextTable } =
+      useContext(MDBContext);
     return (
       <Component
         {...props}
@@ -81,6 +83,26 @@ export const CardColumnView = forwardRef<HTMLDivElement, CardColumnProps>(
               file={file}
               column={field}
               editable={false}
+              updateValue={(value) =>
+                updateValue(
+                  field.name,
+                  value,
+                  field.table,
+                  parseInt(id) * -1,
+                  file
+                )
+              }
+              updateFieldValue={(value, fieldValue) =>
+                updateFieldValue(
+                  field.name,
+                  fieldValue,
+                  value,
+                  field.table,
+                  parseInt(id) * -1,
+                  file
+                )
+              }
+              contextTable={contextTable}
             ></DataTypeView>
             <div className={"Actions"} {...handleProps}></div>
           </div>

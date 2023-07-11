@@ -1,14 +1,9 @@
-import { Filter, filterFnTypes, FilterFunctionType } from "./filter";
-import { Sort, sortFnTypes, SortFunctionType } from "./sort";
+import { Filter, Predicate, Sort } from "types/predicate";
+import { FilterFunctionType } from "./filter";
+import { filterFnTypes } from "./filterFns/filterFnTypes";
+import { sortFnTypes, SortFunctionType } from "./sort";
 
-export type Predicate = {
-  filters: Filter[];
-  sort: Sort[];
-  groupBy: string[];
-  colsOrder: string[];
-  colsHidden: string[];
-  colsSize: Record<string, number>;
-};
+
 
 export const defaultPredicateFnForType = (
   type: string,
@@ -34,7 +29,7 @@ export const cleanPredicateType = (
   type: Sort[] | Filter[],
   definedTypes: FilterFunctionType | SortFunctionType
 ) => {
-  return type.filter((f) => Object.keys(definedTypes).find((g) => g == f.type));
+  return type.filter((f) => Object.keys(definedTypes).find((g) => g == f.fn));
 };
 
 export const validatePredicate = (prevPredicate: Predicate): Predicate => {
@@ -68,5 +63,4 @@ export const defaultPredicate: Predicate = {
   colsHidden: [],
   colsSize: {},
 };
-export const splitString = (str: string): string[] =>
-  str?.match(/(\\.|[^,])+/g) ?? [];
+

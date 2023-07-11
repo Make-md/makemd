@@ -1,6 +1,9 @@
 import {
-  Annotation, ChangeSpec, EditorState,
-  Transaction, TransactionSpec
+  Annotation,
+  ChangeSpec,
+  EditorState,
+  Transaction,
+  TransactionSpec,
 } from "@codemirror/state";
 import { TransactionRange } from "types/types";
 import { iterateTreeAtPos, iterateTreeInSelection } from "utils/codemirror";

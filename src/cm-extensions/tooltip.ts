@@ -1,19 +1,19 @@
 import {
+  EditorState,
+  Extension,
+  Facet,
+  MapMode,
+  StateEffect,
+  StateEffectType,
+  StateField
+} from "@codemirror/state";
+import {
+  Direction,
   EditorView,
   ViewPlugin,
   ViewUpdate,
-  Direction,
-  logException,
+  logException
 } from "@codemirror/view";
-import {
-  EditorState,
-  StateEffect,
-  StateEffectType,
-  Facet,
-  StateField,
-  Extension,
-  MapMode,
-} from "@codemirror/state";
 
 /**
  * Codemirror tooltip
@@ -62,6 +62,15 @@ class TooltipViewManager {
   }
 
   update(update: ViewUpdate) {
+    if (update.focusChanged && !update.view.hasFocus)  {
+      let input = update.state.facet(this.facet);
+      for (let t of this.tooltipViews)
+        t.dom.remove();
+      this.input = input;
+      this.tooltips = [];
+      this.tooltipViews = [];
+      return true;
+    }
     let input = update.state.facet(this.facet);
     let tooltips = input.filter((x) => x) as Tooltip[];
     if (input === this.input) {
@@ -212,6 +221,7 @@ const tooltipPlugin = ViewPlugin.fromClass(
 
     createContainer() {
       if (this.parent) {
+        
         this.container = document.createElement("div");
         this.container.style.position = "relative";
         this.container.className = this.view.themeClasses;
@@ -299,11 +309,14 @@ const tooltipPlugin = ViewPlugin.fromClass(
         pos: this.manager.tooltips.map((t, i) => {
           let tv = this.manager.tooltipViews[i];
           return tv.getCoords
-            ? tv.getCoords(t.pos)
-            : this.view.coordsAtPos(t.pos);
+          ? tv.getCoords(t.pos) : this.view.coordsAtPos(t.pos);
         }),
         size: this.manager.tooltipViews.map(({ dom }) =>
-          dom.getBoundingClientRect()
+        {
+          
+          const size = dom.getBoundingClientRect()
+          return size;
+        }
         ),
         space: this.view.state.facet(tooltipConfig).tooltipSpace(this.view),
       };
@@ -376,12 +389,46 @@ const tooltipPlugin = ViewPlugin.fromClass(
               top = above
                 ? r.top - height - 2 - arrowHeight
                 : r.bottom + arrowHeight + 2;
+                const computeFrameOffset = (win: any, rect: DOMRect) => {
+                  const {top, right, bottom, left, width, height, x, y} = rect
+                  const dims : Rect = {top, right, bottom, left};
+                  // initialize our result variable
+                  if (typeof dims === 'undefined') {
+                      const dims = { top: 0, left: 0 };
+                  }
+              
+                  // find our <iframe> tag within our parent window
+                  const frames = win.parent.document.getElementsByTagName('iframe');
+                  let frame;
+                  let found = false;
+                  for (let i=0, len=frames.length; i<len; i++) {
+                      frame = frames[i];
+                      if (frame.contentWindow == win) {
+                          found = true;
+                          break;
+                      }
+                  }
+              
+                  // add the offset & recur up the frame chain
+                  if (found) {
+                      const rect = frame.getBoundingClientRect();
+                      dims.left += rect.left;
+                      dims.top += rect.top;
+                      if (win !== top) {
+                          computeFrameOffset(win.parent, rect);
+                      }
+                  } else {
+                    return { top: 0, left: 0 }
+                  }
+                  return dims;
+              };
+                const viewCoords = computeFrameOffset(this.view.dom.ownerDocument.defaultView, editor)
         if (this.position == "absolute") {
-          dom.style.top = top - measured.parent.top + "px";
-          dom.style.left = left - measured.parent.left + "px";
+          dom.style.top = viewCoords.top + top - measured.parent.top + "px";
+          dom.style.left = viewCoords.left + left - measured.parent.left + "px";
         } else {
-          dom.style.top = top + "px";
-          dom.style.left = left + "px";
+          dom.style.top = viewCoords.top + top + "px";
+          dom.style.left = viewCoords.left + left + "px";
         }
         if (arrow)
           arrow.style.left = `${

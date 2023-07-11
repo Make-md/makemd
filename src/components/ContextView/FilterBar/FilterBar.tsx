@@ -1,54 +1,41 @@
-import {
-  inputMenuItem,
-  showSelectMenu
-} from "components/ui/menus/menuItems";
 import { showDatePickerMenu } from "components/ui/menus/datePickerMenu";
+import { inputMenuItem, showSelectMenu } from "components/ui/menus/menuItems";
+import { showPropertyMenu } from "components/ui/menus/propertyMenu";
+import { ContextEditorModal } from "components/ui/modals/contextEditorModal";
 import { MergeColumnModal } from "components/ui/modals/mergeColumnModal";
 import { SaveViewModal } from "components/ui/modals/saveViewModal";
+import { VaultChangeModal } from "components/ui/modals/vaultChangeModals";
 import "css/FilterBar.css";
 import { isMouseEvent } from "hooks/useLongPress";
 import i18n from "i18n";
-import { uniq } from "lodash";
 import MakeMDPlugin from "main";
-import {
-  Menu, TFile
-} from "obsidian";
-import { getAPI } from "obsidian-dataview";
+import { Menu, TFolder } from "obsidian";
 import React, { useContext, useRef } from "react";
-import { defaultTableFields } from "schemas/mdb";
-import { DBTable, MDBColumn, MDBSchema } from "types/mdb";
+import { FilePropertyName } from "types/context";
+import { MDBColumn, MDBSchema } from "types/mdb";
+import { Filter, Sort } from "types/predicate";
+import { contextEmbedStringFromContext } from "utils/contexts/contexts";
+import { optionValuesForColumn } from "utils/contexts/mdb";
+import { filterFnLabels } from "utils/contexts/predicate/filterFns/filterFnLabels";
+import { filterFnTypes } from "utils/contexts/predicate/filterFns/filterFnTypes";
+import { sortFnTypes } from "utils/contexts/predicate/sort";
 import {
-  frontMatterForFile,
-  frontMatterKeys,
-  guestimateTypes,
-  mergeTableData,
-  parseFrontMatter,
-  saveContextToFile
-} from "utils/contexts/fm";
-import { Filter, filterFnTypes } from "utils/contexts/predicate/filter";
-import { Sort, sortFnTypes } from "utils/contexts/predicate/sort";
-import { getAbstractFileAtPath } from "utils/file";
+  createNewCanvasFile,
+  getAbstractFileAtPath,
+  newFileInFolder,
+} from "utils/file";
 import { uiIconSet } from "utils/icons";
-import { sanitizeTableName } from "utils/sanitize";
+import { serializeMultiString } from "utils/serializer";
+import { filePathToString } from "utils/strings";
 import {
-  filePathToString, uniqCaseInsensitive,
-  uniqueNameFromString
-} from "utils/tree";
-import {
-  defaultPredicateFnForType, predicateFnsForType,
-  splitString
+  defaultPredicateFnForType,
+  predicateFnsForType,
 } from "../../../utils/contexts/predicate/predicate";
+import { parseMultiString } from "../../../utils/parser";
 import { MDBContext } from "../MDBContext";
 import { SearchBar } from "./SearchBar";
-import { TagSelector } from "./TagSelector";
 
-export const FilterBar = (props: {
-  plugin: MakeMDPlugin;
-  folderNoteName?: string;
-  folderNoteOpen?: boolean;
-  viewFolderNote?: (open: boolean) => void;
-}) => {
-  const { folderNoteOpen, viewFolderNote } = props;
+export const FilterBar = (props: { plugin: MakeMDPlugin }) => {
   const ctxRef = useRef(null);
   const {
     tables,
@@ -56,7 +43,6 @@ export const FilterBar = (props: {
     setDBSchema,
     loadContextFields,
     cols,
-    isFolderContext,
     deleteSchema,
     saveSchema,
     saveDB,
@@ -66,14 +52,18 @@ export const FilterBar = (props: {
     predicate,
     tagContexts,
     savePredicate,
+    hideColumn,
+    saveColumn,
+    sortColumn,
+    delColumn,
     schema,
     dbSchema,
-    dbPath,
+    contextInfo,
     contextTable,
     tableData,
   } = useContext(MDBContext);
   const filteredCols = cols.filter((f) => f.hidden != "true");
-  const dataViewAPI = getAPI();
+
   const saveViewType = (type: string) => {
     saveSchema({
       ...schema,
@@ -81,18 +71,18 @@ export const FilterBar = (props: {
     });
   };
 
+  const views = tables.filter((f) => f.type != "db" && f.def == dbSchema?.id);
+
   const selectView = (_dbschema: MDBSchema, value?: string) => {
-    viewFolderNote && folderNoteOpen && viewFolderNote(false);
     setDBSchema(_dbschema);
     value && setSchema(tables.find((f) => f.id == value));
   };
-  const openView = (e: React.MouseEvent, _dbschema: MDBSchema) => {
-    const views = tables.filter((f) => f.type != "db" && f.def == _dbschema.id);
-    if (views.length == 0) {
-      selectView(_dbschema);
+  const openView = (e: React.MouseEvent, view: MDBSchema) => {
+    const dbSchema = tables.find((f) => f.type == "db" && f.id == view.def);
+    if (dbSchema) {
+      selectView(dbSchema, view.id);
       return;
     }
-    selectView(_dbschema, views[0].id);
     return;
   };
   const showViewMenu = (e: React.MouseEvent, _dbschema: MDBSchema) => {
@@ -139,6 +129,49 @@ export const FilterBar = (props: {
     });
   };
 
+  const viewContextMenu = (e: React.MouseEvent, _schema: MDBSchema) => {
+    const fileMenu = new Menu();
+
+    fileMenu.addSeparator();
+    fileMenu.addItem((menuItem) => {
+      menuItem.setTitle("Copy Embed Link");
+      menuItem.onClick(() => {
+        navigator.clipboard.writeText(
+          contextEmbedStringFromContext(contextInfo, _schema.id)
+        );
+      });
+    });
+    fileMenu.addItem((menuItem) => {
+      menuItem.setTitle("Rename View");
+      menuItem.onClick(() => {
+        let vaultChangeModal = new SaveViewModal(
+          _schema,
+          (s) => saveSchema(s),
+          "rename view"
+        );
+        vaultChangeModal.open();
+      });
+    });
+    fileMenu.addItem((menuItem) => {
+      menuItem.setTitle("Delete View");
+      menuItem.onClick(() => {
+        deleteSchema(_schema);
+      });
+    });
+
+    // Trigger
+    if (isMouseEvent(e)) {
+      fileMenu.showAtPosition({ x: e.pageX, y: e.pageY });
+    } else {
+      fileMenu.showAtPosition({
+        // @ts-ignore
+        x: e.nativeEvent.locationX,
+        // @ts-ignore
+        y: e.nativeEvent.locationY,
+      });
+    }
+  };
+
   const showFilterMenu = (e: React.MouseEvent) => {
     const menu = new Menu();
     menu.addItem((item) => {
@@ -162,13 +195,15 @@ export const FilterBar = (props: {
         saveViewType("list");
       });
     });
-    menu.addItem((item) => {
-      item.setTitle(i18n.menu.flowView);
-      item.setIcon("infinity");
-      item.onClick(() => {
-        saveViewType("flow");
+    if (dbSchema?.primary) {
+      menu.addItem((item) => {
+        item.setTitle(i18n.menu.flowView);
+        item.setIcon("infinity");
+        item.onClick(() => {
+          saveViewType("flow");
+        });
       });
-    });
+    }
     menu.addSeparator();
     menu.addItem((item) => {
       item.setTitle(i18n.menu.groupBy);
@@ -219,7 +254,7 @@ export const FilterBar = (props: {
       const type = defaultPredicateFnForType(fieldType, sortFnTypes);
       const newSort: Sort = {
         field,
-        type,
+        fn: type,
       };
       savePredicate({
         ...predicate,
@@ -254,12 +289,12 @@ export const FilterBar = (props: {
         fieldType == "boolean"
           ? {
               field,
-              type,
+              fn: type,
               value: "true",
             }
           : {
               field,
-              type,
+              fn: type,
               value: "",
             };
       savePredicate({
@@ -278,7 +313,7 @@ export const FilterBar = (props: {
       const type = newType[0];
       const newSort: Sort = {
         ...sort,
-        type,
+        fn: type,
       };
       savePredicate({
         ...predicate,
@@ -311,22 +346,67 @@ export const FilterBar = (props: {
   };
 
   const showColsMenu = (e: React.MouseEvent) => {
-    const offset = (e.target as HTMLElement).getBoundingClientRect();
-    showSelectMenu(
-      { x: offset.left, y: offset.top + 30 },
-      {
-        multi: false,
-        editable: false,
-        value: [],
-        options: filteredCols.map((f) => ({
-          name: f.name + f.table,
-          value: f.name + f.table,
-        })),
-        saveOptions: addFilter,
-        placeholder: i18n.labels.propertyItemSelectPlaceholder,
-        searchable: false,
-        showAll: true,
+    let vaultChangeModal = new ContextEditorModal(
+      props.plugin,
+      contextInfo,
+      schema?.id
+    );
+    vaultChangeModal.open();
+    // const offset = (e.target as HTMLElement).getBoundingClientRect();
+    // showSelectMenu(
+    //   { x: offset.left, y: offset.top + 30 },
+    //   {
+    //     multi: false,
+    //     editable: false,
+    //     value: [],
+
+    //     options: cols.map((f) => ({
+    //       name: f.name + f.table,
+    //       value: f.name + f.table,
+    //     })),
+    //     saveOptions: (_, values) =>
+    //       showMenu(
+    //         e,
+    //         cols.find((f) => f.name + f.table == values[0])
+    //       ),
+    //     placeholder: i18n.labels.propertyItemSelectPlaceholder,
+    //     searchable: true,
+    //     showAll: true,
+    //   }
+    // );
+  };
+  const saveField = (field: MDBColumn, oldField: MDBColumn) => {
+    if (field.name.length > 0) {
+      if (
+        field.name != oldField.name ||
+        field.type != oldField.type ||
+        field.value != oldField.value ||
+        field.attrs != oldField.attrs
+      ) {
+        const saveResult = saveColumn(field, oldField);
       }
+    }
+  };
+  const showMenu = (e: React.MouseEvent, field: MDBColumn) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    const options = optionValuesForColumn(
+      field.name,
+      field.table == "" ? tableData : contextTable[field.table]
+    );
+    showPropertyMenu(
+      props.plugin,
+      { x: offset.left, y: offset.top + 30 },
+      true,
+      options,
+      field,
+      cols,
+      contextInfo.contextPath,
+      (newField) => saveField(newField, field),
+      (newField, val) => {},
+      hideColumn,
+      delColumn,
+      sortColumn,
+      predicate.colsHidden.includes(field.name + field.table)
     );
   };
 
@@ -336,7 +416,7 @@ export const FilterBar = (props: {
       const type = newType[0];
       const newFilter: Filter = {
         ...filter,
-        type,
+        fn: type,
       };
       savePredicate({
         ...predicate,
@@ -357,7 +437,7 @@ export const FilterBar = (props: {
         editable: false,
         value: [],
         options: filtersForType.map((f) => ({
-          name: filterFnTypes[f].label,
+          name: filterFnLabels[f],
           value: f,
         })),
         saveOptions: saveFilter,
@@ -376,10 +456,12 @@ export const FilterBar = (props: {
         multi: false,
         editable: false,
         value: [],
-        options: filteredCols.map((f) => ({
-          name: f.name + f.table,
-          value: f.name + f.table,
-        })),
+        options: filteredCols
+          .filter((f) => predicateFnsForType(f.type, filterFnTypes).length > 0)
+          .map((f) => ({
+            name: f.name + f.table,
+            value: f.name + f.table,
+          })),
         saveOptions: addFilter,
         placeholder: i18n.labels.propertyItemSelectPlaceholder,
         searchable: false,
@@ -429,113 +511,55 @@ export const FilterBar = (props: {
     );
   };
 
-  const showFMMenu = (e: React.MouseEvent) => {
-    const saveFM = () => {
-      data.forEach((f) => {
-        const file = getAbstractFileAtPath(app, f.File);
-        if (file && file instanceof TFile) {
-          saveContextToFile(file, cols, f);
-        }
+  const showAddMenu = (e: React.MouseEvent | React.TouchEvent) => {
+    const fileMenu = new Menu();
+    const folder = getAbstractFileAtPath(
+      app,
+      contextInfo.contextPath
+    ) as TFolder;
+    fileMenu.addItem((menuItem) => {
+      menuItem.setIcon("edit");
+      menuItem.setTitle(i18n.buttons.createNote);
+      menuItem.onClick((ev: MouseEvent) => {
+        newFileInFolder(props.plugin, folder);
       });
-    };
-    const getFM = async () => {
-      const table = tableData;
-      const files = data.map((c) => c.File);
+    });
+    fileMenu.addItem((menuItem) => {
+      menuItem.setIcon("layout-dashboard");
+      menuItem.setTitle(i18n.buttons.createCanvas);
+      menuItem.onClick((ev: MouseEvent) => {
+        createNewCanvasFile(props.plugin, folder, "");
+      });
+    });
 
-      const importDV = (files: string[]): DBTable => {
-        return files.reduce(
-          (p, c) => {
-            const dvValues = dataViewAPI.page(c);
-            const fmKeys = uniqCaseInsensitive(
-              Object.keys(dvValues ?? {})
-                .filter((f, i, self) =>
-                  !self.find(
-                    (g, j) =>
-                      g.toLowerCase().replace(/\s/g, "-") ==
-                        f.toLowerCase().replace(/\s/g, "-") && i > j
-                  )
-                    ? true
-                    : false
-                )
-                .filter((f) => f != "file")
-            );
-            return {
-              uniques: [],
-              cols: uniqCaseInsensitive([...p.cols, ...fmKeys]),
-              rows: [
-                ...p.rows,
-                {
-                  File: c,
-                  ...fmKeys.reduce(
-                    (p, c) => ({
-                      ...p,
-                      [c]: parseFrontMatter(c, dvValues[c], true),
-                    }),
-                    {}
-                  ),
-                },
-              ],
-            };
-          },
-          { uniques: [], cols: [], rows: [] }
+    fileMenu.addItem((menuItem) => {
+      menuItem.setIcon("folder-plus");
+      menuItem.setTitle(i18n.buttons.createFolder);
+      menuItem.onClick((ev: MouseEvent) => {
+        let vaultChangeModal = new VaultChangeModal(
+          props.plugin,
+          folder,
+          "create folder",
+          "/"
         );
-      };
-      const importYAML = (files: string[]): DBTable => {
-        return files
-          .map((f) => getAbstractFileAtPath(app, f))
-          .filter((f) => f)
-          .reduce(
-            (p, c) => {
-              const fm = frontMatterForFile(c);
-              const fmKeys = uniqCaseInsensitive(frontMatterKeys(fm));
+        vaultChangeModal.open();
+      });
+    });
 
-              return {
-                uniques: [],
-                cols: uniq([...p.cols, ...fmKeys]),
-                rows: [
-                  ...p.rows,
-                  {
-                    File: c.path,
-                    ...fmKeys.reduce(
-                      (p, c) => ({
-                        ...p,
-                        [c]: parseFrontMatter(c, fm[c], false),
-                      }),
-                      {}
-                    ),
-                  },
-                ],
-              };
-            },
-            { uniques: [], cols: [], rows: [] }
-          );
-      };
-
-      const yamlTableData = dataViewAPI ? importDV(files) : importYAML(files);
-      const yamlTypes = guestimateTypes(files, dataViewAPI ? true : false);
-      const newTable = mergeTableData(table, yamlTableData, yamlTypes);
-      saveDB(newTable);
-    };
+    if (isMouseEvent(e)) {
+      fileMenu.showAtPosition({ x: e.pageX, y: e.pageY });
+    } else {
+      fileMenu.showAtPosition({
+        // @ts-ignore
+        x: e.nativeEvent.locationX,
+        // @ts-ignore
+        y: e.nativeEvent.locationY,
+      });
+    }
+    return false;
+  };
+  const showFMMenu = (e: React.MouseEvent) => {
     const menu = new Menu();
-    if (dataViewAPI) {
-      menu.addItem((menuItem) => {
-        menuItem.setIcon("file-up");
-        menuItem.setTitle(i18n.menu.importDataview);
-        menuItem.onClick(() => {
-          getFM();
-        });
-      });
-    }
-    //@ts-ignore
-    if (app.fileManager.processFrontMatter) {
-      menu.addItem((menuItem) => {
-        menuItem.setIcon("file-down");
-        menuItem.setTitle(i18n.menu.saveAllProperties);
-        menuItem.onClick(() => {
-          saveFM();
-        });
-      });
-    }
 
     menu.addItem((menuItem) => {
       menuItem.setIcon("log-in");
@@ -584,7 +608,9 @@ export const FilterBar = (props: {
             ...(contextTable[c]?.cols
               .filter(
                 (f) =>
-                  f.name != "File" && f.hidden != "true" && f.type != "fileprop"
+                  f.name != FilePropertyName &&
+                  f.hidden != "true" &&
+                  f.type != "fileprop"
               )
               .map((f) => ({ ...f, table: c })) ?? []),
           ],
@@ -601,8 +627,13 @@ export const FilterBar = (props: {
     vaultChangeModal.open();
   };
 
+  const editViewModal = () => {
+    let vaultChangeModal = new SaveViewModal(schema, saveSchema, "rename view");
+    vaultChangeModal.open();
+  };
+
   const selectFilterValue = (e: React.MouseEvent, filter: Filter) => {
-    switch (filterFnTypes[filter.type].valueType) {
+    switch (filterFnTypes[filter.fn].valueType) {
       case "text":
       case "number":
         {
@@ -660,7 +691,7 @@ export const FilterBar = (props: {
           const saveOptions = (options: string[], values: string[]) => {
             const newFilter: Filter = {
               ...filter,
-              value: values.join(","),
+              value: serializeMultiString(values),
             };
             savePredicate({
               ...predicate,
@@ -677,8 +708,8 @@ export const FilterBar = (props: {
               {
                 multi: true,
                 editable: false,
-                value: splitString(filter.value),
-                options: splitString(col.value).map((f) => ({
+                value: parseMultiString(filter.value),
+                options: parseMultiString(col.value).map((f) => ({
                   name: f,
                   value: f,
                 })),
@@ -696,11 +727,11 @@ export const FilterBar = (props: {
               {
                 multi: true,
                 editable: false,
-                value: splitString(filter.value),
+                value: parseMultiString(filter.value),
                 options:
                   contextData.map((f) => ({
-                    name: filePathToString(f["File"]),
-                    value: f["File"],
+                    name: filePathToString(f[FilePropertyName]),
+                    value: f[FilePropertyName],
                   })) ?? [],
                 saveOptions,
                 placeholder: i18n.labels.optionItemSelectPlaceholder,
@@ -714,113 +745,22 @@ export const FilterBar = (props: {
     }
   };
 
-  const saveNewSchemas = (_schema: MDBSchema) => {
-    const newSchema = {
-      ..._schema,
-      id: uniqueNameFromString(
-        sanitizeTableName(_schema.id),
-        tables.map((f) => f.id)
-      ),
-    };
-    saveSchema(newSchema).then((f) =>
-      saveDB({
-        schema: newSchema,
-        cols: defaultTableFields.map((f) => ({ ...f, schemaId: newSchema.id })),
-        rows: [],
-      })
-    );
-  };
-  const newTable = (e: React.MouseEvent) => {
-    let vaultChangeModal = new SaveViewModal(
-      {
-        id: "",
-        name: "",
-        type: "db",
-      },
-      saveNewSchemas,
-      "new table"
-    );
-    vaultChangeModal.open();
-  };
-
-  const viewContextMenu = (e: React.MouseEvent, _schema: MDBSchema) => {
-    const fileMenu = new Menu();
-
-    fileMenu.addSeparator();
-    fileMenu.addItem((menuItem) => {
-      menuItem.setTitle("Rename Table");
-      menuItem.onClick(() => {
-        let vaultChangeModal = new SaveViewModal(
-          _schema,
-          (s) => saveSchema(s),
-          "rename table"
-        );
-        vaultChangeModal.open();
-      });
-    });
-    fileMenu.addItem((menuItem) => {
-      menuItem.setTitle("Delete Table");
-      menuItem.onClick(() => {
-        deleteSchema(_schema);
-      });
-    });
-
-    // Trigger
-    if (isMouseEvent(e)) {
-      fileMenu.showAtPosition({ x: e.pageX, y: e.pageY });
-    } else {
-      
-      fileMenu.showAtPosition({
-        // @ts-ignore
-        x: e.nativeEvent.locationX,
-        // @ts-ignore
-        y: e.nativeEvent.locationY,
-      });
-    }
-  };
   return (
     <>
-      {isFolderContext && <TagSelector plugin={props.plugin}></TagSelector>}
-      <div className="mk-view-selector">
-        <div className="mk-table-selector">
-          {viewFolderNote && (
-            <button
-              className={`mk-folder-note ${
-                folderNoteOpen ? "mk-is-active" : ""
-              }`}
-              onClick={() => viewFolderNote(true)}
+      <div className="mk-view-config">
+        <div className="mk-view-selector">
+          {views.map((f) => (
+            <div
+              className={`${schema?.id == f.id ? "mk-is-active" : ""}`}
+              onContextMenu={(e) => viewContextMenu(e, f)}
             >
-              {props.folderNoteName}
-            </button>
-          )}
-          {tables
-            .filter((f) => f.type == "db")
-            .map((f) => (
-              <div
-                className={`${
-                  !folderNoteOpen && dbSchema?.id == f.id ? "mk-is-active" : ""
-                }`}
-                onContextMenu={(e) => !f.primary && viewContextMenu(e, f)}
-              >
-                <button onClick={(e) => openView(e, f)}>{f.name}</button>
-                {tables.filter((g) => g.type != "db" && g.def == f.id).length >
-                  1 && (
-                  <button
-                    className="mk-icon-xsmall mk-collapse"
-                    onClick={(e) => showViewMenu(e, f)}
-                    dangerouslySetInnerHTML={{
-                      __html: uiIconSet["mk-ui-collapse"],
-                    }}
-                  ></button>
-                )}
-              </div>
-            ))}
-          {isFolderContext && (
-            <button onClick={(e) => newTable(e)}>+ Table</button>
-          )}
+              <button onClick={(e) => openView(e, f)}>{f.name}</button>
+            </div>
+          ))}
+          <button onClick={(e) => showSaveViewModal()}>+</button>
         </div>
         <span></span>
-        {!props.folderNoteOpen && (
+        {
           <div className="mk-view-options">
             <SearchBar setSearchString={setSearchString}></SearchBar>
 
@@ -831,83 +771,83 @@ export const FilterBar = (props: {
               }}
             ></button>
             {/* <button onClick={(e) => showColsMenu(e)} dangerouslySetInnerHTML={{__html: uiIconSet['mk-ui-options']}}></button> */}
-            <button
-              onClick={(e) => showFMMenu(e)}
-              dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-options"] }}
-            ></button>
+            {dbSchema?.primary && (
+              <button
+                onClick={(e) => showColsMenu(e)}
+                dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-build"] }}
+              ></button>
+            )}
+
+            {contextInfo.type == "folder" && dbSchema?.id == "files" && (
+              <button
+                className="mk-button-new"
+                onClick={(e) => showAddMenu(e)}
+                dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-plus"] }}
+              ></button>
+            )}
           </div>
-        )}
+        }
       </div>
       {(predicate.filters.length > 0 ||
         predicate.sort.length > 0 ||
-        predicate.groupBy.length > 0) &&
-        !folderNoteOpen && (
-          <div className="mk-filter-bar">
-            {predicate.groupBy.length > 0 && (
-              <div className="mk-filter">
-                <span>Group By</span>
-                <span onClick={(e) => showGroupByMenu(e)}>
-                  {predicate.groupBy[0]}
-                </span>
-                <div
-                  onClick={() => saveGroupBy(null, [])}
-                  dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
-                ></div>
-              </div>
-            )}
-            {predicate.sort.map((f) => (
-              <div className="mk-filter">
-                <span>{f.field}</span>
-                <span onClick={(e) => changeSortMenu(e, f)}>
-                  {sortFnTypes[f.type].label}
-                </span>
-                <div
-                  onClick={() => removeSort(f)}
-                  dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
-                ></div>
-              </div>
-            ))}
-            {predicate.filters.map((f) => (
-              <div className="mk-filter">
-                <span>{f.field}</span>
-                <span onClick={(e) => changeFilterMenu(e, f)}>
-                  {filterFnTypes[f.type].label}
-                </span>
-                <FilterValueSpan
-                  col={cols.find((c) => c.name + c.table == f.field)}
-                  filter={f}
-                  selectFilterValue={selectFilterValue}
-                ></FilterValueSpan>
-                <div
-                  onClick={() => removeFilter(f)}
-                  dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
-                ></div>
-              </div>
-            ))}
-            <span></span>
-            <button
-              className="mk-filter-add mk-icon-small"
-              onClick={() => showSaveViewModal()}
-            >
+        predicate.groupBy.length > 0) && (
+        <div className="mk-filter-bar">
+          {predicate.groupBy.length > 0 && (
+            <div className="mk-filter">
+              <span>Group By</span>
+              <span onClick={(e) => showGroupByMenu(e)}>
+                {predicate.groupBy[0]}
+              </span>
               <div
-                dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-stack"] }}
+                onClick={() => saveGroupBy(null, [])}
+                dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
               ></div>
-              Save View
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+          {predicate.sort.map((f) => (
+            <div className="mk-filter">
+              <span>{f.field}</span>
+              <span onClick={(e) => changeSortMenu(e, f)}>
+                {sortFnTypes[f.fn].label}
+              </span>
+              <div
+                onClick={() => removeSort(f)}
+                dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
+              ></div>
+            </div>
+          ))}
+          {predicate.filters.map((f) => (
+            <div className="mk-filter">
+              <span>{f.field}</span>
+              <span onClick={(e) => changeFilterMenu(e, f)}>
+                {filterFnLabels[f.fn]}
+              </span>
+              <FilterValueSpan
+                fieldType={cols.find((c) => c.name + c.table == f.field)?.type}
+                filter={f}
+                selectFilterValue={selectFilterValue}
+              ></FilterValueSpan>
+              <div
+                onClick={() => removeFilter(f)}
+                dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
+              ></div>
+            </div>
+          ))}
+          <span></span>
+        </div>
+      )}
     </>
   );
 };
 
-const FilterValueSpan = (props: {
+export const FilterValueSpan = (props: {
   filter: Filter;
   selectFilterValue: (e: React.MouseEvent, f: Filter) => void;
-  col: MDBColumn;
+  fieldType: string;
 }) => {
-  const { filter, selectFilterValue } = props;
-  const fieldType = props.col?.type;
-  if (fieldType == "boolean" || !fieldType) {
+  const { filter, selectFilterValue, fieldType } = props;
+  const fnType = filterFnTypes[filter.fn];
+  if (!fieldType || !fnType || fnType.valueType == "none") {
     return <></>;
   } else if (filter.value.length == 0) {
     return <span onClick={(e) => selectFilterValue(e, filter)}>Select</span>;
@@ -915,7 +855,7 @@ const FilterValueSpan = (props: {
     fieldType.startsWith("option") ||
     fieldType.startsWith("context")
   ) {
-    const options = splitString(filter.value);
+    const options = parseMultiString(filter.value);
     return (
       <span onClick={(e) => selectFilterValue(e, filter)}>
         {" "}

@@ -1,8 +1,6 @@
+import { default as i18n, default as t } from "i18n";
 import { Modal } from "obsidian";
-import t from "i18n";
 import { MDBColumn } from "types/mdb";
-import i18n from "i18n";
-
 
 export class MergeColumnModal extends Modal {
   columns: MDBColumn[];

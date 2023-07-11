@@ -1,13 +1,13 @@
 import MakeMDPlugin from "main";
-import {
-  TFile,
-  TFolder
-} from "obsidian";
+import { TFolder } from "obsidian";
 import React, {
-  CSSProperties, forwardRef, useMemo
+  CSSProperties,
+  forwardRef,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 import { useRecoilState } from "recoil";
-import * as tree from "utils/tree";
 
 import { UniqueIdentifier } from "@dnd-kit/core";
 import { AnimateLayoutChanges, useSortable } from "@dnd-kit/sortable";
@@ -16,19 +16,21 @@ import { FileSticker } from "components/FileSticker/FileSticker";
 import { SectionItem } from "components/Spaces/TreeView/SectionView";
 import {
   triggerFileMenu,
-  triggerMultiFileMenu
+  triggerMultiFileMenu,
 } from "components/ui/menus/fileMenu";
 import "css/FolderTreeView.css";
-import t from "i18n";
+import { default as i18n, default as t } from "i18n";
 import * as recoilState from "recoil/pluginState";
+import { spaceRowHeight, TreeNode } from "superstate/spacesStore/spaces";
+import { eventTypes, SpaceChangeEvent } from "types/types";
 import {
   getAbstractFileAtPath,
   newFileInFolder,
-  openAFile, platformIsMobile
+  openAFile,
+  platformIsMobile,
 } from "utils/file";
 import { uiIconSet } from "utils/icons";
-import { TreeNode } from "utils/spaces/spaces";
-import i18n from "i18n";
+import { pathByString } from "utils/path";
 
 export enum IndicatorState {
   None,
@@ -130,13 +132,14 @@ export interface TreeItemProps {
   ghost?: boolean;
   handleProps?: any;
   selected: boolean;
+  highlighted: boolean;
   onSelectRange?(id: string): void;
   indicator: Indicator;
   indentationWidth: number;
   data: TreeNode;
   plugin: MakeMDPlugin;
   style: CSSProperties;
-  onCollapse?(node: TreeNode): void;
+  onCollapse?(node: TreeNode, open: boolean): void;
   wrapperRef?(node: HTMLDivElement): void;
 }
 
@@ -156,6 +159,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
       indicator,
       collapsed,
       selected,
+      highlighted,
       onCollapse,
       onSelectRange,
       wrapperRef,
@@ -166,42 +170,58 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
     ref
   ) => {
     const [activeFile, setActiveFile] = useRecoilState(recoilState.activeFile);
+    const [hoverTarget, setHoverTarget] = useState<EventTarget>(null);
     const [selectedFiles, setSelectedFiles] = useRecoilState(
       recoilState.selectedFiles
     );
-
+    const [fileCache, setFileCache] = useState(data.item);
     const openFileAtTarget = (file: TreeNode, e: React.MouseEvent) => {
       if (e.shiftKey) {
         onSelectRange(file.id as string);
         return;
       }
-      openAFile(
-        getAbstractFileAtPath(app, file.item.path),
-        plugin,
-        e.ctrlKey || e.metaKey
-      );
-      setActiveFile(file.item.path as string);
-      setSelectedFiles([file]);
+      if (file.item.isFolder) {
+        onCollapse(data, true);
+      }
+      if (!plugin.settings.contextEnabled) {
+        if (!file.item.isFolder) {
+          openAFile(
+            getAbstractFileAtPath(app, file.item.path),
+            plugin,
+            e.ctrlKey || e.metaKey
+          );
+          setActiveFile(pathByString(file.item.path));
+          setSelectedFiles([file]);
+        }
+      } else {
+        openAFile(
+          getAbstractFileAtPath(app, file.item.path),
+          plugin,
+          e.ctrlKey || e.metaKey
+        );
+        setActiveFile(pathByString(file.item.path));
+        setSelectedFiles([file]);
+      }
     };
 
     const dragStarted = (e: React.DragEvent<HTMLDivElement>) => {
       if (selectedFiles.length > 1) {
         const files = selectedFiles.map((f) => f.file).filter((f) => f);
-        //@ts-ignore
         app.dragManager.onDragStart(e, {
           icon: "lucide-files",
           source: undefined,
-          title: i18n.labels.filesCount.replace('{$1}', files.length.toString()),
+          title: i18n.labels.filesCount.replace(
+            "{$1}",
+            files.length.toString()
+          ),
           type: "files",
           files: files,
         });
-        //@ts-ignore
         app.dragManager.dragFiles(e, files, true);
         return;
       }
       const file = getAbstractFileAtPath(app, data.item.path);
       if (file instanceof TFolder) {
-        //@ts-ignore
         app.dragManager.onDragStart(e, {
           icon: "lucide-folder",
           source: undefined,
@@ -209,11 +229,9 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
           type: "folder",
           file: file,
         });
-        //@ts-ignore
         app.dragManager.dragFolder(e, file, true);
         return;
       }
-      //@ts-ignore
       app.dragManager.onDragStart(e, {
         icon: "lucide-file",
         source: undefined,
@@ -221,10 +239,57 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         type: "file",
         file: file,
       });
-      //@ts-ignore
       app.dragManager.dragFile(e, file, true);
     };
-
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Control" || e.key === "Meta") {
+        if (e.repeat) return;
+        const el = hoverTarget;
+        if (el)
+          plugin.app.workspace.trigger(
+            "link-hover",
+            {},
+            el,
+            data.item.path,
+            data.item.path
+          );
+      }
+    };
+    const mouseOut = (e: React.MouseEvent) => {
+      setHoverTarget(null);
+    };
+    const updateFileCache = (evt: SpaceChangeEvent) => {
+      if (evt.detail.type == "file" && evt.detail.name == data.item.path)
+        setFileCache(plugin.index.filesIndex.get(data.item.path));
+    };
+    useEffect(() => {
+      window.addEventListener(eventTypes.spacesChange, updateFileCache);
+      return () => {
+        window.removeEventListener(eventTypes.refreshView, updateFileCache);
+      };
+    }, []);
+    const hoverItem = (e: React.MouseEvent) => {
+      if (plugin.settings.filePreviewOnHover) {
+        setHoverTarget(e.target);
+        if (e.ctrlKey || e.metaKey) {
+          plugin.app.workspace.trigger(
+            "link-hover",
+            {},
+            e.target,
+            data.item.path,
+            data.item.path
+          );
+        }
+      }
+    };
+    useEffect(() => {
+      if (hoverTarget && plugin.settings.filePreviewOnHover) {
+        window.addEventListener("keydown", onKeyDown);
+        return () => {
+          window.removeEventListener("keydown", onKeyDown);
+        };
+      }
+    }, [hoverTarget]);
     const innerProps = !platformIsMobile()
       ? {
           draggable: true,
@@ -245,19 +310,18 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
           style={style}
         >
           <div
-            className={
-              indicator &&
-              classNames(
-                "nav-file",
-                indicator.state == IndicatorState.Bottom
+            className={classNames(
+              data.item.isFolder ? "nav-folder" : "nav-file",
+              indicator
+                ? indicator.state == IndicatorState.Bottom
                   ? "mk-indicator-bottom"
                   : indicator.state == IndicatorState.Top
                   ? "mk-indicator-top"
                   : indicator.state == IndicatorState.Row
                   ? "mk-indicator-row"
                   : ""
-              )
-            }
+                : ""
+            )}
             style={
               indicator
                 ? ({
@@ -276,41 +340,44 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
             )}
             <div
               className={classNames(
-                `mk-tree-item ${
-                  data.item.folder == "true"
-                    ? "nav-folder-title"
-                    : "nav-file-title"
-                } ${active && "is-active"} ${selected && "is-selected"}`
+                "mk-tree-item",
+                "tree-item-self",
+                fileCache.isFolder ? "nav-folder-title" : "nav-file-title",
+                fileCache.folderNote ? "mk-folder-is-folder-note" : "",
+                active ? "is-active" : "",
+                selected ? "is-selected" : "",
+                highlighted ? "is-highlighted" : ""
               )}
               ref={ref}
               style={
                 {
                   "--spacing": `${indentationWidth * depth - 28}px`,
+                  "--childrenCount": `${
+                    childCount * spaceRowHeight(plugin) - 13
+                  }px`,
                 } as React.CSSProperties
               }
+              onMouseLeave={mouseOut}
+              onMouseEnter={hoverItem}
+              onKeyDown={onKeyDown}
               onClick={(e) => openFileAtTarget(data, e)}
-              data-path={data.item.path}
+              data-path={fileCache.path}
               onContextMenu={(e) =>
                 selectedFiles.length > 1 &&
                 selectedFiles.some((f) => f.id == (data.id as string))
                   ? triggerMultiFileMenu(plugin, selectedFiles, e)
-                  : triggerFileMenu(
-                      plugin,
-                      data.file,
-                      data.item.folder == "true",
-                      e
-                    )
+                  : triggerFileMenu(plugin, data.file, fileCache.isFolder, e)
               }
               {...innerProps}
             >
-              {data.item.folder == "true" && (
+              {data.item.isFolder && (
                 <button
                   aria-label={`${
                     collapsed ? t.labels.expand : t.labels.collapse
                   }`}
                   className={`mk-collapse ${collapsed ? "mk-collapsed" : ""}`}
                   onClick={(e) => {
-                    onCollapse(data);
+                    onCollapse(data, false);
                     e.stopPropagation();
                   }}
                   dangerouslySetInnerHTML={{
@@ -319,54 +386,37 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
                 ></button>
               )}
               {plugin.settings.spacesStickers && (
-                <FileSticker
-                  plugin={plugin}
-                  filePath={data.item.path}
-                ></FileSticker>
+                <FileSticker plugin={plugin} fileCache={fileCache} />
               )}
               <div
                 className={`mk-tree-text ${
-                  data.item.folder == "true"
+                  fileCache.isFolder
                     ? "nav-folder-title-content"
                     : "nav-file-title-content"
                 }`}
               >
-                {data.file
-                  ? data.item.folder == "true"
-                    ? data.file.name
-                    : tree.fileNameToString(data.file.name)
-                  : ""}
-                {data.item.folder == "false" &&
-                  data.file &&
-                  (data.file as TFile).extension != "md" && (
-                    <span className="nav-file-tag">
-                      {(data.file as TFile)?.extension}
-                    </span>
-                  )}
+                {fileCache.name}
               </div>
+              {!fileCache.isFolder && fileCache.extension != "md" && (
+                <span className="nav-file-tag">{fileCache.extension}</span>
+              )}
               {!clone ? (
                 <div className="mk-folder-buttons">
                   <button
                     aria-label={t.buttons.moreOptions}
                     onClick={(e) => {
-                      triggerFileMenu(
-                        plugin,
-                        data.file,
-                        data.item.folder == "true",
-                        e
-                      );
+                      triggerFileMenu(plugin, data.file, fileCache.isFolder, e);
                       e.stopPropagation();
                     }}
                     dangerouslySetInnerHTML={{
                       __html: uiIconSet["mk-ui-options"],
                     }}
                   ></button>
-                  {data.item.folder == "true" && (
+                  {fileCache.isFolder && (
                     <button
                       aria-label={t.buttons.newNote}
                       onClick={(e) => {
-                        //@ts-ignore
-                        newFileInFolder(plugin, data.file);
+                        newFileInFolder(plugin, data.file as TFolder);
                         e.stopPropagation();
                       }}
                       dangerouslySetInnerHTML={{

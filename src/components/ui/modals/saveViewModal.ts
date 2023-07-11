@@ -1,7 +1,6 @@
+import { default as i18n, default as t } from "i18n";
 import { Modal } from "obsidian";
-import t from "i18n";
 import { MDBSchema } from "types/mdb";
-import i18n from "i18n";
 
 type ViewAction = "rename table" | "rename view" | "new view" | "new table";
 export class SaveViewModal extends Modal {
@@ -26,14 +25,10 @@ export class SaveViewModal extends Modal {
 
     // Header
     let headerText;
-    if (this.action == "new view")
-      headerText = i18n.labels.saveView;
-    if (this.action == "new table")
-      headerText = i18n.labels.saveTable;
-    if (this.action == "rename view")
-      headerText = i18n.labels.renameView;
-    if (this.action == "rename table")
-      headerText = i18n.labels.renameTable;
+    if (this.action == "new view") headerText = i18n.labels.saveView;
+    if (this.action == "new table") headerText = i18n.labels.saveTable;
+    if (this.action == "rename view") headerText = i18n.labels.renameView;
+    if (this.action == "rename table") headerText = i18n.labels.renameTable;
 
     const headerEl = contentEl.createEl("div", { text: headerText });
     headerEl.addClass("modal-title");
@@ -46,10 +41,8 @@ export class SaveViewModal extends Modal {
 
     // Buttons
     let changeButtonText;
-    if (this.action == "new view")
-      changeButtonText = i18n.buttons.saveView;
-    if (this.action == "new table")
-      changeButtonText = i18n.buttons.saveTable;
+    if (this.action == "new view") changeButtonText = i18n.buttons.saveView;
+    if (this.action == "new table") changeButtonText = i18n.buttons.saveTable;
     if (this.action == "rename view")
       changeButtonText = i18n.buttons.renameView;
     if (this.action == "rename table")

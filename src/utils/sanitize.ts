@@ -1,8 +1,11 @@
 export const sanitizeTableName = (name: string) => {
   return name?.replace(/[^a-z0-9+]+/gi, "");
 };
-export const sanitizeColumnName = (name: string) => {
-  return name?.replace(/'/g, `''`).replace(/[^\w ]/g, "");
+export const sanitizeColumnName = (name: string): string => {
+  if (name?.charAt(0) == "_") {
+    return sanitizeColumnName(name.substring(1));
+  }
+  return name?.replace(/"/g, ``);
 };
 
 var illegalRe = /[\/\?<>\\:\*\|":]/g;
