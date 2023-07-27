@@ -42134,7 +42134,6 @@ var InlineFileContextView = (props2) => {
     if (!file) {
       return;
     }
-    console.log("refresh file");
     const fileCache2 = getFileCache(file);
     setFileCache(fileCache2);
   };
