@@ -42225,6 +42225,10 @@ var InlineFileContextView = (props2) => {
       field
     );
   };
+  const fileName = F2(() => {
+    var _a3;
+    return (_a3 = fileCache != null ? fileCache : file) == null ? void 0 : _a3.name;
+  }, [fileCache, file]);
   const propertiesPlugin = corePluginEnabled(app, "properties");
   const newProperty = (e4) => {
     const offset = e4.target.getBoundingClientRect();
@@ -42241,7 +42245,7 @@ var InlineFileContextView = (props2) => {
   };
   const onBlur = (e4) => {
     const newValue = e4.target.innerHTML;
-    if (newValue != fileCache.name) {
+    if (newValue != fileName) {
       if (props2.plugin.settings.spacesUseAlias) {
         saveFrontmatterValue(
           props2.plugin,
@@ -42290,7 +42294,7 @@ var InlineFileContextView = (props2) => {
   }, []);
   p2(() => {
     var _a3;
-    if (fileCache == null ? void 0 : fileCache.name.startsWith("Untitled")) {
+    if (fileName == null ? void 0 : fileName.startsWith("Untitled")) {
       selectElementContents(fileNameRef.current);
     }
     const pasteEvent = (e4) => {
@@ -42303,7 +42307,7 @@ var InlineFileContextView = (props2) => {
       var _a4;
       (_a4 = fileNameRef.current) == null ? void 0 : _a4.removeEventListener("paste", pasteEvent);
     };
-  }, [fileNameRef]);
+  }, [fileNameRef, fileName]);
   return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, props2.showBanner && /* @__PURE__ */ Cn.createElement(NoteBannerView, {
     plugin: props2.plugin,
     link: banner,
@@ -42331,7 +42335,7 @@ var InlineFileContextView = (props2) => {
     onKeyPress,
     onKeyUp,
     dangerouslySetInnerHTML: {
-      __html: fileNameToString(fileCache.name)
+      __html: fileNameToString(fileName)
     }
   }), /* @__PURE__ */ Cn.createElement("div", {
     className: `mk-collapse mk-icon-xsmall mk-file-context-collapse ${collapsed ? "mk-collapsed" : ""}`,

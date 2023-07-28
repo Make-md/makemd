@@ -1139,6 +1139,7 @@ body {
 .mk-sizer-override {
   min-height: auto !important;
 }
+.mk-backlinks.embedded-backlinks,
 .mk-sizer-override > .embedded-backlinks {
   border-top: none;
 }
