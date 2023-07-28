@@ -54731,7 +54731,7 @@ var loadSQL = async () => {
 
 // src/utils/flow/flow.tsx
 var modifyFlowDom = (plugin) => {
-  if (!plugin.settings.inlineContext || !app.workspace.activeEditor)
+  if (!plugin.settings.editorFlow || !plugin.settings.inlineContext || !app.workspace.activeEditor)
     return;
   const contentEl = app.workspace.activeEditor.contentEl;
   const editorView = app.workspace.activeEditor.editor;
