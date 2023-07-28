@@ -42241,8 +42241,19 @@ var InlineFileContextView = (props2) => {
   };
   const onBlur = (e4) => {
     const newValue = e4.target.innerHTML;
-    if (newValue != fileNameToString(file.name)) {
-      renameFile(props2.plugin, file, newValue + ".md");
+    if (newValue != fileCache.name) {
+      if (props2.plugin.settings.spacesUseAlias) {
+        saveFrontmatterValue(
+          props2.plugin,
+          fileCache.path,
+          props2.plugin.settings.fmKeyAlias,
+          newValue,
+          "text",
+          true
+        );
+      } else {
+        renameFile(props2.plugin, file, newValue + ".md");
+      }
     }
   };
   const onKeyPress = (e4) => {
@@ -42279,7 +42290,7 @@ var InlineFileContextView = (props2) => {
   }, []);
   p2(() => {
     var _a3;
-    if (file == null ? void 0 : file.name.startsWith("Untitled")) {
+    if (fileCache == null ? void 0 : fileCache.name.startsWith("Untitled")) {
       selectElementContents(fileNameRef.current);
     }
     const pasteEvent = (e4) => {
@@ -42320,7 +42331,7 @@ var InlineFileContextView = (props2) => {
     onKeyPress,
     onKeyUp,
     dangerouslySetInnerHTML: {
-      __html: fileNameToString(file.name)
+      __html: fileNameToString(fileCache.name)
     }
   }), /* @__PURE__ */ Cn.createElement("div", {
     className: `mk-collapse mk-icon-xsmall mk-file-context-collapse ${collapsed ? "mk-collapsed" : ""}`,
