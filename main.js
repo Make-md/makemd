@@ -42145,7 +42145,7 @@ var InlineFileContextView = (props2) => {
   };
   const cacheChanged = (evt) => {
     var _a3;
-    if (evt.detail.type == "file" && (evt.detail.name == (file == null ? void 0 : file.path) || evt.detail.name == ((_a3 = fileCache == null ? void 0 : fileCache.folderNote) == null ? void 0 : _a3.folderNotePath))) {
+    if (evt.detail.type == "file" && (evt.detail.name == (file == null ? void 0 : file.path) || evt.detail.name == ((_a3 = fileCache == null ? void 0 : fileCache.folderNote) == null ? void 0 : _a3.folderPath))) {
       refreshFile();
     }
     if (evt.detail.type == "context" && contexts.some((f4) => f4.contextPath == evt.detail.name)) {
@@ -42528,6 +42528,7 @@ var ContextViewComponent = (props2) => {
   const [flowOpen, setFlowOpen] = h2(
     props2.plugin.settings.folderNoteDefaultView && props2.plugin.settings.enableFolderNote
   );
+  const folderRef = _2("");
   const loadFile = async () => {
     if (!folderCache)
       return;
@@ -42538,6 +42539,9 @@ var ContextViewComponent = (props2) => {
     const folderNote = getAbstractFileAtPath(app, folderNotePath);
     if ((currentFlowNotePath == null ? void 0 : currentFlowNotePath.path) != (folderNote == null ? void 0 : folderNote.path))
       setCurrentFlowNotePath(folderNote);
+    if (folderNotePath == folderRef.current)
+      return;
+    folderRef.current = folderNotePath;
     const div = ref.current;
     spawnPortal(props2.plugin, div, folderCache.name, async (editor) => {
       var _a3, _b3;
@@ -42667,7 +42671,7 @@ var ContextViewComponent = (props2) => {
     plugin: props2.plugin
   })), flowOpen && /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-folder-outer"
-  }, currentFlowNotePath && props2.plugin.settings.inlineContext && props2.plugin.settings.editorFlow && /* @__PURE__ */ Cn.createElement("div", {
+  }, currentFlowNotePath && props2.plugin.settings.inlineContext && props2.plugin.settings.makerMode && /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-sizer-override cm-sizer"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-inline-context embedded-backlinks"
@@ -54743,7 +54747,7 @@ var loadSQL = async () => {
 
 // src/utils/flow/flow.tsx
 var modifyFlowDom = (plugin) => {
-  if (!plugin.settings.editorFlow || !plugin.settings.inlineContext || !app.workspace.activeEditor)
+  if (!plugin.settings.makerMode || !plugin.settings.inlineContext || !app.workspace.activeEditor)
     return;
   const contentEl = app.workspace.activeEditor.contentEl;
   const editorView = app.workspace.activeEditor.editor;
