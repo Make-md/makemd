@@ -54769,20 +54769,22 @@ var modifyFlowDom = (plugin) => {
         editable: true
       })
     );
-    let backlinksEl = contentEl.querySelector(".mk-backlinks");
-    if (!backlinksEl) {
-      backlinksEl = document.createElement("div");
-      backlinksEl.classList.add("mk-backlinks");
-      backlinksEl.classList.add("embedded-backlinks");
-      sizerEl.appendChild(backlinksEl);
+    if (plugin.settings.inlineBacklinks) {
+      let backlinksEl = contentEl.querySelector(".mk-backlinks");
+      if (!backlinksEl) {
+        backlinksEl = document.createElement("div");
+        backlinksEl.classList.add("mk-backlinks");
+        backlinksEl.classList.add("embedded-backlinks");
+        sizerEl.appendChild(backlinksEl);
+      }
+      const backlinksReactEl = createRoot(backlinksEl);
+      backlinksReactEl.render(
+        /* @__PURE__ */ Cn.createElement(Backlinks, {
+          plugin,
+          file
+        })
+      );
     }
-    const backlinksReactEl = createRoot(backlinksEl);
-    backlinksReactEl.render(
-      /* @__PURE__ */ Cn.createElement(Backlinks, {
-        plugin,
-        file
-      })
-    );
   }
 };
 
