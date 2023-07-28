@@ -30292,7 +30292,7 @@ var imageModal = class extends import_obsidian16.FuzzySuggestModal {
 var import_obsidian35 = require("obsidian");
 
 // src/types/space.ts
-var FMMetadataKeys = (plugin) => [plugin.settings.fmKeyBanner, plugin.settings.fmKeySticker, plugin.settings.fmKeyAlias, plugin.settings.fmKeyColor];
+var FMMetadataKeys = (plugin) => [plugin.settings.fmKeyBanner, plugin.settings.fmKeySticker, plugin.settings.fmKeyColor];
 
 // src/utils/obsidian/obsidian.ts
 var corePluginEnabled = (app2, plugin) => app2.internalPlugins.getPluginById(plugin) ? true : false;
