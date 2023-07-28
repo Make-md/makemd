@@ -12642,6 +12642,10 @@ var T4 = class {
             name: "App Ribbon",
             desc: `Show/hide the left menu aka. ribbon`
           },
+          readableLineWidth: {
+            name: "Readable Line Width",
+            desc: `Use Readable Line Width`
+          },
           sidebarTabs: {
             name: "Sidebar Tabs",
             desc: `Show/hide other sidebar tabs`
@@ -42517,7 +42521,7 @@ var ContextViewComponent = (props2) => {
       folderCache
     );
     const folderNote = getAbstractFileAtPath(app, folderNotePath);
-    if ((currentFlowNotePath == null ? void 0 : currentFlowNotePath.path) == folderNote.path) {
+    if ((currentFlowNotePath == null ? void 0 : currentFlowNotePath.path) == (folderNote == null ? void 0 : folderNote.path)) {
       return;
     } else {
       setCurrentFlowNotePath(folderNote);
@@ -42600,7 +42604,7 @@ var ContextViewComponent = (props2) => {
     }
   };
   return /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-folder-scroller markdown-source-view mod-cm6 is-readable-line-width"
+    className: `mk-folder-scroller markdown-source-view mod-cm6 ${props2.plugin.settings.readableLineWidth ? "is-readable-line-width" : ""}`
   }, props2.plugin.settings.enableFolderNote && props2.context.type == "folder" ? /* @__PURE__ */ Cn.createElement(MDBProvider, {
     plugin: props2.plugin,
     context
@@ -52787,7 +52791,8 @@ var DEFAULT_SETTINGS = {
   fmKeyColor: "color",
   fmKeySticker: "sticker",
   openSpacesOnLaunch: true,
-  indexSVG: false
+  indexSVG: false,
+  readableLineWidth: true
 };
 var MakeMDPluginSettingsTab = class extends import_obsidian56.PluginSettingTab {
   constructor(app2, plugin) {
@@ -52856,6 +52861,12 @@ var MakeMDPluginSettingsTab = class extends import_obsidian56.PluginSettingTab {
           this.plugin.settings.spacesUseAlias = value;
           this.plugin.saveSettings();
           this.refreshView();
+        })
+      );
+      new import_obsidian56.Setting(spaceAppearances).setName(i18n_default.settings.readableLineWidth.name).setDesc(i18n_default.settings.readableLineWidth.desc).addToggle(
+        (toggle) => toggle.setValue(this.plugin.settings.readableLineWidth).onChange((value) => {
+          this.plugin.settings.readableLineWidth = value;
+          this.plugin.saveSettings();
         })
       );
       new import_obsidian56.Setting(spaceAppearances).setName(i18n_default.settings.openSpacesOnLaunch.name).setDesc(i18n_default.settings.openSpacesOnLaunch.desc).addToggle(
@@ -54720,7 +54731,7 @@ var loadSQL = async () => {
 
 // src/utils/flow/flow.tsx
 var modifyFlowDom = (plugin) => {
-  if (!app.workspace.activeEditor)
+  if (!plugin.settings.inlineContext || !app.workspace.activeEditor)
     return;
   const contentEl = app.workspace.activeEditor.contentEl;
   const editorView = app.workspace.activeEditor.editor;

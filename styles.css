@@ -1124,10 +1124,10 @@ body {
   height: 100%;
   overflow-x: auto;
   position: relative;
+  padding: var(--file-margins);
   z-index: 0;
 }
 .mk-context-header {
-  margin: var(--file-margins);
   margin-bottom: 0;
 }
 .mk-context-header {
@@ -1142,7 +1142,7 @@ body {
 .mk-sizer-override > .embedded-backlinks {
   border-top: none;
 }
-.markdown-source-view.mod-cm6.is-readable-line-width .mk-folder-outer {
+.markdown-source-view.mod-cm6 .mk-folder-outer {
   padding: 0 var(--file-margins);
   max-width: 100%;
   width: 100%;
@@ -1152,9 +1152,7 @@ body {
 .mk-folder-header {
   margin-left: auto;
   margin-right: auto;
-  margin-top: var(--file-margins);
   width: 100%;
-  max-width: var(--file-line-width);
 }
 .mk-folder-header .inline-title {
   flex-grow: 1;
@@ -1244,7 +1242,6 @@ body {
   padding: 12px 0px;
 }
 .mk-flowspace-editor.mk-foldernote {
-  width: var(--file-line-width);
   max-width: 100%;
   margin-left: auto;
   margin-right: auto;
@@ -1300,6 +1297,7 @@ body {
   width: 100%;
   height: 100%;
   overflow-x: auto;
+  overflow-y: visible;
 }
 .mk-cards-container .mk-list-content > .mk-flowspace-editor {
   padding-left: 12px !important;
@@ -1762,11 +1760,11 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   display: none;
 }
 .markdown-reading-view .mk-file-context-file > .mk-inline-title.inline-title,
-.markdown-source-view.mod-cm6.is-readable-line-width .mk-file-context-file > .mk-inline-title.inline-title {
+.markdown-source-view.mod-cm6 .mk-file-context-file > .mk-inline-title.inline-title {
   padding-bottom: 0;
   margin-left: 0 !important;
   margin-top: 0;
-  padding-top: 0;
+  padding-top: 0 !important;
   margin-bottom: 0;
 }
 .mk-file-context-component .mk-tag-selector {
