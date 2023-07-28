@@ -42521,11 +42521,8 @@ var ContextViewComponent = (props2) => {
       folderCache
     );
     const folderNote = getAbstractFileAtPath(app, folderNotePath);
-    if ((currentFlowNotePath == null ? void 0 : currentFlowNotePath.path) == (folderNote == null ? void 0 : folderNote.path)) {
-      return;
-    } else {
+    if ((currentFlowNotePath == null ? void 0 : currentFlowNotePath.path) != (folderNote == null ? void 0 : folderNote.path))
       setCurrentFlowNotePath(folderNote);
-    }
     const div = ref.current;
     spawnPortal(props2.plugin, div, folderCache.name, async (editor) => {
       var _a3, _b3;
@@ -42655,7 +42652,7 @@ var ContextViewComponent = (props2) => {
     plugin: props2.plugin
   })), flowOpen && /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-folder-outer"
-  }, currentFlowNotePath && /* @__PURE__ */ Cn.createElement("div", {
+  }, currentFlowNotePath && props2.plugin.settings.inlineContext && props2.plugin.settings.editorFlow && /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-sizer-override cm-sizer"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-inline-context embedded-backlinks"
