@@ -878,8 +878,9 @@ body {
   max-width: 100%;
   overflow-x: auto;
 }
-.mk-view-selector {
-  margin-left: var(--file-margins);
+.mk-view-selector-spacer {
+  min-width: var(--context-padding);
+  width: var(--file-margins);
 }
 .mk-view-selector::-webkit-scrollbar {
   display: none;
@@ -1134,6 +1135,12 @@ body {
   flex-direction: column;
   max-width: var(--file-line-width);
   width: 100%;
+}
+.mk-sizer-override {
+  min-height: auto !important;
+}
+.mk-sizer-override > .embedded-backlinks {
+  border-top: none;
 }
 .markdown-source-view.mod-cm6.is-readable-line-width .mk-folder-outer {
   padding: 0 var(--file-margins);
@@ -1743,7 +1750,7 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   text-indent: 0 !important;
 }
 .mk-folder-header .mk-file-icon-placeholder button,
-.mk-header .mk-file-context-component .mk-file-icon-placeholder button {
+.mk-inline-context .mk-file-context-component .mk-file-icon-placeholder button {
   background: var(--background-secondary);
   border-radius: 8px;
   padding: 8px !important;
@@ -1943,6 +1950,7 @@ c .mk-section-title,
   gap: 8px;
   display: flex;
   flex-direction: column;
+  border-top: none !important;
 }
 .mk-inline-context .mk-file-context-collapse.mk-collapsed {
   opacity: 1;

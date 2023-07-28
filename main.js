@@ -37175,7 +37175,9 @@ var FilterBar = (props2) => {
     className: "mk-view-config"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-view-selector"
-  }, views.map((f4) => /* @__PURE__ */ Cn.createElement("div", {
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-view-selector-spacer"
+  }), views.map((f4) => /* @__PURE__ */ Cn.createElement("div", {
     className: `${(schema == null ? void 0 : schema.id) == f4.id ? "mk-is-active" : ""}`,
     onContextMenu: (e4) => viewContextMenu(e4, f4)
   }, /* @__PURE__ */ Cn.createElement("button", {
@@ -42293,15 +42295,15 @@ var InlineFileContextView = (props2) => {
     file: props2.file
   }), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-file-context-component"
-  }, /* @__PURE__ */ Cn.createElement("div", {
+  }, props2.showBanner && banner && /* @__PURE__ */ Cn.createElement("div", {
     className: `mk-spacer`,
     style: {
-      "--header-height": props2.showBanner && banner ? ((platformIsMobile() ? 1 : 0) * 26 + 138 + (!props2.plugin.settings.spacesStickers || props2.plugin.settings.inlineContextNameLayout == "horizontal" ? 1 : 0) * 50).toString() + "px" : 0
+      "--header-height": ((platformIsMobile() ? 1 : 0) * 26 + 138 + (!props2.plugin.settings.spacesStickers || props2.plugin.settings.inlineContextNameLayout == "horizontal" ? 1 : 0) * 50).toString() + "px"
     },
     onContextMenu: (e4) => e4.preventDefault()
-  }), /* @__PURE__ */ Cn.createElement("div", {
+  }), showHeader && /* @__PURE__ */ Cn.createElement("div", {
     className: `mk-file-context-file ${props2.plugin.settings.inlineContextNameLayout == "horizontal" ? "mk-file-context-file-horizontal" : ""}`
-  }, showHeader && /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, props2.plugin.settings.spacesStickers && fileCache ? /* @__PURE__ */ Cn.createElement(FileSticker, {
+  }, props2.plugin.settings.spacesStickers && fileCache ? /* @__PURE__ */ Cn.createElement(FileSticker, {
     plugin: props2.plugin,
     fileCache
   }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), /* @__PURE__ */ Cn.createElement("div", {
@@ -42316,7 +42318,7 @@ var InlineFileContextView = (props2) => {
     dangerouslySetInnerHTML: {
       __html: fileNameToString(file.name)
     }
-  })), /* @__PURE__ */ Cn.createElement("div", {
+  }), /* @__PURE__ */ Cn.createElement("div", {
     className: `mk-collapse mk-icon-xsmall mk-file-context-collapse ${collapsed ? "mk-collapsed" : ""}`,
     dangerouslySetInnerHTML: {
       __html: uiIconSet["mk-ui-collapse"]
@@ -42606,9 +42608,9 @@ var ContextViewComponent = (props2) => {
     plugin: props2.plugin,
     link: folderCache.banner
   }), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-folder-outer cm-line"
+    className: "mk-sizer-override cm-sizer"
   }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-folder-header"
+    className: "mk-folder-header embedded-backlinks"
   }, folderCache && /* @__PURE__ */ Cn.createElement("div", {
     className: `mk-spacer`,
     style: {
@@ -42649,22 +42651,24 @@ var ContextViewComponent = (props2) => {
     plugin: props2.plugin
   })), flowOpen && /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-folder-outer"
+  }, currentFlowNotePath && /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-sizer-override cm-sizer"
   }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "cm-sizer"
-  }, currentFlowNotePath && /* @__PURE__ */ Cn.createElement(InlineFileContextView, {
+    className: "mk-inline-context embedded-backlinks"
+  }, /* @__PURE__ */ Cn.createElement(InlineFileContextView, {
     plugin: props2.plugin,
     file: currentFlowNotePath,
     showHeader: false,
     showBanner: false,
     editable: true
-  }), /* @__PURE__ */ Cn.createElement("div", {
+  }))), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-flowspace-editor mk-foldernote",
     ref
-  })))) : /* @__PURE__ */ Cn.createElement(MDBProvider, {
+  }))) : /* @__PURE__ */ Cn.createElement(MDBProvider, {
     plugin: props2.plugin,
     context
   }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-context-header"
+    className: "mk-context-header cm-sizer mk-sizer-override"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-inline-title inline-title",
     ref: fileNameRef,
@@ -54727,6 +54731,7 @@ var modifyFlowDom = (plugin) => {
     if (!inlineContext) {
       inlineContext = document.createElement("div");
       inlineContext.classList.add("mk-inline-context");
+      inlineContext.classList.add("embedded-backlinks");
       sizerEl.prepend(inlineContext);
     }
     const inlineContextReactEl = createRoot(inlineContext);
@@ -54745,6 +54750,7 @@ var modifyFlowDom = (plugin) => {
     if (!backlinksEl) {
       backlinksEl = document.createElement("div");
       backlinksEl.classList.add("mk-backlinks");
+      backlinksEl.classList.add("embedded-backlinks");
       sizerEl.appendChild(backlinksEl);
     }
     const backlinksReactEl = createRoot(backlinksEl);
