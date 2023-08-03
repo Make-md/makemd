@@ -126,6 +126,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .mk-options-menu__suggestions li .mk-description {
   color: var(--text-faint);
@@ -137,6 +138,7 @@
 .mk-options-menu__suggestions li span {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .mk-options-menu__suggestions li mark {
   text-decoration: underline;
@@ -1126,6 +1128,7 @@ body {
   position: relative;
   padding: var(--file-margins);
   z-index: 0;
+  padding-bottom: 0;
 }
 .mk-context-header {
   margin-bottom: 0;
@@ -1508,6 +1511,7 @@ body {
   min-height: 600px;
   height: calc(100vh - 100px);
 }
+.mk-flow-container .mk-floweditor .cm-content,
 div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   padding: 0 !important;
 }
