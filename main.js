@@ -56230,7 +56230,9 @@ var MakeMDPlugin = class extends import_obsidian65.Plugin {
       if (this.settings.flowMenuEnabled) {
         this.registerEditorSuggest(new MakeMenu(this.app, this));
       }
-      this.registerEditorSuggest(new StickerMenu(this.app, this));
+      if (this.settings.inlineStickerMenu) {
+        this.registerEditorSuggest(new StickerMenu(this.app, this));
+      }
       if (platformIsMobile() && this.settings.mobileMakeBar && this.settings.inlineStyler)
         loadStylerIntoContainer(app.mobileToolbar.containerEl, this);
     }
