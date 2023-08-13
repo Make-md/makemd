@@ -2580,6 +2580,9 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   background: unset !important;
   box-shadow: unset !important;
 }
+.is-mobile .mk-tree-wrapper button {
+  background: none !important;
+}
 .mk-inline-button,
 .mk-tree-wrapper button {
   background: none;

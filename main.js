@@ -622,10 +622,10 @@ var require_lodash = __commonJS({
         }
         return index;
       }
-      function countHolders(array, placeholder2) {
+      function countHolders(array, placeholder) {
         var length = array.length, result = 0;
         while (length--) {
-          if (array[length] === placeholder2) {
+          if (array[length] === placeholder) {
             ++result;
           }
         }
@@ -664,11 +664,11 @@ var require_lodash = __commonJS({
           return func(transform(arg));
         };
       }
-      function replaceHolders(array, placeholder2) {
+      function replaceHolders(array, placeholder) {
         var index = -1, length = array.length, resIndex = 0, result = [];
         while (++index < length) {
           var value = array[index];
-          if (value === placeholder2 || value === PLACEHOLDER) {
+          if (value === placeholder || value === PLACEHOLDER) {
             array[index] = PLACEHOLDER;
             result[resIndex++] = index;
           }
@@ -2225,11 +2225,11 @@ var require_lodash = __commonJS({
         function createCurry(func, bitmask, arity) {
           var Ctor = createCtor(func);
           function wrapper() {
-            var length = arguments.length, args = Array2(length), index = length, placeholder2 = getHolder(wrapper);
+            var length = arguments.length, args = Array2(length), index = length, placeholder = getHolder(wrapper);
             while (index--) {
               args[index] = arguments[index];
             }
-            var holders = length < 3 && args[0] !== placeholder2 && args[length - 1] !== placeholder2 ? [] : replaceHolders(args, placeholder2);
+            var holders = length < 3 && args[0] !== placeholder && args[length - 1] !== placeholder ? [] : replaceHolders(args, placeholder);
             length -= holders.length;
             if (length < arity) {
               return createRecurry(
@@ -2310,7 +2310,7 @@ var require_lodash = __commonJS({
               args[index] = arguments[index];
             }
             if (isCurried) {
-              var placeholder2 = getHolder(wrapper), holdersCount = countHolders(args, placeholder2);
+              var placeholder = getHolder(wrapper), holdersCount = countHolders(args, placeholder);
             }
             if (partials) {
               args = composeArgs(args, partials, holders, isCurried);
@@ -2320,7 +2320,7 @@ var require_lodash = __commonJS({
             }
             length -= holdersCount;
             if (isCurried && length < arity) {
-              var newHolders = replaceHolders(args, placeholder2);
+              var newHolders = replaceHolders(args, placeholder);
               return createRecurry(
                 func,
                 bitmask,
@@ -2440,7 +2440,7 @@ var require_lodash = __commonJS({
             return operator(value, other);
           };
         }
-        function createRecurry(func, bitmask, wrapFunc, placeholder2, thisArg, partials, holders, argPos, ary2, arity) {
+        function createRecurry(func, bitmask, wrapFunc, placeholder, thisArg, partials, holders, argPos, ary2, arity) {
           var isCurry = bitmask & WRAP_CURRY_FLAG, newHolders = isCurry ? holders : undefined2, newHoldersRight = isCurry ? undefined2 : holders, newPartials = isCurry ? partials : undefined2, newPartialsRight = isCurry ? undefined2 : partials;
           bitmask |= isCurry ? WRAP_PARTIAL_FLAG : WRAP_PARTIAL_RIGHT_FLAG;
           bitmask &= ~(isCurry ? WRAP_PARTIAL_RIGHT_FLAG : WRAP_PARTIAL_FLAG);
@@ -2463,7 +2463,7 @@ var require_lodash = __commonJS({
           if (isLaziable(func)) {
             setData(result2, newData);
           }
-          result2.placeholder = placeholder2;
+          result2.placeholder = placeholder;
           return setWrapToString(result2, func, bitmask);
         }
         function createRound(methodName) {
@@ -13291,7 +13291,7 @@ var T4 = class {
           expand: "Expand",
           findStickers: "Find Sticker",
           mergeProperties: "Merge Properties",
-          placeholder: "Type '/' for commands",
+          placeholder: "Type '${1}' for commands",
           noFile: "is not created yet. Click to create.",
           blinkPlaceholder: "Quickly Search a File, Folder, Tag... Press Tab to Edit",
           searchPlaceholder: "Type to search...",
@@ -16112,10 +16112,15 @@ var createDefaultDB = async (plugin, context) => {
 };
 var sanitizeTableSchema = async (plugin, db, context) => {
   const sqlJS = await plugin.sqlJS();
-  const tableRes = db.exec(
-    `SELECT name FROM sqlite_master WHERE type='table';`
-  );
-  if (!tableRes[0] || !tableRes[0].values.some((f4) => f4[0] == "m_schema") || !tableRes[0].values.some((f4) => f4[0] == "m_fields") || !tableRes[0].values.some((f4) => f4[0] == "files")) {
+  let tableRes;
+  try {
+    tableRes = db.exec(
+      `SELECT name FROM sqlite_master WHERE type='table';`
+    );
+  } catch (e4) {
+    console.log(e4, context.dbPath);
+  }
+  if (tableRes && (!tableRes[0] || !tableRes[0].values.some((f4) => f4[0] == "m_schema") || !tableRes[0].values.some((f4) => f4[0] == "m_fields") || !tableRes[0].values.some((f4) => f4[0] == "files"))) {
     await createDefaultDB(plugin, context);
   }
 };
@@ -19119,12 +19124,14 @@ var import_obsidian6 = require("obsidian");
 var urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
 
 // src/utils/path.ts
-var openPath = (plugin, _path) => {
+var openPath = (plugin, _path, modifiers) => {
   const { type, path } = _path;
+  const target = modifiers.ctrlKey || modifiers.metaKey ? modifiers.altKey ? "split" : "tab" : false;
+  console.log(_path);
   if (type == "file" || type == "folder") {
     const afile = getAbstractFileAtPath(app, path);
     if (afile) {
-      openAFile(afile, plugin, false);
+      openAFile(afile, plugin, target);
     } else {
       if (type == "file")
         createNewMarkdownFile(
@@ -19136,7 +19143,7 @@ var openPath = (plugin, _path) => {
     return;
   }
   if (type == "tag") {
-    openTagContext(path, plugin, false);
+    openTagContext(path, plugin, target);
     return;
   }
   if (type == "url") {
@@ -20217,7 +20224,12 @@ var SelectMenuSuggestions = (props2) => {
       className: classNames9.join(" "),
       "aria-disabled": Boolean(item.disabled),
       onMouseDown: (e4) => e4.preventDefault(),
-      onClick: () => props2.addTag(item),
+      onClick: (e4) => props2.addTag(item, {
+        ctrlKey: e4.ctrlKey,
+        metaKey: e4.metaKey,
+        altKey: e4.altKey,
+        shiftKey: e4.shiftKey
+      }),
       onMouseOver: (e4) => mouseOver(e4, index),
       onMouseOut: (e4) => props2.hoverSelect && clearTimeout(timer.current)
     }, /* @__PURE__ */ Cn.createElement(SelectMenuSuggestionsComponent, {
@@ -20234,7 +20246,15 @@ var SelectMenuSuggestions = (props2) => {
     id: props2.id
   }, options, props2.query && props2.allowNew && /* @__PURE__ */ Cn.createElement("li", {
     onMouseDown: (e4) => e4.preventDefault(),
-    onClick: () => props2.addTag({ name: props2.query, value: props2.query })
+    onClick: (e4) => props2.addTag(
+      { name: props2.query, value: props2.query },
+      {
+        ctrlKey: e4.ctrlKey,
+        metaKey: e4.metaKey,
+        altKey: e4.altKey,
+        shiftKey: e4.shiftKey
+      }
+    )
   }, "Add ", props2.query)));
 };
 var SelectMenuSuggestions_default = SelectMenuSuggestions;
@@ -20295,15 +20315,15 @@ var defaultProps = {
 var findMatchIndex = (options, query) => {
   return options.findIndex((option) => matchExact(query).test(option.name));
 };
-var pressDelimiter = (props2, query, index, options, addTag2) => {
+var pressDelimiter = (props2, query, index, options, addTag2, modifiers) => {
   if (query.length >= props2.minQueryLength) {
     const match2 = findMatchIndex(options, query);
     const _index = index === -1 ? match2 : index;
     const tag = _index > -1 ? options[_index] : null;
     if (tag) {
-      addTag2(tag);
+      addTag2(tag, modifiers);
     } else {
-      addTag2({ name: query, value: query });
+      addTag2({ name: query, value: query }, modifiers);
     }
   }
 };
@@ -20390,7 +20410,7 @@ var SelectMenuComponent = Cn.forwardRef(
         props2.onInput(_query);
       }
       if (_query.length === query.length + 1 && props2.delimiters.indexOf(query.slice(-1)) > -1) {
-        pressDelimiter(props2, query, index, options, addTag2);
+        pressDelimiter(props2, query, index, options, addTag2, {});
       } else if (_query !== query) {
         setQuery(_query);
       }
@@ -20400,7 +20420,12 @@ var SelectMenuComponent = Cn.forwardRef(
         if (query || index > -1) {
           e4.preventDefault();
         }
-        pressDelimiter(props2, query, index, options, addTag2);
+        pressDelimiter(props2, query, index, options, addTag2, {
+          ctrlKey: e4.ctrlKey,
+          metaKey: e4.metaKey,
+          altKey: e4.altKey,
+          shiftKey: e4.shiftKey
+        });
       }
       if (e4.key === KEYS.BACKSPACE) {
         pressBackspaceKey();
@@ -20430,14 +20455,14 @@ var SelectMenuComponent = Cn.forwardRef(
       }
       deleteTag2(index2);
     };
-    const addTag2 = (tag) => {
+    const addTag2 = (tag, modifiers) => {
       if (tag.disabled) {
         return;
       }
       if (props2.onValidate && !props2.onValidate(tag)) {
         return;
       }
-      props2.onAddition(tag);
+      props2.onAddition(tag, modifiers);
       clearInput();
     };
     const deleteTag2 = (i4) => {
@@ -20563,7 +20588,8 @@ var SelectMenu = Cn.forwardRef(
         setTags(newTags);
         props2.saveOptions(
           suggestions.map((f4) => f4.value),
-          newTags.map((f4) => f4.value)
+          newTags.map((f4) => f4.value),
+          {}
         );
       },
       [suggestions, tags, props2]
@@ -20581,7 +20607,8 @@ var SelectMenu = Cn.forwardRef(
       [tags, suggestions, props2]
     );
     const onAddition = T2(
-      (newTag) => {
+      (newTag, modifiers) => {
+        var _a3;
         let tag = newTag;
         let newSuggestions = suggestions;
         let newTags = tags;
@@ -20589,7 +20616,7 @@ var SelectMenu = Cn.forwardRef(
           tag = {
             id: suggestions.length + 1,
             name: newTag.name,
-            value: newTag.name
+            value: (_a3 = newTag.value) != null ? _a3 : newTag.name
           };
           newSuggestions = [...suggestions, tag];
           setSuggestions(newSuggestions);
@@ -20605,7 +20632,8 @@ var SelectMenu = Cn.forwardRef(
         }
         props2.saveOptions(
           newSuggestions.map((f4) => f4.value),
-          newTags.map((f4) => f4.value)
+          newTags.map((f4) => f4.value),
+          modifiers
         );
         if (!props2.multi) {
           props2.hide();
@@ -39422,7 +39450,7 @@ var FileCell = (props2) => {
         onClick: (e4) => openAFile(
           getAbstractFileAtPath(app, v3.fileCache.path),
           props2.plugin,
-          e4.ctrlKey || e4.metaKey
+          e4.ctrlKey || e4.metaKey ? e4.altKey ? "split" : "tab" : false
         )
       }, v3 && v3.fileCache ? filePathToString(v3.fileCache.name) : "")));
     }
@@ -39950,7 +39978,7 @@ var CardColumnView = k3(
     field,
     label,
     file,
-    placeholder: placeholder2,
+    placeholder,
     style,
     scrollable,
     shadow,
@@ -39971,7 +39999,7 @@ var CardColumnView = k3(
         unstyled && "unstyled",
         horizontal && "horizontal",
         hover && "hover",
-        placeholder2 && "placeholder",
+        placeholder && "placeholder",
         scrollable && "scrollable",
         shadow && "shadow"
       ),
@@ -40005,7 +40033,7 @@ var CardColumnView = k3(
     }), /* @__PURE__ */ Cn.createElement("div", {
       className: "Actions",
       ...handleProps
-    })) : null, placeholder2 ? children : /* @__PURE__ */ Cn.createElement("ul", null, children));
+    })) : null, placeholder ? children : /* @__PURE__ */ Cn.createElement("ul", null, children));
   }
 );
 
@@ -40078,9 +40106,26 @@ var CardView = Cn.memo(
           return;
         }
         if (e4.detail === 1) {
-          onSelect(e4.shiftKey ? 1 : e4.metaKey ? 2 : 0, value["_index"]);
+          onSelect(
+            {
+              metaKey: e4.metaKey,
+              ctrlKey: e4.ctrlKey,
+              altKey: e4.altKey,
+              shiftKey: e4.shiftKey
+            },
+            value["_index"]
+          );
         } else if (e4.detail === 2) {
-          onSelect(3, value["_index"]);
+          console.log(e4);
+          onSelect(
+            {
+              doubleClick: true,
+              metaKey: e4.metaKey,
+              ctrlKey: e4.ctrlKey,
+              altKey: e4.altKey
+            },
+            value["_index"]
+          );
         }
       };
       const { updateValue: updateValue2, updateFieldValue, contextTable } = q2(MDBContext);
@@ -40377,21 +40422,24 @@ var CardsView = ({
         openAFile(file, plugin, false);
       return;
     }
-    if (modifier == 3) {
+    if (modifier.doubleClick) {
       const file = getAbstractFileAtPath(
         app,
         tableData.rows[parseInt(index)].File
       );
       if (file)
-        openAFile(file, plugin, false);
+        openAFile(
+          file,
+          plugin,
+          modifier.ctrlKey || modifier.metaKey ? modifier.altKey ? "split" : "tab" : false
+        );
       return;
-    }
-    if (modifier == 2) {
+    } else if (modifier.shiftKey) {
       selectedRows.some((f4) => f4 == index) ? selectRows(
         null,
         selectedRows.filter((f4) => f4 != index)
       ) : selectRows(index, uniq([...selectedRows, index]));
-    } else if (modifier == 1) {
+    } else if (modifier.metaKey) {
       selectRows(
         index,
         uniq([
@@ -43367,25 +43415,22 @@ var ContextViewComponent = (props2) => {
       props2.plugin.settings,
       folderCache
     );
-    const folderNote = getAbstractFileAtPath(app, folderNotePath);
+    let folderNote = getAbstractFileAtPath(app, folderNotePath);
     if ((currentFlowNotePath == null ? void 0 : currentFlowNotePath.path) != (folderNote == null ? void 0 : folderNote.path))
       setCurrentFlowNotePath(folderNote);
     if (folderNotePath == folderRef.current && folderNotePath)
       return;
     folderRef.current = folderNotePath;
     const div = ref.current;
+    if (!folderNote) {
+      folderNote = await app.fileManager.createNewMarkdownFile(
+        app.vault.getRoot(),
+        folderNotePath
+      );
+    }
     spawnPortal(props2.plugin, div, folderCache.name, async (editor) => {
       var _a3, _b3;
-      let leaf;
-      if (folderNote) {
-        leaf = await editor.openFile(folderNote);
-      } else {
-        const newFile = await app.fileManager.createNewMarkdownFile(
-          app.vault.getRoot(),
-          folderNotePath
-        );
-        leaf = await editor.openFile(newFile);
-      }
+      const leaf = await editor.openFile(folderNote);
       if (!((_a3 = leaf == null ? void 0 : leaf.view) == null ? void 0 : _a3.editor)) {
         return;
       }
@@ -43396,8 +43441,10 @@ var ContextViewComponent = (props2) => {
     });
   };
   const cacheChanged = (evt) => {
-    if (evt.detail.type == "file" && evt.detail.name == context.contextPath) {
-      refreshCache();
+    if (evt.detail.type == "file") {
+      if (evt.detail.name == context.contextPath || evt.detail.name == (folderCache == null ? void 0 : folderCache.path)) {
+        refreshCache();
+      }
     }
   };
   p2(() => {
@@ -45056,8 +45103,8 @@ var FlowEditorWidget = class extends import_view4.WidgetType {
     div.toggleClass("mk-floweditor-container", true);
     div.toggleClass("mk-floweditor-fix", this.info.startOfLineFix);
     div.setAttribute("id", "mk-flow-" + this.info.id);
-    const placeholder2 = div.createDiv("mk-floweditor-placeholder");
-    placeholder2.style.setProperty("height", this.info.height + "px");
+    const placeholder = div.createDiv("mk-floweditor-placeholder");
+    placeholder.style.setProperty("height", this.info.height + "px");
     loadFlowEditorByDOM(div, view, this.info.id);
     return div;
   }
@@ -45660,11 +45707,11 @@ function cursorTooltip(plugin) {
 // src/cm-extensions/placeholder.ts
 var import_state9 = require("@codemirror/state");
 var import_view6 = require("@codemirror/view");
-var placeholderLine = import_view6.Decoration.line({
-  attributes: { "data-ph": i18n_default.labels.placeholder },
+var placeholderLine = (plugin) => import_view6.Decoration.line({
+  attributes: { "data-ph": i18n_default.labels.placeholder.replace("${1}", plugin.settings.menuTriggerChar) },
   class: "mk-placeholder"
 });
-var placeholder = import_state9.StateField.define({
+var placeholderExtension = (plugin) => import_state9.StateField.define({
   create() {
     return import_view6.Decoration.none;
   },
@@ -45672,7 +45719,7 @@ var placeholder = import_state9.StateField.define({
     let builder = new import_state9.RangeSetBuilder();
     const currentLine = tr.state.doc.lineAt(tr.state.selection.main.head);
     if ((currentLine == null ? void 0 : currentLine.length) == 0)
-      builder.add(currentLine.from, currentLine.from, placeholderLine);
+      builder.add(currentLine.from, currentLine.from, placeholderLine(plugin));
     const dec = builder.finish();
     return dec;
   },
@@ -45754,7 +45801,7 @@ var cmExtensions = (plugin, mobile) => {
       extensions.push(cursorTooltip(plugin));
     }
     if (plugin.settings.flowMenuEnabled && plugin.settings.makeMenuPlaceholder)
-      extensions.push(placeholder);
+      extensions.push(placeholderExtension(plugin));
     if (plugin.settings.editorFlow) {
       extensions.push(
         flowTypeStateField,
@@ -45904,7 +45951,7 @@ var MakeMenu = class extends import_obsidian47.EditorSuggest {
       this.inCmd = true;
     }
     const currentCmd = currentLine.slice(this.cmdStartCh, cursor.ch);
-    if (currentCmd.includes(" ") || !currentCmd.includes(this.plugin.settings.menuTriggerChar)) {
+    if (currentCmd.length > 1 && currentCmd.includes(" ") || !currentCmd.includes(this.plugin.settings.menuTriggerChar)) {
       this.resetInfos();
       return null;
     }
@@ -52156,7 +52203,11 @@ var SectionItem = k3(
       }
     })), /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-tree-text",
-      onClick: (e4) => space ? openSpace(space.name, plugin, false) : {}
+      onClick: (e4) => space ? openSpace(
+        space.name,
+        plugin,
+        e4.ctrlKey || e4.metaKey ? e4.altKey ? "split" : "tab" : false
+      ) : {}
     }, data.space), /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-folder-buttons"
     }, /* @__PURE__ */ Cn.createElement("button", {
@@ -52283,7 +52334,7 @@ var TreeItem = k3(
       openAFile(
         getAbstractFileAtPath(app, file.item.path),
         plugin,
-        e4.ctrlKey || e4.metaKey
+        e4.ctrlKey || e4.metaKey ? e4.altKey ? "split" : "tab" : false
       );
       setActiveFile(pathByString(file.item.path));
       setSelectedFiles([file]);
@@ -53948,12 +53999,12 @@ var MakeMDPluginSettingsTab = class extends import_obsidian56.PluginSettingTab {
       );
       new import_obsidian56.Setting(containerEl).setName(i18n_default.settings.makeChar.name).setDesc(i18n_default.settings.makeChar.desc).addText((text2) => {
         text2.setValue(this.plugin.settings.menuTriggerChar).onChange(async (value) => {
-          if (value.trim().length < 1) {
+          if (value.length < 1) {
             text2.setValue(this.plugin.settings.menuTriggerChar);
             return;
           }
           let char = value[0];
-          if (value.trim().length === 2) {
+          if (value.length === 2) {
             char = value.replace(this.plugin.settings.menuTriggerChar, "");
           }
           text2.setValue(char);
@@ -54040,10 +54091,10 @@ var BlinkComponent = Cn.forwardRef(
     const hoverItem = (item) => {
       loadPreview(item);
     };
-    const selectItem = (item) => {
+    const selectItem = (item, modifiers) => {
       if (!item)
         return;
-      openPath(props2.plugin, pathByString(item));
+      openPath(props2.plugin, pathByString(item), modifiers);
     };
     const optionProps = {
       multi: false,
@@ -54052,7 +54103,9 @@ var BlinkComponent = Cn.forwardRef(
       value: [],
       options: allItems,
       defaultOptions: defaultOptions3,
-      saveOptions: (_9, items) => selectItem(items[0]),
+      saveOptions: (_9, items, modifiers) => {
+        selectItem(items[0], modifiers);
+      },
       placeholder: i18n_default.labels.blinkPlaceholder,
       searchable: true,
       showAll: true
@@ -55979,12 +56032,8 @@ var MakeMDPlugin = class extends import_obsidian65.Plugin {
     }
   }
   getActiveFile() {
-    var _a2, _b2;
     let filePath = null;
-    let leaf = (_a2 = app.workspace.getActiveViewOfType(import_obsidian65.MarkdownView)) == null ? void 0 : _a2.leaf;
-    if (!leaf) {
-      leaf = (_b2 = app.workspace.getActiveViewOfType(ContextView)) == null ? void 0 : _b2.leaf;
-    }
+    const leaf = app.workspace.activeLeaf;
     const activeView2 = leaf == null ? void 0 : leaf.view;
     if (!activeView2 || leaf.isFlowBlock)
       return null;
