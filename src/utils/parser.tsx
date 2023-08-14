@@ -4,6 +4,7 @@ import { DBRow } from "types/mdb";
 import { SpaceDef } from "types/space";
 import { safelyParseJSON } from "./json";
 import { filePathToString, indexOfCharElseEOS } from "./strings";
+import { MULTI_STRING_DELIMITER } from "./serializer";
 
 //named parsers for converting strings to values
 
@@ -13,7 +14,7 @@ export const parseSortStrat = (str: string): [string, boolean] => {
 };
 
 export const parseMultiString = (str: string): string[] =>
-  str?.match(/(\\.|[^,])+/g) ?? [];
+  str?.match(new RegExp(`(\\.|[^${MULTI_STRING_DELIMITER}])+`, 'g')) ?? [];
 
 export const parseLinkString = (string: string) => {
   if (!string) return "";

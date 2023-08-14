@@ -3,3 +3,6 @@ node_modules
 .DS_Store
 undefined
 .vscode
+backups
+Spaces.mdb
+data.json

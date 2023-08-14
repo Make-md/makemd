@@ -96,6 +96,7 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
       ></ContextCell>
     );
   } else if (fieldType.type == "fileprop") {
+
     return <LookUpCell {...viewProps} file={file}></LookUpCell>;
   } else if (fieldType.type == "number") {
     return <NumberCell {...viewProps}></NumberCell>;

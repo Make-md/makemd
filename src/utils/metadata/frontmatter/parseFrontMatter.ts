@@ -1,9 +1,10 @@
-import { serializeMultiDisplayString, serializeMultiString } from "utils/serializer";
+import { MULTI_STRING_DELIMITER, serializeMultiDisplayString, serializeMultiString } from "utils/serializer";
 import { detectYAMLType } from "./detectYAMLType";
 
 
 export const parseFrontMatter = (field: string, value: any) => {
-  const YAMLtype = detectYAMLType(value, field);
+  // We need to always treat Aliases as an option-multi field, even if it's a string.
+  const YAMLtype = field === 'aliases' ? 'option-multi' : detectYAMLType(value, field);
   switch (YAMLtype) {
     case "object":
       return JSON.stringify(value);
@@ -30,7 +31,7 @@ export const parseFrontMatter = (field: string, value: any) => {
     case "option-multi":
     case "link-multi":
       if (typeof value === "string") {
-        return value;
+        return value.split(',').join(MULTI_STRING_DELIMITER);
       }
       return serializeMultiString(value
         .map((v: any) => {

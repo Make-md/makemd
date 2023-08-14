@@ -368,7 +368,7 @@ export const connectContext = async (
   tag: string,
   source: string
 ) => {
-  
+
 };
 
 export const disconnectContext = async (
@@ -376,7 +376,7 @@ export const disconnectContext = async (
   tag: string,
   source: string
 ) => {
-  
+
 };
 
 export const renameSpaceContextFile = async (
@@ -394,7 +394,7 @@ export const renameSpaceContextFile = async (
           "/" + newSpaceDBPath
       )
     ) {
-      await renameFile(plugin, 
+      await renameFile(plugin,
         getAbstractFileAtPath(app, context.dbPath),
         newSpaceDBPath
       );
@@ -413,7 +413,7 @@ export const renameSpaceContextFile = async (
         });
       }
     }, app.workspace["rootSplit"]!);
-  
+
 };
 
 
@@ -434,7 +434,7 @@ export const renameTagContextFile = async (
           ".mdb"
       )
     ) {
-      await renameFile(plugin, 
+      await renameFile(plugin,
         getAbstractFileAtPath(app, context.dbPath),
         tagToTagPath(newTag) + ".mdb"
       );
@@ -454,5 +454,5 @@ export const renameTagContextFile = async (
         });
       }
     }, app.workspace["rootSplit"]!);
-  
+
 };
