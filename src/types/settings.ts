@@ -72,5 +72,7 @@ export interface MakeMDPluginSettings {
   fmKeyColor: string;
   fmKeySticker: string;
   openSpacesOnLaunch: boolean;
-  indexSVG: boolean;
+  stickerSVG: boolean;
+  stickerEmoji: boolean;
+  stickerIcon: boolean;
 }

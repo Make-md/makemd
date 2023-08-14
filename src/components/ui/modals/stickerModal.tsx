@@ -48,14 +48,17 @@ export class stickerModal extends FuzzySuggestModal<Sticker> {
   }
 
   getItems(): Sticker[] {
-    const allLucide: Sticker[] = lucideIcons.map((f) => ({
+    let stickers: Sticker[] = [];
+
+    if (this.plugin.settings.stickerIcon) stickers = stickers.concat(lucideIcons.map((f) => ({
       name: f,
       type: "lucide",
       keywords: f,
       value: f,
       html: getIcon(f).outerHTML,
-    }));
-    const allCustom: Sticker[] = [...this.plugin.index.iconsCache.keys()].map(
+    })));
+
+    if (this.plugin.settings.stickerSVG) stickers = stickers.concat([...this.plugin.index.iconsCache.keys()].map(
       (f) => ({
         name: f,
         type: "vault",
@@ -63,8 +66,9 @@ export class stickerModal extends FuzzySuggestModal<Sticker> {
         value: f,
         html: this.plugin.index.iconsCache.get(f),
       })
-    );
-    const allEmojis: Sticker[] = Object.keys(emojis as EmojiData).reduce(
+    ));
+
+    if (this.plugin.settings.stickerEmoji) stickers = stickers.concat(Object.keys(emojis as EmojiData).reduce(
       (p, c: string) => [
         ...p,
         ...emojis[c].map((e) => ({
@@ -75,8 +79,11 @@ export class stickerModal extends FuzzySuggestModal<Sticker> {
         })),
       ],
       []
-    );
-    return [...allCustom, ...allEmojis, ...allLucide];
+    ));
+
+    console.log(stickers);
+
+    return stickers;
   }
 
   onChooseItem(item: Sticker, evt: MouseEvent | KeyboardEvent) {
