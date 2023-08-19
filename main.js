@@ -11897,14 +11897,14 @@ var HoverPlugin = class {
       return;
     let bidi = this.view.bidiSpans(this.view.state.doc.lineAt(pos)).find((s5) => s5.from <= pos && s5.to >= pos);
     let rtl = bidi && bidi.dir == import_view.Direction.RTL ? -1 : 1;
-    let open = this.source(
+    let open2 = this.source(
       this.view,
       pos,
       lastMove.x < posCoords.left ? -rtl : rtl
     );
-    if (open == null ? void 0 : open.then) {
+    if (open2 == null ? void 0 : open2.then) {
       let pending = this.pending = { pos };
-      open.then(
+      open2.then(
         (result) => {
           if (this.pending == pending) {
             this.pending = null;
@@ -11914,8 +11914,8 @@ var HoverPlugin = class {
         },
         (e4) => (0, import_view.logException)(this.view.state, e4, "hover tooltip")
       );
-    } else if (open) {
-      this.view.dispatch({ effects: this.setHover.of(open) });
+    } else if (open2) {
+      this.view.dispatch({ effects: this.setHover.of(open2) });
     }
   }
   mousemove(event) {
@@ -13116,6 +13116,7 @@ var T4 = class {
           delete: "Delete",
           getHelp: "Make.md Community",
           openVault: "Open Another Vault",
+          openVaultInFolder: "Open Vault Folder",
           obSettings: "Obsidian Settings",
           commandPalette: "Command Palette",
           backToSpace: "Back to Spaces",
@@ -13198,7 +13199,7 @@ var T4 = class {
           cutTable: "Cut Table",
           deleteTable: "Delete Table",
           blink: "Blink",
-          addFile: "Add File",
+          addFile: "Add Item",
           merge: "Merge",
           saveView: "Save View",
           saveTable: "Save Table",
@@ -13312,7 +13313,7 @@ var T4 = class {
           multiple: "Multiple",
           filesCount: "{$1} Files",
           hiddenFiles: "Hidden Files",
-          addExtension: "Add Extension",
+          addExtension: "Add Rule",
           saveView: "Save View",
           saveTable: "Save Table",
           renameView: "Rename View",
@@ -15419,9 +15420,9 @@ var nodeIsAncestorOfTarget = (node, target) => {
   return (_a2 = target.item) == null ? void 0 : _a2.path.contains(node.item.path + "/");
 };
 var excludeVaultItemPredicate = (settings) => (f4, index, folder) => !(f4.folder != "true" && settings.hiddenExtensions.find(
-  (e4) => fileExtensionForFile(f4.path) == e4
+  (e4) => f4.path.endsWith(e4)
 )) && !settings.hiddenFiles.find((e4) => e4 == f4.path) && (!settings.enableFolderNote || !settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || settings.folderNoteInsideFolder && !(f4.parent + "/" + folderPathToString(f4.parent) + ".md" == f4.path));
-var excludeFilePredicate = (plugin) => (f4, index, folder) => !(f4 instanceof import_obsidian.TFile && plugin.settings.hiddenExtensions.find((e4) => f4.extension == e4)) && !plugin.settings.hiddenFiles.find((e4) => e4 == f4.path) && (!plugin.settings.enableFolderNote || !plugin.settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !(f4.parent.path + "/" + f4.parent.name + ".md" == f4.path));
+var excludeFilePredicate = (plugin) => (f4, index, folder) => !(f4 instanceof import_obsidian.TFile && plugin.settings.hiddenExtensions.find((e4) => f4.path.endsWith(e4))) && !plugin.settings.hiddenFiles.find((e4) => e4 == f4.path) && (!plugin.settings.enableFolderNote || !plugin.settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !(f4.parent.path + "/" + f4.parent.name + ".md" == f4.path));
 var folderChildren = (plugin, f4, exclusionList) => {
   var _a2, _b2;
   return (_b2 = (_a2 = f4 == null ? void 0 : f4.children) == null ? void 0 : _a2.filter(excludeFilePredicate(plugin))) != null ? _b2 : [];
@@ -19023,8 +19024,8 @@ var deleteFrontmatterValue = (plugin, path, key2) => {
 var saveFrontmatterValue = (plugin, path, key2, value, type, forceSave) => {
   let afile = getAbstractFileAtPath(app, path);
   const fileCache = plugin.index.filesIndex.get(path);
-  if (afile && fileCache) {
-    if (fileCache.isFolder && fileCache.folderNote) {
+  if (afile) {
+    if (fileCache && fileCache.isFolder && fileCache.folderNote) {
       afile = getAbstractFileAtPath(app, fileCache.folderNote.folderNotePath);
     }
     if (afile instanceof import_obsidian5.TFile) {
@@ -39452,7 +39453,7 @@ var FileCell = (props2) => {
           props2.plugin,
           e4.ctrlKey || e4.metaKey ? e4.altKey ? "split" : "tab" : false
         )
-      }, v3 && v3.fileCache ? filePathToString(v3.fileCache.name) : "")));
+      }, v3 && v3.fileCache ? v3.fileCache.name : "")));
     }
     return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-cell-file-item"
@@ -43462,8 +43463,8 @@ var ContextViewComponent = (props2) => {
         ref.current.empty();
     }
   }, [flowOpen, folderCache]);
-  const viewFolderNote = (open) => {
-    setFlowOpen(open);
+  const viewFolderNote = (open2) => {
+    setFlowOpen(open2);
   };
   const fileNameRef = _2(null);
   const onBlur = (e4) => {
@@ -43763,7 +43764,6 @@ var defaultConfigFile = async (app2) => {
     (0, import_obsidian41.normalizePath)(app2.vault.configDir + "/app.json")
   );
 };
-var fileExtensionForFile = (path) => path == null ? void 0 : path.split(".").pop();
 var appendFilesMetaData = (plugin, propType, filesString) => {
   const files = parseMultiString(filesString).map((f4) => plugin.index.filesIndex.get(f4)).filter((f4) => f4);
   return serializeMultiString(files.map((f4) => appendFileMetaData(propType, f4)));
@@ -44054,11 +44054,11 @@ var newFileInFolder = async (plugin, data, dontOpen) => {
     dontOpen
   );
 };
-var noteToFolderNote = async (plugin, file, open) => {
+var noteToFolderNote = async (plugin, file, open2) => {
   const folderPath = fileNameToString(file.path);
   const folder = getAbstractFileAtPath(app, folderPath);
   if (folder && folder instanceof import_obsidian41.TFolder) {
-    if (open) {
+    if (open2) {
       openTFolder(folder, plugin, false);
     }
     return;
@@ -44069,7 +44069,7 @@ var noteToFolderNote = async (plugin, file, open) => {
   if (newFolderNotePath != file.path) {
     await app.vault.rename(file, newFolderNotePath);
   }
-  if (open) {
+  if (open2) {
     openTFolder(getAbstractFileAtPath(app, folderPath), plugin, false);
   }
 };
@@ -45574,6 +45574,22 @@ var InlineMenuComponent = (props2) => {
     },
     className: "mk-mark",
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-make-attach"] }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    "aria-label": !platformIsMobile() ? i18n_default.commands.toggleKeyboard : void 0,
+    onMouseDown: () => {
+      const view = getActiveMarkdownView();
+      props2.plugin.app.commands.commands["editor:indent-list"].editorCallback(view.editor, view);
+    },
+    className: "mk-mark",
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-make-keyboard"] }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    "aria-label": !platformIsMobile() ? i18n_default.commands.toggleKeyboard : void 0,
+    onMouseDown: () => {
+      const view = getActiveMarkdownView();
+      props2.plugin.app.commands.commands["editor:unindent-list"].editorCallback(view.editor, view);
+    },
+    className: "mk-mark",
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-make-keyboard"] }
   }), /* @__PURE__ */ Cn.createElement("div", {
     "aria-label": !platformIsMobile() ? i18n_default.commands.toggleKeyboard : void 0,
     onMouseDown: () => {
@@ -51426,7 +51442,9 @@ var HiddenFiles = (props2) => {
     className: "modal-content"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "setting-item setting-item-heading"
-  }, "Extensions"), /* @__PURE__ */ Cn.createElement("div", null, hiddenExtensions.map((f4, index) => /* @__PURE__ */ Cn.createElement("div", {
+  }, "Name, Suffixes and Extension"), /* @__PURE__ */ Cn.createElement("div", {
+    className: "setting-item-description"
+  }, "Exclude any files and folders by name, suffix or extension."), /* @__PURE__ */ Cn.createElement("div", null, hiddenExtensions.map((f4, index) => /* @__PURE__ */ Cn.createElement("div", {
     className: "mobile-option-setting-item"
   }, /* @__PURE__ */ Cn.createElement("span", {
     className: "mobile-option-setting-item-name"
@@ -51445,7 +51463,9 @@ var HiddenFiles = (props2) => {
     onClick: (e4) => addExtension()
   }, "+ Add")), /* @__PURE__ */ Cn.createElement("div", {
     className: "setting-item setting-item-heading"
-  }, "Files"), /* @__PURE__ */ Cn.createElement("div", null, hiddenFiles.map((f4, index) => /* @__PURE__ */ Cn.createElement("div", {
+  }, "Files and Folders"), /* @__PURE__ */ Cn.createElement("div", {
+    className: "setting-item-description"
+  }, "Exclude specific files and folders"), /* @__PURE__ */ Cn.createElement("div", null, hiddenFiles.map((f4, index) => /* @__PURE__ */ Cn.createElement("div", {
     className: "mobile-option-setting-item"
   }, /* @__PURE__ */ Cn.createElement("span", {
     className: "mobile-option-setting-item-name"
@@ -51691,7 +51711,7 @@ var MainMenu = (props2) => {
       menuItem.setIcon("vault");
       menuItem.setTitle(i18n_default.menu.openVault);
       menuItem.onClick((ev) => {
-        plugin.app.commands.commands["app:open-vault"].callback();
+        open();
       });
     });
     menu.addSeparator();
@@ -53072,10 +53092,10 @@ var FileExplorerComponent = (props2) => {
     resetState();
   }
   const handleCollapse = T2(
-    (folder, open) => {
+    (folder, open2) => {
       var _a2;
       if (folder.parentId == null) {
-        if (plugin.settings.expandedSpaces.includes(folder.space) && !open)
+        if (plugin.settings.expandedSpaces.includes(folder.space) && !open2)
           plugin.settings.expandedSpaces = plugin.settings.expandedSpaces.filter((f4) => f4 != folder.space);
         else
           plugin.settings.expandedSpaces = [
@@ -53086,7 +53106,7 @@ var FileExplorerComponent = (props2) => {
       } else {
         const openFolders = (_a2 = expandedFolders2[folder.space]) != null ? _a2 : [];
         const folderOpen = openFolders == null ? void 0 : openFolders.includes(folder.item.path);
-        const newOpenFolders = !folderOpen || open ? [...openFolders, folder.item.path] : openFolders.filter(
+        const newOpenFolders = !folderOpen || open2 ? [...openFolders, folder.item.path] : openFolders.filter(
           (openFolder) => folder.item.path !== openFolder
         );
         plugin.settings.expandedFolders = {
@@ -53655,7 +53675,7 @@ var DEFAULT_SETTINGS = {
   tagContextFolder: "Context",
   hiddenFiles: ["Context"],
   lineNumbers: false,
-  hiddenExtensions: ["mdb"],
+  hiddenExtensions: [".mdb"],
   newFileLocation: "root",
   newFileFolderPath: "",
   inlineBacklinks: false,
@@ -55759,14 +55779,6 @@ var patchWorkspace = (plugin) => {
         if (leaf.view.getViewType() == "markdown") {
           this.activeEditor = leaf.view;
           if (leaf.view.file) {
-            if (!plugin.settings.spacesDisablePatch)
-              this._["file-open"].forEach((cb) => {
-                var _a2;
-                if ((cb == null ? void 0 : cb.fn) && ((_a2 = cb.ctx) == null ? void 0 : _a2.leaf)) {
-                  const bound = cb.fn.bind(cb.ctx);
-                  bound(leaf.view.file);
-                }
-              });
           }
         }
         return old.call(this, leaf, params);
