@@ -13822,6 +13822,21 @@ var uiIconSet = {
 <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
 </svg>
 `,
+  "mk-make-indent": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<line x1="9.5" y1="8.5" x2="17.5" y2="8.5" stroke="currentColor" stroke-linecap="round"/>
+<line x1="9.5" y1="11.5" x2="17.5" y2="11.5" stroke="currentColor" stroke-linecap="round"/>
+<line x1="9.5" y1="14.5" x2="13.5" y2="14.5" stroke="currentColor" stroke-linecap="round"/>
+<path d="M7 11.5L3.25 13.6651L3.25 9.33494L7 11.5Z" fill="currentColor"/>
+</svg>
+
+`,
+  "mk-make-unindent": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<line x1="5.5" y1="8.5" x2="13.5" y2="8.5" stroke="currentColor" stroke-linecap="round"/>
+<line x1="5.5" y1="11.5" x2="13.5" y2="11.5" stroke="currentColor" stroke-linecap="round"/>
+<line x1="5.5" y1="14.5" x2="9.5" y2="14.5" stroke="currentColor" stroke-linecap="round"/>
+<path d="M16 11.5L19.75 9.33494L19.75 13.6651L16 11.5Z" fill="currentColor"/>
+</svg>
+`,
   "mk-mark-strong": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M7 17.6364V6H11.8523C12.7235 6 13.4527 6.12311 14.0398 6.36932C14.6307 6.61553 15.0739 6.96023 15.3693 7.40341C15.6686 7.84659 15.8182 8.35985 15.8182 8.94318C15.8182 9.38636 15.7254 9.7822 15.5398 10.1307C15.3542 10.4754 15.0985 10.7614 14.7727 10.9886C14.447 11.2159 14.0701 11.375 13.642 11.4659V11.5795C14.1117 11.6023 14.5455 11.7292 14.9432 11.9602C15.3447 12.1913 15.6667 12.5133 15.9091 12.9261C16.1515 13.3352 16.2727 13.8201 16.2727 14.3807C16.2727 15.0057 16.1136 15.5644 15.7955 16.0568C15.4773 16.5455 15.017 16.9318 14.4148 17.2159C13.8125 17.4962 13.0814 17.6364 12.2216 17.6364H7ZM9.8125 15.3693H11.5511C12.161 15.3693 12.6098 15.2538 12.8977 15.0227C13.1894 14.7917 13.3352 14.4697 13.3352 14.0568C13.3352 13.7576 13.2652 13.5 13.125 13.2841C12.9848 13.0644 12.786 12.8958 12.5284 12.7784C12.2708 12.6572 11.9621 12.5966 11.6023 12.5966H9.8125V15.3693ZM9.8125 10.7841H11.3693C11.6761 10.7841 11.9489 10.733 12.1875 10.6307C12.4261 10.5284 12.6117 10.3807 12.7443 10.1875C12.8807 9.99432 12.9489 9.76136 12.9489 9.48864C12.9489 9.09848 12.8106 8.79167 12.5341 8.56818C12.2576 8.3447 11.8845 8.23295 11.4148 8.23295H9.8125V10.7841Z" fill="currentColor"/>
 </svg>
@@ -19301,7 +19316,10 @@ var MDBProvider = (props2) => {
     return props2.context;
   }, [props2.context]);
   const tagContexts = F2(
-    () => def.filter((f4) => f4.type == "tag").map((f4) => f4.value),
+    () => {
+      var _a3;
+      return (_a3 = def.filter((f4) => f4.type == "tag").map((f4) => f4.value).filter((f4) => f4)) != null ? _a3 : [];
+    },
     [def]
   );
   const cols = F2(
@@ -20815,7 +20833,7 @@ var TagsView = (props2) => {
   };
   return /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-tag-selector"
-  }, props2.tags.map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
+  }, props2.tags.filter((f4) => f4).map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
     key: i4,
     onContextMenu: (e4) => showTagMenu(e4, f4),
     onClick: (e4) => !props2.canOpen ? showTagMenu(e4, f4) : openTagContext(f4, props2.plugin, e4.metaKey)
@@ -43419,8 +43437,6 @@ var ContextViewComponent = (props2) => {
     let folderNote = getAbstractFileAtPath(app, folderNotePath);
     if ((currentFlowNotePath == null ? void 0 : currentFlowNotePath.path) != (folderNote == null ? void 0 : folderNote.path))
       setCurrentFlowNotePath(folderNote);
-    if (folderNotePath == folderRef.current && folderNotePath)
-      return;
     folderRef.current = folderNotePath;
     const div = ref.current;
     if (!folderNote) {
@@ -45581,7 +45597,7 @@ var InlineMenuComponent = (props2) => {
       props2.plugin.app.commands.commands["editor:indent-list"].editorCallback(view.editor, view);
     },
     className: "mk-mark",
-    dangerouslySetInnerHTML: { __html: uiIconSet["mk-make-keyboard"] }
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-make-indent"] }
   }), /* @__PURE__ */ Cn.createElement("div", {
     "aria-label": !platformIsMobile() ? i18n_default.commands.toggleKeyboard : void 0,
     onMouseDown: () => {
@@ -45589,7 +45605,7 @@ var InlineMenuComponent = (props2) => {
       props2.plugin.app.commands.commands["editor:unindent-list"].editorCallback(view.editor, view);
     },
     className: "mk-mark",
-    dangerouslySetInnerHTML: { __html: uiIconSet["mk-make-keyboard"] }
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-make-unindent"] }
   }), /* @__PURE__ */ Cn.createElement("div", {
     "aria-label": !platformIsMobile() ? i18n_default.commands.toggleKeyboard : void 0,
     onMouseDown: () => {
@@ -55595,8 +55611,16 @@ var ReadingModeHeader = (props2) => {
 // src/utils/contexts/markdownPost.tsx
 var import_obsidian63 = require("obsidian");
 var replaceInlineContext = (plugin, el, ctx) => {
-  replaceMarkdownForReadingMode(el, (dom) => {
+  replaceMarkdownForReadingMode(el, async (dom) => {
     let element = dom.querySelector(".mod-header");
+    if (!el.parentElement)
+      return;
+    let outerdom = dom;
+    while (!outerdom.hasClass("mk-floweditor") && !outerdom.hasClass("workspace") && outerdom.parentElement) {
+      outerdom = outerdom.parentElement;
+    }
+    if (outerdom.hasClass("mk-floweditor"))
+      return;
     if (element) {
       if (!element.hasClass("mk-inline-context") || element.getAttribute("data-path") != ctx.sourcePath) {
         element.innerHTML = "";

@@ -1754,7 +1754,7 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
 }
 .mk-folder-header .mk-file-icon-placeholder button,
 .mk-inline-context .mk-file-context-component .mk-file-icon-placeholder button {
-  background: var(--background-secondary);
+  background: var(--label-color);
   border-radius: 8px;
   padding: 8px !important;
 }
@@ -2580,7 +2580,7 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   background: unset !important;
   box-shadow: unset !important;
 }
-.is-mobile .mk-tree-wrapper button {
+.is-mobile .mk-tree-wrapper button:hover {
   background: none !important;
 }
 .mk-inline-button,
