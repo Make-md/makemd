@@ -11897,14 +11897,14 @@ var HoverPlugin = class {
       return;
     let bidi = this.view.bidiSpans(this.view.state.doc.lineAt(pos)).find((s5) => s5.from <= pos && s5.to >= pos);
     let rtl = bidi && bidi.dir == import_view.Direction.RTL ? -1 : 1;
-    let open2 = this.source(
+    let open = this.source(
       this.view,
       pos,
       lastMove.x < posCoords.left ? -rtl : rtl
     );
-    if (open2 == null ? void 0 : open2.then) {
+    if (open == null ? void 0 : open.then) {
       let pending = this.pending = { pos };
-      open2.then(
+      open.then(
         (result) => {
           if (this.pending == pending) {
             this.pending = null;
@@ -11914,8 +11914,8 @@ var HoverPlugin = class {
         },
         (e4) => (0, import_view.logException)(this.view.state, e4, "hover tooltip")
       );
-    } else if (open2) {
-      this.view.dispatch({ effects: this.setHover.of(open2) });
+    } else if (open) {
+      this.view.dispatch({ effects: this.setHover.of(open) });
     }
   }
   mousemove(event) {
@@ -43478,8 +43478,8 @@ var ContextViewComponent = (props2) => {
         ref.current.empty();
     }
   }, [flowOpen, folderCache]);
-  const viewFolderNote = (open2) => {
-    setFlowOpen(open2);
+  const viewFolderNote = (open) => {
+    setFlowOpen(open);
   };
   const fileNameRef = _2(null);
   const onBlur = (e4) => {
@@ -44069,11 +44069,11 @@ var newFileInFolder = async (plugin, data, dontOpen) => {
     dontOpen
   );
 };
-var noteToFolderNote = async (plugin, file, open2) => {
+var noteToFolderNote = async (plugin, file, open) => {
   const folderPath = fileNameToString(file.path);
   const folder = getAbstractFileAtPath(app, folderPath);
   if (folder && folder instanceof import_obsidian41.TFolder) {
-    if (open2) {
+    if (open) {
       openTFolder(folder, plugin, false);
     }
     return;
@@ -44084,7 +44084,7 @@ var noteToFolderNote = async (plugin, file, open2) => {
   if (newFolderNotePath != file.path) {
     await app.vault.rename(file, newFolderNotePath);
   }
-  if (open2) {
+  if (open) {
     openTFolder(getAbstractFileAtPath(app, folderPath), plugin, false);
   }
 };
@@ -51726,7 +51726,7 @@ var MainMenu = (props2) => {
       menuItem.setIcon("vault");
       menuItem.setTitle(i18n_default.menu.openVault);
       menuItem.onClick((ev) => {
-        open();
+        plugin.app.commands.commands["app:open-vault"].callback();
       });
     });
     menu.addSeparator();
@@ -53107,10 +53107,10 @@ var FileExplorerComponent = (props2) => {
     resetState();
   }
   const handleCollapse = T2(
-    (folder, open2) => {
+    (folder, open) => {
       var _a2;
       if (folder.parentId == null) {
-        if (plugin.settings.expandedSpaces.includes(folder.space) && !open2)
+        if (plugin.settings.expandedSpaces.includes(folder.space) && !open)
           plugin.settings.expandedSpaces = plugin.settings.expandedSpaces.filter((f4) => f4 != folder.space);
         else
           plugin.settings.expandedSpaces = [
@@ -53121,7 +53121,7 @@ var FileExplorerComponent = (props2) => {
       } else {
         const openFolders = (_a2 = expandedFolders2[folder.space]) != null ? _a2 : [];
         const folderOpen = openFolders == null ? void 0 : openFolders.includes(folder.item.path);
-        const newOpenFolders = !folderOpen || open2 ? [...openFolders, folder.item.path] : openFolders.filter(
+        const newOpenFolders = !folderOpen || open ? [...openFolders, folder.item.path] : openFolders.filter(
           (openFolder) => folder.item.path !== openFolder
         );
         plugin.settings.expandedFolders = {
