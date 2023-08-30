@@ -16134,7 +16134,7 @@ var sanitizeTableSchema = async (plugin, db, context) => {
       `SELECT name FROM sqlite_master WHERE type='table';`
     );
   } catch (e4) {
-    console.log(e4, context.dbPath);
+    console.log(e4);
   }
   if (tableRes && (!tableRes[0] || !tableRes[0].values.some((f4) => f4[0] == "m_schema") || !tableRes[0].values.some((f4) => f4[0] == "m_fields") || !tableRes[0].values.some((f4) => f4[0] == "files"))) {
     await createDefaultDB(plugin, context);
@@ -19143,7 +19143,6 @@ var urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{
 var openPath = (plugin, _path, modifiers) => {
   const { type, path } = _path;
   const target = modifiers.ctrlKey || modifiers.metaKey ? modifiers.altKey ? "split" : "tab" : false;
-  console.log(_path);
   if (type == "file" || type == "folder") {
     const afile = getAbstractFileAtPath(app, path);
     if (afile) {
