@@ -188,7 +188,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
           openAFile(
             getAbstractFileAtPath(app, file.item.path),
             plugin,
-            e.ctrlKey || e.metaKey
+            e.ctrlKey || e.metaKey || e.button === 1
           );
           setActiveFile(pathByString(file.item.path));
           setSelectedFiles([file]);
@@ -197,7 +197,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
         openAFile(
           getAbstractFileAtPath(app, file.item.path),
           plugin,
-          e.ctrlKey || e.metaKey
+          e.ctrlKey || e.metaKey || e.button === 1
         );
         setActiveFile(pathByString(file.item.path));
         setSelectedFiles([file]);
@@ -361,6 +361,7 @@ export const TreeItem = forwardRef<HTMLDivElement, TreeItemProps>(
               onMouseEnter={hoverItem}
               onKeyDown={onKeyDown}
               onClick={(e) => openFileAtTarget(data, e)}
+              onAuxClick={(e) => openFileAtTarget(data, e)}
               data-path={fileCache.path}
               onContextMenu={(e) =>
                 selectedFiles.length > 1 &&
