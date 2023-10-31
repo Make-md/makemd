@@ -46,590 +46,6 @@ var __toBinary = /* @__PURE__ */ (() => {
   };
 })();
 
-// node_modules/fuzzysort/fuzzysort.js
-var require_fuzzysort = __commonJS({
-  "node_modules/fuzzysort/fuzzysort.js"(exports, module2) {
-    ((root, UMD) => {
-      if (typeof define === "function" && define.amd)
-        define([], UMD);
-      else if (typeof module2 === "object" && module2.exports)
-        module2.exports = UMD();
-      else
-        root["fuzzysort"] = UMD();
-    })(exports, (_12) => {
-      "use strict";
-      var single = (search, target) => {
-        if (search == "farzher")
-          return { target: "farzher was here (^-^*)/", score: 0, _indexes: [0] };
-        if (!search || !target)
-          return NULL;
-        var preparedSearch = getPreparedSearch(search);
-        if (!isObj(target))
-          target = getPrepared(target);
-        var searchBitflags = preparedSearch.bitflags;
-        if ((searchBitflags & target._bitflags) !== searchBitflags)
-          return NULL;
-        return algorithm(preparedSearch, target);
-      };
-      var go = (search, targets, options) => {
-        if (search == "farzher")
-          return [{ target: "farzher was here (^-^*)/", score: 0, _indexes: [0], obj: targets ? targets[0] : NULL }];
-        if (!search)
-          return options && options.all ? all(search, targets, options) : noResults;
-        var preparedSearch = getPreparedSearch(search);
-        var searchBitflags = preparedSearch.bitflags;
-        var containsSpace = preparedSearch.containsSpace;
-        var threshold = options && options.threshold || INT_MIN;
-        var limit = options && options["limit"] || INT_MAX;
-        var resultsLen = 0;
-        var limitedCount = 0;
-        var targetsLen = targets.length;
-        if (options && options.key) {
-          var key2 = options.key;
-          for (var i4 = 0; i4 < targetsLen; ++i4) {
-            var obj = targets[i4];
-            var target = getValue(obj, key2);
-            if (!target)
-              continue;
-            if (!isObj(target))
-              target = getPrepared(target);
-            if ((searchBitflags & target._bitflags) !== searchBitflags)
-              continue;
-            var result = algorithm(preparedSearch, target);
-            if (result === NULL)
-              continue;
-            if (result.score < threshold)
-              continue;
-            result = { target: result.target, _targetLower: "", _targetLowerCodes: NULL, _nextBeginningIndexes: NULL, _bitflags: 0, score: result.score, _indexes: result._indexes, obj };
-            if (resultsLen < limit) {
-              q5.add(result);
-              ++resultsLen;
-            } else {
-              ++limitedCount;
-              if (result.score > q5.peek().score)
-                q5.replaceTop(result);
-            }
-          }
-        } else if (options && options.keys) {
-          var scoreFn = options["scoreFn"] || defaultScoreFn;
-          var keys = options.keys;
-          var keysLen = keys.length;
-          for (var i4 = 0; i4 < targetsLen; ++i4) {
-            var obj = targets[i4];
-            var objResults = new Array(keysLen);
-            for (var keyI = 0; keyI < keysLen; ++keyI) {
-              var key2 = keys[keyI];
-              var target = getValue(obj, key2);
-              if (!target) {
-                objResults[keyI] = NULL;
-                continue;
-              }
-              if (!isObj(target))
-                target = getPrepared(target);
-              if ((searchBitflags & target._bitflags) !== searchBitflags)
-                objResults[keyI] = NULL;
-              else
-                objResults[keyI] = algorithm(preparedSearch, target);
-            }
-            objResults.obj = obj;
-            var score = scoreFn(objResults);
-            if (score === NULL)
-              continue;
-            if (score < threshold)
-              continue;
-            objResults.score = score;
-            if (resultsLen < limit) {
-              q5.add(objResults);
-              ++resultsLen;
-            } else {
-              ++limitedCount;
-              if (score > q5.peek().score)
-                q5.replaceTop(objResults);
-            }
-          }
-        } else {
-          for (var i4 = 0; i4 < targetsLen; ++i4) {
-            var target = targets[i4];
-            if (!target)
-              continue;
-            if (!isObj(target))
-              target = getPrepared(target);
-            if ((searchBitflags & target._bitflags) !== searchBitflags)
-              continue;
-            var result = algorithm(preparedSearch, target);
-            if (result === NULL)
-              continue;
-            if (result.score < threshold)
-              continue;
-            if (resultsLen < limit) {
-              q5.add(result);
-              ++resultsLen;
-            } else {
-              ++limitedCount;
-              if (result.score > q5.peek().score)
-                q5.replaceTop(result);
-            }
-          }
-        }
-        if (resultsLen === 0)
-          return noResults;
-        var results = new Array(resultsLen);
-        for (var i4 = resultsLen - 1; i4 >= 0; --i4)
-          results[i4] = q5.poll();
-        results.total = resultsLen + limitedCount;
-        return results;
-      };
-      var highlight = (result, hOpen, hClose) => {
-        if (typeof hOpen === "function")
-          return highlightCallback(result, hOpen);
-        if (result === NULL)
-          return NULL;
-        if (hOpen === void 0)
-          hOpen = "<b>";
-        if (hClose === void 0)
-          hClose = "</b>";
-        var highlighted = "";
-        var matchesIndex = 0;
-        var opened = false;
-        var target = result.target;
-        var targetLen = target.length;
-        var indexes2 = result._indexes;
-        indexes2 = indexes2.slice(0, indexes2.len).sort((a5, b4) => a5 - b4);
-        for (var i4 = 0; i4 < targetLen; ++i4) {
-          var char = target[i4];
-          if (indexes2[matchesIndex] === i4) {
-            ++matchesIndex;
-            if (!opened) {
-              opened = true;
-              highlighted += hOpen;
-            }
-            if (matchesIndex === indexes2.length) {
-              highlighted += char + hClose + target.substr(i4 + 1);
-              break;
-            }
-          } else {
-            if (opened) {
-              opened = false;
-              highlighted += hClose;
-            }
-          }
-          highlighted += char;
-        }
-        return highlighted;
-      };
-      var highlightCallback = (result, cb) => {
-        if (result === NULL)
-          return NULL;
-        var target = result.target;
-        var targetLen = target.length;
-        var indexes2 = result._indexes;
-        indexes2 = indexes2.slice(0, indexes2.len).sort((a5, b4) => a5 - b4);
-        var highlighted = "";
-        var matchI = 0;
-        var indexesI = 0;
-        var opened = false;
-        var result = [];
-        for (var i4 = 0; i4 < targetLen; ++i4) {
-          var char = target[i4];
-          if (indexes2[indexesI] === i4) {
-            ++indexesI;
-            if (!opened) {
-              opened = true;
-              result.push(highlighted);
-              highlighted = "";
-            }
-            if (indexesI === indexes2.length) {
-              highlighted += char;
-              result.push(cb(highlighted, matchI++));
-              highlighted = "";
-              result.push(target.substr(i4 + 1));
-              break;
-            }
-          } else {
-            if (opened) {
-              opened = false;
-              result.push(cb(highlighted, matchI++));
-              highlighted = "";
-            }
-          }
-          highlighted += char;
-        }
-        return result;
-      };
-      var indexes = (result) => result._indexes.slice(0, result._indexes.len).sort((a5, b4) => a5 - b4);
-      var prepare = (target) => {
-        if (typeof target !== "string")
-          target = "";
-        var info = prepareLowerInfo(target);
-        return { "target": target, _targetLower: info._lower, _targetLowerCodes: info.lowerCodes, _nextBeginningIndexes: NULL, _bitflags: info.bitflags, "score": NULL, _indexes: [0], "obj": NULL };
-      };
-      var prepareSearch = (search) => {
-        if (typeof search !== "string")
-          search = "";
-        search = search.trim();
-        var info = prepareLowerInfo(search);
-        var spaceSearches = [];
-        if (info.containsSpace) {
-          var searches = search.split(/\s+/);
-          searches = [...new Set(searches)];
-          for (var i4 = 0; i4 < searches.length; i4++) {
-            if (searches[i4] === "")
-              continue;
-            var _info = prepareLowerInfo(searches[i4]);
-            spaceSearches.push({ lowerCodes: _info.lowerCodes, _lower: searches[i4].toLowerCase(), containsSpace: false });
-          }
-        }
-        return { lowerCodes: info.lowerCodes, bitflags: info.bitflags, containsSpace: info.containsSpace, _lower: info._lower, spaceSearches };
-      };
-      var getPrepared = (target) => {
-        if (target.length > 999)
-          return prepare(target);
-        var targetPrepared = preparedCache.get(target);
-        if (targetPrepared !== void 0)
-          return targetPrepared;
-        targetPrepared = prepare(target);
-        preparedCache.set(target, targetPrepared);
-        return targetPrepared;
-      };
-      var getPreparedSearch = (search) => {
-        if (search.length > 999)
-          return prepareSearch(search);
-        var searchPrepared = preparedSearchCache.get(search);
-        if (searchPrepared !== void 0)
-          return searchPrepared;
-        searchPrepared = prepareSearch(search);
-        preparedSearchCache.set(search, searchPrepared);
-        return searchPrepared;
-      };
-      var all = (search, targets, options) => {
-        var results = [];
-        results.total = targets.length;
-        var limit = options && options.limit || INT_MAX;
-        if (options && options.key) {
-          for (var i4 = 0; i4 < targets.length; i4++) {
-            var obj = targets[i4];
-            var target = getValue(obj, options.key);
-            if (!target)
-              continue;
-            if (!isObj(target))
-              target = getPrepared(target);
-            target.score = INT_MIN;
-            target._indexes.len = 0;
-            var result = target;
-            result = { target: result.target, _targetLower: "", _targetLowerCodes: NULL, _nextBeginningIndexes: NULL, _bitflags: 0, score: target.score, _indexes: NULL, obj };
-            results.push(result);
-            if (results.length >= limit)
-              return results;
-          }
-        } else if (options && options.keys) {
-          for (var i4 = 0; i4 < targets.length; i4++) {
-            var obj = targets[i4];
-            var objResults = new Array(options.keys.length);
-            for (var keyI = options.keys.length - 1; keyI >= 0; --keyI) {
-              var target = getValue(obj, options.keys[keyI]);
-              if (!target) {
-                objResults[keyI] = NULL;
-                continue;
-              }
-              if (!isObj(target))
-                target = getPrepared(target);
-              target.score = INT_MIN;
-              target._indexes.len = 0;
-              objResults[keyI] = target;
-            }
-            objResults.obj = obj;
-            objResults.score = INT_MIN;
-            results.push(objResults);
-            if (results.length >= limit)
-              return results;
-          }
-        } else {
-          for (var i4 = 0; i4 < targets.length; i4++) {
-            var target = targets[i4];
-            if (!target)
-              continue;
-            if (!isObj(target))
-              target = getPrepared(target);
-            target.score = INT_MIN;
-            target._indexes.len = 0;
-            results.push(target);
-            if (results.length >= limit)
-              return results;
-          }
-        }
-        return results;
-      };
-      var algorithm = (preparedSearch, prepared, allowSpaces = false) => {
-        if (allowSpaces === false && preparedSearch.containsSpace)
-          return algorithmSpaces(preparedSearch, prepared);
-        var searchLower = preparedSearch._lower;
-        var searchLowerCodes = preparedSearch.lowerCodes;
-        var searchLowerCode = searchLowerCodes[0];
-        var targetLowerCodes = prepared._targetLowerCodes;
-        var searchLen = searchLowerCodes.length;
-        var targetLen = targetLowerCodes.length;
-        var searchI = 0;
-        var targetI = 0;
-        var matchesSimpleLen = 0;
-        for (; ; ) {
-          var isMatch2 = searchLowerCode === targetLowerCodes[targetI];
-          if (isMatch2) {
-            matchesSimple[matchesSimpleLen++] = targetI;
-            ++searchI;
-            if (searchI === searchLen)
-              break;
-            searchLowerCode = searchLowerCodes[searchI];
-          }
-          ++targetI;
-          if (targetI >= targetLen)
-            return NULL;
-        }
-        var searchI = 0;
-        var successStrict = false;
-        var matchesStrictLen = 0;
-        var nextBeginningIndexes = prepared._nextBeginningIndexes;
-        if (nextBeginningIndexes === NULL)
-          nextBeginningIndexes = prepared._nextBeginningIndexes = prepareNextBeginningIndexes(prepared.target);
-        var firstPossibleI = targetI = matchesSimple[0] === 0 ? 0 : nextBeginningIndexes[matchesSimple[0] - 1];
-        var backtrackCount = 0;
-        if (targetI !== targetLen)
-          for (; ; ) {
-            if (targetI >= targetLen) {
-              if (searchI <= 0)
-                break;
-              ++backtrackCount;
-              if (backtrackCount > 200)
-                break;
-              --searchI;
-              var lastMatch = matchesStrict[--matchesStrictLen];
-              targetI = nextBeginningIndexes[lastMatch];
-            } else {
-              var isMatch2 = searchLowerCodes[searchI] === targetLowerCodes[targetI];
-              if (isMatch2) {
-                matchesStrict[matchesStrictLen++] = targetI;
-                ++searchI;
-                if (searchI === searchLen) {
-                  successStrict = true;
-                  break;
-                }
-                ++targetI;
-              } else {
-                targetI = nextBeginningIndexes[targetI];
-              }
-            }
-          }
-        var substringIndex = prepared._targetLower.indexOf(searchLower, matchesSimple[0]);
-        var isSubstring = ~substringIndex;
-        if (isSubstring && !successStrict) {
-          for (var i4 = 0; i4 < matchesSimpleLen; ++i4)
-            matchesSimple[i4] = substringIndex + i4;
-        }
-        var isSubstringBeginning = false;
-        if (isSubstring) {
-          isSubstringBeginning = prepared._nextBeginningIndexes[substringIndex - 1] === substringIndex;
-        }
-        {
-          if (successStrict) {
-            var matchesBest = matchesStrict;
-            var matchesBestLen = matchesStrictLen;
-          } else {
-            var matchesBest = matchesSimple;
-            var matchesBestLen = matchesSimpleLen;
-          }
-          var score = 0;
-          var extraMatchGroupCount = 0;
-          for (var i4 = 1; i4 < searchLen; ++i4) {
-            if (matchesBest[i4] - matchesBest[i4 - 1] !== 1) {
-              score -= matchesBest[i4];
-              ++extraMatchGroupCount;
-            }
-          }
-          var unmatchedDistance = matchesBest[searchLen - 1] - matchesBest[0] - (searchLen - 1);
-          score -= (12 + unmatchedDistance) * extraMatchGroupCount;
-          if (matchesBest[0] !== 0)
-            score -= matchesBest[0] * matchesBest[0] * 0.2;
-          if (!successStrict) {
-            score *= 1e3;
-          } else {
-            var uniqueBeginningIndexes = 1;
-            for (var i4 = nextBeginningIndexes[0]; i4 < targetLen; i4 = nextBeginningIndexes[i4])
-              ++uniqueBeginningIndexes;
-            if (uniqueBeginningIndexes > 24)
-              score *= (uniqueBeginningIndexes - 24) * 10;
-          }
-          if (isSubstring)
-            score /= 1 + searchLen * searchLen * 1;
-          if (isSubstringBeginning)
-            score /= 1 + searchLen * searchLen * 1;
-          score -= targetLen - searchLen;
-          prepared.score = score;
-          for (var i4 = 0; i4 < matchesBestLen; ++i4)
-            prepared._indexes[i4] = matchesBest[i4];
-          prepared._indexes.len = matchesBestLen;
-          return prepared;
-        }
-      };
-      var algorithmSpaces = (preparedSearch, target) => {
-        var seen_indexes = /* @__PURE__ */ new Set();
-        var score = 0;
-        var result = NULL;
-        var first_seen_index_last_search = 0;
-        var searches = preparedSearch.spaceSearches;
-        for (var i4 = 0; i4 < searches.length; ++i4) {
-          var search = searches[i4];
-          result = algorithm(search, target);
-          if (result === NULL)
-            return NULL;
-          score += result.score;
-          if (result._indexes[0] < first_seen_index_last_search) {
-            score -= first_seen_index_last_search - result._indexes[0];
-          }
-          first_seen_index_last_search = result._indexes[0];
-          for (var j4 = 0; j4 < result._indexes.len; ++j4)
-            seen_indexes.add(result._indexes[j4]);
-        }
-        var allowSpacesResult = algorithm(preparedSearch, target, true);
-        if (allowSpacesResult !== NULL && allowSpacesResult.score > score) {
-          return allowSpacesResult;
-        }
-        result.score = score;
-        var i4 = 0;
-        for (let index of seen_indexes)
-          result._indexes[i4++] = index;
-        result._indexes.len = i4;
-        return result;
-      };
-      var prepareLowerInfo = (str) => {
-        var strLen = str.length;
-        var lower = str.toLowerCase();
-        var lowerCodes = [];
-        var bitflags = 0;
-        var containsSpace = false;
-        for (var i4 = 0; i4 < strLen; ++i4) {
-          var lowerCode = lowerCodes[i4] = lower.charCodeAt(i4);
-          if (lowerCode === 32) {
-            containsSpace = true;
-            continue;
-          }
-          var bit = lowerCode >= 97 && lowerCode <= 122 ? lowerCode - 97 : lowerCode >= 48 && lowerCode <= 57 ? 26 : lowerCode <= 127 ? 30 : 31;
-          bitflags |= 1 << bit;
-        }
-        return { lowerCodes, bitflags, containsSpace, _lower: lower };
-      };
-      var prepareBeginningIndexes = (target) => {
-        var targetLen = target.length;
-        var beginningIndexes = [];
-        var beginningIndexesLen = 0;
-        var wasUpper = false;
-        var wasAlphanum = false;
-        for (var i4 = 0; i4 < targetLen; ++i4) {
-          var targetCode = target.charCodeAt(i4);
-          var isUpper = targetCode >= 65 && targetCode <= 90;
-          var isAlphanum = isUpper || targetCode >= 97 && targetCode <= 122 || targetCode >= 48 && targetCode <= 57;
-          var isBeginning = isUpper && !wasUpper || !wasAlphanum || !isAlphanum;
-          wasUpper = isUpper;
-          wasAlphanum = isAlphanum;
-          if (isBeginning)
-            beginningIndexes[beginningIndexesLen++] = i4;
-        }
-        return beginningIndexes;
-      };
-      var prepareNextBeginningIndexes = (target) => {
-        var targetLen = target.length;
-        var beginningIndexes = prepareBeginningIndexes(target);
-        var nextBeginningIndexes = [];
-        var lastIsBeginning = beginningIndexes[0];
-        var lastIsBeginningI = 0;
-        for (var i4 = 0; i4 < targetLen; ++i4) {
-          if (lastIsBeginning > i4) {
-            nextBeginningIndexes[i4] = lastIsBeginning;
-          } else {
-            lastIsBeginning = beginningIndexes[++lastIsBeginningI];
-            nextBeginningIndexes[i4] = lastIsBeginning === void 0 ? targetLen : lastIsBeginning;
-          }
-        }
-        return nextBeginningIndexes;
-      };
-      var cleanup = () => {
-        preparedCache.clear();
-        preparedSearchCache.clear();
-        matchesSimple = [];
-        matchesStrict = [];
-      };
-      var preparedCache = /* @__PURE__ */ new Map();
-      var preparedSearchCache = /* @__PURE__ */ new Map();
-      var matchesSimple = [];
-      var matchesStrict = [];
-      var defaultScoreFn = (a5) => {
-        var max3 = INT_MIN;
-        var len = a5.length;
-        for (var i4 = 0; i4 < len; ++i4) {
-          var result = a5[i4];
-          if (result === NULL)
-            continue;
-          var score = result.score;
-          if (score > max3)
-            max3 = score;
-        }
-        if (max3 === INT_MIN)
-          return NULL;
-        return max3;
-      };
-      var getValue = (obj, prop) => {
-        var tmp = obj[prop];
-        if (tmp !== void 0)
-          return tmp;
-        var segs = prop;
-        if (!Array.isArray(prop))
-          segs = prop.split(".");
-        var len = segs.length;
-        var i4 = -1;
-        while (obj && ++i4 < len)
-          obj = obj[segs[i4]];
-        return obj;
-      };
-      var isObj = (x5) => {
-        return typeof x5 === "object";
-      };
-      var INT_MAX = Infinity;
-      var INT_MIN = -INT_MAX;
-      var noResults = [];
-      noResults.total = 0;
-      var NULL = null;
-      var fastpriorityqueue = (r3) => {
-        var e4 = [], o3 = 0, a5 = {}, v3 = (r4) => {
-          for (var a6 = 0, v4 = e4[a6], c4 = 1; c4 < o3; ) {
-            var s5 = c4 + 1;
-            a6 = c4, s5 < o3 && e4[s5].score < e4[c4].score && (a6 = s5), e4[a6 - 1 >> 1] = e4[a6], c4 = 1 + (a6 << 1);
-          }
-          for (var f4 = a6 - 1 >> 1; a6 > 0 && v4.score < e4[f4].score; f4 = (a6 = f4) - 1 >> 1)
-            e4[a6] = e4[f4];
-          e4[a6] = v4;
-        };
-        return a5.add = (r4) => {
-          var a6 = o3;
-          e4[o3++] = r4;
-          for (var v4 = a6 - 1 >> 1; a6 > 0 && r4.score < e4[v4].score; v4 = (a6 = v4) - 1 >> 1)
-            e4[a6] = e4[v4];
-          e4[a6] = r4;
-        }, a5.poll = (r4) => {
-          if (0 !== o3) {
-            var a6 = e4[0];
-            return e4[0] = e4[--o3], v3(), a6;
-          }
-        }, a5.peek = (r4) => {
-          if (0 !== o3)
-            return e4[0];
-        }, a5.replaceTop = (r4) => {
-          e4[0] = r4, v3();
-        }, a5;
-      };
-      var q5 = fastpriorityqueue();
-      return { "single": single, "go": go, "highlight": highlight, "prepare": prepare, "indexes": indexes, "cleanup": cleanup };
-    });
-  }
-});
-
 // node_modules/lodash/lodash.js
 var require_lodash = __commonJS({
   "node_modules/lodash/lodash.js"(exports, module2) {
@@ -6068,6 +5484,832 @@ var require_lodash = __commonJS({
   }
 });
 
+// node_modules/he/he.js
+var require_he = __commonJS({
+  "node_modules/he/he.js"(exports, module2) {
+    (function(root) {
+      var freeExports = typeof exports == "object" && exports;
+      var freeModule = typeof module2 == "object" && module2 && module2.exports == freeExports && module2;
+      var freeGlobal = typeof global == "object" && global;
+      if (freeGlobal.global === freeGlobal || freeGlobal.window === freeGlobal) {
+        root = freeGlobal;
+      }
+      var regexAstralSymbols = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g;
+      var regexAsciiWhitelist = /[\x01-\x7F]/g;
+      var regexBmpWhitelist = /[\x01-\t\x0B\f\x0E-\x1F\x7F\x81\x8D\x8F\x90\x9D\xA0-\uFFFF]/g;
+      var regexEncodeNonAscii = /<\u20D2|=\u20E5|>\u20D2|\u205F\u200A|\u219D\u0338|\u2202\u0338|\u2220\u20D2|\u2229\uFE00|\u222A\uFE00|\u223C\u20D2|\u223D\u0331|\u223E\u0333|\u2242\u0338|\u224B\u0338|\u224D\u20D2|\u224E\u0338|\u224F\u0338|\u2250\u0338|\u2261\u20E5|\u2264\u20D2|\u2265\u20D2|\u2266\u0338|\u2267\u0338|\u2268\uFE00|\u2269\uFE00|\u226A\u0338|\u226A\u20D2|\u226B\u0338|\u226B\u20D2|\u227F\u0338|\u2282\u20D2|\u2283\u20D2|\u228A\uFE00|\u228B\uFE00|\u228F\u0338|\u2290\u0338|\u2293\uFE00|\u2294\uFE00|\u22B4\u20D2|\u22B5\u20D2|\u22D8\u0338|\u22D9\u0338|\u22DA\uFE00|\u22DB\uFE00|\u22F5\u0338|\u22F9\u0338|\u2933\u0338|\u29CF\u0338|\u29D0\u0338|\u2A6D\u0338|\u2A70\u0338|\u2A7D\u0338|\u2A7E\u0338|\u2AA1\u0338|\u2AA2\u0338|\u2AAC\uFE00|\u2AAD\uFE00|\u2AAF\u0338|\u2AB0\u0338|\u2AC5\u0338|\u2AC6\u0338|\u2ACB\uFE00|\u2ACC\uFE00|\u2AFD\u20E5|[\xA0-\u0113\u0116-\u0122\u0124-\u012B\u012E-\u014D\u0150-\u017E\u0192\u01B5\u01F5\u0237\u02C6\u02C7\u02D8-\u02DD\u0311\u0391-\u03A1\u03A3-\u03A9\u03B1-\u03C9\u03D1\u03D2\u03D5\u03D6\u03DC\u03DD\u03F0\u03F1\u03F5\u03F6\u0401-\u040C\u040E-\u044F\u0451-\u045C\u045E\u045F\u2002-\u2005\u2007-\u2010\u2013-\u2016\u2018-\u201A\u201C-\u201E\u2020-\u2022\u2025\u2026\u2030-\u2035\u2039\u203A\u203E\u2041\u2043\u2044\u204F\u2057\u205F-\u2063\u20AC\u20DB\u20DC\u2102\u2105\u210A-\u2113\u2115-\u211E\u2122\u2124\u2127-\u2129\u212C\u212D\u212F-\u2131\u2133-\u2138\u2145-\u2148\u2153-\u215E\u2190-\u219B\u219D-\u21A7\u21A9-\u21AE\u21B0-\u21B3\u21B5-\u21B7\u21BA-\u21DB\u21DD\u21E4\u21E5\u21F5\u21FD-\u2205\u2207-\u2209\u220B\u220C\u220F-\u2214\u2216-\u2218\u221A\u221D-\u2238\u223A-\u2257\u2259\u225A\u225C\u225F-\u2262\u2264-\u228B\u228D-\u229B\u229D-\u22A5\u22A7-\u22B0\u22B2-\u22BB\u22BD-\u22DB\u22DE-\u22E3\u22E6-\u22F7\u22F9-\u22FE\u2305\u2306\u2308-\u2310\u2312\u2313\u2315\u2316\u231C-\u231F\u2322\u2323\u232D\u232E\u2336\u233D\u233F\u237C\u23B0\u23B1\u23B4-\u23B6\u23DC-\u23DF\u23E2\u23E7\u2423\u24C8\u2500\u2502\u250C\u2510\u2514\u2518\u251C\u2524\u252C\u2534\u253C\u2550-\u256C\u2580\u2584\u2588\u2591-\u2593\u25A1\u25AA\u25AB\u25AD\u25AE\u25B1\u25B3-\u25B5\u25B8\u25B9\u25BD-\u25BF\u25C2\u25C3\u25CA\u25CB\u25EC\u25EF\u25F8-\u25FC\u2605\u2606\u260E\u2640\u2642\u2660\u2663\u2665\u2666\u266A\u266D-\u266F\u2713\u2717\u2720\u2736\u2758\u2772\u2773\u27C8\u27C9\u27E6-\u27ED\u27F5-\u27FA\u27FC\u27FF\u2902-\u2905\u290C-\u2913\u2916\u2919-\u2920\u2923-\u292A\u2933\u2935-\u2939\u293C\u293D\u2945\u2948-\u294B\u294E-\u2976\u2978\u2979\u297B-\u297F\u2985\u2986\u298B-\u2996\u299A\u299C\u299D\u29A4-\u29B7\u29B9\u29BB\u29BC\u29BE-\u29C5\u29C9\u29CD-\u29D0\u29DC-\u29DE\u29E3-\u29E5\u29EB\u29F4\u29F6\u2A00-\u2A02\u2A04\u2A06\u2A0C\u2A0D\u2A10-\u2A17\u2A22-\u2A27\u2A29\u2A2A\u2A2D-\u2A31\u2A33-\u2A3C\u2A3F\u2A40\u2A42-\u2A4D\u2A50\u2A53-\u2A58\u2A5A-\u2A5D\u2A5F\u2A66\u2A6A\u2A6D-\u2A75\u2A77-\u2A9A\u2A9D-\u2AA2\u2AA4-\u2AB0\u2AB3-\u2AC8\u2ACB\u2ACC\u2ACF-\u2ADB\u2AE4\u2AE6-\u2AE9\u2AEB-\u2AF3\u2AFD\uFB00-\uFB04]|\uD835[\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDCCF\uDD04\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDD6B]/g;
+      var encodeMap = { "\xAD": "shy", "\u200C": "zwnj", "\u200D": "zwj", "\u200E": "lrm", "\u2063": "ic", "\u2062": "it", "\u2061": "af", "\u200F": "rlm", "\u200B": "ZeroWidthSpace", "\u2060": "NoBreak", "\u0311": "DownBreve", "\u20DB": "tdot", "\u20DC": "DotDot", "	": "Tab", "\n": "NewLine", "\u2008": "puncsp", "\u205F": "MediumSpace", "\u2009": "thinsp", "\u200A": "hairsp", "\u2004": "emsp13", "\u2002": "ensp", "\u2005": "emsp14", "\u2003": "emsp", "\u2007": "numsp", "\xA0": "nbsp", "\u205F\u200A": "ThickSpace", "\u203E": "oline", "_": "lowbar", "\u2010": "dash", "\u2013": "ndash", "\u2014": "mdash", "\u2015": "horbar", ",": "comma", ";": "semi", "\u204F": "bsemi", ":": "colon", "\u2A74": "Colone", "!": "excl", "\xA1": "iexcl", "?": "quest", "\xBF": "iquest", ".": "period", "\u2025": "nldr", "\u2026": "mldr", "\xB7": "middot", "'": "apos", "\u2018": "lsquo", "\u2019": "rsquo", "\u201A": "sbquo", "\u2039": "lsaquo", "\u203A": "rsaquo", '"': "quot", "\u201C": "ldquo", "\u201D": "rdquo", "\u201E": "bdquo", "\xAB": "laquo", "\xBB": "raquo", "(": "lpar", ")": "rpar", "[": "lsqb", "]": "rsqb", "{": "lcub", "}": "rcub", "\u2308": "lceil", "\u2309": "rceil", "\u230A": "lfloor", "\u230B": "rfloor", "\u2985": "lopar", "\u2986": "ropar", "\u298B": "lbrke", "\u298C": "rbrke", "\u298D": "lbrkslu", "\u298E": "rbrksld", "\u298F": "lbrksld", "\u2990": "rbrkslu", "\u2991": "langd", "\u2992": "rangd", "\u2993": "lparlt", "\u2994": "rpargt", "\u2995": "gtlPar", "\u2996": "ltrPar", "\u27E6": "lobrk", "\u27E7": "robrk", "\u27E8": "lang", "\u27E9": "rang", "\u27EA": "Lang", "\u27EB": "Rang", "\u27EC": "loang", "\u27ED": "roang", "\u2772": "lbbrk", "\u2773": "rbbrk", "\u2016": "Vert", "\xA7": "sect", "\xB6": "para", "@": "commat", "*": "ast", "/": "sol", "undefined": null, "&": "amp", "#": "num", "%": "percnt", "\u2030": "permil", "\u2031": "pertenk", "\u2020": "dagger", "\u2021": "Dagger", "\u2022": "bull", "\u2043": "hybull", "\u2032": "prime", "\u2033": "Prime", "\u2034": "tprime", "\u2057": "qprime", "\u2035": "bprime", "\u2041": "caret", "`": "grave", "\xB4": "acute", "\u02DC": "tilde", "^": "Hat", "\xAF": "macr", "\u02D8": "breve", "\u02D9": "dot", "\xA8": "die", "\u02DA": "ring", "\u02DD": "dblac", "\xB8": "cedil", "\u02DB": "ogon", "\u02C6": "circ", "\u02C7": "caron", "\xB0": "deg", "\xA9": "copy", "\xAE": "reg", "\u2117": "copysr", "\u2118": "wp", "\u211E": "rx", "\u2127": "mho", "\u2129": "iiota", "\u2190": "larr", "\u219A": "nlarr", "\u2192": "rarr", "\u219B": "nrarr", "\u2191": "uarr", "\u2193": "darr", "\u2194": "harr", "\u21AE": "nharr", "\u2195": "varr", "\u2196": "nwarr", "\u2197": "nearr", "\u2198": "searr", "\u2199": "swarr", "\u219D": "rarrw", "\u219D\u0338": "nrarrw", "\u219E": "Larr", "\u219F": "Uarr", "\u21A0": "Rarr", "\u21A1": "Darr", "\u21A2": "larrtl", "\u21A3": "rarrtl", "\u21A4": "mapstoleft", "\u21A5": "mapstoup", "\u21A6": "map", "\u21A7": "mapstodown", "\u21A9": "larrhk", "\u21AA": "rarrhk", "\u21AB": "larrlp", "\u21AC": "rarrlp", "\u21AD": "harrw", "\u21B0": "lsh", "\u21B1": "rsh", "\u21B2": "ldsh", "\u21B3": "rdsh", "\u21B5": "crarr", "\u21B6": "cularr", "\u21B7": "curarr", "\u21BA": "olarr", "\u21BB": "orarr", "\u21BC": "lharu", "\u21BD": "lhard", "\u21BE": "uharr", "\u21BF": "uharl", "\u21C0": "rharu", "\u21C1": "rhard", "\u21C2": "dharr", "\u21C3": "dharl", "\u21C4": "rlarr", "\u21C5": "udarr", "\u21C6": "lrarr", "\u21C7": "llarr", "\u21C8": "uuarr", "\u21C9": "rrarr", "\u21CA": "ddarr", "\u21CB": "lrhar", "\u21CC": "rlhar", "\u21D0": "lArr", "\u21CD": "nlArr", "\u21D1": "uArr", "\u21D2": "rArr", "\u21CF": "nrArr", "\u21D3": "dArr", "\u21D4": "iff", "\u21CE": "nhArr", "\u21D5": "vArr", "\u21D6": "nwArr", "\u21D7": "neArr", "\u21D8": "seArr", "\u21D9": "swArr", "\u21DA": "lAarr", "\u21DB": "rAarr", "\u21DD": "zigrarr", "\u21E4": "larrb", "\u21E5": "rarrb", "\u21F5": "duarr", "\u21FD": "loarr", "\u21FE": "roarr", "\u21FF": "hoarr", "\u2200": "forall", "\u2201": "comp", "\u2202": "part", "\u2202\u0338": "npart", "\u2203": "exist", "\u2204": "nexist", "\u2205": "empty", "\u2207": "Del", "\u2208": "in", "\u2209": "notin", "\u220B": "ni", "\u220C": "notni", "\u03F6": "bepsi", "\u220F": "prod", "\u2210": "coprod", "\u2211": "sum", "+": "plus", "\xB1": "pm", "\xF7": "div", "\xD7": "times", "<": "lt", "\u226E": "nlt", "<\u20D2": "nvlt", "=": "equals", "\u2260": "ne", "=\u20E5": "bne", "\u2A75": "Equal", ">": "gt", "\u226F": "ngt", ">\u20D2": "nvgt", "\xAC": "not", "|": "vert", "\xA6": "brvbar", "\u2212": "minus", "\u2213": "mp", "\u2214": "plusdo", "\u2044": "frasl", "\u2216": "setmn", "\u2217": "lowast", "\u2218": "compfn", "\u221A": "Sqrt", "\u221D": "prop", "\u221E": "infin", "\u221F": "angrt", "\u2220": "ang", "\u2220\u20D2": "nang", "\u2221": "angmsd", "\u2222": "angsph", "\u2223": "mid", "\u2224": "nmid", "\u2225": "par", "\u2226": "npar", "\u2227": "and", "\u2228": "or", "\u2229": "cap", "\u2229\uFE00": "caps", "\u222A": "cup", "\u222A\uFE00": "cups", "\u222B": "int", "\u222C": "Int", "\u222D": "tint", "\u2A0C": "qint", "\u222E": "oint", "\u222F": "Conint", "\u2230": "Cconint", "\u2231": "cwint", "\u2232": "cwconint", "\u2233": "awconint", "\u2234": "there4", "\u2235": "becaus", "\u2236": "ratio", "\u2237": "Colon", "\u2238": "minusd", "\u223A": "mDDot", "\u223B": "homtht", "\u223C": "sim", "\u2241": "nsim", "\u223C\u20D2": "nvsim", "\u223D": "bsim", "\u223D\u0331": "race", "\u223E": "ac", "\u223E\u0333": "acE", "\u223F": "acd", "\u2240": "wr", "\u2242": "esim", "\u2242\u0338": "nesim", "\u2243": "sime", "\u2244": "nsime", "\u2245": "cong", "\u2247": "ncong", "\u2246": "simne", "\u2248": "ap", "\u2249": "nap", "\u224A": "ape", "\u224B": "apid", "\u224B\u0338": "napid", "\u224C": "bcong", "\u224D": "CupCap", "\u226D": "NotCupCap", "\u224D\u20D2": "nvap", "\u224E": "bump", "\u224E\u0338": "nbump", "\u224F": "bumpe", "\u224F\u0338": "nbumpe", "\u2250": "doteq", "\u2250\u0338": "nedot", "\u2251": "eDot", "\u2252": "efDot", "\u2253": "erDot", "\u2254": "colone", "\u2255": "ecolon", "\u2256": "ecir", "\u2257": "cire", "\u2259": "wedgeq", "\u225A": "veeeq", "\u225C": "trie", "\u225F": "equest", "\u2261": "equiv", "\u2262": "nequiv", "\u2261\u20E5": "bnequiv", "\u2264": "le", "\u2270": "nle", "\u2264\u20D2": "nvle", "\u2265": "ge", "\u2271": "nge", "\u2265\u20D2": "nvge", "\u2266": "lE", "\u2266\u0338": "nlE", "\u2267": "gE", "\u2267\u0338": "ngE", "\u2268\uFE00": "lvnE", "\u2268": "lnE", "\u2269": "gnE", "\u2269\uFE00": "gvnE", "\u226A": "ll", "\u226A\u0338": "nLtv", "\u226A\u20D2": "nLt", "\u226B": "gg", "\u226B\u0338": "nGtv", "\u226B\u20D2": "nGt", "\u226C": "twixt", "\u2272": "lsim", "\u2274": "nlsim", "\u2273": "gsim", "\u2275": "ngsim", "\u2276": "lg", "\u2278": "ntlg", "\u2277": "gl", "\u2279": "ntgl", "\u227A": "pr", "\u2280": "npr", "\u227B": "sc", "\u2281": "nsc", "\u227C": "prcue", "\u22E0": "nprcue", "\u227D": "sccue", "\u22E1": "nsccue", "\u227E": "prsim", "\u227F": "scsim", "\u227F\u0338": "NotSucceedsTilde", "\u2282": "sub", "\u2284": "nsub", "\u2282\u20D2": "vnsub", "\u2283": "sup", "\u2285": "nsup", "\u2283\u20D2": "vnsup", "\u2286": "sube", "\u2288": "nsube", "\u2287": "supe", "\u2289": "nsupe", "\u228A\uFE00": "vsubne", "\u228A": "subne", "\u228B\uFE00": "vsupne", "\u228B": "supne", "\u228D": "cupdot", "\u228E": "uplus", "\u228F": "sqsub", "\u228F\u0338": "NotSquareSubset", "\u2290": "sqsup", "\u2290\u0338": "NotSquareSuperset", "\u2291": "sqsube", "\u22E2": "nsqsube", "\u2292": "sqsupe", "\u22E3": "nsqsupe", "\u2293": "sqcap", "\u2293\uFE00": "sqcaps", "\u2294": "sqcup", "\u2294\uFE00": "sqcups", "\u2295": "oplus", "\u2296": "ominus", "\u2297": "otimes", "\u2298": "osol", "\u2299": "odot", "\u229A": "ocir", "\u229B": "oast", "\u229D": "odash", "\u229E": "plusb", "\u229F": "minusb", "\u22A0": "timesb", "\u22A1": "sdotb", "\u22A2": "vdash", "\u22AC": "nvdash", "\u22A3": "dashv", "\u22A4": "top", "\u22A5": "bot", "\u22A7": "models", "\u22A8": "vDash", "\u22AD": "nvDash", "\u22A9": "Vdash", "\u22AE": "nVdash", "\u22AA": "Vvdash", "\u22AB": "VDash", "\u22AF": "nVDash", "\u22B0": "prurel", "\u22B2": "vltri", "\u22EA": "nltri", "\u22B3": "vrtri", "\u22EB": "nrtri", "\u22B4": "ltrie", "\u22EC": "nltrie", "\u22B4\u20D2": "nvltrie", "\u22B5": "rtrie", "\u22ED": "nrtrie", "\u22B5\u20D2": "nvrtrie", "\u22B6": "origof", "\u22B7": "imof", "\u22B8": "mumap", "\u22B9": "hercon", "\u22BA": "intcal", "\u22BB": "veebar", "\u22BD": "barvee", "\u22BE": "angrtvb", "\u22BF": "lrtri", "\u22C0": "Wedge", "\u22C1": "Vee", "\u22C2": "xcap", "\u22C3": "xcup", "\u22C4": "diam", "\u22C5": "sdot", "\u22C6": "Star", "\u22C7": "divonx", "\u22C8": "bowtie", "\u22C9": "ltimes", "\u22CA": "rtimes", "\u22CB": "lthree", "\u22CC": "rthree", "\u22CD": "bsime", "\u22CE": "cuvee", "\u22CF": "cuwed", "\u22D0": "Sub", "\u22D1": "Sup", "\u22D2": "Cap", "\u22D3": "Cup", "\u22D4": "fork", "\u22D5": "epar", "\u22D6": "ltdot", "\u22D7": "gtdot", "\u22D8": "Ll", "\u22D8\u0338": "nLl", "\u22D9": "Gg", "\u22D9\u0338": "nGg", "\u22DA\uFE00": "lesg", "\u22DA": "leg", "\u22DB": "gel", "\u22DB\uFE00": "gesl", "\u22DE": "cuepr", "\u22DF": "cuesc", "\u22E6": "lnsim", "\u22E7": "gnsim", "\u22E8": "prnsim", "\u22E9": "scnsim", "\u22EE": "vellip", "\u22EF": "ctdot", "\u22F0": "utdot", "\u22F1": "dtdot", "\u22F2": "disin", "\u22F3": "isinsv", "\u22F4": "isins", "\u22F5": "isindot", "\u22F5\u0338": "notindot", "\u22F6": "notinvc", "\u22F7": "notinvb", "\u22F9": "isinE", "\u22F9\u0338": "notinE", "\u22FA": "nisd", "\u22FB": "xnis", "\u22FC": "nis", "\u22FD": "notnivc", "\u22FE": "notnivb", "\u2305": "barwed", "\u2306": "Barwed", "\u230C": "drcrop", "\u230D": "dlcrop", "\u230E": "urcrop", "\u230F": "ulcrop", "\u2310": "bnot", "\u2312": "profline", "\u2313": "profsurf", "\u2315": "telrec", "\u2316": "target", "\u231C": "ulcorn", "\u231D": "urcorn", "\u231E": "dlcorn", "\u231F": "drcorn", "\u2322": "frown", "\u2323": "smile", "\u232D": "cylcty", "\u232E": "profalar", "\u2336": "topbot", "\u233D": "ovbar", "\u233F": "solbar", "\u237C": "angzarr", "\u23B0": "lmoust", "\u23B1": "rmoust", "\u23B4": "tbrk", "\u23B5": "bbrk", "\u23B6": "bbrktbrk", "\u23DC": "OverParenthesis", "\u23DD": "UnderParenthesis", "\u23DE": "OverBrace", "\u23DF": "UnderBrace", "\u23E2": "trpezium", "\u23E7": "elinters", "\u2423": "blank", "\u2500": "boxh", "\u2502": "boxv", "\u250C": "boxdr", "\u2510": "boxdl", "\u2514": "boxur", "\u2518": "boxul", "\u251C": "boxvr", "\u2524": "boxvl", "\u252C": "boxhd", "\u2534": "boxhu", "\u253C": "boxvh", "\u2550": "boxH", "\u2551": "boxV", "\u2552": "boxdR", "\u2553": "boxDr", "\u2554": "boxDR", "\u2555": "boxdL", "\u2556": "boxDl", "\u2557": "boxDL", "\u2558": "boxuR", "\u2559": "boxUr", "\u255A": "boxUR", "\u255B": "boxuL", "\u255C": "boxUl", "\u255D": "boxUL", "\u255E": "boxvR", "\u255F": "boxVr", "\u2560": "boxVR", "\u2561": "boxvL", "\u2562": "boxVl", "\u2563": "boxVL", "\u2564": "boxHd", "\u2565": "boxhD", "\u2566": "boxHD", "\u2567": "boxHu", "\u2568": "boxhU", "\u2569": "boxHU", "\u256A": "boxvH", "\u256B": "boxVh", "\u256C": "boxVH", "\u2580": "uhblk", "\u2584": "lhblk", "\u2588": "block", "\u2591": "blk14", "\u2592": "blk12", "\u2593": "blk34", "\u25A1": "squ", "\u25AA": "squf", "\u25AB": "EmptyVerySmallSquare", "\u25AD": "rect", "\u25AE": "marker", "\u25B1": "fltns", "\u25B3": "xutri", "\u25B4": "utrif", "\u25B5": "utri", "\u25B8": "rtrif", "\u25B9": "rtri", "\u25BD": "xdtri", "\u25BE": "dtrif", "\u25BF": "dtri", "\u25C2": "ltrif", "\u25C3": "ltri", "\u25CA": "loz", "\u25CB": "cir", "\u25EC": "tridot", "\u25EF": "xcirc", "\u25F8": "ultri", "\u25F9": "urtri", "\u25FA": "lltri", "\u25FB": "EmptySmallSquare", "\u25FC": "FilledSmallSquare", "\u2605": "starf", "\u2606": "star", "\u260E": "phone", "\u2640": "female", "\u2642": "male", "\u2660": "spades", "\u2663": "clubs", "\u2665": "hearts", "\u2666": "diams", "\u266A": "sung", "\u2713": "check", "\u2717": "cross", "\u2720": "malt", "\u2736": "sext", "\u2758": "VerticalSeparator", "\u27C8": "bsolhsub", "\u27C9": "suphsol", "\u27F5": "xlarr", "\u27F6": "xrarr", "\u27F7": "xharr", "\u27F8": "xlArr", "\u27F9": "xrArr", "\u27FA": "xhArr", "\u27FC": "xmap", "\u27FF": "dzigrarr", "\u2902": "nvlArr", "\u2903": "nvrArr", "\u2904": "nvHarr", "\u2905": "Map", "\u290C": "lbarr", "\u290D": "rbarr", "\u290E": "lBarr", "\u290F": "rBarr", "\u2910": "RBarr", "\u2911": "DDotrahd", "\u2912": "UpArrowBar", "\u2913": "DownArrowBar", "\u2916": "Rarrtl", "\u2919": "latail", "\u291A": "ratail", "\u291B": "lAtail", "\u291C": "rAtail", "\u291D": "larrfs", "\u291E": "rarrfs", "\u291F": "larrbfs", "\u2920": "rarrbfs", "\u2923": "nwarhk", "\u2924": "nearhk", "\u2925": "searhk", "\u2926": "swarhk", "\u2927": "nwnear", "\u2928": "toea", "\u2929": "tosa", "\u292A": "swnwar", "\u2933": "rarrc", "\u2933\u0338": "nrarrc", "\u2935": "cudarrr", "\u2936": "ldca", "\u2937": "rdca", "\u2938": "cudarrl", "\u2939": "larrpl", "\u293C": "curarrm", "\u293D": "cularrp", "\u2945": "rarrpl", "\u2948": "harrcir", "\u2949": "Uarrocir", "\u294A": "lurdshar", "\u294B": "ldrushar", "\u294E": "LeftRightVector", "\u294F": "RightUpDownVector", "\u2950": "DownLeftRightVector", "\u2951": "LeftUpDownVector", "\u2952": "LeftVectorBar", "\u2953": "RightVectorBar", "\u2954": "RightUpVectorBar", "\u2955": "RightDownVectorBar", "\u2956": "DownLeftVectorBar", "\u2957": "DownRightVectorBar", "\u2958": "LeftUpVectorBar", "\u2959": "LeftDownVectorBar", "\u295A": "LeftTeeVector", "\u295B": "RightTeeVector", "\u295C": "RightUpTeeVector", "\u295D": "RightDownTeeVector", "\u295E": "DownLeftTeeVector", "\u295F": "DownRightTeeVector", "\u2960": "LeftUpTeeVector", "\u2961": "LeftDownTeeVector", "\u2962": "lHar", "\u2963": "uHar", "\u2964": "rHar", "\u2965": "dHar", "\u2966": "luruhar", "\u2967": "ldrdhar", "\u2968": "ruluhar", "\u2969": "rdldhar", "\u296A": "lharul", "\u296B": "llhard", "\u296C": "rharul", "\u296D": "lrhard", "\u296E": "udhar", "\u296F": "duhar", "\u2970": "RoundImplies", "\u2971": "erarr", "\u2972": "simrarr", "\u2973": "larrsim", "\u2974": "rarrsim", "\u2975": "rarrap", "\u2976": "ltlarr", "\u2978": "gtrarr", "\u2979": "subrarr", "\u297B": "suplarr", "\u297C": "lfisht", "\u297D": "rfisht", "\u297E": "ufisht", "\u297F": "dfisht", "\u299A": "vzigzag", "\u299C": "vangrt", "\u299D": "angrtvbd", "\u29A4": "ange", "\u29A5": "range", "\u29A6": "dwangle", "\u29A7": "uwangle", "\u29A8": "angmsdaa", "\u29A9": "angmsdab", "\u29AA": "angmsdac", "\u29AB": "angmsdad", "\u29AC": "angmsdae", "\u29AD": "angmsdaf", "\u29AE": "angmsdag", "\u29AF": "angmsdah", "\u29B0": "bemptyv", "\u29B1": "demptyv", "\u29B2": "cemptyv", "\u29B3": "raemptyv", "\u29B4": "laemptyv", "\u29B5": "ohbar", "\u29B6": "omid", "\u29B7": "opar", "\u29B9": "operp", "\u29BB": "olcross", "\u29BC": "odsold", "\u29BE": "olcir", "\u29BF": "ofcir", "\u29C0": "olt", "\u29C1": "ogt", "\u29C2": "cirscir", "\u29C3": "cirE", "\u29C4": "solb", "\u29C5": "bsolb", "\u29C9": "boxbox", "\u29CD": "trisb", "\u29CE": "rtriltri", "\u29CF": "LeftTriangleBar", "\u29CF\u0338": "NotLeftTriangleBar", "\u29D0": "RightTriangleBar", "\u29D0\u0338": "NotRightTriangleBar", "\u29DC": "iinfin", "\u29DD": "infintie", "\u29DE": "nvinfin", "\u29E3": "eparsl", "\u29E4": "smeparsl", "\u29E5": "eqvparsl", "\u29EB": "lozf", "\u29F4": "RuleDelayed", "\u29F6": "dsol", "\u2A00": "xodot", "\u2A01": "xoplus", "\u2A02": "xotime", "\u2A04": "xuplus", "\u2A06": "xsqcup", "\u2A0D": "fpartint", "\u2A10": "cirfnint", "\u2A11": "awint", "\u2A12": "rppolint", "\u2A13": "scpolint", "\u2A14": "npolint", "\u2A15": "pointint", "\u2A16": "quatint", "\u2A17": "intlarhk", "\u2A22": "pluscir", "\u2A23": "plusacir", "\u2A24": "simplus", "\u2A25": "plusdu", "\u2A26": "plussim", "\u2A27": "plustwo", "\u2A29": "mcomma", "\u2A2A": "minusdu", "\u2A2D": "loplus", "\u2A2E": "roplus", "\u2A2F": "Cross", "\u2A30": "timesd", "\u2A31": "timesbar", "\u2A33": "smashp", "\u2A34": "lotimes", "\u2A35": "rotimes", "\u2A36": "otimesas", "\u2A37": "Otimes", "\u2A38": "odiv", "\u2A39": "triplus", "\u2A3A": "triminus", "\u2A3B": "tritime", "\u2A3C": "iprod", "\u2A3F": "amalg", "\u2A40": "capdot", "\u2A42": "ncup", "\u2A43": "ncap", "\u2A44": "capand", "\u2A45": "cupor", "\u2A46": "cupcap", "\u2A47": "capcup", "\u2A48": "cupbrcap", "\u2A49": "capbrcup", "\u2A4A": "cupcup", "\u2A4B": "capcap", "\u2A4C": "ccups", "\u2A4D": "ccaps", "\u2A50": "ccupssm", "\u2A53": "And", "\u2A54": "Or", "\u2A55": "andand", "\u2A56": "oror", "\u2A57": "orslope", "\u2A58": "andslope", "\u2A5A": "andv", "\u2A5B": "orv", "\u2A5C": "andd", "\u2A5D": "ord", "\u2A5F": "wedbar", "\u2A66": "sdote", "\u2A6A": "simdot", "\u2A6D": "congdot", "\u2A6D\u0338": "ncongdot", "\u2A6E": "easter", "\u2A6F": "apacir", "\u2A70": "apE", "\u2A70\u0338": "napE", "\u2A71": "eplus", "\u2A72": "pluse", "\u2A73": "Esim", "\u2A77": "eDDot", "\u2A78": "equivDD", "\u2A79": "ltcir", "\u2A7A": "gtcir", "\u2A7B": "ltquest", "\u2A7C": "gtquest", "\u2A7D": "les", "\u2A7D\u0338": "nles", "\u2A7E": "ges", "\u2A7E\u0338": "nges", "\u2A7F": "lesdot", "\u2A80": "gesdot", "\u2A81": "lesdoto", "\u2A82": "gesdoto", "\u2A83": "lesdotor", "\u2A84": "gesdotol", "\u2A85": "lap", "\u2A86": "gap", "\u2A87": "lne", "\u2A88": "gne", "\u2A89": "lnap", "\u2A8A": "gnap", "\u2A8B": "lEg", "\u2A8C": "gEl", "\u2A8D": "lsime", "\u2A8E": "gsime", "\u2A8F": "lsimg", "\u2A90": "gsiml", "\u2A91": "lgE", "\u2A92": "glE", "\u2A93": "lesges", "\u2A94": "gesles", "\u2A95": "els", "\u2A96": "egs", "\u2A97": "elsdot", "\u2A98": "egsdot", "\u2A99": "el", "\u2A9A": "eg", "\u2A9D": "siml", "\u2A9E": "simg", "\u2A9F": "simlE", "\u2AA0": "simgE", "\u2AA1": "LessLess", "\u2AA1\u0338": "NotNestedLessLess", "\u2AA2": "GreaterGreater", "\u2AA2\u0338": "NotNestedGreaterGreater", "\u2AA4": "glj", "\u2AA5": "gla", "\u2AA6": "ltcc", "\u2AA7": "gtcc", "\u2AA8": "lescc", "\u2AA9": "gescc", "\u2AAA": "smt", "\u2AAB": "lat", "\u2AAC": "smte", "\u2AAC\uFE00": "smtes", "\u2AAD": "late", "\u2AAD\uFE00": "lates", "\u2AAE": "bumpE", "\u2AAF": "pre", "\u2AAF\u0338": "npre", "\u2AB0": "sce", "\u2AB0\u0338": "nsce", "\u2AB3": "prE", "\u2AB4": "scE", "\u2AB5": "prnE", "\u2AB6": "scnE", "\u2AB7": "prap", "\u2AB8": "scap", "\u2AB9": "prnap", "\u2ABA": "scnap", "\u2ABB": "Pr", "\u2ABC": "Sc", "\u2ABD": "subdot", "\u2ABE": "supdot", "\u2ABF": "subplus", "\u2AC0": "supplus", "\u2AC1": "submult", "\u2AC2": "supmult", "\u2AC3": "subedot", "\u2AC4": "supedot", "\u2AC5": "subE", "\u2AC5\u0338": "nsubE", "\u2AC6": "supE", "\u2AC6\u0338": "nsupE", "\u2AC7": "subsim", "\u2AC8": "supsim", "\u2ACB\uFE00": "vsubnE", "\u2ACB": "subnE", "\u2ACC\uFE00": "vsupnE", "\u2ACC": "supnE", "\u2ACF": "csub", "\u2AD0": "csup", "\u2AD1": "csube", "\u2AD2": "csupe", "\u2AD3": "subsup", "\u2AD4": "supsub", "\u2AD5": "subsub", "\u2AD6": "supsup", "\u2AD7": "suphsub", "\u2AD8": "supdsub", "\u2AD9": "forkv", "\u2ADA": "topfork", "\u2ADB": "mlcp", "\u2AE4": "Dashv", "\u2AE6": "Vdashl", "\u2AE7": "Barv", "\u2AE8": "vBar", "\u2AE9": "vBarv", "\u2AEB": "Vbar", "\u2AEC": "Not", "\u2AED": "bNot", "\u2AEE": "rnmid", "\u2AEF": "cirmid", "\u2AF0": "midcir", "\u2AF1": "topcir", "\u2AF2": "nhpar", "\u2AF3": "parsim", "\u2AFD": "parsl", "\u2AFD\u20E5": "nparsl", "\u266D": "flat", "\u266E": "natur", "\u266F": "sharp", "\xA4": "curren", "\xA2": "cent", "$": "dollar", "\xA3": "pound", "\xA5": "yen", "\u20AC": "euro", "\xB9": "sup1", "\xBD": "half", "\u2153": "frac13", "\xBC": "frac14", "\u2155": "frac15", "\u2159": "frac16", "\u215B": "frac18", "\xB2": "sup2", "\u2154": "frac23", "\u2156": "frac25", "\xB3": "sup3", "\xBE": "frac34", "\u2157": "frac35", "\u215C": "frac38", "\u2158": "frac45", "\u215A": "frac56", "\u215D": "frac58", "\u215E": "frac78", "\u{1D4B6}": "ascr", "\u{1D552}": "aopf", "\u{1D51E}": "afr", "\u{1D538}": "Aopf", "\u{1D504}": "Afr", "\u{1D49C}": "Ascr", "\xAA": "ordf", "\xE1": "aacute", "\xC1": "Aacute", "\xE0": "agrave", "\xC0": "Agrave", "\u0103": "abreve", "\u0102": "Abreve", "\xE2": "acirc", "\xC2": "Acirc", "\xE5": "aring", "\xC5": "angst", "\xE4": "auml", "\xC4": "Auml", "\xE3": "atilde", "\xC3": "Atilde", "\u0105": "aogon", "\u0104": "Aogon", "\u0101": "amacr", "\u0100": "Amacr", "\xE6": "aelig", "\xC6": "AElig", "\u{1D4B7}": "bscr", "\u{1D553}": "bopf", "\u{1D51F}": "bfr", "\u{1D539}": "Bopf", "\u212C": "Bscr", "\u{1D505}": "Bfr", "\u{1D520}": "cfr", "\u{1D4B8}": "cscr", "\u{1D554}": "copf", "\u212D": "Cfr", "\u{1D49E}": "Cscr", "\u2102": "Copf", "\u0107": "cacute", "\u0106": "Cacute", "\u0109": "ccirc", "\u0108": "Ccirc", "\u010D": "ccaron", "\u010C": "Ccaron", "\u010B": "cdot", "\u010A": "Cdot", "\xE7": "ccedil", "\xC7": "Ccedil", "\u2105": "incare", "\u{1D521}": "dfr", "\u2146": "dd", "\u{1D555}": "dopf", "\u{1D4B9}": "dscr", "\u{1D49F}": "Dscr", "\u{1D507}": "Dfr", "\u2145": "DD", "\u{1D53B}": "Dopf", "\u010F": "dcaron", "\u010E": "Dcaron", "\u0111": "dstrok", "\u0110": "Dstrok", "\xF0": "eth", "\xD0": "ETH", "\u2147": "ee", "\u212F": "escr", "\u{1D522}": "efr", "\u{1D556}": "eopf", "\u2130": "Escr", "\u{1D508}": "Efr", "\u{1D53C}": "Eopf", "\xE9": "eacute", "\xC9": "Eacute", "\xE8": "egrave", "\xC8": "Egrave", "\xEA": "ecirc", "\xCA": "Ecirc", "\u011B": "ecaron", "\u011A": "Ecaron", "\xEB": "euml", "\xCB": "Euml", "\u0117": "edot", "\u0116": "Edot", "\u0119": "eogon", "\u0118": "Eogon", "\u0113": "emacr", "\u0112": "Emacr", "\u{1D523}": "ffr", "\u{1D557}": "fopf", "\u{1D4BB}": "fscr", "\u{1D509}": "Ffr", "\u{1D53D}": "Fopf", "\u2131": "Fscr", "\uFB00": "fflig", "\uFB03": "ffilig", "\uFB04": "ffllig", "\uFB01": "filig", "fj": "fjlig", "\uFB02": "fllig", "\u0192": "fnof", "\u210A": "gscr", "\u{1D558}": "gopf", "\u{1D524}": "gfr", "\u{1D4A2}": "Gscr", "\u{1D53E}": "Gopf", "\u{1D50A}": "Gfr", "\u01F5": "gacute", "\u011F": "gbreve", "\u011E": "Gbreve", "\u011D": "gcirc", "\u011C": "Gcirc", "\u0121": "gdot", "\u0120": "Gdot", "\u0122": "Gcedil", "\u{1D525}": "hfr", "\u210E": "planckh", "\u{1D4BD}": "hscr", "\u{1D559}": "hopf", "\u210B": "Hscr", "\u210C": "Hfr", "\u210D": "Hopf", "\u0125": "hcirc", "\u0124": "Hcirc", "\u210F": "hbar", "\u0127": "hstrok", "\u0126": "Hstrok", "\u{1D55A}": "iopf", "\u{1D526}": "ifr", "\u{1D4BE}": "iscr", "\u2148": "ii", "\u{1D540}": "Iopf", "\u2110": "Iscr", "\u2111": "Im", "\xED": "iacute", "\xCD": "Iacute", "\xEC": "igrave", "\xCC": "Igrave", "\xEE": "icirc", "\xCE": "Icirc", "\xEF": "iuml", "\xCF": "Iuml", "\u0129": "itilde", "\u0128": "Itilde", "\u0130": "Idot", "\u012F": "iogon", "\u012E": "Iogon", "\u012B": "imacr", "\u012A": "Imacr", "\u0133": "ijlig", "\u0132": "IJlig", "\u0131": "imath", "\u{1D4BF}": "jscr", "\u{1D55B}": "jopf", "\u{1D527}": "jfr", "\u{1D4A5}": "Jscr", "\u{1D50D}": "Jfr", "\u{1D541}": "Jopf", "\u0135": "jcirc", "\u0134": "Jcirc", "\u0237": "jmath", "\u{1D55C}": "kopf", "\u{1D4C0}": "kscr", "\u{1D528}": "kfr", "\u{1D4A6}": "Kscr", "\u{1D542}": "Kopf", "\u{1D50E}": "Kfr", "\u0137": "kcedil", "\u0136": "Kcedil", "\u{1D529}": "lfr", "\u{1D4C1}": "lscr", "\u2113": "ell", "\u{1D55D}": "lopf", "\u2112": "Lscr", "\u{1D50F}": "Lfr", "\u{1D543}": "Lopf", "\u013A": "lacute", "\u0139": "Lacute", "\u013E": "lcaron", "\u013D": "Lcaron", "\u013C": "lcedil", "\u013B": "Lcedil", "\u0142": "lstrok", "\u0141": "Lstrok", "\u0140": "lmidot", "\u013F": "Lmidot", "\u{1D52A}": "mfr", "\u{1D55E}": "mopf", "\u{1D4C2}": "mscr", "\u{1D510}": "Mfr", "\u{1D544}": "Mopf", "\u2133": "Mscr", "\u{1D52B}": "nfr", "\u{1D55F}": "nopf", "\u{1D4C3}": "nscr", "\u2115": "Nopf", "\u{1D4A9}": "Nscr", "\u{1D511}": "Nfr", "\u0144": "nacute", "\u0143": "Nacute", "\u0148": "ncaron", "\u0147": "Ncaron", "\xF1": "ntilde", "\xD1": "Ntilde", "\u0146": "ncedil", "\u0145": "Ncedil", "\u2116": "numero", "\u014B": "eng", "\u014A": "ENG", "\u{1D560}": "oopf", "\u{1D52C}": "ofr", "\u2134": "oscr", "\u{1D4AA}": "Oscr", "\u{1D512}": "Ofr", "\u{1D546}": "Oopf", "\xBA": "ordm", "\xF3": "oacute", "\xD3": "Oacute", "\xF2": "ograve", "\xD2": "Ograve", "\xF4": "ocirc", "\xD4": "Ocirc", "\xF6": "ouml", "\xD6": "Ouml", "\u0151": "odblac", "\u0150": "Odblac", "\xF5": "otilde", "\xD5": "Otilde", "\xF8": "oslash", "\xD8": "Oslash", "\u014D": "omacr", "\u014C": "Omacr", "\u0153": "oelig", "\u0152": "OElig", "\u{1D52D}": "pfr", "\u{1D4C5}": "pscr", "\u{1D561}": "popf", "\u2119": "Popf", "\u{1D513}": "Pfr", "\u{1D4AB}": "Pscr", "\u{1D562}": "qopf", "\u{1D52E}": "qfr", "\u{1D4C6}": "qscr", "\u{1D4AC}": "Qscr", "\u{1D514}": "Qfr", "\u211A": "Qopf", "\u0138": "kgreen", "\u{1D52F}": "rfr", "\u{1D563}": "ropf", "\u{1D4C7}": "rscr", "\u211B": "Rscr", "\u211C": "Re", "\u211D": "Ropf", "\u0155": "racute", "\u0154": "Racute", "\u0159": "rcaron", "\u0158": "Rcaron", "\u0157": "rcedil", "\u0156": "Rcedil", "\u{1D564}": "sopf", "\u{1D4C8}": "sscr", "\u{1D530}": "sfr", "\u{1D54A}": "Sopf", "\u{1D516}": "Sfr", "\u{1D4AE}": "Sscr", "\u24C8": "oS", "\u015B": "sacute", "\u015A": "Sacute", "\u015D": "scirc", "\u015C": "Scirc", "\u0161": "scaron", "\u0160": "Scaron", "\u015F": "scedil", "\u015E": "Scedil", "\xDF": "szlig", "\u{1D531}": "tfr", "\u{1D4C9}": "tscr", "\u{1D565}": "topf", "\u{1D4AF}": "Tscr", "\u{1D517}": "Tfr", "\u{1D54B}": "Topf", "\u0165": "tcaron", "\u0164": "Tcaron", "\u0163": "tcedil", "\u0162": "Tcedil", "\u2122": "trade", "\u0167": "tstrok", "\u0166": "Tstrok", "\u{1D4CA}": "uscr", "\u{1D566}": "uopf", "\u{1D532}": "ufr", "\u{1D54C}": "Uopf", "\u{1D518}": "Ufr", "\u{1D4B0}": "Uscr", "\xFA": "uacute", "\xDA": "Uacute", "\xF9": "ugrave", "\xD9": "Ugrave", "\u016D": "ubreve", "\u016C": "Ubreve", "\xFB": "ucirc", "\xDB": "Ucirc", "\u016F": "uring", "\u016E": "Uring", "\xFC": "uuml", "\xDC": "Uuml", "\u0171": "udblac", "\u0170": "Udblac", "\u0169": "utilde", "\u0168": "Utilde", "\u0173": "uogon", "\u0172": "Uogon", "\u016B": "umacr", "\u016A": "Umacr", "\u{1D533}": "vfr", "\u{1D567}": "vopf", "\u{1D4CB}": "vscr", "\u{1D519}": "Vfr", "\u{1D54D}": "Vopf", "\u{1D4B1}": "Vscr", "\u{1D568}": "wopf", "\u{1D4CC}": "wscr", "\u{1D534}": "wfr", "\u{1D4B2}": "Wscr", "\u{1D54E}": "Wopf", "\u{1D51A}": "Wfr", "\u0175": "wcirc", "\u0174": "Wcirc", "\u{1D535}": "xfr", "\u{1D4CD}": "xscr", "\u{1D569}": "xopf", "\u{1D54F}": "Xopf", "\u{1D51B}": "Xfr", "\u{1D4B3}": "Xscr", "\u{1D536}": "yfr", "\u{1D4CE}": "yscr", "\u{1D56A}": "yopf", "\u{1D4B4}": "Yscr", "\u{1D51C}": "Yfr", "\u{1D550}": "Yopf", "\xFD": "yacute", "\xDD": "Yacute", "\u0177": "ycirc", "\u0176": "Ycirc", "\xFF": "yuml", "\u0178": "Yuml", "\u{1D4CF}": "zscr", "\u{1D537}": "zfr", "\u{1D56B}": "zopf", "\u2128": "Zfr", "\u2124": "Zopf", "\u{1D4B5}": "Zscr", "\u017A": "zacute", "\u0179": "Zacute", "\u017E": "zcaron", "\u017D": "Zcaron", "\u017C": "zdot", "\u017B": "Zdot", "\u01B5": "imped", "\xFE": "thorn", "\xDE": "THORN", "\u0149": "napos", "\u03B1": "alpha", "\u0391": "Alpha", "\u03B2": "beta", "\u0392": "Beta", "\u03B3": "gamma", "\u0393": "Gamma", "\u03B4": "delta", "\u0394": "Delta", "\u03B5": "epsi", "\u03F5": "epsiv", "\u0395": "Epsilon", "\u03DD": "gammad", "\u03DC": "Gammad", "\u03B6": "zeta", "\u0396": "Zeta", "\u03B7": "eta", "\u0397": "Eta", "\u03B8": "theta", "\u03D1": "thetav", "\u0398": "Theta", "\u03B9": "iota", "\u0399": "Iota", "\u03BA": "kappa", "\u03F0": "kappav", "\u039A": "Kappa", "\u03BB": "lambda", "\u039B": "Lambda", "\u03BC": "mu", "\xB5": "micro", "\u039C": "Mu", "\u03BD": "nu", "\u039D": "Nu", "\u03BE": "xi", "\u039E": "Xi", "\u03BF": "omicron", "\u039F": "Omicron", "\u03C0": "pi", "\u03D6": "piv", "\u03A0": "Pi", "\u03C1": "rho", "\u03F1": "rhov", "\u03A1": "Rho", "\u03C3": "sigma", "\u03A3": "Sigma", "\u03C2": "sigmaf", "\u03C4": "tau", "\u03A4": "Tau", "\u03C5": "upsi", "\u03A5": "Upsilon", "\u03D2": "Upsi", "\u03C6": "phi", "\u03D5": "phiv", "\u03A6": "Phi", "\u03C7": "chi", "\u03A7": "Chi", "\u03C8": "psi", "\u03A8": "Psi", "\u03C9": "omega", "\u03A9": "ohm", "\u0430": "acy", "\u0410": "Acy", "\u0431": "bcy", "\u0411": "Bcy", "\u0432": "vcy", "\u0412": "Vcy", "\u0433": "gcy", "\u0413": "Gcy", "\u0453": "gjcy", "\u0403": "GJcy", "\u0434": "dcy", "\u0414": "Dcy", "\u0452": "djcy", "\u0402": "DJcy", "\u0435": "iecy", "\u0415": "IEcy", "\u0451": "iocy", "\u0401": "IOcy", "\u0454": "jukcy", "\u0404": "Jukcy", "\u0436": "zhcy", "\u0416": "ZHcy", "\u0437": "zcy", "\u0417": "Zcy", "\u0455": "dscy", "\u0405": "DScy", "\u0438": "icy", "\u0418": "Icy", "\u0456": "iukcy", "\u0406": "Iukcy", "\u0457": "yicy", "\u0407": "YIcy", "\u0439": "jcy", "\u0419": "Jcy", "\u0458": "jsercy", "\u0408": "Jsercy", "\u043A": "kcy", "\u041A": "Kcy", "\u045C": "kjcy", "\u040C": "KJcy", "\u043B": "lcy", "\u041B": "Lcy", "\u0459": "ljcy", "\u0409": "LJcy", "\u043C": "mcy", "\u041C": "Mcy", "\u043D": "ncy", "\u041D": "Ncy", "\u045A": "njcy", "\u040A": "NJcy", "\u043E": "ocy", "\u041E": "Ocy", "\u043F": "pcy", "\u041F": "Pcy", "\u0440": "rcy", "\u0420": "Rcy", "\u0441": "scy", "\u0421": "Scy", "\u0442": "tcy", "\u0422": "Tcy", "\u045B": "tshcy", "\u040B": "TSHcy", "\u0443": "ucy", "\u0423": "Ucy", "\u045E": "ubrcy", "\u040E": "Ubrcy", "\u0444": "fcy", "\u0424": "Fcy", "\u0445": "khcy", "\u0425": "KHcy", "\u0446": "tscy", "\u0426": "TScy", "\u0447": "chcy", "\u0427": "CHcy", "\u045F": "dzcy", "\u040F": "DZcy", "\u0448": "shcy", "\u0428": "SHcy", "\u0449": "shchcy", "\u0429": "SHCHcy", "\u044A": "hardcy", "\u042A": "HARDcy", "\u044B": "ycy", "\u042B": "Ycy", "\u044C": "softcy", "\u042C": "SOFTcy", "\u044D": "ecy", "\u042D": "Ecy", "\u044E": "yucy", "\u042E": "YUcy", "\u044F": "yacy", "\u042F": "YAcy", "\u2135": "aleph", "\u2136": "beth", "\u2137": "gimel", "\u2138": "daleth" };
+      var regexEscape = /["&'<>`]/g;
+      var escapeMap = {
+        '"': "&quot;",
+        "&": "&amp;",
+        "'": "&#x27;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "`": "&#x60;"
+      };
+      var regexInvalidEntity = /&#(?:[xX][^a-fA-F0-9]|[^0-9xX])/;
+      var regexInvalidRawCodePoint = /[\0-\x08\x0B\x0E-\x1F\x7F-\x9F\uFDD0-\uFDEF\uFFFE\uFFFF]|[\uD83F\uD87F\uD8BF\uD8FF\uD93F\uD97F\uD9BF\uD9FF\uDA3F\uDA7F\uDABF\uDAFF\uDB3F\uDB7F\uDBBF\uDBFF][\uDFFE\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/;
+      var regexDecode = /&(CounterClockwiseContourIntegral|DoubleLongLeftRightArrow|ClockwiseContourIntegral|NotNestedGreaterGreater|NotSquareSupersetEqual|DiacriticalDoubleAcute|NotRightTriangleEqual|NotSucceedsSlantEqual|NotPrecedesSlantEqual|CloseCurlyDoubleQuote|NegativeVeryThinSpace|DoubleContourIntegral|FilledVerySmallSquare|CapitalDifferentialD|OpenCurlyDoubleQuote|EmptyVerySmallSquare|NestedGreaterGreater|DoubleLongRightArrow|NotLeftTriangleEqual|NotGreaterSlantEqual|ReverseUpEquilibrium|DoubleLeftRightArrow|NotSquareSubsetEqual|NotDoubleVerticalBar|RightArrowLeftArrow|NotGreaterFullEqual|NotRightTriangleBar|SquareSupersetEqual|DownLeftRightVector|DoubleLongLeftArrow|leftrightsquigarrow|LeftArrowRightArrow|NegativeMediumSpace|blacktriangleright|RightDownVectorBar|PrecedesSlantEqual|RightDoubleBracket|SucceedsSlantEqual|NotLeftTriangleBar|RightTriangleEqual|SquareIntersection|RightDownTeeVector|ReverseEquilibrium|NegativeThickSpace|longleftrightarrow|Longleftrightarrow|LongLeftRightArrow|DownRightTeeVector|DownRightVectorBar|GreaterSlantEqual|SquareSubsetEqual|LeftDownVectorBar|LeftDoubleBracket|VerticalSeparator|rightleftharpoons|NotGreaterGreater|NotSquareSuperset|blacktriangleleft|blacktriangledown|NegativeThinSpace|LeftDownTeeVector|NotLessSlantEqual|leftrightharpoons|DoubleUpDownArrow|DoubleVerticalBar|LeftTriangleEqual|FilledSmallSquare|twoheadrightarrow|NotNestedLessLess|DownLeftTeeVector|DownLeftVectorBar|RightAngleBracket|NotTildeFullEqual|NotReverseElement|RightUpDownVector|DiacriticalTilde|NotSucceedsTilde|circlearrowright|NotPrecedesEqual|rightharpoondown|DoubleRightArrow|NotSucceedsEqual|NonBreakingSpace|NotRightTriangle|LessEqualGreater|RightUpTeeVector|LeftAngleBracket|GreaterFullEqual|DownArrowUpArrow|RightUpVectorBar|twoheadleftarrow|GreaterEqualLess|downharpoonright|RightTriangleBar|ntrianglerighteq|NotSupersetEqual|LeftUpDownVector|DiacriticalAcute|rightrightarrows|vartriangleright|UpArrowDownArrow|DiacriticalGrave|UnderParenthesis|EmptySmallSquare|LeftUpVectorBar|leftrightarrows|DownRightVector|downharpoonleft|trianglerighteq|ShortRightArrow|OverParenthesis|DoubleLeftArrow|DoubleDownArrow|NotSquareSubset|bigtriangledown|ntrianglelefteq|UpperRightArrow|curvearrowright|vartriangleleft|NotLeftTriangle|nleftrightarrow|LowerRightArrow|NotHumpDownHump|NotGreaterTilde|rightthreetimes|LeftUpTeeVector|NotGreaterEqual|straightepsilon|LeftTriangleBar|rightsquigarrow|ContourIntegral|rightleftarrows|CloseCurlyQuote|RightDownVector|LeftRightVector|nLeftrightarrow|leftharpoondown|circlearrowleft|SquareSuperset|OpenCurlyQuote|hookrightarrow|HorizontalLine|DiacriticalDot|NotLessGreater|ntriangleright|DoubleRightTee|InvisibleComma|InvisibleTimes|LowerLeftArrow|DownLeftVector|NotSubsetEqual|curvearrowleft|trianglelefteq|NotVerticalBar|TildeFullEqual|downdownarrows|NotGreaterLess|RightTeeVector|ZeroWidthSpace|looparrowright|LongRightArrow|doublebarwedge|ShortLeftArrow|ShortDownArrow|RightVectorBar|GreaterGreater|ReverseElement|rightharpoonup|LessSlantEqual|leftthreetimes|upharpoonright|rightarrowtail|LeftDownVector|Longrightarrow|NestedLessLess|UpperLeftArrow|nshortparallel|leftleftarrows|leftrightarrow|Leftrightarrow|LeftRightArrow|longrightarrow|upharpoonleft|RightArrowBar|ApplyFunction|LeftTeeVector|leftarrowtail|NotEqualTilde|varsubsetneqq|varsupsetneqq|RightTeeArrow|SucceedsEqual|SucceedsTilde|LeftVectorBar|SupersetEqual|hookleftarrow|DifferentialD|VerticalTilde|VeryThinSpace|blacktriangle|bigtriangleup|LessFullEqual|divideontimes|leftharpoonup|UpEquilibrium|ntriangleleft|RightTriangle|measuredangle|shortparallel|longleftarrow|Longleftarrow|LongLeftArrow|DoubleLeftTee|Poincareplane|PrecedesEqual|triangleright|DoubleUpArrow|RightUpVector|fallingdotseq|looparrowleft|PrecedesTilde|NotTildeEqual|NotTildeTilde|smallsetminus|Proportional|triangleleft|triangledown|UnderBracket|NotHumpEqual|exponentiale|ExponentialE|NotLessTilde|HilbertSpace|RightCeiling|blacklozenge|varsupsetneq|HumpDownHump|GreaterEqual|VerticalLine|LeftTeeArrow|NotLessEqual|DownTeeArrow|LeftTriangle|varsubsetneq|Intersection|NotCongruent|DownArrowBar|LeftUpVector|LeftArrowBar|risingdotseq|GreaterTilde|RoundImplies|SquareSubset|ShortUpArrow|NotSuperset|quaternions|precnapprox|backepsilon|preccurlyeq|OverBracket|blacksquare|MediumSpace|VerticalBar|circledcirc|circleddash|CircleMinus|CircleTimes|LessGreater|curlyeqprec|curlyeqsucc|diamondsuit|UpDownArrow|Updownarrow|RuleDelayed|Rrightarrow|updownarrow|RightVector|nRightarrow|nrightarrow|eqslantless|LeftCeiling|Equilibrium|SmallCircle|expectation|NotSucceeds|thickapprox|GreaterLess|SquareUnion|NotPrecedes|NotLessLess|straightphi|succnapprox|succcurlyeq|SubsetEqual|sqsupseteq|Proportion|Laplacetrf|ImaginaryI|supsetneqq|NotGreater|gtreqqless|NotElement|ThickSpace|TildeEqual|TildeTilde|Fouriertrf|rmoustache|EqualTilde|eqslantgtr|UnderBrace|LeftVector|UpArrowBar|nLeftarrow|nsubseteqq|subsetneqq|nsupseteqq|nleftarrow|succapprox|lessapprox|UpTeeArrow|upuparrows|curlywedge|lesseqqgtr|varepsilon|varnothing|RightFloor|complement|CirclePlus|sqsubseteq|Lleftarrow|circledast|RightArrow|Rightarrow|rightarrow|lmoustache|Bernoullis|precapprox|mapstoleft|mapstodown|longmapsto|dotsquare|downarrow|DoubleDot|nsubseteq|supsetneq|leftarrow|nsupseteq|subsetneq|ThinSpace|ngeqslant|subseteqq|HumpEqual|NotSubset|triangleq|NotCupCap|lesseqgtr|heartsuit|TripleDot|Leftarrow|Coproduct|Congruent|varpropto|complexes|gvertneqq|LeftArrow|LessTilde|supseteqq|MinusPlus|CircleDot|nleqslant|NotExists|gtreqless|nparallel|UnionPlus|LeftFloor|checkmark|CenterDot|centerdot|Mellintrf|gtrapprox|bigotimes|OverBrace|spadesuit|therefore|pitchfork|rationals|PlusMinus|Backslash|Therefore|DownBreve|backsimeq|backprime|DownArrow|nshortmid|Downarrow|lvertneqq|eqvparsl|imagline|imagpart|infintie|integers|Integral|intercal|LessLess|Uarrocir|intlarhk|sqsupset|angmsdaf|sqsubset|llcorner|vartheta|cupbrcap|lnapprox|Superset|SuchThat|succnsim|succneqq|angmsdag|biguplus|curlyvee|trpezium|Succeeds|NotTilde|bigwedge|angmsdah|angrtvbd|triminus|cwconint|fpartint|lrcorner|smeparsl|subseteq|urcorner|lurdshar|laemptyv|DDotrahd|approxeq|ldrushar|awconint|mapstoup|backcong|shortmid|triangle|geqslant|gesdotol|timesbar|circledR|circledS|setminus|multimap|naturals|scpolint|ncongdot|RightTee|boxminus|gnapprox|boxtimes|andslope|thicksim|angmsdaa|varsigma|cirfnint|rtriltri|angmsdab|rppolint|angmsdac|barwedge|drbkarow|clubsuit|thetasym|bsolhsub|capbrcup|dzigrarr|doteqdot|DotEqual|dotminus|UnderBar|NotEqual|realpart|otimesas|ulcorner|hksearow|hkswarow|parallel|PartialD|elinters|emptyset|plusacir|bbrktbrk|angmsdad|pointint|bigoplus|angmsdae|Precedes|bigsqcup|varkappa|notindot|supseteq|precneqq|precnsim|profalar|profline|profsurf|leqslant|lesdotor|raemptyv|subplus|notnivb|notnivc|subrarr|zigrarr|vzigzag|submult|subedot|Element|between|cirscir|larrbfs|larrsim|lotimes|lbrksld|lbrkslu|lozenge|ldrdhar|dbkarow|bigcirc|epsilon|simrarr|simplus|ltquest|Epsilon|luruhar|gtquest|maltese|npolint|eqcolon|npreceq|bigodot|ddagger|gtrless|bnequiv|harrcir|ddotseq|equivDD|backsim|demptyv|nsqsube|nsqsupe|Upsilon|nsubset|upsilon|minusdu|nsucceq|swarrow|nsupset|coloneq|searrow|boxplus|napprox|natural|asympeq|alefsym|congdot|nearrow|bigstar|diamond|supplus|tritime|LeftTee|nvinfin|triplus|NewLine|nvltrie|nvrtrie|nwarrow|nexists|Diamond|ruluhar|Implies|supmult|angzarr|suplarr|suphsub|questeq|because|digamma|Because|olcross|bemptyv|omicron|Omicron|rotimes|NoBreak|intprod|angrtvb|orderof|uwangle|suphsol|lesdoto|orslope|DownTee|realine|cudarrl|rdldhar|OverBar|supedot|lessdot|supdsub|topfork|succsim|rbrkslu|rbrksld|pertenk|cudarrr|isindot|planckh|lessgtr|pluscir|gesdoto|plussim|plustwo|lesssim|cularrp|rarrsim|Cayleys|notinva|notinvb|notinvc|UpArrow|Uparrow|uparrow|NotLess|dwangle|precsim|Product|curarrm|Cconint|dotplus|rarrbfs|ccupssm|Cedilla|cemptyv|notniva|quatint|frac35|frac38|frac45|frac56|frac58|frac78|tridot|xoplus|gacute|gammad|Gammad|lfisht|lfloor|bigcup|sqsupe|gbreve|Gbreve|lharul|sqsube|sqcups|Gcedil|apacir|llhard|lmidot|Lmidot|lmoust|andand|sqcaps|approx|Abreve|spades|circeq|tprime|divide|topcir|Assign|topbot|gesdot|divonx|xuplus|timesd|gesles|atilde|solbar|SOFTcy|loplus|timesb|lowast|lowbar|dlcorn|dlcrop|softcy|dollar|lparlt|thksim|lrhard|Atilde|lsaquo|smashp|bigvee|thinsp|wreath|bkarow|lsquor|lstrok|Lstrok|lthree|ltimes|ltlarr|DotDot|simdot|ltrPar|weierp|xsqcup|angmsd|sigmav|sigmaf|zeetrf|Zcaron|zcaron|mapsto|vsupne|thetav|cirmid|marker|mcomma|Zacute|vsubnE|there4|gtlPar|vsubne|bottom|gtrarr|SHCHcy|shchcy|midast|midcir|middot|minusb|minusd|gtrdot|bowtie|sfrown|mnplus|models|colone|seswar|Colone|mstpos|searhk|gtrsim|nacute|Nacute|boxbox|telrec|hairsp|Tcedil|nbumpe|scnsim|ncaron|Ncaron|ncedil|Ncedil|hamilt|Scedil|nearhk|hardcy|HARDcy|tcedil|Tcaron|commat|nequiv|nesear|tcaron|target|hearts|nexist|varrho|scedil|Scaron|scaron|hellip|Sacute|sacute|hercon|swnwar|compfn|rtimes|rthree|rsquor|rsaquo|zacute|wedgeq|homtht|barvee|barwed|Barwed|rpargt|horbar|conint|swarhk|roplus|nltrie|hslash|hstrok|Hstrok|rmoust|Conint|bprime|hybull|hyphen|iacute|Iacute|supsup|supsub|supsim|varphi|coprod|brvbar|agrave|Supset|supset|igrave|Igrave|notinE|Agrave|iiiint|iinfin|copysr|wedbar|Verbar|vangrt|becaus|incare|verbar|inodot|bullet|drcorn|intcal|drcrop|cularr|vellip|Utilde|bumpeq|cupcap|dstrok|Dstrok|CupCap|cupcup|cupdot|eacute|Eacute|supdot|iquest|easter|ecaron|Ecaron|ecolon|isinsv|utilde|itilde|Itilde|curarr|succeq|Bumpeq|cacute|ulcrop|nparsl|Cacute|nprcue|egrave|Egrave|nrarrc|nrarrw|subsup|subsub|nrtrie|jsercy|nsccue|Jsercy|kappav|kcedil|Kcedil|subsim|ulcorn|nsimeq|egsdot|veebar|kgreen|capand|elsdot|Subset|subset|curren|aacute|lacute|Lacute|emptyv|ntilde|Ntilde|lagran|lambda|Lambda|capcap|Ugrave|langle|subdot|emsp13|numero|emsp14|nvdash|nvDash|nVdash|nVDash|ugrave|ufisht|nvHarr|larrfs|nvlArr|larrhk|larrlp|larrpl|nvrArr|Udblac|nwarhk|larrtl|nwnear|oacute|Oacute|latail|lAtail|sstarf|lbrace|odblac|Odblac|lbrack|udblac|odsold|eparsl|lcaron|Lcaron|ograve|Ograve|lcedil|Lcedil|Aacute|ssmile|ssetmn|squarf|ldquor|capcup|ominus|cylcty|rharul|eqcirc|dagger|rfloor|rfisht|Dagger|daleth|equals|origof|capdot|equest|dcaron|Dcaron|rdquor|oslash|Oslash|otilde|Otilde|otimes|Otimes|urcrop|Ubreve|ubreve|Yacute|Uacute|uacute|Rcedil|rcedil|urcorn|parsim|Rcaron|Vdashl|rcaron|Tstrok|percnt|period|permil|Exists|yacute|rbrack|rbrace|phmmat|ccaron|Ccaron|planck|ccedil|plankv|tstrok|female|plusdo|plusdu|ffilig|plusmn|ffllig|Ccedil|rAtail|dfisht|bernou|ratail|Rarrtl|rarrtl|angsph|rarrpl|rarrlp|rarrhk|xwedge|xotime|forall|ForAll|Vvdash|vsupnE|preceq|bigcap|frac12|frac13|frac14|primes|rarrfs|prnsim|frac15|Square|frac16|square|lesdot|frac18|frac23|propto|prurel|rarrap|rangle|puncsp|frac25|Racute|qprime|racute|lesges|frac34|abreve|AElig|eqsim|utdot|setmn|urtri|Equal|Uring|seArr|uring|searr|dashv|Dashv|mumap|nabla|iogon|Iogon|sdote|sdotb|scsim|napid|napos|equiv|natur|Acirc|dblac|erarr|nbump|iprod|erDot|ucirc|awint|esdot|angrt|ncong|isinE|scnap|Scirc|scirc|ndash|isins|Ubrcy|nearr|neArr|isinv|nedot|ubrcy|acute|Ycirc|iukcy|Iukcy|xutri|nesim|caret|jcirc|Jcirc|caron|twixt|ddarr|sccue|exist|jmath|sbquo|ngeqq|angst|ccaps|lceil|ngsim|UpTee|delta|Delta|rtrif|nharr|nhArr|nhpar|rtrie|jukcy|Jukcy|kappa|rsquo|Kappa|nlarr|nlArr|TSHcy|rrarr|aogon|Aogon|fflig|xrarr|tshcy|ccirc|nleqq|filig|upsih|nless|dharl|nlsim|fjlig|ropar|nltri|dharr|robrk|roarr|fllig|fltns|roang|rnmid|subnE|subne|lAarr|trisb|Ccirc|acirc|ccups|blank|VDash|forkv|Vdash|langd|cedil|blk12|blk14|laquo|strns|diams|notin|vDash|larrb|blk34|block|disin|uplus|vdash|vBarv|aelig|starf|Wedge|check|xrArr|lates|lbarr|lBarr|notni|lbbrk|bcong|frasl|lbrke|frown|vrtri|vprop|vnsup|gamma|Gamma|wedge|xodot|bdquo|srarr|doteq|ldquo|boxdl|boxdL|gcirc|Gcirc|boxDl|boxDL|boxdr|boxdR|boxDr|TRADE|trade|rlhar|boxDR|vnsub|npart|vltri|rlarr|boxhd|boxhD|nprec|gescc|nrarr|nrArr|boxHd|boxHD|boxhu|boxhU|nrtri|boxHu|clubs|boxHU|times|colon|Colon|gimel|xlArr|Tilde|nsime|tilde|nsmid|nspar|THORN|thorn|xlarr|nsube|nsubE|thkap|xhArr|comma|nsucc|boxul|boxuL|nsupe|nsupE|gneqq|gnsim|boxUl|boxUL|grave|boxur|boxuR|boxUr|boxUR|lescc|angle|bepsi|boxvh|varpi|boxvH|numsp|Theta|gsime|gsiml|theta|boxVh|boxVH|boxvl|gtcir|gtdot|boxvL|boxVl|boxVL|crarr|cross|Cross|nvsim|boxvr|nwarr|nwArr|sqsup|dtdot|Uogon|lhard|lharu|dtrif|ocirc|Ocirc|lhblk|duarr|odash|sqsub|Hacek|sqcup|llarr|duhar|oelig|OElig|ofcir|boxvR|uogon|lltri|boxVr|csube|uuarr|ohbar|csupe|ctdot|olarr|olcir|harrw|oline|sqcap|omacr|Omacr|omega|Omega|boxVR|aleph|lneqq|lnsim|loang|loarr|rharu|lobrk|hcirc|operp|oplus|rhard|Hcirc|orarr|Union|order|ecirc|Ecirc|cuepr|szlig|cuesc|breve|reals|eDDot|Breve|hoarr|lopar|utrif|rdquo|Umacr|umacr|efDot|swArr|ultri|alpha|rceil|ovbar|swarr|Wcirc|wcirc|smtes|smile|bsemi|lrarr|aring|parsl|lrhar|bsime|uhblk|lrtri|cupor|Aring|uharr|uharl|slarr|rbrke|bsolb|lsime|rbbrk|RBarr|lsimg|phone|rBarr|rbarr|icirc|lsquo|Icirc|emacr|Emacr|ratio|simne|plusb|simlE|simgE|simeq|pluse|ltcir|ltdot|empty|xharr|xdtri|iexcl|Alpha|ltrie|rarrw|pound|ltrif|xcirc|bumpe|prcue|bumpE|asymp|amacr|cuvee|Sigma|sigma|iiint|udhar|iiota|ijlig|IJlig|supnE|imacr|Imacr|prime|Prime|image|prnap|eogon|Eogon|rarrc|mdash|mDDot|cuwed|imath|supne|imped|Amacr|udarr|prsim|micro|rarrb|cwint|raquo|infin|eplus|range|rangd|Ucirc|radic|minus|amalg|veeeq|rAarr|epsiv|ycirc|quest|sharp|quot|zwnj|Qscr|race|qscr|Qopf|qopf|qint|rang|Rang|Zscr|zscr|Zopf|zopf|rarr|rArr|Rarr|Pscr|pscr|prop|prod|prnE|prec|ZHcy|zhcy|prap|Zeta|zeta|Popf|popf|Zdot|plus|zdot|Yuml|yuml|phiv|YUcy|yucy|Yscr|yscr|perp|Yopf|yopf|part|para|YIcy|Ouml|rcub|yicy|YAcy|rdca|ouml|osol|Oscr|rdsh|yacy|real|oscr|xvee|andd|rect|andv|Xscr|oror|ordm|ordf|xscr|ange|aopf|Aopf|rHar|Xopf|opar|Oopf|xopf|xnis|rhov|oopf|omid|xmap|oint|apid|apos|ogon|ascr|Ascr|odot|odiv|xcup|xcap|ocir|oast|nvlt|nvle|nvgt|nvge|nvap|Wscr|wscr|auml|ntlg|ntgl|nsup|nsub|nsim|Nscr|nscr|nsce|Wopf|ring|npre|wopf|npar|Auml|Barv|bbrk|Nopf|nopf|nmid|nLtv|beta|ropf|Ropf|Beta|beth|nles|rpar|nleq|bnot|bNot|nldr|NJcy|rscr|Rscr|Vscr|vscr|rsqb|njcy|bopf|nisd|Bopf|rtri|Vopf|nGtv|ngtr|vopf|boxh|boxH|boxv|nges|ngeq|boxV|bscr|scap|Bscr|bsim|Vert|vert|bsol|bull|bump|caps|cdot|ncup|scnE|ncap|nbsp|napE|Cdot|cent|sdot|Vbar|nang|vBar|chcy|Mscr|mscr|sect|semi|CHcy|Mopf|mopf|sext|circ|cire|mldr|mlcp|cirE|comp|shcy|SHcy|vArr|varr|cong|copf|Copf|copy|COPY|malt|male|macr|lvnE|cscr|ltri|sime|ltcc|simg|Cscr|siml|csub|Uuml|lsqb|lsim|uuml|csup|Lscr|lscr|utri|smid|lpar|cups|smte|lozf|darr|Lopf|Uscr|solb|lopf|sopf|Sopf|lneq|uscr|spar|dArr|lnap|Darr|dash|Sqrt|LJcy|ljcy|lHar|dHar|Upsi|upsi|diam|lesg|djcy|DJcy|leqq|dopf|Dopf|dscr|Dscr|dscy|ldsh|ldca|squf|DScy|sscr|Sscr|dsol|lcub|late|star|Star|Uopf|Larr|lArr|larr|uopf|dtri|dzcy|sube|subE|Lang|lang|Kscr|kscr|Kopf|kopf|KJcy|kjcy|KHcy|khcy|DZcy|ecir|edot|eDot|Jscr|jscr|succ|Jopf|jopf|Edot|uHar|emsp|ensp|Iuml|iuml|eopf|isin|Iscr|iscr|Eopf|epar|sung|epsi|escr|sup1|sup2|sup3|Iota|iota|supe|supE|Iopf|iopf|IOcy|iocy|Escr|esim|Esim|imof|Uarr|QUOT|uArr|uarr|euml|IEcy|iecy|Idot|Euml|euro|excl|Hscr|hscr|Hopf|hopf|TScy|tscy|Tscr|hbar|tscr|flat|tbrk|fnof|hArr|harr|half|fopf|Fopf|tdot|gvnE|fork|trie|gtcc|fscr|Fscr|gdot|gsim|Gscr|gscr|Gopf|gopf|gneq|Gdot|tosa|gnap|Topf|topf|geqq|toea|GJcy|gjcy|tint|gesl|mid|Sfr|ggg|top|ges|gla|glE|glj|geq|gne|gEl|gel|gnE|Gcy|gcy|gap|Tfr|tfr|Tcy|tcy|Hat|Tau|Ffr|tau|Tab|hfr|Hfr|ffr|Fcy|fcy|icy|Icy|iff|ETH|eth|ifr|Ifr|Eta|eta|int|Int|Sup|sup|ucy|Ucy|Sum|sum|jcy|ENG|ufr|Ufr|eng|Jcy|jfr|els|ell|egs|Efr|efr|Jfr|uml|kcy|Kcy|Ecy|ecy|kfr|Kfr|lap|Sub|sub|lat|lcy|Lcy|leg|Dot|dot|lEg|leq|les|squ|div|die|lfr|Lfr|lgE|Dfr|dfr|Del|deg|Dcy|dcy|lne|lnE|sol|loz|smt|Cup|lrm|cup|lsh|Lsh|sim|shy|map|Map|mcy|Mcy|mfr|Mfr|mho|gfr|Gfr|sfr|cir|Chi|chi|nap|Cfr|vcy|Vcy|cfr|Scy|scy|ncy|Ncy|vee|Vee|Cap|cap|nfr|scE|sce|Nfr|nge|ngE|nGg|vfr|Vfr|ngt|bot|nGt|nis|niv|Rsh|rsh|nle|nlE|bne|Bfr|bfr|nLl|nlt|nLt|Bcy|bcy|not|Not|rlm|wfr|Wfr|npr|nsc|num|ocy|ast|Ocy|ofr|xfr|Xfr|Ofr|ogt|ohm|apE|olt|Rho|ape|rho|Rfr|rfr|ord|REG|ang|reg|orv|And|and|AMP|Rcy|amp|Afr|ycy|Ycy|yen|yfr|Yfr|rcy|par|pcy|Pcy|pfr|Pfr|phi|Phi|afr|Acy|acy|zcy|Zcy|piv|acE|acd|zfr|Zfr|pre|prE|psi|Psi|qfr|Qfr|zwj|Or|ge|Gg|gt|gg|el|oS|lt|Lt|LT|Re|lg|gl|eg|ne|Im|it|le|DD|wp|wr|nu|Nu|dd|lE|Sc|sc|pi|Pi|ee|af|ll|Ll|rx|gE|xi|pm|Xi|ic|pr|Pr|in|ni|mp|mu|ac|Mu|or|ap|Gt|GT|ii);|&(Aacute|Agrave|Atilde|Ccedil|Eacute|Egrave|Iacute|Igrave|Ntilde|Oacute|Ograve|Oslash|Otilde|Uacute|Ugrave|Yacute|aacute|agrave|atilde|brvbar|ccedil|curren|divide|eacute|egrave|frac12|frac14|frac34|iacute|igrave|iquest|middot|ntilde|oacute|ograve|oslash|otilde|plusmn|uacute|ugrave|yacute|AElig|Acirc|Aring|Ecirc|Icirc|Ocirc|THORN|Ucirc|acirc|acute|aelig|aring|cedil|ecirc|icirc|iexcl|laquo|micro|ocirc|pound|raquo|szlig|thorn|times|ucirc|Auml|COPY|Euml|Iuml|Ouml|QUOT|Uuml|auml|cent|copy|euml|iuml|macr|nbsp|ordf|ordm|ouml|para|quot|sect|sup1|sup2|sup3|uuml|yuml|AMP|ETH|REG|amp|deg|eth|not|reg|shy|uml|yen|GT|LT|gt|lt)(?!;)([=a-zA-Z0-9]?)|&#([0-9]+)(;?)|&#[xX]([a-fA-F0-9]+)(;?)|&([0-9a-zA-Z]+)/g;
+      var decodeMap = { "aacute": "\xE1", "Aacute": "\xC1", "abreve": "\u0103", "Abreve": "\u0102", "ac": "\u223E", "acd": "\u223F", "acE": "\u223E\u0333", "acirc": "\xE2", "Acirc": "\xC2", "acute": "\xB4", "acy": "\u0430", "Acy": "\u0410", "aelig": "\xE6", "AElig": "\xC6", "af": "\u2061", "afr": "\u{1D51E}", "Afr": "\u{1D504}", "agrave": "\xE0", "Agrave": "\xC0", "alefsym": "\u2135", "aleph": "\u2135", "alpha": "\u03B1", "Alpha": "\u0391", "amacr": "\u0101", "Amacr": "\u0100", "amalg": "\u2A3F", "amp": "&", "AMP": "&", "and": "\u2227", "And": "\u2A53", "andand": "\u2A55", "andd": "\u2A5C", "andslope": "\u2A58", "andv": "\u2A5A", "ang": "\u2220", "ange": "\u29A4", "angle": "\u2220", "angmsd": "\u2221", "angmsdaa": "\u29A8", "angmsdab": "\u29A9", "angmsdac": "\u29AA", "angmsdad": "\u29AB", "angmsdae": "\u29AC", "angmsdaf": "\u29AD", "angmsdag": "\u29AE", "angmsdah": "\u29AF", "angrt": "\u221F", "angrtvb": "\u22BE", "angrtvbd": "\u299D", "angsph": "\u2222", "angst": "\xC5", "angzarr": "\u237C", "aogon": "\u0105", "Aogon": "\u0104", "aopf": "\u{1D552}", "Aopf": "\u{1D538}", "ap": "\u2248", "apacir": "\u2A6F", "ape": "\u224A", "apE": "\u2A70", "apid": "\u224B", "apos": "'", "ApplyFunction": "\u2061", "approx": "\u2248", "approxeq": "\u224A", "aring": "\xE5", "Aring": "\xC5", "ascr": "\u{1D4B6}", "Ascr": "\u{1D49C}", "Assign": "\u2254", "ast": "*", "asymp": "\u2248", "asympeq": "\u224D", "atilde": "\xE3", "Atilde": "\xC3", "auml": "\xE4", "Auml": "\xC4", "awconint": "\u2233", "awint": "\u2A11", "backcong": "\u224C", "backepsilon": "\u03F6", "backprime": "\u2035", "backsim": "\u223D", "backsimeq": "\u22CD", "Backslash": "\u2216", "Barv": "\u2AE7", "barvee": "\u22BD", "barwed": "\u2305", "Barwed": "\u2306", "barwedge": "\u2305", "bbrk": "\u23B5", "bbrktbrk": "\u23B6", "bcong": "\u224C", "bcy": "\u0431", "Bcy": "\u0411", "bdquo": "\u201E", "becaus": "\u2235", "because": "\u2235", "Because": "\u2235", "bemptyv": "\u29B0", "bepsi": "\u03F6", "bernou": "\u212C", "Bernoullis": "\u212C", "beta": "\u03B2", "Beta": "\u0392", "beth": "\u2136", "between": "\u226C", "bfr": "\u{1D51F}", "Bfr": "\u{1D505}", "bigcap": "\u22C2", "bigcirc": "\u25EF", "bigcup": "\u22C3", "bigodot": "\u2A00", "bigoplus": "\u2A01", "bigotimes": "\u2A02", "bigsqcup": "\u2A06", "bigstar": "\u2605", "bigtriangledown": "\u25BD", "bigtriangleup": "\u25B3", "biguplus": "\u2A04", "bigvee": "\u22C1", "bigwedge": "\u22C0", "bkarow": "\u290D", "blacklozenge": "\u29EB", "blacksquare": "\u25AA", "blacktriangle": "\u25B4", "blacktriangledown": "\u25BE", "blacktriangleleft": "\u25C2", "blacktriangleright": "\u25B8", "blank": "\u2423", "blk12": "\u2592", "blk14": "\u2591", "blk34": "\u2593", "block": "\u2588", "bne": "=\u20E5", "bnequiv": "\u2261\u20E5", "bnot": "\u2310", "bNot": "\u2AED", "bopf": "\u{1D553}", "Bopf": "\u{1D539}", "bot": "\u22A5", "bottom": "\u22A5", "bowtie": "\u22C8", "boxbox": "\u29C9", "boxdl": "\u2510", "boxdL": "\u2555", "boxDl": "\u2556", "boxDL": "\u2557", "boxdr": "\u250C", "boxdR": "\u2552", "boxDr": "\u2553", "boxDR": "\u2554", "boxh": "\u2500", "boxH": "\u2550", "boxhd": "\u252C", "boxhD": "\u2565", "boxHd": "\u2564", "boxHD": "\u2566", "boxhu": "\u2534", "boxhU": "\u2568", "boxHu": "\u2567", "boxHU": "\u2569", "boxminus": "\u229F", "boxplus": "\u229E", "boxtimes": "\u22A0", "boxul": "\u2518", "boxuL": "\u255B", "boxUl": "\u255C", "boxUL": "\u255D", "boxur": "\u2514", "boxuR": "\u2558", "boxUr": "\u2559", "boxUR": "\u255A", "boxv": "\u2502", "boxV": "\u2551", "boxvh": "\u253C", "boxvH": "\u256A", "boxVh": "\u256B", "boxVH": "\u256C", "boxvl": "\u2524", "boxvL": "\u2561", "boxVl": "\u2562", "boxVL": "\u2563", "boxvr": "\u251C", "boxvR": "\u255E", "boxVr": "\u255F", "boxVR": "\u2560", "bprime": "\u2035", "breve": "\u02D8", "Breve": "\u02D8", "brvbar": "\xA6", "bscr": "\u{1D4B7}", "Bscr": "\u212C", "bsemi": "\u204F", "bsim": "\u223D", "bsime": "\u22CD", "bsol": "\\", "bsolb": "\u29C5", "bsolhsub": "\u27C8", "bull": "\u2022", "bullet": "\u2022", "bump": "\u224E", "bumpe": "\u224F", "bumpE": "\u2AAE", "bumpeq": "\u224F", "Bumpeq": "\u224E", "cacute": "\u0107", "Cacute": "\u0106", "cap": "\u2229", "Cap": "\u22D2", "capand": "\u2A44", "capbrcup": "\u2A49", "capcap": "\u2A4B", "capcup": "\u2A47", "capdot": "\u2A40", "CapitalDifferentialD": "\u2145", "caps": "\u2229\uFE00", "caret": "\u2041", "caron": "\u02C7", "Cayleys": "\u212D", "ccaps": "\u2A4D", "ccaron": "\u010D", "Ccaron": "\u010C", "ccedil": "\xE7", "Ccedil": "\xC7", "ccirc": "\u0109", "Ccirc": "\u0108", "Cconint": "\u2230", "ccups": "\u2A4C", "ccupssm": "\u2A50", "cdot": "\u010B", "Cdot": "\u010A", "cedil": "\xB8", "Cedilla": "\xB8", "cemptyv": "\u29B2", "cent": "\xA2", "centerdot": "\xB7", "CenterDot": "\xB7", "cfr": "\u{1D520}", "Cfr": "\u212D", "chcy": "\u0447", "CHcy": "\u0427", "check": "\u2713", "checkmark": "\u2713", "chi": "\u03C7", "Chi": "\u03A7", "cir": "\u25CB", "circ": "\u02C6", "circeq": "\u2257", "circlearrowleft": "\u21BA", "circlearrowright": "\u21BB", "circledast": "\u229B", "circledcirc": "\u229A", "circleddash": "\u229D", "CircleDot": "\u2299", "circledR": "\xAE", "circledS": "\u24C8", "CircleMinus": "\u2296", "CirclePlus": "\u2295", "CircleTimes": "\u2297", "cire": "\u2257", "cirE": "\u29C3", "cirfnint": "\u2A10", "cirmid": "\u2AEF", "cirscir": "\u29C2", "ClockwiseContourIntegral": "\u2232", "CloseCurlyDoubleQuote": "\u201D", "CloseCurlyQuote": "\u2019", "clubs": "\u2663", "clubsuit": "\u2663", "colon": ":", "Colon": "\u2237", "colone": "\u2254", "Colone": "\u2A74", "coloneq": "\u2254", "comma": ",", "commat": "@", "comp": "\u2201", "compfn": "\u2218", "complement": "\u2201", "complexes": "\u2102", "cong": "\u2245", "congdot": "\u2A6D", "Congruent": "\u2261", "conint": "\u222E", "Conint": "\u222F", "ContourIntegral": "\u222E", "copf": "\u{1D554}", "Copf": "\u2102", "coprod": "\u2210", "Coproduct": "\u2210", "copy": "\xA9", "COPY": "\xA9", "copysr": "\u2117", "CounterClockwiseContourIntegral": "\u2233", "crarr": "\u21B5", "cross": "\u2717", "Cross": "\u2A2F", "cscr": "\u{1D4B8}", "Cscr": "\u{1D49E}", "csub": "\u2ACF", "csube": "\u2AD1", "csup": "\u2AD0", "csupe": "\u2AD2", "ctdot": "\u22EF", "cudarrl": "\u2938", "cudarrr": "\u2935", "cuepr": "\u22DE", "cuesc": "\u22DF", "cularr": "\u21B6", "cularrp": "\u293D", "cup": "\u222A", "Cup": "\u22D3", "cupbrcap": "\u2A48", "cupcap": "\u2A46", "CupCap": "\u224D", "cupcup": "\u2A4A", "cupdot": "\u228D", "cupor": "\u2A45", "cups": "\u222A\uFE00", "curarr": "\u21B7", "curarrm": "\u293C", "curlyeqprec": "\u22DE", "curlyeqsucc": "\u22DF", "curlyvee": "\u22CE", "curlywedge": "\u22CF", "curren": "\xA4", "curvearrowleft": "\u21B6", "curvearrowright": "\u21B7", "cuvee": "\u22CE", "cuwed": "\u22CF", "cwconint": "\u2232", "cwint": "\u2231", "cylcty": "\u232D", "dagger": "\u2020", "Dagger": "\u2021", "daleth": "\u2138", "darr": "\u2193", "dArr": "\u21D3", "Darr": "\u21A1", "dash": "\u2010", "dashv": "\u22A3", "Dashv": "\u2AE4", "dbkarow": "\u290F", "dblac": "\u02DD", "dcaron": "\u010F", "Dcaron": "\u010E", "dcy": "\u0434", "Dcy": "\u0414", "dd": "\u2146", "DD": "\u2145", "ddagger": "\u2021", "ddarr": "\u21CA", "DDotrahd": "\u2911", "ddotseq": "\u2A77", "deg": "\xB0", "Del": "\u2207", "delta": "\u03B4", "Delta": "\u0394", "demptyv": "\u29B1", "dfisht": "\u297F", "dfr": "\u{1D521}", "Dfr": "\u{1D507}", "dHar": "\u2965", "dharl": "\u21C3", "dharr": "\u21C2", "DiacriticalAcute": "\xB4", "DiacriticalDot": "\u02D9", "DiacriticalDoubleAcute": "\u02DD", "DiacriticalGrave": "`", "DiacriticalTilde": "\u02DC", "diam": "\u22C4", "diamond": "\u22C4", "Diamond": "\u22C4", "diamondsuit": "\u2666", "diams": "\u2666", "die": "\xA8", "DifferentialD": "\u2146", "digamma": "\u03DD", "disin": "\u22F2", "div": "\xF7", "divide": "\xF7", "divideontimes": "\u22C7", "divonx": "\u22C7", "djcy": "\u0452", "DJcy": "\u0402", "dlcorn": "\u231E", "dlcrop": "\u230D", "dollar": "$", "dopf": "\u{1D555}", "Dopf": "\u{1D53B}", "dot": "\u02D9", "Dot": "\xA8", "DotDot": "\u20DC", "doteq": "\u2250", "doteqdot": "\u2251", "DotEqual": "\u2250", "dotminus": "\u2238", "dotplus": "\u2214", "dotsquare": "\u22A1", "doublebarwedge": "\u2306", "DoubleContourIntegral": "\u222F", "DoubleDot": "\xA8", "DoubleDownArrow": "\u21D3", "DoubleLeftArrow": "\u21D0", "DoubleLeftRightArrow": "\u21D4", "DoubleLeftTee": "\u2AE4", "DoubleLongLeftArrow": "\u27F8", "DoubleLongLeftRightArrow": "\u27FA", "DoubleLongRightArrow": "\u27F9", "DoubleRightArrow": "\u21D2", "DoubleRightTee": "\u22A8", "DoubleUpArrow": "\u21D1", "DoubleUpDownArrow": "\u21D5", "DoubleVerticalBar": "\u2225", "downarrow": "\u2193", "Downarrow": "\u21D3", "DownArrow": "\u2193", "DownArrowBar": "\u2913", "DownArrowUpArrow": "\u21F5", "DownBreve": "\u0311", "downdownarrows": "\u21CA", "downharpoonleft": "\u21C3", "downharpoonright": "\u21C2", "DownLeftRightVector": "\u2950", "DownLeftTeeVector": "\u295E", "DownLeftVector": "\u21BD", "DownLeftVectorBar": "\u2956", "DownRightTeeVector": "\u295F", "DownRightVector": "\u21C1", "DownRightVectorBar": "\u2957", "DownTee": "\u22A4", "DownTeeArrow": "\u21A7", "drbkarow": "\u2910", "drcorn": "\u231F", "drcrop": "\u230C", "dscr": "\u{1D4B9}", "Dscr": "\u{1D49F}", "dscy": "\u0455", "DScy": "\u0405", "dsol": "\u29F6", "dstrok": "\u0111", "Dstrok": "\u0110", "dtdot": "\u22F1", "dtri": "\u25BF", "dtrif": "\u25BE", "duarr": "\u21F5", "duhar": "\u296F", "dwangle": "\u29A6", "dzcy": "\u045F", "DZcy": "\u040F", "dzigrarr": "\u27FF", "eacute": "\xE9", "Eacute": "\xC9", "easter": "\u2A6E", "ecaron": "\u011B", "Ecaron": "\u011A", "ecir": "\u2256", "ecirc": "\xEA", "Ecirc": "\xCA", "ecolon": "\u2255", "ecy": "\u044D", "Ecy": "\u042D", "eDDot": "\u2A77", "edot": "\u0117", "eDot": "\u2251", "Edot": "\u0116", "ee": "\u2147", "efDot": "\u2252", "efr": "\u{1D522}", "Efr": "\u{1D508}", "eg": "\u2A9A", "egrave": "\xE8", "Egrave": "\xC8", "egs": "\u2A96", "egsdot": "\u2A98", "el": "\u2A99", "Element": "\u2208", "elinters": "\u23E7", "ell": "\u2113", "els": "\u2A95", "elsdot": "\u2A97", "emacr": "\u0113", "Emacr": "\u0112", "empty": "\u2205", "emptyset": "\u2205", "EmptySmallSquare": "\u25FB", "emptyv": "\u2205", "EmptyVerySmallSquare": "\u25AB", "emsp": "\u2003", "emsp13": "\u2004", "emsp14": "\u2005", "eng": "\u014B", "ENG": "\u014A", "ensp": "\u2002", "eogon": "\u0119", "Eogon": "\u0118", "eopf": "\u{1D556}", "Eopf": "\u{1D53C}", "epar": "\u22D5", "eparsl": "\u29E3", "eplus": "\u2A71", "epsi": "\u03B5", "epsilon": "\u03B5", "Epsilon": "\u0395", "epsiv": "\u03F5", "eqcirc": "\u2256", "eqcolon": "\u2255", "eqsim": "\u2242", "eqslantgtr": "\u2A96", "eqslantless": "\u2A95", "Equal": "\u2A75", "equals": "=", "EqualTilde": "\u2242", "equest": "\u225F", "Equilibrium": "\u21CC", "equiv": "\u2261", "equivDD": "\u2A78", "eqvparsl": "\u29E5", "erarr": "\u2971", "erDot": "\u2253", "escr": "\u212F", "Escr": "\u2130", "esdot": "\u2250", "esim": "\u2242", "Esim": "\u2A73", "eta": "\u03B7", "Eta": "\u0397", "eth": "\xF0", "ETH": "\xD0", "euml": "\xEB", "Euml": "\xCB", "euro": "\u20AC", "excl": "!", "exist": "\u2203", "Exists": "\u2203", "expectation": "\u2130", "exponentiale": "\u2147", "ExponentialE": "\u2147", "fallingdotseq": "\u2252", "fcy": "\u0444", "Fcy": "\u0424", "female": "\u2640", "ffilig": "\uFB03", "fflig": "\uFB00", "ffllig": "\uFB04", "ffr": "\u{1D523}", "Ffr": "\u{1D509}", "filig": "\uFB01", "FilledSmallSquare": "\u25FC", "FilledVerySmallSquare": "\u25AA", "fjlig": "fj", "flat": "\u266D", "fllig": "\uFB02", "fltns": "\u25B1", "fnof": "\u0192", "fopf": "\u{1D557}", "Fopf": "\u{1D53D}", "forall": "\u2200", "ForAll": "\u2200", "fork": "\u22D4", "forkv": "\u2AD9", "Fouriertrf": "\u2131", "fpartint": "\u2A0D", "frac12": "\xBD", "frac13": "\u2153", "frac14": "\xBC", "frac15": "\u2155", "frac16": "\u2159", "frac18": "\u215B", "frac23": "\u2154", "frac25": "\u2156", "frac34": "\xBE", "frac35": "\u2157", "frac38": "\u215C", "frac45": "\u2158", "frac56": "\u215A", "frac58": "\u215D", "frac78": "\u215E", "frasl": "\u2044", "frown": "\u2322", "fscr": "\u{1D4BB}", "Fscr": "\u2131", "gacute": "\u01F5", "gamma": "\u03B3", "Gamma": "\u0393", "gammad": "\u03DD", "Gammad": "\u03DC", "gap": "\u2A86", "gbreve": "\u011F", "Gbreve": "\u011E", "Gcedil": "\u0122", "gcirc": "\u011D", "Gcirc": "\u011C", "gcy": "\u0433", "Gcy": "\u0413", "gdot": "\u0121", "Gdot": "\u0120", "ge": "\u2265", "gE": "\u2267", "gel": "\u22DB", "gEl": "\u2A8C", "geq": "\u2265", "geqq": "\u2267", "geqslant": "\u2A7E", "ges": "\u2A7E", "gescc": "\u2AA9", "gesdot": "\u2A80", "gesdoto": "\u2A82", "gesdotol": "\u2A84", "gesl": "\u22DB\uFE00", "gesles": "\u2A94", "gfr": "\u{1D524}", "Gfr": "\u{1D50A}", "gg": "\u226B", "Gg": "\u22D9", "ggg": "\u22D9", "gimel": "\u2137", "gjcy": "\u0453", "GJcy": "\u0403", "gl": "\u2277", "gla": "\u2AA5", "glE": "\u2A92", "glj": "\u2AA4", "gnap": "\u2A8A", "gnapprox": "\u2A8A", "gne": "\u2A88", "gnE": "\u2269", "gneq": "\u2A88", "gneqq": "\u2269", "gnsim": "\u22E7", "gopf": "\u{1D558}", "Gopf": "\u{1D53E}", "grave": "`", "GreaterEqual": "\u2265", "GreaterEqualLess": "\u22DB", "GreaterFullEqual": "\u2267", "GreaterGreater": "\u2AA2", "GreaterLess": "\u2277", "GreaterSlantEqual": "\u2A7E", "GreaterTilde": "\u2273", "gscr": "\u210A", "Gscr": "\u{1D4A2}", "gsim": "\u2273", "gsime": "\u2A8E", "gsiml": "\u2A90", "gt": ">", "Gt": "\u226B", "GT": ">", "gtcc": "\u2AA7", "gtcir": "\u2A7A", "gtdot": "\u22D7", "gtlPar": "\u2995", "gtquest": "\u2A7C", "gtrapprox": "\u2A86", "gtrarr": "\u2978", "gtrdot": "\u22D7", "gtreqless": "\u22DB", "gtreqqless": "\u2A8C", "gtrless": "\u2277", "gtrsim": "\u2273", "gvertneqq": "\u2269\uFE00", "gvnE": "\u2269\uFE00", "Hacek": "\u02C7", "hairsp": "\u200A", "half": "\xBD", "hamilt": "\u210B", "hardcy": "\u044A", "HARDcy": "\u042A", "harr": "\u2194", "hArr": "\u21D4", "harrcir": "\u2948", "harrw": "\u21AD", "Hat": "^", "hbar": "\u210F", "hcirc": "\u0125", "Hcirc": "\u0124", "hearts": "\u2665", "heartsuit": "\u2665", "hellip": "\u2026", "hercon": "\u22B9", "hfr": "\u{1D525}", "Hfr": "\u210C", "HilbertSpace": "\u210B", "hksearow": "\u2925", "hkswarow": "\u2926", "hoarr": "\u21FF", "homtht": "\u223B", "hookleftarrow": "\u21A9", "hookrightarrow": "\u21AA", "hopf": "\u{1D559}", "Hopf": "\u210D", "horbar": "\u2015", "HorizontalLine": "\u2500", "hscr": "\u{1D4BD}", "Hscr": "\u210B", "hslash": "\u210F", "hstrok": "\u0127", "Hstrok": "\u0126", "HumpDownHump": "\u224E", "HumpEqual": "\u224F", "hybull": "\u2043", "hyphen": "\u2010", "iacute": "\xED", "Iacute": "\xCD", "ic": "\u2063", "icirc": "\xEE", "Icirc": "\xCE", "icy": "\u0438", "Icy": "\u0418", "Idot": "\u0130", "iecy": "\u0435", "IEcy": "\u0415", "iexcl": "\xA1", "iff": "\u21D4", "ifr": "\u{1D526}", "Ifr": "\u2111", "igrave": "\xEC", "Igrave": "\xCC", "ii": "\u2148", "iiiint": "\u2A0C", "iiint": "\u222D", "iinfin": "\u29DC", "iiota": "\u2129", "ijlig": "\u0133", "IJlig": "\u0132", "Im": "\u2111", "imacr": "\u012B", "Imacr": "\u012A", "image": "\u2111", "ImaginaryI": "\u2148", "imagline": "\u2110", "imagpart": "\u2111", "imath": "\u0131", "imof": "\u22B7", "imped": "\u01B5", "Implies": "\u21D2", "in": "\u2208", "incare": "\u2105", "infin": "\u221E", "infintie": "\u29DD", "inodot": "\u0131", "int": "\u222B", "Int": "\u222C", "intcal": "\u22BA", "integers": "\u2124", "Integral": "\u222B", "intercal": "\u22BA", "Intersection": "\u22C2", "intlarhk": "\u2A17", "intprod": "\u2A3C", "InvisibleComma": "\u2063", "InvisibleTimes": "\u2062", "iocy": "\u0451", "IOcy": "\u0401", "iogon": "\u012F", "Iogon": "\u012E", "iopf": "\u{1D55A}", "Iopf": "\u{1D540}", "iota": "\u03B9", "Iota": "\u0399", "iprod": "\u2A3C", "iquest": "\xBF", "iscr": "\u{1D4BE}", "Iscr": "\u2110", "isin": "\u2208", "isindot": "\u22F5", "isinE": "\u22F9", "isins": "\u22F4", "isinsv": "\u22F3", "isinv": "\u2208", "it": "\u2062", "itilde": "\u0129", "Itilde": "\u0128", "iukcy": "\u0456", "Iukcy": "\u0406", "iuml": "\xEF", "Iuml": "\xCF", "jcirc": "\u0135", "Jcirc": "\u0134", "jcy": "\u0439", "Jcy": "\u0419", "jfr": "\u{1D527}", "Jfr": "\u{1D50D}", "jmath": "\u0237", "jopf": "\u{1D55B}", "Jopf": "\u{1D541}", "jscr": "\u{1D4BF}", "Jscr": "\u{1D4A5}", "jsercy": "\u0458", "Jsercy": "\u0408", "jukcy": "\u0454", "Jukcy": "\u0404", "kappa": "\u03BA", "Kappa": "\u039A", "kappav": "\u03F0", "kcedil": "\u0137", "Kcedil": "\u0136", "kcy": "\u043A", "Kcy": "\u041A", "kfr": "\u{1D528}", "Kfr": "\u{1D50E}", "kgreen": "\u0138", "khcy": "\u0445", "KHcy": "\u0425", "kjcy": "\u045C", "KJcy": "\u040C", "kopf": "\u{1D55C}", "Kopf": "\u{1D542}", "kscr": "\u{1D4C0}", "Kscr": "\u{1D4A6}", "lAarr": "\u21DA", "lacute": "\u013A", "Lacute": "\u0139", "laemptyv": "\u29B4", "lagran": "\u2112", "lambda": "\u03BB", "Lambda": "\u039B", "lang": "\u27E8", "Lang": "\u27EA", "langd": "\u2991", "langle": "\u27E8", "lap": "\u2A85", "Laplacetrf": "\u2112", "laquo": "\xAB", "larr": "\u2190", "lArr": "\u21D0", "Larr": "\u219E", "larrb": "\u21E4", "larrbfs": "\u291F", "larrfs": "\u291D", "larrhk": "\u21A9", "larrlp": "\u21AB", "larrpl": "\u2939", "larrsim": "\u2973", "larrtl": "\u21A2", "lat": "\u2AAB", "latail": "\u2919", "lAtail": "\u291B", "late": "\u2AAD", "lates": "\u2AAD\uFE00", "lbarr": "\u290C", "lBarr": "\u290E", "lbbrk": "\u2772", "lbrace": "{", "lbrack": "[", "lbrke": "\u298B", "lbrksld": "\u298F", "lbrkslu": "\u298D", "lcaron": "\u013E", "Lcaron": "\u013D", "lcedil": "\u013C", "Lcedil": "\u013B", "lceil": "\u2308", "lcub": "{", "lcy": "\u043B", "Lcy": "\u041B", "ldca": "\u2936", "ldquo": "\u201C", "ldquor": "\u201E", "ldrdhar": "\u2967", "ldrushar": "\u294B", "ldsh": "\u21B2", "le": "\u2264", "lE": "\u2266", "LeftAngleBracket": "\u27E8", "leftarrow": "\u2190", "Leftarrow": "\u21D0", "LeftArrow": "\u2190", "LeftArrowBar": "\u21E4", "LeftArrowRightArrow": "\u21C6", "leftarrowtail": "\u21A2", "LeftCeiling": "\u2308", "LeftDoubleBracket": "\u27E6", "LeftDownTeeVector": "\u2961", "LeftDownVector": "\u21C3", "LeftDownVectorBar": "\u2959", "LeftFloor": "\u230A", "leftharpoondown": "\u21BD", "leftharpoonup": "\u21BC", "leftleftarrows": "\u21C7", "leftrightarrow": "\u2194", "Leftrightarrow": "\u21D4", "LeftRightArrow": "\u2194", "leftrightarrows": "\u21C6", "leftrightharpoons": "\u21CB", "leftrightsquigarrow": "\u21AD", "LeftRightVector": "\u294E", "LeftTee": "\u22A3", "LeftTeeArrow": "\u21A4", "LeftTeeVector": "\u295A", "leftthreetimes": "\u22CB", "LeftTriangle": "\u22B2", "LeftTriangleBar": "\u29CF", "LeftTriangleEqual": "\u22B4", "LeftUpDownVector": "\u2951", "LeftUpTeeVector": "\u2960", "LeftUpVector": "\u21BF", "LeftUpVectorBar": "\u2958", "LeftVector": "\u21BC", "LeftVectorBar": "\u2952", "leg": "\u22DA", "lEg": "\u2A8B", "leq": "\u2264", "leqq": "\u2266", "leqslant": "\u2A7D", "les": "\u2A7D", "lescc": "\u2AA8", "lesdot": "\u2A7F", "lesdoto": "\u2A81", "lesdotor": "\u2A83", "lesg": "\u22DA\uFE00", "lesges": "\u2A93", "lessapprox": "\u2A85", "lessdot": "\u22D6", "lesseqgtr": "\u22DA", "lesseqqgtr": "\u2A8B", "LessEqualGreater": "\u22DA", "LessFullEqual": "\u2266", "LessGreater": "\u2276", "lessgtr": "\u2276", "LessLess": "\u2AA1", "lesssim": "\u2272", "LessSlantEqual": "\u2A7D", "LessTilde": "\u2272", "lfisht": "\u297C", "lfloor": "\u230A", "lfr": "\u{1D529}", "Lfr": "\u{1D50F}", "lg": "\u2276", "lgE": "\u2A91", "lHar": "\u2962", "lhard": "\u21BD", "lharu": "\u21BC", "lharul": "\u296A", "lhblk": "\u2584", "ljcy": "\u0459", "LJcy": "\u0409", "ll": "\u226A", "Ll": "\u22D8", "llarr": "\u21C7", "llcorner": "\u231E", "Lleftarrow": "\u21DA", "llhard": "\u296B", "lltri": "\u25FA", "lmidot": "\u0140", "Lmidot": "\u013F", "lmoust": "\u23B0", "lmoustache": "\u23B0", "lnap": "\u2A89", "lnapprox": "\u2A89", "lne": "\u2A87", "lnE": "\u2268", "lneq": "\u2A87", "lneqq": "\u2268", "lnsim": "\u22E6", "loang": "\u27EC", "loarr": "\u21FD", "lobrk": "\u27E6", "longleftarrow": "\u27F5", "Longleftarrow": "\u27F8", "LongLeftArrow": "\u27F5", "longleftrightarrow": "\u27F7", "Longleftrightarrow": "\u27FA", "LongLeftRightArrow": "\u27F7", "longmapsto": "\u27FC", "longrightarrow": "\u27F6", "Longrightarrow": "\u27F9", "LongRightArrow": "\u27F6", "looparrowleft": "\u21AB", "looparrowright": "\u21AC", "lopar": "\u2985", "lopf": "\u{1D55D}", "Lopf": "\u{1D543}", "loplus": "\u2A2D", "lotimes": "\u2A34", "lowast": "\u2217", "lowbar": "_", "LowerLeftArrow": "\u2199", "LowerRightArrow": "\u2198", "loz": "\u25CA", "lozenge": "\u25CA", "lozf": "\u29EB", "lpar": "(", "lparlt": "\u2993", "lrarr": "\u21C6", "lrcorner": "\u231F", "lrhar": "\u21CB", "lrhard": "\u296D", "lrm": "\u200E", "lrtri": "\u22BF", "lsaquo": "\u2039", "lscr": "\u{1D4C1}", "Lscr": "\u2112", "lsh": "\u21B0", "Lsh": "\u21B0", "lsim": "\u2272", "lsime": "\u2A8D", "lsimg": "\u2A8F", "lsqb": "[", "lsquo": "\u2018", "lsquor": "\u201A", "lstrok": "\u0142", "Lstrok": "\u0141", "lt": "<", "Lt": "\u226A", "LT": "<", "ltcc": "\u2AA6", "ltcir": "\u2A79", "ltdot": "\u22D6", "lthree": "\u22CB", "ltimes": "\u22C9", "ltlarr": "\u2976", "ltquest": "\u2A7B", "ltri": "\u25C3", "ltrie": "\u22B4", "ltrif": "\u25C2", "ltrPar": "\u2996", "lurdshar": "\u294A", "luruhar": "\u2966", "lvertneqq": "\u2268\uFE00", "lvnE": "\u2268\uFE00", "macr": "\xAF", "male": "\u2642", "malt": "\u2720", "maltese": "\u2720", "map": "\u21A6", "Map": "\u2905", "mapsto": "\u21A6", "mapstodown": "\u21A7", "mapstoleft": "\u21A4", "mapstoup": "\u21A5", "marker": "\u25AE", "mcomma": "\u2A29", "mcy": "\u043C", "Mcy": "\u041C", "mdash": "\u2014", "mDDot": "\u223A", "measuredangle": "\u2221", "MediumSpace": "\u205F", "Mellintrf": "\u2133", "mfr": "\u{1D52A}", "Mfr": "\u{1D510}", "mho": "\u2127", "micro": "\xB5", "mid": "\u2223", "midast": "*", "midcir": "\u2AF0", "middot": "\xB7", "minus": "\u2212", "minusb": "\u229F", "minusd": "\u2238", "minusdu": "\u2A2A", "MinusPlus": "\u2213", "mlcp": "\u2ADB", "mldr": "\u2026", "mnplus": "\u2213", "models": "\u22A7", "mopf": "\u{1D55E}", "Mopf": "\u{1D544}", "mp": "\u2213", "mscr": "\u{1D4C2}", "Mscr": "\u2133", "mstpos": "\u223E", "mu": "\u03BC", "Mu": "\u039C", "multimap": "\u22B8", "mumap": "\u22B8", "nabla": "\u2207", "nacute": "\u0144", "Nacute": "\u0143", "nang": "\u2220\u20D2", "nap": "\u2249", "napE": "\u2A70\u0338", "napid": "\u224B\u0338", "napos": "\u0149", "napprox": "\u2249", "natur": "\u266E", "natural": "\u266E", "naturals": "\u2115", "nbsp": "\xA0", "nbump": "\u224E\u0338", "nbumpe": "\u224F\u0338", "ncap": "\u2A43", "ncaron": "\u0148", "Ncaron": "\u0147", "ncedil": "\u0146", "Ncedil": "\u0145", "ncong": "\u2247", "ncongdot": "\u2A6D\u0338", "ncup": "\u2A42", "ncy": "\u043D", "Ncy": "\u041D", "ndash": "\u2013", "ne": "\u2260", "nearhk": "\u2924", "nearr": "\u2197", "neArr": "\u21D7", "nearrow": "\u2197", "nedot": "\u2250\u0338", "NegativeMediumSpace": "\u200B", "NegativeThickSpace": "\u200B", "NegativeThinSpace": "\u200B", "NegativeVeryThinSpace": "\u200B", "nequiv": "\u2262", "nesear": "\u2928", "nesim": "\u2242\u0338", "NestedGreaterGreater": "\u226B", "NestedLessLess": "\u226A", "NewLine": "\n", "nexist": "\u2204", "nexists": "\u2204", "nfr": "\u{1D52B}", "Nfr": "\u{1D511}", "nge": "\u2271", "ngE": "\u2267\u0338", "ngeq": "\u2271", "ngeqq": "\u2267\u0338", "ngeqslant": "\u2A7E\u0338", "nges": "\u2A7E\u0338", "nGg": "\u22D9\u0338", "ngsim": "\u2275", "ngt": "\u226F", "nGt": "\u226B\u20D2", "ngtr": "\u226F", "nGtv": "\u226B\u0338", "nharr": "\u21AE", "nhArr": "\u21CE", "nhpar": "\u2AF2", "ni": "\u220B", "nis": "\u22FC", "nisd": "\u22FA", "niv": "\u220B", "njcy": "\u045A", "NJcy": "\u040A", "nlarr": "\u219A", "nlArr": "\u21CD", "nldr": "\u2025", "nle": "\u2270", "nlE": "\u2266\u0338", "nleftarrow": "\u219A", "nLeftarrow": "\u21CD", "nleftrightarrow": "\u21AE", "nLeftrightarrow": "\u21CE", "nleq": "\u2270", "nleqq": "\u2266\u0338", "nleqslant": "\u2A7D\u0338", "nles": "\u2A7D\u0338", "nless": "\u226E", "nLl": "\u22D8\u0338", "nlsim": "\u2274", "nlt": "\u226E", "nLt": "\u226A\u20D2", "nltri": "\u22EA", "nltrie": "\u22EC", "nLtv": "\u226A\u0338", "nmid": "\u2224", "NoBreak": "\u2060", "NonBreakingSpace": "\xA0", "nopf": "\u{1D55F}", "Nopf": "\u2115", "not": "\xAC", "Not": "\u2AEC", "NotCongruent": "\u2262", "NotCupCap": "\u226D", "NotDoubleVerticalBar": "\u2226", "NotElement": "\u2209", "NotEqual": "\u2260", "NotEqualTilde": "\u2242\u0338", "NotExists": "\u2204", "NotGreater": "\u226F", "NotGreaterEqual": "\u2271", "NotGreaterFullEqual": "\u2267\u0338", "NotGreaterGreater": "\u226B\u0338", "NotGreaterLess": "\u2279", "NotGreaterSlantEqual": "\u2A7E\u0338", "NotGreaterTilde": "\u2275", "NotHumpDownHump": "\u224E\u0338", "NotHumpEqual": "\u224F\u0338", "notin": "\u2209", "notindot": "\u22F5\u0338", "notinE": "\u22F9\u0338", "notinva": "\u2209", "notinvb": "\u22F7", "notinvc": "\u22F6", "NotLeftTriangle": "\u22EA", "NotLeftTriangleBar": "\u29CF\u0338", "NotLeftTriangleEqual": "\u22EC", "NotLess": "\u226E", "NotLessEqual": "\u2270", "NotLessGreater": "\u2278", "NotLessLess": "\u226A\u0338", "NotLessSlantEqual": "\u2A7D\u0338", "NotLessTilde": "\u2274", "NotNestedGreaterGreater": "\u2AA2\u0338", "NotNestedLessLess": "\u2AA1\u0338", "notni": "\u220C", "notniva": "\u220C", "notnivb": "\u22FE", "notnivc": "\u22FD", "NotPrecedes": "\u2280", "NotPrecedesEqual": "\u2AAF\u0338", "NotPrecedesSlantEqual": "\u22E0", "NotReverseElement": "\u220C", "NotRightTriangle": "\u22EB", "NotRightTriangleBar": "\u29D0\u0338", "NotRightTriangleEqual": "\u22ED", "NotSquareSubset": "\u228F\u0338", "NotSquareSubsetEqual": "\u22E2", "NotSquareSuperset": "\u2290\u0338", "NotSquareSupersetEqual": "\u22E3", "NotSubset": "\u2282\u20D2", "NotSubsetEqual": "\u2288", "NotSucceeds": "\u2281", "NotSucceedsEqual": "\u2AB0\u0338", "NotSucceedsSlantEqual": "\u22E1", "NotSucceedsTilde": "\u227F\u0338", "NotSuperset": "\u2283\u20D2", "NotSupersetEqual": "\u2289", "NotTilde": "\u2241", "NotTildeEqual": "\u2244", "NotTildeFullEqual": "\u2247", "NotTildeTilde": "\u2249", "NotVerticalBar": "\u2224", "npar": "\u2226", "nparallel": "\u2226", "nparsl": "\u2AFD\u20E5", "npart": "\u2202\u0338", "npolint": "\u2A14", "npr": "\u2280", "nprcue": "\u22E0", "npre": "\u2AAF\u0338", "nprec": "\u2280", "npreceq": "\u2AAF\u0338", "nrarr": "\u219B", "nrArr": "\u21CF", "nrarrc": "\u2933\u0338", "nrarrw": "\u219D\u0338", "nrightarrow": "\u219B", "nRightarrow": "\u21CF", "nrtri": "\u22EB", "nrtrie": "\u22ED", "nsc": "\u2281", "nsccue": "\u22E1", "nsce": "\u2AB0\u0338", "nscr": "\u{1D4C3}", "Nscr": "\u{1D4A9}", "nshortmid": "\u2224", "nshortparallel": "\u2226", "nsim": "\u2241", "nsime": "\u2244", "nsimeq": "\u2244", "nsmid": "\u2224", "nspar": "\u2226", "nsqsube": "\u22E2", "nsqsupe": "\u22E3", "nsub": "\u2284", "nsube": "\u2288", "nsubE": "\u2AC5\u0338", "nsubset": "\u2282\u20D2", "nsubseteq": "\u2288", "nsubseteqq": "\u2AC5\u0338", "nsucc": "\u2281", "nsucceq": "\u2AB0\u0338", "nsup": "\u2285", "nsupe": "\u2289", "nsupE": "\u2AC6\u0338", "nsupset": "\u2283\u20D2", "nsupseteq": "\u2289", "nsupseteqq": "\u2AC6\u0338", "ntgl": "\u2279", "ntilde": "\xF1", "Ntilde": "\xD1", "ntlg": "\u2278", "ntriangleleft": "\u22EA", "ntrianglelefteq": "\u22EC", "ntriangleright": "\u22EB", "ntrianglerighteq": "\u22ED", "nu": "\u03BD", "Nu": "\u039D", "num": "#", "numero": "\u2116", "numsp": "\u2007", "nvap": "\u224D\u20D2", "nvdash": "\u22AC", "nvDash": "\u22AD", "nVdash": "\u22AE", "nVDash": "\u22AF", "nvge": "\u2265\u20D2", "nvgt": ">\u20D2", "nvHarr": "\u2904", "nvinfin": "\u29DE", "nvlArr": "\u2902", "nvle": "\u2264\u20D2", "nvlt": "<\u20D2", "nvltrie": "\u22B4\u20D2", "nvrArr": "\u2903", "nvrtrie": "\u22B5\u20D2", "nvsim": "\u223C\u20D2", "nwarhk": "\u2923", "nwarr": "\u2196", "nwArr": "\u21D6", "nwarrow": "\u2196", "nwnear": "\u2927", "oacute": "\xF3", "Oacute": "\xD3", "oast": "\u229B", "ocir": "\u229A", "ocirc": "\xF4", "Ocirc": "\xD4", "ocy": "\u043E", "Ocy": "\u041E", "odash": "\u229D", "odblac": "\u0151", "Odblac": "\u0150", "odiv": "\u2A38", "odot": "\u2299", "odsold": "\u29BC", "oelig": "\u0153", "OElig": "\u0152", "ofcir": "\u29BF", "ofr": "\u{1D52C}", "Ofr": "\u{1D512}", "ogon": "\u02DB", "ograve": "\xF2", "Ograve": "\xD2", "ogt": "\u29C1", "ohbar": "\u29B5", "ohm": "\u03A9", "oint": "\u222E", "olarr": "\u21BA", "olcir": "\u29BE", "olcross": "\u29BB", "oline": "\u203E", "olt": "\u29C0", "omacr": "\u014D", "Omacr": "\u014C", "omega": "\u03C9", "Omega": "\u03A9", "omicron": "\u03BF", "Omicron": "\u039F", "omid": "\u29B6", "ominus": "\u2296", "oopf": "\u{1D560}", "Oopf": "\u{1D546}", "opar": "\u29B7", "OpenCurlyDoubleQuote": "\u201C", "OpenCurlyQuote": "\u2018", "operp": "\u29B9", "oplus": "\u2295", "or": "\u2228", "Or": "\u2A54", "orarr": "\u21BB", "ord": "\u2A5D", "order": "\u2134", "orderof": "\u2134", "ordf": "\xAA", "ordm": "\xBA", "origof": "\u22B6", "oror": "\u2A56", "orslope": "\u2A57", "orv": "\u2A5B", "oS": "\u24C8", "oscr": "\u2134", "Oscr": "\u{1D4AA}", "oslash": "\xF8", "Oslash": "\xD8", "osol": "\u2298", "otilde": "\xF5", "Otilde": "\xD5", "otimes": "\u2297", "Otimes": "\u2A37", "otimesas": "\u2A36", "ouml": "\xF6", "Ouml": "\xD6", "ovbar": "\u233D", "OverBar": "\u203E", "OverBrace": "\u23DE", "OverBracket": "\u23B4", "OverParenthesis": "\u23DC", "par": "\u2225", "para": "\xB6", "parallel": "\u2225", "parsim": "\u2AF3", "parsl": "\u2AFD", "part": "\u2202", "PartialD": "\u2202", "pcy": "\u043F", "Pcy": "\u041F", "percnt": "%", "period": ".", "permil": "\u2030", "perp": "\u22A5", "pertenk": "\u2031", "pfr": "\u{1D52D}", "Pfr": "\u{1D513}", "phi": "\u03C6", "Phi": "\u03A6", "phiv": "\u03D5", "phmmat": "\u2133", "phone": "\u260E", "pi": "\u03C0", "Pi": "\u03A0", "pitchfork": "\u22D4", "piv": "\u03D6", "planck": "\u210F", "planckh": "\u210E", "plankv": "\u210F", "plus": "+", "plusacir": "\u2A23", "plusb": "\u229E", "pluscir": "\u2A22", "plusdo": "\u2214", "plusdu": "\u2A25", "pluse": "\u2A72", "PlusMinus": "\xB1", "plusmn": "\xB1", "plussim": "\u2A26", "plustwo": "\u2A27", "pm": "\xB1", "Poincareplane": "\u210C", "pointint": "\u2A15", "popf": "\u{1D561}", "Popf": "\u2119", "pound": "\xA3", "pr": "\u227A", "Pr": "\u2ABB", "prap": "\u2AB7", "prcue": "\u227C", "pre": "\u2AAF", "prE": "\u2AB3", "prec": "\u227A", "precapprox": "\u2AB7", "preccurlyeq": "\u227C", "Precedes": "\u227A", "PrecedesEqual": "\u2AAF", "PrecedesSlantEqual": "\u227C", "PrecedesTilde": "\u227E", "preceq": "\u2AAF", "precnapprox": "\u2AB9", "precneqq": "\u2AB5", "precnsim": "\u22E8", "precsim": "\u227E", "prime": "\u2032", "Prime": "\u2033", "primes": "\u2119", "prnap": "\u2AB9", "prnE": "\u2AB5", "prnsim": "\u22E8", "prod": "\u220F", "Product": "\u220F", "profalar": "\u232E", "profline": "\u2312", "profsurf": "\u2313", "prop": "\u221D", "Proportion": "\u2237", "Proportional": "\u221D", "propto": "\u221D", "prsim": "\u227E", "prurel": "\u22B0", "pscr": "\u{1D4C5}", "Pscr": "\u{1D4AB}", "psi": "\u03C8", "Psi": "\u03A8", "puncsp": "\u2008", "qfr": "\u{1D52E}", "Qfr": "\u{1D514}", "qint": "\u2A0C", "qopf": "\u{1D562}", "Qopf": "\u211A", "qprime": "\u2057", "qscr": "\u{1D4C6}", "Qscr": "\u{1D4AC}", "quaternions": "\u210D", "quatint": "\u2A16", "quest": "?", "questeq": "\u225F", "quot": '"', "QUOT": '"', "rAarr": "\u21DB", "race": "\u223D\u0331", "racute": "\u0155", "Racute": "\u0154", "radic": "\u221A", "raemptyv": "\u29B3", "rang": "\u27E9", "Rang": "\u27EB", "rangd": "\u2992", "range": "\u29A5", "rangle": "\u27E9", "raquo": "\xBB", "rarr": "\u2192", "rArr": "\u21D2", "Rarr": "\u21A0", "rarrap": "\u2975", "rarrb": "\u21E5", "rarrbfs": "\u2920", "rarrc": "\u2933", "rarrfs": "\u291E", "rarrhk": "\u21AA", "rarrlp": "\u21AC", "rarrpl": "\u2945", "rarrsim": "\u2974", "rarrtl": "\u21A3", "Rarrtl": "\u2916", "rarrw": "\u219D", "ratail": "\u291A", "rAtail": "\u291C", "ratio": "\u2236", "rationals": "\u211A", "rbarr": "\u290D", "rBarr": "\u290F", "RBarr": "\u2910", "rbbrk": "\u2773", "rbrace": "}", "rbrack": "]", "rbrke": "\u298C", "rbrksld": "\u298E", "rbrkslu": "\u2990", "rcaron": "\u0159", "Rcaron": "\u0158", "rcedil": "\u0157", "Rcedil": "\u0156", "rceil": "\u2309", "rcub": "}", "rcy": "\u0440", "Rcy": "\u0420", "rdca": "\u2937", "rdldhar": "\u2969", "rdquo": "\u201D", "rdquor": "\u201D", "rdsh": "\u21B3", "Re": "\u211C", "real": "\u211C", "realine": "\u211B", "realpart": "\u211C", "reals": "\u211D", "rect": "\u25AD", "reg": "\xAE", "REG": "\xAE", "ReverseElement": "\u220B", "ReverseEquilibrium": "\u21CB", "ReverseUpEquilibrium": "\u296F", "rfisht": "\u297D", "rfloor": "\u230B", "rfr": "\u{1D52F}", "Rfr": "\u211C", "rHar": "\u2964", "rhard": "\u21C1", "rharu": "\u21C0", "rharul": "\u296C", "rho": "\u03C1", "Rho": "\u03A1", "rhov": "\u03F1", "RightAngleBracket": "\u27E9", "rightarrow": "\u2192", "Rightarrow": "\u21D2", "RightArrow": "\u2192", "RightArrowBar": "\u21E5", "RightArrowLeftArrow": "\u21C4", "rightarrowtail": "\u21A3", "RightCeiling": "\u2309", "RightDoubleBracket": "\u27E7", "RightDownTeeVector": "\u295D", "RightDownVector": "\u21C2", "RightDownVectorBar": "\u2955", "RightFloor": "\u230B", "rightharpoondown": "\u21C1", "rightharpoonup": "\u21C0", "rightleftarrows": "\u21C4", "rightleftharpoons": "\u21CC", "rightrightarrows": "\u21C9", "rightsquigarrow": "\u219D", "RightTee": "\u22A2", "RightTeeArrow": "\u21A6", "RightTeeVector": "\u295B", "rightthreetimes": "\u22CC", "RightTriangle": "\u22B3", "RightTriangleBar": "\u29D0", "RightTriangleEqual": "\u22B5", "RightUpDownVector": "\u294F", "RightUpTeeVector": "\u295C", "RightUpVector": "\u21BE", "RightUpVectorBar": "\u2954", "RightVector": "\u21C0", "RightVectorBar": "\u2953", "ring": "\u02DA", "risingdotseq": "\u2253", "rlarr": "\u21C4", "rlhar": "\u21CC", "rlm": "\u200F", "rmoust": "\u23B1", "rmoustache": "\u23B1", "rnmid": "\u2AEE", "roang": "\u27ED", "roarr": "\u21FE", "robrk": "\u27E7", "ropar": "\u2986", "ropf": "\u{1D563}", "Ropf": "\u211D", "roplus": "\u2A2E", "rotimes": "\u2A35", "RoundImplies": "\u2970", "rpar": ")", "rpargt": "\u2994", "rppolint": "\u2A12", "rrarr": "\u21C9", "Rrightarrow": "\u21DB", "rsaquo": "\u203A", "rscr": "\u{1D4C7}", "Rscr": "\u211B", "rsh": "\u21B1", "Rsh": "\u21B1", "rsqb": "]", "rsquo": "\u2019", "rsquor": "\u2019", "rthree": "\u22CC", "rtimes": "\u22CA", "rtri": "\u25B9", "rtrie": "\u22B5", "rtrif": "\u25B8", "rtriltri": "\u29CE", "RuleDelayed": "\u29F4", "ruluhar": "\u2968", "rx": "\u211E", "sacute": "\u015B", "Sacute": "\u015A", "sbquo": "\u201A", "sc": "\u227B", "Sc": "\u2ABC", "scap": "\u2AB8", "scaron": "\u0161", "Scaron": "\u0160", "sccue": "\u227D", "sce": "\u2AB0", "scE": "\u2AB4", "scedil": "\u015F", "Scedil": "\u015E", "scirc": "\u015D", "Scirc": "\u015C", "scnap": "\u2ABA", "scnE": "\u2AB6", "scnsim": "\u22E9", "scpolint": "\u2A13", "scsim": "\u227F", "scy": "\u0441", "Scy": "\u0421", "sdot": "\u22C5", "sdotb": "\u22A1", "sdote": "\u2A66", "searhk": "\u2925", "searr": "\u2198", "seArr": "\u21D8", "searrow": "\u2198", "sect": "\xA7", "semi": ";", "seswar": "\u2929", "setminus": "\u2216", "setmn": "\u2216", "sext": "\u2736", "sfr": "\u{1D530}", "Sfr": "\u{1D516}", "sfrown": "\u2322", "sharp": "\u266F", "shchcy": "\u0449", "SHCHcy": "\u0429", "shcy": "\u0448", "SHcy": "\u0428", "ShortDownArrow": "\u2193", "ShortLeftArrow": "\u2190", "shortmid": "\u2223", "shortparallel": "\u2225", "ShortRightArrow": "\u2192", "ShortUpArrow": "\u2191", "shy": "\xAD", "sigma": "\u03C3", "Sigma": "\u03A3", "sigmaf": "\u03C2", "sigmav": "\u03C2", "sim": "\u223C", "simdot": "\u2A6A", "sime": "\u2243", "simeq": "\u2243", "simg": "\u2A9E", "simgE": "\u2AA0", "siml": "\u2A9D", "simlE": "\u2A9F", "simne": "\u2246", "simplus": "\u2A24", "simrarr": "\u2972", "slarr": "\u2190", "SmallCircle": "\u2218", "smallsetminus": "\u2216", "smashp": "\u2A33", "smeparsl": "\u29E4", "smid": "\u2223", "smile": "\u2323", "smt": "\u2AAA", "smte": "\u2AAC", "smtes": "\u2AAC\uFE00", "softcy": "\u044C", "SOFTcy": "\u042C", "sol": "/", "solb": "\u29C4", "solbar": "\u233F", "sopf": "\u{1D564}", "Sopf": "\u{1D54A}", "spades": "\u2660", "spadesuit": "\u2660", "spar": "\u2225", "sqcap": "\u2293", "sqcaps": "\u2293\uFE00", "sqcup": "\u2294", "sqcups": "\u2294\uFE00", "Sqrt": "\u221A", "sqsub": "\u228F", "sqsube": "\u2291", "sqsubset": "\u228F", "sqsubseteq": "\u2291", "sqsup": "\u2290", "sqsupe": "\u2292", "sqsupset": "\u2290", "sqsupseteq": "\u2292", "squ": "\u25A1", "square": "\u25A1", "Square": "\u25A1", "SquareIntersection": "\u2293", "SquareSubset": "\u228F", "SquareSubsetEqual": "\u2291", "SquareSuperset": "\u2290", "SquareSupersetEqual": "\u2292", "SquareUnion": "\u2294", "squarf": "\u25AA", "squf": "\u25AA", "srarr": "\u2192", "sscr": "\u{1D4C8}", "Sscr": "\u{1D4AE}", "ssetmn": "\u2216", "ssmile": "\u2323", "sstarf": "\u22C6", "star": "\u2606", "Star": "\u22C6", "starf": "\u2605", "straightepsilon": "\u03F5", "straightphi": "\u03D5", "strns": "\xAF", "sub": "\u2282", "Sub": "\u22D0", "subdot": "\u2ABD", "sube": "\u2286", "subE": "\u2AC5", "subedot": "\u2AC3", "submult": "\u2AC1", "subne": "\u228A", "subnE": "\u2ACB", "subplus": "\u2ABF", "subrarr": "\u2979", "subset": "\u2282", "Subset": "\u22D0", "subseteq": "\u2286", "subseteqq": "\u2AC5", "SubsetEqual": "\u2286", "subsetneq": "\u228A", "subsetneqq": "\u2ACB", "subsim": "\u2AC7", "subsub": "\u2AD5", "subsup": "\u2AD3", "succ": "\u227B", "succapprox": "\u2AB8", "succcurlyeq": "\u227D", "Succeeds": "\u227B", "SucceedsEqual": "\u2AB0", "SucceedsSlantEqual": "\u227D", "SucceedsTilde": "\u227F", "succeq": "\u2AB0", "succnapprox": "\u2ABA", "succneqq": "\u2AB6", "succnsim": "\u22E9", "succsim": "\u227F", "SuchThat": "\u220B", "sum": "\u2211", "Sum": "\u2211", "sung": "\u266A", "sup": "\u2283", "Sup": "\u22D1", "sup1": "\xB9", "sup2": "\xB2", "sup3": "\xB3", "supdot": "\u2ABE", "supdsub": "\u2AD8", "supe": "\u2287", "supE": "\u2AC6", "supedot": "\u2AC4", "Superset": "\u2283", "SupersetEqual": "\u2287", "suphsol": "\u27C9", "suphsub": "\u2AD7", "suplarr": "\u297B", "supmult": "\u2AC2", "supne": "\u228B", "supnE": "\u2ACC", "supplus": "\u2AC0", "supset": "\u2283", "Supset": "\u22D1", "supseteq": "\u2287", "supseteqq": "\u2AC6", "supsetneq": "\u228B", "supsetneqq": "\u2ACC", "supsim": "\u2AC8", "supsub": "\u2AD4", "supsup": "\u2AD6", "swarhk": "\u2926", "swarr": "\u2199", "swArr": "\u21D9", "swarrow": "\u2199", "swnwar": "\u292A", "szlig": "\xDF", "Tab": "	", "target": "\u2316", "tau": "\u03C4", "Tau": "\u03A4", "tbrk": "\u23B4", "tcaron": "\u0165", "Tcaron": "\u0164", "tcedil": "\u0163", "Tcedil": "\u0162", "tcy": "\u0442", "Tcy": "\u0422", "tdot": "\u20DB", "telrec": "\u2315", "tfr": "\u{1D531}", "Tfr": "\u{1D517}", "there4": "\u2234", "therefore": "\u2234", "Therefore": "\u2234", "theta": "\u03B8", "Theta": "\u0398", "thetasym": "\u03D1", "thetav": "\u03D1", "thickapprox": "\u2248", "thicksim": "\u223C", "ThickSpace": "\u205F\u200A", "thinsp": "\u2009", "ThinSpace": "\u2009", "thkap": "\u2248", "thksim": "\u223C", "thorn": "\xFE", "THORN": "\xDE", "tilde": "\u02DC", "Tilde": "\u223C", "TildeEqual": "\u2243", "TildeFullEqual": "\u2245", "TildeTilde": "\u2248", "times": "\xD7", "timesb": "\u22A0", "timesbar": "\u2A31", "timesd": "\u2A30", "tint": "\u222D", "toea": "\u2928", "top": "\u22A4", "topbot": "\u2336", "topcir": "\u2AF1", "topf": "\u{1D565}", "Topf": "\u{1D54B}", "topfork": "\u2ADA", "tosa": "\u2929", "tprime": "\u2034", "trade": "\u2122", "TRADE": "\u2122", "triangle": "\u25B5", "triangledown": "\u25BF", "triangleleft": "\u25C3", "trianglelefteq": "\u22B4", "triangleq": "\u225C", "triangleright": "\u25B9", "trianglerighteq": "\u22B5", "tridot": "\u25EC", "trie": "\u225C", "triminus": "\u2A3A", "TripleDot": "\u20DB", "triplus": "\u2A39", "trisb": "\u29CD", "tritime": "\u2A3B", "trpezium": "\u23E2", "tscr": "\u{1D4C9}", "Tscr": "\u{1D4AF}", "tscy": "\u0446", "TScy": "\u0426", "tshcy": "\u045B", "TSHcy": "\u040B", "tstrok": "\u0167", "Tstrok": "\u0166", "twixt": "\u226C", "twoheadleftarrow": "\u219E", "twoheadrightarrow": "\u21A0", "uacute": "\xFA", "Uacute": "\xDA", "uarr": "\u2191", "uArr": "\u21D1", "Uarr": "\u219F", "Uarrocir": "\u2949", "ubrcy": "\u045E", "Ubrcy": "\u040E", "ubreve": "\u016D", "Ubreve": "\u016C", "ucirc": "\xFB", "Ucirc": "\xDB", "ucy": "\u0443", "Ucy": "\u0423", "udarr": "\u21C5", "udblac": "\u0171", "Udblac": "\u0170", "udhar": "\u296E", "ufisht": "\u297E", "ufr": "\u{1D532}", "Ufr": "\u{1D518}", "ugrave": "\xF9", "Ugrave": "\xD9", "uHar": "\u2963", "uharl": "\u21BF", "uharr": "\u21BE", "uhblk": "\u2580", "ulcorn": "\u231C", "ulcorner": "\u231C", "ulcrop": "\u230F", "ultri": "\u25F8", "umacr": "\u016B", "Umacr": "\u016A", "uml": "\xA8", "UnderBar": "_", "UnderBrace": "\u23DF", "UnderBracket": "\u23B5", "UnderParenthesis": "\u23DD", "Union": "\u22C3", "UnionPlus": "\u228E", "uogon": "\u0173", "Uogon": "\u0172", "uopf": "\u{1D566}", "Uopf": "\u{1D54C}", "uparrow": "\u2191", "Uparrow": "\u21D1", "UpArrow": "\u2191", "UpArrowBar": "\u2912", "UpArrowDownArrow": "\u21C5", "updownarrow": "\u2195", "Updownarrow": "\u21D5", "UpDownArrow": "\u2195", "UpEquilibrium": "\u296E", "upharpoonleft": "\u21BF", "upharpoonright": "\u21BE", "uplus": "\u228E", "UpperLeftArrow": "\u2196", "UpperRightArrow": "\u2197", "upsi": "\u03C5", "Upsi": "\u03D2", "upsih": "\u03D2", "upsilon": "\u03C5", "Upsilon": "\u03A5", "UpTee": "\u22A5", "UpTeeArrow": "\u21A5", "upuparrows": "\u21C8", "urcorn": "\u231D", "urcorner": "\u231D", "urcrop": "\u230E", "uring": "\u016F", "Uring": "\u016E", "urtri": "\u25F9", "uscr": "\u{1D4CA}", "Uscr": "\u{1D4B0}", "utdot": "\u22F0", "utilde": "\u0169", "Utilde": "\u0168", "utri": "\u25B5", "utrif": "\u25B4", "uuarr": "\u21C8", "uuml": "\xFC", "Uuml": "\xDC", "uwangle": "\u29A7", "vangrt": "\u299C", "varepsilon": "\u03F5", "varkappa": "\u03F0", "varnothing": "\u2205", "varphi": "\u03D5", "varpi": "\u03D6", "varpropto": "\u221D", "varr": "\u2195", "vArr": "\u21D5", "varrho": "\u03F1", "varsigma": "\u03C2", "varsubsetneq": "\u228A\uFE00", "varsubsetneqq": "\u2ACB\uFE00", "varsupsetneq": "\u228B\uFE00", "varsupsetneqq": "\u2ACC\uFE00", "vartheta": "\u03D1", "vartriangleleft": "\u22B2", "vartriangleright": "\u22B3", "vBar": "\u2AE8", "Vbar": "\u2AEB", "vBarv": "\u2AE9", "vcy": "\u0432", "Vcy": "\u0412", "vdash": "\u22A2", "vDash": "\u22A8", "Vdash": "\u22A9", "VDash": "\u22AB", "Vdashl": "\u2AE6", "vee": "\u2228", "Vee": "\u22C1", "veebar": "\u22BB", "veeeq": "\u225A", "vellip": "\u22EE", "verbar": "|", "Verbar": "\u2016", "vert": "|", "Vert": "\u2016", "VerticalBar": "\u2223", "VerticalLine": "|", "VerticalSeparator": "\u2758", "VerticalTilde": "\u2240", "VeryThinSpace": "\u200A", "vfr": "\u{1D533}", "Vfr": "\u{1D519}", "vltri": "\u22B2", "vnsub": "\u2282\u20D2", "vnsup": "\u2283\u20D2", "vopf": "\u{1D567}", "Vopf": "\u{1D54D}", "vprop": "\u221D", "vrtri": "\u22B3", "vscr": "\u{1D4CB}", "Vscr": "\u{1D4B1}", "vsubne": "\u228A\uFE00", "vsubnE": "\u2ACB\uFE00", "vsupne": "\u228B\uFE00", "vsupnE": "\u2ACC\uFE00", "Vvdash": "\u22AA", "vzigzag": "\u299A", "wcirc": "\u0175", "Wcirc": "\u0174", "wedbar": "\u2A5F", "wedge": "\u2227", "Wedge": "\u22C0", "wedgeq": "\u2259", "weierp": "\u2118", "wfr": "\u{1D534}", "Wfr": "\u{1D51A}", "wopf": "\u{1D568}", "Wopf": "\u{1D54E}", "wp": "\u2118", "wr": "\u2240", "wreath": "\u2240", "wscr": "\u{1D4CC}", "Wscr": "\u{1D4B2}", "xcap": "\u22C2", "xcirc": "\u25EF", "xcup": "\u22C3", "xdtri": "\u25BD", "xfr": "\u{1D535}", "Xfr": "\u{1D51B}", "xharr": "\u27F7", "xhArr": "\u27FA", "xi": "\u03BE", "Xi": "\u039E", "xlarr": "\u27F5", "xlArr": "\u27F8", "xmap": "\u27FC", "xnis": "\u22FB", "xodot": "\u2A00", "xopf": "\u{1D569}", "Xopf": "\u{1D54F}", "xoplus": "\u2A01", "xotime": "\u2A02", "xrarr": "\u27F6", "xrArr": "\u27F9", "xscr": "\u{1D4CD}", "Xscr": "\u{1D4B3}", "xsqcup": "\u2A06", "xuplus": "\u2A04", "xutri": "\u25B3", "xvee": "\u22C1", "xwedge": "\u22C0", "yacute": "\xFD", "Yacute": "\xDD", "yacy": "\u044F", "YAcy": "\u042F", "ycirc": "\u0177", "Ycirc": "\u0176", "ycy": "\u044B", "Ycy": "\u042B", "yen": "\xA5", "yfr": "\u{1D536}", "Yfr": "\u{1D51C}", "yicy": "\u0457", "YIcy": "\u0407", "yopf": "\u{1D56A}", "Yopf": "\u{1D550}", "yscr": "\u{1D4CE}", "Yscr": "\u{1D4B4}", "yucy": "\u044E", "YUcy": "\u042E", "yuml": "\xFF", "Yuml": "\u0178", "zacute": "\u017A", "Zacute": "\u0179", "zcaron": "\u017E", "Zcaron": "\u017D", "zcy": "\u0437", "Zcy": "\u0417", "zdot": "\u017C", "Zdot": "\u017B", "zeetrf": "\u2128", "ZeroWidthSpace": "\u200B", "zeta": "\u03B6", "Zeta": "\u0396", "zfr": "\u{1D537}", "Zfr": "\u2128", "zhcy": "\u0436", "ZHcy": "\u0416", "zigrarr": "\u21DD", "zopf": "\u{1D56B}", "Zopf": "\u2124", "zscr": "\u{1D4CF}", "Zscr": "\u{1D4B5}", "zwj": "\u200D", "zwnj": "\u200C" };
+      var decodeMapLegacy = { "aacute": "\xE1", "Aacute": "\xC1", "acirc": "\xE2", "Acirc": "\xC2", "acute": "\xB4", "aelig": "\xE6", "AElig": "\xC6", "agrave": "\xE0", "Agrave": "\xC0", "amp": "&", "AMP": "&", "aring": "\xE5", "Aring": "\xC5", "atilde": "\xE3", "Atilde": "\xC3", "auml": "\xE4", "Auml": "\xC4", "brvbar": "\xA6", "ccedil": "\xE7", "Ccedil": "\xC7", "cedil": "\xB8", "cent": "\xA2", "copy": "\xA9", "COPY": "\xA9", "curren": "\xA4", "deg": "\xB0", "divide": "\xF7", "eacute": "\xE9", "Eacute": "\xC9", "ecirc": "\xEA", "Ecirc": "\xCA", "egrave": "\xE8", "Egrave": "\xC8", "eth": "\xF0", "ETH": "\xD0", "euml": "\xEB", "Euml": "\xCB", "frac12": "\xBD", "frac14": "\xBC", "frac34": "\xBE", "gt": ">", "GT": ">", "iacute": "\xED", "Iacute": "\xCD", "icirc": "\xEE", "Icirc": "\xCE", "iexcl": "\xA1", "igrave": "\xEC", "Igrave": "\xCC", "iquest": "\xBF", "iuml": "\xEF", "Iuml": "\xCF", "laquo": "\xAB", "lt": "<", "LT": "<", "macr": "\xAF", "micro": "\xB5", "middot": "\xB7", "nbsp": "\xA0", "not": "\xAC", "ntilde": "\xF1", "Ntilde": "\xD1", "oacute": "\xF3", "Oacute": "\xD3", "ocirc": "\xF4", "Ocirc": "\xD4", "ograve": "\xF2", "Ograve": "\xD2", "ordf": "\xAA", "ordm": "\xBA", "oslash": "\xF8", "Oslash": "\xD8", "otilde": "\xF5", "Otilde": "\xD5", "ouml": "\xF6", "Ouml": "\xD6", "para": "\xB6", "plusmn": "\xB1", "pound": "\xA3", "quot": '"', "QUOT": '"', "raquo": "\xBB", "reg": "\xAE", "REG": "\xAE", "sect": "\xA7", "shy": "\xAD", "sup1": "\xB9", "sup2": "\xB2", "sup3": "\xB3", "szlig": "\xDF", "thorn": "\xFE", "THORN": "\xDE", "times": "\xD7", "uacute": "\xFA", "Uacute": "\xDA", "ucirc": "\xFB", "Ucirc": "\xDB", "ugrave": "\xF9", "Ugrave": "\xD9", "uml": "\xA8", "uuml": "\xFC", "Uuml": "\xDC", "yacute": "\xFD", "Yacute": "\xDD", "yen": "\xA5", "yuml": "\xFF" };
+      var decodeMapNumeric = { "0": "\uFFFD", "128": "\u20AC", "130": "\u201A", "131": "\u0192", "132": "\u201E", "133": "\u2026", "134": "\u2020", "135": "\u2021", "136": "\u02C6", "137": "\u2030", "138": "\u0160", "139": "\u2039", "140": "\u0152", "142": "\u017D", "145": "\u2018", "146": "\u2019", "147": "\u201C", "148": "\u201D", "149": "\u2022", "150": "\u2013", "151": "\u2014", "152": "\u02DC", "153": "\u2122", "154": "\u0161", "155": "\u203A", "156": "\u0153", "158": "\u017E", "159": "\u0178" };
+      var invalidReferenceCodePoints = [1, 2, 3, 4, 5, 6, 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 64976, 64977, 64978, 64979, 64980, 64981, 64982, 64983, 64984, 64985, 64986, 64987, 64988, 64989, 64990, 64991, 64992, 64993, 64994, 64995, 64996, 64997, 64998, 64999, 65e3, 65001, 65002, 65003, 65004, 65005, 65006, 65007, 65534, 65535, 131070, 131071, 196606, 196607, 262142, 262143, 327678, 327679, 393214, 393215, 458750, 458751, 524286, 524287, 589822, 589823, 655358, 655359, 720894, 720895, 786430, 786431, 851966, 851967, 917502, 917503, 983038, 983039, 1048574, 1048575, 1114110, 1114111];
+      var stringFromCharCode = String.fromCharCode;
+      var object = {};
+      var hasOwnProperty2 = object.hasOwnProperty;
+      var has = function(object2, propertyName) {
+        return hasOwnProperty2.call(object2, propertyName);
+      };
+      var contains = function(array, value) {
+        var index = -1;
+        var length = array.length;
+        while (++index < length) {
+          if (array[index] == value) {
+            return true;
+          }
+        }
+        return false;
+      };
+      var merge = function(options, defaults) {
+        if (!options) {
+          return defaults;
+        }
+        var result = {};
+        var key3;
+        for (key3 in defaults) {
+          result[key3] = has(options, key3) ? options[key3] : defaults[key3];
+        }
+        return result;
+      };
+      var codePointToSymbol = function(codePoint, strict) {
+        var output = "";
+        if (codePoint >= 55296 && codePoint <= 57343 || codePoint > 1114111) {
+          if (strict) {
+            parseError("character reference outside the permissible Unicode range");
+          }
+          return "\uFFFD";
+        }
+        if (has(decodeMapNumeric, codePoint)) {
+          if (strict) {
+            parseError("disallowed character reference");
+          }
+          return decodeMapNumeric[codePoint];
+        }
+        if (strict && contains(invalidReferenceCodePoints, codePoint)) {
+          parseError("disallowed character reference");
+        }
+        if (codePoint > 65535) {
+          codePoint -= 65536;
+          output += stringFromCharCode(codePoint >>> 10 & 1023 | 55296);
+          codePoint = 56320 | codePoint & 1023;
+        }
+        output += stringFromCharCode(codePoint);
+        return output;
+      };
+      var hexEscape = function(codePoint) {
+        return "&#x" + codePoint.toString(16).toUpperCase() + ";";
+      };
+      var decEscape = function(codePoint) {
+        return "&#" + codePoint + ";";
+      };
+      var parseError = function(message) {
+        throw Error("Parse error: " + message);
+      };
+      var encode = function(string, options) {
+        options = merge(options, encode.options);
+        var strict = options.strict;
+        if (strict && regexInvalidRawCodePoint.test(string)) {
+          parseError("forbidden code point");
+        }
+        var encodeEverything = options.encodeEverything;
+        var useNamedReferences = options.useNamedReferences;
+        var allowUnsafeSymbols = options.allowUnsafeSymbols;
+        var escapeCodePoint = options.decimal ? decEscape : hexEscape;
+        var escapeBmpSymbol = function(symbol) {
+          return escapeCodePoint(symbol.charCodeAt(0));
+        };
+        if (encodeEverything) {
+          string = string.replace(regexAsciiWhitelist, function(symbol) {
+            if (useNamedReferences && has(encodeMap, symbol)) {
+              return "&" + encodeMap[symbol] + ";";
+            }
+            return escapeBmpSymbol(symbol);
+          });
+          if (useNamedReferences) {
+            string = string.replace(/&gt;\u20D2/g, "&nvgt;").replace(/&lt;\u20D2/g, "&nvlt;").replace(/&#x66;&#x6A;/g, "&fjlig;");
+          }
+          if (useNamedReferences) {
+            string = string.replace(regexEncodeNonAscii, function(string2) {
+              return "&" + encodeMap[string2] + ";";
+            });
+          }
+        } else if (useNamedReferences) {
+          if (!allowUnsafeSymbols) {
+            string = string.replace(regexEscape, function(string2) {
+              return "&" + encodeMap[string2] + ";";
+            });
+          }
+          string = string.replace(/&gt;\u20D2/g, "&nvgt;").replace(/&lt;\u20D2/g, "&nvlt;");
+          string = string.replace(regexEncodeNonAscii, function(string2) {
+            return "&" + encodeMap[string2] + ";";
+          });
+        } else if (!allowUnsafeSymbols) {
+          string = string.replace(regexEscape, escapeBmpSymbol);
+        }
+        return string.replace(regexAstralSymbols, function($0) {
+          var high = $0.charCodeAt(0);
+          var low = $0.charCodeAt(1);
+          var codePoint = (high - 55296) * 1024 + low - 56320 + 65536;
+          return escapeCodePoint(codePoint);
+        }).replace(regexBmpWhitelist, escapeBmpSymbol);
+      };
+      encode.options = {
+        "allowUnsafeSymbols": false,
+        "encodeEverything": false,
+        "strict": false,
+        "useNamedReferences": false,
+        "decimal": false
+      };
+      var decode = function(html, options) {
+        options = merge(options, decode.options);
+        var strict = options.strict;
+        if (strict && regexInvalidEntity.test(html)) {
+          parseError("malformed character reference");
+        }
+        return html.replace(regexDecode, function($0, $1, $22, $3, $4, $5, $6, $7, $8) {
+          var codePoint;
+          var semicolon;
+          var decDigits;
+          var hexDigits;
+          var reference;
+          var next;
+          if ($1) {
+            reference = $1;
+            return decodeMap[reference];
+          }
+          if ($22) {
+            reference = $22;
+            next = $3;
+            if (next && options.isAttributeValue) {
+              if (strict && next == "=") {
+                parseError("`&` did not start a character reference");
+              }
+              return $0;
+            } else {
+              if (strict) {
+                parseError(
+                  "named character reference was not terminated by a semicolon"
+                );
+              }
+              return decodeMapLegacy[reference] + (next || "");
+            }
+          }
+          if ($4) {
+            decDigits = $4;
+            semicolon = $5;
+            if (strict && !semicolon) {
+              parseError("character reference was not terminated by a semicolon");
+            }
+            codePoint = parseInt(decDigits, 10);
+            return codePointToSymbol(codePoint, strict);
+          }
+          if ($6) {
+            hexDigits = $6;
+            semicolon = $7;
+            if (strict && !semicolon) {
+              parseError("character reference was not terminated by a semicolon");
+            }
+            codePoint = parseInt(hexDigits, 16);
+            return codePointToSymbol(codePoint, strict);
+          }
+          if (strict) {
+            parseError(
+              "named character reference was not terminated by a semicolon"
+            );
+          }
+          return $0;
+        });
+      };
+      decode.options = {
+        "isAttributeValue": false,
+        "strict": false
+      };
+      var escape = function(string) {
+        return string.replace(regexEscape, function($0) {
+          return escapeMap[$0];
+        });
+      };
+      var he2 = {
+        "version": "1.2.0",
+        "encode": encode,
+        "decode": decode,
+        "escape": escape,
+        "unescape": decode
+      };
+      if (typeof define == "function" && typeof define.amd == "object" && define.amd) {
+        define(function() {
+          return he2;
+        });
+      } else if (freeExports && !freeExports.nodeType) {
+        if (freeModule) {
+          freeModule.exports = he2;
+        } else {
+          for (var key2 in he2) {
+            has(he2, key2) && (freeExports[key2] = he2[key2]);
+          }
+        }
+      } else {
+        root.he = he2;
+      }
+    })(exports);
+  }
+});
+
+// node_modules/fuzzysort/fuzzysort.js
+var require_fuzzysort = __commonJS({
+  "node_modules/fuzzysort/fuzzysort.js"(exports, module2) {
+    ((root, UMD) => {
+      if (typeof define === "function" && define.amd)
+        define([], UMD);
+      else if (typeof module2 === "object" && module2.exports)
+        module2.exports = UMD();
+      else
+        root["fuzzysort"] = UMD();
+    })(exports, (_12) => {
+      "use strict";
+      var single = (search, target) => {
+        if (search == "farzher")
+          return { target: "farzher was here (^-^*)/", score: 0, _indexes: [0] };
+        if (!search || !target)
+          return NULL;
+        var preparedSearch = getPreparedSearch(search);
+        if (!isObj(target))
+          target = getPrepared(target);
+        var searchBitflags = preparedSearch.bitflags;
+        if ((searchBitflags & target._bitflags) !== searchBitflags)
+          return NULL;
+        return algorithm(preparedSearch, target);
+      };
+      var go = (search, targets, options) => {
+        if (search == "farzher")
+          return [{ target: "farzher was here (^-^*)/", score: 0, _indexes: [0], obj: targets ? targets[0] : NULL }];
+        if (!search)
+          return options && options.all ? all(search, targets, options) : noResults;
+        var preparedSearch = getPreparedSearch(search);
+        var searchBitflags = preparedSearch.bitflags;
+        var containsSpace = preparedSearch.containsSpace;
+        var threshold = options && options.threshold || INT_MIN;
+        var limit = options && options["limit"] || INT_MAX;
+        var resultsLen = 0;
+        var limitedCount = 0;
+        var targetsLen = targets.length;
+        if (options && options.key) {
+          var key2 = options.key;
+          for (var i4 = 0; i4 < targetsLen; ++i4) {
+            var obj = targets[i4];
+            var target = getValue(obj, key2);
+            if (!target)
+              continue;
+            if (!isObj(target))
+              target = getPrepared(target);
+            if ((searchBitflags & target._bitflags) !== searchBitflags)
+              continue;
+            var result = algorithm(preparedSearch, target);
+            if (result === NULL)
+              continue;
+            if (result.score < threshold)
+              continue;
+            result = { target: result.target, _targetLower: "", _targetLowerCodes: NULL, _nextBeginningIndexes: NULL, _bitflags: 0, score: result.score, _indexes: result._indexes, obj };
+            if (resultsLen < limit) {
+              q5.add(result);
+              ++resultsLen;
+            } else {
+              ++limitedCount;
+              if (result.score > q5.peek().score)
+                q5.replaceTop(result);
+            }
+          }
+        } else if (options && options.keys) {
+          var scoreFn = options["scoreFn"] || defaultScoreFn;
+          var keys = options.keys;
+          var keysLen = keys.length;
+          for (var i4 = 0; i4 < targetsLen; ++i4) {
+            var obj = targets[i4];
+            var objResults = new Array(keysLen);
+            for (var keyI = 0; keyI < keysLen; ++keyI) {
+              var key2 = keys[keyI];
+              var target = getValue(obj, key2);
+              if (!target) {
+                objResults[keyI] = NULL;
+                continue;
+              }
+              if (!isObj(target))
+                target = getPrepared(target);
+              if ((searchBitflags & target._bitflags) !== searchBitflags)
+                objResults[keyI] = NULL;
+              else
+                objResults[keyI] = algorithm(preparedSearch, target);
+            }
+            objResults.obj = obj;
+            var score = scoreFn(objResults);
+            if (score === NULL)
+              continue;
+            if (score < threshold)
+              continue;
+            objResults.score = score;
+            if (resultsLen < limit) {
+              q5.add(objResults);
+              ++resultsLen;
+            } else {
+              ++limitedCount;
+              if (score > q5.peek().score)
+                q5.replaceTop(objResults);
+            }
+          }
+        } else {
+          for (var i4 = 0; i4 < targetsLen; ++i4) {
+            var target = targets[i4];
+            if (!target)
+              continue;
+            if (!isObj(target))
+              target = getPrepared(target);
+            if ((searchBitflags & target._bitflags) !== searchBitflags)
+              continue;
+            var result = algorithm(preparedSearch, target);
+            if (result === NULL)
+              continue;
+            if (result.score < threshold)
+              continue;
+            if (resultsLen < limit) {
+              q5.add(result);
+              ++resultsLen;
+            } else {
+              ++limitedCount;
+              if (result.score > q5.peek().score)
+                q5.replaceTop(result);
+            }
+          }
+        }
+        if (resultsLen === 0)
+          return noResults;
+        var results = new Array(resultsLen);
+        for (var i4 = resultsLen - 1; i4 >= 0; --i4)
+          results[i4] = q5.poll();
+        results.total = resultsLen + limitedCount;
+        return results;
+      };
+      var highlight = (result, hOpen, hClose) => {
+        if (typeof hOpen === "function")
+          return highlightCallback(result, hOpen);
+        if (result === NULL)
+          return NULL;
+        if (hOpen === void 0)
+          hOpen = "<b>";
+        if (hClose === void 0)
+          hClose = "</b>";
+        var highlighted = "";
+        var matchesIndex = 0;
+        var opened = false;
+        var target = result.target;
+        var targetLen = target.length;
+        var indexes2 = result._indexes;
+        indexes2 = indexes2.slice(0, indexes2.len).sort((a5, b4) => a5 - b4);
+        for (var i4 = 0; i4 < targetLen; ++i4) {
+          var char = target[i4];
+          if (indexes2[matchesIndex] === i4) {
+            ++matchesIndex;
+            if (!opened) {
+              opened = true;
+              highlighted += hOpen;
+            }
+            if (matchesIndex === indexes2.length) {
+              highlighted += char + hClose + target.substr(i4 + 1);
+              break;
+            }
+          } else {
+            if (opened) {
+              opened = false;
+              highlighted += hClose;
+            }
+          }
+          highlighted += char;
+        }
+        return highlighted;
+      };
+      var highlightCallback = (result, cb) => {
+        if (result === NULL)
+          return NULL;
+        var target = result.target;
+        var targetLen = target.length;
+        var indexes2 = result._indexes;
+        indexes2 = indexes2.slice(0, indexes2.len).sort((a5, b4) => a5 - b4);
+        var highlighted = "";
+        var matchI = 0;
+        var indexesI = 0;
+        var opened = false;
+        var result = [];
+        for (var i4 = 0; i4 < targetLen; ++i4) {
+          var char = target[i4];
+          if (indexes2[indexesI] === i4) {
+            ++indexesI;
+            if (!opened) {
+              opened = true;
+              result.push(highlighted);
+              highlighted = "";
+            }
+            if (indexesI === indexes2.length) {
+              highlighted += char;
+              result.push(cb(highlighted, matchI++));
+              highlighted = "";
+              result.push(target.substr(i4 + 1));
+              break;
+            }
+          } else {
+            if (opened) {
+              opened = false;
+              result.push(cb(highlighted, matchI++));
+              highlighted = "";
+            }
+          }
+          highlighted += char;
+        }
+        return result;
+      };
+      var indexes = (result) => result._indexes.slice(0, result._indexes.len).sort((a5, b4) => a5 - b4);
+      var prepare = (target) => {
+        if (typeof target !== "string")
+          target = "";
+        var info = prepareLowerInfo(target);
+        return { "target": target, _targetLower: info._lower, _targetLowerCodes: info.lowerCodes, _nextBeginningIndexes: NULL, _bitflags: info.bitflags, "score": NULL, _indexes: [0], "obj": NULL };
+      };
+      var prepareSearch = (search) => {
+        if (typeof search !== "string")
+          search = "";
+        search = search.trim();
+        var info = prepareLowerInfo(search);
+        var spaceSearches = [];
+        if (info.containsSpace) {
+          var searches = search.split(/\s+/);
+          searches = [...new Set(searches)];
+          for (var i4 = 0; i4 < searches.length; i4++) {
+            if (searches[i4] === "")
+              continue;
+            var _info = prepareLowerInfo(searches[i4]);
+            spaceSearches.push({ lowerCodes: _info.lowerCodes, _lower: searches[i4].toLowerCase(), containsSpace: false });
+          }
+        }
+        return { lowerCodes: info.lowerCodes, bitflags: info.bitflags, containsSpace: info.containsSpace, _lower: info._lower, spaceSearches };
+      };
+      var getPrepared = (target) => {
+        if (target.length > 999)
+          return prepare(target);
+        var targetPrepared = preparedCache.get(target);
+        if (targetPrepared !== void 0)
+          return targetPrepared;
+        targetPrepared = prepare(target);
+        preparedCache.set(target, targetPrepared);
+        return targetPrepared;
+      };
+      var getPreparedSearch = (search) => {
+        if (search.length > 999)
+          return prepareSearch(search);
+        var searchPrepared = preparedSearchCache.get(search);
+        if (searchPrepared !== void 0)
+          return searchPrepared;
+        searchPrepared = prepareSearch(search);
+        preparedSearchCache.set(search, searchPrepared);
+        return searchPrepared;
+      };
+      var all = (search, targets, options) => {
+        var results = [];
+        results.total = targets.length;
+        var limit = options && options.limit || INT_MAX;
+        if (options && options.key) {
+          for (var i4 = 0; i4 < targets.length; i4++) {
+            var obj = targets[i4];
+            var target = getValue(obj, options.key);
+            if (!target)
+              continue;
+            if (!isObj(target))
+              target = getPrepared(target);
+            target.score = INT_MIN;
+            target._indexes.len = 0;
+            var result = target;
+            result = { target: result.target, _targetLower: "", _targetLowerCodes: NULL, _nextBeginningIndexes: NULL, _bitflags: 0, score: target.score, _indexes: NULL, obj };
+            results.push(result);
+            if (results.length >= limit)
+              return results;
+          }
+        } else if (options && options.keys) {
+          for (var i4 = 0; i4 < targets.length; i4++) {
+            var obj = targets[i4];
+            var objResults = new Array(options.keys.length);
+            for (var keyI = options.keys.length - 1; keyI >= 0; --keyI) {
+              var target = getValue(obj, options.keys[keyI]);
+              if (!target) {
+                objResults[keyI] = NULL;
+                continue;
+              }
+              if (!isObj(target))
+                target = getPrepared(target);
+              target.score = INT_MIN;
+              target._indexes.len = 0;
+              objResults[keyI] = target;
+            }
+            objResults.obj = obj;
+            objResults.score = INT_MIN;
+            results.push(objResults);
+            if (results.length >= limit)
+              return results;
+          }
+        } else {
+          for (var i4 = 0; i4 < targets.length; i4++) {
+            var target = targets[i4];
+            if (!target)
+              continue;
+            if (!isObj(target))
+              target = getPrepared(target);
+            target.score = INT_MIN;
+            target._indexes.len = 0;
+            results.push(target);
+            if (results.length >= limit)
+              return results;
+          }
+        }
+        return results;
+      };
+      var algorithm = (preparedSearch, prepared, allowSpaces = false) => {
+        if (allowSpaces === false && preparedSearch.containsSpace)
+          return algorithmSpaces(preparedSearch, prepared);
+        var searchLower = preparedSearch._lower;
+        var searchLowerCodes = preparedSearch.lowerCodes;
+        var searchLowerCode = searchLowerCodes[0];
+        var targetLowerCodes = prepared._targetLowerCodes;
+        var searchLen = searchLowerCodes.length;
+        var targetLen = targetLowerCodes.length;
+        var searchI = 0;
+        var targetI = 0;
+        var matchesSimpleLen = 0;
+        for (; ; ) {
+          var isMatch2 = searchLowerCode === targetLowerCodes[targetI];
+          if (isMatch2) {
+            matchesSimple[matchesSimpleLen++] = targetI;
+            ++searchI;
+            if (searchI === searchLen)
+              break;
+            searchLowerCode = searchLowerCodes[searchI];
+          }
+          ++targetI;
+          if (targetI >= targetLen)
+            return NULL;
+        }
+        var searchI = 0;
+        var successStrict = false;
+        var matchesStrictLen = 0;
+        var nextBeginningIndexes = prepared._nextBeginningIndexes;
+        if (nextBeginningIndexes === NULL)
+          nextBeginningIndexes = prepared._nextBeginningIndexes = prepareNextBeginningIndexes(prepared.target);
+        var firstPossibleI = targetI = matchesSimple[0] === 0 ? 0 : nextBeginningIndexes[matchesSimple[0] - 1];
+        var backtrackCount = 0;
+        if (targetI !== targetLen)
+          for (; ; ) {
+            if (targetI >= targetLen) {
+              if (searchI <= 0)
+                break;
+              ++backtrackCount;
+              if (backtrackCount > 200)
+                break;
+              --searchI;
+              var lastMatch = matchesStrict[--matchesStrictLen];
+              targetI = nextBeginningIndexes[lastMatch];
+            } else {
+              var isMatch2 = searchLowerCodes[searchI] === targetLowerCodes[targetI];
+              if (isMatch2) {
+                matchesStrict[matchesStrictLen++] = targetI;
+                ++searchI;
+                if (searchI === searchLen) {
+                  successStrict = true;
+                  break;
+                }
+                ++targetI;
+              } else {
+                targetI = nextBeginningIndexes[targetI];
+              }
+            }
+          }
+        var substringIndex = prepared._targetLower.indexOf(searchLower, matchesSimple[0]);
+        var isSubstring = ~substringIndex;
+        if (isSubstring && !successStrict) {
+          for (var i4 = 0; i4 < matchesSimpleLen; ++i4)
+            matchesSimple[i4] = substringIndex + i4;
+        }
+        var isSubstringBeginning = false;
+        if (isSubstring) {
+          isSubstringBeginning = prepared._nextBeginningIndexes[substringIndex - 1] === substringIndex;
+        }
+        {
+          if (successStrict) {
+            var matchesBest = matchesStrict;
+            var matchesBestLen = matchesStrictLen;
+          } else {
+            var matchesBest = matchesSimple;
+            var matchesBestLen = matchesSimpleLen;
+          }
+          var score = 0;
+          var extraMatchGroupCount = 0;
+          for (var i4 = 1; i4 < searchLen; ++i4) {
+            if (matchesBest[i4] - matchesBest[i4 - 1] !== 1) {
+              score -= matchesBest[i4];
+              ++extraMatchGroupCount;
+            }
+          }
+          var unmatchedDistance = matchesBest[searchLen - 1] - matchesBest[0] - (searchLen - 1);
+          score -= (12 + unmatchedDistance) * extraMatchGroupCount;
+          if (matchesBest[0] !== 0)
+            score -= matchesBest[0] * matchesBest[0] * 0.2;
+          if (!successStrict) {
+            score *= 1e3;
+          } else {
+            var uniqueBeginningIndexes = 1;
+            for (var i4 = nextBeginningIndexes[0]; i4 < targetLen; i4 = nextBeginningIndexes[i4])
+              ++uniqueBeginningIndexes;
+            if (uniqueBeginningIndexes > 24)
+              score *= (uniqueBeginningIndexes - 24) * 10;
+          }
+          if (isSubstring)
+            score /= 1 + searchLen * searchLen * 1;
+          if (isSubstringBeginning)
+            score /= 1 + searchLen * searchLen * 1;
+          score -= targetLen - searchLen;
+          prepared.score = score;
+          for (var i4 = 0; i4 < matchesBestLen; ++i4)
+            prepared._indexes[i4] = matchesBest[i4];
+          prepared._indexes.len = matchesBestLen;
+          return prepared;
+        }
+      };
+      var algorithmSpaces = (preparedSearch, target) => {
+        var seen_indexes = /* @__PURE__ */ new Set();
+        var score = 0;
+        var result = NULL;
+        var first_seen_index_last_search = 0;
+        var searches = preparedSearch.spaceSearches;
+        for (var i4 = 0; i4 < searches.length; ++i4) {
+          var search = searches[i4];
+          result = algorithm(search, target);
+          if (result === NULL)
+            return NULL;
+          score += result.score;
+          if (result._indexes[0] < first_seen_index_last_search) {
+            score -= first_seen_index_last_search - result._indexes[0];
+          }
+          first_seen_index_last_search = result._indexes[0];
+          for (var j4 = 0; j4 < result._indexes.len; ++j4)
+            seen_indexes.add(result._indexes[j4]);
+        }
+        var allowSpacesResult = algorithm(preparedSearch, target, true);
+        if (allowSpacesResult !== NULL && allowSpacesResult.score > score) {
+          return allowSpacesResult;
+        }
+        result.score = score;
+        var i4 = 0;
+        for (let index of seen_indexes)
+          result._indexes[i4++] = index;
+        result._indexes.len = i4;
+        return result;
+      };
+      var prepareLowerInfo = (str) => {
+        var strLen = str.length;
+        var lower = str.toLowerCase();
+        var lowerCodes = [];
+        var bitflags = 0;
+        var containsSpace = false;
+        for (var i4 = 0; i4 < strLen; ++i4) {
+          var lowerCode = lowerCodes[i4] = lower.charCodeAt(i4);
+          if (lowerCode === 32) {
+            containsSpace = true;
+            continue;
+          }
+          var bit = lowerCode >= 97 && lowerCode <= 122 ? lowerCode - 97 : lowerCode >= 48 && lowerCode <= 57 ? 26 : lowerCode <= 127 ? 30 : 31;
+          bitflags |= 1 << bit;
+        }
+        return { lowerCodes, bitflags, containsSpace, _lower: lower };
+      };
+      var prepareBeginningIndexes = (target) => {
+        var targetLen = target.length;
+        var beginningIndexes = [];
+        var beginningIndexesLen = 0;
+        var wasUpper = false;
+        var wasAlphanum = false;
+        for (var i4 = 0; i4 < targetLen; ++i4) {
+          var targetCode = target.charCodeAt(i4);
+          var isUpper = targetCode >= 65 && targetCode <= 90;
+          var isAlphanum = isUpper || targetCode >= 97 && targetCode <= 122 || targetCode >= 48 && targetCode <= 57;
+          var isBeginning = isUpper && !wasUpper || !wasAlphanum || !isAlphanum;
+          wasUpper = isUpper;
+          wasAlphanum = isAlphanum;
+          if (isBeginning)
+            beginningIndexes[beginningIndexesLen++] = i4;
+        }
+        return beginningIndexes;
+      };
+      var prepareNextBeginningIndexes = (target) => {
+        var targetLen = target.length;
+        var beginningIndexes = prepareBeginningIndexes(target);
+        var nextBeginningIndexes = [];
+        var lastIsBeginning = beginningIndexes[0];
+        var lastIsBeginningI = 0;
+        for (var i4 = 0; i4 < targetLen; ++i4) {
+          if (lastIsBeginning > i4) {
+            nextBeginningIndexes[i4] = lastIsBeginning;
+          } else {
+            lastIsBeginning = beginningIndexes[++lastIsBeginningI];
+            nextBeginningIndexes[i4] = lastIsBeginning === void 0 ? targetLen : lastIsBeginning;
+          }
+        }
+        return nextBeginningIndexes;
+      };
+      var cleanup = () => {
+        preparedCache.clear();
+        preparedSearchCache.clear();
+        matchesSimple = [];
+        matchesStrict = [];
+      };
+      var preparedCache = /* @__PURE__ */ new Map();
+      var preparedSearchCache = /* @__PURE__ */ new Map();
+      var matchesSimple = [];
+      var matchesStrict = [];
+      var defaultScoreFn = (a5) => {
+        var max3 = INT_MIN;
+        var len = a5.length;
+        for (var i4 = 0; i4 < len; ++i4) {
+          var result = a5[i4];
+          if (result === NULL)
+            continue;
+          var score = result.score;
+          if (score > max3)
+            max3 = score;
+        }
+        if (max3 === INT_MIN)
+          return NULL;
+        return max3;
+      };
+      var getValue = (obj, prop) => {
+        var tmp = obj[prop];
+        if (tmp !== void 0)
+          return tmp;
+        var segs = prop;
+        if (!Array.isArray(prop))
+          segs = prop.split(".");
+        var len = segs.length;
+        var i4 = -1;
+        while (obj && ++i4 < len)
+          obj = obj[segs[i4]];
+        return obj;
+      };
+      var isObj = (x5) => {
+        return typeof x5 === "object";
+      };
+      var INT_MAX = Infinity;
+      var INT_MIN = -INT_MAX;
+      var noResults = [];
+      noResults.total = 0;
+      var NULL = null;
+      var fastpriorityqueue = (r3) => {
+        var e4 = [], o3 = 0, a5 = {}, v3 = (r4) => {
+          for (var a6 = 0, v4 = e4[a6], c4 = 1; c4 < o3; ) {
+            var s5 = c4 + 1;
+            a6 = c4, s5 < o3 && e4[s5].score < e4[c4].score && (a6 = s5), e4[a6 - 1 >> 1] = e4[a6], c4 = 1 + (a6 << 1);
+          }
+          for (var f4 = a6 - 1 >> 1; a6 > 0 && v4.score < e4[f4].score; f4 = (a6 = f4) - 1 >> 1)
+            e4[a6] = e4[f4];
+          e4[a6] = v4;
+        };
+        return a5.add = (r4) => {
+          var a6 = o3;
+          e4[o3++] = r4;
+          for (var v4 = a6 - 1 >> 1; a6 > 0 && r4.score < e4[v4].score; v4 = (a6 = v4) - 1 >> 1)
+            e4[a6] = e4[v4];
+          e4[a6] = r4;
+        }, a5.poll = (r4) => {
+          if (0 !== o3) {
+            var a6 = e4[0];
+            return e4[0] = e4[--o3], v3(), a6;
+          }
+        }, a5.peek = (r4) => {
+          if (0 !== o3)
+            return e4[0];
+        }, a5.replaceTop = (r4) => {
+          e4[0] = r4, v3();
+        }, a5;
+      };
+      var q5 = fastpriorityqueue();
+      return { "single": single, "go": go, "highlight": highlight, "prepare": prepare, "indexes": indexes, "cleanup": cleanup };
+    });
+  }
+});
+
 // node_modules/classnames/index.js
 var require_classnames = __commonJS({
   "node_modules/classnames/index.js"(exports, module2) {
@@ -6623,248 +6865,6 @@ var require_tslib = __commonJS({
       exporter("__classPrivateFieldSet", __classPrivateFieldSet2);
       exporter("__classPrivateFieldIn", __classPrivateFieldIn2);
     });
-  }
-});
-
-// node_modules/he/he.js
-var require_he = __commonJS({
-  "node_modules/he/he.js"(exports, module2) {
-    (function(root) {
-      var freeExports = typeof exports == "object" && exports;
-      var freeModule = typeof module2 == "object" && module2 && module2.exports == freeExports && module2;
-      var freeGlobal = typeof global == "object" && global;
-      if (freeGlobal.global === freeGlobal || freeGlobal.window === freeGlobal) {
-        root = freeGlobal;
-      }
-      var regexAstralSymbols = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g;
-      var regexAsciiWhitelist = /[\x01-\x7F]/g;
-      var regexBmpWhitelist = /[\x01-\t\x0B\f\x0E-\x1F\x7F\x81\x8D\x8F\x90\x9D\xA0-\uFFFF]/g;
-      var regexEncodeNonAscii = /<\u20D2|=\u20E5|>\u20D2|\u205F\u200A|\u219D\u0338|\u2202\u0338|\u2220\u20D2|\u2229\uFE00|\u222A\uFE00|\u223C\u20D2|\u223D\u0331|\u223E\u0333|\u2242\u0338|\u224B\u0338|\u224D\u20D2|\u224E\u0338|\u224F\u0338|\u2250\u0338|\u2261\u20E5|\u2264\u20D2|\u2265\u20D2|\u2266\u0338|\u2267\u0338|\u2268\uFE00|\u2269\uFE00|\u226A\u0338|\u226A\u20D2|\u226B\u0338|\u226B\u20D2|\u227F\u0338|\u2282\u20D2|\u2283\u20D2|\u228A\uFE00|\u228B\uFE00|\u228F\u0338|\u2290\u0338|\u2293\uFE00|\u2294\uFE00|\u22B4\u20D2|\u22B5\u20D2|\u22D8\u0338|\u22D9\u0338|\u22DA\uFE00|\u22DB\uFE00|\u22F5\u0338|\u22F9\u0338|\u2933\u0338|\u29CF\u0338|\u29D0\u0338|\u2A6D\u0338|\u2A70\u0338|\u2A7D\u0338|\u2A7E\u0338|\u2AA1\u0338|\u2AA2\u0338|\u2AAC\uFE00|\u2AAD\uFE00|\u2AAF\u0338|\u2AB0\u0338|\u2AC5\u0338|\u2AC6\u0338|\u2ACB\uFE00|\u2ACC\uFE00|\u2AFD\u20E5|[\xA0-\u0113\u0116-\u0122\u0124-\u012B\u012E-\u014D\u0150-\u017E\u0192\u01B5\u01F5\u0237\u02C6\u02C7\u02D8-\u02DD\u0311\u0391-\u03A1\u03A3-\u03A9\u03B1-\u03C9\u03D1\u03D2\u03D5\u03D6\u03DC\u03DD\u03F0\u03F1\u03F5\u03F6\u0401-\u040C\u040E-\u044F\u0451-\u045C\u045E\u045F\u2002-\u2005\u2007-\u2010\u2013-\u2016\u2018-\u201A\u201C-\u201E\u2020-\u2022\u2025\u2026\u2030-\u2035\u2039\u203A\u203E\u2041\u2043\u2044\u204F\u2057\u205F-\u2063\u20AC\u20DB\u20DC\u2102\u2105\u210A-\u2113\u2115-\u211E\u2122\u2124\u2127-\u2129\u212C\u212D\u212F-\u2131\u2133-\u2138\u2145-\u2148\u2153-\u215E\u2190-\u219B\u219D-\u21A7\u21A9-\u21AE\u21B0-\u21B3\u21B5-\u21B7\u21BA-\u21DB\u21DD\u21E4\u21E5\u21F5\u21FD-\u2205\u2207-\u2209\u220B\u220C\u220F-\u2214\u2216-\u2218\u221A\u221D-\u2238\u223A-\u2257\u2259\u225A\u225C\u225F-\u2262\u2264-\u228B\u228D-\u229B\u229D-\u22A5\u22A7-\u22B0\u22B2-\u22BB\u22BD-\u22DB\u22DE-\u22E3\u22E6-\u22F7\u22F9-\u22FE\u2305\u2306\u2308-\u2310\u2312\u2313\u2315\u2316\u231C-\u231F\u2322\u2323\u232D\u232E\u2336\u233D\u233F\u237C\u23B0\u23B1\u23B4-\u23B6\u23DC-\u23DF\u23E2\u23E7\u2423\u24C8\u2500\u2502\u250C\u2510\u2514\u2518\u251C\u2524\u252C\u2534\u253C\u2550-\u256C\u2580\u2584\u2588\u2591-\u2593\u25A1\u25AA\u25AB\u25AD\u25AE\u25B1\u25B3-\u25B5\u25B8\u25B9\u25BD-\u25BF\u25C2\u25C3\u25CA\u25CB\u25EC\u25EF\u25F8-\u25FC\u2605\u2606\u260E\u2640\u2642\u2660\u2663\u2665\u2666\u266A\u266D-\u266F\u2713\u2717\u2720\u2736\u2758\u2772\u2773\u27C8\u27C9\u27E6-\u27ED\u27F5-\u27FA\u27FC\u27FF\u2902-\u2905\u290C-\u2913\u2916\u2919-\u2920\u2923-\u292A\u2933\u2935-\u2939\u293C\u293D\u2945\u2948-\u294B\u294E-\u2976\u2978\u2979\u297B-\u297F\u2985\u2986\u298B-\u2996\u299A\u299C\u299D\u29A4-\u29B7\u29B9\u29BB\u29BC\u29BE-\u29C5\u29C9\u29CD-\u29D0\u29DC-\u29DE\u29E3-\u29E5\u29EB\u29F4\u29F6\u2A00-\u2A02\u2A04\u2A06\u2A0C\u2A0D\u2A10-\u2A17\u2A22-\u2A27\u2A29\u2A2A\u2A2D-\u2A31\u2A33-\u2A3C\u2A3F\u2A40\u2A42-\u2A4D\u2A50\u2A53-\u2A58\u2A5A-\u2A5D\u2A5F\u2A66\u2A6A\u2A6D-\u2A75\u2A77-\u2A9A\u2A9D-\u2AA2\u2AA4-\u2AB0\u2AB3-\u2AC8\u2ACB\u2ACC\u2ACF-\u2ADB\u2AE4\u2AE6-\u2AE9\u2AEB-\u2AF3\u2AFD\uFB00-\uFB04]|\uD835[\uDC9C\uDC9E\uDC9F\uDCA2\uDCA5\uDCA6\uDCA9-\uDCAC\uDCAE-\uDCB9\uDCBB\uDCBD-\uDCC3\uDCC5-\uDCCF\uDD04\uDD05\uDD07-\uDD0A\uDD0D-\uDD14\uDD16-\uDD1C\uDD1E-\uDD39\uDD3B-\uDD3E\uDD40-\uDD44\uDD46\uDD4A-\uDD50\uDD52-\uDD6B]/g;
-      var encodeMap = { "\xAD": "shy", "\u200C": "zwnj", "\u200D": "zwj", "\u200E": "lrm", "\u2063": "ic", "\u2062": "it", "\u2061": "af", "\u200F": "rlm", "\u200B": "ZeroWidthSpace", "\u2060": "NoBreak", "\u0311": "DownBreve", "\u20DB": "tdot", "\u20DC": "DotDot", "	": "Tab", "\n": "NewLine", "\u2008": "puncsp", "\u205F": "MediumSpace", "\u2009": "thinsp", "\u200A": "hairsp", "\u2004": "emsp13", "\u2002": "ensp", "\u2005": "emsp14", "\u2003": "emsp", "\u2007": "numsp", "\xA0": "nbsp", "\u205F\u200A": "ThickSpace", "\u203E": "oline", "_": "lowbar", "\u2010": "dash", "\u2013": "ndash", "\u2014": "mdash", "\u2015": "horbar", ",": "comma", ";": "semi", "\u204F": "bsemi", ":": "colon", "\u2A74": "Colone", "!": "excl", "\xA1": "iexcl", "?": "quest", "\xBF": "iquest", ".": "period", "\u2025": "nldr", "\u2026": "mldr", "\xB7": "middot", "'": "apos", "\u2018": "lsquo", "\u2019": "rsquo", "\u201A": "sbquo", "\u2039": "lsaquo", "\u203A": "rsaquo", '"': "quot", "\u201C": "ldquo", "\u201D": "rdquo", "\u201E": "bdquo", "\xAB": "laquo", "\xBB": "raquo", "(": "lpar", ")": "rpar", "[": "lsqb", "]": "rsqb", "{": "lcub", "}": "rcub", "\u2308": "lceil", "\u2309": "rceil", "\u230A": "lfloor", "\u230B": "rfloor", "\u2985": "lopar", "\u2986": "ropar", "\u298B": "lbrke", "\u298C": "rbrke", "\u298D": "lbrkslu", "\u298E": "rbrksld", "\u298F": "lbrksld", "\u2990": "rbrkslu", "\u2991": "langd", "\u2992": "rangd", "\u2993": "lparlt", "\u2994": "rpargt", "\u2995": "gtlPar", "\u2996": "ltrPar", "\u27E6": "lobrk", "\u27E7": "robrk", "\u27E8": "lang", "\u27E9": "rang", "\u27EA": "Lang", "\u27EB": "Rang", "\u27EC": "loang", "\u27ED": "roang", "\u2772": "lbbrk", "\u2773": "rbbrk", "\u2016": "Vert", "\xA7": "sect", "\xB6": "para", "@": "commat", "*": "ast", "/": "sol", "undefined": null, "&": "amp", "#": "num", "%": "percnt", "\u2030": "permil", "\u2031": "pertenk", "\u2020": "dagger", "\u2021": "Dagger", "\u2022": "bull", "\u2043": "hybull", "\u2032": "prime", "\u2033": "Prime", "\u2034": "tprime", "\u2057": "qprime", "\u2035": "bprime", "\u2041": "caret", "`": "grave", "\xB4": "acute", "\u02DC": "tilde", "^": "Hat", "\xAF": "macr", "\u02D8": "breve", "\u02D9": "dot", "\xA8": "die", "\u02DA": "ring", "\u02DD": "dblac", "\xB8": "cedil", "\u02DB": "ogon", "\u02C6": "circ", "\u02C7": "caron", "\xB0": "deg", "\xA9": "copy", "\xAE": "reg", "\u2117": "copysr", "\u2118": "wp", "\u211E": "rx", "\u2127": "mho", "\u2129": "iiota", "\u2190": "larr", "\u219A": "nlarr", "\u2192": "rarr", "\u219B": "nrarr", "\u2191": "uarr", "\u2193": "darr", "\u2194": "harr", "\u21AE": "nharr", "\u2195": "varr", "\u2196": "nwarr", "\u2197": "nearr", "\u2198": "searr", "\u2199": "swarr", "\u219D": "rarrw", "\u219D\u0338": "nrarrw", "\u219E": "Larr", "\u219F": "Uarr", "\u21A0": "Rarr", "\u21A1": "Darr", "\u21A2": "larrtl", "\u21A3": "rarrtl", "\u21A4": "mapstoleft", "\u21A5": "mapstoup", "\u21A6": "map", "\u21A7": "mapstodown", "\u21A9": "larrhk", "\u21AA": "rarrhk", "\u21AB": "larrlp", "\u21AC": "rarrlp", "\u21AD": "harrw", "\u21B0": "lsh", "\u21B1": "rsh", "\u21B2": "ldsh", "\u21B3": "rdsh", "\u21B5": "crarr", "\u21B6": "cularr", "\u21B7": "curarr", "\u21BA": "olarr", "\u21BB": "orarr", "\u21BC": "lharu", "\u21BD": "lhard", "\u21BE": "uharr", "\u21BF": "uharl", "\u21C0": "rharu", "\u21C1": "rhard", "\u21C2": "dharr", "\u21C3": "dharl", "\u21C4": "rlarr", "\u21C5": "udarr", "\u21C6": "lrarr", "\u21C7": "llarr", "\u21C8": "uuarr", "\u21C9": "rrarr", "\u21CA": "ddarr", "\u21CB": "lrhar", "\u21CC": "rlhar", "\u21D0": "lArr", "\u21CD": "nlArr", "\u21D1": "uArr", "\u21D2": "rArr", "\u21CF": "nrArr", "\u21D3": "dArr", "\u21D4": "iff", "\u21CE": "nhArr", "\u21D5": "vArr", "\u21D6": "nwArr", "\u21D7": "neArr", "\u21D8": "seArr", "\u21D9": "swArr", "\u21DA": "lAarr", "\u21DB": "rAarr", "\u21DD": "zigrarr", "\u21E4": "larrb", "\u21E5": "rarrb", "\u21F5": "duarr", "\u21FD": "loarr", "\u21FE": "roarr", "\u21FF": "hoarr", "\u2200": "forall", "\u2201": "comp", "\u2202": "part", "\u2202\u0338": "npart", "\u2203": "exist", "\u2204": "nexist", "\u2205": "empty", "\u2207": "Del", "\u2208": "in", "\u2209": "notin", "\u220B": "ni", "\u220C": "notni", "\u03F6": "bepsi", "\u220F": "prod", "\u2210": "coprod", "\u2211": "sum", "+": "plus", "\xB1": "pm", "\xF7": "div", "\xD7": "times", "<": "lt", "\u226E": "nlt", "<\u20D2": "nvlt", "=": "equals", "\u2260": "ne", "=\u20E5": "bne", "\u2A75": "Equal", ">": "gt", "\u226F": "ngt", ">\u20D2": "nvgt", "\xAC": "not", "|": "vert", "\xA6": "brvbar", "\u2212": "minus", "\u2213": "mp", "\u2214": "plusdo", "\u2044": "frasl", "\u2216": "setmn", "\u2217": "lowast", "\u2218": "compfn", "\u221A": "Sqrt", "\u221D": "prop", "\u221E": "infin", "\u221F": "angrt", "\u2220": "ang", "\u2220\u20D2": "nang", "\u2221": "angmsd", "\u2222": "angsph", "\u2223": "mid", "\u2224": "nmid", "\u2225": "par", "\u2226": "npar", "\u2227": "and", "\u2228": "or", "\u2229": "cap", "\u2229\uFE00": "caps", "\u222A": "cup", "\u222A\uFE00": "cups", "\u222B": "int", "\u222C": "Int", "\u222D": "tint", "\u2A0C": "qint", "\u222E": "oint", "\u222F": "Conint", "\u2230": "Cconint", "\u2231": "cwint", "\u2232": "cwconint", "\u2233": "awconint", "\u2234": "there4", "\u2235": "becaus", "\u2236": "ratio", "\u2237": "Colon", "\u2238": "minusd", "\u223A": "mDDot", "\u223B": "homtht", "\u223C": "sim", "\u2241": "nsim", "\u223C\u20D2": "nvsim", "\u223D": "bsim", "\u223D\u0331": "race", "\u223E": "ac", "\u223E\u0333": "acE", "\u223F": "acd", "\u2240": "wr", "\u2242": "esim", "\u2242\u0338": "nesim", "\u2243": "sime", "\u2244": "nsime", "\u2245": "cong", "\u2247": "ncong", "\u2246": "simne", "\u2248": "ap", "\u2249": "nap", "\u224A": "ape", "\u224B": "apid", "\u224B\u0338": "napid", "\u224C": "bcong", "\u224D": "CupCap", "\u226D": "NotCupCap", "\u224D\u20D2": "nvap", "\u224E": "bump", "\u224E\u0338": "nbump", "\u224F": "bumpe", "\u224F\u0338": "nbumpe", "\u2250": "doteq", "\u2250\u0338": "nedot", "\u2251": "eDot", "\u2252": "efDot", "\u2253": "erDot", "\u2254": "colone", "\u2255": "ecolon", "\u2256": "ecir", "\u2257": "cire", "\u2259": "wedgeq", "\u225A": "veeeq", "\u225C": "trie", "\u225F": "equest", "\u2261": "equiv", "\u2262": "nequiv", "\u2261\u20E5": "bnequiv", "\u2264": "le", "\u2270": "nle", "\u2264\u20D2": "nvle", "\u2265": "ge", "\u2271": "nge", "\u2265\u20D2": "nvge", "\u2266": "lE", "\u2266\u0338": "nlE", "\u2267": "gE", "\u2267\u0338": "ngE", "\u2268\uFE00": "lvnE", "\u2268": "lnE", "\u2269": "gnE", "\u2269\uFE00": "gvnE", "\u226A": "ll", "\u226A\u0338": "nLtv", "\u226A\u20D2": "nLt", "\u226B": "gg", "\u226B\u0338": "nGtv", "\u226B\u20D2": "nGt", "\u226C": "twixt", "\u2272": "lsim", "\u2274": "nlsim", "\u2273": "gsim", "\u2275": "ngsim", "\u2276": "lg", "\u2278": "ntlg", "\u2277": "gl", "\u2279": "ntgl", "\u227A": "pr", "\u2280": "npr", "\u227B": "sc", "\u2281": "nsc", "\u227C": "prcue", "\u22E0": "nprcue", "\u227D": "sccue", "\u22E1": "nsccue", "\u227E": "prsim", "\u227F": "scsim", "\u227F\u0338": "NotSucceedsTilde", "\u2282": "sub", "\u2284": "nsub", "\u2282\u20D2": "vnsub", "\u2283": "sup", "\u2285": "nsup", "\u2283\u20D2": "vnsup", "\u2286": "sube", "\u2288": "nsube", "\u2287": "supe", "\u2289": "nsupe", "\u228A\uFE00": "vsubne", "\u228A": "subne", "\u228B\uFE00": "vsupne", "\u228B": "supne", "\u228D": "cupdot", "\u228E": "uplus", "\u228F": "sqsub", "\u228F\u0338": "NotSquareSubset", "\u2290": "sqsup", "\u2290\u0338": "NotSquareSuperset", "\u2291": "sqsube", "\u22E2": "nsqsube", "\u2292": "sqsupe", "\u22E3": "nsqsupe", "\u2293": "sqcap", "\u2293\uFE00": "sqcaps", "\u2294": "sqcup", "\u2294\uFE00": "sqcups", "\u2295": "oplus", "\u2296": "ominus", "\u2297": "otimes", "\u2298": "osol", "\u2299": "odot", "\u229A": "ocir", "\u229B": "oast", "\u229D": "odash", "\u229E": "plusb", "\u229F": "minusb", "\u22A0": "timesb", "\u22A1": "sdotb", "\u22A2": "vdash", "\u22AC": "nvdash", "\u22A3": "dashv", "\u22A4": "top", "\u22A5": "bot", "\u22A7": "models", "\u22A8": "vDash", "\u22AD": "nvDash", "\u22A9": "Vdash", "\u22AE": "nVdash", "\u22AA": "Vvdash", "\u22AB": "VDash", "\u22AF": "nVDash", "\u22B0": "prurel", "\u22B2": "vltri", "\u22EA": "nltri", "\u22B3": "vrtri", "\u22EB": "nrtri", "\u22B4": "ltrie", "\u22EC": "nltrie", "\u22B4\u20D2": "nvltrie", "\u22B5": "rtrie", "\u22ED": "nrtrie", "\u22B5\u20D2": "nvrtrie", "\u22B6": "origof", "\u22B7": "imof", "\u22B8": "mumap", "\u22B9": "hercon", "\u22BA": "intcal", "\u22BB": "veebar", "\u22BD": "barvee", "\u22BE": "angrtvb", "\u22BF": "lrtri", "\u22C0": "Wedge", "\u22C1": "Vee", "\u22C2": "xcap", "\u22C3": "xcup", "\u22C4": "diam", "\u22C5": "sdot", "\u22C6": "Star", "\u22C7": "divonx", "\u22C8": "bowtie", "\u22C9": "ltimes", "\u22CA": "rtimes", "\u22CB": "lthree", "\u22CC": "rthree", "\u22CD": "bsime", "\u22CE": "cuvee", "\u22CF": "cuwed", "\u22D0": "Sub", "\u22D1": "Sup", "\u22D2": "Cap", "\u22D3": "Cup", "\u22D4": "fork", "\u22D5": "epar", "\u22D6": "ltdot", "\u22D7": "gtdot", "\u22D8": "Ll", "\u22D8\u0338": "nLl", "\u22D9": "Gg", "\u22D9\u0338": "nGg", "\u22DA\uFE00": "lesg", "\u22DA": "leg", "\u22DB": "gel", "\u22DB\uFE00": "gesl", "\u22DE": "cuepr", "\u22DF": "cuesc", "\u22E6": "lnsim", "\u22E7": "gnsim", "\u22E8": "prnsim", "\u22E9": "scnsim", "\u22EE": "vellip", "\u22EF": "ctdot", "\u22F0": "utdot", "\u22F1": "dtdot", "\u22F2": "disin", "\u22F3": "isinsv", "\u22F4": "isins", "\u22F5": "isindot", "\u22F5\u0338": "notindot", "\u22F6": "notinvc", "\u22F7": "notinvb", "\u22F9": "isinE", "\u22F9\u0338": "notinE", "\u22FA": "nisd", "\u22FB": "xnis", "\u22FC": "nis", "\u22FD": "notnivc", "\u22FE": "notnivb", "\u2305": "barwed", "\u2306": "Barwed", "\u230C": "drcrop", "\u230D": "dlcrop", "\u230E": "urcrop", "\u230F": "ulcrop", "\u2310": "bnot", "\u2312": "profline", "\u2313": "profsurf", "\u2315": "telrec", "\u2316": "target", "\u231C": "ulcorn", "\u231D": "urcorn", "\u231E": "dlcorn", "\u231F": "drcorn", "\u2322": "frown", "\u2323": "smile", "\u232D": "cylcty", "\u232E": "profalar", "\u2336": "topbot", "\u233D": "ovbar", "\u233F": "solbar", "\u237C": "angzarr", "\u23B0": "lmoust", "\u23B1": "rmoust", "\u23B4": "tbrk", "\u23B5": "bbrk", "\u23B6": "bbrktbrk", "\u23DC": "OverParenthesis", "\u23DD": "UnderParenthesis", "\u23DE": "OverBrace", "\u23DF": "UnderBrace", "\u23E2": "trpezium", "\u23E7": "elinters", "\u2423": "blank", "\u2500": "boxh", "\u2502": "boxv", "\u250C": "boxdr", "\u2510": "boxdl", "\u2514": "boxur", "\u2518": "boxul", "\u251C": "boxvr", "\u2524": "boxvl", "\u252C": "boxhd", "\u2534": "boxhu", "\u253C": "boxvh", "\u2550": "boxH", "\u2551": "boxV", "\u2552": "boxdR", "\u2553": "boxDr", "\u2554": "boxDR", "\u2555": "boxdL", "\u2556": "boxDl", "\u2557": "boxDL", "\u2558": "boxuR", "\u2559": "boxUr", "\u255A": "boxUR", "\u255B": "boxuL", "\u255C": "boxUl", "\u255D": "boxUL", "\u255E": "boxvR", "\u255F": "boxVr", "\u2560": "boxVR", "\u2561": "boxvL", "\u2562": "boxVl", "\u2563": "boxVL", "\u2564": "boxHd", "\u2565": "boxhD", "\u2566": "boxHD", "\u2567": "boxHu", "\u2568": "boxhU", "\u2569": "boxHU", "\u256A": "boxvH", "\u256B": "boxVh", "\u256C": "boxVH", "\u2580": "uhblk", "\u2584": "lhblk", "\u2588": "block", "\u2591": "blk14", "\u2592": "blk12", "\u2593": "blk34", "\u25A1": "squ", "\u25AA": "squf", "\u25AB": "EmptyVerySmallSquare", "\u25AD": "rect", "\u25AE": "marker", "\u25B1": "fltns", "\u25B3": "xutri", "\u25B4": "utrif", "\u25B5": "utri", "\u25B8": "rtrif", "\u25B9": "rtri", "\u25BD": "xdtri", "\u25BE": "dtrif", "\u25BF": "dtri", "\u25C2": "ltrif", "\u25C3": "ltri", "\u25CA": "loz", "\u25CB": "cir", "\u25EC": "tridot", "\u25EF": "xcirc", "\u25F8": "ultri", "\u25F9": "urtri", "\u25FA": "lltri", "\u25FB": "EmptySmallSquare", "\u25FC": "FilledSmallSquare", "\u2605": "starf", "\u2606": "star", "\u260E": "phone", "\u2640": "female", "\u2642": "male", "\u2660": "spades", "\u2663": "clubs", "\u2665": "hearts", "\u2666": "diams", "\u266A": "sung", "\u2713": "check", "\u2717": "cross", "\u2720": "malt", "\u2736": "sext", "\u2758": "VerticalSeparator", "\u27C8": "bsolhsub", "\u27C9": "suphsol", "\u27F5": "xlarr", "\u27F6": "xrarr", "\u27F7": "xharr", "\u27F8": "xlArr", "\u27F9": "xrArr", "\u27FA": "xhArr", "\u27FC": "xmap", "\u27FF": "dzigrarr", "\u2902": "nvlArr", "\u2903": "nvrArr", "\u2904": "nvHarr", "\u2905": "Map", "\u290C": "lbarr", "\u290D": "rbarr", "\u290E": "lBarr", "\u290F": "rBarr", "\u2910": "RBarr", "\u2911": "DDotrahd", "\u2912": "UpArrowBar", "\u2913": "DownArrowBar", "\u2916": "Rarrtl", "\u2919": "latail", "\u291A": "ratail", "\u291B": "lAtail", "\u291C": "rAtail", "\u291D": "larrfs", "\u291E": "rarrfs", "\u291F": "larrbfs", "\u2920": "rarrbfs", "\u2923": "nwarhk", "\u2924": "nearhk", "\u2925": "searhk", "\u2926": "swarhk", "\u2927": "nwnear", "\u2928": "toea", "\u2929": "tosa", "\u292A": "swnwar", "\u2933": "rarrc", "\u2933\u0338": "nrarrc", "\u2935": "cudarrr", "\u2936": "ldca", "\u2937": "rdca", "\u2938": "cudarrl", "\u2939": "larrpl", "\u293C": "curarrm", "\u293D": "cularrp", "\u2945": "rarrpl", "\u2948": "harrcir", "\u2949": "Uarrocir", "\u294A": "lurdshar", "\u294B": "ldrushar", "\u294E": "LeftRightVector", "\u294F": "RightUpDownVector", "\u2950": "DownLeftRightVector", "\u2951": "LeftUpDownVector", "\u2952": "LeftVectorBar", "\u2953": "RightVectorBar", "\u2954": "RightUpVectorBar", "\u2955": "RightDownVectorBar", "\u2956": "DownLeftVectorBar", "\u2957": "DownRightVectorBar", "\u2958": "LeftUpVectorBar", "\u2959": "LeftDownVectorBar", "\u295A": "LeftTeeVector", "\u295B": "RightTeeVector", "\u295C": "RightUpTeeVector", "\u295D": "RightDownTeeVector", "\u295E": "DownLeftTeeVector", "\u295F": "DownRightTeeVector", "\u2960": "LeftUpTeeVector", "\u2961": "LeftDownTeeVector", "\u2962": "lHar", "\u2963": "uHar", "\u2964": "rHar", "\u2965": "dHar", "\u2966": "luruhar", "\u2967": "ldrdhar", "\u2968": "ruluhar", "\u2969": "rdldhar", "\u296A": "lharul", "\u296B": "llhard", "\u296C": "rharul", "\u296D": "lrhard", "\u296E": "udhar", "\u296F": "duhar", "\u2970": "RoundImplies", "\u2971": "erarr", "\u2972": "simrarr", "\u2973": "larrsim", "\u2974": "rarrsim", "\u2975": "rarrap", "\u2976": "ltlarr", "\u2978": "gtrarr", "\u2979": "subrarr", "\u297B": "suplarr", "\u297C": "lfisht", "\u297D": "rfisht", "\u297E": "ufisht", "\u297F": "dfisht", "\u299A": "vzigzag", "\u299C": "vangrt", "\u299D": "angrtvbd", "\u29A4": "ange", "\u29A5": "range", "\u29A6": "dwangle", "\u29A7": "uwangle", "\u29A8": "angmsdaa", "\u29A9": "angmsdab", "\u29AA": "angmsdac", "\u29AB": "angmsdad", "\u29AC": "angmsdae", "\u29AD": "angmsdaf", "\u29AE": "angmsdag", "\u29AF": "angmsdah", "\u29B0": "bemptyv", "\u29B1": "demptyv", "\u29B2": "cemptyv", "\u29B3": "raemptyv", "\u29B4": "laemptyv", "\u29B5": "ohbar", "\u29B6": "omid", "\u29B7": "opar", "\u29B9": "operp", "\u29BB": "olcross", "\u29BC": "odsold", "\u29BE": "olcir", "\u29BF": "ofcir", "\u29C0": "olt", "\u29C1": "ogt", "\u29C2": "cirscir", "\u29C3": "cirE", "\u29C4": "solb", "\u29C5": "bsolb", "\u29C9": "boxbox", "\u29CD": "trisb", "\u29CE": "rtriltri", "\u29CF": "LeftTriangleBar", "\u29CF\u0338": "NotLeftTriangleBar", "\u29D0": "RightTriangleBar", "\u29D0\u0338": "NotRightTriangleBar", "\u29DC": "iinfin", "\u29DD": "infintie", "\u29DE": "nvinfin", "\u29E3": "eparsl", "\u29E4": "smeparsl", "\u29E5": "eqvparsl", "\u29EB": "lozf", "\u29F4": "RuleDelayed", "\u29F6": "dsol", "\u2A00": "xodot", "\u2A01": "xoplus", "\u2A02": "xotime", "\u2A04": "xuplus", "\u2A06": "xsqcup", "\u2A0D": "fpartint", "\u2A10": "cirfnint", "\u2A11": "awint", "\u2A12": "rppolint", "\u2A13": "scpolint", "\u2A14": "npolint", "\u2A15": "pointint", "\u2A16": "quatint", "\u2A17": "intlarhk", "\u2A22": "pluscir", "\u2A23": "plusacir", "\u2A24": "simplus", "\u2A25": "plusdu", "\u2A26": "plussim", "\u2A27": "plustwo", "\u2A29": "mcomma", "\u2A2A": "minusdu", "\u2A2D": "loplus", "\u2A2E": "roplus", "\u2A2F": "Cross", "\u2A30": "timesd", "\u2A31": "timesbar", "\u2A33": "smashp", "\u2A34": "lotimes", "\u2A35": "rotimes", "\u2A36": "otimesas", "\u2A37": "Otimes", "\u2A38": "odiv", "\u2A39": "triplus", "\u2A3A": "triminus", "\u2A3B": "tritime", "\u2A3C": "iprod", "\u2A3F": "amalg", "\u2A40": "capdot", "\u2A42": "ncup", "\u2A43": "ncap", "\u2A44": "capand", "\u2A45": "cupor", "\u2A46": "cupcap", "\u2A47": "capcup", "\u2A48": "cupbrcap", "\u2A49": "capbrcup", "\u2A4A": "cupcup", "\u2A4B": "capcap", "\u2A4C": "ccups", "\u2A4D": "ccaps", "\u2A50": "ccupssm", "\u2A53": "And", "\u2A54": "Or", "\u2A55": "andand", "\u2A56": "oror", "\u2A57": "orslope", "\u2A58": "andslope", "\u2A5A": "andv", "\u2A5B": "orv", "\u2A5C": "andd", "\u2A5D": "ord", "\u2A5F": "wedbar", "\u2A66": "sdote", "\u2A6A": "simdot", "\u2A6D": "congdot", "\u2A6D\u0338": "ncongdot", "\u2A6E": "easter", "\u2A6F": "apacir", "\u2A70": "apE", "\u2A70\u0338": "napE", "\u2A71": "eplus", "\u2A72": "pluse", "\u2A73": "Esim", "\u2A77": "eDDot", "\u2A78": "equivDD", "\u2A79": "ltcir", "\u2A7A": "gtcir", "\u2A7B": "ltquest", "\u2A7C": "gtquest", "\u2A7D": "les", "\u2A7D\u0338": "nles", "\u2A7E": "ges", "\u2A7E\u0338": "nges", "\u2A7F": "lesdot", "\u2A80": "gesdot", "\u2A81": "lesdoto", "\u2A82": "gesdoto", "\u2A83": "lesdotor", "\u2A84": "gesdotol", "\u2A85": "lap", "\u2A86": "gap", "\u2A87": "lne", "\u2A88": "gne", "\u2A89": "lnap", "\u2A8A": "gnap", "\u2A8B": "lEg", "\u2A8C": "gEl", "\u2A8D": "lsime", "\u2A8E": "gsime", "\u2A8F": "lsimg", "\u2A90": "gsiml", "\u2A91": "lgE", "\u2A92": "glE", "\u2A93": "lesges", "\u2A94": "gesles", "\u2A95": "els", "\u2A96": "egs", "\u2A97": "elsdot", "\u2A98": "egsdot", "\u2A99": "el", "\u2A9A": "eg", "\u2A9D": "siml", "\u2A9E": "simg", "\u2A9F": "simlE", "\u2AA0": "simgE", "\u2AA1": "LessLess", "\u2AA1\u0338": "NotNestedLessLess", "\u2AA2": "GreaterGreater", "\u2AA2\u0338": "NotNestedGreaterGreater", "\u2AA4": "glj", "\u2AA5": "gla", "\u2AA6": "ltcc", "\u2AA7": "gtcc", "\u2AA8": "lescc", "\u2AA9": "gescc", "\u2AAA": "smt", "\u2AAB": "lat", "\u2AAC": "smte", "\u2AAC\uFE00": "smtes", "\u2AAD": "late", "\u2AAD\uFE00": "lates", "\u2AAE": "bumpE", "\u2AAF": "pre", "\u2AAF\u0338": "npre", "\u2AB0": "sce", "\u2AB0\u0338": "nsce", "\u2AB3": "prE", "\u2AB4": "scE", "\u2AB5": "prnE", "\u2AB6": "scnE", "\u2AB7": "prap", "\u2AB8": "scap", "\u2AB9": "prnap", "\u2ABA": "scnap", "\u2ABB": "Pr", "\u2ABC": "Sc", "\u2ABD": "subdot", "\u2ABE": "supdot", "\u2ABF": "subplus", "\u2AC0": "supplus", "\u2AC1": "submult", "\u2AC2": "supmult", "\u2AC3": "subedot", "\u2AC4": "supedot", "\u2AC5": "subE", "\u2AC5\u0338": "nsubE", "\u2AC6": "supE", "\u2AC6\u0338": "nsupE", "\u2AC7": "subsim", "\u2AC8": "supsim", "\u2ACB\uFE00": "vsubnE", "\u2ACB": "subnE", "\u2ACC\uFE00": "vsupnE", "\u2ACC": "supnE", "\u2ACF": "csub", "\u2AD0": "csup", "\u2AD1": "csube", "\u2AD2": "csupe", "\u2AD3": "subsup", "\u2AD4": "supsub", "\u2AD5": "subsub", "\u2AD6": "supsup", "\u2AD7": "suphsub", "\u2AD8": "supdsub", "\u2AD9": "forkv", "\u2ADA": "topfork", "\u2ADB": "mlcp", "\u2AE4": "Dashv", "\u2AE6": "Vdashl", "\u2AE7": "Barv", "\u2AE8": "vBar", "\u2AE9": "vBarv", "\u2AEB": "Vbar", "\u2AEC": "Not", "\u2AED": "bNot", "\u2AEE": "rnmid", "\u2AEF": "cirmid", "\u2AF0": "midcir", "\u2AF1": "topcir", "\u2AF2": "nhpar", "\u2AF3": "parsim", "\u2AFD": "parsl", "\u2AFD\u20E5": "nparsl", "\u266D": "flat", "\u266E": "natur", "\u266F": "sharp", "\xA4": "curren", "\xA2": "cent", "$": "dollar", "\xA3": "pound", "\xA5": "yen", "\u20AC": "euro", "\xB9": "sup1", "\xBD": "half", "\u2153": "frac13", "\xBC": "frac14", "\u2155": "frac15", "\u2159": "frac16", "\u215B": "frac18", "\xB2": "sup2", "\u2154": "frac23", "\u2156": "frac25", "\xB3": "sup3", "\xBE": "frac34", "\u2157": "frac35", "\u215C": "frac38", "\u2158": "frac45", "\u215A": "frac56", "\u215D": "frac58", "\u215E": "frac78", "\u{1D4B6}": "ascr", "\u{1D552}": "aopf", "\u{1D51E}": "afr", "\u{1D538}": "Aopf", "\u{1D504}": "Afr", "\u{1D49C}": "Ascr", "\xAA": "ordf", "\xE1": "aacute", "\xC1": "Aacute", "\xE0": "agrave", "\xC0": "Agrave", "\u0103": "abreve", "\u0102": "Abreve", "\xE2": "acirc", "\xC2": "Acirc", "\xE5": "aring", "\xC5": "angst", "\xE4": "auml", "\xC4": "Auml", "\xE3": "atilde", "\xC3": "Atilde", "\u0105": "aogon", "\u0104": "Aogon", "\u0101": "amacr", "\u0100": "Amacr", "\xE6": "aelig", "\xC6": "AElig", "\u{1D4B7}": "bscr", "\u{1D553}": "bopf", "\u{1D51F}": "bfr", "\u{1D539}": "Bopf", "\u212C": "Bscr", "\u{1D505}": "Bfr", "\u{1D520}": "cfr", "\u{1D4B8}": "cscr", "\u{1D554}": "copf", "\u212D": "Cfr", "\u{1D49E}": "Cscr", "\u2102": "Copf", "\u0107": "cacute", "\u0106": "Cacute", "\u0109": "ccirc", "\u0108": "Ccirc", "\u010D": "ccaron", "\u010C": "Ccaron", "\u010B": "cdot", "\u010A": "Cdot", "\xE7": "ccedil", "\xC7": "Ccedil", "\u2105": "incare", "\u{1D521}": "dfr", "\u2146": "dd", "\u{1D555}": "dopf", "\u{1D4B9}": "dscr", "\u{1D49F}": "Dscr", "\u{1D507}": "Dfr", "\u2145": "DD", "\u{1D53B}": "Dopf", "\u010F": "dcaron", "\u010E": "Dcaron", "\u0111": "dstrok", "\u0110": "Dstrok", "\xF0": "eth", "\xD0": "ETH", "\u2147": "ee", "\u212F": "escr", "\u{1D522}": "efr", "\u{1D556}": "eopf", "\u2130": "Escr", "\u{1D508}": "Efr", "\u{1D53C}": "Eopf", "\xE9": "eacute", "\xC9": "Eacute", "\xE8": "egrave", "\xC8": "Egrave", "\xEA": "ecirc", "\xCA": "Ecirc", "\u011B": "ecaron", "\u011A": "Ecaron", "\xEB": "euml", "\xCB": "Euml", "\u0117": "edot", "\u0116": "Edot", "\u0119": "eogon", "\u0118": "Eogon", "\u0113": "emacr", "\u0112": "Emacr", "\u{1D523}": "ffr", "\u{1D557}": "fopf", "\u{1D4BB}": "fscr", "\u{1D509}": "Ffr", "\u{1D53D}": "Fopf", "\u2131": "Fscr", "\uFB00": "fflig", "\uFB03": "ffilig", "\uFB04": "ffllig", "\uFB01": "filig", "fj": "fjlig", "\uFB02": "fllig", "\u0192": "fnof", "\u210A": "gscr", "\u{1D558}": "gopf", "\u{1D524}": "gfr", "\u{1D4A2}": "Gscr", "\u{1D53E}": "Gopf", "\u{1D50A}": "Gfr", "\u01F5": "gacute", "\u011F": "gbreve", "\u011E": "Gbreve", "\u011D": "gcirc", "\u011C": "Gcirc", "\u0121": "gdot", "\u0120": "Gdot", "\u0122": "Gcedil", "\u{1D525}": "hfr", "\u210E": "planckh", "\u{1D4BD}": "hscr", "\u{1D559}": "hopf", "\u210B": "Hscr", "\u210C": "Hfr", "\u210D": "Hopf", "\u0125": "hcirc", "\u0124": "Hcirc", "\u210F": "hbar", "\u0127": "hstrok", "\u0126": "Hstrok", "\u{1D55A}": "iopf", "\u{1D526}": "ifr", "\u{1D4BE}": "iscr", "\u2148": "ii", "\u{1D540}": "Iopf", "\u2110": "Iscr", "\u2111": "Im", "\xED": "iacute", "\xCD": "Iacute", "\xEC": "igrave", "\xCC": "Igrave", "\xEE": "icirc", "\xCE": "Icirc", "\xEF": "iuml", "\xCF": "Iuml", "\u0129": "itilde", "\u0128": "Itilde", "\u0130": "Idot", "\u012F": "iogon", "\u012E": "Iogon", "\u012B": "imacr", "\u012A": "Imacr", "\u0133": "ijlig", "\u0132": "IJlig", "\u0131": "imath", "\u{1D4BF}": "jscr", "\u{1D55B}": "jopf", "\u{1D527}": "jfr", "\u{1D4A5}": "Jscr", "\u{1D50D}": "Jfr", "\u{1D541}": "Jopf", "\u0135": "jcirc", "\u0134": "Jcirc", "\u0237": "jmath", "\u{1D55C}": "kopf", "\u{1D4C0}": "kscr", "\u{1D528}": "kfr", "\u{1D4A6}": "Kscr", "\u{1D542}": "Kopf", "\u{1D50E}": "Kfr", "\u0137": "kcedil", "\u0136": "Kcedil", "\u{1D529}": "lfr", "\u{1D4C1}": "lscr", "\u2113": "ell", "\u{1D55D}": "lopf", "\u2112": "Lscr", "\u{1D50F}": "Lfr", "\u{1D543}": "Lopf", "\u013A": "lacute", "\u0139": "Lacute", "\u013E": "lcaron", "\u013D": "Lcaron", "\u013C": "lcedil", "\u013B": "Lcedil", "\u0142": "lstrok", "\u0141": "Lstrok", "\u0140": "lmidot", "\u013F": "Lmidot", "\u{1D52A}": "mfr", "\u{1D55E}": "mopf", "\u{1D4C2}": "mscr", "\u{1D510}": "Mfr", "\u{1D544}": "Mopf", "\u2133": "Mscr", "\u{1D52B}": "nfr", "\u{1D55F}": "nopf", "\u{1D4C3}": "nscr", "\u2115": "Nopf", "\u{1D4A9}": "Nscr", "\u{1D511}": "Nfr", "\u0144": "nacute", "\u0143": "Nacute", "\u0148": "ncaron", "\u0147": "Ncaron", "\xF1": "ntilde", "\xD1": "Ntilde", "\u0146": "ncedil", "\u0145": "Ncedil", "\u2116": "numero", "\u014B": "eng", "\u014A": "ENG", "\u{1D560}": "oopf", "\u{1D52C}": "ofr", "\u2134": "oscr", "\u{1D4AA}": "Oscr", "\u{1D512}": "Ofr", "\u{1D546}": "Oopf", "\xBA": "ordm", "\xF3": "oacute", "\xD3": "Oacute", "\xF2": "ograve", "\xD2": "Ograve", "\xF4": "ocirc", "\xD4": "Ocirc", "\xF6": "ouml", "\xD6": "Ouml", "\u0151": "odblac", "\u0150": "Odblac", "\xF5": "otilde", "\xD5": "Otilde", "\xF8": "oslash", "\xD8": "Oslash", "\u014D": "omacr", "\u014C": "Omacr", "\u0153": "oelig", "\u0152": "OElig", "\u{1D52D}": "pfr", "\u{1D4C5}": "pscr", "\u{1D561}": "popf", "\u2119": "Popf", "\u{1D513}": "Pfr", "\u{1D4AB}": "Pscr", "\u{1D562}": "qopf", "\u{1D52E}": "qfr", "\u{1D4C6}": "qscr", "\u{1D4AC}": "Qscr", "\u{1D514}": "Qfr", "\u211A": "Qopf", "\u0138": "kgreen", "\u{1D52F}": "rfr", "\u{1D563}": "ropf", "\u{1D4C7}": "rscr", "\u211B": "Rscr", "\u211C": "Re", "\u211D": "Ropf", "\u0155": "racute", "\u0154": "Racute", "\u0159": "rcaron", "\u0158": "Rcaron", "\u0157": "rcedil", "\u0156": "Rcedil", "\u{1D564}": "sopf", "\u{1D4C8}": "sscr", "\u{1D530}": "sfr", "\u{1D54A}": "Sopf", "\u{1D516}": "Sfr", "\u{1D4AE}": "Sscr", "\u24C8": "oS", "\u015B": "sacute", "\u015A": "Sacute", "\u015D": "scirc", "\u015C": "Scirc", "\u0161": "scaron", "\u0160": "Scaron", "\u015F": "scedil", "\u015E": "Scedil", "\xDF": "szlig", "\u{1D531}": "tfr", "\u{1D4C9}": "tscr", "\u{1D565}": "topf", "\u{1D4AF}": "Tscr", "\u{1D517}": "Tfr", "\u{1D54B}": "Topf", "\u0165": "tcaron", "\u0164": "Tcaron", "\u0163": "tcedil", "\u0162": "Tcedil", "\u2122": "trade", "\u0167": "tstrok", "\u0166": "Tstrok", "\u{1D4CA}": "uscr", "\u{1D566}": "uopf", "\u{1D532}": "ufr", "\u{1D54C}": "Uopf", "\u{1D518}": "Ufr", "\u{1D4B0}": "Uscr", "\xFA": "uacute", "\xDA": "Uacute", "\xF9": "ugrave", "\xD9": "Ugrave", "\u016D": "ubreve", "\u016C": "Ubreve", "\xFB": "ucirc", "\xDB": "Ucirc", "\u016F": "uring", "\u016E": "Uring", "\xFC": "uuml", "\xDC": "Uuml", "\u0171": "udblac", "\u0170": "Udblac", "\u0169": "utilde", "\u0168": "Utilde", "\u0173": "uogon", "\u0172": "Uogon", "\u016B": "umacr", "\u016A": "Umacr", "\u{1D533}": "vfr", "\u{1D567}": "vopf", "\u{1D4CB}": "vscr", "\u{1D519}": "Vfr", "\u{1D54D}": "Vopf", "\u{1D4B1}": "Vscr", "\u{1D568}": "wopf", "\u{1D4CC}": "wscr", "\u{1D534}": "wfr", "\u{1D4B2}": "Wscr", "\u{1D54E}": "Wopf", "\u{1D51A}": "Wfr", "\u0175": "wcirc", "\u0174": "Wcirc", "\u{1D535}": "xfr", "\u{1D4CD}": "xscr", "\u{1D569}": "xopf", "\u{1D54F}": "Xopf", "\u{1D51B}": "Xfr", "\u{1D4B3}": "Xscr", "\u{1D536}": "yfr", "\u{1D4CE}": "yscr", "\u{1D56A}": "yopf", "\u{1D4B4}": "Yscr", "\u{1D51C}": "Yfr", "\u{1D550}": "Yopf", "\xFD": "yacute", "\xDD": "Yacute", "\u0177": "ycirc", "\u0176": "Ycirc", "\xFF": "yuml", "\u0178": "Yuml", "\u{1D4CF}": "zscr", "\u{1D537}": "zfr", "\u{1D56B}": "zopf", "\u2128": "Zfr", "\u2124": "Zopf", "\u{1D4B5}": "Zscr", "\u017A": "zacute", "\u0179": "Zacute", "\u017E": "zcaron", "\u017D": "Zcaron", "\u017C": "zdot", "\u017B": "Zdot", "\u01B5": "imped", "\xFE": "thorn", "\xDE": "THORN", "\u0149": "napos", "\u03B1": "alpha", "\u0391": "Alpha", "\u03B2": "beta", "\u0392": "Beta", "\u03B3": "gamma", "\u0393": "Gamma", "\u03B4": "delta", "\u0394": "Delta", "\u03B5": "epsi", "\u03F5": "epsiv", "\u0395": "Epsilon", "\u03DD": "gammad", "\u03DC": "Gammad", "\u03B6": "zeta", "\u0396": "Zeta", "\u03B7": "eta", "\u0397": "Eta", "\u03B8": "theta", "\u03D1": "thetav", "\u0398": "Theta", "\u03B9": "iota", "\u0399": "Iota", "\u03BA": "kappa", "\u03F0": "kappav", "\u039A": "Kappa", "\u03BB": "lambda", "\u039B": "Lambda", "\u03BC": "mu", "\xB5": "micro", "\u039C": "Mu", "\u03BD": "nu", "\u039D": "Nu", "\u03BE": "xi", "\u039E": "Xi", "\u03BF": "omicron", "\u039F": "Omicron", "\u03C0": "pi", "\u03D6": "piv", "\u03A0": "Pi", "\u03C1": "rho", "\u03F1": "rhov", "\u03A1": "Rho", "\u03C3": "sigma", "\u03A3": "Sigma", "\u03C2": "sigmaf", "\u03C4": "tau", "\u03A4": "Tau", "\u03C5": "upsi", "\u03A5": "Upsilon", "\u03D2": "Upsi", "\u03C6": "phi", "\u03D5": "phiv", "\u03A6": "Phi", "\u03C7": "chi", "\u03A7": "Chi", "\u03C8": "psi", "\u03A8": "Psi", "\u03C9": "omega", "\u03A9": "ohm", "\u0430": "acy", "\u0410": "Acy", "\u0431": "bcy", "\u0411": "Bcy", "\u0432": "vcy", "\u0412": "Vcy", "\u0433": "gcy", "\u0413": "Gcy", "\u0453": "gjcy", "\u0403": "GJcy", "\u0434": "dcy", "\u0414": "Dcy", "\u0452": "djcy", "\u0402": "DJcy", "\u0435": "iecy", "\u0415": "IEcy", "\u0451": "iocy", "\u0401": "IOcy", "\u0454": "jukcy", "\u0404": "Jukcy", "\u0436": "zhcy", "\u0416": "ZHcy", "\u0437": "zcy", "\u0417": "Zcy", "\u0455": "dscy", "\u0405": "DScy", "\u0438": "icy", "\u0418": "Icy", "\u0456": "iukcy", "\u0406": "Iukcy", "\u0457": "yicy", "\u0407": "YIcy", "\u0439": "jcy", "\u0419": "Jcy", "\u0458": "jsercy", "\u0408": "Jsercy", "\u043A": "kcy", "\u041A": "Kcy", "\u045C": "kjcy", "\u040C": "KJcy", "\u043B": "lcy", "\u041B": "Lcy", "\u0459": "ljcy", "\u0409": "LJcy", "\u043C": "mcy", "\u041C": "Mcy", "\u043D": "ncy", "\u041D": "Ncy", "\u045A": "njcy", "\u040A": "NJcy", "\u043E": "ocy", "\u041E": "Ocy", "\u043F": "pcy", "\u041F": "Pcy", "\u0440": "rcy", "\u0420": "Rcy", "\u0441": "scy", "\u0421": "Scy", "\u0442": "tcy", "\u0422": "Tcy", "\u045B": "tshcy", "\u040B": "TSHcy", "\u0443": "ucy", "\u0423": "Ucy", "\u045E": "ubrcy", "\u040E": "Ubrcy", "\u0444": "fcy", "\u0424": "Fcy", "\u0445": "khcy", "\u0425": "KHcy", "\u0446": "tscy", "\u0426": "TScy", "\u0447": "chcy", "\u0427": "CHcy", "\u045F": "dzcy", "\u040F": "DZcy", "\u0448": "shcy", "\u0428": "SHcy", "\u0449": "shchcy", "\u0429": "SHCHcy", "\u044A": "hardcy", "\u042A": "HARDcy", "\u044B": "ycy", "\u042B": "Ycy", "\u044C": "softcy", "\u042C": "SOFTcy", "\u044D": "ecy", "\u042D": "Ecy", "\u044E": "yucy", "\u042E": "YUcy", "\u044F": "yacy", "\u042F": "YAcy", "\u2135": "aleph", "\u2136": "beth", "\u2137": "gimel", "\u2138": "daleth" };
-      var regexEscape = /["&'<>`]/g;
-      var escapeMap = {
-        '"': "&quot;",
-        "&": "&amp;",
-        "'": "&#x27;",
-        "<": "&lt;",
-        ">": "&gt;",
-        "`": "&#x60;"
-      };
-      var regexInvalidEntity = /&#(?:[xX][^a-fA-F0-9]|[^0-9xX])/;
-      var regexInvalidRawCodePoint = /[\0-\x08\x0B\x0E-\x1F\x7F-\x9F\uFDD0-\uFDEF\uFFFE\uFFFF]|[\uD83F\uD87F\uD8BF\uD8FF\uD93F\uD97F\uD9BF\uD9FF\uDA3F\uDA7F\uDABF\uDAFF\uDB3F\uDB7F\uDBBF\uDBFF][\uDFFE\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/;
-      var regexDecode = /&(CounterClockwiseContourIntegral|DoubleLongLeftRightArrow|ClockwiseContourIntegral|NotNestedGreaterGreater|NotSquareSupersetEqual|DiacriticalDoubleAcute|NotRightTriangleEqual|NotSucceedsSlantEqual|NotPrecedesSlantEqual|CloseCurlyDoubleQuote|NegativeVeryThinSpace|DoubleContourIntegral|FilledVerySmallSquare|CapitalDifferentialD|OpenCurlyDoubleQuote|EmptyVerySmallSquare|NestedGreaterGreater|DoubleLongRightArrow|NotLeftTriangleEqual|NotGreaterSlantEqual|ReverseUpEquilibrium|DoubleLeftRightArrow|NotSquareSubsetEqual|NotDoubleVerticalBar|RightArrowLeftArrow|NotGreaterFullEqual|NotRightTriangleBar|SquareSupersetEqual|DownLeftRightVector|DoubleLongLeftArrow|leftrightsquigarrow|LeftArrowRightArrow|NegativeMediumSpace|blacktriangleright|RightDownVectorBar|PrecedesSlantEqual|RightDoubleBracket|SucceedsSlantEqual|NotLeftTriangleBar|RightTriangleEqual|SquareIntersection|RightDownTeeVector|ReverseEquilibrium|NegativeThickSpace|longleftrightarrow|Longleftrightarrow|LongLeftRightArrow|DownRightTeeVector|DownRightVectorBar|GreaterSlantEqual|SquareSubsetEqual|LeftDownVectorBar|LeftDoubleBracket|VerticalSeparator|rightleftharpoons|NotGreaterGreater|NotSquareSuperset|blacktriangleleft|blacktriangledown|NegativeThinSpace|LeftDownTeeVector|NotLessSlantEqual|leftrightharpoons|DoubleUpDownArrow|DoubleVerticalBar|LeftTriangleEqual|FilledSmallSquare|twoheadrightarrow|NotNestedLessLess|DownLeftTeeVector|DownLeftVectorBar|RightAngleBracket|NotTildeFullEqual|NotReverseElement|RightUpDownVector|DiacriticalTilde|NotSucceedsTilde|circlearrowright|NotPrecedesEqual|rightharpoondown|DoubleRightArrow|NotSucceedsEqual|NonBreakingSpace|NotRightTriangle|LessEqualGreater|RightUpTeeVector|LeftAngleBracket|GreaterFullEqual|DownArrowUpArrow|RightUpVectorBar|twoheadleftarrow|GreaterEqualLess|downharpoonright|RightTriangleBar|ntrianglerighteq|NotSupersetEqual|LeftUpDownVector|DiacriticalAcute|rightrightarrows|vartriangleright|UpArrowDownArrow|DiacriticalGrave|UnderParenthesis|EmptySmallSquare|LeftUpVectorBar|leftrightarrows|DownRightVector|downharpoonleft|trianglerighteq|ShortRightArrow|OverParenthesis|DoubleLeftArrow|DoubleDownArrow|NotSquareSubset|bigtriangledown|ntrianglelefteq|UpperRightArrow|curvearrowright|vartriangleleft|NotLeftTriangle|nleftrightarrow|LowerRightArrow|NotHumpDownHump|NotGreaterTilde|rightthreetimes|LeftUpTeeVector|NotGreaterEqual|straightepsilon|LeftTriangleBar|rightsquigarrow|ContourIntegral|rightleftarrows|CloseCurlyQuote|RightDownVector|LeftRightVector|nLeftrightarrow|leftharpoondown|circlearrowleft|SquareSuperset|OpenCurlyQuote|hookrightarrow|HorizontalLine|DiacriticalDot|NotLessGreater|ntriangleright|DoubleRightTee|InvisibleComma|InvisibleTimes|LowerLeftArrow|DownLeftVector|NotSubsetEqual|curvearrowleft|trianglelefteq|NotVerticalBar|TildeFullEqual|downdownarrows|NotGreaterLess|RightTeeVector|ZeroWidthSpace|looparrowright|LongRightArrow|doublebarwedge|ShortLeftArrow|ShortDownArrow|RightVectorBar|GreaterGreater|ReverseElement|rightharpoonup|LessSlantEqual|leftthreetimes|upharpoonright|rightarrowtail|LeftDownVector|Longrightarrow|NestedLessLess|UpperLeftArrow|nshortparallel|leftleftarrows|leftrightarrow|Leftrightarrow|LeftRightArrow|longrightarrow|upharpoonleft|RightArrowBar|ApplyFunction|LeftTeeVector|leftarrowtail|NotEqualTilde|varsubsetneqq|varsupsetneqq|RightTeeArrow|SucceedsEqual|SucceedsTilde|LeftVectorBar|SupersetEqual|hookleftarrow|DifferentialD|VerticalTilde|VeryThinSpace|blacktriangle|bigtriangleup|LessFullEqual|divideontimes|leftharpoonup|UpEquilibrium|ntriangleleft|RightTriangle|measuredangle|shortparallel|longleftarrow|Longleftarrow|LongLeftArrow|DoubleLeftTee|Poincareplane|PrecedesEqual|triangleright|DoubleUpArrow|RightUpVector|fallingdotseq|looparrowleft|PrecedesTilde|NotTildeEqual|NotTildeTilde|smallsetminus|Proportional|triangleleft|triangledown|UnderBracket|NotHumpEqual|exponentiale|ExponentialE|NotLessTilde|HilbertSpace|RightCeiling|blacklozenge|varsupsetneq|HumpDownHump|GreaterEqual|VerticalLine|LeftTeeArrow|NotLessEqual|DownTeeArrow|LeftTriangle|varsubsetneq|Intersection|NotCongruent|DownArrowBar|LeftUpVector|LeftArrowBar|risingdotseq|GreaterTilde|RoundImplies|SquareSubset|ShortUpArrow|NotSuperset|quaternions|precnapprox|backepsilon|preccurlyeq|OverBracket|blacksquare|MediumSpace|VerticalBar|circledcirc|circleddash|CircleMinus|CircleTimes|LessGreater|curlyeqprec|curlyeqsucc|diamondsuit|UpDownArrow|Updownarrow|RuleDelayed|Rrightarrow|updownarrow|RightVector|nRightarrow|nrightarrow|eqslantless|LeftCeiling|Equilibrium|SmallCircle|expectation|NotSucceeds|thickapprox|GreaterLess|SquareUnion|NotPrecedes|NotLessLess|straightphi|succnapprox|succcurlyeq|SubsetEqual|sqsupseteq|Proportion|Laplacetrf|ImaginaryI|supsetneqq|NotGreater|gtreqqless|NotElement|ThickSpace|TildeEqual|TildeTilde|Fouriertrf|rmoustache|EqualTilde|eqslantgtr|UnderBrace|LeftVector|UpArrowBar|nLeftarrow|nsubseteqq|subsetneqq|nsupseteqq|nleftarrow|succapprox|lessapprox|UpTeeArrow|upuparrows|curlywedge|lesseqqgtr|varepsilon|varnothing|RightFloor|complement|CirclePlus|sqsubseteq|Lleftarrow|circledast|RightArrow|Rightarrow|rightarrow|lmoustache|Bernoullis|precapprox|mapstoleft|mapstodown|longmapsto|dotsquare|downarrow|DoubleDot|nsubseteq|supsetneq|leftarrow|nsupseteq|subsetneq|ThinSpace|ngeqslant|subseteqq|HumpEqual|NotSubset|triangleq|NotCupCap|lesseqgtr|heartsuit|TripleDot|Leftarrow|Coproduct|Congruent|varpropto|complexes|gvertneqq|LeftArrow|LessTilde|supseteqq|MinusPlus|CircleDot|nleqslant|NotExists|gtreqless|nparallel|UnionPlus|LeftFloor|checkmark|CenterDot|centerdot|Mellintrf|gtrapprox|bigotimes|OverBrace|spadesuit|therefore|pitchfork|rationals|PlusMinus|Backslash|Therefore|DownBreve|backsimeq|backprime|DownArrow|nshortmid|Downarrow|lvertneqq|eqvparsl|imagline|imagpart|infintie|integers|Integral|intercal|LessLess|Uarrocir|intlarhk|sqsupset|angmsdaf|sqsubset|llcorner|vartheta|cupbrcap|lnapprox|Superset|SuchThat|succnsim|succneqq|angmsdag|biguplus|curlyvee|trpezium|Succeeds|NotTilde|bigwedge|angmsdah|angrtvbd|triminus|cwconint|fpartint|lrcorner|smeparsl|subseteq|urcorner|lurdshar|laemptyv|DDotrahd|approxeq|ldrushar|awconint|mapstoup|backcong|shortmid|triangle|geqslant|gesdotol|timesbar|circledR|circledS|setminus|multimap|naturals|scpolint|ncongdot|RightTee|boxminus|gnapprox|boxtimes|andslope|thicksim|angmsdaa|varsigma|cirfnint|rtriltri|angmsdab|rppolint|angmsdac|barwedge|drbkarow|clubsuit|thetasym|bsolhsub|capbrcup|dzigrarr|doteqdot|DotEqual|dotminus|UnderBar|NotEqual|realpart|otimesas|ulcorner|hksearow|hkswarow|parallel|PartialD|elinters|emptyset|plusacir|bbrktbrk|angmsdad|pointint|bigoplus|angmsdae|Precedes|bigsqcup|varkappa|notindot|supseteq|precneqq|precnsim|profalar|profline|profsurf|leqslant|lesdotor|raemptyv|subplus|notnivb|notnivc|subrarr|zigrarr|vzigzag|submult|subedot|Element|between|cirscir|larrbfs|larrsim|lotimes|lbrksld|lbrkslu|lozenge|ldrdhar|dbkarow|bigcirc|epsilon|simrarr|simplus|ltquest|Epsilon|luruhar|gtquest|maltese|npolint|eqcolon|npreceq|bigodot|ddagger|gtrless|bnequiv|harrcir|ddotseq|equivDD|backsim|demptyv|nsqsube|nsqsupe|Upsilon|nsubset|upsilon|minusdu|nsucceq|swarrow|nsupset|coloneq|searrow|boxplus|napprox|natural|asympeq|alefsym|congdot|nearrow|bigstar|diamond|supplus|tritime|LeftTee|nvinfin|triplus|NewLine|nvltrie|nvrtrie|nwarrow|nexists|Diamond|ruluhar|Implies|supmult|angzarr|suplarr|suphsub|questeq|because|digamma|Because|olcross|bemptyv|omicron|Omicron|rotimes|NoBreak|intprod|angrtvb|orderof|uwangle|suphsol|lesdoto|orslope|DownTee|realine|cudarrl|rdldhar|OverBar|supedot|lessdot|supdsub|topfork|succsim|rbrkslu|rbrksld|pertenk|cudarrr|isindot|planckh|lessgtr|pluscir|gesdoto|plussim|plustwo|lesssim|cularrp|rarrsim|Cayleys|notinva|notinvb|notinvc|UpArrow|Uparrow|uparrow|NotLess|dwangle|precsim|Product|curarrm|Cconint|dotplus|rarrbfs|ccupssm|Cedilla|cemptyv|notniva|quatint|frac35|frac38|frac45|frac56|frac58|frac78|tridot|xoplus|gacute|gammad|Gammad|lfisht|lfloor|bigcup|sqsupe|gbreve|Gbreve|lharul|sqsube|sqcups|Gcedil|apacir|llhard|lmidot|Lmidot|lmoust|andand|sqcaps|approx|Abreve|spades|circeq|tprime|divide|topcir|Assign|topbot|gesdot|divonx|xuplus|timesd|gesles|atilde|solbar|SOFTcy|loplus|timesb|lowast|lowbar|dlcorn|dlcrop|softcy|dollar|lparlt|thksim|lrhard|Atilde|lsaquo|smashp|bigvee|thinsp|wreath|bkarow|lsquor|lstrok|Lstrok|lthree|ltimes|ltlarr|DotDot|simdot|ltrPar|weierp|xsqcup|angmsd|sigmav|sigmaf|zeetrf|Zcaron|zcaron|mapsto|vsupne|thetav|cirmid|marker|mcomma|Zacute|vsubnE|there4|gtlPar|vsubne|bottom|gtrarr|SHCHcy|shchcy|midast|midcir|middot|minusb|minusd|gtrdot|bowtie|sfrown|mnplus|models|colone|seswar|Colone|mstpos|searhk|gtrsim|nacute|Nacute|boxbox|telrec|hairsp|Tcedil|nbumpe|scnsim|ncaron|Ncaron|ncedil|Ncedil|hamilt|Scedil|nearhk|hardcy|HARDcy|tcedil|Tcaron|commat|nequiv|nesear|tcaron|target|hearts|nexist|varrho|scedil|Scaron|scaron|hellip|Sacute|sacute|hercon|swnwar|compfn|rtimes|rthree|rsquor|rsaquo|zacute|wedgeq|homtht|barvee|barwed|Barwed|rpargt|horbar|conint|swarhk|roplus|nltrie|hslash|hstrok|Hstrok|rmoust|Conint|bprime|hybull|hyphen|iacute|Iacute|supsup|supsub|supsim|varphi|coprod|brvbar|agrave|Supset|supset|igrave|Igrave|notinE|Agrave|iiiint|iinfin|copysr|wedbar|Verbar|vangrt|becaus|incare|verbar|inodot|bullet|drcorn|intcal|drcrop|cularr|vellip|Utilde|bumpeq|cupcap|dstrok|Dstrok|CupCap|cupcup|cupdot|eacute|Eacute|supdot|iquest|easter|ecaron|Ecaron|ecolon|isinsv|utilde|itilde|Itilde|curarr|succeq|Bumpeq|cacute|ulcrop|nparsl|Cacute|nprcue|egrave|Egrave|nrarrc|nrarrw|subsup|subsub|nrtrie|jsercy|nsccue|Jsercy|kappav|kcedil|Kcedil|subsim|ulcorn|nsimeq|egsdot|veebar|kgreen|capand|elsdot|Subset|subset|curren|aacute|lacute|Lacute|emptyv|ntilde|Ntilde|lagran|lambda|Lambda|capcap|Ugrave|langle|subdot|emsp13|numero|emsp14|nvdash|nvDash|nVdash|nVDash|ugrave|ufisht|nvHarr|larrfs|nvlArr|larrhk|larrlp|larrpl|nvrArr|Udblac|nwarhk|larrtl|nwnear|oacute|Oacute|latail|lAtail|sstarf|lbrace|odblac|Odblac|lbrack|udblac|odsold|eparsl|lcaron|Lcaron|ograve|Ograve|lcedil|Lcedil|Aacute|ssmile|ssetmn|squarf|ldquor|capcup|ominus|cylcty|rharul|eqcirc|dagger|rfloor|rfisht|Dagger|daleth|equals|origof|capdot|equest|dcaron|Dcaron|rdquor|oslash|Oslash|otilde|Otilde|otimes|Otimes|urcrop|Ubreve|ubreve|Yacute|Uacute|uacute|Rcedil|rcedil|urcorn|parsim|Rcaron|Vdashl|rcaron|Tstrok|percnt|period|permil|Exists|yacute|rbrack|rbrace|phmmat|ccaron|Ccaron|planck|ccedil|plankv|tstrok|female|plusdo|plusdu|ffilig|plusmn|ffllig|Ccedil|rAtail|dfisht|bernou|ratail|Rarrtl|rarrtl|angsph|rarrpl|rarrlp|rarrhk|xwedge|xotime|forall|ForAll|Vvdash|vsupnE|preceq|bigcap|frac12|frac13|frac14|primes|rarrfs|prnsim|frac15|Square|frac16|square|lesdot|frac18|frac23|propto|prurel|rarrap|rangle|puncsp|frac25|Racute|qprime|racute|lesges|frac34|abreve|AElig|eqsim|utdot|setmn|urtri|Equal|Uring|seArr|uring|searr|dashv|Dashv|mumap|nabla|iogon|Iogon|sdote|sdotb|scsim|napid|napos|equiv|natur|Acirc|dblac|erarr|nbump|iprod|erDot|ucirc|awint|esdot|angrt|ncong|isinE|scnap|Scirc|scirc|ndash|isins|Ubrcy|nearr|neArr|isinv|nedot|ubrcy|acute|Ycirc|iukcy|Iukcy|xutri|nesim|caret|jcirc|Jcirc|caron|twixt|ddarr|sccue|exist|jmath|sbquo|ngeqq|angst|ccaps|lceil|ngsim|UpTee|delta|Delta|rtrif|nharr|nhArr|nhpar|rtrie|jukcy|Jukcy|kappa|rsquo|Kappa|nlarr|nlArr|TSHcy|rrarr|aogon|Aogon|fflig|xrarr|tshcy|ccirc|nleqq|filig|upsih|nless|dharl|nlsim|fjlig|ropar|nltri|dharr|robrk|roarr|fllig|fltns|roang|rnmid|subnE|subne|lAarr|trisb|Ccirc|acirc|ccups|blank|VDash|forkv|Vdash|langd|cedil|blk12|blk14|laquo|strns|diams|notin|vDash|larrb|blk34|block|disin|uplus|vdash|vBarv|aelig|starf|Wedge|check|xrArr|lates|lbarr|lBarr|notni|lbbrk|bcong|frasl|lbrke|frown|vrtri|vprop|vnsup|gamma|Gamma|wedge|xodot|bdquo|srarr|doteq|ldquo|boxdl|boxdL|gcirc|Gcirc|boxDl|boxDL|boxdr|boxdR|boxDr|TRADE|trade|rlhar|boxDR|vnsub|npart|vltri|rlarr|boxhd|boxhD|nprec|gescc|nrarr|nrArr|boxHd|boxHD|boxhu|boxhU|nrtri|boxHu|clubs|boxHU|times|colon|Colon|gimel|xlArr|Tilde|nsime|tilde|nsmid|nspar|THORN|thorn|xlarr|nsube|nsubE|thkap|xhArr|comma|nsucc|boxul|boxuL|nsupe|nsupE|gneqq|gnsim|boxUl|boxUL|grave|boxur|boxuR|boxUr|boxUR|lescc|angle|bepsi|boxvh|varpi|boxvH|numsp|Theta|gsime|gsiml|theta|boxVh|boxVH|boxvl|gtcir|gtdot|boxvL|boxVl|boxVL|crarr|cross|Cross|nvsim|boxvr|nwarr|nwArr|sqsup|dtdot|Uogon|lhard|lharu|dtrif|ocirc|Ocirc|lhblk|duarr|odash|sqsub|Hacek|sqcup|llarr|duhar|oelig|OElig|ofcir|boxvR|uogon|lltri|boxVr|csube|uuarr|ohbar|csupe|ctdot|olarr|olcir|harrw|oline|sqcap|omacr|Omacr|omega|Omega|boxVR|aleph|lneqq|lnsim|loang|loarr|rharu|lobrk|hcirc|operp|oplus|rhard|Hcirc|orarr|Union|order|ecirc|Ecirc|cuepr|szlig|cuesc|breve|reals|eDDot|Breve|hoarr|lopar|utrif|rdquo|Umacr|umacr|efDot|swArr|ultri|alpha|rceil|ovbar|swarr|Wcirc|wcirc|smtes|smile|bsemi|lrarr|aring|parsl|lrhar|bsime|uhblk|lrtri|cupor|Aring|uharr|uharl|slarr|rbrke|bsolb|lsime|rbbrk|RBarr|lsimg|phone|rBarr|rbarr|icirc|lsquo|Icirc|emacr|Emacr|ratio|simne|plusb|simlE|simgE|simeq|pluse|ltcir|ltdot|empty|xharr|xdtri|iexcl|Alpha|ltrie|rarrw|pound|ltrif|xcirc|bumpe|prcue|bumpE|asymp|amacr|cuvee|Sigma|sigma|iiint|udhar|iiota|ijlig|IJlig|supnE|imacr|Imacr|prime|Prime|image|prnap|eogon|Eogon|rarrc|mdash|mDDot|cuwed|imath|supne|imped|Amacr|udarr|prsim|micro|rarrb|cwint|raquo|infin|eplus|range|rangd|Ucirc|radic|minus|amalg|veeeq|rAarr|epsiv|ycirc|quest|sharp|quot|zwnj|Qscr|race|qscr|Qopf|qopf|qint|rang|Rang|Zscr|zscr|Zopf|zopf|rarr|rArr|Rarr|Pscr|pscr|prop|prod|prnE|prec|ZHcy|zhcy|prap|Zeta|zeta|Popf|popf|Zdot|plus|zdot|Yuml|yuml|phiv|YUcy|yucy|Yscr|yscr|perp|Yopf|yopf|part|para|YIcy|Ouml|rcub|yicy|YAcy|rdca|ouml|osol|Oscr|rdsh|yacy|real|oscr|xvee|andd|rect|andv|Xscr|oror|ordm|ordf|xscr|ange|aopf|Aopf|rHar|Xopf|opar|Oopf|xopf|xnis|rhov|oopf|omid|xmap|oint|apid|apos|ogon|ascr|Ascr|odot|odiv|xcup|xcap|ocir|oast|nvlt|nvle|nvgt|nvge|nvap|Wscr|wscr|auml|ntlg|ntgl|nsup|nsub|nsim|Nscr|nscr|nsce|Wopf|ring|npre|wopf|npar|Auml|Barv|bbrk|Nopf|nopf|nmid|nLtv|beta|ropf|Ropf|Beta|beth|nles|rpar|nleq|bnot|bNot|nldr|NJcy|rscr|Rscr|Vscr|vscr|rsqb|njcy|bopf|nisd|Bopf|rtri|Vopf|nGtv|ngtr|vopf|boxh|boxH|boxv|nges|ngeq|boxV|bscr|scap|Bscr|bsim|Vert|vert|bsol|bull|bump|caps|cdot|ncup|scnE|ncap|nbsp|napE|Cdot|cent|sdot|Vbar|nang|vBar|chcy|Mscr|mscr|sect|semi|CHcy|Mopf|mopf|sext|circ|cire|mldr|mlcp|cirE|comp|shcy|SHcy|vArr|varr|cong|copf|Copf|copy|COPY|malt|male|macr|lvnE|cscr|ltri|sime|ltcc|simg|Cscr|siml|csub|Uuml|lsqb|lsim|uuml|csup|Lscr|lscr|utri|smid|lpar|cups|smte|lozf|darr|Lopf|Uscr|solb|lopf|sopf|Sopf|lneq|uscr|spar|dArr|lnap|Darr|dash|Sqrt|LJcy|ljcy|lHar|dHar|Upsi|upsi|diam|lesg|djcy|DJcy|leqq|dopf|Dopf|dscr|Dscr|dscy|ldsh|ldca|squf|DScy|sscr|Sscr|dsol|lcub|late|star|Star|Uopf|Larr|lArr|larr|uopf|dtri|dzcy|sube|subE|Lang|lang|Kscr|kscr|Kopf|kopf|KJcy|kjcy|KHcy|khcy|DZcy|ecir|edot|eDot|Jscr|jscr|succ|Jopf|jopf|Edot|uHar|emsp|ensp|Iuml|iuml|eopf|isin|Iscr|iscr|Eopf|epar|sung|epsi|escr|sup1|sup2|sup3|Iota|iota|supe|supE|Iopf|iopf|IOcy|iocy|Escr|esim|Esim|imof|Uarr|QUOT|uArr|uarr|euml|IEcy|iecy|Idot|Euml|euro|excl|Hscr|hscr|Hopf|hopf|TScy|tscy|Tscr|hbar|tscr|flat|tbrk|fnof|hArr|harr|half|fopf|Fopf|tdot|gvnE|fork|trie|gtcc|fscr|Fscr|gdot|gsim|Gscr|gscr|Gopf|gopf|gneq|Gdot|tosa|gnap|Topf|topf|geqq|toea|GJcy|gjcy|tint|gesl|mid|Sfr|ggg|top|ges|gla|glE|glj|geq|gne|gEl|gel|gnE|Gcy|gcy|gap|Tfr|tfr|Tcy|tcy|Hat|Tau|Ffr|tau|Tab|hfr|Hfr|ffr|Fcy|fcy|icy|Icy|iff|ETH|eth|ifr|Ifr|Eta|eta|int|Int|Sup|sup|ucy|Ucy|Sum|sum|jcy|ENG|ufr|Ufr|eng|Jcy|jfr|els|ell|egs|Efr|efr|Jfr|uml|kcy|Kcy|Ecy|ecy|kfr|Kfr|lap|Sub|sub|lat|lcy|Lcy|leg|Dot|dot|lEg|leq|les|squ|div|die|lfr|Lfr|lgE|Dfr|dfr|Del|deg|Dcy|dcy|lne|lnE|sol|loz|smt|Cup|lrm|cup|lsh|Lsh|sim|shy|map|Map|mcy|Mcy|mfr|Mfr|mho|gfr|Gfr|sfr|cir|Chi|chi|nap|Cfr|vcy|Vcy|cfr|Scy|scy|ncy|Ncy|vee|Vee|Cap|cap|nfr|scE|sce|Nfr|nge|ngE|nGg|vfr|Vfr|ngt|bot|nGt|nis|niv|Rsh|rsh|nle|nlE|bne|Bfr|bfr|nLl|nlt|nLt|Bcy|bcy|not|Not|rlm|wfr|Wfr|npr|nsc|num|ocy|ast|Ocy|ofr|xfr|Xfr|Ofr|ogt|ohm|apE|olt|Rho|ape|rho|Rfr|rfr|ord|REG|ang|reg|orv|And|and|AMP|Rcy|amp|Afr|ycy|Ycy|yen|yfr|Yfr|rcy|par|pcy|Pcy|pfr|Pfr|phi|Phi|afr|Acy|acy|zcy|Zcy|piv|acE|acd|zfr|Zfr|pre|prE|psi|Psi|qfr|Qfr|zwj|Or|ge|Gg|gt|gg|el|oS|lt|Lt|LT|Re|lg|gl|eg|ne|Im|it|le|DD|wp|wr|nu|Nu|dd|lE|Sc|sc|pi|Pi|ee|af|ll|Ll|rx|gE|xi|pm|Xi|ic|pr|Pr|in|ni|mp|mu|ac|Mu|or|ap|Gt|GT|ii);|&(Aacute|Agrave|Atilde|Ccedil|Eacute|Egrave|Iacute|Igrave|Ntilde|Oacute|Ograve|Oslash|Otilde|Uacute|Ugrave|Yacute|aacute|agrave|atilde|brvbar|ccedil|curren|divide|eacute|egrave|frac12|frac14|frac34|iacute|igrave|iquest|middot|ntilde|oacute|ograve|oslash|otilde|plusmn|uacute|ugrave|yacute|AElig|Acirc|Aring|Ecirc|Icirc|Ocirc|THORN|Ucirc|acirc|acute|aelig|aring|cedil|ecirc|icirc|iexcl|laquo|micro|ocirc|pound|raquo|szlig|thorn|times|ucirc|Auml|COPY|Euml|Iuml|Ouml|QUOT|Uuml|auml|cent|copy|euml|iuml|macr|nbsp|ordf|ordm|ouml|para|quot|sect|sup1|sup2|sup3|uuml|yuml|AMP|ETH|REG|amp|deg|eth|not|reg|shy|uml|yen|GT|LT|gt|lt)(?!;)([=a-zA-Z0-9]?)|&#([0-9]+)(;?)|&#[xX]([a-fA-F0-9]+)(;?)|&([0-9a-zA-Z]+)/g;
-      var decodeMap = { "aacute": "\xE1", "Aacute": "\xC1", "abreve": "\u0103", "Abreve": "\u0102", "ac": "\u223E", "acd": "\u223F", "acE": "\u223E\u0333", "acirc": "\xE2", "Acirc": "\xC2", "acute": "\xB4", "acy": "\u0430", "Acy": "\u0410", "aelig": "\xE6", "AElig": "\xC6", "af": "\u2061", "afr": "\u{1D51E}", "Afr": "\u{1D504}", "agrave": "\xE0", "Agrave": "\xC0", "alefsym": "\u2135", "aleph": "\u2135", "alpha": "\u03B1", "Alpha": "\u0391", "amacr": "\u0101", "Amacr": "\u0100", "amalg": "\u2A3F", "amp": "&", "AMP": "&", "and": "\u2227", "And": "\u2A53", "andand": "\u2A55", "andd": "\u2A5C", "andslope": "\u2A58", "andv": "\u2A5A", "ang": "\u2220", "ange": "\u29A4", "angle": "\u2220", "angmsd": "\u2221", "angmsdaa": "\u29A8", "angmsdab": "\u29A9", "angmsdac": "\u29AA", "angmsdad": "\u29AB", "angmsdae": "\u29AC", "angmsdaf": "\u29AD", "angmsdag": "\u29AE", "angmsdah": "\u29AF", "angrt": "\u221F", "angrtvb": "\u22BE", "angrtvbd": "\u299D", "angsph": "\u2222", "angst": "\xC5", "angzarr": "\u237C", "aogon": "\u0105", "Aogon": "\u0104", "aopf": "\u{1D552}", "Aopf": "\u{1D538}", "ap": "\u2248", "apacir": "\u2A6F", "ape": "\u224A", "apE": "\u2A70", "apid": "\u224B", "apos": "'", "ApplyFunction": "\u2061", "approx": "\u2248", "approxeq": "\u224A", "aring": "\xE5", "Aring": "\xC5", "ascr": "\u{1D4B6}", "Ascr": "\u{1D49C}", "Assign": "\u2254", "ast": "*", "asymp": "\u2248", "asympeq": "\u224D", "atilde": "\xE3", "Atilde": "\xC3", "auml": "\xE4", "Auml": "\xC4", "awconint": "\u2233", "awint": "\u2A11", "backcong": "\u224C", "backepsilon": "\u03F6", "backprime": "\u2035", "backsim": "\u223D", "backsimeq": "\u22CD", "Backslash": "\u2216", "Barv": "\u2AE7", "barvee": "\u22BD", "barwed": "\u2305", "Barwed": "\u2306", "barwedge": "\u2305", "bbrk": "\u23B5", "bbrktbrk": "\u23B6", "bcong": "\u224C", "bcy": "\u0431", "Bcy": "\u0411", "bdquo": "\u201E", "becaus": "\u2235", "because": "\u2235", "Because": "\u2235", "bemptyv": "\u29B0", "bepsi": "\u03F6", "bernou": "\u212C", "Bernoullis": "\u212C", "beta": "\u03B2", "Beta": "\u0392", "beth": "\u2136", "between": "\u226C", "bfr": "\u{1D51F}", "Bfr": "\u{1D505}", "bigcap": "\u22C2", "bigcirc": "\u25EF", "bigcup": "\u22C3", "bigodot": "\u2A00", "bigoplus": "\u2A01", "bigotimes": "\u2A02", "bigsqcup": "\u2A06", "bigstar": "\u2605", "bigtriangledown": "\u25BD", "bigtriangleup": "\u25B3", "biguplus": "\u2A04", "bigvee": "\u22C1", "bigwedge": "\u22C0", "bkarow": "\u290D", "blacklozenge": "\u29EB", "blacksquare": "\u25AA", "blacktriangle": "\u25B4", "blacktriangledown": "\u25BE", "blacktriangleleft": "\u25C2", "blacktriangleright": "\u25B8", "blank": "\u2423", "blk12": "\u2592", "blk14": "\u2591", "blk34": "\u2593", "block": "\u2588", "bne": "=\u20E5", "bnequiv": "\u2261\u20E5", "bnot": "\u2310", "bNot": "\u2AED", "bopf": "\u{1D553}", "Bopf": "\u{1D539}", "bot": "\u22A5", "bottom": "\u22A5", "bowtie": "\u22C8", "boxbox": "\u29C9", "boxdl": "\u2510", "boxdL": "\u2555", "boxDl": "\u2556", "boxDL": "\u2557", "boxdr": "\u250C", "boxdR": "\u2552", "boxDr": "\u2553", "boxDR": "\u2554", "boxh": "\u2500", "boxH": "\u2550", "boxhd": "\u252C", "boxhD": "\u2565", "boxHd": "\u2564", "boxHD": "\u2566", "boxhu": "\u2534", "boxhU": "\u2568", "boxHu": "\u2567", "boxHU": "\u2569", "boxminus": "\u229F", "boxplus": "\u229E", "boxtimes": "\u22A0", "boxul": "\u2518", "boxuL": "\u255B", "boxUl": "\u255C", "boxUL": "\u255D", "boxur": "\u2514", "boxuR": "\u2558", "boxUr": "\u2559", "boxUR": "\u255A", "boxv": "\u2502", "boxV": "\u2551", "boxvh": "\u253C", "boxvH": "\u256A", "boxVh": "\u256B", "boxVH": "\u256C", "boxvl": "\u2524", "boxvL": "\u2561", "boxVl": "\u2562", "boxVL": "\u2563", "boxvr": "\u251C", "boxvR": "\u255E", "boxVr": "\u255F", "boxVR": "\u2560", "bprime": "\u2035", "breve": "\u02D8", "Breve": "\u02D8", "brvbar": "\xA6", "bscr": "\u{1D4B7}", "Bscr": "\u212C", "bsemi": "\u204F", "bsim": "\u223D", "bsime": "\u22CD", "bsol": "\\", "bsolb": "\u29C5", "bsolhsub": "\u27C8", "bull": "\u2022", "bullet": "\u2022", "bump": "\u224E", "bumpe": "\u224F", "bumpE": "\u2AAE", "bumpeq": "\u224F", "Bumpeq": "\u224E", "cacute": "\u0107", "Cacute": "\u0106", "cap": "\u2229", "Cap": "\u22D2", "capand": "\u2A44", "capbrcup": "\u2A49", "capcap": "\u2A4B", "capcup": "\u2A47", "capdot": "\u2A40", "CapitalDifferentialD": "\u2145", "caps": "\u2229\uFE00", "caret": "\u2041", "caron": "\u02C7", "Cayleys": "\u212D", "ccaps": "\u2A4D", "ccaron": "\u010D", "Ccaron": "\u010C", "ccedil": "\xE7", "Ccedil": "\xC7", "ccirc": "\u0109", "Ccirc": "\u0108", "Cconint": "\u2230", "ccups": "\u2A4C", "ccupssm": "\u2A50", "cdot": "\u010B", "Cdot": "\u010A", "cedil": "\xB8", "Cedilla": "\xB8", "cemptyv": "\u29B2", "cent": "\xA2", "centerdot": "\xB7", "CenterDot": "\xB7", "cfr": "\u{1D520}", "Cfr": "\u212D", "chcy": "\u0447", "CHcy": "\u0427", "check": "\u2713", "checkmark": "\u2713", "chi": "\u03C7", "Chi": "\u03A7", "cir": "\u25CB", "circ": "\u02C6", "circeq": "\u2257", "circlearrowleft": "\u21BA", "circlearrowright": "\u21BB", "circledast": "\u229B", "circledcirc": "\u229A", "circleddash": "\u229D", "CircleDot": "\u2299", "circledR": "\xAE", "circledS": "\u24C8", "CircleMinus": "\u2296", "CirclePlus": "\u2295", "CircleTimes": "\u2297", "cire": "\u2257", "cirE": "\u29C3", "cirfnint": "\u2A10", "cirmid": "\u2AEF", "cirscir": "\u29C2", "ClockwiseContourIntegral": "\u2232", "CloseCurlyDoubleQuote": "\u201D", "CloseCurlyQuote": "\u2019", "clubs": "\u2663", "clubsuit": "\u2663", "colon": ":", "Colon": "\u2237", "colone": "\u2254", "Colone": "\u2A74", "coloneq": "\u2254", "comma": ",", "commat": "@", "comp": "\u2201", "compfn": "\u2218", "complement": "\u2201", "complexes": "\u2102", "cong": "\u2245", "congdot": "\u2A6D", "Congruent": "\u2261", "conint": "\u222E", "Conint": "\u222F", "ContourIntegral": "\u222E", "copf": "\u{1D554}", "Copf": "\u2102", "coprod": "\u2210", "Coproduct": "\u2210", "copy": "\xA9", "COPY": "\xA9", "copysr": "\u2117", "CounterClockwiseContourIntegral": "\u2233", "crarr": "\u21B5", "cross": "\u2717", "Cross": "\u2A2F", "cscr": "\u{1D4B8}", "Cscr": "\u{1D49E}", "csub": "\u2ACF", "csube": "\u2AD1", "csup": "\u2AD0", "csupe": "\u2AD2", "ctdot": "\u22EF", "cudarrl": "\u2938", "cudarrr": "\u2935", "cuepr": "\u22DE", "cuesc": "\u22DF", "cularr": "\u21B6", "cularrp": "\u293D", "cup": "\u222A", "Cup": "\u22D3", "cupbrcap": "\u2A48", "cupcap": "\u2A46", "CupCap": "\u224D", "cupcup": "\u2A4A", "cupdot": "\u228D", "cupor": "\u2A45", "cups": "\u222A\uFE00", "curarr": "\u21B7", "curarrm": "\u293C", "curlyeqprec": "\u22DE", "curlyeqsucc": "\u22DF", "curlyvee": "\u22CE", "curlywedge": "\u22CF", "curren": "\xA4", "curvearrowleft": "\u21B6", "curvearrowright": "\u21B7", "cuvee": "\u22CE", "cuwed": "\u22CF", "cwconint": "\u2232", "cwint": "\u2231", "cylcty": "\u232D", "dagger": "\u2020", "Dagger": "\u2021", "daleth": "\u2138", "darr": "\u2193", "dArr": "\u21D3", "Darr": "\u21A1", "dash": "\u2010", "dashv": "\u22A3", "Dashv": "\u2AE4", "dbkarow": "\u290F", "dblac": "\u02DD", "dcaron": "\u010F", "Dcaron": "\u010E", "dcy": "\u0434", "Dcy": "\u0414", "dd": "\u2146", "DD": "\u2145", "ddagger": "\u2021", "ddarr": "\u21CA", "DDotrahd": "\u2911", "ddotseq": "\u2A77", "deg": "\xB0", "Del": "\u2207", "delta": "\u03B4", "Delta": "\u0394", "demptyv": "\u29B1", "dfisht": "\u297F", "dfr": "\u{1D521}", "Dfr": "\u{1D507}", "dHar": "\u2965", "dharl": "\u21C3", "dharr": "\u21C2", "DiacriticalAcute": "\xB4", "DiacriticalDot": "\u02D9", "DiacriticalDoubleAcute": "\u02DD", "DiacriticalGrave": "`", "DiacriticalTilde": "\u02DC", "diam": "\u22C4", "diamond": "\u22C4", "Diamond": "\u22C4", "diamondsuit": "\u2666", "diams": "\u2666", "die": "\xA8", "DifferentialD": "\u2146", "digamma": "\u03DD", "disin": "\u22F2", "div": "\xF7", "divide": "\xF7", "divideontimes": "\u22C7", "divonx": "\u22C7", "djcy": "\u0452", "DJcy": "\u0402", "dlcorn": "\u231E", "dlcrop": "\u230D", "dollar": "$", "dopf": "\u{1D555}", "Dopf": "\u{1D53B}", "dot": "\u02D9", "Dot": "\xA8", "DotDot": "\u20DC", "doteq": "\u2250", "doteqdot": "\u2251", "DotEqual": "\u2250", "dotminus": "\u2238", "dotplus": "\u2214", "dotsquare": "\u22A1", "doublebarwedge": "\u2306", "DoubleContourIntegral": "\u222F", "DoubleDot": "\xA8", "DoubleDownArrow": "\u21D3", "DoubleLeftArrow": "\u21D0", "DoubleLeftRightArrow": "\u21D4", "DoubleLeftTee": "\u2AE4", "DoubleLongLeftArrow": "\u27F8", "DoubleLongLeftRightArrow": "\u27FA", "DoubleLongRightArrow": "\u27F9", "DoubleRightArrow": "\u21D2", "DoubleRightTee": "\u22A8", "DoubleUpArrow": "\u21D1", "DoubleUpDownArrow": "\u21D5", "DoubleVerticalBar": "\u2225", "downarrow": "\u2193", "Downarrow": "\u21D3", "DownArrow": "\u2193", "DownArrowBar": "\u2913", "DownArrowUpArrow": "\u21F5", "DownBreve": "\u0311", "downdownarrows": "\u21CA", "downharpoonleft": "\u21C3", "downharpoonright": "\u21C2", "DownLeftRightVector": "\u2950", "DownLeftTeeVector": "\u295E", "DownLeftVector": "\u21BD", "DownLeftVectorBar": "\u2956", "DownRightTeeVector": "\u295F", "DownRightVector": "\u21C1", "DownRightVectorBar": "\u2957", "DownTee": "\u22A4", "DownTeeArrow": "\u21A7", "drbkarow": "\u2910", "drcorn": "\u231F", "drcrop": "\u230C", "dscr": "\u{1D4B9}", "Dscr": "\u{1D49F}", "dscy": "\u0455", "DScy": "\u0405", "dsol": "\u29F6", "dstrok": "\u0111", "Dstrok": "\u0110", "dtdot": "\u22F1", "dtri": "\u25BF", "dtrif": "\u25BE", "duarr": "\u21F5", "duhar": "\u296F", "dwangle": "\u29A6", "dzcy": "\u045F", "DZcy": "\u040F", "dzigrarr": "\u27FF", "eacute": "\xE9", "Eacute": "\xC9", "easter": "\u2A6E", "ecaron": "\u011B", "Ecaron": "\u011A", "ecir": "\u2256", "ecirc": "\xEA", "Ecirc": "\xCA", "ecolon": "\u2255", "ecy": "\u044D", "Ecy": "\u042D", "eDDot": "\u2A77", "edot": "\u0117", "eDot": "\u2251", "Edot": "\u0116", "ee": "\u2147", "efDot": "\u2252", "efr": "\u{1D522}", "Efr": "\u{1D508}", "eg": "\u2A9A", "egrave": "\xE8", "Egrave": "\xC8", "egs": "\u2A96", "egsdot": "\u2A98", "el": "\u2A99", "Element": "\u2208", "elinters": "\u23E7", "ell": "\u2113", "els": "\u2A95", "elsdot": "\u2A97", "emacr": "\u0113", "Emacr": "\u0112", "empty": "\u2205", "emptyset": "\u2205", "EmptySmallSquare": "\u25FB", "emptyv": "\u2205", "EmptyVerySmallSquare": "\u25AB", "emsp": "\u2003", "emsp13": "\u2004", "emsp14": "\u2005", "eng": "\u014B", "ENG": "\u014A", "ensp": "\u2002", "eogon": "\u0119", "Eogon": "\u0118", "eopf": "\u{1D556}", "Eopf": "\u{1D53C}", "epar": "\u22D5", "eparsl": "\u29E3", "eplus": "\u2A71", "epsi": "\u03B5", "epsilon": "\u03B5", "Epsilon": "\u0395", "epsiv": "\u03F5", "eqcirc": "\u2256", "eqcolon": "\u2255", "eqsim": "\u2242", "eqslantgtr": "\u2A96", "eqslantless": "\u2A95", "Equal": "\u2A75", "equals": "=", "EqualTilde": "\u2242", "equest": "\u225F", "Equilibrium": "\u21CC", "equiv": "\u2261", "equivDD": "\u2A78", "eqvparsl": "\u29E5", "erarr": "\u2971", "erDot": "\u2253", "escr": "\u212F", "Escr": "\u2130", "esdot": "\u2250", "esim": "\u2242", "Esim": "\u2A73", "eta": "\u03B7", "Eta": "\u0397", "eth": "\xF0", "ETH": "\xD0", "euml": "\xEB", "Euml": "\xCB", "euro": "\u20AC", "excl": "!", "exist": "\u2203", "Exists": "\u2203", "expectation": "\u2130", "exponentiale": "\u2147", "ExponentialE": "\u2147", "fallingdotseq": "\u2252", "fcy": "\u0444", "Fcy": "\u0424", "female": "\u2640", "ffilig": "\uFB03", "fflig": "\uFB00", "ffllig": "\uFB04", "ffr": "\u{1D523}", "Ffr": "\u{1D509}", "filig": "\uFB01", "FilledSmallSquare": "\u25FC", "FilledVerySmallSquare": "\u25AA", "fjlig": "fj", "flat": "\u266D", "fllig": "\uFB02", "fltns": "\u25B1", "fnof": "\u0192", "fopf": "\u{1D557}", "Fopf": "\u{1D53D}", "forall": "\u2200", "ForAll": "\u2200", "fork": "\u22D4", "forkv": "\u2AD9", "Fouriertrf": "\u2131", "fpartint": "\u2A0D", "frac12": "\xBD", "frac13": "\u2153", "frac14": "\xBC", "frac15": "\u2155", "frac16": "\u2159", "frac18": "\u215B", "frac23": "\u2154", "frac25": "\u2156", "frac34": "\xBE", "frac35": "\u2157", "frac38": "\u215C", "frac45": "\u2158", "frac56": "\u215A", "frac58": "\u215D", "frac78": "\u215E", "frasl": "\u2044", "frown": "\u2322", "fscr": "\u{1D4BB}", "Fscr": "\u2131", "gacute": "\u01F5", "gamma": "\u03B3", "Gamma": "\u0393", "gammad": "\u03DD", "Gammad": "\u03DC", "gap": "\u2A86", "gbreve": "\u011F", "Gbreve": "\u011E", "Gcedil": "\u0122", "gcirc": "\u011D", "Gcirc": "\u011C", "gcy": "\u0433", "Gcy": "\u0413", "gdot": "\u0121", "Gdot": "\u0120", "ge": "\u2265", "gE": "\u2267", "gel": "\u22DB", "gEl": "\u2A8C", "geq": "\u2265", "geqq": "\u2267", "geqslant": "\u2A7E", "ges": "\u2A7E", "gescc": "\u2AA9", "gesdot": "\u2A80", "gesdoto": "\u2A82", "gesdotol": "\u2A84", "gesl": "\u22DB\uFE00", "gesles": "\u2A94", "gfr": "\u{1D524}", "Gfr": "\u{1D50A}", "gg": "\u226B", "Gg": "\u22D9", "ggg": "\u22D9", "gimel": "\u2137", "gjcy": "\u0453", "GJcy": "\u0403", "gl": "\u2277", "gla": "\u2AA5", "glE": "\u2A92", "glj": "\u2AA4", "gnap": "\u2A8A", "gnapprox": "\u2A8A", "gne": "\u2A88", "gnE": "\u2269", "gneq": "\u2A88", "gneqq": "\u2269", "gnsim": "\u22E7", "gopf": "\u{1D558}", "Gopf": "\u{1D53E}", "grave": "`", "GreaterEqual": "\u2265", "GreaterEqualLess": "\u22DB", "GreaterFullEqual": "\u2267", "GreaterGreater": "\u2AA2", "GreaterLess": "\u2277", "GreaterSlantEqual": "\u2A7E", "GreaterTilde": "\u2273", "gscr": "\u210A", "Gscr": "\u{1D4A2}", "gsim": "\u2273", "gsime": "\u2A8E", "gsiml": "\u2A90", "gt": ">", "Gt": "\u226B", "GT": ">", "gtcc": "\u2AA7", "gtcir": "\u2A7A", "gtdot": "\u22D7", "gtlPar": "\u2995", "gtquest": "\u2A7C", "gtrapprox": "\u2A86", "gtrarr": "\u2978", "gtrdot": "\u22D7", "gtreqless": "\u22DB", "gtreqqless": "\u2A8C", "gtrless": "\u2277", "gtrsim": "\u2273", "gvertneqq": "\u2269\uFE00", "gvnE": "\u2269\uFE00", "Hacek": "\u02C7", "hairsp": "\u200A", "half": "\xBD", "hamilt": "\u210B", "hardcy": "\u044A", "HARDcy": "\u042A", "harr": "\u2194", "hArr": "\u21D4", "harrcir": "\u2948", "harrw": "\u21AD", "Hat": "^", "hbar": "\u210F", "hcirc": "\u0125", "Hcirc": "\u0124", "hearts": "\u2665", "heartsuit": "\u2665", "hellip": "\u2026", "hercon": "\u22B9", "hfr": "\u{1D525}", "Hfr": "\u210C", "HilbertSpace": "\u210B", "hksearow": "\u2925", "hkswarow": "\u2926", "hoarr": "\u21FF", "homtht": "\u223B", "hookleftarrow": "\u21A9", "hookrightarrow": "\u21AA", "hopf": "\u{1D559}", "Hopf": "\u210D", "horbar": "\u2015", "HorizontalLine": "\u2500", "hscr": "\u{1D4BD}", "Hscr": "\u210B", "hslash": "\u210F", "hstrok": "\u0127", "Hstrok": "\u0126", "HumpDownHump": "\u224E", "HumpEqual": "\u224F", "hybull": "\u2043", "hyphen": "\u2010", "iacute": "\xED", "Iacute": "\xCD", "ic": "\u2063", "icirc": "\xEE", "Icirc": "\xCE", "icy": "\u0438", "Icy": "\u0418", "Idot": "\u0130", "iecy": "\u0435", "IEcy": "\u0415", "iexcl": "\xA1", "iff": "\u21D4", "ifr": "\u{1D526}", "Ifr": "\u2111", "igrave": "\xEC", "Igrave": "\xCC", "ii": "\u2148", "iiiint": "\u2A0C", "iiint": "\u222D", "iinfin": "\u29DC", "iiota": "\u2129", "ijlig": "\u0133", "IJlig": "\u0132", "Im": "\u2111", "imacr": "\u012B", "Imacr": "\u012A", "image": "\u2111", "ImaginaryI": "\u2148", "imagline": "\u2110", "imagpart": "\u2111", "imath": "\u0131", "imof": "\u22B7", "imped": "\u01B5", "Implies": "\u21D2", "in": "\u2208", "incare": "\u2105", "infin": "\u221E", "infintie": "\u29DD", "inodot": "\u0131", "int": "\u222B", "Int": "\u222C", "intcal": "\u22BA", "integers": "\u2124", "Integral": "\u222B", "intercal": "\u22BA", "Intersection": "\u22C2", "intlarhk": "\u2A17", "intprod": "\u2A3C", "InvisibleComma": "\u2063", "InvisibleTimes": "\u2062", "iocy": "\u0451", "IOcy": "\u0401", "iogon": "\u012F", "Iogon": "\u012E", "iopf": "\u{1D55A}", "Iopf": "\u{1D540}", "iota": "\u03B9", "Iota": "\u0399", "iprod": "\u2A3C", "iquest": "\xBF", "iscr": "\u{1D4BE}", "Iscr": "\u2110", "isin": "\u2208", "isindot": "\u22F5", "isinE": "\u22F9", "isins": "\u22F4", "isinsv": "\u22F3", "isinv": "\u2208", "it": "\u2062", "itilde": "\u0129", "Itilde": "\u0128", "iukcy": "\u0456", "Iukcy": "\u0406", "iuml": "\xEF", "Iuml": "\xCF", "jcirc": "\u0135", "Jcirc": "\u0134", "jcy": "\u0439", "Jcy": "\u0419", "jfr": "\u{1D527}", "Jfr": "\u{1D50D}", "jmath": "\u0237", "jopf": "\u{1D55B}", "Jopf": "\u{1D541}", "jscr": "\u{1D4BF}", "Jscr": "\u{1D4A5}", "jsercy": "\u0458", "Jsercy": "\u0408", "jukcy": "\u0454", "Jukcy": "\u0404", "kappa": "\u03BA", "Kappa": "\u039A", "kappav": "\u03F0", "kcedil": "\u0137", "Kcedil": "\u0136", "kcy": "\u043A", "Kcy": "\u041A", "kfr": "\u{1D528}", "Kfr": "\u{1D50E}", "kgreen": "\u0138", "khcy": "\u0445", "KHcy": "\u0425", "kjcy": "\u045C", "KJcy": "\u040C", "kopf": "\u{1D55C}", "Kopf": "\u{1D542}", "kscr": "\u{1D4C0}", "Kscr": "\u{1D4A6}", "lAarr": "\u21DA", "lacute": "\u013A", "Lacute": "\u0139", "laemptyv": "\u29B4", "lagran": "\u2112", "lambda": "\u03BB", "Lambda": "\u039B", "lang": "\u27E8", "Lang": "\u27EA", "langd": "\u2991", "langle": "\u27E8", "lap": "\u2A85", "Laplacetrf": "\u2112", "laquo": "\xAB", "larr": "\u2190", "lArr": "\u21D0", "Larr": "\u219E", "larrb": "\u21E4", "larrbfs": "\u291F", "larrfs": "\u291D", "larrhk": "\u21A9", "larrlp": "\u21AB", "larrpl": "\u2939", "larrsim": "\u2973", "larrtl": "\u21A2", "lat": "\u2AAB", "latail": "\u2919", "lAtail": "\u291B", "late": "\u2AAD", "lates": "\u2AAD\uFE00", "lbarr": "\u290C", "lBarr": "\u290E", "lbbrk": "\u2772", "lbrace": "{", "lbrack": "[", "lbrke": "\u298B", "lbrksld": "\u298F", "lbrkslu": "\u298D", "lcaron": "\u013E", "Lcaron": "\u013D", "lcedil": "\u013C", "Lcedil": "\u013B", "lceil": "\u2308", "lcub": "{", "lcy": "\u043B", "Lcy": "\u041B", "ldca": "\u2936", "ldquo": "\u201C", "ldquor": "\u201E", "ldrdhar": "\u2967", "ldrushar": "\u294B", "ldsh": "\u21B2", "le": "\u2264", "lE": "\u2266", "LeftAngleBracket": "\u27E8", "leftarrow": "\u2190", "Leftarrow": "\u21D0", "LeftArrow": "\u2190", "LeftArrowBar": "\u21E4", "LeftArrowRightArrow": "\u21C6", "leftarrowtail": "\u21A2", "LeftCeiling": "\u2308", "LeftDoubleBracket": "\u27E6", "LeftDownTeeVector": "\u2961", "LeftDownVector": "\u21C3", "LeftDownVectorBar": "\u2959", "LeftFloor": "\u230A", "leftharpoondown": "\u21BD", "leftharpoonup": "\u21BC", "leftleftarrows": "\u21C7", "leftrightarrow": "\u2194", "Leftrightarrow": "\u21D4", "LeftRightArrow": "\u2194", "leftrightarrows": "\u21C6", "leftrightharpoons": "\u21CB", "leftrightsquigarrow": "\u21AD", "LeftRightVector": "\u294E", "LeftTee": "\u22A3", "LeftTeeArrow": "\u21A4", "LeftTeeVector": "\u295A", "leftthreetimes": "\u22CB", "LeftTriangle": "\u22B2", "LeftTriangleBar": "\u29CF", "LeftTriangleEqual": "\u22B4", "LeftUpDownVector": "\u2951", "LeftUpTeeVector": "\u2960", "LeftUpVector": "\u21BF", "LeftUpVectorBar": "\u2958", "LeftVector": "\u21BC", "LeftVectorBar": "\u2952", "leg": "\u22DA", "lEg": "\u2A8B", "leq": "\u2264", "leqq": "\u2266", "leqslant": "\u2A7D", "les": "\u2A7D", "lescc": "\u2AA8", "lesdot": "\u2A7F", "lesdoto": "\u2A81", "lesdotor": "\u2A83", "lesg": "\u22DA\uFE00", "lesges": "\u2A93", "lessapprox": "\u2A85", "lessdot": "\u22D6", "lesseqgtr": "\u22DA", "lesseqqgtr": "\u2A8B", "LessEqualGreater": "\u22DA", "LessFullEqual": "\u2266", "LessGreater": "\u2276", "lessgtr": "\u2276", "LessLess": "\u2AA1", "lesssim": "\u2272", "LessSlantEqual": "\u2A7D", "LessTilde": "\u2272", "lfisht": "\u297C", "lfloor": "\u230A", "lfr": "\u{1D529}", "Lfr": "\u{1D50F}", "lg": "\u2276", "lgE": "\u2A91", "lHar": "\u2962", "lhard": "\u21BD", "lharu": "\u21BC", "lharul": "\u296A", "lhblk": "\u2584", "ljcy": "\u0459", "LJcy": "\u0409", "ll": "\u226A", "Ll": "\u22D8", "llarr": "\u21C7", "llcorner": "\u231E", "Lleftarrow": "\u21DA", "llhard": "\u296B", "lltri": "\u25FA", "lmidot": "\u0140", "Lmidot": "\u013F", "lmoust": "\u23B0", "lmoustache": "\u23B0", "lnap": "\u2A89", "lnapprox": "\u2A89", "lne": "\u2A87", "lnE": "\u2268", "lneq": "\u2A87", "lneqq": "\u2268", "lnsim": "\u22E6", "loang": "\u27EC", "loarr": "\u21FD", "lobrk": "\u27E6", "longleftarrow": "\u27F5", "Longleftarrow": "\u27F8", "LongLeftArrow": "\u27F5", "longleftrightarrow": "\u27F7", "Longleftrightarrow": "\u27FA", "LongLeftRightArrow": "\u27F7", "longmapsto": "\u27FC", "longrightarrow": "\u27F6", "Longrightarrow": "\u27F9", "LongRightArrow": "\u27F6", "looparrowleft": "\u21AB", "looparrowright": "\u21AC", "lopar": "\u2985", "lopf": "\u{1D55D}", "Lopf": "\u{1D543}", "loplus": "\u2A2D", "lotimes": "\u2A34", "lowast": "\u2217", "lowbar": "_", "LowerLeftArrow": "\u2199", "LowerRightArrow": "\u2198", "loz": "\u25CA", "lozenge": "\u25CA", "lozf": "\u29EB", "lpar": "(", "lparlt": "\u2993", "lrarr": "\u21C6", "lrcorner": "\u231F", "lrhar": "\u21CB", "lrhard": "\u296D", "lrm": "\u200E", "lrtri": "\u22BF", "lsaquo": "\u2039", "lscr": "\u{1D4C1}", "Lscr": "\u2112", "lsh": "\u21B0", "Lsh": "\u21B0", "lsim": "\u2272", "lsime": "\u2A8D", "lsimg": "\u2A8F", "lsqb": "[", "lsquo": "\u2018", "lsquor": "\u201A", "lstrok": "\u0142", "Lstrok": "\u0141", "lt": "<", "Lt": "\u226A", "LT": "<", "ltcc": "\u2AA6", "ltcir": "\u2A79", "ltdot": "\u22D6", "lthree": "\u22CB", "ltimes": "\u22C9", "ltlarr": "\u2976", "ltquest": "\u2A7B", "ltri": "\u25C3", "ltrie": "\u22B4", "ltrif": "\u25C2", "ltrPar": "\u2996", "lurdshar": "\u294A", "luruhar": "\u2966", "lvertneqq": "\u2268\uFE00", "lvnE": "\u2268\uFE00", "macr": "\xAF", "male": "\u2642", "malt": "\u2720", "maltese": "\u2720", "map": "\u21A6", "Map": "\u2905", "mapsto": "\u21A6", "mapstodown": "\u21A7", "mapstoleft": "\u21A4", "mapstoup": "\u21A5", "marker": "\u25AE", "mcomma": "\u2A29", "mcy": "\u043C", "Mcy": "\u041C", "mdash": "\u2014", "mDDot": "\u223A", "measuredangle": "\u2221", "MediumSpace": "\u205F", "Mellintrf": "\u2133", "mfr": "\u{1D52A}", "Mfr": "\u{1D510}", "mho": "\u2127", "micro": "\xB5", "mid": "\u2223", "midast": "*", "midcir": "\u2AF0", "middot": "\xB7", "minus": "\u2212", "minusb": "\u229F", "minusd": "\u2238", "minusdu": "\u2A2A", "MinusPlus": "\u2213", "mlcp": "\u2ADB", "mldr": "\u2026", "mnplus": "\u2213", "models": "\u22A7", "mopf": "\u{1D55E}", "Mopf": "\u{1D544}", "mp": "\u2213", "mscr": "\u{1D4C2}", "Mscr": "\u2133", "mstpos": "\u223E", "mu": "\u03BC", "Mu": "\u039C", "multimap": "\u22B8", "mumap": "\u22B8", "nabla": "\u2207", "nacute": "\u0144", "Nacute": "\u0143", "nang": "\u2220\u20D2", "nap": "\u2249", "napE": "\u2A70\u0338", "napid": "\u224B\u0338", "napos": "\u0149", "napprox": "\u2249", "natur": "\u266E", "natural": "\u266E", "naturals": "\u2115", "nbsp": "\xA0", "nbump": "\u224E\u0338", "nbumpe": "\u224F\u0338", "ncap": "\u2A43", "ncaron": "\u0148", "Ncaron": "\u0147", "ncedil": "\u0146", "Ncedil": "\u0145", "ncong": "\u2247", "ncongdot": "\u2A6D\u0338", "ncup": "\u2A42", "ncy": "\u043D", "Ncy": "\u041D", "ndash": "\u2013", "ne": "\u2260", "nearhk": "\u2924", "nearr": "\u2197", "neArr": "\u21D7", "nearrow": "\u2197", "nedot": "\u2250\u0338", "NegativeMediumSpace": "\u200B", "NegativeThickSpace": "\u200B", "NegativeThinSpace": "\u200B", "NegativeVeryThinSpace": "\u200B", "nequiv": "\u2262", "nesear": "\u2928", "nesim": "\u2242\u0338", "NestedGreaterGreater": "\u226B", "NestedLessLess": "\u226A", "NewLine": "\n", "nexist": "\u2204", "nexists": "\u2204", "nfr": "\u{1D52B}", "Nfr": "\u{1D511}", "nge": "\u2271", "ngE": "\u2267\u0338", "ngeq": "\u2271", "ngeqq": "\u2267\u0338", "ngeqslant": "\u2A7E\u0338", "nges": "\u2A7E\u0338", "nGg": "\u22D9\u0338", "ngsim": "\u2275", "ngt": "\u226F", "nGt": "\u226B\u20D2", "ngtr": "\u226F", "nGtv": "\u226B\u0338", "nharr": "\u21AE", "nhArr": "\u21CE", "nhpar": "\u2AF2", "ni": "\u220B", "nis": "\u22FC", "nisd": "\u22FA", "niv": "\u220B", "njcy": "\u045A", "NJcy": "\u040A", "nlarr": "\u219A", "nlArr": "\u21CD", "nldr": "\u2025", "nle": "\u2270", "nlE": "\u2266\u0338", "nleftarrow": "\u219A", "nLeftarrow": "\u21CD", "nleftrightarrow": "\u21AE", "nLeftrightarrow": "\u21CE", "nleq": "\u2270", "nleqq": "\u2266\u0338", "nleqslant": "\u2A7D\u0338", "nles": "\u2A7D\u0338", "nless": "\u226E", "nLl": "\u22D8\u0338", "nlsim": "\u2274", "nlt": "\u226E", "nLt": "\u226A\u20D2", "nltri": "\u22EA", "nltrie": "\u22EC", "nLtv": "\u226A\u0338", "nmid": "\u2224", "NoBreak": "\u2060", "NonBreakingSpace": "\xA0", "nopf": "\u{1D55F}", "Nopf": "\u2115", "not": "\xAC", "Not": "\u2AEC", "NotCongruent": "\u2262", "NotCupCap": "\u226D", "NotDoubleVerticalBar": "\u2226", "NotElement": "\u2209", "NotEqual": "\u2260", "NotEqualTilde": "\u2242\u0338", "NotExists": "\u2204", "NotGreater": "\u226F", "NotGreaterEqual": "\u2271", "NotGreaterFullEqual": "\u2267\u0338", "NotGreaterGreater": "\u226B\u0338", "NotGreaterLess": "\u2279", "NotGreaterSlantEqual": "\u2A7E\u0338", "NotGreaterTilde": "\u2275", "NotHumpDownHump": "\u224E\u0338", "NotHumpEqual": "\u224F\u0338", "notin": "\u2209", "notindot": "\u22F5\u0338", "notinE": "\u22F9\u0338", "notinva": "\u2209", "notinvb": "\u22F7", "notinvc": "\u22F6", "NotLeftTriangle": "\u22EA", "NotLeftTriangleBar": "\u29CF\u0338", "NotLeftTriangleEqual": "\u22EC", "NotLess": "\u226E", "NotLessEqual": "\u2270", "NotLessGreater": "\u2278", "NotLessLess": "\u226A\u0338", "NotLessSlantEqual": "\u2A7D\u0338", "NotLessTilde": "\u2274", "NotNestedGreaterGreater": "\u2AA2\u0338", "NotNestedLessLess": "\u2AA1\u0338", "notni": "\u220C", "notniva": "\u220C", "notnivb": "\u22FE", "notnivc": "\u22FD", "NotPrecedes": "\u2280", "NotPrecedesEqual": "\u2AAF\u0338", "NotPrecedesSlantEqual": "\u22E0", "NotReverseElement": "\u220C", "NotRightTriangle": "\u22EB", "NotRightTriangleBar": "\u29D0\u0338", "NotRightTriangleEqual": "\u22ED", "NotSquareSubset": "\u228F\u0338", "NotSquareSubsetEqual": "\u22E2", "NotSquareSuperset": "\u2290\u0338", "NotSquareSupersetEqual": "\u22E3", "NotSubset": "\u2282\u20D2", "NotSubsetEqual": "\u2288", "NotSucceeds": "\u2281", "NotSucceedsEqual": "\u2AB0\u0338", "NotSucceedsSlantEqual": "\u22E1", "NotSucceedsTilde": "\u227F\u0338", "NotSuperset": "\u2283\u20D2", "NotSupersetEqual": "\u2289", "NotTilde": "\u2241", "NotTildeEqual": "\u2244", "NotTildeFullEqual": "\u2247", "NotTildeTilde": "\u2249", "NotVerticalBar": "\u2224", "npar": "\u2226", "nparallel": "\u2226", "nparsl": "\u2AFD\u20E5", "npart": "\u2202\u0338", "npolint": "\u2A14", "npr": "\u2280", "nprcue": "\u22E0", "npre": "\u2AAF\u0338", "nprec": "\u2280", "npreceq": "\u2AAF\u0338", "nrarr": "\u219B", "nrArr": "\u21CF", "nrarrc": "\u2933\u0338", "nrarrw": "\u219D\u0338", "nrightarrow": "\u219B", "nRightarrow": "\u21CF", "nrtri": "\u22EB", "nrtrie": "\u22ED", "nsc": "\u2281", "nsccue": "\u22E1", "nsce": "\u2AB0\u0338", "nscr": "\u{1D4C3}", "Nscr": "\u{1D4A9}", "nshortmid": "\u2224", "nshortparallel": "\u2226", "nsim": "\u2241", "nsime": "\u2244", "nsimeq": "\u2244", "nsmid": "\u2224", "nspar": "\u2226", "nsqsube": "\u22E2", "nsqsupe": "\u22E3", "nsub": "\u2284", "nsube": "\u2288", "nsubE": "\u2AC5\u0338", "nsubset": "\u2282\u20D2", "nsubseteq": "\u2288", "nsubseteqq": "\u2AC5\u0338", "nsucc": "\u2281", "nsucceq": "\u2AB0\u0338", "nsup": "\u2285", "nsupe": "\u2289", "nsupE": "\u2AC6\u0338", "nsupset": "\u2283\u20D2", "nsupseteq": "\u2289", "nsupseteqq": "\u2AC6\u0338", "ntgl": "\u2279", "ntilde": "\xF1", "Ntilde": "\xD1", "ntlg": "\u2278", "ntriangleleft": "\u22EA", "ntrianglelefteq": "\u22EC", "ntriangleright": "\u22EB", "ntrianglerighteq": "\u22ED", "nu": "\u03BD", "Nu": "\u039D", "num": "#", "numero": "\u2116", "numsp": "\u2007", "nvap": "\u224D\u20D2", "nvdash": "\u22AC", "nvDash": "\u22AD", "nVdash": "\u22AE", "nVDash": "\u22AF", "nvge": "\u2265\u20D2", "nvgt": ">\u20D2", "nvHarr": "\u2904", "nvinfin": "\u29DE", "nvlArr": "\u2902", "nvle": "\u2264\u20D2", "nvlt": "<\u20D2", "nvltrie": "\u22B4\u20D2", "nvrArr": "\u2903", "nvrtrie": "\u22B5\u20D2", "nvsim": "\u223C\u20D2", "nwarhk": "\u2923", "nwarr": "\u2196", "nwArr": "\u21D6", "nwarrow": "\u2196", "nwnear": "\u2927", "oacute": "\xF3", "Oacute": "\xD3", "oast": "\u229B", "ocir": "\u229A", "ocirc": "\xF4", "Ocirc": "\xD4", "ocy": "\u043E", "Ocy": "\u041E", "odash": "\u229D", "odblac": "\u0151", "Odblac": "\u0150", "odiv": "\u2A38", "odot": "\u2299", "odsold": "\u29BC", "oelig": "\u0153", "OElig": "\u0152", "ofcir": "\u29BF", "ofr": "\u{1D52C}", "Ofr": "\u{1D512}", "ogon": "\u02DB", "ograve": "\xF2", "Ograve": "\xD2", "ogt": "\u29C1", "ohbar": "\u29B5", "ohm": "\u03A9", "oint": "\u222E", "olarr": "\u21BA", "olcir": "\u29BE", "olcross": "\u29BB", "oline": "\u203E", "olt": "\u29C0", "omacr": "\u014D", "Omacr": "\u014C", "omega": "\u03C9", "Omega": "\u03A9", "omicron": "\u03BF", "Omicron": "\u039F", "omid": "\u29B6", "ominus": "\u2296", "oopf": "\u{1D560}", "Oopf": "\u{1D546}", "opar": "\u29B7", "OpenCurlyDoubleQuote": "\u201C", "OpenCurlyQuote": "\u2018", "operp": "\u29B9", "oplus": "\u2295", "or": "\u2228", "Or": "\u2A54", "orarr": "\u21BB", "ord": "\u2A5D", "order": "\u2134", "orderof": "\u2134", "ordf": "\xAA", "ordm": "\xBA", "origof": "\u22B6", "oror": "\u2A56", "orslope": "\u2A57", "orv": "\u2A5B", "oS": "\u24C8", "oscr": "\u2134", "Oscr": "\u{1D4AA}", "oslash": "\xF8", "Oslash": "\xD8", "osol": "\u2298", "otilde": "\xF5", "Otilde": "\xD5", "otimes": "\u2297", "Otimes": "\u2A37", "otimesas": "\u2A36", "ouml": "\xF6", "Ouml": "\xD6", "ovbar": "\u233D", "OverBar": "\u203E", "OverBrace": "\u23DE", "OverBracket": "\u23B4", "OverParenthesis": "\u23DC", "par": "\u2225", "para": "\xB6", "parallel": "\u2225", "parsim": "\u2AF3", "parsl": "\u2AFD", "part": "\u2202", "PartialD": "\u2202", "pcy": "\u043F", "Pcy": "\u041F", "percnt": "%", "period": ".", "permil": "\u2030", "perp": "\u22A5", "pertenk": "\u2031", "pfr": "\u{1D52D}", "Pfr": "\u{1D513}", "phi": "\u03C6", "Phi": "\u03A6", "phiv": "\u03D5", "phmmat": "\u2133", "phone": "\u260E", "pi": "\u03C0", "Pi": "\u03A0", "pitchfork": "\u22D4", "piv": "\u03D6", "planck": "\u210F", "planckh": "\u210E", "plankv": "\u210F", "plus": "+", "plusacir": "\u2A23", "plusb": "\u229E", "pluscir": "\u2A22", "plusdo": "\u2214", "plusdu": "\u2A25", "pluse": "\u2A72", "PlusMinus": "\xB1", "plusmn": "\xB1", "plussim": "\u2A26", "plustwo": "\u2A27", "pm": "\xB1", "Poincareplane": "\u210C", "pointint": "\u2A15", "popf": "\u{1D561}", "Popf": "\u2119", "pound": "\xA3", "pr": "\u227A", "Pr": "\u2ABB", "prap": "\u2AB7", "prcue": "\u227C", "pre": "\u2AAF", "prE": "\u2AB3", "prec": "\u227A", "precapprox": "\u2AB7", "preccurlyeq": "\u227C", "Precedes": "\u227A", "PrecedesEqual": "\u2AAF", "PrecedesSlantEqual": "\u227C", "PrecedesTilde": "\u227E", "preceq": "\u2AAF", "precnapprox": "\u2AB9", "precneqq": "\u2AB5", "precnsim": "\u22E8", "precsim": "\u227E", "prime": "\u2032", "Prime": "\u2033", "primes": "\u2119", "prnap": "\u2AB9", "prnE": "\u2AB5", "prnsim": "\u22E8", "prod": "\u220F", "Product": "\u220F", "profalar": "\u232E", "profline": "\u2312", "profsurf": "\u2313", "prop": "\u221D", "Proportion": "\u2237", "Proportional": "\u221D", "propto": "\u221D", "prsim": "\u227E", "prurel": "\u22B0", "pscr": "\u{1D4C5}", "Pscr": "\u{1D4AB}", "psi": "\u03C8", "Psi": "\u03A8", "puncsp": "\u2008", "qfr": "\u{1D52E}", "Qfr": "\u{1D514}", "qint": "\u2A0C", "qopf": "\u{1D562}", "Qopf": "\u211A", "qprime": "\u2057", "qscr": "\u{1D4C6}", "Qscr": "\u{1D4AC}", "quaternions": "\u210D", "quatint": "\u2A16", "quest": "?", "questeq": "\u225F", "quot": '"', "QUOT": '"', "rAarr": "\u21DB", "race": "\u223D\u0331", "racute": "\u0155", "Racute": "\u0154", "radic": "\u221A", "raemptyv": "\u29B3", "rang": "\u27E9", "Rang": "\u27EB", "rangd": "\u2992", "range": "\u29A5", "rangle": "\u27E9", "raquo": "\xBB", "rarr": "\u2192", "rArr": "\u21D2", "Rarr": "\u21A0", "rarrap": "\u2975", "rarrb": "\u21E5", "rarrbfs": "\u2920", "rarrc": "\u2933", "rarrfs": "\u291E", "rarrhk": "\u21AA", "rarrlp": "\u21AC", "rarrpl": "\u2945", "rarrsim": "\u2974", "rarrtl": "\u21A3", "Rarrtl": "\u2916", "rarrw": "\u219D", "ratail": "\u291A", "rAtail": "\u291C", "ratio": "\u2236", "rationals": "\u211A", "rbarr": "\u290D", "rBarr": "\u290F", "RBarr": "\u2910", "rbbrk": "\u2773", "rbrace": "}", "rbrack": "]", "rbrke": "\u298C", "rbrksld": "\u298E", "rbrkslu": "\u2990", "rcaron": "\u0159", "Rcaron": "\u0158", "rcedil": "\u0157", "Rcedil": "\u0156", "rceil": "\u2309", "rcub": "}", "rcy": "\u0440", "Rcy": "\u0420", "rdca": "\u2937", "rdldhar": "\u2969", "rdquo": "\u201D", "rdquor": "\u201D", "rdsh": "\u21B3", "Re": "\u211C", "real": "\u211C", "realine": "\u211B", "realpart": "\u211C", "reals": "\u211D", "rect": "\u25AD", "reg": "\xAE", "REG": "\xAE", "ReverseElement": "\u220B", "ReverseEquilibrium": "\u21CB", "ReverseUpEquilibrium": "\u296F", "rfisht": "\u297D", "rfloor": "\u230B", "rfr": "\u{1D52F}", "Rfr": "\u211C", "rHar": "\u2964", "rhard": "\u21C1", "rharu": "\u21C0", "rharul": "\u296C", "rho": "\u03C1", "Rho": "\u03A1", "rhov": "\u03F1", "RightAngleBracket": "\u27E9", "rightarrow": "\u2192", "Rightarrow": "\u21D2", "RightArrow": "\u2192", "RightArrowBar": "\u21E5", "RightArrowLeftArrow": "\u21C4", "rightarrowtail": "\u21A3", "RightCeiling": "\u2309", "RightDoubleBracket": "\u27E7", "RightDownTeeVector": "\u295D", "RightDownVector": "\u21C2", "RightDownVectorBar": "\u2955", "RightFloor": "\u230B", "rightharpoondown": "\u21C1", "rightharpoonup": "\u21C0", "rightleftarrows": "\u21C4", "rightleftharpoons": "\u21CC", "rightrightarrows": "\u21C9", "rightsquigarrow": "\u219D", "RightTee": "\u22A2", "RightTeeArrow": "\u21A6", "RightTeeVector": "\u295B", "rightthreetimes": "\u22CC", "RightTriangle": "\u22B3", "RightTriangleBar": "\u29D0", "RightTriangleEqual": "\u22B5", "RightUpDownVector": "\u294F", "RightUpTeeVector": "\u295C", "RightUpVector": "\u21BE", "RightUpVectorBar": "\u2954", "RightVector": "\u21C0", "RightVectorBar": "\u2953", "ring": "\u02DA", "risingdotseq": "\u2253", "rlarr": "\u21C4", "rlhar": "\u21CC", "rlm": "\u200F", "rmoust": "\u23B1", "rmoustache": "\u23B1", "rnmid": "\u2AEE", "roang": "\u27ED", "roarr": "\u21FE", "robrk": "\u27E7", "ropar": "\u2986", "ropf": "\u{1D563}", "Ropf": "\u211D", "roplus": "\u2A2E", "rotimes": "\u2A35", "RoundImplies": "\u2970", "rpar": ")", "rpargt": "\u2994", "rppolint": "\u2A12", "rrarr": "\u21C9", "Rrightarrow": "\u21DB", "rsaquo": "\u203A", "rscr": "\u{1D4C7}", "Rscr": "\u211B", "rsh": "\u21B1", "Rsh": "\u21B1", "rsqb": "]", "rsquo": "\u2019", "rsquor": "\u2019", "rthree": "\u22CC", "rtimes": "\u22CA", "rtri": "\u25B9", "rtrie": "\u22B5", "rtrif": "\u25B8", "rtriltri": "\u29CE", "RuleDelayed": "\u29F4", "ruluhar": "\u2968", "rx": "\u211E", "sacute": "\u015B", "Sacute": "\u015A", "sbquo": "\u201A", "sc": "\u227B", "Sc": "\u2ABC", "scap": "\u2AB8", "scaron": "\u0161", "Scaron": "\u0160", "sccue": "\u227D", "sce": "\u2AB0", "scE": "\u2AB4", "scedil": "\u015F", "Scedil": "\u015E", "scirc": "\u015D", "Scirc": "\u015C", "scnap": "\u2ABA", "scnE": "\u2AB6", "scnsim": "\u22E9", "scpolint": "\u2A13", "scsim": "\u227F", "scy": "\u0441", "Scy": "\u0421", "sdot": "\u22C5", "sdotb": "\u22A1", "sdote": "\u2A66", "searhk": "\u2925", "searr": "\u2198", "seArr": "\u21D8", "searrow": "\u2198", "sect": "\xA7", "semi": ";", "seswar": "\u2929", "setminus": "\u2216", "setmn": "\u2216", "sext": "\u2736", "sfr": "\u{1D530}", "Sfr": "\u{1D516}", "sfrown": "\u2322", "sharp": "\u266F", "shchcy": "\u0449", "SHCHcy": "\u0429", "shcy": "\u0448", "SHcy": "\u0428", "ShortDownArrow": "\u2193", "ShortLeftArrow": "\u2190", "shortmid": "\u2223", "shortparallel": "\u2225", "ShortRightArrow": "\u2192", "ShortUpArrow": "\u2191", "shy": "\xAD", "sigma": "\u03C3", "Sigma": "\u03A3", "sigmaf": "\u03C2", "sigmav": "\u03C2", "sim": "\u223C", "simdot": "\u2A6A", "sime": "\u2243", "simeq": "\u2243", "simg": "\u2A9E", "simgE": "\u2AA0", "siml": "\u2A9D", "simlE": "\u2A9F", "simne": "\u2246", "simplus": "\u2A24", "simrarr": "\u2972", "slarr": "\u2190", "SmallCircle": "\u2218", "smallsetminus": "\u2216", "smashp": "\u2A33", "smeparsl": "\u29E4", "smid": "\u2223", "smile": "\u2323", "smt": "\u2AAA", "smte": "\u2AAC", "smtes": "\u2AAC\uFE00", "softcy": "\u044C", "SOFTcy": "\u042C", "sol": "/", "solb": "\u29C4", "solbar": "\u233F", "sopf": "\u{1D564}", "Sopf": "\u{1D54A}", "spades": "\u2660", "spadesuit": "\u2660", "spar": "\u2225", "sqcap": "\u2293", "sqcaps": "\u2293\uFE00", "sqcup": "\u2294", "sqcups": "\u2294\uFE00", "Sqrt": "\u221A", "sqsub": "\u228F", "sqsube": "\u2291", "sqsubset": "\u228F", "sqsubseteq": "\u2291", "sqsup": "\u2290", "sqsupe": "\u2292", "sqsupset": "\u2290", "sqsupseteq": "\u2292", "squ": "\u25A1", "square": "\u25A1", "Square": "\u25A1", "SquareIntersection": "\u2293", "SquareSubset": "\u228F", "SquareSubsetEqual": "\u2291", "SquareSuperset": "\u2290", "SquareSupersetEqual": "\u2292", "SquareUnion": "\u2294", "squarf": "\u25AA", "squf": "\u25AA", "srarr": "\u2192", "sscr": "\u{1D4C8}", "Sscr": "\u{1D4AE}", "ssetmn": "\u2216", "ssmile": "\u2323", "sstarf": "\u22C6", "star": "\u2606", "Star": "\u22C6", "starf": "\u2605", "straightepsilon": "\u03F5", "straightphi": "\u03D5", "strns": "\xAF", "sub": "\u2282", "Sub": "\u22D0", "subdot": "\u2ABD", "sube": "\u2286", "subE": "\u2AC5", "subedot": "\u2AC3", "submult": "\u2AC1", "subne": "\u228A", "subnE": "\u2ACB", "subplus": "\u2ABF", "subrarr": "\u2979", "subset": "\u2282", "Subset": "\u22D0", "subseteq": "\u2286", "subseteqq": "\u2AC5", "SubsetEqual": "\u2286", "subsetneq": "\u228A", "subsetneqq": "\u2ACB", "subsim": "\u2AC7", "subsub": "\u2AD5", "subsup": "\u2AD3", "succ": "\u227B", "succapprox": "\u2AB8", "succcurlyeq": "\u227D", "Succeeds": "\u227B", "SucceedsEqual": "\u2AB0", "SucceedsSlantEqual": "\u227D", "SucceedsTilde": "\u227F", "succeq": "\u2AB0", "succnapprox": "\u2ABA", "succneqq": "\u2AB6", "succnsim": "\u22E9", "succsim": "\u227F", "SuchThat": "\u220B", "sum": "\u2211", "Sum": "\u2211", "sung": "\u266A", "sup": "\u2283", "Sup": "\u22D1", "sup1": "\xB9", "sup2": "\xB2", "sup3": "\xB3", "supdot": "\u2ABE", "supdsub": "\u2AD8", "supe": "\u2287", "supE": "\u2AC6", "supedot": "\u2AC4", "Superset": "\u2283", "SupersetEqual": "\u2287", "suphsol": "\u27C9", "suphsub": "\u2AD7", "suplarr": "\u297B", "supmult": "\u2AC2", "supne": "\u228B", "supnE": "\u2ACC", "supplus": "\u2AC0", "supset": "\u2283", "Supset": "\u22D1", "supseteq": "\u2287", "supseteqq": "\u2AC6", "supsetneq": "\u228B", "supsetneqq": "\u2ACC", "supsim": "\u2AC8", "supsub": "\u2AD4", "supsup": "\u2AD6", "swarhk": "\u2926", "swarr": "\u2199", "swArr": "\u21D9", "swarrow": "\u2199", "swnwar": "\u292A", "szlig": "\xDF", "Tab": "	", "target": "\u2316", "tau": "\u03C4", "Tau": "\u03A4", "tbrk": "\u23B4", "tcaron": "\u0165", "Tcaron": "\u0164", "tcedil": "\u0163", "Tcedil": "\u0162", "tcy": "\u0442", "Tcy": "\u0422", "tdot": "\u20DB", "telrec": "\u2315", "tfr": "\u{1D531}", "Tfr": "\u{1D517}", "there4": "\u2234", "therefore": "\u2234", "Therefore": "\u2234", "theta": "\u03B8", "Theta": "\u0398", "thetasym": "\u03D1", "thetav": "\u03D1", "thickapprox": "\u2248", "thicksim": "\u223C", "ThickSpace": "\u205F\u200A", "thinsp": "\u2009", "ThinSpace": "\u2009", "thkap": "\u2248", "thksim": "\u223C", "thorn": "\xFE", "THORN": "\xDE", "tilde": "\u02DC", "Tilde": "\u223C", "TildeEqual": "\u2243", "TildeFullEqual": "\u2245", "TildeTilde": "\u2248", "times": "\xD7", "timesb": "\u22A0", "timesbar": "\u2A31", "timesd": "\u2A30", "tint": "\u222D", "toea": "\u2928", "top": "\u22A4", "topbot": "\u2336", "topcir": "\u2AF1", "topf": "\u{1D565}", "Topf": "\u{1D54B}", "topfork": "\u2ADA", "tosa": "\u2929", "tprime": "\u2034", "trade": "\u2122", "TRADE": "\u2122", "triangle": "\u25B5", "triangledown": "\u25BF", "triangleleft": "\u25C3", "trianglelefteq": "\u22B4", "triangleq": "\u225C", "triangleright": "\u25B9", "trianglerighteq": "\u22B5", "tridot": "\u25EC", "trie": "\u225C", "triminus": "\u2A3A", "TripleDot": "\u20DB", "triplus": "\u2A39", "trisb": "\u29CD", "tritime": "\u2A3B", "trpezium": "\u23E2", "tscr": "\u{1D4C9}", "Tscr": "\u{1D4AF}", "tscy": "\u0446", "TScy": "\u0426", "tshcy": "\u045B", "TSHcy": "\u040B", "tstrok": "\u0167", "Tstrok": "\u0166", "twixt": "\u226C", "twoheadleftarrow": "\u219E", "twoheadrightarrow": "\u21A0", "uacute": "\xFA", "Uacute": "\xDA", "uarr": "\u2191", "uArr": "\u21D1", "Uarr": "\u219F", "Uarrocir": "\u2949", "ubrcy": "\u045E", "Ubrcy": "\u040E", "ubreve": "\u016D", "Ubreve": "\u016C", "ucirc": "\xFB", "Ucirc": "\xDB", "ucy": "\u0443", "Ucy": "\u0423", "udarr": "\u21C5", "udblac": "\u0171", "Udblac": "\u0170", "udhar": "\u296E", "ufisht": "\u297E", "ufr": "\u{1D532}", "Ufr": "\u{1D518}", "ugrave": "\xF9", "Ugrave": "\xD9", "uHar": "\u2963", "uharl": "\u21BF", "uharr": "\u21BE", "uhblk": "\u2580", "ulcorn": "\u231C", "ulcorner": "\u231C", "ulcrop": "\u230F", "ultri": "\u25F8", "umacr": "\u016B", "Umacr": "\u016A", "uml": "\xA8", "UnderBar": "_", "UnderBrace": "\u23DF", "UnderBracket": "\u23B5", "UnderParenthesis": "\u23DD", "Union": "\u22C3", "UnionPlus": "\u228E", "uogon": "\u0173", "Uogon": "\u0172", "uopf": "\u{1D566}", "Uopf": "\u{1D54C}", "uparrow": "\u2191", "Uparrow": "\u21D1", "UpArrow": "\u2191", "UpArrowBar": "\u2912", "UpArrowDownArrow": "\u21C5", "updownarrow": "\u2195", "Updownarrow": "\u21D5", "UpDownArrow": "\u2195", "UpEquilibrium": "\u296E", "upharpoonleft": "\u21BF", "upharpoonright": "\u21BE", "uplus": "\u228E", "UpperLeftArrow": "\u2196", "UpperRightArrow": "\u2197", "upsi": "\u03C5", "Upsi": "\u03D2", "upsih": "\u03D2", "upsilon": "\u03C5", "Upsilon": "\u03A5", "UpTee": "\u22A5", "UpTeeArrow": "\u21A5", "upuparrows": "\u21C8", "urcorn": "\u231D", "urcorner": "\u231D", "urcrop": "\u230E", "uring": "\u016F", "Uring": "\u016E", "urtri": "\u25F9", "uscr": "\u{1D4CA}", "Uscr": "\u{1D4B0}", "utdot": "\u22F0", "utilde": "\u0169", "Utilde": "\u0168", "utri": "\u25B5", "utrif": "\u25B4", "uuarr": "\u21C8", "uuml": "\xFC", "Uuml": "\xDC", "uwangle": "\u29A7", "vangrt": "\u299C", "varepsilon": "\u03F5", "varkappa": "\u03F0", "varnothing": "\u2205", "varphi": "\u03D5", "varpi": "\u03D6", "varpropto": "\u221D", "varr": "\u2195", "vArr": "\u21D5", "varrho": "\u03F1", "varsigma": "\u03C2", "varsubsetneq": "\u228A\uFE00", "varsubsetneqq": "\u2ACB\uFE00", "varsupsetneq": "\u228B\uFE00", "varsupsetneqq": "\u2ACC\uFE00", "vartheta": "\u03D1", "vartriangleleft": "\u22B2", "vartriangleright": "\u22B3", "vBar": "\u2AE8", "Vbar": "\u2AEB", "vBarv": "\u2AE9", "vcy": "\u0432", "Vcy": "\u0412", "vdash": "\u22A2", "vDash": "\u22A8", "Vdash": "\u22A9", "VDash": "\u22AB", "Vdashl": "\u2AE6", "vee": "\u2228", "Vee": "\u22C1", "veebar": "\u22BB", "veeeq": "\u225A", "vellip": "\u22EE", "verbar": "|", "Verbar": "\u2016", "vert": "|", "Vert": "\u2016", "VerticalBar": "\u2223", "VerticalLine": "|", "VerticalSeparator": "\u2758", "VerticalTilde": "\u2240", "VeryThinSpace": "\u200A", "vfr": "\u{1D533}", "Vfr": "\u{1D519}", "vltri": "\u22B2", "vnsub": "\u2282\u20D2", "vnsup": "\u2283\u20D2", "vopf": "\u{1D567}", "Vopf": "\u{1D54D}", "vprop": "\u221D", "vrtri": "\u22B3", "vscr": "\u{1D4CB}", "Vscr": "\u{1D4B1}", "vsubne": "\u228A\uFE00", "vsubnE": "\u2ACB\uFE00", "vsupne": "\u228B\uFE00", "vsupnE": "\u2ACC\uFE00", "Vvdash": "\u22AA", "vzigzag": "\u299A", "wcirc": "\u0175", "Wcirc": "\u0174", "wedbar": "\u2A5F", "wedge": "\u2227", "Wedge": "\u22C0", "wedgeq": "\u2259", "weierp": "\u2118", "wfr": "\u{1D534}", "Wfr": "\u{1D51A}", "wopf": "\u{1D568}", "Wopf": "\u{1D54E}", "wp": "\u2118", "wr": "\u2240", "wreath": "\u2240", "wscr": "\u{1D4CC}", "Wscr": "\u{1D4B2}", "xcap": "\u22C2", "xcirc": "\u25EF", "xcup": "\u22C3", "xdtri": "\u25BD", "xfr": "\u{1D535}", "Xfr": "\u{1D51B}", "xharr": "\u27F7", "xhArr": "\u27FA", "xi": "\u03BE", "Xi": "\u039E", "xlarr": "\u27F5", "xlArr": "\u27F8", "xmap": "\u27FC", "xnis": "\u22FB", "xodot": "\u2A00", "xopf": "\u{1D569}", "Xopf": "\u{1D54F}", "xoplus": "\u2A01", "xotime": "\u2A02", "xrarr": "\u27F6", "xrArr": "\u27F9", "xscr": "\u{1D4CD}", "Xscr": "\u{1D4B3}", "xsqcup": "\u2A06", "xuplus": "\u2A04", "xutri": "\u25B3", "xvee": "\u22C1", "xwedge": "\u22C0", "yacute": "\xFD", "Yacute": "\xDD", "yacy": "\u044F", "YAcy": "\u042F", "ycirc": "\u0177", "Ycirc": "\u0176", "ycy": "\u044B", "Ycy": "\u042B", "yen": "\xA5", "yfr": "\u{1D536}", "Yfr": "\u{1D51C}", "yicy": "\u0457", "YIcy": "\u0407", "yopf": "\u{1D56A}", "Yopf": "\u{1D550}", "yscr": "\u{1D4CE}", "Yscr": "\u{1D4B4}", "yucy": "\u044E", "YUcy": "\u042E", "yuml": "\xFF", "Yuml": "\u0178", "zacute": "\u017A", "Zacute": "\u0179", "zcaron": "\u017E", "Zcaron": "\u017D", "zcy": "\u0437", "Zcy": "\u0417", "zdot": "\u017C", "Zdot": "\u017B", "zeetrf": "\u2128", "ZeroWidthSpace": "\u200B", "zeta": "\u03B6", "Zeta": "\u0396", "zfr": "\u{1D537}", "Zfr": "\u2128", "zhcy": "\u0436", "ZHcy": "\u0416", "zigrarr": "\u21DD", "zopf": "\u{1D56B}", "Zopf": "\u2124", "zscr": "\u{1D4CF}", "Zscr": "\u{1D4B5}", "zwj": "\u200D", "zwnj": "\u200C" };
-      var decodeMapLegacy = { "aacute": "\xE1", "Aacute": "\xC1", "acirc": "\xE2", "Acirc": "\xC2", "acute": "\xB4", "aelig": "\xE6", "AElig": "\xC6", "agrave": "\xE0", "Agrave": "\xC0", "amp": "&", "AMP": "&", "aring": "\xE5", "Aring": "\xC5", "atilde": "\xE3", "Atilde": "\xC3", "auml": "\xE4", "Auml": "\xC4", "brvbar": "\xA6", "ccedil": "\xE7", "Ccedil": "\xC7", "cedil": "\xB8", "cent": "\xA2", "copy": "\xA9", "COPY": "\xA9", "curren": "\xA4", "deg": "\xB0", "divide": "\xF7", "eacute": "\xE9", "Eacute": "\xC9", "ecirc": "\xEA", "Ecirc": "\xCA", "egrave": "\xE8", "Egrave": "\xC8", "eth": "\xF0", "ETH": "\xD0", "euml": "\xEB", "Euml": "\xCB", "frac12": "\xBD", "frac14": "\xBC", "frac34": "\xBE", "gt": ">", "GT": ">", "iacute": "\xED", "Iacute": "\xCD", "icirc": "\xEE", "Icirc": "\xCE", "iexcl": "\xA1", "igrave": "\xEC", "Igrave": "\xCC", "iquest": "\xBF", "iuml": "\xEF", "Iuml": "\xCF", "laquo": "\xAB", "lt": "<", "LT": "<", "macr": "\xAF", "micro": "\xB5", "middot": "\xB7", "nbsp": "\xA0", "not": "\xAC", "ntilde": "\xF1", "Ntilde": "\xD1", "oacute": "\xF3", "Oacute": "\xD3", "ocirc": "\xF4", "Ocirc": "\xD4", "ograve": "\xF2", "Ograve": "\xD2", "ordf": "\xAA", "ordm": "\xBA", "oslash": "\xF8", "Oslash": "\xD8", "otilde": "\xF5", "Otilde": "\xD5", "ouml": "\xF6", "Ouml": "\xD6", "para": "\xB6", "plusmn": "\xB1", "pound": "\xA3", "quot": '"', "QUOT": '"', "raquo": "\xBB", "reg": "\xAE", "REG": "\xAE", "sect": "\xA7", "shy": "\xAD", "sup1": "\xB9", "sup2": "\xB2", "sup3": "\xB3", "szlig": "\xDF", "thorn": "\xFE", "THORN": "\xDE", "times": "\xD7", "uacute": "\xFA", "Uacute": "\xDA", "ucirc": "\xFB", "Ucirc": "\xDB", "ugrave": "\xF9", "Ugrave": "\xD9", "uml": "\xA8", "uuml": "\xFC", "Uuml": "\xDC", "yacute": "\xFD", "Yacute": "\xDD", "yen": "\xA5", "yuml": "\xFF" };
-      var decodeMapNumeric = { "0": "\uFFFD", "128": "\u20AC", "130": "\u201A", "131": "\u0192", "132": "\u201E", "133": "\u2026", "134": "\u2020", "135": "\u2021", "136": "\u02C6", "137": "\u2030", "138": "\u0160", "139": "\u2039", "140": "\u0152", "142": "\u017D", "145": "\u2018", "146": "\u2019", "147": "\u201C", "148": "\u201D", "149": "\u2022", "150": "\u2013", "151": "\u2014", "152": "\u02DC", "153": "\u2122", "154": "\u0161", "155": "\u203A", "156": "\u0153", "158": "\u017E", "159": "\u0178" };
-      var invalidReferenceCodePoints = [1, 2, 3, 4, 5, 6, 7, 8, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 64976, 64977, 64978, 64979, 64980, 64981, 64982, 64983, 64984, 64985, 64986, 64987, 64988, 64989, 64990, 64991, 64992, 64993, 64994, 64995, 64996, 64997, 64998, 64999, 65e3, 65001, 65002, 65003, 65004, 65005, 65006, 65007, 65534, 65535, 131070, 131071, 196606, 196607, 262142, 262143, 327678, 327679, 393214, 393215, 458750, 458751, 524286, 524287, 589822, 589823, 655358, 655359, 720894, 720895, 786430, 786431, 851966, 851967, 917502, 917503, 983038, 983039, 1048574, 1048575, 1114110, 1114111];
-      var stringFromCharCode = String.fromCharCode;
-      var object = {};
-      var hasOwnProperty2 = object.hasOwnProperty;
-      var has = function(object2, propertyName) {
-        return hasOwnProperty2.call(object2, propertyName);
-      };
-      var contains = function(array, value) {
-        var index = -1;
-        var length = array.length;
-        while (++index < length) {
-          if (array[index] == value) {
-            return true;
-          }
-        }
-        return false;
-      };
-      var merge = function(options, defaults) {
-        if (!options) {
-          return defaults;
-        }
-        var result = {};
-        var key3;
-        for (key3 in defaults) {
-          result[key3] = has(options, key3) ? options[key3] : defaults[key3];
-        }
-        return result;
-      };
-      var codePointToSymbol = function(codePoint, strict) {
-        var output = "";
-        if (codePoint >= 55296 && codePoint <= 57343 || codePoint > 1114111) {
-          if (strict) {
-            parseError("character reference outside the permissible Unicode range");
-          }
-          return "\uFFFD";
-        }
-        if (has(decodeMapNumeric, codePoint)) {
-          if (strict) {
-            parseError("disallowed character reference");
-          }
-          return decodeMapNumeric[codePoint];
-        }
-        if (strict && contains(invalidReferenceCodePoints, codePoint)) {
-          parseError("disallowed character reference");
-        }
-        if (codePoint > 65535) {
-          codePoint -= 65536;
-          output += stringFromCharCode(codePoint >>> 10 & 1023 | 55296);
-          codePoint = 56320 | codePoint & 1023;
-        }
-        output += stringFromCharCode(codePoint);
-        return output;
-      };
-      var hexEscape = function(codePoint) {
-        return "&#x" + codePoint.toString(16).toUpperCase() + ";";
-      };
-      var decEscape = function(codePoint) {
-        return "&#" + codePoint + ";";
-      };
-      var parseError = function(message) {
-        throw Error("Parse error: " + message);
-      };
-      var encode = function(string, options) {
-        options = merge(options, encode.options);
-        var strict = options.strict;
-        if (strict && regexInvalidRawCodePoint.test(string)) {
-          parseError("forbidden code point");
-        }
-        var encodeEverything = options.encodeEverything;
-        var useNamedReferences = options.useNamedReferences;
-        var allowUnsafeSymbols = options.allowUnsafeSymbols;
-        var escapeCodePoint = options.decimal ? decEscape : hexEscape;
-        var escapeBmpSymbol = function(symbol) {
-          return escapeCodePoint(symbol.charCodeAt(0));
-        };
-        if (encodeEverything) {
-          string = string.replace(regexAsciiWhitelist, function(symbol) {
-            if (useNamedReferences && has(encodeMap, symbol)) {
-              return "&" + encodeMap[symbol] + ";";
-            }
-            return escapeBmpSymbol(symbol);
-          });
-          if (useNamedReferences) {
-            string = string.replace(/&gt;\u20D2/g, "&nvgt;").replace(/&lt;\u20D2/g, "&nvlt;").replace(/&#x66;&#x6A;/g, "&fjlig;");
-          }
-          if (useNamedReferences) {
-            string = string.replace(regexEncodeNonAscii, function(string2) {
-              return "&" + encodeMap[string2] + ";";
-            });
-          }
-        } else if (useNamedReferences) {
-          if (!allowUnsafeSymbols) {
-            string = string.replace(regexEscape, function(string2) {
-              return "&" + encodeMap[string2] + ";";
-            });
-          }
-          string = string.replace(/&gt;\u20D2/g, "&nvgt;").replace(/&lt;\u20D2/g, "&nvlt;");
-          string = string.replace(regexEncodeNonAscii, function(string2) {
-            return "&" + encodeMap[string2] + ";";
-          });
-        } else if (!allowUnsafeSymbols) {
-          string = string.replace(regexEscape, escapeBmpSymbol);
-        }
-        return string.replace(regexAstralSymbols, function($0) {
-          var high = $0.charCodeAt(0);
-          var low = $0.charCodeAt(1);
-          var codePoint = (high - 55296) * 1024 + low - 56320 + 65536;
-          return escapeCodePoint(codePoint);
-        }).replace(regexBmpWhitelist, escapeBmpSymbol);
-      };
-      encode.options = {
-        "allowUnsafeSymbols": false,
-        "encodeEverything": false,
-        "strict": false,
-        "useNamedReferences": false,
-        "decimal": false
-      };
-      var decode = function(html, options) {
-        options = merge(options, decode.options);
-        var strict = options.strict;
-        if (strict && regexInvalidEntity.test(html)) {
-          parseError("malformed character reference");
-        }
-        return html.replace(regexDecode, function($0, $1, $22, $3, $4, $5, $6, $7, $8) {
-          var codePoint;
-          var semicolon;
-          var decDigits;
-          var hexDigits;
-          var reference;
-          var next;
-          if ($1) {
-            reference = $1;
-            return decodeMap[reference];
-          }
-          if ($22) {
-            reference = $22;
-            next = $3;
-            if (next && options.isAttributeValue) {
-              if (strict && next == "=") {
-                parseError("`&` did not start a character reference");
-              }
-              return $0;
-            } else {
-              if (strict) {
-                parseError(
-                  "named character reference was not terminated by a semicolon"
-                );
-              }
-              return decodeMapLegacy[reference] + (next || "");
-            }
-          }
-          if ($4) {
-            decDigits = $4;
-            semicolon = $5;
-            if (strict && !semicolon) {
-              parseError("character reference was not terminated by a semicolon");
-            }
-            codePoint = parseInt(decDigits, 10);
-            return codePointToSymbol(codePoint, strict);
-          }
-          if ($6) {
-            hexDigits = $6;
-            semicolon = $7;
-            if (strict && !semicolon) {
-              parseError("character reference was not terminated by a semicolon");
-            }
-            codePoint = parseInt(hexDigits, 16);
-            return codePointToSymbol(codePoint, strict);
-          }
-          if (strict) {
-            parseError(
-              "named character reference was not terminated by a semicolon"
-            );
-          }
-          return $0;
-        });
-      };
-      decode.options = {
-        "isAttributeValue": false,
-        "strict": false
-      };
-      var escape = function(string) {
-        return string.replace(regexEscape, function($0) {
-          return escapeMap[$0];
-        });
-      };
-      var he2 = {
-        "version": "1.2.0",
-        "encode": encode,
-        "decode": decode,
-        "escape": escape,
-        "unescape": decode
-      };
-      if (typeof define == "function" && typeof define.amd == "object" && define.amd) {
-        define(function() {
-          return he2;
-        });
-      } else if (freeExports && !freeExports.nodeType) {
-        if (freeModule) {
-          freeModule.exports = he2;
-        } else {
-          for (var key2 in he2) {
-            has(he2, key2) && (freeExports[key2] = he2[key2]);
-          }
-        }
-      } else {
-        root.he = he2;
-      }
-    })(exports);
   }
 });
 
@@ -12214,11 +12214,11 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 
-// src/cm-extensions/flowEditor/flowEditor.tsx
+// src/codemirror/extensions/flowEditor/flowEditor.tsx
 var import_state6 = require("@codemirror/state");
 var import_view4 = require("@codemirror/view");
 
-// src/cm-extensions/tooltip.ts
+// src/codemirror/extensions/tooltip.ts
 var import_state = require("@codemirror/state");
 var import_view = require("@codemirror/view");
 var ios = typeof navigator != "undefined" && !/Edge\/(\d+)/.exec(navigator.userAgent) && /Apple Computer/.test(navigator.vendor) && (/Mobile\/\w+/.test(navigator.userAgent) || navigator.maxTouchPoints > 2);
@@ -13708,7 +13708,7 @@ function iterateTreeInDocument(state, iterateFns) {
   (0, import_language.syntaxTree)(state).iterate({ ...iterateFns });
 }
 
-// src/cm-extensions/markSans/callout.tsx
+// src/codemirror/extensions/markSans/callout.tsx
 var import_language2 = require("@codemirror/language");
 var import_state2 = require("@codemirror/state");
 var import_view2 = require("@codemirror/view");
@@ -13721,7 +13721,7 @@ function genId() {
   );
 }
 
-// src/cm-extensions/markSans/callout.tsx
+// src/codemirror/extensions/markSans/callout.tsx
 var portalTypeAnnotation = import_state2.Annotation.define();
 var flowIDAnnotation = import_state2.Annotation.define();
 var flowIDStateField = import_state2.StateField.define({
@@ -13868,7 +13868,7 @@ var eventTypes = {
   focusPortal: "mkmd-portal-focus"
 };
 
-// src/dispatch/flowDispatch.ts
+// src/dispatch/flowEditor.ts
 var createFlowEditorInElement = (id2, leaf, source, el, type, path, from, to) => {
   const evt = new CustomEvent(eventTypes.spawnPortal, {
     detail: { id: id2, leaf, source, el, path, from, to, type }
@@ -13905,6 +13905,9 @@ var T4 = class {
   constructor() {
     this.all = {
       en: {
+        hintText: {
+          dragDropModifierKeys: "Hold ${1} to Pin and ${2} to Copy"
+        },
         commands: {
           h1: "Heading 1",
           h2: "Heading 2",
@@ -13948,7 +13951,7 @@ var T4 = class {
           toggleBold: "Toggle Bold",
           toggleItalics: "Toggle Italics",
           openSpaces: "Open Spaces",
-          reloadSpaces: "Reload Spaces",
+          reloadSpaces: "Migrate Spaces From 0.7",
           blink: "Blink",
           openFileContext: "Open Explorer",
           convertFolderNote: "Convert to Space",
@@ -13960,7 +13963,8 @@ var T4 = class {
           removeFileSpace: "Remove File from Space"
         },
         menu: {
-          fileMetadata: "None",
+          revealInDefault: "Reveal in Finder",
+          setNone: "None",
           fileMetadataDescription: "This note only",
           openFilePane: "Open in a new pane",
           rename: "Rename",
@@ -13970,12 +13974,12 @@ var T4 = class {
           edit: "Edit",
           delete: "Delete",
           getHelp: "Make.md Community",
+          vault: "Vault",
           openVault: "Open Another Vault",
           openVaultInFolder: "Open Vault Folder",
           obSettings: "Obsidian Settings",
           commandPalette: "Command Palette",
           backToSpace: "Back to Spaces",
-          newSpace: "New Space",
           collapseAllSections: "Collapse All Spaces",
           expandAllSections: "Expand All Spaces",
           collapseAllFolders: "Collapse All Folders",
@@ -13995,8 +13999,8 @@ var T4 = class {
           importDataview: "Import All Dataview Properties",
           saveAllProperties: "Save All Properties to Files",
           mergeProperties: "Merge Properties",
-          openSpace: "Open Space",
-          removeFromSpace: "Remove from Space",
+          openSpace: "Open",
+          removeFromSpace: "Unpin from Space",
           editCode: "Edit Code",
           deleteProperty: "Delete Property",
           hideProperty: "Hide Property",
@@ -14017,15 +14021,13 @@ var T4 = class {
           spaces: "Spaces",
           tags: "Tags",
           manageHiddenFiles: "Manage Hidden Files",
-          unpinSpace: "Remove from Waypoints",
-          pinSpace: "Add to Waypoints",
-          deleteSpace: "Delete Space",
+          deleteSpace: "Delete",
           changeColor: "Change Color",
           changePropertyType: "Change Type",
           deleteFiles: "Delete Files",
           createFolderSpace: "Create Space from Folder",
           folder: "Folder",
-          syncToContext: "Add to Space"
+          syncToContext: "Add Property to Context"
         },
         buttons: {
           moreOptions: "More Options",
@@ -14033,12 +14035,15 @@ var T4 = class {
           changeIcon: "Change Sticker",
           removeIcon: "Remove Sticker",
           changeBanner: "Change Cover",
+          changeBannerShort: "Cover",
           removeBanner: "Remove Cover",
           rename: "Change Name",
           saveSpace: "Save Space",
-          createFolder: "New Space",
+          createSpace: "New Space",
+          createFolder: "New Folder/Space",
           createNote: "New Note",
           createCanvas: "New Canvas",
+          addIntoSpace: "New Pin",
           cancel: "Cancel",
           search: "Search",
           delete: "Delete",
@@ -14046,7 +14051,8 @@ var T4 = class {
           openFlow: "Open Flow",
           hideFlow: "Hide Flow",
           openLink: "Open Link",
-          addToSpace: "Add to Space",
+          addToSpace: "Pin to Space",
+          addToSpaceShort: "Pin",
           tag: "Tag",
           syncFields: "Sync Properties",
           convertTable: "Convert to Markdown",
@@ -14173,6 +14179,7 @@ var T4 = class {
           filterItemSelectPlaceholder: "Select Filter",
           syncFrontmatterProperty: "Sync Frontmatter Property",
           newProperty: "New Property",
+          newPropertyShort: "New Property",
           propertyType: "Type",
           propertyValueSpace: "Space",
           propertyValueProperty: "Property",
@@ -14191,7 +14198,15 @@ var T4 = class {
           selectContext: "Select Context",
           metadata: "Metadata",
           backlinks: "Backlinks",
-          context: "Context"
+          spaces: "Spaces",
+          context: "Context",
+          properties: "Properties",
+          content: "Content",
+          outgoingLinks: "Outgoing Links",
+          moveTo: "Move to",
+          addTo: "Pin to",
+          copyTo: "Copy to",
+          reorderIn: "Reorder in"
         },
         descriptions: {
           syncMetadata: "Select which fields from your notes to start syncing with the context.",
@@ -14222,6 +14237,7 @@ var T4 = class {
           sectionAdvanced: "Advanced",
           sectionDataview: "Dataview",
           sectionAppearance: "Appearance",
+          sectionDefault: "Default Spaces",
           sectionContext: "Context",
           inlineStickerMenu: {
             name: "Inline Stickers",
@@ -14336,6 +14352,18 @@ var T4 = class {
             name: "App Ribbon",
             desc: `Show/hide the left menu aka. ribbon`
           },
+          defaultSpaces: {
+            name: "Enable Default Spaces",
+            desc: `Recommended spaces for quickly organizing your vault`
+          },
+          homeSpace: {
+            name: "Home Space",
+            desc: `An easy-to-access space where you can add/organize your other spaces`
+          },
+          tagSpaces: {
+            name: "Tag Spaces",
+            desc: `Automatically create spaces for each of your tags`
+          },
           readableLineWidth: {
             name: "Readable Line Width",
             desc: `Use Readable Line Width`
@@ -14417,6 +14445,9 @@ var T4 = class {
   }
 };
 var i18n_default = new T4().texts;
+
+// src/codemirror/extensions/flowEditor/flowEditor.tsx
+var import_obsidian50 = require("obsidian");
 
 // src/utils/array.ts
 var insert = (arr, index, newItem) => !index || index <= 0 ? [
@@ -14626,10 +14657,13 @@ var serializeSQLValues = (value) => value.join(", ");
 var serializeSQLStatements = (value) => value.join("; ");
 var serializeSQLFieldNames = (value) => value.join(",");
 
-// src/components/RemoteMarkdownView/FileView.tsx
+// src/utils/file.ts
+var import_obsidian49 = require("obsidian");
+
+// src/react/components/RemoteMarkdownView/FileView.tsx
 var import_obsidian2 = require("obsidian");
 
-// src/components/RemoteMarkdownView/FileLinkViewComponent.tsx
+// src/react/components/RemoteMarkdownView/FileLinkViewComponent.tsx
 var import_obsidian = require("obsidian");
 var FileLinkViewComponent = (props2) => {
   const ref2 = _2(null);
@@ -14655,7 +14689,7 @@ var FileLinkViewComponent = (props2) => {
   }));
 };
 
-// src/components/RemoteMarkdownView/FileView.tsx
+// src/react/components/RemoteMarkdownView/FileView.tsx
 var FILE_VIEW_TYPE = "make-file-view";
 var FileLinkView = class extends import_obsidian2.ItemView {
   constructor(leaf, plugin, viewType) {
@@ -14713,6 +14747,12 @@ var FileLinkView = class extends import_obsidian2.ItemView {
     );
   }
 };
+
+// src/react/components/SpaceView/Contexts/SpaceView.tsx
+var import_obsidian48 = require("obsidian");
+
+// src/react/context/FramesMDBContext.tsx
+var import_obsidian5 = require("obsidian");
 
 // src/types/mframe.ts
 var defaultFrameEditorProps = { editMode: 0 };
@@ -22115,7 +22155,7 @@ var defaultTagTables = {
   )
 };
 
-// src/components/SpaceView/Frames/DefaultFrames/DefaultFrames.ts
+// src/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames.ts
 var defaultMainFrame = [
   {
     ...groupNode.node,
@@ -22183,9 +22223,6 @@ var DefaultMDBTables = {
   }
 };
 
-// src/context/FramesMDBContext.tsx
-var import_obsidian5 = require("obsidian");
-
 // src/utils/sanitize.ts
 var sanitizeTableName = (name) => {
   return name == null ? void 0 : name.replace(/[^a-z0-9+]+/gi, "");
@@ -22230,7 +22267,15 @@ var getDBFile = async (plugin, path, isRemote) => {
 var getDB = async (plugin, sqlJS, path, isRemote) => {
   const buf = await getDBFile(plugin, path, isRemote);
   if (buf) {
-    return new sqlJS.Database(new Uint8Array(buf));
+    const db = await new sqlJS.Database(new Uint8Array(buf));
+    try {
+      db.exec(
+        "SELECT name FROM sqlite_schema"
+      );
+    } catch (e4) {
+      return new sqlJS.Database();
+    }
+    return db;
   }
   return new sqlJS.Database();
 };
@@ -22238,7 +22283,7 @@ var saveDBFile = async (plugin, path, binary) => {
   if (!await plugin.app.vault.adapter.exists(
     removeTrailingSlashFromFolder(getParentPathFromString(path))
   )) {
-    await plugin.app.vault.createFolder(getParentPathFromString(path));
+    await plugin.files.createFolder(getParentPathFromString(path));
   }
   const file = plugin.app.vault.adapter.writeBinary(
     (0, import_obsidian4.normalizePath)(path),
@@ -22667,12 +22712,6 @@ var createNewRow = (mdb, row, index) => {
     rows: [...mdb.rows, row]
   };
 };
-var deleteSpaceFolder = async (plugin, space) => {
-  const spacePath = folderForSpace(space, plugin);
-  if (getAbstractFileAtPath(plugin, spacePath)) {
-    await deleteFile(plugin, getAbstractFileAtPath(plugin, spacePath));
-  }
-};
 var spaceFolderDelete = (space) => {
   app.workspace.iterateLeaves((leaf) => {
     if (leaf.view.getViewType() == SPACE_VIEW_TYPE && leaf.view.getState().path == space) {
@@ -22680,12 +22719,12 @@ var spaceFolderDelete = (space) => {
     }
   }, app.workspace["rootSplit"]);
 };
-var renameSpaceFolder = async (plugin, space, newSpace) => {
-  const spacePath = folderForSpace(space, plugin);
+var renameTagSpaceFolder = async (plugin, space, newSpace) => {
+  const spacePath = folderForTagSpace(space, plugin);
   if (getAbstractFileAtPath(plugin, spacePath)) {
     if (!getAbstractFileAtPath(
       plugin,
-      folderForSpace(newSpace, plugin)
+      folderForTagSpace(newSpace, plugin)
     )) {
       await renameFile(
         plugin,
@@ -22779,7 +22818,7 @@ var saveMFramesToPath = async (plugin, space, mdb) => {
   return saveSpaceDBToPath(plugin, space, "frames", tables);
 };
 
-// src/context/SpaceContext.tsx
+// src/react/context/SpaceContext.tsx
 var SpaceContext = F({
   spaceInfo: null,
   readMode: false,
@@ -22826,7 +22865,7 @@ var SpaceContextProvider = (props2) => {
   }, props2.children);
 };
 
-// src/context/FramesMDBContext.tsx
+// src/react/context/FramesMDBContext.tsx
 var FramesMDBContext = F({
   frameSchemas: [],
   frames: [],
@@ -23083,9 +23122,6 @@ var FramesMDBProvider = (props2) => {
     }
   }, props2.children);
 };
-
-// src/components/SpaceView/Contexts/SpaceView.tsx
-var import_obsidian47 = require("obsidian");
 
 // node_modules/@dnd-kit/utilities/dist/utilities.esm.js
 function useCombinedRefs() {
@@ -27370,17 +27406,3177 @@ function isAfter(a5, b4) {
   return a5.data.current.sortable.index < b4.data.current.sortable.index;
 }
 
-// src/components/UI/menus/propertyMenu/newPropertyMenu.tsx
-var import_obsidian16 = require("obsidian");
-
-// src/components/UI/menus/menuItems.tsx
+// src/dispatch/mdb.ts
+var import_lodash2 = __toESM(require_lodash());
 var import_obsidian8 = require("obsidian");
 
-// src/components/UI/menus/selectMenu/SelectMenuComponent.tsx
-var import_fuzzysort = __toESM(require_fuzzysort());
-var import_lodash = __toESM(require_lodash());
+// src/utils/contexts/file.ts
+var renameRowForFile = (folder, filePath, toFilePath) => {
+  return {
+    ...folder,
+    rows: folder.rows.map(
+      (f4) => f4.File == filePath ? { ...f4, File: toFilePath } : f4
+    )
+  };
+};
+var removeRowForFile = (folder, filePath) => {
+  return {
+    ...folder,
+    rows: folder.rows.filter(
+      (f4) => f4.File != filePath
+    )
+  };
+};
+var removeRowsForFile = (folder, filePaths) => {
+  return {
+    ...folder,
+    rows: folder.rows.filter(
+      (f4) => !filePaths.includes(f4.File)
+    )
+  };
+};
+var reorderRowsForFile = (folder, filePaths, index) => {
+  const rows = folder.rows.filter(
+    (f4) => filePaths.includes(f4.File)
+  );
+  return {
+    ...folder,
+    rows: insertMulti(folder.rows.filter(
+      (f4) => !filePaths.includes(f4.File)
+    ), index, rows)
+  };
+};
 
-// src/components/UI/menus/selectMenu/SelectMenuInput.tsx
+// node_modules/date-fns/esm/_lib/toInteger/index.js
+function toInteger(dirtyNumber) {
+  if (dirtyNumber === null || dirtyNumber === true || dirtyNumber === false) {
+    return NaN;
+  }
+  var number = Number(dirtyNumber);
+  if (isNaN(number)) {
+    return number;
+  }
+  return number < 0 ? Math.ceil(number) : Math.floor(number);
+}
+
+// node_modules/date-fns/esm/_lib/requiredArgs/index.js
+function requiredArgs(required, args) {
+  if (args.length < required) {
+    throw new TypeError(required + " argument" + (required > 1 ? "s" : "") + " required, but only " + args.length + " present");
+  }
+}
+
+// node_modules/date-fns/esm/toDate/index.js
+function _typeof(obj) {
+  "@babel/helpers - typeof";
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof = function _typeof5(obj2) {
+      return typeof obj2;
+    };
+  } else {
+    _typeof = function _typeof5(obj2) {
+      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
+    };
+  }
+  return _typeof(obj);
+}
+function toDate(argument) {
+  requiredArgs(1, arguments);
+  var argStr = Object.prototype.toString.call(argument);
+  if (argument instanceof Date || _typeof(argument) === "object" && argStr === "[object Date]") {
+    return new Date(argument.getTime());
+  } else if (typeof argument === "number" || argStr === "[object Number]") {
+    return new Date(argument);
+  } else {
+    if ((typeof argument === "string" || argStr === "[object String]") && typeof console !== "undefined") {
+      console.warn("Starting with v2.0.0-beta.1 date-fns doesn't accept strings as date arguments. Please use `parseISO` to parse strings. See: https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#string-arguments");
+      console.warn(new Error().stack);
+    }
+    return new Date(NaN);
+  }
+}
+
+// node_modules/date-fns/esm/addDays/index.js
+function addDays(dirtyDate, dirtyAmount) {
+  requiredArgs(2, arguments);
+  var date = toDate(dirtyDate);
+  var amount = toInteger(dirtyAmount);
+  if (isNaN(amount)) {
+    return new Date(NaN);
+  }
+  if (!amount) {
+    return date;
+  }
+  date.setDate(date.getDate() + amount);
+  return date;
+}
+
+// node_modules/date-fns/esm/addMonths/index.js
+function addMonths(dirtyDate, dirtyAmount) {
+  requiredArgs(2, arguments);
+  var date = toDate(dirtyDate);
+  var amount = toInteger(dirtyAmount);
+  if (isNaN(amount)) {
+    return new Date(NaN);
+  }
+  if (!amount) {
+    return date;
+  }
+  var dayOfMonth = date.getDate();
+  var endOfDesiredMonth = new Date(date.getTime());
+  endOfDesiredMonth.setMonth(date.getMonth() + amount + 1, 0);
+  var daysInMonth = endOfDesiredMonth.getDate();
+  if (dayOfMonth >= daysInMonth) {
+    return endOfDesiredMonth;
+  } else {
+    date.setFullYear(endOfDesiredMonth.getFullYear(), endOfDesiredMonth.getMonth(), dayOfMonth);
+    return date;
+  }
+}
+
+// node_modules/date-fns/esm/addMilliseconds/index.js
+function addMilliseconds(dirtyDate, dirtyAmount) {
+  requiredArgs(2, arguments);
+  var timestamp = toDate(dirtyDate).getTime();
+  var amount = toInteger(dirtyAmount);
+  return new Date(timestamp + amount);
+}
+
+// node_modules/date-fns/esm/_lib/defaultOptions/index.js
+var defaultOptions3 = {};
+function getDefaultOptions() {
+  return defaultOptions3;
+}
+
+// node_modules/date-fns/esm/startOfWeek/index.js
+function startOfWeek(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$weekStartsOn, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+  requiredArgs(1, arguments);
+  var defaultOptions4 = getDefaultOptions();
+  var weekStartsOn = toInteger((_ref = (_ref2 = (_ref3 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.weekStartsOn) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.weekStartsOn) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.weekStartsOn) !== null && _ref !== void 0 ? _ref : 0);
+  if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
+    throw new RangeError("weekStartsOn must be between 0 and 6 inclusively");
+  }
+  var date = toDate(dirtyDate);
+  var day = date.getDay();
+  var diff = (day < weekStartsOn ? 7 : 0) + day - weekStartsOn;
+  date.setDate(date.getDate() - diff);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+// node_modules/date-fns/esm/startOfISOWeek/index.js
+function startOfISOWeek(dirtyDate) {
+  requiredArgs(1, arguments);
+  return startOfWeek(dirtyDate, {
+    weekStartsOn: 1
+  });
+}
+
+// node_modules/date-fns/esm/getISOWeekYear/index.js
+function getISOWeekYear(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var year = date.getFullYear();
+  var fourthOfJanuaryOfNextYear = new Date(0);
+  fourthOfJanuaryOfNextYear.setFullYear(year + 1, 0, 4);
+  fourthOfJanuaryOfNextYear.setHours(0, 0, 0, 0);
+  var startOfNextYear = startOfISOWeek(fourthOfJanuaryOfNextYear);
+  var fourthOfJanuaryOfThisYear = new Date(0);
+  fourthOfJanuaryOfThisYear.setFullYear(year, 0, 4);
+  fourthOfJanuaryOfThisYear.setHours(0, 0, 0, 0);
+  var startOfThisYear = startOfISOWeek(fourthOfJanuaryOfThisYear);
+  if (date.getTime() >= startOfNextYear.getTime()) {
+    return year + 1;
+  } else if (date.getTime() >= startOfThisYear.getTime()) {
+    return year;
+  } else {
+    return year - 1;
+  }
+}
+
+// node_modules/date-fns/esm/startOfISOWeekYear/index.js
+function startOfISOWeekYear(dirtyDate) {
+  requiredArgs(1, arguments);
+  var year = getISOWeekYear(dirtyDate);
+  var fourthOfJanuary = new Date(0);
+  fourthOfJanuary.setFullYear(year, 0, 4);
+  fourthOfJanuary.setHours(0, 0, 0, 0);
+  var date = startOfISOWeek(fourthOfJanuary);
+  return date;
+}
+
+// node_modules/date-fns/esm/_lib/getTimezoneOffsetInMilliseconds/index.js
+function getTimezoneOffsetInMilliseconds(date) {
+  var utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()));
+  utcDate.setUTCFullYear(date.getFullYear());
+  return date.getTime() - utcDate.getTime();
+}
+
+// node_modules/date-fns/esm/startOfDay/index.js
+function startOfDay(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+// node_modules/date-fns/esm/differenceInCalendarDays/index.js
+var MILLISECONDS_IN_DAY = 864e5;
+function differenceInCalendarDays(dirtyDateLeft, dirtyDateRight) {
+  requiredArgs(2, arguments);
+  var startOfDayLeft = startOfDay(dirtyDateLeft);
+  var startOfDayRight = startOfDay(dirtyDateRight);
+  var timestampLeft = startOfDayLeft.getTime() - getTimezoneOffsetInMilliseconds(startOfDayLeft);
+  var timestampRight = startOfDayRight.getTime() - getTimezoneOffsetInMilliseconds(startOfDayRight);
+  return Math.round((timestampLeft - timestampRight) / MILLISECONDS_IN_DAY);
+}
+
+// node_modules/date-fns/esm/addWeeks/index.js
+function addWeeks(dirtyDate, dirtyAmount) {
+  requiredArgs(2, arguments);
+  var amount = toInteger(dirtyAmount);
+  var days = amount * 7;
+  return addDays(dirtyDate, days);
+}
+
+// node_modules/date-fns/esm/addYears/index.js
+function addYears(dirtyDate, dirtyAmount) {
+  requiredArgs(2, arguments);
+  var amount = toInteger(dirtyAmount);
+  return addMonths(dirtyDate, amount * 12);
+}
+
+// node_modules/date-fns/esm/max/index.js
+function _typeof2(obj) {
+  "@babel/helpers - typeof";
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof2 = function _typeof5(obj2) {
+      return typeof obj2;
+    };
+  } else {
+    _typeof2 = function _typeof5(obj2) {
+      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
+    };
+  }
+  return _typeof2(obj);
+}
+function max(dirtyDatesArray) {
+  requiredArgs(1, arguments);
+  var datesArray;
+  if (dirtyDatesArray && typeof dirtyDatesArray.forEach === "function") {
+    datesArray = dirtyDatesArray;
+  } else if (_typeof2(dirtyDatesArray) === "object" && dirtyDatesArray !== null) {
+    datesArray = Array.prototype.slice.call(dirtyDatesArray);
+  } else {
+    return new Date(NaN);
+  }
+  var result;
+  datesArray.forEach(function(dirtyDate) {
+    var currentDate = toDate(dirtyDate);
+    if (result === void 0 || result < currentDate || isNaN(Number(currentDate))) {
+      result = currentDate;
+    }
+  });
+  return result || new Date(NaN);
+}
+
+// node_modules/date-fns/esm/min/index.js
+function _typeof3(obj) {
+  "@babel/helpers - typeof";
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof3 = function _typeof5(obj2) {
+      return typeof obj2;
+    };
+  } else {
+    _typeof3 = function _typeof5(obj2) {
+      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
+    };
+  }
+  return _typeof3(obj);
+}
+function min(dirtyDatesArray) {
+  requiredArgs(1, arguments);
+  var datesArray;
+  if (dirtyDatesArray && typeof dirtyDatesArray.forEach === "function") {
+    datesArray = dirtyDatesArray;
+  } else if (_typeof3(dirtyDatesArray) === "object" && dirtyDatesArray !== null) {
+    datesArray = Array.prototype.slice.call(dirtyDatesArray);
+  } else {
+    return new Date(NaN);
+  }
+  var result;
+  datesArray.forEach(function(dirtyDate) {
+    var currentDate = toDate(dirtyDate);
+    if (result === void 0 || result > currentDate || isNaN(currentDate.getDate())) {
+      result = currentDate;
+    }
+  });
+  return result || new Date(NaN);
+}
+
+// node_modules/date-fns/esm/compareAsc/index.js
+function compareAsc(dirtyDateLeft, dirtyDateRight) {
+  requiredArgs(2, arguments);
+  var dateLeft = toDate(dirtyDateLeft);
+  var dateRight = toDate(dirtyDateRight);
+  var diff = dateLeft.getTime() - dateRight.getTime();
+  if (diff < 0) {
+    return -1;
+  } else if (diff > 0) {
+    return 1;
+  } else {
+    return diff;
+  }
+}
+
+// node_modules/date-fns/esm/isSameDay/index.js
+function isSameDay(dirtyDateLeft, dirtyDateRight) {
+  requiredArgs(2, arguments);
+  var dateLeftStartOfDay = startOfDay(dirtyDateLeft);
+  var dateRightStartOfDay = startOfDay(dirtyDateRight);
+  return dateLeftStartOfDay.getTime() === dateRightStartOfDay.getTime();
+}
+
+// node_modules/date-fns/esm/isDate/index.js
+function _typeof4(obj) {
+  "@babel/helpers - typeof";
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof4 = function _typeof5(obj2) {
+      return typeof obj2;
+    };
+  } else {
+    _typeof4 = function _typeof5(obj2) {
+      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
+    };
+  }
+  return _typeof4(obj);
+}
+function isDate(value) {
+  requiredArgs(1, arguments);
+  return value instanceof Date || _typeof4(value) === "object" && Object.prototype.toString.call(value) === "[object Date]";
+}
+
+// node_modules/date-fns/esm/isValid/index.js
+function isValid(dirtyDate) {
+  requiredArgs(1, arguments);
+  if (!isDate(dirtyDate) && typeof dirtyDate !== "number") {
+    return false;
+  }
+  var date = toDate(dirtyDate);
+  return !isNaN(Number(date));
+}
+
+// node_modules/date-fns/esm/differenceInCalendarMonths/index.js
+function differenceInCalendarMonths(dirtyDateLeft, dirtyDateRight) {
+  requiredArgs(2, arguments);
+  var dateLeft = toDate(dirtyDateLeft);
+  var dateRight = toDate(dirtyDateRight);
+  var yearDiff = dateLeft.getFullYear() - dateRight.getFullYear();
+  var monthDiff = dateLeft.getMonth() - dateRight.getMonth();
+  return yearDiff * 12 + monthDiff;
+}
+
+// node_modules/date-fns/esm/differenceInCalendarWeeks/index.js
+var MILLISECONDS_IN_WEEK = 6048e5;
+function differenceInCalendarWeeks(dirtyDateLeft, dirtyDateRight, options) {
+  requiredArgs(2, arguments);
+  var startOfWeekLeft = startOfWeek(dirtyDateLeft, options);
+  var startOfWeekRight = startOfWeek(dirtyDateRight, options);
+  var timestampLeft = startOfWeekLeft.getTime() - getTimezoneOffsetInMilliseconds(startOfWeekLeft);
+  var timestampRight = startOfWeekRight.getTime() - getTimezoneOffsetInMilliseconds(startOfWeekRight);
+  return Math.round((timestampLeft - timestampRight) / MILLISECONDS_IN_WEEK);
+}
+
+// node_modules/date-fns/esm/differenceInMilliseconds/index.js
+function differenceInMilliseconds(dateLeft, dateRight) {
+  requiredArgs(2, arguments);
+  return toDate(dateLeft).getTime() - toDate(dateRight).getTime();
+}
+
+// node_modules/date-fns/esm/_lib/roundingMethods/index.js
+var roundingMap = {
+  ceil: Math.ceil,
+  round: Math.round,
+  floor: Math.floor,
+  trunc: function trunc(value) {
+    return value < 0 ? Math.ceil(value) : Math.floor(value);
+  }
+};
+var defaultRoundingMethod = "trunc";
+function getRoundingMethod(method) {
+  return method ? roundingMap[method] : roundingMap[defaultRoundingMethod];
+}
+
+// node_modules/date-fns/esm/endOfDay/index.js
+function endOfDay(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
+// node_modules/date-fns/esm/endOfMonth/index.js
+function endOfMonth(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var month = date.getMonth();
+  date.setFullYear(date.getFullYear(), month + 1, 0);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
+// node_modules/date-fns/esm/isLastDayOfMonth/index.js
+function isLastDayOfMonth(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  return endOfDay(date).getTime() === endOfMonth(date).getTime();
+}
+
+// node_modules/date-fns/esm/differenceInMonths/index.js
+function differenceInMonths(dirtyDateLeft, dirtyDateRight) {
+  requiredArgs(2, arguments);
+  var dateLeft = toDate(dirtyDateLeft);
+  var dateRight = toDate(dirtyDateRight);
+  var sign = compareAsc(dateLeft, dateRight);
+  var difference = Math.abs(differenceInCalendarMonths(dateLeft, dateRight));
+  var result;
+  if (difference < 1) {
+    result = 0;
+  } else {
+    if (dateLeft.getMonth() === 1 && dateLeft.getDate() > 27) {
+      dateLeft.setDate(30);
+    }
+    dateLeft.setMonth(dateLeft.getMonth() - sign * difference);
+    var isLastMonthNotFull = compareAsc(dateLeft, dateRight) === -sign;
+    if (isLastDayOfMonth(toDate(dirtyDateLeft)) && difference === 1 && compareAsc(dirtyDateLeft, dateRight) === 1) {
+      isLastMonthNotFull = false;
+    }
+    result = sign * (difference - Number(isLastMonthNotFull));
+  }
+  return result === 0 ? 0 : result;
+}
+
+// node_modules/date-fns/esm/differenceInSeconds/index.js
+function differenceInSeconds(dateLeft, dateRight, options) {
+  requiredArgs(2, arguments);
+  var diff = differenceInMilliseconds(dateLeft, dateRight) / 1e3;
+  return getRoundingMethod(options === null || options === void 0 ? void 0 : options.roundingMethod)(diff);
+}
+
+// node_modules/date-fns/esm/startOfMonth/index.js
+function startOfMonth(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  date.setDate(1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+// node_modules/date-fns/esm/startOfYear/index.js
+function startOfYear(dirtyDate) {
+  requiredArgs(1, arguments);
+  var cleanDate = toDate(dirtyDate);
+  var date = new Date(0);
+  date.setFullYear(cleanDate.getFullYear(), 0, 1);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+// node_modules/date-fns/esm/endOfWeek/index.js
+function endOfWeek(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$weekStartsOn, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+  requiredArgs(1, arguments);
+  var defaultOptions4 = getDefaultOptions();
+  var weekStartsOn = toInteger((_ref = (_ref2 = (_ref3 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.weekStartsOn) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.weekStartsOn) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.weekStartsOn) !== null && _ref !== void 0 ? _ref : 0);
+  if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
+    throw new RangeError("weekStartsOn must be between 0 and 6 inclusively");
+  }
+  var date = toDate(dirtyDate);
+  var day = date.getDay();
+  var diff = (day < weekStartsOn ? -7 : 0) + 6 - (day - weekStartsOn);
+  date.setDate(date.getDate() + diff);
+  date.setHours(23, 59, 59, 999);
+  return date;
+}
+
+// node_modules/date-fns/esm/endOfISOWeek/index.js
+function endOfISOWeek(dirtyDate) {
+  requiredArgs(1, arguments);
+  return endOfWeek(dirtyDate, {
+    weekStartsOn: 1
+  });
+}
+
+// node_modules/date-fns/esm/subMilliseconds/index.js
+function subMilliseconds(dirtyDate, dirtyAmount) {
+  requiredArgs(2, arguments);
+  var amount = toInteger(dirtyAmount);
+  return addMilliseconds(dirtyDate, -amount);
+}
+
+// node_modules/date-fns/esm/_lib/getUTCDayOfYear/index.js
+var MILLISECONDS_IN_DAY2 = 864e5;
+function getUTCDayOfYear(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var timestamp = date.getTime();
+  date.setUTCMonth(0, 1);
+  date.setUTCHours(0, 0, 0, 0);
+  var startOfYearTimestamp = date.getTime();
+  var difference = timestamp - startOfYearTimestamp;
+  return Math.floor(difference / MILLISECONDS_IN_DAY2) + 1;
+}
+
+// node_modules/date-fns/esm/_lib/startOfUTCISOWeek/index.js
+function startOfUTCISOWeek(dirtyDate) {
+  requiredArgs(1, arguments);
+  var weekStartsOn = 1;
+  var date = toDate(dirtyDate);
+  var day = date.getUTCDay();
+  var diff = (day < weekStartsOn ? 7 : 0) + day - weekStartsOn;
+  date.setUTCDate(date.getUTCDate() - diff);
+  date.setUTCHours(0, 0, 0, 0);
+  return date;
+}
+
+// node_modules/date-fns/esm/_lib/getUTCISOWeekYear/index.js
+function getUTCISOWeekYear(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var year = date.getUTCFullYear();
+  var fourthOfJanuaryOfNextYear = new Date(0);
+  fourthOfJanuaryOfNextYear.setUTCFullYear(year + 1, 0, 4);
+  fourthOfJanuaryOfNextYear.setUTCHours(0, 0, 0, 0);
+  var startOfNextYear = startOfUTCISOWeek(fourthOfJanuaryOfNextYear);
+  var fourthOfJanuaryOfThisYear = new Date(0);
+  fourthOfJanuaryOfThisYear.setUTCFullYear(year, 0, 4);
+  fourthOfJanuaryOfThisYear.setUTCHours(0, 0, 0, 0);
+  var startOfThisYear = startOfUTCISOWeek(fourthOfJanuaryOfThisYear);
+  if (date.getTime() >= startOfNextYear.getTime()) {
+    return year + 1;
+  } else if (date.getTime() >= startOfThisYear.getTime()) {
+    return year;
+  } else {
+    return year - 1;
+  }
+}
+
+// node_modules/date-fns/esm/_lib/startOfUTCISOWeekYear/index.js
+function startOfUTCISOWeekYear(dirtyDate) {
+  requiredArgs(1, arguments);
+  var year = getUTCISOWeekYear(dirtyDate);
+  var fourthOfJanuary = new Date(0);
+  fourthOfJanuary.setUTCFullYear(year, 0, 4);
+  fourthOfJanuary.setUTCHours(0, 0, 0, 0);
+  var date = startOfUTCISOWeek(fourthOfJanuary);
+  return date;
+}
+
+// node_modules/date-fns/esm/_lib/getUTCISOWeek/index.js
+var MILLISECONDS_IN_WEEK2 = 6048e5;
+function getUTCISOWeek(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var diff = startOfUTCISOWeek(date).getTime() - startOfUTCISOWeekYear(date).getTime();
+  return Math.round(diff / MILLISECONDS_IN_WEEK2) + 1;
+}
+
+// node_modules/date-fns/esm/_lib/startOfUTCWeek/index.js
+function startOfUTCWeek(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$weekStartsOn, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+  requiredArgs(1, arguments);
+  var defaultOptions4 = getDefaultOptions();
+  var weekStartsOn = toInteger((_ref = (_ref2 = (_ref3 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.weekStartsOn) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.weekStartsOn) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.weekStartsOn) !== null && _ref !== void 0 ? _ref : 0);
+  if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
+    throw new RangeError("weekStartsOn must be between 0 and 6 inclusively");
+  }
+  var date = toDate(dirtyDate);
+  var day = date.getUTCDay();
+  var diff = (day < weekStartsOn ? 7 : 0) + day - weekStartsOn;
+  date.setUTCDate(date.getUTCDate() - diff);
+  date.setUTCHours(0, 0, 0, 0);
+  return date;
+}
+
+// node_modules/date-fns/esm/_lib/getUTCWeekYear/index.js
+function getUTCWeekYear(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var year = date.getUTCFullYear();
+  var defaultOptions4 = getDefaultOptions();
+  var firstWeekContainsDate = toInteger((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1);
+  if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
+    throw new RangeError("firstWeekContainsDate must be between 1 and 7 inclusively");
+  }
+  var firstWeekOfNextYear = new Date(0);
+  firstWeekOfNextYear.setUTCFullYear(year + 1, 0, firstWeekContainsDate);
+  firstWeekOfNextYear.setUTCHours(0, 0, 0, 0);
+  var startOfNextYear = startOfUTCWeek(firstWeekOfNextYear, options);
+  var firstWeekOfThisYear = new Date(0);
+  firstWeekOfThisYear.setUTCFullYear(year, 0, firstWeekContainsDate);
+  firstWeekOfThisYear.setUTCHours(0, 0, 0, 0);
+  var startOfThisYear = startOfUTCWeek(firstWeekOfThisYear, options);
+  if (date.getTime() >= startOfNextYear.getTime()) {
+    return year + 1;
+  } else if (date.getTime() >= startOfThisYear.getTime()) {
+    return year;
+  } else {
+    return year - 1;
+  }
+}
+
+// node_modules/date-fns/esm/_lib/startOfUTCWeekYear/index.js
+function startOfUTCWeekYear(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+  requiredArgs(1, arguments);
+  var defaultOptions4 = getDefaultOptions();
+  var firstWeekContainsDate = toInteger((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1);
+  var year = getUTCWeekYear(dirtyDate, options);
+  var firstWeek = new Date(0);
+  firstWeek.setUTCFullYear(year, 0, firstWeekContainsDate);
+  firstWeek.setUTCHours(0, 0, 0, 0);
+  var date = startOfUTCWeek(firstWeek, options);
+  return date;
+}
+
+// node_modules/date-fns/esm/_lib/getUTCWeek/index.js
+var MILLISECONDS_IN_WEEK3 = 6048e5;
+function getUTCWeek(dirtyDate, options) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var diff = startOfUTCWeek(date, options).getTime() - startOfUTCWeekYear(date, options).getTime();
+  return Math.round(diff / MILLISECONDS_IN_WEEK3) + 1;
+}
+
+// node_modules/date-fns/esm/_lib/addLeadingZeros/index.js
+function addLeadingZeros(number, targetLength) {
+  var sign = number < 0 ? "-" : "";
+  var output = Math.abs(number).toString();
+  while (output.length < targetLength) {
+    output = "0" + output;
+  }
+  return sign + output;
+}
+
+// node_modules/date-fns/esm/_lib/format/lightFormatters/index.js
+var formatters = {
+  y: function y3(date, token) {
+    var signedYear = date.getUTCFullYear();
+    var year = signedYear > 0 ? signedYear : 1 - signedYear;
+    return addLeadingZeros(token === "yy" ? year % 100 : year, token.length);
+  },
+  M: function M3(date, token) {
+    var month = date.getUTCMonth();
+    return token === "M" ? String(month + 1) : addLeadingZeros(month + 1, 2);
+  },
+  d: function d3(date, token) {
+    return addLeadingZeros(date.getUTCDate(), token.length);
+  },
+  a: function a3(date, token) {
+    var dayPeriodEnumValue = date.getUTCHours() / 12 >= 1 ? "pm" : "am";
+    switch (token) {
+      case "a":
+      case "aa":
+        return dayPeriodEnumValue.toUpperCase();
+      case "aaa":
+        return dayPeriodEnumValue;
+      case "aaaaa":
+        return dayPeriodEnumValue[0];
+      case "aaaa":
+      default:
+        return dayPeriodEnumValue === "am" ? "a.m." : "p.m.";
+    }
+  },
+  h: function h3(date, token) {
+    return addLeadingZeros(date.getUTCHours() % 12 || 12, token.length);
+  },
+  H: function H3(date, token) {
+    return addLeadingZeros(date.getUTCHours(), token.length);
+  },
+  m: function m3(date, token) {
+    return addLeadingZeros(date.getUTCMinutes(), token.length);
+  },
+  s: function s3(date, token) {
+    return addLeadingZeros(date.getUTCSeconds(), token.length);
+  },
+  S: function S2(date, token) {
+    var numberOfDigits = token.length;
+    var milliseconds = date.getUTCMilliseconds();
+    var fractionalSeconds = Math.floor(milliseconds * Math.pow(10, numberOfDigits - 3));
+    return addLeadingZeros(fractionalSeconds, token.length);
+  }
+};
+var lightFormatters_default = formatters;
+
+// node_modules/date-fns/esm/_lib/format/formatters/index.js
+var dayPeriodEnum = {
+  am: "am",
+  pm: "pm",
+  midnight: "midnight",
+  noon: "noon",
+  morning: "morning",
+  afternoon: "afternoon",
+  evening: "evening",
+  night: "night"
+};
+var formatters2 = {
+  G: function G2(date, token, localize2) {
+    var era = date.getUTCFullYear() > 0 ? 1 : 0;
+    switch (token) {
+      case "G":
+      case "GG":
+      case "GGG":
+        return localize2.era(era, {
+          width: "abbreviated"
+        });
+      case "GGGGG":
+        return localize2.era(era, {
+          width: "narrow"
+        });
+      case "GGGG":
+      default:
+        return localize2.era(era, {
+          width: "wide"
+        });
+    }
+  },
+  y: function y4(date, token, localize2) {
+    if (token === "yo") {
+      var signedYear = date.getUTCFullYear();
+      var year = signedYear > 0 ? signedYear : 1 - signedYear;
+      return localize2.ordinalNumber(year, {
+        unit: "year"
+      });
+    }
+    return lightFormatters_default.y(date, token);
+  },
+  Y: function Y2(date, token, localize2, options) {
+    var signedWeekYear = getUTCWeekYear(date, options);
+    var weekYear = signedWeekYear > 0 ? signedWeekYear : 1 - signedWeekYear;
+    if (token === "YY") {
+      var twoDigitYear = weekYear % 100;
+      return addLeadingZeros(twoDigitYear, 2);
+    }
+    if (token === "Yo") {
+      return localize2.ordinalNumber(weekYear, {
+        unit: "year"
+      });
+    }
+    return addLeadingZeros(weekYear, token.length);
+  },
+  R: function R2(date, token) {
+    var isoWeekYear = getUTCISOWeekYear(date);
+    return addLeadingZeros(isoWeekYear, token.length);
+  },
+  u: function u3(date, token) {
+    var year = date.getUTCFullYear();
+    return addLeadingZeros(year, token.length);
+  },
+  Q: function Q2(date, token, localize2) {
+    var quarter = Math.ceil((date.getUTCMonth() + 1) / 3);
+    switch (token) {
+      case "Q":
+        return String(quarter);
+      case "QQ":
+        return addLeadingZeros(quarter, 2);
+      case "Qo":
+        return localize2.ordinalNumber(quarter, {
+          unit: "quarter"
+        });
+      case "QQQ":
+        return localize2.quarter(quarter, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "QQQQQ":
+        return localize2.quarter(quarter, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "QQQQ":
+      default:
+        return localize2.quarter(quarter, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  q: function q4(date, token, localize2) {
+    var quarter = Math.ceil((date.getUTCMonth() + 1) / 3);
+    switch (token) {
+      case "q":
+        return String(quarter);
+      case "qq":
+        return addLeadingZeros(quarter, 2);
+      case "qo":
+        return localize2.ordinalNumber(quarter, {
+          unit: "quarter"
+        });
+      case "qqq":
+        return localize2.quarter(quarter, {
+          width: "abbreviated",
+          context: "standalone"
+        });
+      case "qqqqq":
+        return localize2.quarter(quarter, {
+          width: "narrow",
+          context: "standalone"
+        });
+      case "qqqq":
+      default:
+        return localize2.quarter(quarter, {
+          width: "wide",
+          context: "standalone"
+        });
+    }
+  },
+  M: function M4(date, token, localize2) {
+    var month = date.getUTCMonth();
+    switch (token) {
+      case "M":
+      case "MM":
+        return lightFormatters_default.M(date, token);
+      case "Mo":
+        return localize2.ordinalNumber(month + 1, {
+          unit: "month"
+        });
+      case "MMM":
+        return localize2.month(month, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "MMMMM":
+        return localize2.month(month, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "MMMM":
+      default:
+        return localize2.month(month, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  L: function L3(date, token, localize2) {
+    var month = date.getUTCMonth();
+    switch (token) {
+      case "L":
+        return String(month + 1);
+      case "LL":
+        return addLeadingZeros(month + 1, 2);
+      case "Lo":
+        return localize2.ordinalNumber(month + 1, {
+          unit: "month"
+        });
+      case "LLL":
+        return localize2.month(month, {
+          width: "abbreviated",
+          context: "standalone"
+        });
+      case "LLLLL":
+        return localize2.month(month, {
+          width: "narrow",
+          context: "standalone"
+        });
+      case "LLLL":
+      default:
+        return localize2.month(month, {
+          width: "wide",
+          context: "standalone"
+        });
+    }
+  },
+  w: function w4(date, token, localize2, options) {
+    var week = getUTCWeek(date, options);
+    if (token === "wo") {
+      return localize2.ordinalNumber(week, {
+        unit: "week"
+      });
+    }
+    return addLeadingZeros(week, token.length);
+  },
+  I: function I3(date, token, localize2) {
+    var isoWeek = getUTCISOWeek(date);
+    if (token === "Io") {
+      return localize2.ordinalNumber(isoWeek, {
+        unit: "week"
+      });
+    }
+    return addLeadingZeros(isoWeek, token.length);
+  },
+  d: function d4(date, token, localize2) {
+    if (token === "do") {
+      return localize2.ordinalNumber(date.getUTCDate(), {
+        unit: "date"
+      });
+    }
+    return lightFormatters_default.d(date, token);
+  },
+  D: function D3(date, token, localize2) {
+    var dayOfYear = getUTCDayOfYear(date);
+    if (token === "Do") {
+      return localize2.ordinalNumber(dayOfYear, {
+        unit: "dayOfYear"
+      });
+    }
+    return addLeadingZeros(dayOfYear, token.length);
+  },
+  E: function E3(date, token, localize2) {
+    var dayOfWeek = date.getUTCDay();
+    switch (token) {
+      case "E":
+      case "EE":
+      case "EEE":
+        return localize2.day(dayOfWeek, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "EEEEE":
+        return localize2.day(dayOfWeek, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "EEEEEE":
+        return localize2.day(dayOfWeek, {
+          width: "short",
+          context: "formatting"
+        });
+      case "EEEE":
+      default:
+        return localize2.day(dayOfWeek, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  e: function e3(date, token, localize2, options) {
+    var dayOfWeek = date.getUTCDay();
+    var localDayOfWeek = (dayOfWeek - options.weekStartsOn + 8) % 7 || 7;
+    switch (token) {
+      case "e":
+        return String(localDayOfWeek);
+      case "ee":
+        return addLeadingZeros(localDayOfWeek, 2);
+      case "eo":
+        return localize2.ordinalNumber(localDayOfWeek, {
+          unit: "day"
+        });
+      case "eee":
+        return localize2.day(dayOfWeek, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "eeeee":
+        return localize2.day(dayOfWeek, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "eeeeee":
+        return localize2.day(dayOfWeek, {
+          width: "short",
+          context: "formatting"
+        });
+      case "eeee":
+      default:
+        return localize2.day(dayOfWeek, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  c: function c3(date, token, localize2, options) {
+    var dayOfWeek = date.getUTCDay();
+    var localDayOfWeek = (dayOfWeek - options.weekStartsOn + 8) % 7 || 7;
+    switch (token) {
+      case "c":
+        return String(localDayOfWeek);
+      case "cc":
+        return addLeadingZeros(localDayOfWeek, token.length);
+      case "co":
+        return localize2.ordinalNumber(localDayOfWeek, {
+          unit: "day"
+        });
+      case "ccc":
+        return localize2.day(dayOfWeek, {
+          width: "abbreviated",
+          context: "standalone"
+        });
+      case "ccccc":
+        return localize2.day(dayOfWeek, {
+          width: "narrow",
+          context: "standalone"
+        });
+      case "cccccc":
+        return localize2.day(dayOfWeek, {
+          width: "short",
+          context: "standalone"
+        });
+      case "cccc":
+      default:
+        return localize2.day(dayOfWeek, {
+          width: "wide",
+          context: "standalone"
+        });
+    }
+  },
+  i: function i3(date, token, localize2) {
+    var dayOfWeek = date.getUTCDay();
+    var isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+    switch (token) {
+      case "i":
+        return String(isoDayOfWeek);
+      case "ii":
+        return addLeadingZeros(isoDayOfWeek, token.length);
+      case "io":
+        return localize2.ordinalNumber(isoDayOfWeek, {
+          unit: "day"
+        });
+      case "iii":
+        return localize2.day(dayOfWeek, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "iiiii":
+        return localize2.day(dayOfWeek, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "iiiiii":
+        return localize2.day(dayOfWeek, {
+          width: "short",
+          context: "formatting"
+        });
+      case "iiii":
+      default:
+        return localize2.day(dayOfWeek, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  a: function a4(date, token, localize2) {
+    var hours = date.getUTCHours();
+    var dayPeriodEnumValue = hours / 12 >= 1 ? "pm" : "am";
+    switch (token) {
+      case "a":
+      case "aa":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "aaa":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        }).toLowerCase();
+      case "aaaaa":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "aaaa":
+      default:
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  b: function b3(date, token, localize2) {
+    var hours = date.getUTCHours();
+    var dayPeriodEnumValue;
+    if (hours === 12) {
+      dayPeriodEnumValue = dayPeriodEnum.noon;
+    } else if (hours === 0) {
+      dayPeriodEnumValue = dayPeriodEnum.midnight;
+    } else {
+      dayPeriodEnumValue = hours / 12 >= 1 ? "pm" : "am";
+    }
+    switch (token) {
+      case "b":
+      case "bb":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "bbb":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        }).toLowerCase();
+      case "bbbbb":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "bbbb":
+      default:
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  B: function B4(date, token, localize2) {
+    var hours = date.getUTCHours();
+    var dayPeriodEnumValue;
+    if (hours >= 17) {
+      dayPeriodEnumValue = dayPeriodEnum.evening;
+    } else if (hours >= 12) {
+      dayPeriodEnumValue = dayPeriodEnum.afternoon;
+    } else if (hours >= 4) {
+      dayPeriodEnumValue = dayPeriodEnum.morning;
+    } else {
+      dayPeriodEnumValue = dayPeriodEnum.night;
+    }
+    switch (token) {
+      case "B":
+      case "BB":
+      case "BBB":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "abbreviated",
+          context: "formatting"
+        });
+      case "BBBBB":
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "narrow",
+          context: "formatting"
+        });
+      case "BBBB":
+      default:
+        return localize2.dayPeriod(dayPeriodEnumValue, {
+          width: "wide",
+          context: "formatting"
+        });
+    }
+  },
+  h: function h4(date, token, localize2) {
+    if (token === "ho") {
+      var hours = date.getUTCHours() % 12;
+      if (hours === 0)
+        hours = 12;
+      return localize2.ordinalNumber(hours, {
+        unit: "hour"
+      });
+    }
+    return lightFormatters_default.h(date, token);
+  },
+  H: function H4(date, token, localize2) {
+    if (token === "Ho") {
+      return localize2.ordinalNumber(date.getUTCHours(), {
+        unit: "hour"
+      });
+    }
+    return lightFormatters_default.H(date, token);
+  },
+  K: function K2(date, token, localize2) {
+    var hours = date.getUTCHours() % 12;
+    if (token === "Ko") {
+      return localize2.ordinalNumber(hours, {
+        unit: "hour"
+      });
+    }
+    return addLeadingZeros(hours, token.length);
+  },
+  k: function k4(date, token, localize2) {
+    var hours = date.getUTCHours();
+    if (hours === 0)
+      hours = 24;
+    if (token === "ko") {
+      return localize2.ordinalNumber(hours, {
+        unit: "hour"
+      });
+    }
+    return addLeadingZeros(hours, token.length);
+  },
+  m: function m4(date, token, localize2) {
+    if (token === "mo") {
+      return localize2.ordinalNumber(date.getUTCMinutes(), {
+        unit: "minute"
+      });
+    }
+    return lightFormatters_default.m(date, token);
+  },
+  s: function s4(date, token, localize2) {
+    if (token === "so") {
+      return localize2.ordinalNumber(date.getUTCSeconds(), {
+        unit: "second"
+      });
+    }
+    return lightFormatters_default.s(date, token);
+  },
+  S: function S3(date, token) {
+    return lightFormatters_default.S(date, token);
+  },
+  X: function X2(date, token, _localize, options) {
+    var originalDate = options._originalDate || date;
+    var timezoneOffset = originalDate.getTimezoneOffset();
+    if (timezoneOffset === 0) {
+      return "Z";
+    }
+    switch (token) {
+      case "X":
+        return formatTimezoneWithOptionalMinutes(timezoneOffset);
+      case "XXXX":
+      case "XX":
+        return formatTimezone(timezoneOffset);
+      case "XXXXX":
+      case "XXX":
+      default:
+        return formatTimezone(timezoneOffset, ":");
+    }
+  },
+  x: function x4(date, token, _localize, options) {
+    var originalDate = options._originalDate || date;
+    var timezoneOffset = originalDate.getTimezoneOffset();
+    switch (token) {
+      case "x":
+        return formatTimezoneWithOptionalMinutes(timezoneOffset);
+      case "xxxx":
+      case "xx":
+        return formatTimezone(timezoneOffset);
+      case "xxxxx":
+      case "xxx":
+      default:
+        return formatTimezone(timezoneOffset, ":");
+    }
+  },
+  O: function O3(date, token, _localize, options) {
+    var originalDate = options._originalDate || date;
+    var timezoneOffset = originalDate.getTimezoneOffset();
+    switch (token) {
+      case "O":
+      case "OO":
+      case "OOO":
+        return "GMT" + formatTimezoneShort(timezoneOffset, ":");
+      case "OOOO":
+      default:
+        return "GMT" + formatTimezone(timezoneOffset, ":");
+    }
+  },
+  z: function z4(date, token, _localize, options) {
+    var originalDate = options._originalDate || date;
+    var timezoneOffset = originalDate.getTimezoneOffset();
+    switch (token) {
+      case "z":
+      case "zz":
+      case "zzz":
+        return "GMT" + formatTimezoneShort(timezoneOffset, ":");
+      case "zzzz":
+      default:
+        return "GMT" + formatTimezone(timezoneOffset, ":");
+    }
+  },
+  t: function t3(date, token, _localize, options) {
+    var originalDate = options._originalDate || date;
+    var timestamp = Math.floor(originalDate.getTime() / 1e3);
+    return addLeadingZeros(timestamp, token.length);
+  },
+  T: function T5(date, token, _localize, options) {
+    var originalDate = options._originalDate || date;
+    var timestamp = originalDate.getTime();
+    return addLeadingZeros(timestamp, token.length);
+  }
+};
+function formatTimezoneShort(offset2, dirtyDelimiter) {
+  var sign = offset2 > 0 ? "-" : "+";
+  var absOffset = Math.abs(offset2);
+  var hours = Math.floor(absOffset / 60);
+  var minutes = absOffset % 60;
+  if (minutes === 0) {
+    return sign + String(hours);
+  }
+  var delimiter = dirtyDelimiter || "";
+  return sign + String(hours) + delimiter + addLeadingZeros(minutes, 2);
+}
+function formatTimezoneWithOptionalMinutes(offset2, dirtyDelimiter) {
+  if (offset2 % 60 === 0) {
+    var sign = offset2 > 0 ? "-" : "+";
+    return sign + addLeadingZeros(Math.abs(offset2) / 60, 2);
+  }
+  return formatTimezone(offset2, dirtyDelimiter);
+}
+function formatTimezone(offset2, dirtyDelimiter) {
+  var delimiter = dirtyDelimiter || "";
+  var sign = offset2 > 0 ? "-" : "+";
+  var absOffset = Math.abs(offset2);
+  var hours = addLeadingZeros(Math.floor(absOffset / 60), 2);
+  var minutes = addLeadingZeros(absOffset % 60, 2);
+  return sign + hours + delimiter + minutes;
+}
+var formatters_default = formatters2;
+
+// node_modules/date-fns/esm/_lib/format/longFormatters/index.js
+var dateLongFormatter = function dateLongFormatter2(pattern, formatLong2) {
+  switch (pattern) {
+    case "P":
+      return formatLong2.date({
+        width: "short"
+      });
+    case "PP":
+      return formatLong2.date({
+        width: "medium"
+      });
+    case "PPP":
+      return formatLong2.date({
+        width: "long"
+      });
+    case "PPPP":
+    default:
+      return formatLong2.date({
+        width: "full"
+      });
+  }
+};
+var timeLongFormatter = function timeLongFormatter2(pattern, formatLong2) {
+  switch (pattern) {
+    case "p":
+      return formatLong2.time({
+        width: "short"
+      });
+    case "pp":
+      return formatLong2.time({
+        width: "medium"
+      });
+    case "ppp":
+      return formatLong2.time({
+        width: "long"
+      });
+    case "pppp":
+    default:
+      return formatLong2.time({
+        width: "full"
+      });
+  }
+};
+var dateTimeLongFormatter = function dateTimeLongFormatter2(pattern, formatLong2) {
+  var matchResult = pattern.match(/(P+)(p+)?/) || [];
+  var datePattern = matchResult[1];
+  var timePattern = matchResult[2];
+  if (!timePattern) {
+    return dateLongFormatter(pattern, formatLong2);
+  }
+  var dateTimeFormat;
+  switch (datePattern) {
+    case "P":
+      dateTimeFormat = formatLong2.dateTime({
+        width: "short"
+      });
+      break;
+    case "PP":
+      dateTimeFormat = formatLong2.dateTime({
+        width: "medium"
+      });
+      break;
+    case "PPP":
+      dateTimeFormat = formatLong2.dateTime({
+        width: "long"
+      });
+      break;
+    case "PPPP":
+    default:
+      dateTimeFormat = formatLong2.dateTime({
+        width: "full"
+      });
+      break;
+  }
+  return dateTimeFormat.replace("{{date}}", dateLongFormatter(datePattern, formatLong2)).replace("{{time}}", timeLongFormatter(timePattern, formatLong2));
+};
+var longFormatters = {
+  p: timeLongFormatter,
+  P: dateTimeLongFormatter
+};
+var longFormatters_default = longFormatters;
+
+// node_modules/date-fns/esm/_lib/protectedTokens/index.js
+var protectedDayOfYearTokens = ["D", "DD"];
+var protectedWeekYearTokens = ["YY", "YYYY"];
+function isProtectedDayOfYearToken(token) {
+  return protectedDayOfYearTokens.indexOf(token) !== -1;
+}
+function isProtectedWeekYearToken(token) {
+  return protectedWeekYearTokens.indexOf(token) !== -1;
+}
+function throwProtectedError(token, format2, input) {
+  if (token === "YYYY") {
+    throw new RangeError("Use `yyyy` instead of `YYYY` (in `".concat(format2, "`) for formatting years to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
+  } else if (token === "YY") {
+    throw new RangeError("Use `yy` instead of `YY` (in `".concat(format2, "`) for formatting years to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
+  } else if (token === "D") {
+    throw new RangeError("Use `d` instead of `D` (in `".concat(format2, "`) for formatting days of the month to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
+  } else if (token === "DD") {
+    throw new RangeError("Use `dd` instead of `DD` (in `".concat(format2, "`) for formatting days of the month to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
+  }
+}
+
+// node_modules/date-fns/esm/locale/en-US/_lib/formatDistance/index.js
+var formatDistanceLocale = {
+  lessThanXSeconds: {
+    one: "less than a second",
+    other: "less than {{count}} seconds"
+  },
+  xSeconds: {
+    one: "1 second",
+    other: "{{count}} seconds"
+  },
+  halfAMinute: "half a minute",
+  lessThanXMinutes: {
+    one: "less than a minute",
+    other: "less than {{count}} minutes"
+  },
+  xMinutes: {
+    one: "1 minute",
+    other: "{{count}} minutes"
+  },
+  aboutXHours: {
+    one: "about 1 hour",
+    other: "about {{count}} hours"
+  },
+  xHours: {
+    one: "1 hour",
+    other: "{{count}} hours"
+  },
+  xDays: {
+    one: "1 day",
+    other: "{{count}} days"
+  },
+  aboutXWeeks: {
+    one: "about 1 week",
+    other: "about {{count}} weeks"
+  },
+  xWeeks: {
+    one: "1 week",
+    other: "{{count}} weeks"
+  },
+  aboutXMonths: {
+    one: "about 1 month",
+    other: "about {{count}} months"
+  },
+  xMonths: {
+    one: "1 month",
+    other: "{{count}} months"
+  },
+  aboutXYears: {
+    one: "about 1 year",
+    other: "about {{count}} years"
+  },
+  xYears: {
+    one: "1 year",
+    other: "{{count}} years"
+  },
+  overXYears: {
+    one: "over 1 year",
+    other: "over {{count}} years"
+  },
+  almostXYears: {
+    one: "almost 1 year",
+    other: "almost {{count}} years"
+  }
+};
+var formatDistance = function formatDistance2(token, count2, options) {
+  var result;
+  var tokenValue = formatDistanceLocale[token];
+  if (typeof tokenValue === "string") {
+    result = tokenValue;
+  } else if (count2 === 1) {
+    result = tokenValue.one;
+  } else {
+    result = tokenValue.other.replace("{{count}}", count2.toString());
+  }
+  if (options !== null && options !== void 0 && options.addSuffix) {
+    if (options.comparison && options.comparison > 0) {
+      return "in " + result;
+    } else {
+      return result + " ago";
+    }
+  }
+  return result;
+};
+var formatDistance_default = formatDistance;
+
+// node_modules/date-fns/esm/locale/_lib/buildFormatLongFn/index.js
+function buildFormatLongFn(args) {
+  return function() {
+    var options = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+    var width = options.width ? String(options.width) : args.defaultWidth;
+    var format2 = args.formats[width] || args.formats[args.defaultWidth];
+    return format2;
+  };
+}
+
+// node_modules/date-fns/esm/locale/en-US/_lib/formatLong/index.js
+var dateFormats = {
+  full: "EEEE, MMMM do, y",
+  long: "MMMM do, y",
+  medium: "MMM d, y",
+  short: "MM/dd/yyyy"
+};
+var timeFormats = {
+  full: "h:mm:ss a zzzz",
+  long: "h:mm:ss a z",
+  medium: "h:mm:ss a",
+  short: "h:mm a"
+};
+var dateTimeFormats = {
+  full: "{{date}} 'at' {{time}}",
+  long: "{{date}} 'at' {{time}}",
+  medium: "{{date}}, {{time}}",
+  short: "{{date}}, {{time}}"
+};
+var formatLong = {
+  date: buildFormatLongFn({
+    formats: dateFormats,
+    defaultWidth: "full"
+  }),
+  time: buildFormatLongFn({
+    formats: timeFormats,
+    defaultWidth: "full"
+  }),
+  dateTime: buildFormatLongFn({
+    formats: dateTimeFormats,
+    defaultWidth: "full"
+  })
+};
+var formatLong_default = formatLong;
+
+// node_modules/date-fns/esm/locale/en-US/_lib/formatRelative/index.js
+var formatRelativeLocale = {
+  lastWeek: "'last' eeee 'at' p",
+  yesterday: "'yesterday at' p",
+  today: "'today at' p",
+  tomorrow: "'tomorrow at' p",
+  nextWeek: "eeee 'at' p",
+  other: "P"
+};
+var formatRelative = function formatRelative2(token, _date, _baseDate, _options) {
+  return formatRelativeLocale[token];
+};
+var formatRelative_default = formatRelative;
+
+// node_modules/date-fns/esm/locale/_lib/buildLocalizeFn/index.js
+function buildLocalizeFn(args) {
+  return function(dirtyIndex, options) {
+    var context = options !== null && options !== void 0 && options.context ? String(options.context) : "standalone";
+    var valuesArray;
+    if (context === "formatting" && args.formattingValues) {
+      var defaultWidth = args.defaultFormattingWidth || args.defaultWidth;
+      var width = options !== null && options !== void 0 && options.width ? String(options.width) : defaultWidth;
+      valuesArray = args.formattingValues[width] || args.formattingValues[defaultWidth];
+    } else {
+      var _defaultWidth = args.defaultWidth;
+      var _width = options !== null && options !== void 0 && options.width ? String(options.width) : args.defaultWidth;
+      valuesArray = args.values[_width] || args.values[_defaultWidth];
+    }
+    var index = args.argumentCallback ? args.argumentCallback(dirtyIndex) : dirtyIndex;
+    return valuesArray[index];
+  };
+}
+
+// node_modules/date-fns/esm/locale/en-US/_lib/localize/index.js
+var eraValues = {
+  narrow: ["B", "A"],
+  abbreviated: ["BC", "AD"],
+  wide: ["Before Christ", "Anno Domini"]
+};
+var quarterValues = {
+  narrow: ["1", "2", "3", "4"],
+  abbreviated: ["Q1", "Q2", "Q3", "Q4"],
+  wide: ["1st quarter", "2nd quarter", "3rd quarter", "4th quarter"]
+};
+var monthValues = {
+  narrow: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"],
+  abbreviated: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  wide: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+};
+var dayValues = {
+  narrow: ["S", "M", "T", "W", "T", "F", "S"],
+  short: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
+  abbreviated: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  wide: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+};
+var dayPeriodValues = {
+  narrow: {
+    am: "a",
+    pm: "p",
+    midnight: "mi",
+    noon: "n",
+    morning: "morning",
+    afternoon: "afternoon",
+    evening: "evening",
+    night: "night"
+  },
+  abbreviated: {
+    am: "AM",
+    pm: "PM",
+    midnight: "midnight",
+    noon: "noon",
+    morning: "morning",
+    afternoon: "afternoon",
+    evening: "evening",
+    night: "night"
+  },
+  wide: {
+    am: "a.m.",
+    pm: "p.m.",
+    midnight: "midnight",
+    noon: "noon",
+    morning: "morning",
+    afternoon: "afternoon",
+    evening: "evening",
+    night: "night"
+  }
+};
+var formattingDayPeriodValues = {
+  narrow: {
+    am: "a",
+    pm: "p",
+    midnight: "mi",
+    noon: "n",
+    morning: "in the morning",
+    afternoon: "in the afternoon",
+    evening: "in the evening",
+    night: "at night"
+  },
+  abbreviated: {
+    am: "AM",
+    pm: "PM",
+    midnight: "midnight",
+    noon: "noon",
+    morning: "in the morning",
+    afternoon: "in the afternoon",
+    evening: "in the evening",
+    night: "at night"
+  },
+  wide: {
+    am: "a.m.",
+    pm: "p.m.",
+    midnight: "midnight",
+    noon: "noon",
+    morning: "in the morning",
+    afternoon: "in the afternoon",
+    evening: "in the evening",
+    night: "at night"
+  }
+};
+var ordinalNumber = function ordinalNumber2(dirtyNumber, _options) {
+  var number = Number(dirtyNumber);
+  var rem100 = number % 100;
+  if (rem100 > 20 || rem100 < 10) {
+    switch (rem100 % 10) {
+      case 1:
+        return number + "st";
+      case 2:
+        return number + "nd";
+      case 3:
+        return number + "rd";
+    }
+  }
+  return number + "th";
+};
+var localize = {
+  ordinalNumber,
+  era: buildLocalizeFn({
+    values: eraValues,
+    defaultWidth: "wide"
+  }),
+  quarter: buildLocalizeFn({
+    values: quarterValues,
+    defaultWidth: "wide",
+    argumentCallback: function argumentCallback(quarter) {
+      return quarter - 1;
+    }
+  }),
+  month: buildLocalizeFn({
+    values: monthValues,
+    defaultWidth: "wide"
+  }),
+  day: buildLocalizeFn({
+    values: dayValues,
+    defaultWidth: "wide"
+  }),
+  dayPeriod: buildLocalizeFn({
+    values: dayPeriodValues,
+    defaultWidth: "wide",
+    formattingValues: formattingDayPeriodValues,
+    defaultFormattingWidth: "wide"
+  })
+};
+var localize_default = localize;
+
+// node_modules/date-fns/esm/locale/_lib/buildMatchFn/index.js
+function buildMatchFn(args) {
+  return function(string) {
+    var options = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
+    var width = options.width;
+    var matchPattern = width && args.matchPatterns[width] || args.matchPatterns[args.defaultMatchWidth];
+    var matchResult = string.match(matchPattern);
+    if (!matchResult) {
+      return null;
+    }
+    var matchedString = matchResult[0];
+    var parsePatterns = width && args.parsePatterns[width] || args.parsePatterns[args.defaultParseWidth];
+    var key2 = Array.isArray(parsePatterns) ? findIndex(parsePatterns, function(pattern) {
+      return pattern.test(matchedString);
+    }) : findKey(parsePatterns, function(pattern) {
+      return pattern.test(matchedString);
+    });
+    var value;
+    value = args.valueCallback ? args.valueCallback(key2) : key2;
+    value = options.valueCallback ? options.valueCallback(value) : value;
+    var rest = string.slice(matchedString.length);
+    return {
+      value,
+      rest
+    };
+  };
+}
+function findKey(object, predicate) {
+  for (var key2 in object) {
+    if (object.hasOwnProperty(key2) && predicate(object[key2])) {
+      return key2;
+    }
+  }
+  return void 0;
+}
+function findIndex(array, predicate) {
+  for (var key2 = 0; key2 < array.length; key2++) {
+    if (predicate(array[key2])) {
+      return key2;
+    }
+  }
+  return void 0;
+}
+
+// node_modules/date-fns/esm/locale/_lib/buildMatchPatternFn/index.js
+function buildMatchPatternFn(args) {
+  return function(string) {
+    var options = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
+    var matchResult = string.match(args.matchPattern);
+    if (!matchResult)
+      return null;
+    var matchedString = matchResult[0];
+    var parseResult = string.match(args.parsePattern);
+    if (!parseResult)
+      return null;
+    var value = args.valueCallback ? args.valueCallback(parseResult[0]) : parseResult[0];
+    value = options.valueCallback ? options.valueCallback(value) : value;
+    var rest = string.slice(matchedString.length);
+    return {
+      value,
+      rest
+    };
+  };
+}
+
+// node_modules/date-fns/esm/locale/en-US/_lib/match/index.js
+var matchOrdinalNumberPattern = /^(\d+)(th|st|nd|rd)?/i;
+var parseOrdinalNumberPattern = /\d+/i;
+var matchEraPatterns = {
+  narrow: /^(b|a)/i,
+  abbreviated: /^(b\.?\s?c\.?|b\.?\s?c\.?\s?e\.?|a\.?\s?d\.?|c\.?\s?e\.?)/i,
+  wide: /^(before christ|before common era|anno domini|common era)/i
+};
+var parseEraPatterns = {
+  any: [/^b/i, /^(a|c)/i]
+};
+var matchQuarterPatterns = {
+  narrow: /^[1234]/i,
+  abbreviated: /^q[1234]/i,
+  wide: /^[1234](th|st|nd|rd)? quarter/i
+};
+var parseQuarterPatterns = {
+  any: [/1/i, /2/i, /3/i, /4/i]
+};
+var matchMonthPatterns = {
+  narrow: /^[jfmasond]/i,
+  abbreviated: /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i,
+  wide: /^(january|february|march|april|may|june|july|august|september|october|november|december)/i
+};
+var parseMonthPatterns = {
+  narrow: [/^j/i, /^f/i, /^m/i, /^a/i, /^m/i, /^j/i, /^j/i, /^a/i, /^s/i, /^o/i, /^n/i, /^d/i],
+  any: [/^ja/i, /^f/i, /^mar/i, /^ap/i, /^may/i, /^jun/i, /^jul/i, /^au/i, /^s/i, /^o/i, /^n/i, /^d/i]
+};
+var matchDayPatterns = {
+  narrow: /^[smtwf]/i,
+  short: /^(su|mo|tu|we|th|fr|sa)/i,
+  abbreviated: /^(sun|mon|tue|wed|thu|fri|sat)/i,
+  wide: /^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i
+};
+var parseDayPatterns = {
+  narrow: [/^s/i, /^m/i, /^t/i, /^w/i, /^t/i, /^f/i, /^s/i],
+  any: [/^su/i, /^m/i, /^tu/i, /^w/i, /^th/i, /^f/i, /^sa/i]
+};
+var matchDayPeriodPatterns = {
+  narrow: /^(a|p|mi|n|(in the|at) (morning|afternoon|evening|night))/i,
+  any: /^([ap]\.?\s?m\.?|midnight|noon|(in the|at) (morning|afternoon|evening|night))/i
+};
+var parseDayPeriodPatterns = {
+  any: {
+    am: /^a/i,
+    pm: /^p/i,
+    midnight: /^mi/i,
+    noon: /^no/i,
+    morning: /morning/i,
+    afternoon: /afternoon/i,
+    evening: /evening/i,
+    night: /night/i
+  }
+};
+var match = {
+  ordinalNumber: buildMatchPatternFn({
+    matchPattern: matchOrdinalNumberPattern,
+    parsePattern: parseOrdinalNumberPattern,
+    valueCallback: function valueCallback(value) {
+      return parseInt(value, 10);
+    }
+  }),
+  era: buildMatchFn({
+    matchPatterns: matchEraPatterns,
+    defaultMatchWidth: "wide",
+    parsePatterns: parseEraPatterns,
+    defaultParseWidth: "any"
+  }),
+  quarter: buildMatchFn({
+    matchPatterns: matchQuarterPatterns,
+    defaultMatchWidth: "wide",
+    parsePatterns: parseQuarterPatterns,
+    defaultParseWidth: "any",
+    valueCallback: function valueCallback2(index) {
+      return index + 1;
+    }
+  }),
+  month: buildMatchFn({
+    matchPatterns: matchMonthPatterns,
+    defaultMatchWidth: "wide",
+    parsePatterns: parseMonthPatterns,
+    defaultParseWidth: "any"
+  }),
+  day: buildMatchFn({
+    matchPatterns: matchDayPatterns,
+    defaultMatchWidth: "wide",
+    parsePatterns: parseDayPatterns,
+    defaultParseWidth: "any"
+  }),
+  dayPeriod: buildMatchFn({
+    matchPatterns: matchDayPeriodPatterns,
+    defaultMatchWidth: "any",
+    parsePatterns: parseDayPeriodPatterns,
+    defaultParseWidth: "any"
+  })
+};
+var match_default = match;
+
+// node_modules/date-fns/esm/locale/en-US/index.js
+var locale = {
+  code: "en-US",
+  formatDistance: formatDistance_default,
+  formatLong: formatLong_default,
+  formatRelative: formatRelative_default,
+  localize: localize_default,
+  match: match_default,
+  options: {
+    weekStartsOn: 0,
+    firstWeekContainsDate: 1
+  }
+};
+var en_US_default = locale;
+
+// node_modules/date-fns/esm/_lib/defaultLocale/index.js
+var defaultLocale_default = en_US_default;
+
+// node_modules/date-fns/esm/format/index.js
+var formattingTokensRegExp = /[yYQqMLwIdDecihHKkms]o|(\w)\1*|''|'(''|[^'])+('|$)|./g;
+var longFormattingTokensRegExp = /P+p+|P+|p+|''|'(''|[^'])+('|$)|./g;
+var escapedStringRegExp = /^'([^]*?)'?$/;
+var doubleQuoteRegExp = /''/g;
+var unescapedLatinCharacterRegExp = /[a-zA-Z]/;
+function format(dirtyDate, dirtyFormatStr, options) {
+  var _ref, _options$locale, _ref2, _ref3, _ref4, _options$firstWeekCon, _options$locale2, _options$locale2$opti, _defaultOptions$local, _defaultOptions$local2, _ref5, _ref6, _ref7, _options$weekStartsOn, _options$locale3, _options$locale3$opti, _defaultOptions$local3, _defaultOptions$local4;
+  requiredArgs(2, arguments);
+  var formatStr = String(dirtyFormatStr);
+  var defaultOptions4 = getDefaultOptions();
+  var locale2 = (_ref = (_options$locale = options === null || options === void 0 ? void 0 : options.locale) !== null && _options$locale !== void 0 ? _options$locale : defaultOptions4.locale) !== null && _ref !== void 0 ? _ref : defaultLocale_default;
+  var firstWeekContainsDate = toInteger((_ref2 = (_ref3 = (_ref4 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale2 = options.locale) === null || _options$locale2 === void 0 ? void 0 : (_options$locale2$opti = _options$locale2.options) === null || _options$locale2$opti === void 0 ? void 0 : _options$locale2$opti.firstWeekContainsDate) !== null && _ref4 !== void 0 ? _ref4 : defaultOptions4.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : 1);
+  if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
+    throw new RangeError("firstWeekContainsDate must be between 1 and 7 inclusively");
+  }
+  var weekStartsOn = toInteger((_ref5 = (_ref6 = (_ref7 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale3 = options.locale) === null || _options$locale3 === void 0 ? void 0 : (_options$locale3$opti = _options$locale3.options) === null || _options$locale3$opti === void 0 ? void 0 : _options$locale3$opti.weekStartsOn) !== null && _ref7 !== void 0 ? _ref7 : defaultOptions4.weekStartsOn) !== null && _ref6 !== void 0 ? _ref6 : (_defaultOptions$local3 = defaultOptions4.locale) === null || _defaultOptions$local3 === void 0 ? void 0 : (_defaultOptions$local4 = _defaultOptions$local3.options) === null || _defaultOptions$local4 === void 0 ? void 0 : _defaultOptions$local4.weekStartsOn) !== null && _ref5 !== void 0 ? _ref5 : 0);
+  if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
+    throw new RangeError("weekStartsOn must be between 0 and 6 inclusively");
+  }
+  if (!locale2.localize) {
+    throw new RangeError("locale must contain localize property");
+  }
+  if (!locale2.formatLong) {
+    throw new RangeError("locale must contain formatLong property");
+  }
+  var originalDate = toDate(dirtyDate);
+  if (!isValid(originalDate)) {
+    throw new RangeError("Invalid time value");
+  }
+  var timezoneOffset = getTimezoneOffsetInMilliseconds(originalDate);
+  var utcDate = subMilliseconds(originalDate, timezoneOffset);
+  var formatterOptions = {
+    firstWeekContainsDate,
+    weekStartsOn,
+    locale: locale2,
+    _originalDate: originalDate
+  };
+  var result = formatStr.match(longFormattingTokensRegExp).map(function(substring) {
+    var firstCharacter = substring[0];
+    if (firstCharacter === "p" || firstCharacter === "P") {
+      var longFormatter = longFormatters_default[firstCharacter];
+      return longFormatter(substring, locale2.formatLong);
+    }
+    return substring;
+  }).join("").match(formattingTokensRegExp).map(function(substring) {
+    if (substring === "''") {
+      return "'";
+    }
+    var firstCharacter = substring[0];
+    if (firstCharacter === "'") {
+      return cleanEscapedString(substring);
+    }
+    var formatter = formatters_default[firstCharacter];
+    if (formatter) {
+      if (!(options !== null && options !== void 0 && options.useAdditionalWeekYearTokens) && isProtectedWeekYearToken(substring)) {
+        throwProtectedError(substring, dirtyFormatStr, String(dirtyDate));
+      }
+      if (!(options !== null && options !== void 0 && options.useAdditionalDayOfYearTokens) && isProtectedDayOfYearToken(substring)) {
+        throwProtectedError(substring, dirtyFormatStr, String(dirtyDate));
+      }
+      return formatter(utcDate, substring, locale2.localize, formatterOptions);
+    }
+    if (firstCharacter.match(unescapedLatinCharacterRegExp)) {
+      throw new RangeError("Format string contains an unescaped latin alphabet character `" + firstCharacter + "`");
+    }
+    return substring;
+  }).join("");
+  return result;
+}
+function cleanEscapedString(input) {
+  var matched = input.match(escapedStringRegExp);
+  if (!matched) {
+    return input;
+  }
+  return matched[1].replace(doubleQuoteRegExp, "'");
+}
+
+// node_modules/date-fns/esm/_lib/assign/index.js
+function assign(target, object) {
+  if (target == null) {
+    throw new TypeError("assign requires that input parameter not be null or undefined");
+  }
+  for (var property in object) {
+    if (Object.prototype.hasOwnProperty.call(object, property)) {
+      ;
+      target[property] = object[property];
+    }
+  }
+  return target;
+}
+
+// node_modules/date-fns/esm/_lib/cloneObject/index.js
+function cloneObject(object) {
+  return assign({}, object);
+}
+
+// node_modules/date-fns/esm/formatDistance/index.js
+var MINUTES_IN_DAY = 1440;
+var MINUTES_IN_ALMOST_TWO_DAYS = 2520;
+var MINUTES_IN_MONTH = 43200;
+var MINUTES_IN_TWO_MONTHS = 86400;
+function formatDistance3(dirtyDate, dirtyBaseDate, options) {
+  var _ref, _options$locale;
+  requiredArgs(2, arguments);
+  var defaultOptions4 = getDefaultOptions();
+  var locale2 = (_ref = (_options$locale = options === null || options === void 0 ? void 0 : options.locale) !== null && _options$locale !== void 0 ? _options$locale : defaultOptions4.locale) !== null && _ref !== void 0 ? _ref : defaultLocale_default;
+  if (!locale2.formatDistance) {
+    throw new RangeError("locale must contain formatDistance property");
+  }
+  var comparison = compareAsc(dirtyDate, dirtyBaseDate);
+  if (isNaN(comparison)) {
+    throw new RangeError("Invalid time value");
+  }
+  var localizeOptions = assign(cloneObject(options), {
+    addSuffix: Boolean(options === null || options === void 0 ? void 0 : options.addSuffix),
+    comparison
+  });
+  var dateLeft;
+  var dateRight;
+  if (comparison > 0) {
+    dateLeft = toDate(dirtyBaseDate);
+    dateRight = toDate(dirtyDate);
+  } else {
+    dateLeft = toDate(dirtyDate);
+    dateRight = toDate(dirtyBaseDate);
+  }
+  var seconds = differenceInSeconds(dateRight, dateLeft);
+  var offsetInSeconds = (getTimezoneOffsetInMilliseconds(dateRight) - getTimezoneOffsetInMilliseconds(dateLeft)) / 1e3;
+  var minutes = Math.round((seconds - offsetInSeconds) / 60);
+  var months;
+  if (minutes < 2) {
+    if (options !== null && options !== void 0 && options.includeSeconds) {
+      if (seconds < 5) {
+        return locale2.formatDistance("lessThanXSeconds", 5, localizeOptions);
+      } else if (seconds < 10) {
+        return locale2.formatDistance("lessThanXSeconds", 10, localizeOptions);
+      } else if (seconds < 20) {
+        return locale2.formatDistance("lessThanXSeconds", 20, localizeOptions);
+      } else if (seconds < 40) {
+        return locale2.formatDistance("halfAMinute", 0, localizeOptions);
+      } else if (seconds < 60) {
+        return locale2.formatDistance("lessThanXMinutes", 1, localizeOptions);
+      } else {
+        return locale2.formatDistance("xMinutes", 1, localizeOptions);
+      }
+    } else {
+      if (minutes === 0) {
+        return locale2.formatDistance("lessThanXMinutes", 1, localizeOptions);
+      } else {
+        return locale2.formatDistance("xMinutes", minutes, localizeOptions);
+      }
+    }
+  } else if (minutes < 45) {
+    return locale2.formatDistance("xMinutes", minutes, localizeOptions);
+  } else if (minutes < 90) {
+    return locale2.formatDistance("aboutXHours", 1, localizeOptions);
+  } else if (minutes < MINUTES_IN_DAY) {
+    var hours = Math.round(minutes / 60);
+    return locale2.formatDistance("aboutXHours", hours, localizeOptions);
+  } else if (minutes < MINUTES_IN_ALMOST_TWO_DAYS) {
+    return locale2.formatDistance("xDays", 1, localizeOptions);
+  } else if (minutes < MINUTES_IN_MONTH) {
+    var days = Math.round(minutes / MINUTES_IN_DAY);
+    return locale2.formatDistance("xDays", days, localizeOptions);
+  } else if (minutes < MINUTES_IN_TWO_MONTHS) {
+    months = Math.round(minutes / MINUTES_IN_MONTH);
+    return locale2.formatDistance("aboutXMonths", months, localizeOptions);
+  }
+  months = differenceInMonths(dateRight, dateLeft);
+  if (months < 12) {
+    var nearestMonth = Math.round(minutes / MINUTES_IN_MONTH);
+    return locale2.formatDistance("xMonths", nearestMonth, localizeOptions);
+  } else {
+    var monthsSinceStartOfYear = months % 12;
+    var years = Math.floor(months / 12);
+    if (monthsSinceStartOfYear < 3) {
+      return locale2.formatDistance("aboutXYears", years, localizeOptions);
+    } else if (monthsSinceStartOfYear < 9) {
+      return locale2.formatDistance("overXYears", years, localizeOptions);
+    } else {
+      return locale2.formatDistance("almostXYears", years + 1, localizeOptions);
+    }
+  }
+}
+
+// node_modules/date-fns/esm/getDaysInMonth/index.js
+function getDaysInMonth(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var year = date.getFullYear();
+  var monthIndex = date.getMonth();
+  var lastDayOfMonth2 = new Date(0);
+  lastDayOfMonth2.setFullYear(year, monthIndex + 1, 0);
+  lastDayOfMonth2.setHours(0, 0, 0, 0);
+  return lastDayOfMonth2.getDate();
+}
+
+// node_modules/date-fns/esm/getISOWeek/index.js
+var MILLISECONDS_IN_WEEK4 = 6048e5;
+function getISOWeek(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var diff = startOfISOWeek(date).getTime() - startOfISOWeekYear(date).getTime();
+  return Math.round(diff / MILLISECONDS_IN_WEEK4) + 1;
+}
+
+// node_modules/date-fns/esm/getTime/index.js
+function getTime(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var timestamp = date.getTime();
+  return timestamp;
+}
+
+// node_modules/date-fns/esm/getUnixTime/index.js
+function getUnixTime(dirtyDate) {
+  requiredArgs(1, arguments);
+  return Math.floor(getTime(dirtyDate) / 1e3);
+}
+
+// node_modules/date-fns/esm/getWeekYear/index.js
+function getWeekYear(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var year = date.getFullYear();
+  var defaultOptions4 = getDefaultOptions();
+  var firstWeekContainsDate = toInteger((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1);
+  if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
+    throw new RangeError("firstWeekContainsDate must be between 1 and 7 inclusively");
+  }
+  var firstWeekOfNextYear = new Date(0);
+  firstWeekOfNextYear.setFullYear(year + 1, 0, firstWeekContainsDate);
+  firstWeekOfNextYear.setHours(0, 0, 0, 0);
+  var startOfNextYear = startOfWeek(firstWeekOfNextYear, options);
+  var firstWeekOfThisYear = new Date(0);
+  firstWeekOfThisYear.setFullYear(year, 0, firstWeekContainsDate);
+  firstWeekOfThisYear.setHours(0, 0, 0, 0);
+  var startOfThisYear = startOfWeek(firstWeekOfThisYear, options);
+  if (date.getTime() >= startOfNextYear.getTime()) {
+    return year + 1;
+  } else if (date.getTime() >= startOfThisYear.getTime()) {
+    return year;
+  } else {
+    return year - 1;
+  }
+}
+
+// node_modules/date-fns/esm/startOfWeekYear/index.js
+function startOfWeekYear(dirtyDate, options) {
+  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
+  requiredArgs(1, arguments);
+  var defaultOptions4 = getDefaultOptions();
+  var firstWeekContainsDate = toInteger((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1);
+  var year = getWeekYear(dirtyDate, options);
+  var firstWeek = new Date(0);
+  firstWeek.setFullYear(year, 0, firstWeekContainsDate);
+  firstWeek.setHours(0, 0, 0, 0);
+  var date = startOfWeek(firstWeek, options);
+  return date;
+}
+
+// node_modules/date-fns/esm/getWeek/index.js
+var MILLISECONDS_IN_WEEK5 = 6048e5;
+function getWeek(dirtyDate, options) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var diff = startOfWeek(date, options).getTime() - startOfWeekYear(date, options).getTime();
+  return Math.round(diff / MILLISECONDS_IN_WEEK5) + 1;
+}
+
+// node_modules/date-fns/esm/lastDayOfMonth/index.js
+function lastDayOfMonth(dirtyDate) {
+  requiredArgs(1, arguments);
+  var date = toDate(dirtyDate);
+  var month = date.getMonth();
+  date.setFullYear(date.getFullYear(), month + 1, 0);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+// node_modules/date-fns/esm/getWeeksInMonth/index.js
+function getWeeksInMonth(date, options) {
+  requiredArgs(1, arguments);
+  return differenceInCalendarWeeks(lastDayOfMonth(date), startOfMonth(date), options) + 1;
+}
+
+// node_modules/date-fns/esm/isAfter/index.js
+function isAfter2(dirtyDate, dirtyDateToCompare) {
+  requiredArgs(2, arguments);
+  var date = toDate(dirtyDate);
+  var dateToCompare = toDate(dirtyDateToCompare);
+  return date.getTime() > dateToCompare.getTime();
+}
+
+// node_modules/date-fns/esm/isBefore/index.js
+function isBefore(dirtyDate, dirtyDateToCompare) {
+  requiredArgs(2, arguments);
+  var date = toDate(dirtyDate);
+  var dateToCompare = toDate(dirtyDateToCompare);
+  return date.getTime() < dateToCompare.getTime();
+}
+
+// node_modules/date-fns/esm/isSameMonth/index.js
+function isSameMonth(dirtyDateLeft, dirtyDateRight) {
+  requiredArgs(2, arguments);
+  var dateLeft = toDate(dirtyDateLeft);
+  var dateRight = toDate(dirtyDateRight);
+  return dateLeft.getFullYear() === dateRight.getFullYear() && dateLeft.getMonth() === dateRight.getMonth();
+}
+
+// node_modules/date-fns/esm/isSameYear/index.js
+function isSameYear(dirtyDateLeft, dirtyDateRight) {
+  requiredArgs(2, arguments);
+  var dateLeft = toDate(dirtyDateLeft);
+  var dateRight = toDate(dirtyDateRight);
+  return dateLeft.getFullYear() === dateRight.getFullYear();
+}
+
+// node_modules/date-fns/esm/subDays/index.js
+function subDays(dirtyDate, dirtyAmount) {
+  requiredArgs(2, arguments);
+  var amount = toInteger(dirtyAmount);
+  return addDays(dirtyDate, -amount);
+}
+
+// node_modules/date-fns/esm/setMonth/index.js
+function setMonth(dirtyDate, dirtyMonth) {
+  requiredArgs(2, arguments);
+  var date = toDate(dirtyDate);
+  var month = toInteger(dirtyMonth);
+  var year = date.getFullYear();
+  var day = date.getDate();
+  var dateWithDesiredMonth = new Date(0);
+  dateWithDesiredMonth.setFullYear(year, month, 15);
+  dateWithDesiredMonth.setHours(0, 0, 0, 0);
+  var daysInMonth = getDaysInMonth(dateWithDesiredMonth);
+  date.setMonth(month, Math.min(day, daysInMonth));
+  return date;
+}
+
+// node_modules/date-fns/esm/setYear/index.js
+function setYear(dirtyDate, dirtyYear) {
+  requiredArgs(2, arguments);
+  var date = toDate(dirtyDate);
+  var year = toInteger(dirtyYear);
+  if (isNaN(date.getTime())) {
+    return new Date(NaN);
+  }
+  date.setFullYear(year);
+  return date;
+}
+
+// src/utils/metadata/frontmatter/fm.ts
+var import_lodash = __toESM(require_lodash());
+var import_obsidian7 = require("obsidian");
+
+// src/utils/metadata/dv.ts
+var import_obsidian6 = require("obsidian");
+var LocationWrapper = {
+  fullLine: { start: "", end: "" },
+  brackets: { start: "[", end: "]" },
+  parenthesis: { start: "(", end: ")" }
+};
+var fieldComponents = [
+  "inQuote",
+  "inList",
+  "startStyle",
+  "attribute",
+  "endStyle",
+  "beforeSeparatorSpacer",
+  "afterSeparatorSpacer",
+  "values"
+];
+var genericFieldRegex = "(?<inQuote>>(\\s+)?)?(?<inList>- )?(?<startStyle>[_\\*~`]*)(?<attribute>[0-9\\w\\p{Letter}\\p{Emoji_Presentation}][-0-9\\w\\p{Letter}\\p{Emoji_Presentation}\\s]*)(?<endStyle>[_\\*~`]*)(?<beforeSeparatorSpacer>\\s*)";
+var inlineFieldRegex = (attribute) => `(?<inQuote>>(\\s+)?)?(?<inList>- )?(?<startStyle>[_\\*~\`]*)(?<attribute>${attribute})(?<endStyle>[_\\*~\`]*)(?<beforeSeparatorSpacer>\\s*)::(?<afterSeparatorSpacer>\\s*)`;
+var fullLineRegex = new RegExp(
+  `^${genericFieldRegex}::\\s*(?<values>.*)?`,
+  "u"
+);
+var inSentenceRegexBrackets = new RegExp(
+  `\\[${genericFieldRegex}::\\s*(?<values>[^\\]]+)?\\]`,
+  "gu"
+);
+var inSentenceRegexPar = new RegExp(
+  `\\(${genericFieldRegex}::\\s*(?<values>[^\\)]+)?\\)`,
+  "gu"
+);
+var encodeLink = (value) => {
+  return value ? value.replace(/\[\[/g, "\u{1F54C}\u{1F527}").replace(/\]\]/g, "\u{1F413}\u{1F400}") : value;
+};
+var decodeLink = (value) => {
+  return value ? value.replace(/🕌🔧/gu, "[[").replace(/🐓🐀/gu, "]]") : value;
+};
+var matchInlineFields = (regex, line, attribute, input, location = "fullLine") => {
+  const sR = line.matchAll(regex);
+  let next = sR.next();
+  const newFields = [];
+  while (!next.done) {
+    const match2 = next.value;
+    if (match2.groups && Object.keys(match2.groups).every((j4) => fieldComponents.includes(j4))) {
+      const {
+        inList,
+        inQuote,
+        startStyle,
+        endStyle,
+        beforeSeparatorSpacer,
+        afterSeparatorSpacer,
+        values
+      } = match2.groups;
+      const inputArray = input ? input.replace(/(\,\s+)/g, ",").split(",") : [""];
+      const newValue = inputArray.length == 1 ? inputArray[0] : `${serializeMultiDisplayString(inputArray)}`;
+      const start = LocationWrapper[location].start;
+      const end = LocationWrapper[location].end;
+      newFields.push({
+        oldField: match2[0],
+        newField: `${inQuote || ""}${start}${inList || ""}${startStyle}${attribute}${endStyle}${beforeSeparatorSpacer}::${afterSeparatorSpacer}${newValue}${end}`
+      });
+    }
+    next = sR.next();
+  }
+  return newFields;
+};
+async function replaceValues(plugin, fileOrFilePath, attribute, input, previousItemsCount = 0) {
+  var _a2, _b2;
+  let file;
+  if (fileOrFilePath instanceof import_obsidian6.TFile) {
+    file = fileOrFilePath;
+  } else {
+    const _file = plugin.app.vault.getAbstractFileByPath(fileOrFilePath);
+    if (_file instanceof import_obsidian6.TFile && _file.extension == "md") {
+      file = _file;
+    } else {
+      throw Error("path doesn't correspond to a proper file");
+    }
+  }
+  const content = (await plugin.app.vault.read(file)).split("\n");
+  const frontmatter = (_a2 = plugin.app.metadataCache.getFileCache(file)) == null ? void 0 : _a2.frontmatter;
+  const skippedLines = [];
+  const {
+    position: { start, end }
+  } = frontmatter ? frontmatter : { position: { start: void 0, end: void 0 } };
+  const newContent = content.map((line, i4) => {
+    const encodedInput = encodeLink(input);
+    let encodedLine = encodeLink(line);
+    const fullLineRegex2 = new RegExp(
+      `^${inlineFieldRegex(attribute)}(?<values>[^\\]]*)`,
+      "u"
+    );
+    const fR = encodedLine.match(fullLineRegex2);
+    if ((fR == null ? void 0 : fR.groups) && Object.keys(fR.groups).every((j4) => fieldComponents.includes(j4))) {
+      const {
+        inList,
+        inQuote,
+        startStyle,
+        endStyle,
+        beforeSeparatorSpacer,
+        afterSeparatorSpacer,
+        values
+      } = fR.groups;
+      const inputArray = input ? input.replace(/(\,\s+)/g, ",").split(",").sort() : [];
+      const hiddenValue = "";
+      const newValue = inputArray.length == 1 ? inputArray[0] : `${serializeMultiDisplayString(inputArray)}`;
+      return `${inQuote || ""}${inList || ""}${startStyle}${attribute}${endStyle}${beforeSeparatorSpacer}::${afterSeparatorSpacer}${hiddenValue + newValue}`;
+    } else {
+      const newFields = [];
+      const inSentenceRegexBrackets2 = new RegExp(
+        `\\[${inlineFieldRegex(attribute)}(?<values>[^\\]]+)?\\]`,
+        "gu"
+      );
+      const inSentenceRegexPar2 = new RegExp(
+        `\\(${inlineFieldRegex(attribute)}(?<values>[^\\)]+)?\\)`,
+        "gu"
+      );
+      newFields.push(
+        ...matchInlineFields(
+          inSentenceRegexBrackets2,
+          encodedLine,
+          attribute,
+          encodedInput,
+          "brackets" /* brackets */
+        )
+      );
+      newFields.push(
+        ...matchInlineFields(
+          inSentenceRegexPar2,
+          encodedLine,
+          attribute,
+          encodedInput,
+          "parenthesis" /* parenthesis */
+        )
+      );
+      newFields.forEach((field) => {
+        const fieldRegex = new RegExp(
+          field.oldField.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+          "u"
+        );
+        encodedLine = encodedLine.replace(fieldRegex, field.newField);
+      });
+      return decodeLink(encodedLine);
+    }
+  });
+  await plugin.app.vault.modify(
+    file,
+    newContent.filter((line, i4) => !skippedLines.includes(i4)).join("\n")
+  );
+  const editor = (_b2 = plugin.app.workspace.getActiveViewOfType(import_obsidian6.MarkdownView)) == null ? void 0 : _b2.editor;
+  if (editor) {
+    const lineNumber = editor.getCursor().line;
+    editor.setCursor({
+      line: editor.getCursor().line,
+      ch: editor.getLine(lineNumber).length
+    });
+  }
+}
+
+// src/utils/metadata/frontmatter/detectYAMLType.ts
+var detectYAMLType = (value, key2) => {
+  if (typeof value === "string") {
+    if (/\/\/(\S+?(?:jpe?g|png|gif|svg))/gi.test(value) || value.includes("unsplash")) {
+      return "image";
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return "date";
+    }
+    if (key2 == "tag" || key2 == "tags") {
+      return "tag";
+    }
+    if (/\[\[.*?\]\]/.test(value)) {
+      return "link";
+    }
+  } else if (typeof value === "number") {
+    return "number";
+  } else if (typeof value === "boolean") {
+    return "boolean";
+  } else if (!value) {
+    return "unknown";
+  } else if (Array.isArray(value) || typeof value === "string" && value.indexOf(",") > -1) {
+    let arrayValue = Array.isArray(value) ? value : [];
+    if (typeof value === "string" && value.indexOf(",") > -1) {
+      arrayValue = parseMultiString(value);
+    }
+    if (key2 == "tag" || key2 == "tags") {
+      return "tag-multi";
+    }
+    if (arrayValue.length == 1 && Array.isArray(arrayValue[0]) && arrayValue[0].length == 1 && typeof arrayValue[0][0] === "string") {
+      return "link";
+    }
+    const types2 = uniq(arrayValue.map((f4) => detectYAMLType(f4, key2)));
+    if (types2.length == 1 && types2[0] == "link") {
+      return "link-multi";
+    }
+    return "option-multi";
+  } else if (value.isLuxonDateTime) {
+    return "date";
+  } else if (value.isLuxonDuration) {
+    return "duration";
+  } else if (value.type == "file") {
+    return "link";
+  } else if (typeof value === "object" && !Array.isArray(value) && value !== null) {
+    return "object";
+  }
+  return "text";
+};
+
+// src/utils/metadata/frontmatter/frontMatterKeys.ts
+var frontMatterKeys = (fm) => {
+  return Object.keys(fm != null ? fm : {}).filter((f4) => f4 != "position").filter((f4) => f4 != "tag" && f4 != "tags");
+};
+
+// src/utils/metadata/frontmatter/yamlTypeToMDBType.ts
+var yamlTypeToMDBType = (YAMLtype) => {
+  switch (YAMLtype) {
+    case "duration":
+      return "text";
+      break;
+    case "unknown":
+      return "text";
+      break;
+  }
+  return YAMLtype;
+};
+
+// src/utils/metadata/frontmatter/fm.ts
+var saveContextToFile = (file, cols, context, plugin) => {
+  if (plugin.metadata.canProcessFrontmatter()) {
+    plugin.metadata.processFrontMatter(file.path, (frontmatter) => {
+      Object.keys(context).filter(
+        (f4) => cols.find((c4) => c4.name == f4) && cols.find((c4) => c4.name == f4).hidden != "true" && !cols.find((c4) => c4.name == f4).type.contains("file") && context[f4]
+      ).forEach((f4) => {
+        const col = cols.find((c4) => c4.name == f4);
+        frontmatter[f4] = valueForFrontmatter(col.type, context[f4]);
+        frontmatter[f4] = valueForFrontmatter(col.type, context[f4]);
+      });
+    });
+  }
+};
+var frontMatterForFile = (plugin, file) => {
+  let currentCache;
+  if (file instanceof import_obsidian7.TFile && plugin.app.metadataCache.getFileCache(file) !== null) {
+    currentCache = plugin.app.metadataCache.getFileCache(file);
+  }
+  return currentCache == null ? void 0 : currentCache.frontmatter;
+};
+var guestimateTypes = (_files, plugin, dv) => {
+  const typesArray = _files.map((f4) => getAbstractFileAtPath(plugin, f4)).filter((f4) => f4).map((k5) => {
+    const fm = dv && plugin.dataViewAPI() ? plugin.dataViewAPI().page(k5.path) : frontMatterForFile(plugin, k5);
+    const fmKeys = dv ? Object.keys(fm != null ? fm : {}).filter(
+      (f4, i4, self2) => !self2.find(
+        (g4, j4) => g4.toLowerCase().replace(/\s/g, "-") == f4.toLowerCase().replace(/\s/g, "-") && i4 > j4
+      ) ? true : false
+    ).filter((f4) => f4 != "file") : frontMatterKeys(fm);
+    return fmKeys.reduce(
+      (pk, ck) => ({ ...pk, [ck]: detectYAMLType(fm[ck], ck) }),
+      {}
+    );
+  });
+  const types2 = typesArray.reduce(
+    (p3, c4) => {
+      const newSet = Object.keys(c4).reduce(
+        (pk, ck) => {
+          var _a2;
+          return { ...pk, [ck]: [...(_a2 = p3 == null ? void 0 : p3[ck]) != null ? _a2 : [], c4[ck]] };
+        },
+        { ...p3 }
+      );
+      return newSet;
+    },
+    {}
+  );
+  const guessType = (ts) => {
+    return import_lodash.default.head((0, import_lodash.default)(ts).countBy().entries().maxBy(import_lodash.default.last));
+  };
+  const guessedTypes = Object.keys(types2).reduce((p3, c4) => {
+    return { ...p3, [c4]: guessType(types2[c4]) };
+  }, {});
+  return guessedTypes;
+};
+var valueForFrontmatter = (type, value) => {
+  if (type == "number") {
+    return parseFloat(value);
+  } else if (type == "boolean") {
+    return value == "true";
+  } else if (type.contains("multi")) {
+    return parseMultiString(value).map(
+      (f4) => valueForFrontmatter(type.replace("-multi", ""), f4)
+    );
+  } else if (type.contains("link") || type.contains("context")) {
+    return `[[${value}]]`;
+  }
+  return value;
+};
+var valueForDataview = (type, value) => {
+  if (type.contains("link") || type.contains("context")) {
+    return `[[${value}]]`;
+  }
+  return value;
+};
+var renameFrontmatterKey = (plugin, path, key2, name) => {
+  if (plugin.metadata.canProcessFrontmatter()) {
+    plugin.metadata.processFrontMatter(path, (frontmatter) => {
+      if (key2 in frontmatter) {
+        frontmatter[name] = frontmatter[key2];
+        delete frontmatter[key2];
+      }
+    });
+  }
+};
+var defaultValueForType = (value, type) => {
+  if (type == "date") {
+    return format(Date.now(), "yyyy-MM-dd");
+  }
+  if (type == "number") {
+    return 0;
+  }
+  if (type == "boolean") {
+    return true;
+  }
+  if (type == "link") {
+    return "[[Select Note]]";
+  }
+  if (type == "option") {
+    return "one, two";
+  }
+  if (type == "text") {
+    return " ";
+  }
+  if (type == "image") {
+    return "https://images.unsplash.com/photo-1675789652575-0a5d2425b6c2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80";
+  }
+};
+var changeFrontmatterType = (plugin, path, key2, type) => {
+  if (plugin.metadata.canProcessFrontmatter()) {
+    plugin.metadata.processFrontMatter(path, (frontmatter) => {
+      if (key2 in frontmatter) {
+        frontmatter[key2] = defaultValueForType(frontmatter[key2], type);
+      }
+    });
+  }
+};
+var deleteFrontmatterValue = (plugin, path, key2) => {
+  if (plugin.metadata.canProcessFrontmatter()) {
+    plugin.metadata.processFrontMatter(path, (frontmatter) => {
+      if (plugin.dataViewAPI()) {
+        if (plugin.dataViewAPI().page(path)[key2] && !frontmatter[key2]) {
+          replaceValues(plugin, path, key2, "");
+        } else {
+          if (key2 in frontmatter) {
+            delete frontmatter[key2];
+          }
+        }
+      } else {
+        if (key2 in frontmatter) {
+          delete frontmatter[key2];
+        }
+      }
+    });
+  }
+};
+var saveFrontmatterValue = (plugin, path, key2, value, type, forceSave) => {
+  let afile = getAbstractFileAtPath(plugin, path);
+  const fileCache = plugin.index.filesIndex.get(path);
+  if (afile) {
+    if (fileCache && fileCache.isFolder && fileCache.folderNote) {
+      afile = getAbstractFileAtPath(plugin, fileCache.folderNote.folderNotePath);
+    }
+    if (afile instanceof import_obsidian7.TFile) {
+      if (plugin.metadata.canProcessFrontmatter()) {
+        plugin.metadata.processFrontMatter(afile.path, (frontmatter) => {
+          var _a2;
+          if (plugin.dataViewAPI()) {
+            if (((_a2 = plugin.dataViewAPI().page(afile.path)) == null ? void 0 : _a2[key2]) && !frontmatter[key2]) {
+              replaceValues(plugin, afile.path, key2, valueForDataview(type, value));
+            } else {
+              if (key2 in frontmatter || forceSave) {
+                frontmatter[key2] = valueForFrontmatter(type, value);
+              }
+            }
+          } else {
+            if (key2 in frontmatter || forceSave) {
+              frontmatter[key2] = valueForFrontmatter(type, value);
+            }
+          }
+        });
+      }
+    }
+  }
+};
+
+// src/utils/contexts/links.ts
+var valueContainsLink = (link, value) => {
+  return parseMultiString(value).some((f4) => link == parseLinkString(f4));
+};
+var replaceLinkInValue = (link, newLink, value) => {
+  return serializeMultiString(parseMultiString(value).map((f4) => parseLinkString(f4) == link ? newLink : link));
+};
+var removeLinkInValue = (link, value) => {
+  return serializeMultiString(parseMultiString(value).filter((f4) => f4 != link));
+};
+var linkColumns = (cols) => {
+  return cols.filter((f4) => f4.type.startsWith("link") || f4.type.startsWith("context"));
+};
+var removeLinksInRow = (plugin, row, link, cols) => {
+  if (cols.length == 0) {
+    return row;
+  }
+  const deltaRow = cols.reduce((p3, c4) => {
+    if (valueContainsLink(link, row[c4.name])) {
+      const newValue = removeLinkInValue(link, row[c4.name]);
+      saveFrontmatterValue(
+        plugin,
+        row.File,
+        c4.name,
+        newValue,
+        c4.type,
+        plugin.settings.saveAllContextToFrontmatter
+      );
+      return { ...p3, [c4.name]: newValue };
+    }
+    return p3;
+  }, {});
+  return { ...row, ...deltaRow };
+};
+var renameLinksInRow = (plugin, row, link, newLink, cols) => {
+  if (cols.length == 0) {
+    return row;
+  }
+  const deltaRow = cols.reduce((p3, c4) => {
+    if (valueContainsLink(link, row[c4.name])) {
+      const newValue = replaceLinkInValue(link, newLink, row[c4.name]);
+      saveFrontmatterValue(
+        plugin,
+        row.File,
+        c4.name,
+        newValue,
+        c4.type,
+        plugin.settings.saveAllContextToFrontmatter
+      );
+      return { ...p3, [c4.name]: newValue };
+    }
+    return p3;
+  }, {});
+  return { ...row, ...deltaRow };
+};
+
+// src/utils/metadata/dataview/parseDataview.ts
+var parseDataview = (field, value) => {
+  const YAMLtype = detectYAMLType(value, field);
+  switch (YAMLtype) {
+    case "object":
+      return JSON.stringify(value);
+      break;
+    case "number":
+      return value.toString();
+      break;
+    case "boolean":
+      return value ? "true" : "false";
+      break;
+    case "date":
+      return format(new Date(value.ts), "yyyy-MM-dd");
+      break;
+    case "duration":
+      return serializeMultiDisplayString(Object.keys(value.values).reduce(
+        (p3, c4) => [
+          ...p3,
+          ...value.values[c4] > 0 ? [value.values[c4] + " " + c4] : []
+        ],
+        []
+      ));
+      break;
+    case "option-multi":
+    case "link-multi":
+      if (typeof value === "string") {
+        return value;
+      }
+      return serializeMultiString(
+        value.map((v3) => {
+          if (!v3) {
+            return "";
+          }
+          if (typeof v3 === "string") {
+            return v3;
+          }
+          if (v3.path) {
+            return v3.path;
+          }
+          if (Array.isArray(value) && v3.length == 1 && Array.isArray(v3[0]) && v3[0].length == 1 && typeof v3[0][0] === "string") {
+            return v3[0][0];
+          }
+          return JSON.stringify(v3);
+        })
+      );
+      break;
+    case "link":
+      {
+        if (Array.isArray(value) && value.length == 1 && Array.isArray(value[0]) && value[0].length == 1 && typeof value[0][0] === "string") {
+          return value[0][0];
+        } else if (typeof value === "string") {
+          return value;
+        }
+        return value.path;
+      }
+      break;
+    case "text":
+    case "tag":
+    case "image":
+      return value;
+      break;
+  }
+  return "";
+};
+
+// src/utils/metadata/frontmatter/parseFrontMatter.ts
+var parseFrontMatter = (field, value) => {
+  const YAMLtype = detectYAMLType(value, field);
+  switch (YAMLtype) {
+    case "object":
+      return JSON.stringify(value);
+      break;
+    case "number":
+      return value.toString();
+      break;
+    case "boolean":
+      return value ? "true" : "false";
+      break;
+    case "date":
+      return value;
+      break;
+    case "duration":
+      return serializeMultiDisplayString(Object.keys(value.values).reduce(
+        (p3, c4) => [
+          ...p3,
+          ...value.values[c4] > 0 ? [value.values[c4] + " " + c4] : []
+        ],
+        []
+      ));
+      break;
+    case "option-multi":
+    case "link-multi":
+      if (typeof value === "string") {
+        return parseLinkString(value);
+      }
+      return serializeMultiString(
+        value.map((v3) => {
+          if (!v3) {
+            return "";
+          }
+          if (typeof v3 === "string") {
+            return parseLinkString(v3);
+          }
+          if (v3.path) {
+            return v3.path;
+          }
+          if (Array.isArray(value) && v3.length == 1 && Array.isArray(v3[0]) && v3[0].length == 1 && typeof v3[0][0] === "string") {
+            return v3[0][0];
+          }
+          return JSON.stringify(v3);
+        })
+      );
+      break;
+    case "link":
+      {
+        if (Array.isArray(value) && value.length == 1 && Array.isArray(value[0]) && value[0].length == 1 && typeof value[0][0] === "string") {
+          return value[0][0];
+        } else if (typeof value === "string") {
+          return parseLinkString(value);
+        }
+        return value.path;
+      }
+      break;
+    case "text":
+    case "tag":
+    case "image":
+      return value;
+      break;
+  }
+  return "";
+};
+
+// src/dispatch/mdb.ts
+var processContextFile = async (plugin, space, processor, fallback) => {
+  const dbFileExists = await plugin.app.vault.adapter.exists(space.dbPath);
+  if (dbFileExists) {
+    const contextDB = await getMDBTable(plugin, space, "files", "context");
+    if (contextDB) {
+      await processor(contextDB, space);
+      return;
+    } else if (fallback) {
+      await fallback();
+    }
+  } else if (fallback) {
+    await fallback();
+  }
+};
+var saveDB = async (plugin, context, newTable) => {
+  return saveMDBToPath(plugin, context, newTable);
+};
+var insertColumn = (table, column) => {
+  if (table.cols.find((f4) => f4.name == column.name)) {
+    new import_obsidian8.Notice(i18n_default.notice.duplicatePropertyName);
+    return;
+  }
+  return {
+    ...table,
+    cols: [...table.cols, column]
+  };
+};
+var insertColumns = (table, columns) => {
+  return {
+    ...table,
+    cols: [...table.cols, ...columns.filter((f4) => !table.cols.some((g4) => g4.name == f4.name))]
+  };
+};
+var deletePropertyMultiValue = (folder, lookupField, lookupValue, field, value) => {
+  return {
+    ...folder,
+    rows: folder.rows.map(
+      (f4) => f4[lookupField] == lookupValue ? {
+        ...f4,
+        [field]: serializeMultiString(parseMultiString(f4[field]).filter((g4) => g4 != value))
+      } : f4
+    )
+  };
+};
+var updateValue = (folder, lookupField, lookupValue, field, value) => {
+  return {
+    ...folder,
+    rows: folder.rows.map(
+      (f4) => f4[lookupField] == lookupValue ? {
+        ...f4,
+        [field]: value
+      } : f4
+    )
+  };
+};
+var insertRowsIfUnique = (folder, rows, index) => {
+  return { ...folder, rows: index ? insertMulti(folder.rows, index, rows.filter((f4) => !folder.rows.some((g4) => g4.File == f4.File))) : [...folder.rows, ...rows.filter((f4) => !folder.rows.some((g4) => g4.File == f4.File))] };
+};
+var saveContextToFrontmatter = (file, cols, context, plugin) => {
+  const afile = getAbstractFileAtPath(plugin, file);
+  if (afile && afile instanceof import_obsidian8.TFile)
+    saveContextToFile(afile, cols, context, plugin);
+};
+var updateContextValue = async (plugin, space, file, field, value, _updateFunction) => {
+  let tagFileExists = await plugin.app.vault.adapter.exists(space.dbPath);
+  if (!tagFileExists) {
+    tagFileExists = await createContextMDB(plugin, space);
+  }
+  if (tagFileExists)
+    await getMDBTable(plugin, space, "files", "context").then(
+      (tagDB) => {
+        const updateFunction = _updateFunction != null ? _updateFunction : updateValue;
+        const newMDB = updateFunction(tagDB, FilePropertyName, file, field, value);
+        return saveDB(plugin, space, newMDB).then((f4) => newMDB);
+      }
+    );
+};
+var insertContextColumn = async (plugin, space, field) => {
+  let tagFileExists = await plugin.app.vault.adapter.exists(space.dbPath);
+  if (!tagFileExists) {
+    tagFileExists = await createContextMDB(plugin, space);
+  }
+  if (tagFileExists)
+    await getMDBTable(plugin, space, "files", "context").then((tagDB) => {
+      const newDB = insertColumn(tagDB, field);
+      saveDB(plugin, space, newDB).then((f4) => newDB);
+      return newDB;
+    }).then((f4) => plugin.index.reloadContext(space));
+};
+var insertContextColumns = async (plugin, space, fields) => {
+  let tagFileExists = await plugin.app.vault.adapter.exists(space.dbPath);
+  if (!tagFileExists) {
+    tagFileExists = await createContextMDB(plugin, space);
+  }
+  if (tagFileExists)
+    await getMDBTable(plugin, space, "files", "context").then((tagDB) => {
+      const newDB = insertColumns(tagDB, fields);
+      saveDB(plugin, space, newDB).then((f4) => newDB);
+      return newDB;
+    }).then((f4) => plugin.index.reloadContext(space));
+};
+var insertContextItems = async (plugin, newPaths, t4) => {
+  const saveNewContextRows = async (tag, space2) => {
+    const newRow = newPaths.map((newPath) => ({ File: newPath }));
+    await saveDB(plugin, space2, insertRowsIfUnique(tag, newRow));
+  };
+  const space = plugin.index.spacesIndex.get(t4);
+  let tagFileExists = await plugin.app.vault.adapter.exists(space.space.dbPath);
+  if (!tagFileExists) {
+    tagFileExists = await createContextMDB(plugin, space.space);
+  }
+  if (tagFileExists)
+    await getMDBTable(plugin, space.space, "files", "context").then(
+      (tagDB) => saveNewContextRows(tagDB, space.space)
+    );
+};
+var fileToFM = (afile, cols, plugin) => {
+  let file = afile;
+  if (afile instanceof import_obsidian8.TFolder) {
+    file = getAbstractFileAtPath(plugin, folderNotePathFromAFile(plugin.settings, tFileToAFile(afile)));
+  }
+  if (!file)
+    return [];
+  const fm = frontMatterForFile(plugin, file);
+  const fmKeys = frontMatterKeys(fm).filter((f4) => cols.some((g4) => f4 == g4));
+  const rows = fmKeys.reduce(
+    (p3, c4) => ({ ...p3, [c4]: parseFrontMatter(c4, fm[c4]) }),
+    {}
+  );
+  if (plugin.dataViewAPI()) {
+    return { ...rows, ...fileToDV(file, cols, plugin) };
+  }
+  return rows;
+};
+var fileToDV = (file, cols, plugin) => {
+  const dvValues = plugin.dataViewAPI().page(file.path);
+  const fmKeys = uniqCaseInsensitive(
+    Object.keys(dvValues != null ? dvValues : {}).filter(
+      (f4, i4, self2) => !self2.find(
+        (g4, j4) => g4.toLowerCase().replace(/\s/g, "-") == f4.toLowerCase().replace(/\s/g, "-") && i4 > j4
+      ) ? true : false
+    ).filter((f4) => f4 != "file")
+  ).filter((f4) => cols.some((g4) => f4 == g4));
+  return fmKeys.reduce(
+    (p3, c4) => ({
+      ...p3,
+      [c4]: parseDataview(c4, dvValues[c4])
+    }),
+    {}
+  );
+};
+var onMetadataChange = async (plugin, file, spaces) => {
+  const updateFile = (mdb) => {
+    const objectExists = mdb.rows.some((item) => item.File === file.path);
+    if (objectExists) {
+      return mdb.rows.map(
+        (f4) => f4.File == file.path ? {
+          ...f4,
+          ...fileToFM(
+            file,
+            mdb.cols.map((f5) => f5.name),
+            plugin
+          )
+        } : f4
+      );
+    } else {
+      return [
+        ...mdb.rows,
+        {
+          File: file.path,
+          ...fileToFM(
+            file,
+            mdb.cols.map((f4) => f4.name),
+            plugin
+          )
+        }
+      ];
+    }
+  };
+  const promises = spaces.map((space) => {
+    return processContextFile(plugin, space, async (mdb, space2) => {
+      const newDB = {
+        ...mdb,
+        rows: updateFile(mdb)
+      };
+      if (!import_lodash2.default.isEqual(mdb, newDB)) {
+        await saveDB(plugin, space2, newDB);
+      }
+      return newDB;
+    });
+  });
+  return Promise.all(promises);
+};
+var updateValueInContext = async (plugin, row, field, value, space) => {
+  const changeTagInContextMDB = (mdb) => {
+    return { ...mdb, rows: mdb.rows.map((f4) => f4.File == row ? { ...f4, [field]: value } : f4) };
+  };
+  return processContextFile(plugin, space, async (mdb, space2) => {
+    const newDB = changeTagInContextMDB(mdb);
+    if (!import_lodash2.default.isEqual(mdb, newDB)) {
+      await saveDB(plugin, space2, newDB);
+    }
+    return newDB;
+  });
+};
+var renameTagInContexts = async (plugin, oldTag, newTag, spaces) => {
+  const changeTagInContextMDB = (mdb) => {
+    const cols = mdb.cols.map((f4) => f4.type.startsWith("context") && f4.value == oldTag ? { ...f4, value: newTag } : f4);
+    return { ...mdb, cols };
+  };
+  const promises = spaces.map((space) => {
+    return processContextFile(plugin, space, async (mdb, space2) => {
+      const newDB = changeTagInContextMDB(mdb);
+      if (!import_lodash2.default.isEqual(mdb, newDB)) {
+        await saveDB(plugin, space2, newDB);
+      }
+      return newDB;
+    });
+  });
+  return Promise.all(promises);
+};
+var removeTagInContexts = async (plugin, tag, spaces) => {
+  const deleteTagInContextMDB = (mdb) => {
+    const cols = mdb.cols.map((f4) => f4.type.startsWith("context") && f4.value == tag ? { ...f4, type: "link-multi" } : f4);
+    return { ...mdb, cols };
+  };
+  const promises = spaces.map((space) => {
+    return processContextFile(plugin, space, async (mdb, space2) => {
+      const newDB = deleteTagInContextMDB(mdb);
+      if (!import_lodash2.default.isEqual(mdb, newDB)) {
+        await saveDB(plugin, space2, newDB);
+      }
+      return newDB;
+    });
+  });
+  return Promise.all(promises);
+};
+var addFileInContexts = async (plugin, path, contexts, index) => {
+  const promises = contexts.map((space) => {
+    return processContextFile(plugin, space, async (mdb, space2) => {
+      const newDB = insertRowsIfUnique(mdb, [{ File: path }], index);
+      if (!import_lodash2.default.isEqual(mdb, newDB)) {
+        await saveDB(plugin, space2, newDB);
+      }
+      return newDB;
+    });
+  });
+  return Promise.all(promises);
+};
+var renameLinkInContexts = async (plugin, oldPath, newPath, spaces) => {
+  const promises = spaces.map((space) => {
+    return processContextFile(plugin, space, async (mdb, space2) => {
+      const linkCols = linkColumns(mdb.cols);
+      const newDB = {
+        ...mdb,
+        rows: mdb.rows.map((r3) => renameLinksInRow(plugin, r3, oldPath, newPath, linkCols))
+      };
+      if (!import_lodash2.default.isEqual(mdb, newDB)) {
+        await saveDB(plugin, space2, newDB);
+      }
+      return newDB;
+    });
+  });
+  return Promise.all(promises);
+};
+var removeLinkInContexts = async (plugin, path, spaces) => {
+  const promises = spaces.map((space) => {
+    return processContextFile(plugin, space, async (mdb, space2) => {
+      const linkCols = linkColumns(mdb.cols);
+      const newDB = {
+        ...mdb,
+        rows: mdb.rows.map((r3) => removeLinksInRow(plugin, r3, path, linkCols))
+      };
+      if (!import_lodash2.default.isEqual(mdb, newDB)) {
+        await saveDB(plugin, space2, newDB);
+      }
+      return newDB;
+    });
+  });
+  return Promise.all(promises);
+};
+var renameFileInContexts = async (plugin, oldPath, newPath, spaces) => {
+  const promises = spaces.map((space) => {
+    return processContextFile(plugin, space, async (mdb, space2) => {
+      const newDB = renameRowForFile(mdb, oldPath, newPath);
+      if (!import_lodash2.default.isEqual(mdb, newDB)) {
+        await saveDB(plugin, space2, newDB);
+      }
+      return newDB;
+    });
+  });
+  return Promise.all(promises);
+};
+var removeFileInContexts = async (plugin, path, spaces) => {
+  const promises = spaces.map((space) => {
+    return processContextFile(plugin, space, async (mdb, space2) => {
+      const removeRow = mdb.rows.find((f4) => f4.File == path);
+      if (removeRow) {
+        saveContextToFrontmatter(path, mdb.cols, removeRow, plugin);
+      }
+      const newDB = removeRowForFile(mdb, path);
+      if (!import_lodash2.default.isEqual(mdb, newDB)) {
+        await saveDB(plugin, space2, newDB);
+      }
+      return newDB;
+    });
+  });
+  return Promise.all(promises);
+};
+var reorderFilesInContext = async (plugin, paths, index, space) => {
+  return processContextFile(plugin, space, async (mdb, context) => {
+    const newDB = reorderRowsForFile(mdb, paths, index);
+    if (!import_lodash2.default.isEqual(mdb, newDB)) {
+      await saveDB(plugin, context, newDB);
+    }
+    return newDB;
+  });
+};
+var removeFilesInContext = async (plugin, paths, space) => {
+  return processContextFile(plugin, space, async (mdb, context) => {
+    mdb.rows.forEach((row) => {
+      if (paths.includes(row.File))
+        saveContextToFrontmatter(row.File, mdb.cols, row, plugin);
+    });
+    const newDB = removeRowsForFile(mdb, paths);
+    if (!import_lodash2.default.isEqual(mdb, newDB)) {
+      await saveDB(plugin, context, newDB);
+    }
+    return newDB;
+  });
+};
+
+// src/react/components/MarkdownEditor/EditorHeader.tsx
+var import_he = __toESM(require_he());
+
+// src/react/components/SpaceView/Contexts/TagsView/NoteSpacesBar.tsx
+var import_obsidian17 = require("obsidian");
+
+// src/react/components/UI/Menus/propertyMenu/newPropertyMenu.tsx
+var import_obsidian16 = require("obsidian");
+
+// src/react/components/UI/Menus/menuItems.tsx
+var import_obsidian11 = require("obsidian");
+
+// src/react/components/UI/Menus/selectMenu/SelectMenuComponent.tsx
+var import_fuzzysort = __toESM(require_fuzzysort());
+var import_lodash3 = __toESM(require_lodash());
+
+// src/react/components/UI/Menus/selectMenu/SelectMenuInput.tsx
 var SIZER_STYLES = {
   position: "absolute",
   width: 0,
@@ -27450,7 +30646,7 @@ var SelectMenuInput = k3(
 );
 var SelectMenuInput_default = SelectMenuInput;
 
-// src/components/UI/menus/selectMenu/SelectMenuPill.tsx
+// src/react/components/UI/Menus/selectMenu/SelectMenuPill.tsx
 var SelectMenuPillComponent = (props2) => {
   return /* @__PURE__ */ Cn.createElement("button", {
     type: "button",
@@ -27463,16 +30659,18 @@ var SelectMenuPillComponent = (props2) => {
 var SelectMenuPill_default = SelectMenuPillComponent;
 
 // src/utils/sticker.ts
-var import_obsidian7 = require("obsidian");
+var import_obsidian10 = require("obsidian");
 
 // src/utils/icons.ts
-var import_obsidian6 = require("obsidian");
+var import_obsidian9 = require("obsidian");
 var iconForSpaceType = (type, path, force) => {
+  if (path == "Spaces/Home")
+    return "ui//mk-ui-home";
   return type == "folder" ? "ui//mk-ui-folder" : type == "tag" ? force ? "lucide//tags" : "" : type == "vault" ? "lucide//vault" : "lucide//layout-grid";
 };
 var lucideIcon = (value) => {
   var _a2;
-  return (_a2 = (0, import_obsidian6.getIcon)(value)) == null ? void 0 : _a2.outerHTML;
+  return (_a2 = (0, import_obsidian9.getIcon)(value)) == null ? void 0 : _a2.outerHTML;
 };
 var uiIconSet = {
   "mk-ui-rows": `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-rows"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="12" y2="12"/></svg>`,
@@ -27533,7 +30731,7 @@ var uiIconSet = {
   "mk-ui-spaces": `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
 </svg>`,
-  "mk-ui-home": `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+  "mk-ui-home": `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="svg-icon">
 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
 </svg>`,
   "mk-ui-tags": `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -28794,13 +31992,13 @@ var stickerFromString = (sticker, plugin) => {
   } else if (type == "ui") {
     return uiIconSet[value];
   } else if (type == "lucide") {
-    return (_a2 = (0, import_obsidian7.getIcon)(value)) == null ? void 0 : _a2.outerHTML;
+    return (_a2 = (0, import_obsidian10.getIcon)(value)) == null ? void 0 : _a2.outerHTML;
   } else {
     return plugin.index.iconsCache.get(value);
   }
 };
 
-// src/components/UI/Sticker.tsx
+// src/react/components/UI/Stickers/Sticker.tsx
 var Sticker = (props2) => {
   return /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-sticker",
@@ -28810,7 +32008,7 @@ var Sticker = (props2) => {
   });
 };
 
-// src/components/UI/menus/selectMenu/concerns/matchers.js
+// src/react/components/UI/Menus/selectMenu/concerns/matchers.js
 function escapeForRegExp(string) {
   return string.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&");
 }
@@ -28821,7 +32019,7 @@ function matchExact(string) {
   return new RegExp(`^${escapeForRegExp(string)}$`, "i");
 }
 
-// src/components/UI/menus/selectMenu/SelectMenuSuggestions.tsx
+// src/react/components/UI/Menus/selectMenu/SelectMenuSuggestions.tsx
 function markIt(name, query) {
   const regexp = matchAny(query);
   return name.replace(regexp, "<mark>$&</mark>");
@@ -28921,7 +32119,7 @@ var SelectMenuSuggestions = (props2) => {
 };
 var SelectMenuSuggestions_default = SelectMenuSuggestions;
 
-// src/components/UI/menus/selectMenu/concerns/focusNextElement.js
+// src/react/components/UI/Menus/selectMenu/concerns/focusNextElement.js
 function focusNextElement(scope, currentTarget) {
   const interactiveEls = scope.querySelectorAll("a,button,input");
   const currentEl = Array.prototype.findIndex.call(
@@ -28934,7 +32132,7 @@ function focusNextElement(scope, currentTarget) {
   }
 }
 
-// src/components/UI/menus/selectMenu/SelectMenuComponent.tsx
+// src/react/components/UI/Menus/selectMenu/SelectMenuComponent.tsx
 var KEYS = {
   ENTER: "Enter",
   TAB: "Tab",
@@ -29055,7 +32253,7 @@ var SelectMenuComponent = Cn.forwardRef(
       }
     }, [index, options]);
     const debounceFn = T2(
-      (0, import_lodash.debounce)(handleDebounceFn, 300, {
+      (0, import_lodash3.debounce)(handleDebounceFn, 300, {
         leading: false
       }),
       []
@@ -29255,7 +32453,7 @@ var SelectMenuComponent = Cn.forwardRef(
 SelectMenuComponent.displayName = "SelectMenuComponent";
 var SelectMenuComponent_default = SelectMenuComponent;
 
-// src/components/UI/menus/selectMenu.tsx
+// src/react/components/UI/Menus/selectMenu.tsx
 var SelectMenu = Cn.forwardRef(
   (props2, ref2) => {
     var _a2;
@@ -29385,7 +32583,7 @@ var SelectMenu = Cn.forwardRef(
 SelectMenu.displayName = "SelectMenu";
 var selectMenu_default = SelectMenu;
 
-// src/components/UI/menus/menuItems.tsx
+// src/react/components/UI/Menus/menuItems.tsx
 var inputMenuItem = (menuItem, value, setValue) => {
   const frag = document.createDocumentFragment();
   const spanEl = frag.createEl("span");
@@ -29409,7 +32607,7 @@ var inputMenuItem = (menuItem, value, setValue) => {
   return menuItem;
 };
 var showSelectMenu = (point, optionProps) => {
-  const menu = new import_obsidian8.Menu();
+  const menu = new import_obsidian11.Menu();
   menu.dom.toggleClass("mk-menu", true);
   menu.setUseNativeMenu(false);
   const frag = document.createDocumentFragment();
@@ -29480,8 +32678,8 @@ var disclosureMenuItem = (plugin, menuItem, multi, editable, title, value, optio
   return menuItem;
 };
 
-// src/components/UI/menus/propertyMenu/propertyMenu.tsx
-var import_obsidian10 = require("obsidian");
+// src/react/components/UI/Menus/propertyMenu/propertyMenu.tsx
+var import_obsidian13 = require("obsidian");
 
 // src/utils/contexts/predicate/sort.ts
 var simpleSort = (a5, b4) => {
@@ -29572,7 +32770,10 @@ var sortReturnForCol = (col, sort, row, row2) => {
   return 0;
 };
 
-// src/components/SpaceView/Editor/StickerMenu/emojis/default.ts
+// src/react/components/UI/Modals/stickerModal.tsx
+var import_obsidian12 = require("obsidian");
+
+// src/react/components/SpaceView/Editor/StickerMenu/emojis/default.ts
 var emojis = {
   smileys_people: [
     { n: ["grinning", "grinning face"], u: "1f600" },
@@ -34964,15 +38165,14 @@ var emojis = {
   ]
 };
 
-// src/components/UI/modals/stickerModal.tsx
-var import_obsidian9 = require("obsidian");
+// src/react/components/UI/Modals/stickerModal.tsx
 var htmlFromSticker = (sticker) => {
   if (sticker.type == "emoji") {
     return emojiFromString(sticker.html);
   }
   return sticker.html;
 };
-var stickerModal = class extends import_obsidian9.FuzzySuggestModal {
+var stickerModal = class extends import_obsidian12.FuzzySuggestModal {
   constructor(app2, plugin, setIcon) {
     super(app2);
     this.plugin = plugin;
@@ -34995,7 +38195,7 @@ var stickerModal = class extends import_obsidian9.FuzzySuggestModal {
       type: "lucide",
       keywords: f4,
       value: f4,
-      html: (0, import_obsidian9.getIcon)(f4).outerHTML
+      html: (0, import_obsidian12.getIcon)(f4).outerHTML
     }));
     const allCustom = [...this.plugin.index.iconsCache.keys()].map(
       (f4) => ({
@@ -35032,7 +38232,7 @@ var stickerModal = class extends import_obsidian9.FuzzySuggestModal {
   }
 };
 
-// src/components/UI/menus/propertyMenu/propertyMenu.tsx
+// src/react/components/UI/Menus/propertyMenu/propertyMenu.tsx
 var selectPropertyTypeMenu = (e4, plugin, selectedType) => {
   showSelectMenu(e4.target.getBoundingClientRect(), {
     plugin,
@@ -35125,7 +38325,7 @@ var showPropertyMenu = (props2) => {
     editCode,
     hidden
   } = props2;
-  const menu = new import_obsidian10.Menu();
+  const menu = new import_obsidian13.Menu();
   menu.setUseNativeMenu(false);
   if (editable) {
     menu.addItem((menuItem) => {
@@ -35239,9 +38439,9 @@ var showPropertyMenu = (props2) => {
   return menu;
 };
 
-// src/context/ContextEditorContext.tsx
-var import_lodash4 = __toESM(require_lodash());
-var import_obsidian14 = require("obsidian");
+// src/react/context/ContextEditorContext.tsx
+var import_lodash5 = __toESM(require_lodash());
+var import_obsidian15 = require("obsidian");
 
 // src/utils/contexts/predicate/filterFns/filterFnTypes.ts
 var filterFnTypes = {
@@ -35374,2663 +38574,6 @@ var filterReturnForCol = (col, filter, row) => {
   return result;
 };
 
-// node_modules/date-fns/esm/_lib/toInteger/index.js
-function toInteger(dirtyNumber) {
-  if (dirtyNumber === null || dirtyNumber === true || dirtyNumber === false) {
-    return NaN;
-  }
-  var number = Number(dirtyNumber);
-  if (isNaN(number)) {
-    return number;
-  }
-  return number < 0 ? Math.ceil(number) : Math.floor(number);
-}
-
-// node_modules/date-fns/esm/_lib/requiredArgs/index.js
-function requiredArgs(required, args) {
-  if (args.length < required) {
-    throw new TypeError(required + " argument" + (required > 1 ? "s" : "") + " required, but only " + args.length + " present");
-  }
-}
-
-// node_modules/date-fns/esm/toDate/index.js
-function _typeof(obj) {
-  "@babel/helpers - typeof";
-  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-    _typeof = function _typeof5(obj2) {
-      return typeof obj2;
-    };
-  } else {
-    _typeof = function _typeof5(obj2) {
-      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
-    };
-  }
-  return _typeof(obj);
-}
-function toDate(argument) {
-  requiredArgs(1, arguments);
-  var argStr = Object.prototype.toString.call(argument);
-  if (argument instanceof Date || _typeof(argument) === "object" && argStr === "[object Date]") {
-    return new Date(argument.getTime());
-  } else if (typeof argument === "number" || argStr === "[object Number]") {
-    return new Date(argument);
-  } else {
-    if ((typeof argument === "string" || argStr === "[object String]") && typeof console !== "undefined") {
-      console.warn("Starting with v2.0.0-beta.1 date-fns doesn't accept strings as date arguments. Please use `parseISO` to parse strings. See: https://github.com/date-fns/date-fns/blob/master/docs/upgradeGuide.md#string-arguments");
-      console.warn(new Error().stack);
-    }
-    return new Date(NaN);
-  }
-}
-
-// node_modules/date-fns/esm/addDays/index.js
-function addDays(dirtyDate, dirtyAmount) {
-  requiredArgs(2, arguments);
-  var date = toDate(dirtyDate);
-  var amount = toInteger(dirtyAmount);
-  if (isNaN(amount)) {
-    return new Date(NaN);
-  }
-  if (!amount) {
-    return date;
-  }
-  date.setDate(date.getDate() + amount);
-  return date;
-}
-
-// node_modules/date-fns/esm/addMonths/index.js
-function addMonths(dirtyDate, dirtyAmount) {
-  requiredArgs(2, arguments);
-  var date = toDate(dirtyDate);
-  var amount = toInteger(dirtyAmount);
-  if (isNaN(amount)) {
-    return new Date(NaN);
-  }
-  if (!amount) {
-    return date;
-  }
-  var dayOfMonth = date.getDate();
-  var endOfDesiredMonth = new Date(date.getTime());
-  endOfDesiredMonth.setMonth(date.getMonth() + amount + 1, 0);
-  var daysInMonth = endOfDesiredMonth.getDate();
-  if (dayOfMonth >= daysInMonth) {
-    return endOfDesiredMonth;
-  } else {
-    date.setFullYear(endOfDesiredMonth.getFullYear(), endOfDesiredMonth.getMonth(), dayOfMonth);
-    return date;
-  }
-}
-
-// node_modules/date-fns/esm/addMilliseconds/index.js
-function addMilliseconds(dirtyDate, dirtyAmount) {
-  requiredArgs(2, arguments);
-  var timestamp = toDate(dirtyDate).getTime();
-  var amount = toInteger(dirtyAmount);
-  return new Date(timestamp + amount);
-}
-
-// node_modules/date-fns/esm/_lib/defaultOptions/index.js
-var defaultOptions3 = {};
-function getDefaultOptions() {
-  return defaultOptions3;
-}
-
-// node_modules/date-fns/esm/startOfWeek/index.js
-function startOfWeek(dirtyDate, options) {
-  var _ref, _ref2, _ref3, _options$weekStartsOn, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
-  requiredArgs(1, arguments);
-  var defaultOptions4 = getDefaultOptions();
-  var weekStartsOn = toInteger((_ref = (_ref2 = (_ref3 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.weekStartsOn) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.weekStartsOn) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.weekStartsOn) !== null && _ref !== void 0 ? _ref : 0);
-  if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
-    throw new RangeError("weekStartsOn must be between 0 and 6 inclusively");
-  }
-  var date = toDate(dirtyDate);
-  var day = date.getDay();
-  var diff = (day < weekStartsOn ? 7 : 0) + day - weekStartsOn;
-  date.setDate(date.getDate() - diff);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-// node_modules/date-fns/esm/startOfISOWeek/index.js
-function startOfISOWeek(dirtyDate) {
-  requiredArgs(1, arguments);
-  return startOfWeek(dirtyDate, {
-    weekStartsOn: 1
-  });
-}
-
-// node_modules/date-fns/esm/getISOWeekYear/index.js
-function getISOWeekYear(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var year = date.getFullYear();
-  var fourthOfJanuaryOfNextYear = new Date(0);
-  fourthOfJanuaryOfNextYear.setFullYear(year + 1, 0, 4);
-  fourthOfJanuaryOfNextYear.setHours(0, 0, 0, 0);
-  var startOfNextYear = startOfISOWeek(fourthOfJanuaryOfNextYear);
-  var fourthOfJanuaryOfThisYear = new Date(0);
-  fourthOfJanuaryOfThisYear.setFullYear(year, 0, 4);
-  fourthOfJanuaryOfThisYear.setHours(0, 0, 0, 0);
-  var startOfThisYear = startOfISOWeek(fourthOfJanuaryOfThisYear);
-  if (date.getTime() >= startOfNextYear.getTime()) {
-    return year + 1;
-  } else if (date.getTime() >= startOfThisYear.getTime()) {
-    return year;
-  } else {
-    return year - 1;
-  }
-}
-
-// node_modules/date-fns/esm/startOfISOWeekYear/index.js
-function startOfISOWeekYear(dirtyDate) {
-  requiredArgs(1, arguments);
-  var year = getISOWeekYear(dirtyDate);
-  var fourthOfJanuary = new Date(0);
-  fourthOfJanuary.setFullYear(year, 0, 4);
-  fourthOfJanuary.setHours(0, 0, 0, 0);
-  var date = startOfISOWeek(fourthOfJanuary);
-  return date;
-}
-
-// node_modules/date-fns/esm/_lib/getTimezoneOffsetInMilliseconds/index.js
-function getTimezoneOffsetInMilliseconds(date) {
-  var utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()));
-  utcDate.setUTCFullYear(date.getFullYear());
-  return date.getTime() - utcDate.getTime();
-}
-
-// node_modules/date-fns/esm/startOfDay/index.js
-function startOfDay(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-// node_modules/date-fns/esm/differenceInCalendarDays/index.js
-var MILLISECONDS_IN_DAY = 864e5;
-function differenceInCalendarDays(dirtyDateLeft, dirtyDateRight) {
-  requiredArgs(2, arguments);
-  var startOfDayLeft = startOfDay(dirtyDateLeft);
-  var startOfDayRight = startOfDay(dirtyDateRight);
-  var timestampLeft = startOfDayLeft.getTime() - getTimezoneOffsetInMilliseconds(startOfDayLeft);
-  var timestampRight = startOfDayRight.getTime() - getTimezoneOffsetInMilliseconds(startOfDayRight);
-  return Math.round((timestampLeft - timestampRight) / MILLISECONDS_IN_DAY);
-}
-
-// node_modules/date-fns/esm/addWeeks/index.js
-function addWeeks(dirtyDate, dirtyAmount) {
-  requiredArgs(2, arguments);
-  var amount = toInteger(dirtyAmount);
-  var days = amount * 7;
-  return addDays(dirtyDate, days);
-}
-
-// node_modules/date-fns/esm/addYears/index.js
-function addYears(dirtyDate, dirtyAmount) {
-  requiredArgs(2, arguments);
-  var amount = toInteger(dirtyAmount);
-  return addMonths(dirtyDate, amount * 12);
-}
-
-// node_modules/date-fns/esm/max/index.js
-function _typeof2(obj) {
-  "@babel/helpers - typeof";
-  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-    _typeof2 = function _typeof5(obj2) {
-      return typeof obj2;
-    };
-  } else {
-    _typeof2 = function _typeof5(obj2) {
-      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
-    };
-  }
-  return _typeof2(obj);
-}
-function max(dirtyDatesArray) {
-  requiredArgs(1, arguments);
-  var datesArray;
-  if (dirtyDatesArray && typeof dirtyDatesArray.forEach === "function") {
-    datesArray = dirtyDatesArray;
-  } else if (_typeof2(dirtyDatesArray) === "object" && dirtyDatesArray !== null) {
-    datesArray = Array.prototype.slice.call(dirtyDatesArray);
-  } else {
-    return new Date(NaN);
-  }
-  var result;
-  datesArray.forEach(function(dirtyDate) {
-    var currentDate = toDate(dirtyDate);
-    if (result === void 0 || result < currentDate || isNaN(Number(currentDate))) {
-      result = currentDate;
-    }
-  });
-  return result || new Date(NaN);
-}
-
-// node_modules/date-fns/esm/min/index.js
-function _typeof3(obj) {
-  "@babel/helpers - typeof";
-  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-    _typeof3 = function _typeof5(obj2) {
-      return typeof obj2;
-    };
-  } else {
-    _typeof3 = function _typeof5(obj2) {
-      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
-    };
-  }
-  return _typeof3(obj);
-}
-function min(dirtyDatesArray) {
-  requiredArgs(1, arguments);
-  var datesArray;
-  if (dirtyDatesArray && typeof dirtyDatesArray.forEach === "function") {
-    datesArray = dirtyDatesArray;
-  } else if (_typeof3(dirtyDatesArray) === "object" && dirtyDatesArray !== null) {
-    datesArray = Array.prototype.slice.call(dirtyDatesArray);
-  } else {
-    return new Date(NaN);
-  }
-  var result;
-  datesArray.forEach(function(dirtyDate) {
-    var currentDate = toDate(dirtyDate);
-    if (result === void 0 || result > currentDate || isNaN(currentDate.getDate())) {
-      result = currentDate;
-    }
-  });
-  return result || new Date(NaN);
-}
-
-// node_modules/date-fns/esm/compareAsc/index.js
-function compareAsc(dirtyDateLeft, dirtyDateRight) {
-  requiredArgs(2, arguments);
-  var dateLeft = toDate(dirtyDateLeft);
-  var dateRight = toDate(dirtyDateRight);
-  var diff = dateLeft.getTime() - dateRight.getTime();
-  if (diff < 0) {
-    return -1;
-  } else if (diff > 0) {
-    return 1;
-  } else {
-    return diff;
-  }
-}
-
-// node_modules/date-fns/esm/isSameDay/index.js
-function isSameDay(dirtyDateLeft, dirtyDateRight) {
-  requiredArgs(2, arguments);
-  var dateLeftStartOfDay = startOfDay(dirtyDateLeft);
-  var dateRightStartOfDay = startOfDay(dirtyDateRight);
-  return dateLeftStartOfDay.getTime() === dateRightStartOfDay.getTime();
-}
-
-// node_modules/date-fns/esm/isDate/index.js
-function _typeof4(obj) {
-  "@babel/helpers - typeof";
-  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-    _typeof4 = function _typeof5(obj2) {
-      return typeof obj2;
-    };
-  } else {
-    _typeof4 = function _typeof5(obj2) {
-      return obj2 && typeof Symbol === "function" && obj2.constructor === Symbol && obj2 !== Symbol.prototype ? "symbol" : typeof obj2;
-    };
-  }
-  return _typeof4(obj);
-}
-function isDate(value) {
-  requiredArgs(1, arguments);
-  return value instanceof Date || _typeof4(value) === "object" && Object.prototype.toString.call(value) === "[object Date]";
-}
-
-// node_modules/date-fns/esm/isValid/index.js
-function isValid(dirtyDate) {
-  requiredArgs(1, arguments);
-  if (!isDate(dirtyDate) && typeof dirtyDate !== "number") {
-    return false;
-  }
-  var date = toDate(dirtyDate);
-  return !isNaN(Number(date));
-}
-
-// node_modules/date-fns/esm/differenceInCalendarMonths/index.js
-function differenceInCalendarMonths(dirtyDateLeft, dirtyDateRight) {
-  requiredArgs(2, arguments);
-  var dateLeft = toDate(dirtyDateLeft);
-  var dateRight = toDate(dirtyDateRight);
-  var yearDiff = dateLeft.getFullYear() - dateRight.getFullYear();
-  var monthDiff = dateLeft.getMonth() - dateRight.getMonth();
-  return yearDiff * 12 + monthDiff;
-}
-
-// node_modules/date-fns/esm/differenceInCalendarWeeks/index.js
-var MILLISECONDS_IN_WEEK = 6048e5;
-function differenceInCalendarWeeks(dirtyDateLeft, dirtyDateRight, options) {
-  requiredArgs(2, arguments);
-  var startOfWeekLeft = startOfWeek(dirtyDateLeft, options);
-  var startOfWeekRight = startOfWeek(dirtyDateRight, options);
-  var timestampLeft = startOfWeekLeft.getTime() - getTimezoneOffsetInMilliseconds(startOfWeekLeft);
-  var timestampRight = startOfWeekRight.getTime() - getTimezoneOffsetInMilliseconds(startOfWeekRight);
-  return Math.round((timestampLeft - timestampRight) / MILLISECONDS_IN_WEEK);
-}
-
-// node_modules/date-fns/esm/differenceInMilliseconds/index.js
-function differenceInMilliseconds(dateLeft, dateRight) {
-  requiredArgs(2, arguments);
-  return toDate(dateLeft).getTime() - toDate(dateRight).getTime();
-}
-
-// node_modules/date-fns/esm/_lib/roundingMethods/index.js
-var roundingMap = {
-  ceil: Math.ceil,
-  round: Math.round,
-  floor: Math.floor,
-  trunc: function trunc(value) {
-    return value < 0 ? Math.ceil(value) : Math.floor(value);
-  }
-};
-var defaultRoundingMethod = "trunc";
-function getRoundingMethod(method) {
-  return method ? roundingMap[method] : roundingMap[defaultRoundingMethod];
-}
-
-// node_modules/date-fns/esm/endOfDay/index.js
-function endOfDay(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  date.setHours(23, 59, 59, 999);
-  return date;
-}
-
-// node_modules/date-fns/esm/endOfMonth/index.js
-function endOfMonth(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var month = date.getMonth();
-  date.setFullYear(date.getFullYear(), month + 1, 0);
-  date.setHours(23, 59, 59, 999);
-  return date;
-}
-
-// node_modules/date-fns/esm/isLastDayOfMonth/index.js
-function isLastDayOfMonth(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  return endOfDay(date).getTime() === endOfMonth(date).getTime();
-}
-
-// node_modules/date-fns/esm/differenceInMonths/index.js
-function differenceInMonths(dirtyDateLeft, dirtyDateRight) {
-  requiredArgs(2, arguments);
-  var dateLeft = toDate(dirtyDateLeft);
-  var dateRight = toDate(dirtyDateRight);
-  var sign = compareAsc(dateLeft, dateRight);
-  var difference = Math.abs(differenceInCalendarMonths(dateLeft, dateRight));
-  var result;
-  if (difference < 1) {
-    result = 0;
-  } else {
-    if (dateLeft.getMonth() === 1 && dateLeft.getDate() > 27) {
-      dateLeft.setDate(30);
-    }
-    dateLeft.setMonth(dateLeft.getMonth() - sign * difference);
-    var isLastMonthNotFull = compareAsc(dateLeft, dateRight) === -sign;
-    if (isLastDayOfMonth(toDate(dirtyDateLeft)) && difference === 1 && compareAsc(dirtyDateLeft, dateRight) === 1) {
-      isLastMonthNotFull = false;
-    }
-    result = sign * (difference - Number(isLastMonthNotFull));
-  }
-  return result === 0 ? 0 : result;
-}
-
-// node_modules/date-fns/esm/differenceInSeconds/index.js
-function differenceInSeconds(dateLeft, dateRight, options) {
-  requiredArgs(2, arguments);
-  var diff = differenceInMilliseconds(dateLeft, dateRight) / 1e3;
-  return getRoundingMethod(options === null || options === void 0 ? void 0 : options.roundingMethod)(diff);
-}
-
-// node_modules/date-fns/esm/startOfMonth/index.js
-function startOfMonth(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  date.setDate(1);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-// node_modules/date-fns/esm/startOfYear/index.js
-function startOfYear(dirtyDate) {
-  requiredArgs(1, arguments);
-  var cleanDate = toDate(dirtyDate);
-  var date = new Date(0);
-  date.setFullYear(cleanDate.getFullYear(), 0, 1);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-// node_modules/date-fns/esm/endOfWeek/index.js
-function endOfWeek(dirtyDate, options) {
-  var _ref, _ref2, _ref3, _options$weekStartsOn, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
-  requiredArgs(1, arguments);
-  var defaultOptions4 = getDefaultOptions();
-  var weekStartsOn = toInteger((_ref = (_ref2 = (_ref3 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.weekStartsOn) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.weekStartsOn) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.weekStartsOn) !== null && _ref !== void 0 ? _ref : 0);
-  if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
-    throw new RangeError("weekStartsOn must be between 0 and 6 inclusively");
-  }
-  var date = toDate(dirtyDate);
-  var day = date.getDay();
-  var diff = (day < weekStartsOn ? -7 : 0) + 6 - (day - weekStartsOn);
-  date.setDate(date.getDate() + diff);
-  date.setHours(23, 59, 59, 999);
-  return date;
-}
-
-// node_modules/date-fns/esm/endOfISOWeek/index.js
-function endOfISOWeek(dirtyDate) {
-  requiredArgs(1, arguments);
-  return endOfWeek(dirtyDate, {
-    weekStartsOn: 1
-  });
-}
-
-// node_modules/date-fns/esm/subMilliseconds/index.js
-function subMilliseconds(dirtyDate, dirtyAmount) {
-  requiredArgs(2, arguments);
-  var amount = toInteger(dirtyAmount);
-  return addMilliseconds(dirtyDate, -amount);
-}
-
-// node_modules/date-fns/esm/_lib/getUTCDayOfYear/index.js
-var MILLISECONDS_IN_DAY2 = 864e5;
-function getUTCDayOfYear(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var timestamp = date.getTime();
-  date.setUTCMonth(0, 1);
-  date.setUTCHours(0, 0, 0, 0);
-  var startOfYearTimestamp = date.getTime();
-  var difference = timestamp - startOfYearTimestamp;
-  return Math.floor(difference / MILLISECONDS_IN_DAY2) + 1;
-}
-
-// node_modules/date-fns/esm/_lib/startOfUTCISOWeek/index.js
-function startOfUTCISOWeek(dirtyDate) {
-  requiredArgs(1, arguments);
-  var weekStartsOn = 1;
-  var date = toDate(dirtyDate);
-  var day = date.getUTCDay();
-  var diff = (day < weekStartsOn ? 7 : 0) + day - weekStartsOn;
-  date.setUTCDate(date.getUTCDate() - diff);
-  date.setUTCHours(0, 0, 0, 0);
-  return date;
-}
-
-// node_modules/date-fns/esm/_lib/getUTCISOWeekYear/index.js
-function getUTCISOWeekYear(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var year = date.getUTCFullYear();
-  var fourthOfJanuaryOfNextYear = new Date(0);
-  fourthOfJanuaryOfNextYear.setUTCFullYear(year + 1, 0, 4);
-  fourthOfJanuaryOfNextYear.setUTCHours(0, 0, 0, 0);
-  var startOfNextYear = startOfUTCISOWeek(fourthOfJanuaryOfNextYear);
-  var fourthOfJanuaryOfThisYear = new Date(0);
-  fourthOfJanuaryOfThisYear.setUTCFullYear(year, 0, 4);
-  fourthOfJanuaryOfThisYear.setUTCHours(0, 0, 0, 0);
-  var startOfThisYear = startOfUTCISOWeek(fourthOfJanuaryOfThisYear);
-  if (date.getTime() >= startOfNextYear.getTime()) {
-    return year + 1;
-  } else if (date.getTime() >= startOfThisYear.getTime()) {
-    return year;
-  } else {
-    return year - 1;
-  }
-}
-
-// node_modules/date-fns/esm/_lib/startOfUTCISOWeekYear/index.js
-function startOfUTCISOWeekYear(dirtyDate) {
-  requiredArgs(1, arguments);
-  var year = getUTCISOWeekYear(dirtyDate);
-  var fourthOfJanuary = new Date(0);
-  fourthOfJanuary.setUTCFullYear(year, 0, 4);
-  fourthOfJanuary.setUTCHours(0, 0, 0, 0);
-  var date = startOfUTCISOWeek(fourthOfJanuary);
-  return date;
-}
-
-// node_modules/date-fns/esm/_lib/getUTCISOWeek/index.js
-var MILLISECONDS_IN_WEEK2 = 6048e5;
-function getUTCISOWeek(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var diff = startOfUTCISOWeek(date).getTime() - startOfUTCISOWeekYear(date).getTime();
-  return Math.round(diff / MILLISECONDS_IN_WEEK2) + 1;
-}
-
-// node_modules/date-fns/esm/_lib/startOfUTCWeek/index.js
-function startOfUTCWeek(dirtyDate, options) {
-  var _ref, _ref2, _ref3, _options$weekStartsOn, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
-  requiredArgs(1, arguments);
-  var defaultOptions4 = getDefaultOptions();
-  var weekStartsOn = toInteger((_ref = (_ref2 = (_ref3 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.weekStartsOn) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.weekStartsOn) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.weekStartsOn) !== null && _ref !== void 0 ? _ref : 0);
-  if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
-    throw new RangeError("weekStartsOn must be between 0 and 6 inclusively");
-  }
-  var date = toDate(dirtyDate);
-  var day = date.getUTCDay();
-  var diff = (day < weekStartsOn ? 7 : 0) + day - weekStartsOn;
-  date.setUTCDate(date.getUTCDate() - diff);
-  date.setUTCHours(0, 0, 0, 0);
-  return date;
-}
-
-// node_modules/date-fns/esm/_lib/getUTCWeekYear/index.js
-function getUTCWeekYear(dirtyDate, options) {
-  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var year = date.getUTCFullYear();
-  var defaultOptions4 = getDefaultOptions();
-  var firstWeekContainsDate = toInteger((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1);
-  if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
-    throw new RangeError("firstWeekContainsDate must be between 1 and 7 inclusively");
-  }
-  var firstWeekOfNextYear = new Date(0);
-  firstWeekOfNextYear.setUTCFullYear(year + 1, 0, firstWeekContainsDate);
-  firstWeekOfNextYear.setUTCHours(0, 0, 0, 0);
-  var startOfNextYear = startOfUTCWeek(firstWeekOfNextYear, options);
-  var firstWeekOfThisYear = new Date(0);
-  firstWeekOfThisYear.setUTCFullYear(year, 0, firstWeekContainsDate);
-  firstWeekOfThisYear.setUTCHours(0, 0, 0, 0);
-  var startOfThisYear = startOfUTCWeek(firstWeekOfThisYear, options);
-  if (date.getTime() >= startOfNextYear.getTime()) {
-    return year + 1;
-  } else if (date.getTime() >= startOfThisYear.getTime()) {
-    return year;
-  } else {
-    return year - 1;
-  }
-}
-
-// node_modules/date-fns/esm/_lib/startOfUTCWeekYear/index.js
-function startOfUTCWeekYear(dirtyDate, options) {
-  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
-  requiredArgs(1, arguments);
-  var defaultOptions4 = getDefaultOptions();
-  var firstWeekContainsDate = toInteger((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1);
-  var year = getUTCWeekYear(dirtyDate, options);
-  var firstWeek = new Date(0);
-  firstWeek.setUTCFullYear(year, 0, firstWeekContainsDate);
-  firstWeek.setUTCHours(0, 0, 0, 0);
-  var date = startOfUTCWeek(firstWeek, options);
-  return date;
-}
-
-// node_modules/date-fns/esm/_lib/getUTCWeek/index.js
-var MILLISECONDS_IN_WEEK3 = 6048e5;
-function getUTCWeek(dirtyDate, options) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var diff = startOfUTCWeek(date, options).getTime() - startOfUTCWeekYear(date, options).getTime();
-  return Math.round(diff / MILLISECONDS_IN_WEEK3) + 1;
-}
-
-// node_modules/date-fns/esm/_lib/addLeadingZeros/index.js
-function addLeadingZeros(number, targetLength) {
-  var sign = number < 0 ? "-" : "";
-  var output = Math.abs(number).toString();
-  while (output.length < targetLength) {
-    output = "0" + output;
-  }
-  return sign + output;
-}
-
-// node_modules/date-fns/esm/_lib/format/lightFormatters/index.js
-var formatters = {
-  y: function y3(date, token) {
-    var signedYear = date.getUTCFullYear();
-    var year = signedYear > 0 ? signedYear : 1 - signedYear;
-    return addLeadingZeros(token === "yy" ? year % 100 : year, token.length);
-  },
-  M: function M3(date, token) {
-    var month = date.getUTCMonth();
-    return token === "M" ? String(month + 1) : addLeadingZeros(month + 1, 2);
-  },
-  d: function d3(date, token) {
-    return addLeadingZeros(date.getUTCDate(), token.length);
-  },
-  a: function a3(date, token) {
-    var dayPeriodEnumValue = date.getUTCHours() / 12 >= 1 ? "pm" : "am";
-    switch (token) {
-      case "a":
-      case "aa":
-        return dayPeriodEnumValue.toUpperCase();
-      case "aaa":
-        return dayPeriodEnumValue;
-      case "aaaaa":
-        return dayPeriodEnumValue[0];
-      case "aaaa":
-      default:
-        return dayPeriodEnumValue === "am" ? "a.m." : "p.m.";
-    }
-  },
-  h: function h3(date, token) {
-    return addLeadingZeros(date.getUTCHours() % 12 || 12, token.length);
-  },
-  H: function H3(date, token) {
-    return addLeadingZeros(date.getUTCHours(), token.length);
-  },
-  m: function m3(date, token) {
-    return addLeadingZeros(date.getUTCMinutes(), token.length);
-  },
-  s: function s3(date, token) {
-    return addLeadingZeros(date.getUTCSeconds(), token.length);
-  },
-  S: function S2(date, token) {
-    var numberOfDigits = token.length;
-    var milliseconds = date.getUTCMilliseconds();
-    var fractionalSeconds = Math.floor(milliseconds * Math.pow(10, numberOfDigits - 3));
-    return addLeadingZeros(fractionalSeconds, token.length);
-  }
-};
-var lightFormatters_default = formatters;
-
-// node_modules/date-fns/esm/_lib/format/formatters/index.js
-var dayPeriodEnum = {
-  am: "am",
-  pm: "pm",
-  midnight: "midnight",
-  noon: "noon",
-  morning: "morning",
-  afternoon: "afternoon",
-  evening: "evening",
-  night: "night"
-};
-var formatters2 = {
-  G: function G2(date, token, localize2) {
-    var era = date.getUTCFullYear() > 0 ? 1 : 0;
-    switch (token) {
-      case "G":
-      case "GG":
-      case "GGG":
-        return localize2.era(era, {
-          width: "abbreviated"
-        });
-      case "GGGGG":
-        return localize2.era(era, {
-          width: "narrow"
-        });
-      case "GGGG":
-      default:
-        return localize2.era(era, {
-          width: "wide"
-        });
-    }
-  },
-  y: function y4(date, token, localize2) {
-    if (token === "yo") {
-      var signedYear = date.getUTCFullYear();
-      var year = signedYear > 0 ? signedYear : 1 - signedYear;
-      return localize2.ordinalNumber(year, {
-        unit: "year"
-      });
-    }
-    return lightFormatters_default.y(date, token);
-  },
-  Y: function Y2(date, token, localize2, options) {
-    var signedWeekYear = getUTCWeekYear(date, options);
-    var weekYear = signedWeekYear > 0 ? signedWeekYear : 1 - signedWeekYear;
-    if (token === "YY") {
-      var twoDigitYear = weekYear % 100;
-      return addLeadingZeros(twoDigitYear, 2);
-    }
-    if (token === "Yo") {
-      return localize2.ordinalNumber(weekYear, {
-        unit: "year"
-      });
-    }
-    return addLeadingZeros(weekYear, token.length);
-  },
-  R: function R2(date, token) {
-    var isoWeekYear = getUTCISOWeekYear(date);
-    return addLeadingZeros(isoWeekYear, token.length);
-  },
-  u: function u3(date, token) {
-    var year = date.getUTCFullYear();
-    return addLeadingZeros(year, token.length);
-  },
-  Q: function Q2(date, token, localize2) {
-    var quarter = Math.ceil((date.getUTCMonth() + 1) / 3);
-    switch (token) {
-      case "Q":
-        return String(quarter);
-      case "QQ":
-        return addLeadingZeros(quarter, 2);
-      case "Qo":
-        return localize2.ordinalNumber(quarter, {
-          unit: "quarter"
-        });
-      case "QQQ":
-        return localize2.quarter(quarter, {
-          width: "abbreviated",
-          context: "formatting"
-        });
-      case "QQQQQ":
-        return localize2.quarter(quarter, {
-          width: "narrow",
-          context: "formatting"
-        });
-      case "QQQQ":
-      default:
-        return localize2.quarter(quarter, {
-          width: "wide",
-          context: "formatting"
-        });
-    }
-  },
-  q: function q4(date, token, localize2) {
-    var quarter = Math.ceil((date.getUTCMonth() + 1) / 3);
-    switch (token) {
-      case "q":
-        return String(quarter);
-      case "qq":
-        return addLeadingZeros(quarter, 2);
-      case "qo":
-        return localize2.ordinalNumber(quarter, {
-          unit: "quarter"
-        });
-      case "qqq":
-        return localize2.quarter(quarter, {
-          width: "abbreviated",
-          context: "standalone"
-        });
-      case "qqqqq":
-        return localize2.quarter(quarter, {
-          width: "narrow",
-          context: "standalone"
-        });
-      case "qqqq":
-      default:
-        return localize2.quarter(quarter, {
-          width: "wide",
-          context: "standalone"
-        });
-    }
-  },
-  M: function M4(date, token, localize2) {
-    var month = date.getUTCMonth();
-    switch (token) {
-      case "M":
-      case "MM":
-        return lightFormatters_default.M(date, token);
-      case "Mo":
-        return localize2.ordinalNumber(month + 1, {
-          unit: "month"
-        });
-      case "MMM":
-        return localize2.month(month, {
-          width: "abbreviated",
-          context: "formatting"
-        });
-      case "MMMMM":
-        return localize2.month(month, {
-          width: "narrow",
-          context: "formatting"
-        });
-      case "MMMM":
-      default:
-        return localize2.month(month, {
-          width: "wide",
-          context: "formatting"
-        });
-    }
-  },
-  L: function L3(date, token, localize2) {
-    var month = date.getUTCMonth();
-    switch (token) {
-      case "L":
-        return String(month + 1);
-      case "LL":
-        return addLeadingZeros(month + 1, 2);
-      case "Lo":
-        return localize2.ordinalNumber(month + 1, {
-          unit: "month"
-        });
-      case "LLL":
-        return localize2.month(month, {
-          width: "abbreviated",
-          context: "standalone"
-        });
-      case "LLLLL":
-        return localize2.month(month, {
-          width: "narrow",
-          context: "standalone"
-        });
-      case "LLLL":
-      default:
-        return localize2.month(month, {
-          width: "wide",
-          context: "standalone"
-        });
-    }
-  },
-  w: function w4(date, token, localize2, options) {
-    var week = getUTCWeek(date, options);
-    if (token === "wo") {
-      return localize2.ordinalNumber(week, {
-        unit: "week"
-      });
-    }
-    return addLeadingZeros(week, token.length);
-  },
-  I: function I3(date, token, localize2) {
-    var isoWeek = getUTCISOWeek(date);
-    if (token === "Io") {
-      return localize2.ordinalNumber(isoWeek, {
-        unit: "week"
-      });
-    }
-    return addLeadingZeros(isoWeek, token.length);
-  },
-  d: function d4(date, token, localize2) {
-    if (token === "do") {
-      return localize2.ordinalNumber(date.getUTCDate(), {
-        unit: "date"
-      });
-    }
-    return lightFormatters_default.d(date, token);
-  },
-  D: function D3(date, token, localize2) {
-    var dayOfYear = getUTCDayOfYear(date);
-    if (token === "Do") {
-      return localize2.ordinalNumber(dayOfYear, {
-        unit: "dayOfYear"
-      });
-    }
-    return addLeadingZeros(dayOfYear, token.length);
-  },
-  E: function E3(date, token, localize2) {
-    var dayOfWeek = date.getUTCDay();
-    switch (token) {
-      case "E":
-      case "EE":
-      case "EEE":
-        return localize2.day(dayOfWeek, {
-          width: "abbreviated",
-          context: "formatting"
-        });
-      case "EEEEE":
-        return localize2.day(dayOfWeek, {
-          width: "narrow",
-          context: "formatting"
-        });
-      case "EEEEEE":
-        return localize2.day(dayOfWeek, {
-          width: "short",
-          context: "formatting"
-        });
-      case "EEEE":
-      default:
-        return localize2.day(dayOfWeek, {
-          width: "wide",
-          context: "formatting"
-        });
-    }
-  },
-  e: function e3(date, token, localize2, options) {
-    var dayOfWeek = date.getUTCDay();
-    var localDayOfWeek = (dayOfWeek - options.weekStartsOn + 8) % 7 || 7;
-    switch (token) {
-      case "e":
-        return String(localDayOfWeek);
-      case "ee":
-        return addLeadingZeros(localDayOfWeek, 2);
-      case "eo":
-        return localize2.ordinalNumber(localDayOfWeek, {
-          unit: "day"
-        });
-      case "eee":
-        return localize2.day(dayOfWeek, {
-          width: "abbreviated",
-          context: "formatting"
-        });
-      case "eeeee":
-        return localize2.day(dayOfWeek, {
-          width: "narrow",
-          context: "formatting"
-        });
-      case "eeeeee":
-        return localize2.day(dayOfWeek, {
-          width: "short",
-          context: "formatting"
-        });
-      case "eeee":
-      default:
-        return localize2.day(dayOfWeek, {
-          width: "wide",
-          context: "formatting"
-        });
-    }
-  },
-  c: function c3(date, token, localize2, options) {
-    var dayOfWeek = date.getUTCDay();
-    var localDayOfWeek = (dayOfWeek - options.weekStartsOn + 8) % 7 || 7;
-    switch (token) {
-      case "c":
-        return String(localDayOfWeek);
-      case "cc":
-        return addLeadingZeros(localDayOfWeek, token.length);
-      case "co":
-        return localize2.ordinalNumber(localDayOfWeek, {
-          unit: "day"
-        });
-      case "ccc":
-        return localize2.day(dayOfWeek, {
-          width: "abbreviated",
-          context: "standalone"
-        });
-      case "ccccc":
-        return localize2.day(dayOfWeek, {
-          width: "narrow",
-          context: "standalone"
-        });
-      case "cccccc":
-        return localize2.day(dayOfWeek, {
-          width: "short",
-          context: "standalone"
-        });
-      case "cccc":
-      default:
-        return localize2.day(dayOfWeek, {
-          width: "wide",
-          context: "standalone"
-        });
-    }
-  },
-  i: function i3(date, token, localize2) {
-    var dayOfWeek = date.getUTCDay();
-    var isoDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
-    switch (token) {
-      case "i":
-        return String(isoDayOfWeek);
-      case "ii":
-        return addLeadingZeros(isoDayOfWeek, token.length);
-      case "io":
-        return localize2.ordinalNumber(isoDayOfWeek, {
-          unit: "day"
-        });
-      case "iii":
-        return localize2.day(dayOfWeek, {
-          width: "abbreviated",
-          context: "formatting"
-        });
-      case "iiiii":
-        return localize2.day(dayOfWeek, {
-          width: "narrow",
-          context: "formatting"
-        });
-      case "iiiiii":
-        return localize2.day(dayOfWeek, {
-          width: "short",
-          context: "formatting"
-        });
-      case "iiii":
-      default:
-        return localize2.day(dayOfWeek, {
-          width: "wide",
-          context: "formatting"
-        });
-    }
-  },
-  a: function a4(date, token, localize2) {
-    var hours = date.getUTCHours();
-    var dayPeriodEnumValue = hours / 12 >= 1 ? "pm" : "am";
-    switch (token) {
-      case "a":
-      case "aa":
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "abbreviated",
-          context: "formatting"
-        });
-      case "aaa":
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "abbreviated",
-          context: "formatting"
-        }).toLowerCase();
-      case "aaaaa":
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "narrow",
-          context: "formatting"
-        });
-      case "aaaa":
-      default:
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "wide",
-          context: "formatting"
-        });
-    }
-  },
-  b: function b3(date, token, localize2) {
-    var hours = date.getUTCHours();
-    var dayPeriodEnumValue;
-    if (hours === 12) {
-      dayPeriodEnumValue = dayPeriodEnum.noon;
-    } else if (hours === 0) {
-      dayPeriodEnumValue = dayPeriodEnum.midnight;
-    } else {
-      dayPeriodEnumValue = hours / 12 >= 1 ? "pm" : "am";
-    }
-    switch (token) {
-      case "b":
-      case "bb":
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "abbreviated",
-          context: "formatting"
-        });
-      case "bbb":
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "abbreviated",
-          context: "formatting"
-        }).toLowerCase();
-      case "bbbbb":
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "narrow",
-          context: "formatting"
-        });
-      case "bbbb":
-      default:
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "wide",
-          context: "formatting"
-        });
-    }
-  },
-  B: function B4(date, token, localize2) {
-    var hours = date.getUTCHours();
-    var dayPeriodEnumValue;
-    if (hours >= 17) {
-      dayPeriodEnumValue = dayPeriodEnum.evening;
-    } else if (hours >= 12) {
-      dayPeriodEnumValue = dayPeriodEnum.afternoon;
-    } else if (hours >= 4) {
-      dayPeriodEnumValue = dayPeriodEnum.morning;
-    } else {
-      dayPeriodEnumValue = dayPeriodEnum.night;
-    }
-    switch (token) {
-      case "B":
-      case "BB":
-      case "BBB":
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "abbreviated",
-          context: "formatting"
-        });
-      case "BBBBB":
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "narrow",
-          context: "formatting"
-        });
-      case "BBBB":
-      default:
-        return localize2.dayPeriod(dayPeriodEnumValue, {
-          width: "wide",
-          context: "formatting"
-        });
-    }
-  },
-  h: function h4(date, token, localize2) {
-    if (token === "ho") {
-      var hours = date.getUTCHours() % 12;
-      if (hours === 0)
-        hours = 12;
-      return localize2.ordinalNumber(hours, {
-        unit: "hour"
-      });
-    }
-    return lightFormatters_default.h(date, token);
-  },
-  H: function H4(date, token, localize2) {
-    if (token === "Ho") {
-      return localize2.ordinalNumber(date.getUTCHours(), {
-        unit: "hour"
-      });
-    }
-    return lightFormatters_default.H(date, token);
-  },
-  K: function K2(date, token, localize2) {
-    var hours = date.getUTCHours() % 12;
-    if (token === "Ko") {
-      return localize2.ordinalNumber(hours, {
-        unit: "hour"
-      });
-    }
-    return addLeadingZeros(hours, token.length);
-  },
-  k: function k4(date, token, localize2) {
-    var hours = date.getUTCHours();
-    if (hours === 0)
-      hours = 24;
-    if (token === "ko") {
-      return localize2.ordinalNumber(hours, {
-        unit: "hour"
-      });
-    }
-    return addLeadingZeros(hours, token.length);
-  },
-  m: function m4(date, token, localize2) {
-    if (token === "mo") {
-      return localize2.ordinalNumber(date.getUTCMinutes(), {
-        unit: "minute"
-      });
-    }
-    return lightFormatters_default.m(date, token);
-  },
-  s: function s4(date, token, localize2) {
-    if (token === "so") {
-      return localize2.ordinalNumber(date.getUTCSeconds(), {
-        unit: "second"
-      });
-    }
-    return lightFormatters_default.s(date, token);
-  },
-  S: function S3(date, token) {
-    return lightFormatters_default.S(date, token);
-  },
-  X: function X2(date, token, _localize, options) {
-    var originalDate = options._originalDate || date;
-    var timezoneOffset = originalDate.getTimezoneOffset();
-    if (timezoneOffset === 0) {
-      return "Z";
-    }
-    switch (token) {
-      case "X":
-        return formatTimezoneWithOptionalMinutes(timezoneOffset);
-      case "XXXX":
-      case "XX":
-        return formatTimezone(timezoneOffset);
-      case "XXXXX":
-      case "XXX":
-      default:
-        return formatTimezone(timezoneOffset, ":");
-    }
-  },
-  x: function x4(date, token, _localize, options) {
-    var originalDate = options._originalDate || date;
-    var timezoneOffset = originalDate.getTimezoneOffset();
-    switch (token) {
-      case "x":
-        return formatTimezoneWithOptionalMinutes(timezoneOffset);
-      case "xxxx":
-      case "xx":
-        return formatTimezone(timezoneOffset);
-      case "xxxxx":
-      case "xxx":
-      default:
-        return formatTimezone(timezoneOffset, ":");
-    }
-  },
-  O: function O3(date, token, _localize, options) {
-    var originalDate = options._originalDate || date;
-    var timezoneOffset = originalDate.getTimezoneOffset();
-    switch (token) {
-      case "O":
-      case "OO":
-      case "OOO":
-        return "GMT" + formatTimezoneShort(timezoneOffset, ":");
-      case "OOOO":
-      default:
-        return "GMT" + formatTimezone(timezoneOffset, ":");
-    }
-  },
-  z: function z4(date, token, _localize, options) {
-    var originalDate = options._originalDate || date;
-    var timezoneOffset = originalDate.getTimezoneOffset();
-    switch (token) {
-      case "z":
-      case "zz":
-      case "zzz":
-        return "GMT" + formatTimezoneShort(timezoneOffset, ":");
-      case "zzzz":
-      default:
-        return "GMT" + formatTimezone(timezoneOffset, ":");
-    }
-  },
-  t: function t3(date, token, _localize, options) {
-    var originalDate = options._originalDate || date;
-    var timestamp = Math.floor(originalDate.getTime() / 1e3);
-    return addLeadingZeros(timestamp, token.length);
-  },
-  T: function T5(date, token, _localize, options) {
-    var originalDate = options._originalDate || date;
-    var timestamp = originalDate.getTime();
-    return addLeadingZeros(timestamp, token.length);
-  }
-};
-function formatTimezoneShort(offset2, dirtyDelimiter) {
-  var sign = offset2 > 0 ? "-" : "+";
-  var absOffset = Math.abs(offset2);
-  var hours = Math.floor(absOffset / 60);
-  var minutes = absOffset % 60;
-  if (minutes === 0) {
-    return sign + String(hours);
-  }
-  var delimiter = dirtyDelimiter || "";
-  return sign + String(hours) + delimiter + addLeadingZeros(minutes, 2);
-}
-function formatTimezoneWithOptionalMinutes(offset2, dirtyDelimiter) {
-  if (offset2 % 60 === 0) {
-    var sign = offset2 > 0 ? "-" : "+";
-    return sign + addLeadingZeros(Math.abs(offset2) / 60, 2);
-  }
-  return formatTimezone(offset2, dirtyDelimiter);
-}
-function formatTimezone(offset2, dirtyDelimiter) {
-  var delimiter = dirtyDelimiter || "";
-  var sign = offset2 > 0 ? "-" : "+";
-  var absOffset = Math.abs(offset2);
-  var hours = addLeadingZeros(Math.floor(absOffset / 60), 2);
-  var minutes = addLeadingZeros(absOffset % 60, 2);
-  return sign + hours + delimiter + minutes;
-}
-var formatters_default = formatters2;
-
-// node_modules/date-fns/esm/_lib/format/longFormatters/index.js
-var dateLongFormatter = function dateLongFormatter2(pattern, formatLong2) {
-  switch (pattern) {
-    case "P":
-      return formatLong2.date({
-        width: "short"
-      });
-    case "PP":
-      return formatLong2.date({
-        width: "medium"
-      });
-    case "PPP":
-      return formatLong2.date({
-        width: "long"
-      });
-    case "PPPP":
-    default:
-      return formatLong2.date({
-        width: "full"
-      });
-  }
-};
-var timeLongFormatter = function timeLongFormatter2(pattern, formatLong2) {
-  switch (pattern) {
-    case "p":
-      return formatLong2.time({
-        width: "short"
-      });
-    case "pp":
-      return formatLong2.time({
-        width: "medium"
-      });
-    case "ppp":
-      return formatLong2.time({
-        width: "long"
-      });
-    case "pppp":
-    default:
-      return formatLong2.time({
-        width: "full"
-      });
-  }
-};
-var dateTimeLongFormatter = function dateTimeLongFormatter2(pattern, formatLong2) {
-  var matchResult = pattern.match(/(P+)(p+)?/) || [];
-  var datePattern = matchResult[1];
-  var timePattern = matchResult[2];
-  if (!timePattern) {
-    return dateLongFormatter(pattern, formatLong2);
-  }
-  var dateTimeFormat;
-  switch (datePattern) {
-    case "P":
-      dateTimeFormat = formatLong2.dateTime({
-        width: "short"
-      });
-      break;
-    case "PP":
-      dateTimeFormat = formatLong2.dateTime({
-        width: "medium"
-      });
-      break;
-    case "PPP":
-      dateTimeFormat = formatLong2.dateTime({
-        width: "long"
-      });
-      break;
-    case "PPPP":
-    default:
-      dateTimeFormat = formatLong2.dateTime({
-        width: "full"
-      });
-      break;
-  }
-  return dateTimeFormat.replace("{{date}}", dateLongFormatter(datePattern, formatLong2)).replace("{{time}}", timeLongFormatter(timePattern, formatLong2));
-};
-var longFormatters = {
-  p: timeLongFormatter,
-  P: dateTimeLongFormatter
-};
-var longFormatters_default = longFormatters;
-
-// node_modules/date-fns/esm/_lib/protectedTokens/index.js
-var protectedDayOfYearTokens = ["D", "DD"];
-var protectedWeekYearTokens = ["YY", "YYYY"];
-function isProtectedDayOfYearToken(token) {
-  return protectedDayOfYearTokens.indexOf(token) !== -1;
-}
-function isProtectedWeekYearToken(token) {
-  return protectedWeekYearTokens.indexOf(token) !== -1;
-}
-function throwProtectedError(token, format2, input) {
-  if (token === "YYYY") {
-    throw new RangeError("Use `yyyy` instead of `YYYY` (in `".concat(format2, "`) for formatting years to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
-  } else if (token === "YY") {
-    throw new RangeError("Use `yy` instead of `YY` (in `".concat(format2, "`) for formatting years to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
-  } else if (token === "D") {
-    throw new RangeError("Use `d` instead of `D` (in `".concat(format2, "`) for formatting days of the month to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
-  } else if (token === "DD") {
-    throw new RangeError("Use `dd` instead of `DD` (in `".concat(format2, "`) for formatting days of the month to the input `").concat(input, "`; see: https://github.com/date-fns/date-fns/blob/master/docs/unicodeTokens.md"));
-  }
-}
-
-// node_modules/date-fns/esm/locale/en-US/_lib/formatDistance/index.js
-var formatDistanceLocale = {
-  lessThanXSeconds: {
-    one: "less than a second",
-    other: "less than {{count}} seconds"
-  },
-  xSeconds: {
-    one: "1 second",
-    other: "{{count}} seconds"
-  },
-  halfAMinute: "half a minute",
-  lessThanXMinutes: {
-    one: "less than a minute",
-    other: "less than {{count}} minutes"
-  },
-  xMinutes: {
-    one: "1 minute",
-    other: "{{count}} minutes"
-  },
-  aboutXHours: {
-    one: "about 1 hour",
-    other: "about {{count}} hours"
-  },
-  xHours: {
-    one: "1 hour",
-    other: "{{count}} hours"
-  },
-  xDays: {
-    one: "1 day",
-    other: "{{count}} days"
-  },
-  aboutXWeeks: {
-    one: "about 1 week",
-    other: "about {{count}} weeks"
-  },
-  xWeeks: {
-    one: "1 week",
-    other: "{{count}} weeks"
-  },
-  aboutXMonths: {
-    one: "about 1 month",
-    other: "about {{count}} months"
-  },
-  xMonths: {
-    one: "1 month",
-    other: "{{count}} months"
-  },
-  aboutXYears: {
-    one: "about 1 year",
-    other: "about {{count}} years"
-  },
-  xYears: {
-    one: "1 year",
-    other: "{{count}} years"
-  },
-  overXYears: {
-    one: "over 1 year",
-    other: "over {{count}} years"
-  },
-  almostXYears: {
-    one: "almost 1 year",
-    other: "almost {{count}} years"
-  }
-};
-var formatDistance = function formatDistance2(token, count2, options) {
-  var result;
-  var tokenValue = formatDistanceLocale[token];
-  if (typeof tokenValue === "string") {
-    result = tokenValue;
-  } else if (count2 === 1) {
-    result = tokenValue.one;
-  } else {
-    result = tokenValue.other.replace("{{count}}", count2.toString());
-  }
-  if (options !== null && options !== void 0 && options.addSuffix) {
-    if (options.comparison && options.comparison > 0) {
-      return "in " + result;
-    } else {
-      return result + " ago";
-    }
-  }
-  return result;
-};
-var formatDistance_default = formatDistance;
-
-// node_modules/date-fns/esm/locale/_lib/buildFormatLongFn/index.js
-function buildFormatLongFn(args) {
-  return function() {
-    var options = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
-    var width = options.width ? String(options.width) : args.defaultWidth;
-    var format2 = args.formats[width] || args.formats[args.defaultWidth];
-    return format2;
-  };
-}
-
-// node_modules/date-fns/esm/locale/en-US/_lib/formatLong/index.js
-var dateFormats = {
-  full: "EEEE, MMMM do, y",
-  long: "MMMM do, y",
-  medium: "MMM d, y",
-  short: "MM/dd/yyyy"
-};
-var timeFormats = {
-  full: "h:mm:ss a zzzz",
-  long: "h:mm:ss a z",
-  medium: "h:mm:ss a",
-  short: "h:mm a"
-};
-var dateTimeFormats = {
-  full: "{{date}} 'at' {{time}}",
-  long: "{{date}} 'at' {{time}}",
-  medium: "{{date}}, {{time}}",
-  short: "{{date}}, {{time}}"
-};
-var formatLong = {
-  date: buildFormatLongFn({
-    formats: dateFormats,
-    defaultWidth: "full"
-  }),
-  time: buildFormatLongFn({
-    formats: timeFormats,
-    defaultWidth: "full"
-  }),
-  dateTime: buildFormatLongFn({
-    formats: dateTimeFormats,
-    defaultWidth: "full"
-  })
-};
-var formatLong_default = formatLong;
-
-// node_modules/date-fns/esm/locale/en-US/_lib/formatRelative/index.js
-var formatRelativeLocale = {
-  lastWeek: "'last' eeee 'at' p",
-  yesterday: "'yesterday at' p",
-  today: "'today at' p",
-  tomorrow: "'tomorrow at' p",
-  nextWeek: "eeee 'at' p",
-  other: "P"
-};
-var formatRelative = function formatRelative2(token, _date, _baseDate, _options) {
-  return formatRelativeLocale[token];
-};
-var formatRelative_default = formatRelative;
-
-// node_modules/date-fns/esm/locale/_lib/buildLocalizeFn/index.js
-function buildLocalizeFn(args) {
-  return function(dirtyIndex, options) {
-    var context = options !== null && options !== void 0 && options.context ? String(options.context) : "standalone";
-    var valuesArray;
-    if (context === "formatting" && args.formattingValues) {
-      var defaultWidth = args.defaultFormattingWidth || args.defaultWidth;
-      var width = options !== null && options !== void 0 && options.width ? String(options.width) : defaultWidth;
-      valuesArray = args.formattingValues[width] || args.formattingValues[defaultWidth];
-    } else {
-      var _defaultWidth = args.defaultWidth;
-      var _width = options !== null && options !== void 0 && options.width ? String(options.width) : args.defaultWidth;
-      valuesArray = args.values[_width] || args.values[_defaultWidth];
-    }
-    var index = args.argumentCallback ? args.argumentCallback(dirtyIndex) : dirtyIndex;
-    return valuesArray[index];
-  };
-}
-
-// node_modules/date-fns/esm/locale/en-US/_lib/localize/index.js
-var eraValues = {
-  narrow: ["B", "A"],
-  abbreviated: ["BC", "AD"],
-  wide: ["Before Christ", "Anno Domini"]
-};
-var quarterValues = {
-  narrow: ["1", "2", "3", "4"],
-  abbreviated: ["Q1", "Q2", "Q3", "Q4"],
-  wide: ["1st quarter", "2nd quarter", "3rd quarter", "4th quarter"]
-};
-var monthValues = {
-  narrow: ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"],
-  abbreviated: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-  wide: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-};
-var dayValues = {
-  narrow: ["S", "M", "T", "W", "T", "F", "S"],
-  short: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"],
-  abbreviated: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-  wide: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-};
-var dayPeriodValues = {
-  narrow: {
-    am: "a",
-    pm: "p",
-    midnight: "mi",
-    noon: "n",
-    morning: "morning",
-    afternoon: "afternoon",
-    evening: "evening",
-    night: "night"
-  },
-  abbreviated: {
-    am: "AM",
-    pm: "PM",
-    midnight: "midnight",
-    noon: "noon",
-    morning: "morning",
-    afternoon: "afternoon",
-    evening: "evening",
-    night: "night"
-  },
-  wide: {
-    am: "a.m.",
-    pm: "p.m.",
-    midnight: "midnight",
-    noon: "noon",
-    morning: "morning",
-    afternoon: "afternoon",
-    evening: "evening",
-    night: "night"
-  }
-};
-var formattingDayPeriodValues = {
-  narrow: {
-    am: "a",
-    pm: "p",
-    midnight: "mi",
-    noon: "n",
-    morning: "in the morning",
-    afternoon: "in the afternoon",
-    evening: "in the evening",
-    night: "at night"
-  },
-  abbreviated: {
-    am: "AM",
-    pm: "PM",
-    midnight: "midnight",
-    noon: "noon",
-    morning: "in the morning",
-    afternoon: "in the afternoon",
-    evening: "in the evening",
-    night: "at night"
-  },
-  wide: {
-    am: "a.m.",
-    pm: "p.m.",
-    midnight: "midnight",
-    noon: "noon",
-    morning: "in the morning",
-    afternoon: "in the afternoon",
-    evening: "in the evening",
-    night: "at night"
-  }
-};
-var ordinalNumber = function ordinalNumber2(dirtyNumber, _options) {
-  var number = Number(dirtyNumber);
-  var rem100 = number % 100;
-  if (rem100 > 20 || rem100 < 10) {
-    switch (rem100 % 10) {
-      case 1:
-        return number + "st";
-      case 2:
-        return number + "nd";
-      case 3:
-        return number + "rd";
-    }
-  }
-  return number + "th";
-};
-var localize = {
-  ordinalNumber,
-  era: buildLocalizeFn({
-    values: eraValues,
-    defaultWidth: "wide"
-  }),
-  quarter: buildLocalizeFn({
-    values: quarterValues,
-    defaultWidth: "wide",
-    argumentCallback: function argumentCallback(quarter) {
-      return quarter - 1;
-    }
-  }),
-  month: buildLocalizeFn({
-    values: monthValues,
-    defaultWidth: "wide"
-  }),
-  day: buildLocalizeFn({
-    values: dayValues,
-    defaultWidth: "wide"
-  }),
-  dayPeriod: buildLocalizeFn({
-    values: dayPeriodValues,
-    defaultWidth: "wide",
-    formattingValues: formattingDayPeriodValues,
-    defaultFormattingWidth: "wide"
-  })
-};
-var localize_default = localize;
-
-// node_modules/date-fns/esm/locale/_lib/buildMatchFn/index.js
-function buildMatchFn(args) {
-  return function(string) {
-    var options = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-    var width = options.width;
-    var matchPattern = width && args.matchPatterns[width] || args.matchPatterns[args.defaultMatchWidth];
-    var matchResult = string.match(matchPattern);
-    if (!matchResult) {
-      return null;
-    }
-    var matchedString = matchResult[0];
-    var parsePatterns = width && args.parsePatterns[width] || args.parsePatterns[args.defaultParseWidth];
-    var key2 = Array.isArray(parsePatterns) ? findIndex(parsePatterns, function(pattern) {
-      return pattern.test(matchedString);
-    }) : findKey(parsePatterns, function(pattern) {
-      return pattern.test(matchedString);
-    });
-    var value;
-    value = args.valueCallback ? args.valueCallback(key2) : key2;
-    value = options.valueCallback ? options.valueCallback(value) : value;
-    var rest = string.slice(matchedString.length);
-    return {
-      value,
-      rest
-    };
-  };
-}
-function findKey(object, predicate) {
-  for (var key2 in object) {
-    if (object.hasOwnProperty(key2) && predicate(object[key2])) {
-      return key2;
-    }
-  }
-  return void 0;
-}
-function findIndex(array, predicate) {
-  for (var key2 = 0; key2 < array.length; key2++) {
-    if (predicate(array[key2])) {
-      return key2;
-    }
-  }
-  return void 0;
-}
-
-// node_modules/date-fns/esm/locale/_lib/buildMatchPatternFn/index.js
-function buildMatchPatternFn(args) {
-  return function(string) {
-    var options = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : {};
-    var matchResult = string.match(args.matchPattern);
-    if (!matchResult)
-      return null;
-    var matchedString = matchResult[0];
-    var parseResult = string.match(args.parsePattern);
-    if (!parseResult)
-      return null;
-    var value = args.valueCallback ? args.valueCallback(parseResult[0]) : parseResult[0];
-    value = options.valueCallback ? options.valueCallback(value) : value;
-    var rest = string.slice(matchedString.length);
-    return {
-      value,
-      rest
-    };
-  };
-}
-
-// node_modules/date-fns/esm/locale/en-US/_lib/match/index.js
-var matchOrdinalNumberPattern = /^(\d+)(th|st|nd|rd)?/i;
-var parseOrdinalNumberPattern = /\d+/i;
-var matchEraPatterns = {
-  narrow: /^(b|a)/i,
-  abbreviated: /^(b\.?\s?c\.?|b\.?\s?c\.?\s?e\.?|a\.?\s?d\.?|c\.?\s?e\.?)/i,
-  wide: /^(before christ|before common era|anno domini|common era)/i
-};
-var parseEraPatterns = {
-  any: [/^b/i, /^(a|c)/i]
-};
-var matchQuarterPatterns = {
-  narrow: /^[1234]/i,
-  abbreviated: /^q[1234]/i,
-  wide: /^[1234](th|st|nd|rd)? quarter/i
-};
-var parseQuarterPatterns = {
-  any: [/1/i, /2/i, /3/i, /4/i]
-};
-var matchMonthPatterns = {
-  narrow: /^[jfmasond]/i,
-  abbreviated: /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i,
-  wide: /^(january|february|march|april|may|june|july|august|september|october|november|december)/i
-};
-var parseMonthPatterns = {
-  narrow: [/^j/i, /^f/i, /^m/i, /^a/i, /^m/i, /^j/i, /^j/i, /^a/i, /^s/i, /^o/i, /^n/i, /^d/i],
-  any: [/^ja/i, /^f/i, /^mar/i, /^ap/i, /^may/i, /^jun/i, /^jul/i, /^au/i, /^s/i, /^o/i, /^n/i, /^d/i]
-};
-var matchDayPatterns = {
-  narrow: /^[smtwf]/i,
-  short: /^(su|mo|tu|we|th|fr|sa)/i,
-  abbreviated: /^(sun|mon|tue|wed|thu|fri|sat)/i,
-  wide: /^(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i
-};
-var parseDayPatterns = {
-  narrow: [/^s/i, /^m/i, /^t/i, /^w/i, /^t/i, /^f/i, /^s/i],
-  any: [/^su/i, /^m/i, /^tu/i, /^w/i, /^th/i, /^f/i, /^sa/i]
-};
-var matchDayPeriodPatterns = {
-  narrow: /^(a|p|mi|n|(in the|at) (morning|afternoon|evening|night))/i,
-  any: /^([ap]\.?\s?m\.?|midnight|noon|(in the|at) (morning|afternoon|evening|night))/i
-};
-var parseDayPeriodPatterns = {
-  any: {
-    am: /^a/i,
-    pm: /^p/i,
-    midnight: /^mi/i,
-    noon: /^no/i,
-    morning: /morning/i,
-    afternoon: /afternoon/i,
-    evening: /evening/i,
-    night: /night/i
-  }
-};
-var match = {
-  ordinalNumber: buildMatchPatternFn({
-    matchPattern: matchOrdinalNumberPattern,
-    parsePattern: parseOrdinalNumberPattern,
-    valueCallback: function valueCallback(value) {
-      return parseInt(value, 10);
-    }
-  }),
-  era: buildMatchFn({
-    matchPatterns: matchEraPatterns,
-    defaultMatchWidth: "wide",
-    parsePatterns: parseEraPatterns,
-    defaultParseWidth: "any"
-  }),
-  quarter: buildMatchFn({
-    matchPatterns: matchQuarterPatterns,
-    defaultMatchWidth: "wide",
-    parsePatterns: parseQuarterPatterns,
-    defaultParseWidth: "any",
-    valueCallback: function valueCallback2(index) {
-      return index + 1;
-    }
-  }),
-  month: buildMatchFn({
-    matchPatterns: matchMonthPatterns,
-    defaultMatchWidth: "wide",
-    parsePatterns: parseMonthPatterns,
-    defaultParseWidth: "any"
-  }),
-  day: buildMatchFn({
-    matchPatterns: matchDayPatterns,
-    defaultMatchWidth: "wide",
-    parsePatterns: parseDayPatterns,
-    defaultParseWidth: "any"
-  }),
-  dayPeriod: buildMatchFn({
-    matchPatterns: matchDayPeriodPatterns,
-    defaultMatchWidth: "any",
-    parsePatterns: parseDayPeriodPatterns,
-    defaultParseWidth: "any"
-  })
-};
-var match_default = match;
-
-// node_modules/date-fns/esm/locale/en-US/index.js
-var locale = {
-  code: "en-US",
-  formatDistance: formatDistance_default,
-  formatLong: formatLong_default,
-  formatRelative: formatRelative_default,
-  localize: localize_default,
-  match: match_default,
-  options: {
-    weekStartsOn: 0,
-    firstWeekContainsDate: 1
-  }
-};
-var en_US_default = locale;
-
-// node_modules/date-fns/esm/_lib/defaultLocale/index.js
-var defaultLocale_default = en_US_default;
-
-// node_modules/date-fns/esm/format/index.js
-var formattingTokensRegExp = /[yYQqMLwIdDecihHKkms]o|(\w)\1*|''|'(''|[^'])+('|$)|./g;
-var longFormattingTokensRegExp = /P+p+|P+|p+|''|'(''|[^'])+('|$)|./g;
-var escapedStringRegExp = /^'([^]*?)'?$/;
-var doubleQuoteRegExp = /''/g;
-var unescapedLatinCharacterRegExp = /[a-zA-Z]/;
-function format(dirtyDate, dirtyFormatStr, options) {
-  var _ref, _options$locale, _ref2, _ref3, _ref4, _options$firstWeekCon, _options$locale2, _options$locale2$opti, _defaultOptions$local, _defaultOptions$local2, _ref5, _ref6, _ref7, _options$weekStartsOn, _options$locale3, _options$locale3$opti, _defaultOptions$local3, _defaultOptions$local4;
-  requiredArgs(2, arguments);
-  var formatStr = String(dirtyFormatStr);
-  var defaultOptions4 = getDefaultOptions();
-  var locale2 = (_ref = (_options$locale = options === null || options === void 0 ? void 0 : options.locale) !== null && _options$locale !== void 0 ? _options$locale : defaultOptions4.locale) !== null && _ref !== void 0 ? _ref : defaultLocale_default;
-  var firstWeekContainsDate = toInteger((_ref2 = (_ref3 = (_ref4 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale2 = options.locale) === null || _options$locale2 === void 0 ? void 0 : (_options$locale2$opti = _options$locale2.options) === null || _options$locale2$opti === void 0 ? void 0 : _options$locale2$opti.firstWeekContainsDate) !== null && _ref4 !== void 0 ? _ref4 : defaultOptions4.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : 1);
-  if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
-    throw new RangeError("firstWeekContainsDate must be between 1 and 7 inclusively");
-  }
-  var weekStartsOn = toInteger((_ref5 = (_ref6 = (_ref7 = (_options$weekStartsOn = options === null || options === void 0 ? void 0 : options.weekStartsOn) !== null && _options$weekStartsOn !== void 0 ? _options$weekStartsOn : options === null || options === void 0 ? void 0 : (_options$locale3 = options.locale) === null || _options$locale3 === void 0 ? void 0 : (_options$locale3$opti = _options$locale3.options) === null || _options$locale3$opti === void 0 ? void 0 : _options$locale3$opti.weekStartsOn) !== null && _ref7 !== void 0 ? _ref7 : defaultOptions4.weekStartsOn) !== null && _ref6 !== void 0 ? _ref6 : (_defaultOptions$local3 = defaultOptions4.locale) === null || _defaultOptions$local3 === void 0 ? void 0 : (_defaultOptions$local4 = _defaultOptions$local3.options) === null || _defaultOptions$local4 === void 0 ? void 0 : _defaultOptions$local4.weekStartsOn) !== null && _ref5 !== void 0 ? _ref5 : 0);
-  if (!(weekStartsOn >= 0 && weekStartsOn <= 6)) {
-    throw new RangeError("weekStartsOn must be between 0 and 6 inclusively");
-  }
-  if (!locale2.localize) {
-    throw new RangeError("locale must contain localize property");
-  }
-  if (!locale2.formatLong) {
-    throw new RangeError("locale must contain formatLong property");
-  }
-  var originalDate = toDate(dirtyDate);
-  if (!isValid(originalDate)) {
-    throw new RangeError("Invalid time value");
-  }
-  var timezoneOffset = getTimezoneOffsetInMilliseconds(originalDate);
-  var utcDate = subMilliseconds(originalDate, timezoneOffset);
-  var formatterOptions = {
-    firstWeekContainsDate,
-    weekStartsOn,
-    locale: locale2,
-    _originalDate: originalDate
-  };
-  var result = formatStr.match(longFormattingTokensRegExp).map(function(substring) {
-    var firstCharacter = substring[0];
-    if (firstCharacter === "p" || firstCharacter === "P") {
-      var longFormatter = longFormatters_default[firstCharacter];
-      return longFormatter(substring, locale2.formatLong);
-    }
-    return substring;
-  }).join("").match(formattingTokensRegExp).map(function(substring) {
-    if (substring === "''") {
-      return "'";
-    }
-    var firstCharacter = substring[0];
-    if (firstCharacter === "'") {
-      return cleanEscapedString(substring);
-    }
-    var formatter = formatters_default[firstCharacter];
-    if (formatter) {
-      if (!(options !== null && options !== void 0 && options.useAdditionalWeekYearTokens) && isProtectedWeekYearToken(substring)) {
-        throwProtectedError(substring, dirtyFormatStr, String(dirtyDate));
-      }
-      if (!(options !== null && options !== void 0 && options.useAdditionalDayOfYearTokens) && isProtectedDayOfYearToken(substring)) {
-        throwProtectedError(substring, dirtyFormatStr, String(dirtyDate));
-      }
-      return formatter(utcDate, substring, locale2.localize, formatterOptions);
-    }
-    if (firstCharacter.match(unescapedLatinCharacterRegExp)) {
-      throw new RangeError("Format string contains an unescaped latin alphabet character `" + firstCharacter + "`");
-    }
-    return substring;
-  }).join("");
-  return result;
-}
-function cleanEscapedString(input) {
-  var matched = input.match(escapedStringRegExp);
-  if (!matched) {
-    return input;
-  }
-  return matched[1].replace(doubleQuoteRegExp, "'");
-}
-
-// node_modules/date-fns/esm/_lib/assign/index.js
-function assign(target, object) {
-  if (target == null) {
-    throw new TypeError("assign requires that input parameter not be null or undefined");
-  }
-  for (var property in object) {
-    if (Object.prototype.hasOwnProperty.call(object, property)) {
-      ;
-      target[property] = object[property];
-    }
-  }
-  return target;
-}
-
-// node_modules/date-fns/esm/_lib/cloneObject/index.js
-function cloneObject(object) {
-  return assign({}, object);
-}
-
-// node_modules/date-fns/esm/formatDistance/index.js
-var MINUTES_IN_DAY = 1440;
-var MINUTES_IN_ALMOST_TWO_DAYS = 2520;
-var MINUTES_IN_MONTH = 43200;
-var MINUTES_IN_TWO_MONTHS = 86400;
-function formatDistance3(dirtyDate, dirtyBaseDate, options) {
-  var _ref, _options$locale;
-  requiredArgs(2, arguments);
-  var defaultOptions4 = getDefaultOptions();
-  var locale2 = (_ref = (_options$locale = options === null || options === void 0 ? void 0 : options.locale) !== null && _options$locale !== void 0 ? _options$locale : defaultOptions4.locale) !== null && _ref !== void 0 ? _ref : defaultLocale_default;
-  if (!locale2.formatDistance) {
-    throw new RangeError("locale must contain formatDistance property");
-  }
-  var comparison = compareAsc(dirtyDate, dirtyBaseDate);
-  if (isNaN(comparison)) {
-    throw new RangeError("Invalid time value");
-  }
-  var localizeOptions = assign(cloneObject(options), {
-    addSuffix: Boolean(options === null || options === void 0 ? void 0 : options.addSuffix),
-    comparison
-  });
-  var dateLeft;
-  var dateRight;
-  if (comparison > 0) {
-    dateLeft = toDate(dirtyBaseDate);
-    dateRight = toDate(dirtyDate);
-  } else {
-    dateLeft = toDate(dirtyDate);
-    dateRight = toDate(dirtyBaseDate);
-  }
-  var seconds = differenceInSeconds(dateRight, dateLeft);
-  var offsetInSeconds = (getTimezoneOffsetInMilliseconds(dateRight) - getTimezoneOffsetInMilliseconds(dateLeft)) / 1e3;
-  var minutes = Math.round((seconds - offsetInSeconds) / 60);
-  var months;
-  if (minutes < 2) {
-    if (options !== null && options !== void 0 && options.includeSeconds) {
-      if (seconds < 5) {
-        return locale2.formatDistance("lessThanXSeconds", 5, localizeOptions);
-      } else if (seconds < 10) {
-        return locale2.formatDistance("lessThanXSeconds", 10, localizeOptions);
-      } else if (seconds < 20) {
-        return locale2.formatDistance("lessThanXSeconds", 20, localizeOptions);
-      } else if (seconds < 40) {
-        return locale2.formatDistance("halfAMinute", 0, localizeOptions);
-      } else if (seconds < 60) {
-        return locale2.formatDistance("lessThanXMinutes", 1, localizeOptions);
-      } else {
-        return locale2.formatDistance("xMinutes", 1, localizeOptions);
-      }
-    } else {
-      if (minutes === 0) {
-        return locale2.formatDistance("lessThanXMinutes", 1, localizeOptions);
-      } else {
-        return locale2.formatDistance("xMinutes", minutes, localizeOptions);
-      }
-    }
-  } else if (minutes < 45) {
-    return locale2.formatDistance("xMinutes", minutes, localizeOptions);
-  } else if (minutes < 90) {
-    return locale2.formatDistance("aboutXHours", 1, localizeOptions);
-  } else if (minutes < MINUTES_IN_DAY) {
-    var hours = Math.round(minutes / 60);
-    return locale2.formatDistance("aboutXHours", hours, localizeOptions);
-  } else if (minutes < MINUTES_IN_ALMOST_TWO_DAYS) {
-    return locale2.formatDistance("xDays", 1, localizeOptions);
-  } else if (minutes < MINUTES_IN_MONTH) {
-    var days = Math.round(minutes / MINUTES_IN_DAY);
-    return locale2.formatDistance("xDays", days, localizeOptions);
-  } else if (minutes < MINUTES_IN_TWO_MONTHS) {
-    months = Math.round(minutes / MINUTES_IN_MONTH);
-    return locale2.formatDistance("aboutXMonths", months, localizeOptions);
-  }
-  months = differenceInMonths(dateRight, dateLeft);
-  if (months < 12) {
-    var nearestMonth = Math.round(minutes / MINUTES_IN_MONTH);
-    return locale2.formatDistance("xMonths", nearestMonth, localizeOptions);
-  } else {
-    var monthsSinceStartOfYear = months % 12;
-    var years = Math.floor(months / 12);
-    if (monthsSinceStartOfYear < 3) {
-      return locale2.formatDistance("aboutXYears", years, localizeOptions);
-    } else if (monthsSinceStartOfYear < 9) {
-      return locale2.formatDistance("overXYears", years, localizeOptions);
-    } else {
-      return locale2.formatDistance("almostXYears", years + 1, localizeOptions);
-    }
-  }
-}
-
-// node_modules/date-fns/esm/getDaysInMonth/index.js
-function getDaysInMonth(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var year = date.getFullYear();
-  var monthIndex = date.getMonth();
-  var lastDayOfMonth2 = new Date(0);
-  lastDayOfMonth2.setFullYear(year, monthIndex + 1, 0);
-  lastDayOfMonth2.setHours(0, 0, 0, 0);
-  return lastDayOfMonth2.getDate();
-}
-
-// node_modules/date-fns/esm/getISOWeek/index.js
-var MILLISECONDS_IN_WEEK4 = 6048e5;
-function getISOWeek(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var diff = startOfISOWeek(date).getTime() - startOfISOWeekYear(date).getTime();
-  return Math.round(diff / MILLISECONDS_IN_WEEK4) + 1;
-}
-
-// node_modules/date-fns/esm/getTime/index.js
-function getTime(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var timestamp = date.getTime();
-  return timestamp;
-}
-
-// node_modules/date-fns/esm/getUnixTime/index.js
-function getUnixTime(dirtyDate) {
-  requiredArgs(1, arguments);
-  return Math.floor(getTime(dirtyDate) / 1e3);
-}
-
-// node_modules/date-fns/esm/getWeekYear/index.js
-function getWeekYear(dirtyDate, options) {
-  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var year = date.getFullYear();
-  var defaultOptions4 = getDefaultOptions();
-  var firstWeekContainsDate = toInteger((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1);
-  if (!(firstWeekContainsDate >= 1 && firstWeekContainsDate <= 7)) {
-    throw new RangeError("firstWeekContainsDate must be between 1 and 7 inclusively");
-  }
-  var firstWeekOfNextYear = new Date(0);
-  firstWeekOfNextYear.setFullYear(year + 1, 0, firstWeekContainsDate);
-  firstWeekOfNextYear.setHours(0, 0, 0, 0);
-  var startOfNextYear = startOfWeek(firstWeekOfNextYear, options);
-  var firstWeekOfThisYear = new Date(0);
-  firstWeekOfThisYear.setFullYear(year, 0, firstWeekContainsDate);
-  firstWeekOfThisYear.setHours(0, 0, 0, 0);
-  var startOfThisYear = startOfWeek(firstWeekOfThisYear, options);
-  if (date.getTime() >= startOfNextYear.getTime()) {
-    return year + 1;
-  } else if (date.getTime() >= startOfThisYear.getTime()) {
-    return year;
-  } else {
-    return year - 1;
-  }
-}
-
-// node_modules/date-fns/esm/startOfWeekYear/index.js
-function startOfWeekYear(dirtyDate, options) {
-  var _ref, _ref2, _ref3, _options$firstWeekCon, _options$locale, _options$locale$optio, _defaultOptions$local, _defaultOptions$local2;
-  requiredArgs(1, arguments);
-  var defaultOptions4 = getDefaultOptions();
-  var firstWeekContainsDate = toInteger((_ref = (_ref2 = (_ref3 = (_options$firstWeekCon = options === null || options === void 0 ? void 0 : options.firstWeekContainsDate) !== null && _options$firstWeekCon !== void 0 ? _options$firstWeekCon : options === null || options === void 0 ? void 0 : (_options$locale = options.locale) === null || _options$locale === void 0 ? void 0 : (_options$locale$optio = _options$locale.options) === null || _options$locale$optio === void 0 ? void 0 : _options$locale$optio.firstWeekContainsDate) !== null && _ref3 !== void 0 ? _ref3 : defaultOptions4.firstWeekContainsDate) !== null && _ref2 !== void 0 ? _ref2 : (_defaultOptions$local = defaultOptions4.locale) === null || _defaultOptions$local === void 0 ? void 0 : (_defaultOptions$local2 = _defaultOptions$local.options) === null || _defaultOptions$local2 === void 0 ? void 0 : _defaultOptions$local2.firstWeekContainsDate) !== null && _ref !== void 0 ? _ref : 1);
-  var year = getWeekYear(dirtyDate, options);
-  var firstWeek = new Date(0);
-  firstWeek.setFullYear(year, 0, firstWeekContainsDate);
-  firstWeek.setHours(0, 0, 0, 0);
-  var date = startOfWeek(firstWeek, options);
-  return date;
-}
-
-// node_modules/date-fns/esm/getWeek/index.js
-var MILLISECONDS_IN_WEEK5 = 6048e5;
-function getWeek(dirtyDate, options) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var diff = startOfWeek(date, options).getTime() - startOfWeekYear(date, options).getTime();
-  return Math.round(diff / MILLISECONDS_IN_WEEK5) + 1;
-}
-
-// node_modules/date-fns/esm/lastDayOfMonth/index.js
-function lastDayOfMonth(dirtyDate) {
-  requiredArgs(1, arguments);
-  var date = toDate(dirtyDate);
-  var month = date.getMonth();
-  date.setFullYear(date.getFullYear(), month + 1, 0);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-// node_modules/date-fns/esm/getWeeksInMonth/index.js
-function getWeeksInMonth(date, options) {
-  requiredArgs(1, arguments);
-  return differenceInCalendarWeeks(lastDayOfMonth(date), startOfMonth(date), options) + 1;
-}
-
-// node_modules/date-fns/esm/isAfter/index.js
-function isAfter2(dirtyDate, dirtyDateToCompare) {
-  requiredArgs(2, arguments);
-  var date = toDate(dirtyDate);
-  var dateToCompare = toDate(dirtyDateToCompare);
-  return date.getTime() > dateToCompare.getTime();
-}
-
-// node_modules/date-fns/esm/isBefore/index.js
-function isBefore(dirtyDate, dirtyDateToCompare) {
-  requiredArgs(2, arguments);
-  var date = toDate(dirtyDate);
-  var dateToCompare = toDate(dirtyDateToCompare);
-  return date.getTime() < dateToCompare.getTime();
-}
-
-// node_modules/date-fns/esm/isSameMonth/index.js
-function isSameMonth(dirtyDateLeft, dirtyDateRight) {
-  requiredArgs(2, arguments);
-  var dateLeft = toDate(dirtyDateLeft);
-  var dateRight = toDate(dirtyDateRight);
-  return dateLeft.getFullYear() === dateRight.getFullYear() && dateLeft.getMonth() === dateRight.getMonth();
-}
-
-// node_modules/date-fns/esm/isSameYear/index.js
-function isSameYear(dirtyDateLeft, dirtyDateRight) {
-  requiredArgs(2, arguments);
-  var dateLeft = toDate(dirtyDateLeft);
-  var dateRight = toDate(dirtyDateRight);
-  return dateLeft.getFullYear() === dateRight.getFullYear();
-}
-
-// node_modules/date-fns/esm/subDays/index.js
-function subDays(dirtyDate, dirtyAmount) {
-  requiredArgs(2, arguments);
-  var amount = toInteger(dirtyAmount);
-  return addDays(dirtyDate, -amount);
-}
-
-// node_modules/date-fns/esm/setMonth/index.js
-function setMonth(dirtyDate, dirtyMonth) {
-  requiredArgs(2, arguments);
-  var date = toDate(dirtyDate);
-  var month = toInteger(dirtyMonth);
-  var year = date.getFullYear();
-  var day = date.getDate();
-  var dateWithDesiredMonth = new Date(0);
-  dateWithDesiredMonth.setFullYear(year, month, 15);
-  dateWithDesiredMonth.setHours(0, 0, 0, 0);
-  var daysInMonth = getDaysInMonth(dateWithDesiredMonth);
-  date.setMonth(month, Math.min(day, daysInMonth));
-  return date;
-}
-
-// node_modules/date-fns/esm/setYear/index.js
-function setYear(dirtyDate, dirtyYear) {
-  requiredArgs(2, arguments);
-  var date = toDate(dirtyDate);
-  var year = toInteger(dirtyYear);
-  if (isNaN(date.getTime())) {
-    return new Date(NaN);
-  }
-  date.setFullYear(year);
-  return date;
-}
-
-// src/utils/metadata/frontmatter/fm.ts
-var import_lodash2 = __toESM(require_lodash());
-var import_obsidian12 = require("obsidian");
-
-// src/utils/metadata/dv.ts
-var import_obsidian11 = require("obsidian");
-var LocationWrapper = {
-  fullLine: { start: "", end: "" },
-  brackets: { start: "[", end: "]" },
-  parenthesis: { start: "(", end: ")" }
-};
-var fieldComponents = [
-  "inQuote",
-  "inList",
-  "startStyle",
-  "attribute",
-  "endStyle",
-  "beforeSeparatorSpacer",
-  "afterSeparatorSpacer",
-  "values"
-];
-var genericFieldRegex = "(?<inQuote>>(\\s+)?)?(?<inList>- )?(?<startStyle>[_\\*~`]*)(?<attribute>[0-9\\w\\p{Letter}\\p{Emoji_Presentation}][-0-9\\w\\p{Letter}\\p{Emoji_Presentation}\\s]*)(?<endStyle>[_\\*~`]*)(?<beforeSeparatorSpacer>\\s*)";
-var inlineFieldRegex = (attribute) => `(?<inQuote>>(\\s+)?)?(?<inList>- )?(?<startStyle>[_\\*~\`]*)(?<attribute>${attribute})(?<endStyle>[_\\*~\`]*)(?<beforeSeparatorSpacer>\\s*)::(?<afterSeparatorSpacer>\\s*)`;
-var fullLineRegex = new RegExp(
-  `^${genericFieldRegex}::\\s*(?<values>.*)?`,
-  "u"
-);
-var inSentenceRegexBrackets = new RegExp(
-  `\\[${genericFieldRegex}::\\s*(?<values>[^\\]]+)?\\]`,
-  "gu"
-);
-var inSentenceRegexPar = new RegExp(
-  `\\(${genericFieldRegex}::\\s*(?<values>[^\\)]+)?\\)`,
-  "gu"
-);
-var encodeLink = (value) => {
-  return value ? value.replace(/\[\[/g, "\u{1F54C}\u{1F527}").replace(/\]\]/g, "\u{1F413}\u{1F400}") : value;
-};
-var decodeLink = (value) => {
-  return value ? value.replace(/🕌🔧/gu, "[[").replace(/🐓🐀/gu, "]]") : value;
-};
-var matchInlineFields = (regex, line, attribute, input, location = "fullLine") => {
-  const sR = line.matchAll(regex);
-  let next = sR.next();
-  const newFields = [];
-  while (!next.done) {
-    const match2 = next.value;
-    if (match2.groups && Object.keys(match2.groups).every((j4) => fieldComponents.includes(j4))) {
-      const {
-        inList,
-        inQuote,
-        startStyle,
-        endStyle,
-        beforeSeparatorSpacer,
-        afterSeparatorSpacer,
-        values
-      } = match2.groups;
-      const inputArray = input ? input.replace(/(\,\s+)/g, ",").split(",") : [""];
-      const newValue = inputArray.length == 1 ? inputArray[0] : `${serializeMultiDisplayString(inputArray)}`;
-      const start = LocationWrapper[location].start;
-      const end = LocationWrapper[location].end;
-      newFields.push({
-        oldField: match2[0],
-        newField: `${inQuote || ""}${start}${inList || ""}${startStyle}${attribute}${endStyle}${beforeSeparatorSpacer}::${afterSeparatorSpacer}${newValue}${end}`
-      });
-    }
-    next = sR.next();
-  }
-  return newFields;
-};
-async function replaceValues(plugin, fileOrFilePath, attribute, input, previousItemsCount = 0) {
-  var _a2, _b2;
-  let file;
-  if (fileOrFilePath instanceof import_obsidian11.TFile) {
-    file = fileOrFilePath;
-  } else {
-    const _file = plugin.app.vault.getAbstractFileByPath(fileOrFilePath);
-    if (_file instanceof import_obsidian11.TFile && _file.extension == "md") {
-      file = _file;
-    } else {
-      throw Error("path doesn't correspond to a proper file");
-    }
-  }
-  const content = (await plugin.app.vault.read(file)).split("\n");
-  const frontmatter = (_a2 = plugin.app.metadataCache.getFileCache(file)) == null ? void 0 : _a2.frontmatter;
-  const skippedLines = [];
-  const {
-    position: { start, end }
-  } = frontmatter ? frontmatter : { position: { start: void 0, end: void 0 } };
-  const newContent = content.map((line, i4) => {
-    const encodedInput = encodeLink(input);
-    let encodedLine = encodeLink(line);
-    const fullLineRegex2 = new RegExp(
-      `^${inlineFieldRegex(attribute)}(?<values>[^\\]]*)`,
-      "u"
-    );
-    const fR = encodedLine.match(fullLineRegex2);
-    if ((fR == null ? void 0 : fR.groups) && Object.keys(fR.groups).every((j4) => fieldComponents.includes(j4))) {
-      const {
-        inList,
-        inQuote,
-        startStyle,
-        endStyle,
-        beforeSeparatorSpacer,
-        afterSeparatorSpacer,
-        values
-      } = fR.groups;
-      const inputArray = input ? input.replace(/(\,\s+)/g, ",").split(",").sort() : [];
-      const hiddenValue = "";
-      const newValue = inputArray.length == 1 ? inputArray[0] : `${serializeMultiDisplayString(inputArray)}`;
-      return `${inQuote || ""}${inList || ""}${startStyle}${attribute}${endStyle}${beforeSeparatorSpacer}::${afterSeparatorSpacer}${hiddenValue + newValue}`;
-    } else {
-      const newFields = [];
-      const inSentenceRegexBrackets2 = new RegExp(
-        `\\[${inlineFieldRegex(attribute)}(?<values>[^\\]]+)?\\]`,
-        "gu"
-      );
-      const inSentenceRegexPar2 = new RegExp(
-        `\\(${inlineFieldRegex(attribute)}(?<values>[^\\)]+)?\\)`,
-        "gu"
-      );
-      newFields.push(
-        ...matchInlineFields(
-          inSentenceRegexBrackets2,
-          encodedLine,
-          attribute,
-          encodedInput,
-          "brackets" /* brackets */
-        )
-      );
-      newFields.push(
-        ...matchInlineFields(
-          inSentenceRegexPar2,
-          encodedLine,
-          attribute,
-          encodedInput,
-          "parenthesis" /* parenthesis */
-        )
-      );
-      newFields.forEach((field) => {
-        const fieldRegex = new RegExp(
-          field.oldField.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-          "u"
-        );
-        encodedLine = encodedLine.replace(fieldRegex, field.newField);
-      });
-      return decodeLink(encodedLine);
-    }
-  });
-  await plugin.app.vault.modify(
-    file,
-    newContent.filter((line, i4) => !skippedLines.includes(i4)).join("\n")
-  );
-  const editor = (_b2 = plugin.app.workspace.getActiveViewOfType(import_obsidian11.MarkdownView)) == null ? void 0 : _b2.editor;
-  if (editor) {
-    const lineNumber = editor.getCursor().line;
-    editor.setCursor({
-      line: editor.getCursor().line,
-      ch: editor.getLine(lineNumber).length
-    });
-  }
-}
-
-// src/utils/metadata/frontmatter/detectYAMLType.ts
-var detectYAMLType = (value, key2) => {
-  if (typeof value === "string") {
-    if (/\/\/(\S+?(?:jpe?g|png|gif|svg))/gi.test(value) || value.includes("unsplash")) {
-      return "image";
-    }
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      return "date";
-    }
-    if (key2 == "tag" || key2 == "tags") {
-      return "tag";
-    }
-    if (/\[\[.*?\]\]/.test(value)) {
-      return "link";
-    }
-  } else if (typeof value === "number") {
-    return "number";
-  } else if (typeof value === "boolean") {
-    return "boolean";
-  } else if (!value) {
-    return "unknown";
-  } else if (Array.isArray(value) || typeof value === "string" && value.indexOf(",") > -1) {
-    let arrayValue = Array.isArray(value) ? value : [];
-    if (typeof value === "string" && value.indexOf(",") > -1) {
-      arrayValue = parseMultiString(value);
-    }
-    if (key2 == "tag" || key2 == "tags") {
-      return "tag-multi";
-    }
-    if (arrayValue.length == 1 && Array.isArray(arrayValue[0]) && arrayValue[0].length == 1 && typeof arrayValue[0][0] === "string") {
-      return "link";
-    }
-    const types2 = uniq(arrayValue.map((f4) => detectYAMLType(f4, key2)));
-    if (types2.length == 1 && types2[0] == "link") {
-      return "link-multi";
-    }
-    return "option-multi";
-  } else if (value.isLuxonDateTime) {
-    return "date";
-  } else if (value.isLuxonDuration) {
-    return "duration";
-  } else if (value.type == "file") {
-    return "link";
-  } else if (typeof value === "object" && !Array.isArray(value) && value !== null) {
-    return "object";
-  }
-  return "text";
-};
-
-// src/utils/metadata/frontmatter/frontMatterKeys.ts
-var frontMatterKeys = (fm) => {
-  return Object.keys(fm != null ? fm : {}).filter((f4) => f4 != "position").filter((f4) => f4 != "tag" && f4 != "tags");
-};
-
-// src/utils/metadata/frontmatter/yamlTypeToMDBType.ts
-var yamlTypeToMDBType = (YAMLtype) => {
-  switch (YAMLtype) {
-    case "duration":
-      return "text";
-      break;
-    case "unknown":
-      return "text";
-      break;
-  }
-  return YAMLtype;
-};
-
-// src/utils/metadata/frontmatter/fm.ts
-var saveContextToFile = (file, cols, context, plugin) => {
-  if (plugin.metadata.canProcessFrontmatter()) {
-    plugin.metadata.processFrontMatter(file.path, (frontmatter) => {
-      Object.keys(context).filter(
-        (f4) => cols.find((c4) => c4.name == f4) && cols.find((c4) => c4.name == f4).hidden != "true" && !cols.find((c4) => c4.name == f4).type.contains("file") && context[f4]
-      ).forEach((f4) => {
-        const col = cols.find((c4) => c4.name == f4);
-        frontmatter[f4] = valueForFrontmatter(col.type, context[f4]);
-        frontmatter[f4] = valueForFrontmatter(col.type, context[f4]);
-      });
-    });
-  }
-};
-var frontMatterForFile = (plugin, file) => {
-  let currentCache;
-  if (file instanceof import_obsidian12.TFile && plugin.app.metadataCache.getFileCache(file) !== null) {
-    currentCache = plugin.app.metadataCache.getFileCache(file);
-  }
-  return currentCache == null ? void 0 : currentCache.frontmatter;
-};
-var guestimateTypes = (_files, plugin, dv) => {
-  const typesArray = _files.map((f4) => getAbstractFileAtPath(plugin, f4)).filter((f4) => f4).map((k5) => {
-    const fm = dv && plugin.dataViewAPI() ? plugin.dataViewAPI().page(k5.path) : frontMatterForFile(plugin, k5);
-    const fmKeys = dv ? Object.keys(fm != null ? fm : {}).filter(
-      (f4, i4, self2) => !self2.find(
-        (g4, j4) => g4.toLowerCase().replace(/\s/g, "-") == f4.toLowerCase().replace(/\s/g, "-") && i4 > j4
-      ) ? true : false
-    ).filter((f4) => f4 != "file") : frontMatterKeys(fm);
-    return fmKeys.reduce(
-      (pk, ck) => ({ ...pk, [ck]: detectYAMLType(fm[ck], ck) }),
-      {}
-    );
-  });
-  const types2 = typesArray.reduce(
-    (p3, c4) => {
-      const newSet = Object.keys(c4).reduce(
-        (pk, ck) => {
-          var _a2;
-          return { ...pk, [ck]: [...(_a2 = p3 == null ? void 0 : p3[ck]) != null ? _a2 : [], c4[ck]] };
-        },
-        { ...p3 }
-      );
-      return newSet;
-    },
-    {}
-  );
-  const guessType = (ts) => {
-    return import_lodash2.default.head((0, import_lodash2.default)(ts).countBy().entries().maxBy(import_lodash2.default.last));
-  };
-  const guessedTypes = Object.keys(types2).reduce((p3, c4) => {
-    return { ...p3, [c4]: guessType(types2[c4]) };
-  }, {});
-  return guessedTypes;
-};
-var valueForFrontmatter = (type, value) => {
-  if (type == "number") {
-    return parseFloat(value);
-  } else if (type == "boolean") {
-    return value == "true";
-  } else if (type.contains("multi")) {
-    return parseMultiString(value).map(
-      (f4) => valueForFrontmatter(type.replace("-multi", ""), f4)
-    );
-  } else if (type.contains("link") || type.contains("context")) {
-    return `[[${value}]]`;
-  }
-  return value;
-};
-var valueForDataview = (type, value) => {
-  if (type.contains("link") || type.contains("context")) {
-    return `[[${value}]]`;
-  }
-  return value;
-};
-var renameFrontmatterKey = (plugin, path, key2, name) => {
-  if (plugin.metadata.canProcessFrontmatter()) {
-    plugin.metadata.processFrontMatter(path, (frontmatter) => {
-      if (key2 in frontmatter) {
-        frontmatter[name] = frontmatter[key2];
-        delete frontmatter[key2];
-      }
-    });
-  }
-};
-var defaultValueForType = (value, type) => {
-  if (type == "date") {
-    return format(Date.now(), "yyyy-MM-dd");
-  }
-  if (type == "number") {
-    return 0;
-  }
-  if (type == "boolean") {
-    return true;
-  }
-  if (type == "link") {
-    return "[[Select Note]]";
-  }
-  if (type == "option") {
-    return "one, two";
-  }
-  if (type == "text") {
-    return " ";
-  }
-  if (type == "image") {
-    return "https://images.unsplash.com/photo-1675789652575-0a5d2425b6c2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80";
-  }
-};
-var changeFrontmatterType = (plugin, path, key2, type) => {
-  if (plugin.metadata.canProcessFrontmatter()) {
-    plugin.metadata.processFrontMatter(path, (frontmatter) => {
-      if (key2 in frontmatter) {
-        frontmatter[key2] = defaultValueForType(frontmatter[key2], type);
-      }
-    });
-  }
-};
-var deleteFrontmatterValue = (plugin, path, key2) => {
-  if (plugin.metadata.canProcessFrontmatter()) {
-    plugin.metadata.processFrontMatter(path, (frontmatter) => {
-      if (plugin.dataViewAPI()) {
-        if (plugin.dataViewAPI().page(path)[key2] && !frontmatter[key2]) {
-          replaceValues(plugin, path, key2, "");
-        } else {
-          if (key2 in frontmatter) {
-            delete frontmatter[key2];
-          }
-        }
-      } else {
-        if (key2 in frontmatter) {
-          delete frontmatter[key2];
-        }
-      }
-    });
-  }
-};
-var saveFrontmatterValue = (plugin, path, key2, value, type, forceSave) => {
-  let afile = getAbstractFileAtPath(plugin, path);
-  const fileCache = plugin.index.filesIndex.get(path);
-  if (afile) {
-    if (fileCache && fileCache.isFolder && fileCache.folderNote) {
-      afile = getAbstractFileAtPath(plugin, fileCache.folderNote.folderNotePath);
-    }
-    if (afile instanceof import_obsidian12.TFile) {
-      if (plugin.metadata.canProcessFrontmatter()) {
-        plugin.metadata.processFrontMatter(afile.path, (frontmatter) => {
-          var _a2;
-          if (plugin.dataViewAPI()) {
-            if (((_a2 = plugin.dataViewAPI().page(afile.path)) == null ? void 0 : _a2[key2]) && !frontmatter[key2]) {
-              replaceValues(plugin, afile.path, key2, valueForDataview(type, value));
-            } else {
-              if (key2 in frontmatter || forceSave) {
-                frontmatter[key2] = valueForFrontmatter(type, value);
-              }
-            }
-          } else {
-            if (key2 in frontmatter || forceSave) {
-              frontmatter[key2] = valueForFrontmatter(type, value);
-            }
-          }
-        });
-      }
-    }
-  }
-};
-
-// src/utils/metadata/frontmatter/parseFrontMatter.ts
-var parseFrontMatter = (field, value) => {
-  const YAMLtype = detectYAMLType(value, field);
-  switch (YAMLtype) {
-    case "object":
-      return JSON.stringify(value);
-      break;
-    case "number":
-      return value.toString();
-      break;
-    case "boolean":
-      return value ? "true" : "false";
-      break;
-    case "date":
-      return value;
-      break;
-    case "duration":
-      return serializeMultiDisplayString(Object.keys(value.values).reduce(
-        (p3, c4) => [
-          ...p3,
-          ...value.values[c4] > 0 ? [value.values[c4] + " " + c4] : []
-        ],
-        []
-      ));
-      break;
-    case "option-multi":
-    case "link-multi":
-      if (typeof value === "string") {
-        return parseLinkString(value);
-      }
-      return serializeMultiString(
-        value.map((v3) => {
-          if (!v3) {
-            return "";
-          }
-          if (typeof v3 === "string") {
-            return parseLinkString(v3);
-          }
-          if (v3.path) {
-            return v3.path;
-          }
-          if (Array.isArray(value) && v3.length == 1 && Array.isArray(v3[0]) && v3[0].length == 1 && typeof v3[0][0] === "string") {
-            return v3[0][0];
-          }
-          return JSON.stringify(v3);
-        })
-      );
-      break;
-    case "link":
-      {
-        if (Array.isArray(value) && value.length == 1 && Array.isArray(value[0]) && value[0].length == 1 && typeof value[0][0] === "string") {
-          return value[0][0];
-        } else if (typeof value === "string") {
-          return parseLinkString(value);
-        }
-        return value.path;
-      }
-      break;
-    case "text":
-    case "tag":
-    case "image":
-      return value;
-      break;
-  }
-  return "";
-};
-
 // src/utils/contexts/predicate/predicate.tsx
 var defaultPredicateFnForType = (type, types2) => {
   const fnType = Object.keys(types2).find(
@@ -38087,9 +38630,9 @@ var defaultTablePredicate = {
   colsSize: {}
 };
 
-// src/context/ContextMDBContext.tsx
-var import_lodash3 = __toESM(require_lodash());
-var import_obsidian13 = require("obsidian");
+// src/react/context/ContextMDBContext.tsx
+var import_lodash4 = __toESM(require_lodash());
+var import_obsidian14 = require("obsidian");
 var ContextMDBContext = F({
   dbSchemas: [],
   tableData: null,
@@ -38250,7 +38793,7 @@ var ContextMDBProvider = (props2) => {
       const fCache = (_a3 = props2.plugin.app.metadataCache.getCache(
         file.path
       )) == null ? void 0 : _a3.frontmatter;
-      if ((0, import_lodash3.isEqual)(fCache, metadataCache))
+      if ((0, import_lodash4.isEqual)(fCache, metadataCache))
         return;
       setMetadataCache(fCache);
       if (dbSchema.primary) {
@@ -38368,12 +38911,12 @@ var ContextMDBProvider = (props2) => {
       await saveSpaceDBToPath(props2.plugin, spaceInfo, "context", dbField).then(
         (f4) => {
           setDBFileExists(true);
-          f4 ? setTableData(newTable) : new import_obsidian13.Notice("DB ERROR");
+          f4 ? setTableData(newTable) : new import_obsidian14.Notice("DB ERROR");
         }
       );
     } else {
       await saveMDBToPath(props2.plugin, spaceInfo, newTable).then((f4) => {
-        f4 ? setTableData(newTable) : new import_obsidian13.Notice("DB ERROR");
+        f4 ? setTableData(newTable) : new import_obsidian14.Notice("DB ERROR");
       });
     }
   };
@@ -38481,7 +39024,7 @@ var ContextMDBProvider = (props2) => {
   }, props2.children);
 };
 
-// src/context/ContextEditorContext.tsx
+// src/react/context/ContextEditorContext.tsx
 var ContextEditorContext = F({
   cols: [],
   data: [],
@@ -38785,8 +39328,8 @@ var ContextEditorProvider = (props2) => {
       }
       return r3;
     });
-    const rowsChanged = !import_lodash4.default.isEqual(newRows, tableData == null ? void 0 : tableData.rows);
-    const colsChanged = !import_lodash4.default.isEqual(tableData == null ? void 0 : tableData.cols, f4.cols);
+    const rowsChanged = !import_lodash5.default.isEqual(newRows, tableData == null ? void 0 : tableData.rows);
+    const colsChanged = !import_lodash5.default.isEqual(tableData == null ? void 0 : tableData.cols, f4.cols);
     if (rowsChanged || colsChanged) {
       saveDB2({
         ...f4,
@@ -38979,7 +39522,7 @@ var ContextEditorProvider = (props2) => {
       mdbtable = contextTable[table];
     }
     if (column.name == "") {
-      new import_obsidian14.Notice(i18n_default.notice.noPropertyName);
+      new import_obsidian15.Notice(i18n_default.notice.noPropertyName);
       return false;
     }
     if (!oldColumn && mdbtable.cols.find(
@@ -38987,7 +39530,7 @@ var ContextEditorProvider = (props2) => {
     ) || oldColumn && oldColumn.name != column.name && mdbtable.cols.find(
       (f4) => f4.name.toLowerCase() == column.name.toLowerCase()
     )) {
-      new import_obsidian14.Notice(i18n_default.notice.duplicatePropertyName);
+      new import_obsidian15.Notice(i18n_default.notice.duplicatePropertyName);
       return false;
     }
     const oldFieldIndex = oldColumn ? mdbtable.cols.findIndex((f4) => f4.name == oldColumn.name) : -1;
@@ -39066,7 +39609,7 @@ var ContextEditorProvider = (props2) => {
   }, props2.children);
 };
 
-// src/hooks/useCombinedRef.tsx
+// src/react/hooks/useCombinedRef.tsx
 function useCombinedRefs2(...refs) {
   return F2(
     () => (node) => {
@@ -39076,7 +39619,7 @@ function useCombinedRefs2(...refs) {
   );
 }
 
-// src/components/SpaceView/Contexts/TableView/ColumnHeader.tsx
+// src/react/components/SpaceView/Contexts/TableView/ColumnHeader.tsx
 var filePropTypes = [
   {
     name: i18n_default.properties.fileProperty.createdTime,
@@ -39219,504 +39762,7 @@ var ColumnHeader = (props2) => {
   }, props2.column.table.length > 0 ? "#" : "")));
 };
 
-// src/dispatch/mdb.ts
-var import_lodash5 = __toESM(require_lodash());
-var import_obsidian15 = require("obsidian");
-
-// src/utils/contexts/file.ts
-var renameRowForFile = (folder, filePath, toFilePath) => {
-  return {
-    ...folder,
-    rows: folder.rows.map(
-      (f4) => f4.File == filePath ? { ...f4, File: toFilePath } : f4
-    )
-  };
-};
-var removeRowForFile = (folder, filePath) => {
-  return {
-    ...folder,
-    rows: folder.rows.filter(
-      (f4) => f4.File != filePath
-    )
-  };
-};
-var removeRowsForFile = (folder, filePaths) => {
-  return {
-    ...folder,
-    rows: folder.rows.filter(
-      (f4) => !filePaths.includes(f4.File)
-    )
-  };
-};
-var reorderRowsForFile = (folder, filePaths, index) => {
-  const rows = folder.rows.filter(
-    (f4) => filePaths.includes(f4.File)
-  );
-  return {
-    ...folder,
-    rows: insertMulti(folder.rows.filter(
-      (f4) => !filePaths.includes(f4.File)
-    ), index, rows)
-  };
-};
-
-// src/utils/contexts/links.ts
-var valueContainsLink = (link, value) => {
-  return parseMultiString(value).some((f4) => link == parseLinkString(f4));
-};
-var replaceLinkInValue = (link, newLink, value) => {
-  return serializeMultiString(parseMultiString(value).map((f4) => parseLinkString(f4) == link ? newLink : link));
-};
-var removeLinkInValue = (link, value) => {
-  return serializeMultiString(parseMultiString(value).filter((f4) => f4 != link));
-};
-var linkColumns = (cols) => {
-  return cols.filter((f4) => f4.type.startsWith("link") || f4.type.startsWith("context"));
-};
-var removeLinksInRow = (plugin, row, link, cols) => {
-  if (cols.length == 0) {
-    return row;
-  }
-  const deltaRow = cols.reduce((p3, c4) => {
-    if (valueContainsLink(link, row[c4.name])) {
-      const newValue = removeLinkInValue(link, row[c4.name]);
-      saveFrontmatterValue(
-        plugin,
-        row.File,
-        c4.name,
-        newValue,
-        c4.type,
-        plugin.settings.saveAllContextToFrontmatter
-      );
-      return { ...p3, [c4.name]: newValue };
-    }
-    return p3;
-  }, {});
-  return { ...row, ...deltaRow };
-};
-var renameLinksInRow = (plugin, row, link, newLink, cols) => {
-  if (cols.length == 0) {
-    return row;
-  }
-  const deltaRow = cols.reduce((p3, c4) => {
-    if (valueContainsLink(link, row[c4.name])) {
-      const newValue = replaceLinkInValue(link, newLink, row[c4.name]);
-      saveFrontmatterValue(
-        plugin,
-        row.File,
-        c4.name,
-        newValue,
-        c4.type,
-        plugin.settings.saveAllContextToFrontmatter
-      );
-      return { ...p3, [c4.name]: newValue };
-    }
-    return p3;
-  }, {});
-  return { ...row, ...deltaRow };
-};
-
-// src/utils/metadata/dataview/parseDataview.ts
-var parseDataview = (field, value) => {
-  const YAMLtype = detectYAMLType(value, field);
-  switch (YAMLtype) {
-    case "object":
-      return JSON.stringify(value);
-      break;
-    case "number":
-      return value.toString();
-      break;
-    case "boolean":
-      return value ? "true" : "false";
-      break;
-    case "date":
-      return format(new Date(value.ts), "yyyy-MM-dd");
-      break;
-    case "duration":
-      return serializeMultiDisplayString(Object.keys(value.values).reduce(
-        (p3, c4) => [
-          ...p3,
-          ...value.values[c4] > 0 ? [value.values[c4] + " " + c4] : []
-        ],
-        []
-      ));
-      break;
-    case "option-multi":
-    case "link-multi":
-      if (typeof value === "string") {
-        return value;
-      }
-      return serializeMultiString(
-        value.map((v3) => {
-          if (!v3) {
-            return "";
-          }
-          if (typeof v3 === "string") {
-            return v3;
-          }
-          if (v3.path) {
-            return v3.path;
-          }
-          if (Array.isArray(value) && v3.length == 1 && Array.isArray(v3[0]) && v3[0].length == 1 && typeof v3[0][0] === "string") {
-            return v3[0][0];
-          }
-          return JSON.stringify(v3);
-        })
-      );
-      break;
-    case "link":
-      {
-        if (Array.isArray(value) && value.length == 1 && Array.isArray(value[0]) && value[0].length == 1 && typeof value[0][0] === "string") {
-          return value[0][0];
-        } else if (typeof value === "string") {
-          return value;
-        }
-        return value.path;
-      }
-      break;
-    case "text":
-    case "tag":
-    case "image":
-      return value;
-      break;
-  }
-  return "";
-};
-
-// src/dispatch/mdb.ts
-var processContextFile = async (plugin, space, processor, fallback) => {
-  const dbFileExists = await plugin.app.vault.adapter.exists(space.dbPath);
-  if (dbFileExists) {
-    const contextDB = await getMDBTable(plugin, space, "files", "context");
-    if (contextDB) {
-      await processor(contextDB, space);
-      return;
-    } else if (fallback) {
-      await fallback();
-    }
-  } else if (fallback) {
-    await fallback();
-  }
-};
-var saveDB = async (plugin, context, newTable) => {
-  return saveMDBToPath(plugin, context, newTable);
-};
-var insertColumn = (table, column) => {
-  if (table.cols.find((f4) => f4.name == column.name)) {
-    new import_obsidian15.Notice(i18n_default.notice.duplicatePropertyName);
-    return;
-  }
-  return {
-    ...table,
-    cols: [...table.cols, column]
-  };
-};
-var insertColumns = (table, columns) => {
-  return {
-    ...table,
-    cols: [...table.cols, ...columns.filter((f4) => !table.cols.some((g4) => g4.name == f4.name))]
-  };
-};
-var deletePropertyMultiValue = (folder, lookupField, lookupValue, field, value) => {
-  return {
-    ...folder,
-    rows: folder.rows.map(
-      (f4) => f4[lookupField] == lookupValue ? {
-        ...f4,
-        [field]: serializeMultiString(parseMultiString(f4[field]).filter((g4) => g4 != value))
-      } : f4
-    )
-  };
-};
-var updateValue = (folder, lookupField, lookupValue, field, value) => {
-  return {
-    ...folder,
-    rows: folder.rows.map(
-      (f4) => f4[lookupField] == lookupValue ? {
-        ...f4,
-        [field]: value
-      } : f4
-    )
-  };
-};
-var insertRowsIfUnique = (folder, rows, index) => {
-  return { ...folder, rows: index ? insertMulti(folder.rows, index, rows.filter((f4) => !folder.rows.some((g4) => g4.File == f4.File))) : [...folder.rows, ...rows.filter((f4) => !folder.rows.some((g4) => g4.File == f4.File))] };
-};
-var saveContextToFrontmatter = (file, cols, context, plugin) => {
-  const afile = getAbstractFileAtPath(plugin, file);
-  if (afile && afile instanceof import_obsidian15.TFile)
-    saveContextToFile(afile, cols, context, plugin);
-};
-var updateContextValue = async (plugin, space, file, field, value, _updateFunction) => {
-  let tagFileExists = await plugin.app.vault.adapter.exists(space.dbPath);
-  if (!tagFileExists) {
-    tagFileExists = await createContextMDB(plugin, space);
-  }
-  if (tagFileExists)
-    await getMDBTable(plugin, space, "files", "context").then(
-      (tagDB) => {
-        const updateFunction = _updateFunction != null ? _updateFunction : updateValue;
-        const newMDB = updateFunction(tagDB, FilePropertyName, file, field, value);
-        return saveDB(plugin, space, newMDB).then((f4) => newMDB);
-      }
-    );
-};
-var insertContextColumn = async (plugin, space, field) => {
-  let tagFileExists = await plugin.app.vault.adapter.exists(space.dbPath);
-  if (!tagFileExists) {
-    tagFileExists = await createContextMDB(plugin, space);
-  }
-  if (tagFileExists)
-    await getMDBTable(plugin, space, "files", "context").then((tagDB) => {
-      const newDB = insertColumn(tagDB, field);
-      saveDB(plugin, space, newDB).then((f4) => newDB);
-      return newDB;
-    }).then((f4) => plugin.index.reloadContext(space));
-};
-var insertContextColumns = async (plugin, space, fields) => {
-  let tagFileExists = await plugin.app.vault.adapter.exists(space.dbPath);
-  if (!tagFileExists) {
-    tagFileExists = await createContextMDB(plugin, space);
-  }
-  if (tagFileExists)
-    await getMDBTable(plugin, space, "files", "context").then((tagDB) => {
-      const newDB = insertColumns(tagDB, fields);
-      saveDB(plugin, space, newDB).then((f4) => newDB);
-      return newDB;
-    }).then((f4) => plugin.index.reloadContext(space));
-};
-var insertContextItems = async (plugin, newPaths, t4) => {
-  const saveNewContextRows = async (tag, space2) => {
-    const newRow = newPaths.map((newPath) => ({ File: newPath }));
-    await saveDB(plugin, space2, insertRowsIfUnique(tag, newRow));
-  };
-  const space = plugin.index.spacesIndex.get(t4);
-  let tagFileExists = await plugin.app.vault.adapter.exists(space.space.dbPath);
-  if (!tagFileExists) {
-    tagFileExists = await createContextMDB(plugin, space.space);
-  }
-  if (tagFileExists)
-    await getMDBTable(plugin, space.space, "files", "context").then(
-      (tagDB) => saveNewContextRows(tagDB, space.space)
-    );
-};
-var fileToFM = (afile, cols, plugin) => {
-  let file = afile;
-  if (afile instanceof import_obsidian15.TFolder) {
-    file = getAbstractFileAtPath(plugin, folderNotePathFromAFile(plugin.settings, tFileToAFile(afile)));
-  }
-  if (!file)
-    return [];
-  const fm = frontMatterForFile(plugin, file);
-  const fmKeys = frontMatterKeys(fm).filter((f4) => cols.some((g4) => f4 == g4));
-  const rows = fmKeys.reduce(
-    (p3, c4) => ({ ...p3, [c4]: parseFrontMatter(c4, fm[c4]) }),
-    {}
-  );
-  if (plugin.dataViewAPI()) {
-    return { ...rows, ...fileToDV(file, cols, plugin) };
-  }
-  return rows;
-};
-var fileToDV = (file, cols, plugin) => {
-  const dvValues = plugin.dataViewAPI().page(file.path);
-  const fmKeys = uniqCaseInsensitive(
-    Object.keys(dvValues != null ? dvValues : {}).filter(
-      (f4, i4, self2) => !self2.find(
-        (g4, j4) => g4.toLowerCase().replace(/\s/g, "-") == f4.toLowerCase().replace(/\s/g, "-") && i4 > j4
-      ) ? true : false
-    ).filter((f4) => f4 != "file")
-  ).filter((f4) => cols.some((g4) => f4 == g4));
-  return fmKeys.reduce(
-    (p3, c4) => ({
-      ...p3,
-      [c4]: parseDataview(c4, dvValues[c4])
-    }),
-    {}
-  );
-};
-var onMetadataChange = async (plugin, file, spaces) => {
-  const updateFile = (mdb) => {
-    const objectExists = mdb.rows.some((item) => item.File === file.path);
-    if (objectExists) {
-      return mdb.rows.map(
-        (f4) => f4.File == file.path ? {
-          ...f4,
-          ...fileToFM(
-            file,
-            mdb.cols.map((f5) => f5.name),
-            plugin
-          )
-        } : f4
-      );
-    } else {
-      return [
-        ...mdb.rows,
-        {
-          File: file.path,
-          ...fileToFM(
-            file,
-            mdb.cols.map((f4) => f4.name),
-            plugin
-          )
-        }
-      ];
-    }
-  };
-  const promises = spaces.map((space) => {
-    return processContextFile(plugin, space, async (mdb, space2) => {
-      const newDB = {
-        ...mdb,
-        rows: updateFile(mdb)
-      };
-      if (!import_lodash5.default.isEqual(mdb, newDB)) {
-        await saveDB(plugin, space2, newDB);
-      }
-      return newDB;
-    });
-  });
-  return Promise.all(promises);
-};
-var updateValueInContext = async (plugin, row, field, value, space) => {
-  const changeTagInContextMDB = (mdb) => {
-    return { ...mdb, rows: mdb.rows.map((f4) => f4.File == row ? { ...f4, [field]: value } : f4) };
-  };
-  return processContextFile(plugin, space, async (mdb, space2) => {
-    const newDB = changeTagInContextMDB(mdb);
-    if (!import_lodash5.default.isEqual(mdb, newDB)) {
-      await saveDB(plugin, space2, newDB);
-    }
-    return newDB;
-  });
-};
-var renameTagInContexts = async (plugin, oldTag, newTag, spaces) => {
-  const changeTagInContextMDB = (mdb) => {
-    const cols = mdb.cols.map((f4) => f4.type.startsWith("context") && f4.value == oldTag ? { ...f4, value: newTag } : f4);
-    return { ...mdb, cols };
-  };
-  const promises = spaces.map((space) => {
-    return processContextFile(plugin, space, async (mdb, space2) => {
-      const newDB = changeTagInContextMDB(mdb);
-      if (!import_lodash5.default.isEqual(mdb, newDB)) {
-        await saveDB(plugin, space2, newDB);
-      }
-      return newDB;
-    });
-  });
-  return Promise.all(promises);
-};
-var removeTagInContexts = async (plugin, tag, spaces) => {
-  const deleteTagInContextMDB = (mdb) => {
-    const cols = mdb.cols.map((f4) => f4.type.startsWith("context") && f4.value == tag ? { ...f4, type: "link-multi" } : f4);
-    return { ...mdb, cols };
-  };
-  const promises = spaces.map((space) => {
-    return processContextFile(plugin, space, async (mdb, space2) => {
-      const newDB = deleteTagInContextMDB(mdb);
-      if (!import_lodash5.default.isEqual(mdb, newDB)) {
-        await saveDB(plugin, space2, newDB);
-      }
-      return newDB;
-    });
-  });
-  return Promise.all(promises);
-};
-var addFileInContexts = async (plugin, path, contexts, index) => {
-  const promises = contexts.map((space) => {
-    return processContextFile(plugin, space, async (mdb, space2) => {
-      const newDB = insertRowsIfUnique(mdb, [{ File: path }], index);
-      if (!import_lodash5.default.isEqual(mdb, newDB)) {
-        await saveDB(plugin, space2, newDB);
-      }
-      return newDB;
-    });
-  });
-  return Promise.all(promises);
-};
-var renameLinkInContexts = async (plugin, oldPath, newPath, spaces) => {
-  const promises = spaces.map((space) => {
-    return processContextFile(plugin, space, async (mdb, space2) => {
-      const linkCols = linkColumns(mdb.cols);
-      const newDB = {
-        ...mdb,
-        rows: mdb.rows.map((r3) => renameLinksInRow(plugin, r3, oldPath, newPath, linkCols))
-      };
-      if (!import_lodash5.default.isEqual(mdb, newDB)) {
-        await saveDB(plugin, space2, newDB);
-      }
-      return newDB;
-    });
-  });
-  return Promise.all(promises);
-};
-var removeLinkInContexts = async (plugin, path, spaces) => {
-  const promises = spaces.map((space) => {
-    return processContextFile(plugin, space, async (mdb, space2) => {
-      const linkCols = linkColumns(mdb.cols);
-      const newDB = {
-        ...mdb,
-        rows: mdb.rows.map((r3) => removeLinksInRow(plugin, r3, path, linkCols))
-      };
-      if (!import_lodash5.default.isEqual(mdb, newDB)) {
-        await saveDB(plugin, space2, newDB);
-      }
-      return newDB;
-    });
-  });
-  return Promise.all(promises);
-};
-var renameFileInContexts = async (plugin, oldPath, newPath, spaces) => {
-  const promises = spaces.map((space) => {
-    return processContextFile(plugin, space, async (mdb, space2) => {
-      const newDB = renameRowForFile(mdb, oldPath, newPath);
-      if (!import_lodash5.default.isEqual(mdb, newDB)) {
-        await saveDB(plugin, space2, newDB);
-      }
-      return newDB;
-    });
-  });
-  return Promise.all(promises);
-};
-var removeFileInContexts = async (plugin, path, spaces) => {
-  const promises = spaces.map((space) => {
-    return processContextFile(plugin, space, async (mdb, space2) => {
-      const removeRow = mdb.rows.find((f4) => f4.File == path);
-      if (removeRow) {
-        saveContextToFrontmatter(path, mdb.cols, removeRow, plugin);
-      }
-      const newDB = removeRowForFile(mdb, path);
-      if (!import_lodash5.default.isEqual(mdb, newDB)) {
-        await saveDB(plugin, space2, newDB);
-      }
-      return newDB;
-    });
-  });
-  return Promise.all(promises);
-};
-var reorderFilesInContext = async (plugin, paths, index, space) => {
-  return processContextFile(plugin, space, async (mdb, context) => {
-    const newDB = reorderRowsForFile(mdb, paths, index);
-    if (!import_lodash5.default.isEqual(mdb, newDB)) {
-      await saveDB(plugin, context, newDB);
-    }
-    return newDB;
-  });
-};
-var removeFilesInContext = async (plugin, paths, space) => {
-  return processContextFile(plugin, space, async (mdb, context) => {
-    mdb.rows.forEach((row) => {
-      if (paths.includes(row.File))
-        saveContextToFrontmatter(row.File, mdb.cols, row, plugin);
-    });
-    const newDB = removeRowsForFile(mdb, paths);
-    if (!import_lodash5.default.isEqual(mdb, newDB)) {
-      await saveDB(plugin, context, newDB);
-    }
-    return newDB;
-  });
-};
-
-// src/components/UI/menus/propertyMenu/PropertyValue.tsx
+// src/react/components/UI/Menus/propertyMenu/PropertyValue.tsx
 var PropertyValueComponent = (props2) => {
   var _a2;
   const showOptions = (e4, value, options, field, saveProperty) => {
@@ -39858,7 +39904,7 @@ var PropertyValueComponent = (props2) => {
   }, /* @__PURE__ */ Cn.createElement("span", null, i18n_default.labels.propertyFileProp), /* @__PURE__ */ Cn.createElement("span", null, parsedValue.field))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null);
 };
 
-// src/components/UI/menus/propertyMenu/newPropertyMenu.tsx
+// src/react/components/UI/Menus/propertyMenu/newPropertyMenu.tsx
 var NewPropertyMenuComponent = (props2) => {
   const [fieldName, setFieldName] = h2("");
   const [fieldSource, setFieldSource] = h2(
@@ -39874,7 +39920,7 @@ var NewPropertyMenuComponent = (props2) => {
     const options2 = [];
     if (props2.fileMetadata) {
       options2.push({
-        name: i18n_default.menu.fileMetadata,
+        name: i18n_default.menu.setNone,
         value: "fm"
       });
     }
@@ -40050,39 +40096,7 @@ var showNewPropertyMenu = (plugin, position, spaces, fields, saveField, schemaId
   return menu;
 };
 
-// src/components/UI/menus/spaceMenu.tsx
-var showSpacesMenu = (e4, plugin, saveLink, includeDefaults, canAdd) => {
-  const offset2 = e4.target.getBoundingClientRect();
-  const options = plugin.index.allSpaces(true).filter((f4) => includeDefaults || f4.type != "default").map((f4) => ({
-    name: f4.name,
-    value: f4.path,
-    icon: f4.sticker,
-    section: f4.type == "tag" ? "Tag" : "Folder",
-    description: f4.type == "tag" ? f4.name : f4.path
-  }));
-  showSelectMenu(
-    { x: offset2.left, y: offset2.top + 30 },
-    {
-      plugin,
-      multi: false,
-      editable: canAdd,
-      value: [],
-      options,
-      sections: ["Tag", "Folder"],
-      saveOptions: (_12, value) => {
-        saveLink(value[0], !options.some((f4) => f4.value == value[0]));
-      },
-      placeholder: i18n_default.labels.spaceSelectPlaceholder,
-      detail: true,
-      searchable: true,
-      showSections: true,
-      showAll: true
-    }
-  );
-};
-
-// src/components/SpaceView/Contexts/TagsView/NoteSpacesBar.tsx
-var import_obsidian17 = require("obsidian");
+// src/react/components/SpaceView/Contexts/TagsView/NoteSpacesBar.tsx
 var NoteSpacesBar = (props2) => {
   const showContextMenu = (e4, space) => {
     e4.stopPropagation();
@@ -40114,17 +40128,6 @@ var NoteSpacesBar = (props2) => {
       });
     const offset2 = e4.target.getBoundingClientRect();
     menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
-  };
-  const showAddMenu = (e4) => {
-    showSpacesMenu(
-      e4,
-      props2.plugin,
-      (link) => {
-        props2.addSpace(link);
-      },
-      false,
-      true
-    );
   };
   const spacesFromPath = (path) => {
     return [...props2.plugin.index.spacesMap.get(path)].map((f4) => props2.plugin.index.spacesIndex.get(f4)).filter((f4) => f4 && f4.type != "default" && f4.path != "/").sort(
@@ -40195,15 +40198,47 @@ var NoteSpacesBar = (props2) => {
   })) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null);
 };
 
-// src/hooks/useLongPress.tsx
-function isMouseEvent(e4) {
-  return e4 && "screenX" in e4;
-}
+// src/react/components/UI/Menus/fileMenu.tsx
+var import_obsidian44 = require("obsidian");
 
-// src/components/UI/FileSticker/FileSticker.tsx
-var import_obsidian22 = require("obsidian");
+// src/react/components/UI/Modals/editSpaceModal.tsx
+var import_obsidian42 = require("obsidian");
 
-// src/components/UI/modals/vaultChangeModals.ts
+// src/react/components/Navigator/SpaceEditor.tsx
+var import_obsidian41 = require("obsidian");
+
+// src/react/components/UI/Menus/linkMenu.tsx
+var showLinkMenu = (e4, plugin, saveLink, placeholder) => {
+  const offset2 = e4.target.getBoundingClientRect();
+  const options = getAllAbstractFilesInVault(plugin).map((f4) => ({
+    name: fileNameToString(f4.name),
+    value: f4.path,
+    description: f4.path
+  }));
+  showSelectMenu(
+    { x: offset2.left, y: offset2.top + 30 },
+    {
+      plugin,
+      multi: false,
+      editable: true,
+      value: [],
+      options,
+      saveOptions: (_12, value) => {
+        saveLink(value[0]);
+      },
+      placeholder: placeholder != null ? placeholder : i18n_default.labels.linkItemSelectPlaceholder,
+      detail: true,
+      searchable: true,
+      showAll: true
+    }
+  );
+};
+
+// src/superstate/spacesStore/spaces.ts
+var import_lodash7 = __toESM(require_lodash());
+var import_obsidian21 = require("obsidian");
+
+// src/react/components/UI/Modals/vaultChangeModals.ts
 var import_obsidian18 = require("obsidian");
 var VaultChangeModal = class extends import_obsidian18.Modal {
   constructor(plugin, file, action, space) {
@@ -40266,7 +40301,7 @@ var VaultChangeModal = class extends import_obsidian18.Modal {
           new import_obsidian18.Notice(i18n_default.notice.folderExists);
           return;
         }
-        this.app.vault.createFolder(path);
+        this.plugin.files.createFolder(path);
         if (this.space)
           insertSpaceItemAtIndex(this.plugin, this.space, path, 0);
       }
@@ -40305,10 +40340,6 @@ var MoveSuggestionModal = class extends import_obsidian18.FuzzySuggestModal {
   }
 };
 
-// src/superstate/spacesStore/spaces.ts
-var import_lodash7 = __toESM(require_lodash());
-var import_obsidian21 = require("obsidian");
-
 // src/schemas/spaces.ts
 var vaultSchema = {
   uniques: ["path"],
@@ -40320,7 +40351,9 @@ var vaultSchema = {
 var import_lodash6 = __toESM(require_lodash());
 
 // src/utils/defaultIconForExtension.ts
-var defaultIconForExtension = (type, solid) => {
+var defaultIconForExtension = (path, type, solid) => {
+  if (path == "Spaces/Home")
+    return "ui//mk-ui-spaces";
   if (!type)
     return solid ? "ui//mk-ui-folder-solid" : "ui//mk-ui-folder";
   switch (type) {
@@ -40448,7 +40481,7 @@ var loadTags = (plugin) => {
   return uniq([
     ...Object.keys(plugin.app.metadataCache.getTags()),
     ...(_a2 = folder == null ? void 0 : folder.children.filter(
-      (f4) => f4 instanceof import_obsidian19.TFile && f4.extension == "mdb" && f4.name.charAt(0) == "#"
+      (f4) => f4 instanceof import_obsidian19.TFolder && f4.name.charAt(0) == "#"
     ).map((f4) => tagPathToTag(f4.name))) != null ? _a2 : []
   ]);
 };
@@ -40519,7 +40552,7 @@ var renameTag = async (plugin, tag, toTag) => {
       }
     }
   }
-  await renameSpaceFolder(plugin, tag, toTag);
+  await renameTagSpaceFolder(plugin, tag, toTag);
   plugin.index.renameTag(tag, toTag);
   for (const subtag of tags) {
     await renameTag(plugin, subtag, subtag.replace(tag, newTag));
@@ -41072,9 +41105,6 @@ var removeSpace = async (plugin, space) => {
     plugin.index.deleteTag(spaceCache.name);
   } else if (spaceCache.type == "folder") {
     deleteFile(plugin, getAbstractFileAtPath(plugin, space));
-  } else {
-    deleteSpaceFolder(plugin, spaceCache.name);
-    plugin.index.deleteSpace(space);
   }
 };
 var updateSpaceSort = (plugin, spaceName, sort) => {
@@ -41095,7 +41125,7 @@ var toggleSpacePin = (plugin, spacePath, type, remove, rank) => {
     } else {
       plugin.settings.rootSpaces = insert(plugin.settings.rootSpaces, rank, spacePath);
     }
-  } else if (type == "pinned") {
+  } else if (type == "waypoints") {
     if (remove) {
       plugin.settings.waypoints = plugin.settings.waypoints.filter((f4) => f4 != spacePath);
     } else if (plugin.settings.waypoints.some((f4) => f4 == spacePath)) {
@@ -41108,6 +41138,12 @@ var toggleSpacePin = (plugin, spacePath, type, remove, rank) => {
   plugin.saveSettings();
 };
 var removePathsFromSpace = async (plugin, space, paths) => {
+  if (space.type == "default") {
+    if (space.path == "spaces://$waypoints") {
+      toggleSpacePin(plugin, paths[0], "waypoints", true);
+      return;
+    }
+  }
   if (space.type == "tag") {
     paths.map((f4) => {
       var _a2, _b2, _c2;
@@ -41204,6 +41240,14 @@ tags:
   return newFile;
 };
 
+// src/react/components/UI/Stickers/FileSticker/FileSticker.tsx
+var import_obsidian22 = require("obsidian");
+
+// src/react/hooks/useLongPress.tsx
+function isMouseEvent(e4) {
+  return e4 && "screenX" in e4;
+}
+
 // src/utils/emoji.ts
 var saveIconsForPaths = (plugin, files, icon) => {
   files.forEach((file) => {
@@ -41245,7 +41289,7 @@ var removeFileIcon = (plugin, data2) => {
   saveFileSticker(plugin, data2.path, "");
 };
 
-// src/components/UI/FileSticker/FileSticker.tsx
+// src/react/components/UI/Stickers/FileSticker/FileSticker.tsx
 var FileSticker = (props2) => {
   const { fileCache } = props2;
   const sticker = fileCache == null ? void 0 : fileCache.sticker;
@@ -41321,7 +41365,11 @@ var FileSticker = (props2) => {
     },
     dangerouslySetInnerHTML: sticker ? { __html: stickerFromString(sticker, props2.plugin) } : fileCache.cacheType == "file" ? {
       __html: stickerFromString(
-        defaultIconForExtension(extension, color ? true : false),
+        defaultIconForExtension(
+          fileCache.path,
+          extension,
+          color ? true : false
+        ),
         props2.plugin
       )
     } : {
@@ -41362,290 +41410,10 @@ var FileStickerContainer = (props2) => {
   }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null);
 };
 
-// src/components/SpaceView/Contexts/ContextBuilder/SpacePropertyEditor.tsx
-var SpacePropertyEditor = (props2) => {
-  const [activeId, setActiveId] = h2("");
-  const items = props2.columns.map((f4) => ({ ...f4, table: "", id: f4.name }));
-  const [openNodes, setOpenNodes] = h2([]);
-  const [overId, setOverId] = h2("");
-  const contextProperties = F2(() => {
-    return props2.contexts.reduce((p3, c4) => {
-      var _a2, _b2;
-      return {
-        ...p3,
-        [c4]: {
-          space: props2.plugin.index.spacesIndex.get(tagSpacePathFromTag(c4)),
-          cols: (_b2 = (_a2 = props2.plugin.index.contextsIndex.get(tagSpacePathFromTag(c4))) == null ? void 0 : _a2.cols) != null ? _b2 : [].map((f4) => ({ ...f4, table: c4 }))
-        }
-      };
-    }, {});
-  }, [props2.contexts]);
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 10
-      }
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5
-      }
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates
-    })
-  );
-  const resetState = () => {
-    setActiveId(null);
-    setOverId(null);
-  };
-  const saveNewField = (source, field) => {
-    props2.saveColumn({ ...field, table: "" });
-  };
-  const newProperty = (e4) => {
-    var _a2;
-    const offset2 = e4.target.getBoundingClientRect();
-    showNewPropertyMenu(
-      props2.plugin,
-      { x: offset2.left, y: offset2.top + 30 },
-      (_a2 = props2.contexts) != null ? _a2 : [],
-      [],
-      saveNewField,
-      "files",
-      null,
-      false
-    );
-  };
-  const newContexts = (e4) => {
-    const offset2 = e4.target.getBoundingClientRect();
-    const f4 = loadTags(props2.plugin);
-    const addTag = async (tag) => {
-      const newTag = tagToTagPath(tag);
-      props2.saveContexts([
-        ...props2.contexts.filter((f5) => f5 != newTag),
-        newTag
-      ]);
-    };
-    showSelectMenu(
-      { x: offset2.left, y: offset2.top + 30 },
-      {
-        plugin: props2.plugin,
-        multi: false,
-        editable: true,
-        value: [],
-        options: f4.map((m5) => ({ name: m5, value: m5 })),
-        saveOptions: (_12, value) => addTag(value[0]),
-        placeholder: i18n_default.labels.contextItemSelectPlaceholder,
-        searchable: true,
-        showAll: true
-      }
-    );
-  };
-  return /* @__PURE__ */ Cn.createElement(DndContext, {
-    sensors,
-    collisionDetection: closestCenter,
-    measuring: {
-      droppable: {
-        strategy: MeasuringStrategy.Always
-      }
-    },
-    onDragStart: ({ active }) => {
-      setActiveId(active.id);
-    },
-    onDragOver: ({ active, over }) => {
-      const overId2 = over == null ? void 0 : over.id;
-      if (overId2)
-        setOverId(overId2);
-    },
-    onDragEnd: ({ active, over }) => {
-      const overId2 = over == null ? void 0 : over.id;
-      if (!overId2) {
-        resetState();
-        return;
-      }
-      props2.setColumnOrder(
-        arrayMove(
-          props2.colsOrder,
-          props2.colsOrder.findIndex((f4) => f4 == activeId),
-          props2.colsOrder.findIndex((f4) => f4 == overId2)
-        )
-      );
-      resetState();
-    },
-    onDragCancel: resetState
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-property-editor"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-property-editor-context"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-property-editor-context-title"
-  }, /* @__PURE__ */ Cn.createElement("span", null, "Define Properties for your Space Items"), /* @__PURE__ */ Cn.createElement("button", {
-    onClick: (e4) => newProperty(e4)
-  }, "Add Property")), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-property-editor-context-list"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-property-editor-list"
-  }, /* @__PURE__ */ Cn.createElement(SortableContext, {
-    items,
-    strategy: verticalListSortingStrategy
-  }, items.map((value, index) => {
-    return /* @__PURE__ */ Cn.createElement(SortableItem, {
-      key: index,
-      id: value.id,
-      field: value,
-      plugin: props2.plugin,
-      saveColumn: (field) => props2.saveColumn(field, value),
-      cols: items,
-      colsHidden: props2.colsHidden,
-      hideColumn: props2.hideColumn,
-      delColumn: props2.delColumn
-    });
-  }))))), props2.contexts.map((f4, i4) => {
-    var _a2;
-    return /* @__PURE__ */ Cn.createElement("div", {
-      key: i4,
-      className: "mk-property-editor-context"
-    }, /* @__PURE__ */ Cn.createElement("div", {
-      className: "mk-property-editor-context-title"
-    }, f4, /* @__PURE__ */ Cn.createElement("button", {
-      className: `mk-collapse mk-inline-button mk-icon-xsmall ${!openNodes.some((g4) => g4 == f4) ? "mk-collapsed" : ""}`,
-      dangerouslySetInnerHTML: {
-        __html: stickerFromString("ui//mk-ui-collapse", props2.plugin)
-      },
-      onClick: () => setOpenNodes(
-        (p3) => p3.some((g4) => g4 == f4) ? p3.filter((o3) => o3 != f4) : [...p3, f4]
-      )
-    }), /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("div", null, /* @__PURE__ */ Cn.createElement("div", {
-      className: "mk-icon-small",
-      dangerouslySetInnerHTML: {
-        __html: uiIconSet["mk-ui-close"]
-      },
-      onClick: (e4) => {
-        props2.saveContexts(props2.contexts.filter((g4) => g4 != f4));
-      }
-    }))), openNodes.some((g4) => g4 == f4) ? /* @__PURE__ */ Cn.createElement("div", {
-      className: "mk-property-editor-list"
-    }, (_a2 = contextProperties[f4]) == null ? void 0 : _a2.cols.filter((f5) => f5.primary != "true").map((g4, h5) => /* @__PURE__ */ Cn.createElement(SortableItem, {
-      key: h5,
-      id: g4.name + "#" + f4,
-      field: g4,
-      plugin: props2.plugin,
-      saveColumn: (field) => props2.saveColumn(field, g4),
-      cols: contextProperties[f4].cols,
-      colsHidden: props2.colsHidden,
-      hideColumn: props2.hideColumn,
-      delColumn: props2.delColumn
-    }))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
-  }), /* @__PURE__ */ Cn.createElement("div", {
-    onClick: (e4) => newContexts(e4),
-    className: "mk-property-editor-new"
-  }, "+ Add Context", /* @__PURE__ */ Cn.createElement("span", null, "Contexts lets you connect properties from your tags"))), z3(
-    /* @__PURE__ */ Cn.createElement(DragOverlay, {
-      adjustScale: false
-    }, activeId ? /* @__PURE__ */ Cn.createElement(SortableItem, {
-      id: items.find((f4) => f4.id == activeId).id,
-      field: items.find((f4) => f4.id == activeId),
-      plugin: props2.plugin,
-      cols: items,
-      colsHidden: props2.colsHidden
-    }) : null),
-    document.body
-  ));
-};
-function SortableItem(props2) {
-  var _a2, _b2;
-  const { spaceInfo } = q2(SpaceContext);
-  const { field } = props2;
-  const saveField = (field2, oldField) => {
-    if (field2.name.length > 0) {
-      if (field2.name != oldField.name || field2.type != oldField.type || field2.value != oldField.value || field2.attrs != oldField.attrs) {
-        const saveResult = props2.saveColumn(field2, oldField);
-      }
-    }
-  };
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props2.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition
-  };
-  const icon = ((_a2 = props2.field.attrs) == null ? void 0 : _a2.length) > 0 ? props2.field.attrs : (_b2 = fieldTypeForType(props2.field.type)) == null ? void 0 : _b2.icon;
-  const selectedType = (_12, value) => {
-    const newField = {
-      ...props2.field,
-      type: value[0]
-    };
-    props2.saveColumn(newField);
-  };
-  return /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-property-editor-property",
-    ref: setNodeRef,
-    style,
-    ...attributes,
-    ...listeners
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-file-context-field-icon",
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString(icon, props2.plugin)
-    },
-    onClick: (e4) => {
-      selectPropertyTypeMenu(e4, props2.plugin, selectedType);
-    }
-  }), props2.field.name, /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-icon-small",
-    dangerouslySetInnerHTML: {
-      __html: uiIconSet["mk-ui-options"]
-    },
-    onClick: (e4) => {
-      const offset2 = e4.target.getBoundingClientRect();
-      showPropertyMenu({
-        plugin: props2.plugin,
-        position: { x: offset2.left, y: offset2.top + 30 },
-        editable: true,
-        options: [],
-        field,
-        fields: props2.cols,
-        contextPath: spaceInfo == null ? void 0 : spaceInfo.path,
-        saveField: (newField) => saveField(newField, field),
-        hide: props2.hideColumn,
-        deleteColumn: props2.delColumn,
-        hidden: props2.colsHidden.includes(field.name + field.table)
-      });
-    }
-  }));
-}
+// src/react/components/Navigator/SpaceQuery.tsx
+var import_obsidian40 = require("obsidian");
 
-// src/components/UI/menus/linkMenu.tsx
-var showLinkMenu = (e4, plugin, saveLink) => {
-  const offset2 = e4.target.getBoundingClientRect();
-  const options = getAllAbstractFilesInVault(plugin).map((f4) => ({
-    name: fileNameToString(f4.name),
-    value: f4.path,
-    description: f4.path
-  }));
-  showSelectMenu(
-    { x: offset2.left, y: offset2.top + 30 },
-    {
-      plugin,
-      multi: false,
-      editable: true,
-      value: [],
-      options,
-      saveOptions: (_12, value) => {
-        saveLink(value[0]);
-      },
-      placeholder: i18n_default.labels.linkItemSelectPlaceholder,
-      detail: true,
-      searchable: true,
-      showAll: true
-    }
-  );
-};
-
-// src/components/Navigator/SpaceEditor.tsx
-var import_obsidian41 = require("obsidian");
-
-// src/components/SpaceView/Contexts/ContextBuilder/BuilderMetadataFields.tsx
+// src/react/components/SpaceView/Contexts/ContextBuilder/BuilderMetadataFields.tsx
 var import_obsidian23 = require("obsidian");
 var allMetadataForFiles = (plugin, files) => {
   return files.reduce((p3, c4) => {
@@ -41678,7 +41446,7 @@ var metadatTypeFilterPredicate = (value, index, self2) => {
   ) === index;
 };
 
-// src/components/UI/menus/datePickerMenu.tsx
+// src/react/components/UI/Menus/datePickerMenu.tsx
 var import_obsidian24 = require("obsidian");
 
 // node_modules/react-day-picker/dist/index.esm.js
@@ -43259,7 +43027,7 @@ function DayPicker(props2) {
   );
 }
 
-// src/components/UI/menus/datePickerMenu.tsx
+// src/react/components/UI/Menus/datePickerMenu.tsx
 var showDatePickerMenu = (point, value, setValue, format2) => {
   const menu = new import_obsidian24.Menu();
   menu.dom.toggleClass("mk-menu", true);
@@ -43311,9 +43079,6 @@ var showDatePickerMenu = (point, value, setValue, format2) => {
   menu.showAtPosition(point);
   return menu;
 };
-
-// src/components/Navigator/SpaceQuery.tsx
-var import_obsidian40 = require("obsidian");
 
 // src/types/metadata.ts
 var fileProps = {
@@ -43415,670 +43180,14 @@ var filterFnLabels = {
   isFalse: i18n_default.filterTypes.unchecked
 };
 
-// src/components/SpaceView/Frames/EditorNodes/FrameNodeView.tsx
+// src/react/components/SpaceView/Contexts/FilterBar/FilterBar.tsx
+var import_obsidian39 = require("obsidian");
+
+// src/react/components/UI/Modals/contextEditorModal.tsx
+var import_obsidian38 = require("obsidian");
+
+// src/react/components/SpaceView/Frames/EditorNodes/FrameNodeView.tsx
 var import_classnames4 = __toESM(require_classnames());
-
-// src/context/FrameEditorContext.tsx
-var import_lodash8 = __toESM(require_lodash());
-var import_obsidian25 = require("obsidian");
-
-// src/utils/frames/frames.ts
-var propFieldFromString = (str, schemaProps) => {
-  return schemaProps.find((f4) => str == `${f4.schemaId}.props.${f4.name}`);
-};
-var nameForField = (field) => {
-  var _a2;
-  if (!field)
-    return null;
-  const parsedValue = parseFieldValue(field.value, field.type);
-  return (_a2 = parsedValue.alias) != null ? _a2 : field.name;
-};
-var stringIsConst = (str) => {
-  const hasQuotesAtStartEndOnly = /^["'][^"']*["'](?:;)?$/.test(str);
-  const isNumber = !isNaN(parseFloat(str)) && isFinite(str);
-  return hasQuotesAtStartEndOnly || isNumber || str == null || str == "";
-};
-var newUniqueNode = (node, parent, otherNodes, schemaId) => {
-  const id2 = uniqueNameFromString(
-    node.node.id,
-    otherNodes.map((f4) => f4.id)
-  );
-  return {
-    ...node.node,
-    id: id2,
-    schemaId,
-    parentId: parent
-  };
-};
-
-// src/utils/frames/runner.ts
-function extractDependencies(code) {
-  const dependencies = [];
-  function visit(node, parts = []) {
-    if (node.type === "Identifier") {
-      parts.push(node.name);
-      return parts;
-    } else if (node.type === "MemberExpression") {
-      const objectParts = visit(node.object, parts);
-      if (objectParts && node.computed) {
-        if (node.property.type === "Literal") {
-          objectParts.push(String(node.property.value));
-          return objectParts;
-        } else {
-          return null;
-        }
-      } else if (objectParts) {
-        return visit(node.property, objectParts);
-      }
-    } else if (node.type === "Literal") {
-      parts.push(String(node.value));
-      return parts;
-    }
-    return null;
-  }
-  function explore(node) {
-    if (node.type === "MemberExpression") {
-      const parts = visit(node);
-      if (parts) {
-        dependencies.push(parts);
-      }
-      return;
-    }
-    for (const key2 in node) {
-      if (typeof node[key2] === "object" && node[key2] !== null) {
-        explore(node[key2]);
-      }
-    }
-  }
-  try {
-    const ast = parse3(code.replace("return ", ""), { ecmaVersion: 2020 });
-    explore(ast);
-  } catch (e4) {
-    return [];
-  }
-  return dependencies;
-}
-function sortKeysByDependencies(codeBlockStore, identifier) {
-  const graph = /* @__PURE__ */ new Map();
-  const dependencies = /* @__PURE__ */ new Map();
-  const allDependencies = /* @__PURE__ */ new Map();
-  for (const key2 in codeBlockStore) {
-    const code = codeBlockStore[key2];
-    const extractedDependencies = extractDependencies(code);
-    const localDependencies = extractedDependencies.filter((dep) => {
-      return dep.slice(0, -1).join(".") === identifier;
-    });
-    dependencies.set(key2, localDependencies);
-    allDependencies.set(key2, extractedDependencies);
-    if (!graph.has(key2)) {
-      graph.set(key2, /* @__PURE__ */ new Set());
-    }
-    for (const dep of localDependencies) {
-      const depStr = dep[dep.length - 1];
-      if (depStr === key2)
-        continue;
-      graph.get(key2).add(depStr);
-    }
-  }
-  const visited = /* @__PURE__ */ new Set();
-  const result = [];
-  const temp = /* @__PURE__ */ new Set();
-  const visit = (key2) => {
-    if (temp.has(key2))
-      throw new Error("Circular dependency detected");
-    if (!visited.has(key2)) {
-      temp.add(key2);
-      const edges = graph.get(key2) || /* @__PURE__ */ new Set();
-      for (const dep of edges) {
-        visit(dep);
-      }
-      visited.add(key2);
-      temp.delete(key2);
-      result.push(key2);
-    }
-  };
-  for (const key2 in codeBlockStore) {
-    if (!visited.has(key2)) {
-      visit(key2);
-    }
-  }
-  return { sortedKeys: result, dependencies: allDependencies };
-}
-var executeTreeNode = async (_treeNode, state, api, saveState, root, runID, newState) => {
-  var _a2, _b2, _c2;
-  const treeNode = _treeNode;
-  let execState = await executeNode(treeNode.node, { state, newState }, api);
-  if (treeNode.node.type == "list") {
-    let uid = 0;
-    treeNode.children = parseMultiString(execState.state[treeNode.id].props.value).flatMap((f4, i4) => treeNode.children.map((n2) => {
-      const [tree, m5] = linkTreeNodes({ ...n2, node: { ...n2.node, props: { ...n2.node.props, value: wrapQuotes(f4) } } }, uid);
-      uid = m5;
-      return tree;
-    }));
-  }
-  if (typeof ((_b2 = (_a2 = execState.state[treeNode.id]) == null ? void 0 : _a2.actions) == null ? void 0 : _b2.onRun) == "function") {
-    (_c2 = execState.state[treeNode.id].actions) == null ? void 0 : _c2.onRun(
-      execState,
-      (s5) => {
-        saveState(s5, { state: execState.state, root, id: runID });
-      },
-      api
-    );
-  }
-  for (let i4 = 0; i4 < treeNode.children.length; i4++) {
-    const [newState2, newNode] = await executeTreeNode(treeNode.children[i4], execState.state, api, saveState, root, runID, execState.newState).then((f4) => [{ state: f4.state, newState: f4.newState }, f4.root]);
-    execState = newState2;
-    treeNode.children[i4] = newNode;
-  }
-  return { id: runID, root: treeNode, state: execState.state, newState: execState.newState };
-};
-var executeNode = async (node, results, api) => {
-  const propResults = await executePropsCodeBlocks(node, results, api);
-  const stylesResults = executeCodeBlocks(node, "styles", propResults);
-  const actions = executeCodeBlocks(node, "actions", stylesResults);
-  return actions;
-};
-var executePropsCodeBlocks = async (node, results, api) => {
-  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k;
-  const { type, props: props2, id: id2 } = node;
-  const codeBlockStore = props2 != null ? props2 : {};
-  const { sortedKeys, dependencies } = sortKeysByDependencies(codeBlockStore, `${node.id}.props`);
-  const runKeys = results.newState ? sortedKeys.filter((f4) => {
-    var _a3, _b3, _c3, _d3, _e3, _f2;
-    const deps = dependencies.get(f4);
-    if (f4 in ((_c3 = (_b3 = (_a3 = results.newState) == null ? void 0 : _a3[node.id]) == null ? void 0 : _b3["props"]) != null ? _c3 : {})) {
-      return true;
-    }
-    for (const dep of deps) {
-      if (dep[0] == "api")
-        return true;
-      if ((_f2 = (_e3 = (_d3 = results.newState) == null ? void 0 : _d3[dep[0]]) == null ? void 0 : _e3[dep[1]]) == null ? void 0 : _f2[dep[2]]) {
-        return true;
-      }
-    }
-    return false;
-  }) : sortedKeys.filter((f4) => {
-    var _a3;
-    return ((_a3 = codeBlockStore[f4]) == null ? void 0 : _a3.length) > 0;
-  });
-  const environment = results.state;
-  environment[id2] = {
-    props: (_b2 = (_a2 = results.state[id2]) == null ? void 0 : _a2.props) != null ? _b2 : {},
-    actions: (_d2 = (_c2 = results.state[id2]) == null ? void 0 : _c2.actions) != null ? _d2 : {},
-    styles: (_f = (_e2 = results.state[id2]) == null ? void 0 : _e2.styles) != null ? _f : {},
-    contexts: (_h = (_g = results.state[id2]) == null ? void 0 : _g.contexts) != null ? _h : {}
-  };
-  environment.api = api;
-  for (const key2 of runKeys) {
-    try {
-      let result;
-      if (key2 in (((_j = (_i = results.newState) == null ? void 0 : _i[node.id]) == null ? void 0 : _j["props"]) || {})) {
-        result = results.newState[node.id]["props"][key2];
-      } else {
-        const isMultiLine = codeBlockStore[key2].includes("\n");
-        const func = isMultiLine ? new Function(`with(this) { ${codeBlockStore[key2]} }`) : new Function(`with(this) { return ${codeBlockStore[key2]}; }`);
-        result = func.call(environment);
-        if (result instanceof Promise) {
-          result = await result;
-        }
-      }
-      environment[id2]["props"][key2] = result;
-      results.state[id2]["props"][key2] = result;
-      if (results.newState) {
-        results.newState[id2] = (_k = results.newState[id2]) != null ? _k : { props: {}, styles: {}, actions: {}, contexts: {} };
-        results.newState[id2]["props"][key2] = result;
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  return results;
-};
-function executeCodeBlocks(node, type, results) {
-  var _a2;
-  const codeBlockStore = (_a2 = node[type]) != null ? _a2 : {};
-  for (const key2 of Object.keys(codeBlockStore)) {
-    try {
-      const isMultiLine = typeof codeBlockStore[key2] === "string" || codeBlockStore[key2] instanceof String ? codeBlockStore[key2].includes("\n") : false;
-      const func = isMultiLine && !(type == "actions") ? new Function(`with(this) { ${codeBlockStore[key2]} }`) : new Function(`with(this) { return ${codeBlockStore[key2]}; }`);
-      const result = func.call(results.state);
-      parseKeyResult(results.state[node.id][type], key2, result);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-  return results;
-}
-var parseKeyResult = (resultStore, key2, result) => {
-  if (key2 == "layout") {
-    if (result == "row" || result == "column") {
-      resultStore["display"] = "flex";
-      resultStore["flexDirection"] = result;
-      return;
-    }
-    resultStore["display"] = result;
-    return;
-  }
-  resultStore[key2] = result;
-};
-
-// src/context/FrameEditorContext.tsx
-var FramesEditorContext = F({
-  root: null,
-  runRoot: () => null,
-  instance: { state: {}, id: null, root: null },
-  saveState: () => null,
-  fastSaveState: () => null,
-  nodes: [],
-  properties: [],
-  dragNode: null,
-  setDragNode: () => null,
-  hoverNode: null,
-  selectableNodeBounds: null,
-  setHoverNode: () => null,
-  selectedNodes: [],
-  selectNodes: () => null,
-  saveProperty: () => false,
-  newProperty: () => false,
-  delProperty: () => null,
-  groupNodes: () => null,
-  ungroupNode: () => null,
-  renameNode: () => null,
-  addNode: () => null,
-  deleteNode: () => null,
-  saveNodes: () => null,
-  moveUp: () => null,
-  moveDown: () => null,
-  moveToRank: () => null,
-  moveNodeFromSchema: () => null
-});
-var FramesEditorProvider = (props2) => {
-  var _a2;
-  const { spaceInfo } = q2(SpaceContext);
-  const editorProps = { editMode: props2.editMode };
-  const {
-    frameSchema,
-    setFrameSchema: setDBSchema,
-    saveFrame,
-    frameSchemas: schemas,
-    tableData,
-    getMDBData
-  } = q2(FramesMDBContext);
-  const [hoverNode, setHoverNode] = h2(null);
-  const [dragNode, setDragNode] = h2(null);
-  const [selectedNodes, setSelectedNodes] = h2([]);
-  const nodes = F2(() => {
-    var _a3;
-    if (!frameSchema)
-      return [];
-    const frames2 = (_a3 = tableData == null ? void 0 : tableData.rows.map(
-      (f4) => f4.id == frameSchema.id ? {
-        ...frameToNode(f4),
-        types: tableData.cols.reduce(
-          (p3, c4) => ({ ...p3, [c4.name]: c4.type }),
-          {}
-        ),
-        propsValue: tableData.cols.reduce(
-          (p3, c4) => ({ ...p3, [c4.name]: c4.value }),
-          {}
-        )
-      } : frameToNode(f4)
-    )) != null ? _a3 : [];
-    const _root = schemaToRoot(frameSchema);
-    if (frames2.some((f4) => f4.id == _root.id)) {
-      return frames2;
-    }
-    return [...frames2, _root];
-  }, [tableData, frameSchema]);
-  const [root, setRoot] = h2(null);
-  const [instance, setInstance] = h2({
-    state: {},
-    id: null,
-    root: null
-  });
-  const activeRunID = _2(null);
-  const saveState = (newState, instance2) => {
-    const { root: _root, id: runID, state } = instance2;
-    if (activeRunID.current != runID)
-      return;
-    executeTreeNode(
-      applyPropsToRoot(_root, props2.props),
-      state,
-      props2.plugin.index.api,
-      saveState,
-      _root,
-      runID,
-      newState
-    ).then(
-      (s5) => setInstance((p3) => {
-        return s5;
-      })
-    );
-  };
-  const selectableNodeBounds = _2({});
-  const fastSaveState = (newState) => {
-    setInstance((p3) => {
-      return { ...p3, state: newState };
-    });
-  };
-  p2(
-    () => () => {
-      activeRunID.current = null;
-    },
-    []
-  );
-  const runRoot = () => {
-    var _a3;
-    if ((frameSchema == null ? void 0 : frameSchema.type) == "frame" || (frameSchema == null ? void 0 : frameSchema.type) == "listitem") {
-      const _newRoot = buildRoot(
-        frameSchema,
-        (_a3 = tableData == null ? void 0 : tableData.cols) != null ? _a3 : [],
-        nodes,
-        props2.plugin,
-        editorProps
-      );
-      setRoot(_newRoot);
-      if (_newRoot) {
-        const newRoot = import_lodash8.default.cloneDeep(_newRoot);
-        const runID = (0, import_lodash8.uniqueId)();
-        activeRunID.current = runID;
-        executeTreeNode(
-          applyPropsToRoot(newRoot, props2.props),
-          {},
-          props2.plugin.index.api,
-          saveState,
-          newRoot,
-          runID
-        ).then((s5) => {
-          setInstance((p3) => {
-            return s5;
-          });
-          activeRunID.current = s5.id;
-        });
-        if (selectedNodes.length == 0) {
-        } else {
-          setSelectedNodes(
-            nodes.filter((f4) => selectedNodes.find((g4) => g4.id == f4.id))
-          );
-        }
-      }
-    }
-  };
-  const refreshFrame = (e4) => {
-    if (e4.detail.type == "frames" && e4.detail.name == spaceInfo.path) {
-      runRoot();
-    }
-  };
-  p2(() => {
-    window.addEventListener(eventTypes.spacesChange, refreshFrame);
-    return () => {
-      window.removeEventListener(eventTypes.spacesChange, refreshFrame);
-    };
-  }, [spaceInfo]);
-  p2(() => {
-    runRoot();
-  }, [frameSchema, nodes, tableData, props2.props]);
-  const moveUp = (node) => {
-    const items = nodes.filter((f4) => f4.parentId == node.parentId).sort((a5, b4) => a5.rank - b4.rank).map((f4, i4) => ({ ...f4, rank: i4 }));
-    const itemIndex = items.findIndex((item2) => item2.id === node.id);
-    if (itemIndex <= 0) {
-      saveNodes(items);
-      return;
-    }
-    const item = items[itemIndex];
-    const swappedItem = items[itemIndex - 1];
-    [item.rank, swappedItem.rank] = [swappedItem.rank, item.rank];
-    saveNodes(items);
-  };
-  const moveDown = (node) => {
-    const items = nodes.filter((f4) => f4.parentId == node.parentId).sort((a5, b4) => a5.rank - b4.rank).map((f4, i4) => ({ ...f4, rank: i4 }));
-    const itemIndex = items.findIndex((item2) => item2.id === node.id);
-    if (itemIndex < 0 || itemIndex >= items.length - 1) {
-      saveNodes(items);
-      return;
-    }
-    const item = items[itemIndex];
-    const swappedItem = items[itemIndex + 1];
-    [item.rank, swappedItem.rank] = [swappedItem.rank, item.rank];
-    saveNodes(items.sort((a5, b4) => a5.rank - b4.rank));
-  };
-  const ungroupNode = (node) => {
-    const children = nodes.filter((f4) => f4.parentId == node.id);
-    const newRank = node.rank;
-    const items = nodes.filter((f4) => f4.parentId == node.parentId).sort((a5, b4) => a5.rank - b4.rank);
-    const newItems = insertMulti(
-      items,
-      newRank,
-      children.map((f4) => ({ ...f4, parentId: node.parentId }))
-    ).filter((f4) => f4.id != node.id).map((f4, i4) => ({ ...f4, rank: i4 }));
-    return saveNodes(newItems, [node]);
-  };
-  const moveToRank = (node, newRank) => {
-    const items = nodes.filter((f4) => f4.parentId == node.parentId).sort((a5, b4) => a5.rank - b4.rank).map((f4, i4) => ({ ...f4, rank: i4 }));
-    const itemIndex = items.findIndex((item2) => item2.id === node.id);
-    if (itemIndex < 0 || newRank < 0 || newRank >= items.length) {
-      saveNodes(items);
-      return;
-    }
-    const item = items[itemIndex];
-    item.rank = newRank;
-    const newItems = arrayMove(items, itemIndex, newRank).map((f4, i4) => ({
-      ...f4,
-      rank: i4
-    }));
-    saveNodes(newItems);
-  };
-  const groupNodes = (treeNodes, style) => {
-    const parentId = treeNodes[0].id == frameSchema.id ? "" : treeNodes[0].parentId;
-    const group = {
-      ...newUniqueNode(groupNode, parentId, nodes, frameSchema.id)
-    };
-    const newNodes = treeNodes.map((f4) => {
-      const node = import_lodash8.default.cloneDeep(f4);
-      node.parentId = group.id;
-      return node;
-    });
-    saveNodes([
-      { ...group, styles: { ...group.styles, ...style } },
-      ...newNodes
-    ]);
-  };
-  const addNode = (treeNode, target) => {
-    const id2 = uniqueNameFromString(
-      treeNode.id,
-      nodes.map((f4) => f4.id)
-    );
-    let parent = target ? target : selectedNodes.length > 0 ? selectedNodes[0] : root.node;
-    let rank = target ? target.rank + 1 : parent.rank;
-    if (!groupableTypes.some((f4) => parent.type == f4)) {
-      parent = findParent(root, parent.id).node;
-    } else {
-      rank = nodes.filter((f4) => f4.parentId == parent.id).length;
-    }
-    const newTreeNode = {
-      ...treeNode,
-      id: id2,
-      schemaId: frameSchema.id,
-      parentId: parent.id
-    };
-    const newNodes = insert(
-      nodes.filter((f4) => f4.parentId == parent.id).sort((a5, b4) => a5.rank - b4.rank),
-      rank,
-      newTreeNode
-    ).map((f4, i4) => ({ ...f4, rank: i4 }));
-    saveNodes(newNodes).then((f4) => selectNodes([newTreeNode]));
-  };
-  const saveNodes = async (treeNodes, deleteNodes) => {
-    var _a3, _b2, _c2;
-    if (!tableData) {
-      return;
-    }
-    const newRows = ((_a3 = tableData == null ? void 0 : tableData.rows) == null ? void 0 : _a3.some((f4) => f4.id == root.id)) ? tableData.rows : [...(_b2 = tableData == null ? void 0 : tableData.rows) != null ? _b2 : [], nodeToFrame(root.node)];
-    const insertRows = treeNodes.filter((f4) => !newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
-    const modRows = treeNodes.filter((f4) => newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
-    const newTable = {
-      ...tableData,
-      cols: (_c2 = tableData.cols) != null ? _c2 : [],
-      rows: [
-        ...newRows.map((f4) => {
-          var _a4;
-          return (_a4 = modRows.find((g4) => g4.id == f4.id)) != null ? _a4 : f4;
-        }),
-        ...insertRows
-      ].filter(
-        (f4) => deleteNodes ? !deleteNodes.some((g4) => g4.id == f4.id) : f4
-      )
-    };
-    await saveFrame(newTable);
-  };
-  const moveNodeFromSchema = async (nodeId, schemaId, newParentId, styles2) => {
-    const oldTable = await getMDBData();
-    if (!oldTable[schemaId])
-      return;
-    const tableNodes = oldTable[schemaId].rows.map(
-      (g4) => frameToNode(g4)
-    );
-    const oldSchema = schemas.find((f4) => f4.id == schemaId);
-    const treeNode = tableNodes.find((f4) => f4.id == nodeId);
-    if (!oldSchema || !treeNode)
-      return;
-    const tree = buildFrameTree(
-      treeNode,
-      tableNodes,
-      props2.plugin,
-      0,
-      false,
-      editorProps
-    )[0];
-    const deleteNodes = flattenToFrameNodes(tree);
-    const newTreeNodes = deleteNodes.map((f4) => ({
-      ...f4,
-      schemaId: frameSchema.id,
-      styles: f4.id == nodeId && styles2 ? {
-        ...f4.styles,
-        ...styles2
-      } : f4.styles,
-      parentId: f4.id == nodeId ? newParentId : f4.parentId
-    }));
-    await saveFrame({
-      ...oldTable[frameSchema.id],
-      rows: oldTable[frameSchema.id].rows.filter(
-        (f4) => !deleteNodes.some((g4) => f4.schemaId == g4.schemaId && f4.id == g4.id)
-      )
-    });
-    await saveFrame({
-      ...tableData,
-      rows: [
-        ...tableData.rows,
-        ...newTreeNodes.map((f4) => nodeToFrame(f4))
-      ]
-    });
-  };
-  const deleteNode = (treeNode) => {
-    const tree = buildFrameTree(
-      treeNode,
-      nodes,
-      props2.plugin,
-      0,
-      false,
-      editorProps
-    )[0];
-    const parent = findParent(root, treeNode.id);
-    const deleteNodes = flattenToFrameNodes(tree);
-    if (parent) {
-      if (parent.children.length == 1 && parent.node.type == "column")
-        deleteNodes.push(parent.node);
-      const grandParent = findParent(root, parent.id);
-      if ((grandParent == null ? void 0 : grandParent.children.length) == 1 && grandParent.node.type == "container") {
-        deleteNodes.push(grandParent.node);
-      }
-    }
-    saveFrame({
-      ...tableData,
-      rows: tableData.rows.filter(
-        (f4) => !deleteNodes.some((g4) => f4.schemaId == g4.schemaId && f4.id == g4.id)
-      )
-    });
-  };
-  const properties2 = (_a2 = tableData == null ? void 0 : tableData.cols) != null ? _a2 : [];
-  const selectNodes = (frames2) => {
-    setSelectedNodes(frames2);
-  };
-  const delProperty = (column) => {
-    const mdbtable = tableData;
-    const newFields = mdbtable.cols.filter(
-      (f4, i4) => f4.name != column.name
-    );
-    const newTable = {
-      ...mdbtable,
-      cols: newFields != null ? newFields : []
-    };
-    saveFrame(newTable);
-  };
-  const newProperty = (col) => {
-    return saveProperty(col);
-  };
-  const renameNode = (node, newName) => {
-  };
-  const saveProperty = (newColumn, oldColumn) => {
-    const column = {
-      ...newColumn,
-      name: sanitizeColumnName(newColumn.name)
-    };
-    const mdbtable = tableData;
-    if (column.name == "") {
-      new import_obsidian25.Notice(i18n_default.notice.noPropertyName);
-      return false;
-    }
-    if (!oldColumn && mdbtable.cols.find(
-      (f4) => f4.name.toLowerCase() == column.name.toLowerCase()
-    ) || oldColumn && oldColumn.name != column.name && mdbtable.cols.find(
-      (f4) => f4.name.toLowerCase() == column.name.toLowerCase()
-    )) {
-      new import_obsidian25.Notice(i18n_default.notice.duplicatePropertyName);
-      return false;
-    }
-    const oldFieldIndex = oldColumn ? mdbtable.cols.findIndex((f4) => f4.name == oldColumn.name) : -1;
-    const newFields = oldFieldIndex == -1 ? [...mdbtable.cols, column] : mdbtable.cols.map((f4, i4) => i4 == oldFieldIndex ? column : f4);
-    const newTable = {
-      ...mdbtable,
-      cols: newFields != null ? newFields : []
-    };
-    saveFrame(newTable);
-    return true;
-  };
-  return /* @__PURE__ */ Cn.createElement(FramesEditorContext.Provider, {
-    value: {
-      root,
-      runRoot,
-      instance,
-      dragNode,
-      fastSaveState,
-      setDragNode,
-      hoverNode,
-      setHoverNode,
-      saveState,
-      nodes,
-      properties: properties2,
-      addNode,
-      deleteNode,
-      selectedNodes,
-      selectNodes,
-      saveProperty,
-      newProperty,
-      selectableNodeBounds,
-      renameNode,
-      delProperty,
-      saveNodes,
-      ungroupNode,
-      moveUp,
-      moveDown,
-      moveToRank,
-      moveNodeFromSchema,
-      groupNodes
-    }
-  }, props2.children);
-};
 
 // node_modules/re-resizable/lib/resizer.js
 var __extends = function() {
@@ -44878,6 +43987,668 @@ var Resizable = function(_super) {
   return Resizable2;
 }(w3);
 
+// src/react/context/FrameEditorContext.tsx
+var import_lodash8 = __toESM(require_lodash());
+var import_obsidian25 = require("obsidian");
+
+// src/utils/frames/frames.ts
+var propFieldFromString = (str, schemaProps) => {
+  return schemaProps.find((f4) => str == `${f4.schemaId}.props.${f4.name}`);
+};
+var nameForField = (field) => {
+  var _a2;
+  if (!field)
+    return null;
+  const parsedValue = parseFieldValue(field.value, field.type);
+  return (_a2 = parsedValue.alias) != null ? _a2 : field.name;
+};
+var stringIsConst = (str) => {
+  const hasQuotesAtStartEndOnly = /^["'][^"']*["'](?:;)?$/.test(str);
+  const isNumber = !isNaN(parseFloat(str)) && isFinite(str);
+  return hasQuotesAtStartEndOnly || isNumber || str == null || str == "";
+};
+var newUniqueNode = (node, parent, otherNodes, schemaId) => {
+  const id2 = uniqueNameFromString(
+    node.node.id,
+    otherNodes.map((f4) => f4.id)
+  );
+  return {
+    ...node.node,
+    id: id2,
+    schemaId,
+    parentId: parent
+  };
+};
+
+// src/utils/frames/runner.ts
+function extractDependencies(code) {
+  const dependencies = [];
+  function visit(node, parts = []) {
+    if (node.type === "Identifier") {
+      parts.push(node.name);
+      return parts;
+    } else if (node.type === "MemberExpression") {
+      const objectParts = visit(node.object, parts);
+      if (objectParts && node.computed) {
+        if (node.property.type === "Literal") {
+          objectParts.push(String(node.property.value));
+          return objectParts;
+        } else {
+          return null;
+        }
+      } else if (objectParts) {
+        return visit(node.property, objectParts);
+      }
+    } else if (node.type === "Literal") {
+      parts.push(String(node.value));
+      return parts;
+    }
+    return null;
+  }
+  function explore(node) {
+    if (node.type === "MemberExpression") {
+      const parts = visit(node);
+      if (parts) {
+        dependencies.push(parts);
+      }
+      return;
+    }
+    for (const key2 in node) {
+      if (typeof node[key2] === "object" && node[key2] !== null) {
+        explore(node[key2]);
+      }
+    }
+  }
+  try {
+    const ast = parse3(code.replace("return ", ""), { ecmaVersion: 2020 });
+    explore(ast);
+  } catch (e4) {
+    return [];
+  }
+  return dependencies;
+}
+function sortKeysByDependencies(codeBlockStore, identifier) {
+  const graph = /* @__PURE__ */ new Map();
+  const dependencies = /* @__PURE__ */ new Map();
+  const allDependencies = /* @__PURE__ */ new Map();
+  for (const key2 in codeBlockStore) {
+    const code = codeBlockStore[key2];
+    const extractedDependencies = extractDependencies(code);
+    const localDependencies = extractedDependencies.filter((dep) => {
+      return dep.slice(0, -1).join(".") === identifier;
+    });
+    dependencies.set(key2, localDependencies);
+    allDependencies.set(key2, extractedDependencies);
+    if (!graph.has(key2)) {
+      graph.set(key2, /* @__PURE__ */ new Set());
+    }
+    for (const dep of localDependencies) {
+      const depStr = dep[dep.length - 1];
+      if (depStr === key2)
+        continue;
+      graph.get(key2).add(depStr);
+    }
+  }
+  const visited = /* @__PURE__ */ new Set();
+  const result = [];
+  const temp = /* @__PURE__ */ new Set();
+  const visit = (key2) => {
+    if (temp.has(key2))
+      throw new Error("Circular dependency detected");
+    if (!visited.has(key2)) {
+      temp.add(key2);
+      const edges = graph.get(key2) || /* @__PURE__ */ new Set();
+      for (const dep of edges) {
+        visit(dep);
+      }
+      visited.add(key2);
+      temp.delete(key2);
+      result.push(key2);
+    }
+  };
+  for (const key2 in codeBlockStore) {
+    if (!visited.has(key2)) {
+      visit(key2);
+    }
+  }
+  return { sortedKeys: result, dependencies: allDependencies };
+}
+var executeTreeNode = async (_treeNode, state, api, saveState, root, runID, newState) => {
+  var _a2, _b2, _c2;
+  const treeNode = _treeNode;
+  let execState = await executeNode(treeNode.node, { state, newState }, api);
+  if (treeNode.node.type == "list") {
+    let uid = 0;
+    treeNode.children = parseMultiString(execState.state[treeNode.id].props.value).flatMap((f4, i4) => treeNode.children.map((n2) => {
+      const [tree, m5] = linkTreeNodes({ ...n2, node: { ...n2.node, props: { ...n2.node.props, value: wrapQuotes(f4) } } }, uid);
+      uid = m5;
+      return tree;
+    }));
+  }
+  if (typeof ((_b2 = (_a2 = execState.state[treeNode.id]) == null ? void 0 : _a2.actions) == null ? void 0 : _b2.onRun) == "function") {
+    (_c2 = execState.state[treeNode.id].actions) == null ? void 0 : _c2.onRun(
+      execState,
+      (s5) => {
+        saveState(s5, { state: execState.state, root, id: runID });
+      },
+      api
+    );
+  }
+  for (let i4 = 0; i4 < treeNode.children.length; i4++) {
+    const [newState2, newNode] = await executeTreeNode(treeNode.children[i4], execState.state, api, saveState, root, runID, execState.newState).then((f4) => [{ state: f4.state, newState: f4.newState }, f4.root]);
+    execState = newState2;
+    treeNode.children[i4] = newNode;
+  }
+  return { id: runID, root: treeNode, state: execState.state, newState: execState.newState };
+};
+var executeNode = async (node, results, api) => {
+  const propResults = await executePropsCodeBlocks(node, results, api);
+  const stylesResults = executeCodeBlocks(node, "styles", propResults);
+  const actions = executeCodeBlocks(node, "actions", stylesResults);
+  return actions;
+};
+var executePropsCodeBlocks = async (node, results, api) => {
+  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k;
+  const { type, props: props2, id: id2 } = node;
+  const codeBlockStore = props2 != null ? props2 : {};
+  const { sortedKeys, dependencies } = sortKeysByDependencies(codeBlockStore, `${node.id}.props`);
+  const runKeys = results.newState ? sortedKeys.filter((f4) => {
+    var _a3, _b3, _c3, _d3, _e3, _f2;
+    const deps = dependencies.get(f4);
+    if (f4 in ((_c3 = (_b3 = (_a3 = results.newState) == null ? void 0 : _a3[node.id]) == null ? void 0 : _b3["props"]) != null ? _c3 : {})) {
+      return true;
+    }
+    for (const dep of deps) {
+      if (dep[0] == "api")
+        return true;
+      if ((_f2 = (_e3 = (_d3 = results.newState) == null ? void 0 : _d3[dep[0]]) == null ? void 0 : _e3[dep[1]]) == null ? void 0 : _f2[dep[2]]) {
+        return true;
+      }
+    }
+    return false;
+  }) : sortedKeys.filter((f4) => {
+    var _a3;
+    return ((_a3 = codeBlockStore[f4]) == null ? void 0 : _a3.length) > 0;
+  });
+  const environment = results.state;
+  environment[id2] = {
+    props: (_b2 = (_a2 = results.state[id2]) == null ? void 0 : _a2.props) != null ? _b2 : {},
+    actions: (_d2 = (_c2 = results.state[id2]) == null ? void 0 : _c2.actions) != null ? _d2 : {},
+    styles: (_f = (_e2 = results.state[id2]) == null ? void 0 : _e2.styles) != null ? _f : {},
+    contexts: (_h = (_g = results.state[id2]) == null ? void 0 : _g.contexts) != null ? _h : {}
+  };
+  environment.api = api;
+  for (const key2 of runKeys) {
+    try {
+      let result;
+      if (key2 in (((_j = (_i = results.newState) == null ? void 0 : _i[node.id]) == null ? void 0 : _j["props"]) || {})) {
+        result = results.newState[node.id]["props"][key2];
+      } else {
+        const isMultiLine = codeBlockStore[key2].includes("\n");
+        const func = isMultiLine ? new Function(`with(this) { ${codeBlockStore[key2]} }`) : new Function(`with(this) { return ${codeBlockStore[key2]}; }`);
+        result = func.call(environment);
+        if (result instanceof Promise) {
+          result = await result;
+        }
+      }
+      environment[id2]["props"][key2] = result;
+      results.state[id2]["props"][key2] = result;
+      if (results.newState) {
+        results.newState[id2] = (_k = results.newState[id2]) != null ? _k : { props: {}, styles: {}, actions: {}, contexts: {} };
+        results.newState[id2]["props"][key2] = result;
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  return results;
+};
+function executeCodeBlocks(node, type, results) {
+  var _a2;
+  const codeBlockStore = (_a2 = node[type]) != null ? _a2 : {};
+  for (const key2 of Object.keys(codeBlockStore)) {
+    try {
+      const isMultiLine = typeof codeBlockStore[key2] === "string" || codeBlockStore[key2] instanceof String ? codeBlockStore[key2].includes("\n") : false;
+      const func = isMultiLine && !(type == "actions") ? new Function(`with(this) { ${codeBlockStore[key2]} }`) : new Function(`with(this) { return ${codeBlockStore[key2]}; }`);
+      const result = func.call(results.state);
+      parseKeyResult(results.state[node.id][type], key2, result);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  return results;
+}
+var parseKeyResult = (resultStore, key2, result) => {
+  if (key2 == "layout") {
+    if (result == "row" || result == "column") {
+      resultStore["display"] = "flex";
+      resultStore["flexDirection"] = result;
+      return;
+    }
+    resultStore["display"] = result;
+    return;
+  }
+  resultStore[key2] = result;
+};
+
+// src/react/context/FrameEditorContext.tsx
+var FramesEditorContext = F({
+  root: null,
+  runRoot: () => null,
+  instance: { state: {}, id: null, root: null },
+  saveState: () => null,
+  fastSaveState: () => null,
+  nodes: [],
+  properties: [],
+  dragNode: null,
+  setDragNode: () => null,
+  hoverNode: null,
+  selectableNodeBounds: null,
+  setHoverNode: () => null,
+  selectedNodes: [],
+  selectNodes: () => null,
+  saveProperty: () => false,
+  newProperty: () => false,
+  delProperty: () => null,
+  groupNodes: () => null,
+  ungroupNode: () => null,
+  renameNode: () => null,
+  addNode: () => null,
+  deleteNode: () => null,
+  saveNodes: () => null,
+  moveUp: () => null,
+  moveDown: () => null,
+  moveToRank: () => null,
+  moveNodeFromSchema: () => null
+});
+var FramesEditorProvider = (props2) => {
+  var _a2;
+  const { spaceInfo } = q2(SpaceContext);
+  const editorProps = { editMode: props2.editMode };
+  const {
+    frameSchema,
+    setFrameSchema: setDBSchema,
+    saveFrame,
+    frameSchemas: schemas,
+    tableData,
+    getMDBData
+  } = q2(FramesMDBContext);
+  const [hoverNode, setHoverNode] = h2(null);
+  const [dragNode, setDragNode] = h2(null);
+  const [selectedNodes, setSelectedNodes] = h2([]);
+  const nodes = F2(() => {
+    var _a3;
+    if (!frameSchema)
+      return [];
+    const frames2 = (_a3 = tableData == null ? void 0 : tableData.rows.map(
+      (f4) => f4.id == frameSchema.id ? {
+        ...frameToNode(f4),
+        types: tableData.cols.reduce(
+          (p3, c4) => ({ ...p3, [c4.name]: c4.type }),
+          {}
+        ),
+        propsValue: tableData.cols.reduce(
+          (p3, c4) => ({ ...p3, [c4.name]: c4.value }),
+          {}
+        )
+      } : frameToNode(f4)
+    )) != null ? _a3 : [];
+    const _root = schemaToRoot(frameSchema);
+    if (frames2.some((f4) => f4.id == _root.id)) {
+      return frames2;
+    }
+    return [...frames2, _root];
+  }, [tableData, frameSchema]);
+  const [root, setRoot] = h2(null);
+  const [instance, setInstance] = h2({
+    state: {},
+    id: null,
+    root: null
+  });
+  const activeRunID = _2(null);
+  const saveState = (newState, instance2) => {
+    const { root: _root, id: runID, state } = instance2;
+    if (activeRunID.current != runID)
+      return;
+    executeTreeNode(
+      applyPropsToRoot(_root, props2.props),
+      state,
+      props2.plugin.index.api,
+      saveState,
+      _root,
+      runID,
+      newState
+    ).then(
+      (s5) => setInstance((p3) => {
+        return s5;
+      })
+    );
+  };
+  const selectableNodeBounds = _2({});
+  const fastSaveState = (newState) => {
+    setInstance((p3) => {
+      return { ...p3, state: newState };
+    });
+  };
+  p2(
+    () => () => {
+      activeRunID.current = null;
+    },
+    []
+  );
+  const runRoot = () => {
+    var _a3;
+    if ((frameSchema == null ? void 0 : frameSchema.type) == "frame" || (frameSchema == null ? void 0 : frameSchema.type) == "listitem") {
+      const _newRoot = buildRoot(
+        frameSchema,
+        (_a3 = tableData == null ? void 0 : tableData.cols) != null ? _a3 : [],
+        nodes,
+        props2.plugin,
+        editorProps
+      );
+      setRoot(_newRoot);
+      if (_newRoot) {
+        const newRoot = import_lodash8.default.cloneDeep(_newRoot);
+        const runID = (0, import_lodash8.uniqueId)();
+        activeRunID.current = runID;
+        executeTreeNode(
+          applyPropsToRoot(newRoot, props2.props),
+          {},
+          props2.plugin.index.api,
+          saveState,
+          newRoot,
+          runID
+        ).then((s5) => {
+          setInstance((p3) => {
+            return s5;
+          });
+          activeRunID.current = s5.id;
+        });
+        if (selectedNodes.length == 0) {
+        } else {
+          setSelectedNodes(
+            nodes.filter((f4) => selectedNodes.find((g4) => g4.id == f4.id))
+          );
+        }
+      }
+    }
+  };
+  const refreshFrame = (e4) => {
+    if (e4.detail.type == "frames" && e4.detail.name == spaceInfo.path) {
+      runRoot();
+    }
+  };
+  p2(() => {
+    window.addEventListener(eventTypes.spacesChange, refreshFrame);
+    return () => {
+      window.removeEventListener(eventTypes.spacesChange, refreshFrame);
+    };
+  }, [spaceInfo]);
+  p2(() => {
+    runRoot();
+  }, [frameSchema, nodes, tableData, props2.props]);
+  const moveUp = (node) => {
+    const items = nodes.filter((f4) => f4.parentId == node.parentId).sort((a5, b4) => a5.rank - b4.rank).map((f4, i4) => ({ ...f4, rank: i4 }));
+    const itemIndex = items.findIndex((item2) => item2.id === node.id);
+    if (itemIndex <= 0) {
+      saveNodes(items);
+      return;
+    }
+    const item = items[itemIndex];
+    const swappedItem = items[itemIndex - 1];
+    [item.rank, swappedItem.rank] = [swappedItem.rank, item.rank];
+    saveNodes(items);
+  };
+  const moveDown = (node) => {
+    const items = nodes.filter((f4) => f4.parentId == node.parentId).sort((a5, b4) => a5.rank - b4.rank).map((f4, i4) => ({ ...f4, rank: i4 }));
+    const itemIndex = items.findIndex((item2) => item2.id === node.id);
+    if (itemIndex < 0 || itemIndex >= items.length - 1) {
+      saveNodes(items);
+      return;
+    }
+    const item = items[itemIndex];
+    const swappedItem = items[itemIndex + 1];
+    [item.rank, swappedItem.rank] = [swappedItem.rank, item.rank];
+    saveNodes(items.sort((a5, b4) => a5.rank - b4.rank));
+  };
+  const ungroupNode = (node) => {
+    const children = nodes.filter((f4) => f4.parentId == node.id);
+    const newRank = node.rank;
+    const items = nodes.filter((f4) => f4.parentId == node.parentId).sort((a5, b4) => a5.rank - b4.rank);
+    const newItems = insertMulti(
+      items,
+      newRank,
+      children.map((f4) => ({ ...f4, parentId: node.parentId }))
+    ).filter((f4) => f4.id != node.id).map((f4, i4) => ({ ...f4, rank: i4 }));
+    return saveNodes(newItems, [node]);
+  };
+  const moveToRank = (node, newRank) => {
+    const items = nodes.filter((f4) => f4.parentId == node.parentId).sort((a5, b4) => a5.rank - b4.rank).map((f4, i4) => ({ ...f4, rank: i4 }));
+    const itemIndex = items.findIndex((item2) => item2.id === node.id);
+    if (itemIndex < 0 || newRank < 0 || newRank >= items.length) {
+      saveNodes(items);
+      return;
+    }
+    const item = items[itemIndex];
+    item.rank = newRank;
+    const newItems = arrayMove(items, itemIndex, newRank).map((f4, i4) => ({
+      ...f4,
+      rank: i4
+    }));
+    saveNodes(newItems);
+  };
+  const groupNodes = (treeNodes, style) => {
+    const parentId = treeNodes[0].id == frameSchema.id ? "" : treeNodes[0].parentId;
+    const group = {
+      ...newUniqueNode(groupNode, parentId, nodes, frameSchema.id)
+    };
+    const newNodes = treeNodes.map((f4) => {
+      const node = import_lodash8.default.cloneDeep(f4);
+      node.parentId = group.id;
+      return node;
+    });
+    saveNodes([
+      { ...group, styles: { ...group.styles, ...style } },
+      ...newNodes
+    ]);
+  };
+  const addNode = (treeNode, target) => {
+    const id2 = uniqueNameFromString(
+      treeNode.id,
+      nodes.map((f4) => f4.id)
+    );
+    let parent = target ? target : selectedNodes.length > 0 ? selectedNodes[0] : root.node;
+    let rank = target ? target.rank + 1 : parent.rank;
+    if (!groupableTypes.some((f4) => parent.type == f4)) {
+      parent = findParent(root, parent.id).node;
+    } else {
+      rank = nodes.filter((f4) => f4.parentId == parent.id).length;
+    }
+    const newTreeNode = {
+      ...treeNode,
+      id: id2,
+      schemaId: frameSchema.id,
+      parentId: parent.id
+    };
+    const newNodes = insert(
+      nodes.filter((f4) => f4.parentId == parent.id).sort((a5, b4) => a5.rank - b4.rank),
+      rank,
+      newTreeNode
+    ).map((f4, i4) => ({ ...f4, rank: i4 }));
+    saveNodes(newNodes).then((f4) => selectNodes([newTreeNode]));
+  };
+  const saveNodes = async (treeNodes, deleteNodes) => {
+    var _a3, _b2, _c2;
+    if (!tableData) {
+      return;
+    }
+    const newRows = ((_a3 = tableData == null ? void 0 : tableData.rows) == null ? void 0 : _a3.some((f4) => f4.id == root.id)) ? tableData.rows : [...(_b2 = tableData == null ? void 0 : tableData.rows) != null ? _b2 : [], nodeToFrame(root.node)];
+    const insertRows = treeNodes.filter((f4) => !newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
+    const modRows = treeNodes.filter((f4) => newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
+    const newTable = {
+      ...tableData,
+      cols: (_c2 = tableData.cols) != null ? _c2 : [],
+      rows: [
+        ...newRows.map((f4) => {
+          var _a4;
+          return (_a4 = modRows.find((g4) => g4.id == f4.id)) != null ? _a4 : f4;
+        }),
+        ...insertRows
+      ].filter(
+        (f4) => deleteNodes ? !deleteNodes.some((g4) => g4.id == f4.id) : f4
+      )
+    };
+    await saveFrame(newTable);
+  };
+  const moveNodeFromSchema = async (nodeId, schemaId, newParentId, styles2) => {
+    const oldTable = await getMDBData();
+    if (!oldTable[schemaId])
+      return;
+    const tableNodes = oldTable[schemaId].rows.map(
+      (g4) => frameToNode(g4)
+    );
+    const oldSchema = schemas.find((f4) => f4.id == schemaId);
+    const treeNode = tableNodes.find((f4) => f4.id == nodeId);
+    if (!oldSchema || !treeNode)
+      return;
+    const tree = buildFrameTree(
+      treeNode,
+      tableNodes,
+      props2.plugin,
+      0,
+      false,
+      editorProps
+    )[0];
+    const deleteNodes = flattenToFrameNodes(tree);
+    const newTreeNodes = deleteNodes.map((f4) => ({
+      ...f4,
+      schemaId: frameSchema.id,
+      styles: f4.id == nodeId && styles2 ? {
+        ...f4.styles,
+        ...styles2
+      } : f4.styles,
+      parentId: f4.id == nodeId ? newParentId : f4.parentId
+    }));
+    await saveFrame({
+      ...oldTable[frameSchema.id],
+      rows: oldTable[frameSchema.id].rows.filter(
+        (f4) => !deleteNodes.some((g4) => f4.schemaId == g4.schemaId && f4.id == g4.id)
+      )
+    });
+    await saveFrame({
+      ...tableData,
+      rows: [
+        ...tableData.rows,
+        ...newTreeNodes.map((f4) => nodeToFrame(f4))
+      ]
+    });
+  };
+  const deleteNode = (treeNode) => {
+    const tree = buildFrameTree(
+      treeNode,
+      nodes,
+      props2.plugin,
+      0,
+      false,
+      editorProps
+    )[0];
+    const parent = findParent(root, treeNode.id);
+    const deleteNodes = flattenToFrameNodes(tree);
+    if (parent) {
+      if (parent.children.length == 1 && parent.node.type == "column")
+        deleteNodes.push(parent.node);
+      const grandParent = findParent(root, parent.id);
+      if ((grandParent == null ? void 0 : grandParent.children.length) == 1 && grandParent.node.type == "container") {
+        deleteNodes.push(grandParent.node);
+      }
+    }
+    saveFrame({
+      ...tableData,
+      rows: tableData.rows.filter(
+        (f4) => !deleteNodes.some((g4) => f4.schemaId == g4.schemaId && f4.id == g4.id)
+      )
+    });
+  };
+  const properties2 = (_a2 = tableData == null ? void 0 : tableData.cols) != null ? _a2 : [];
+  const selectNodes = (frames2) => {
+    setSelectedNodes(frames2);
+  };
+  const delProperty = (column) => {
+    const mdbtable = tableData;
+    const newFields = mdbtable.cols.filter(
+      (f4, i4) => f4.name != column.name
+    );
+    const newTable = {
+      ...mdbtable,
+      cols: newFields != null ? newFields : []
+    };
+    saveFrame(newTable);
+  };
+  const newProperty = (col) => {
+    return saveProperty(col);
+  };
+  const renameNode = (node, newName) => {
+  };
+  const saveProperty = (newColumn, oldColumn) => {
+    const column = {
+      ...newColumn,
+      name: sanitizeColumnName(newColumn.name)
+    };
+    const mdbtable = tableData;
+    if (column.name == "") {
+      new import_obsidian25.Notice(i18n_default.notice.noPropertyName);
+      return false;
+    }
+    if (!oldColumn && mdbtable.cols.find(
+      (f4) => f4.name.toLowerCase() == column.name.toLowerCase()
+    ) || oldColumn && oldColumn.name != column.name && mdbtable.cols.find(
+      (f4) => f4.name.toLowerCase() == column.name.toLowerCase()
+    )) {
+      new import_obsidian25.Notice(i18n_default.notice.duplicatePropertyName);
+      return false;
+    }
+    const oldFieldIndex = oldColumn ? mdbtable.cols.findIndex((f4) => f4.name == oldColumn.name) : -1;
+    const newFields = oldFieldIndex == -1 ? [...mdbtable.cols, column] : mdbtable.cols.map((f4, i4) => i4 == oldFieldIndex ? column : f4);
+    const newTable = {
+      ...mdbtable,
+      cols: newFields != null ? newFields : []
+    };
+    saveFrame(newTable);
+    return true;
+  };
+  return /* @__PURE__ */ Cn.createElement(FramesEditorContext.Provider, {
+    value: {
+      root,
+      runRoot,
+      instance,
+      dragNode,
+      fastSaveState,
+      setDragNode,
+      hoverNode,
+      setHoverNode,
+      saveState,
+      nodes,
+      properties: properties2,
+      addNode,
+      deleteNode,
+      selectedNodes,
+      selectNodes,
+      saveProperty,
+      newProperty,
+      selectableNodeBounds,
+      renameNode,
+      delProperty,
+      saveNodes,
+      ungroupNode,
+      moveUp,
+      moveDown,
+      moveToRank,
+      moveNodeFromSchema,
+      groupNodes
+    }
+  }, props2.children);
+};
+
 // src/utils/contexts/mdtable.ts
 var createTable = (object, columns) => {
   const columnNames = columns.map((f4) => f4.name);
@@ -44903,7 +44674,7 @@ var createInlineTable = async (plugin, path) => {
   return "Table";
 };
 
-// src/components/UI/menus/newFrameMenu.tsx
+// src/react/components/UI/Menus/newFrameMenu.tsx
 var showNewFrameMenu = (e4, plugin, space, addNode) => {
   const offset2 = e4.target.getBoundingClientRect();
   const kits = plugin.settings.quickFrames.flatMap((s5) => {
@@ -45042,7 +44813,7 @@ var showNewFrameMenu = (e4, plugin, space, addNode) => {
   );
 };
 
-// src/components/SpaceView/Frames/FrameHoverMenu/FrameHoverMenu.tsx
+// src/react/components/SpaceView/Frames/FrameHoverMenu/FrameHoverMenu.tsx
 var FrameHoverMenu = (props2) => {
   var _a2, _b2;
   const { spaceInfo } = q2(SpaceContext);
@@ -45081,7 +44852,7 @@ var FrameHoverMenu = (props2) => {
   }))));
 };
 
-// src/components/SpaceView/Frames/FrameHoverMenu/HoverMultiMenu.tsx
+// src/react/components/SpaceView/Frames/FrameHoverMenu/HoverMultiMenu.tsx
 var HoverMultiMenu = (props2) => {
   const { selectedNodes, groupNodes, selectNodes, saveNodes } = q2(FramesEditorContext);
   const showSelectNodeMenu = (e4) => {
@@ -45130,7 +44901,41 @@ var HoverMultiMenu = (props2) => {
   }));
 };
 
-// src/components/UI/modals/imageModal.tsx
+// src/react/components/SpaceView/Frames/FrameHoverMenu/HoverPropsMenu.tsx
+var import_obsidian27 = require("obsidian");
+
+// src/react/components/UI/Menus/spaceMenu.tsx
+var showSpacesMenu = (e4, plugin, saveLink, includeDefaults, canAdd) => {
+  const offset2 = e4.target.getBoundingClientRect();
+  const options = [...plugin.index.allSpaces(true)].filter((f4) => includeDefaults || f4.type != "default").map((f4) => ({
+    name: f4.name,
+    value: f4.path,
+    icon: f4.sticker,
+    section: f4.type == "tag" ? "Tag" : f4.type == "folder" ? "Folder" : "",
+    description: f4.type == "tag" ? f4.name : f4.type == "folder" ? f4.path : f4.name
+  }));
+  showSelectMenu(
+    { x: offset2.left, y: offset2.top + 30 },
+    {
+      plugin,
+      multi: false,
+      editable: canAdd,
+      value: [],
+      options,
+      sections: ["Tag", "Folder"],
+      saveOptions: (_12, value) => {
+        saveLink(value[0], !options.some((f4) => f4.value == value[0]));
+      },
+      placeholder: i18n_default.labels.spaceSelectPlaceholder,
+      detail: true,
+      searchable: true,
+      showSections: true,
+      showAll: true
+    }
+  );
+};
+
+// src/react/components/UI/Modals/imageModal.tsx
 var import_obsidian26 = require("obsidian");
 var imageModal = class extends import_obsidian26.FuzzySuggestModal {
   constructor(plugin, app2, selectImage) {
@@ -45188,9 +44993,6 @@ var imageModal = class extends import_obsidian26.FuzzySuggestModal {
   }
 };
 
-// src/components/SpaceView/Frames/FrameHoverMenu/HoverPropsMenu.tsx
-var import_obsidian27 = require("obsidian");
-
 // src/utils/fonts.ts
 function listFonts() {
   const { fonts } = document;
@@ -45208,7 +45010,7 @@ function listFonts() {
   return Array.from(new Set(arr));
 }
 
-// src/components/SpaceView/Frames/FrameHoverMenu/HoverPropsMenu.tsx
+// src/react/components/SpaceView/Frames/FrameHoverMenu/HoverPropsMenu.tsx
 var HoverPropsMenu = (props2) => {
   var _a2;
   const { deleteFrame, duplicateFrame, fields, saveStyleValue } = props2;
@@ -45674,7 +45476,7 @@ var HoverPropsMenu = (props2) => {
   })) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
 };
 
-// src/components/SpaceView/Frames/Placeholders/ColumnPlaceholder.tsx
+// src/react/components/SpaceView/Frames/Placeholders/ColumnPlaceholder.tsx
 var FrameEditorDropZone = (props2) => {
   const { frameSchema } = q2(FramesMDBContext);
   const { setNodeRef } = useDroppable({
@@ -45700,7 +45502,7 @@ var FrameEditorDropZone = (props2) => {
   }));
 };
 
-// src/components/SpaceView/Frames/Placeholders/RowPlaceholder.tsx
+// src/react/components/SpaceView/Frames/Placeholders/RowPlaceholder.tsx
 var RowPlaceholder = (props2) => {
   const { hoverNode, root, deleteNode, nodes } = q2(FramesEditorContext);
   const { setNodeRef } = useDroppable({
@@ -45787,16 +45589,16 @@ var RowPlaceholder = (props2) => {
   }));
 };
 
-// src/components/SpaceView/Editor/FlowView.tsx
+// src/react/components/SpaceView/Editor/FlowView.tsx
 var import_obsidian35 = require("obsidian");
 
 // src/utils/flow/flowEditor.ts
 var import_state5 = require("@codemirror/state");
 
-// src/cm-extensions/flowEditor/atomic.ts
+// src/codemirror/extensions/flowEditor/atomic.ts
 var import_state4 = require("@codemirror/state");
 
-// src/cm-extensions/flowEditor/selectiveEditor.ts
+// src/codemirror/extensions/flowEditor/selectiveEditor.ts
 var import_state3 = require("@codemirror/state");
 var import_view3 = require("@codemirror/view");
 
@@ -45834,7 +45636,7 @@ var {
   __classPrivateFieldIn
 } = import_tslib.default;
 
-// src/cm-extensions/flowEditor/selectiveEditor.ts
+// src/codemirror/extensions/flowEditor/selectiveEditor.ts
 var combinedRangeFacets = (rangeA, rangeB) => {
   const startRange = !(rangeA == null ? void 0 : rangeA[0]) ? rangeB[0] : !(rangeB == null ? void 0 : rangeB[0]) ? rangeA[0] : Math.max(rangeA == null ? void 0 : rangeA[0], rangeB == null ? void 0 : rangeB[0]);
   const endRange = !(rangeA == null ? void 0 : rangeA[1]) ? rangeB[1] : !(rangeB == null ? void 0 : rangeB[1]) ? rangeA[1] : Math.min(rangeA == null ? void 0 : rangeA[1], rangeB == null ? void 0 : rangeB[1]);
@@ -46017,7 +45819,7 @@ var editBlockExtensions = () => [
   frontmatterFacet
 ];
 
-// src/cm-extensions/flowEditor/atomic.ts
+// src/codemirror/extensions/flowEditor/atomic.ts
 var arrowKeyAnnotation = import_state4.Annotation.define();
 var atomicSelect = import_state4.EditorState.transactionFilter.of(
   (tr) => {
@@ -46059,13 +45861,16 @@ var atomicSelect = import_state4.EditorState.transactionFilter.of(
   }
 );
 
-// src/components/SpaceView/Editor/EmbedView/EmbedContextView.tsx
+// src/utils/flow/flowEditor.ts
+var import_obsidian34 = require("obsidian");
+
+// src/react/components/SpaceView/Editor/EmbedView/EmbedContextView.tsx
 var import_obsidian32 = require("obsidian");
 
-// src/components/SpaceView/Frames/ViewNodes/FrameRoot.tsx
+// src/react/components/SpaceView/Frames/ViewNodes/FrameRoot.tsx
 var import_lodash9 = __toESM(require_lodash());
 
-// src/components/SpaceView/Frames/EditorNodes/IconNodeView.tsx
+// src/react/components/SpaceView/Frames/EditorNodes/IconNodeView.tsx
 var IconNodeView = (props2) => {
   var _a2, _b2, _c2;
   const { saveNodes } = q2(FramesEditorContext);
@@ -46091,7 +45896,7 @@ var IconNodeView = (props2) => {
   }, "Select Icon") : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
 };
 
-// src/components/SpaceView/Frames/EditorNodes/ImageNodeView.tsx
+// src/react/components/SpaceView/Frames/EditorNodes/ImageNodeView.tsx
 var ImageNodeView = (props2) => {
   var _a2, _b2;
   const value = props2.instance.state[props2.treeNode.id].props.value;
@@ -46109,7 +45914,7 @@ var ImageNodeView = (props2) => {
   });
 };
 
-// src/components/SpaceView/Frames/EditorNodes/SpaceNodeView.tsx
+// src/react/components/SpaceView/Frames/EditorNodes/SpaceNodeView.tsx
 function parseContent(input) {
   const regex1 = /!\[!\[(.*?)\]\]/;
   const regex2 = /!!\[\[(.*?)\]\]/;
@@ -46147,7 +45952,7 @@ var SpaceNodeView = (props2) => {
   }, "Select Space");
 };
 
-// src/components/SpaceView/Frames/EditorNodes/TextNodeView.tsx
+// src/react/components/SpaceView/Frames/EditorNodes/TextNodeView.tsx
 var TextNodeView = (props2) => {
   var _a2, _b2;
   const fileNameRef = _2(null);
@@ -46208,7 +46013,7 @@ var TextNodeView = (props2) => {
   });
 };
 
-// src/components/SpaceView/Frames/ViewNodes/FrameView.tsx
+// src/react/components/SpaceView/Frames/ViewNodes/FrameView.tsx
 var FrameView = (props2) => {
   var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i;
   const innerComponents = props2.treeNode.node.type == "text" ? /* @__PURE__ */ Cn.createElement(TextNodeView, {
@@ -46273,7 +46078,7 @@ var FrameView = (props2) => {
   );
 };
 
-// src/components/SpaceView/Frames/ViewNodes/FrameRoot.tsx
+// src/react/components/SpaceView/Frames/ViewNodes/FrameRoot.tsx
 var FrameRootView = (props2) => {
   const [instance, setInstance] = h2({
     state: {},
@@ -46337,7 +46142,7 @@ var FrameRootView = (props2) => {
   });
 };
 
-// src/components/SpaceView/Contexts/CardsView/CardsView.tsx
+// src/react/components/SpaceView/Contexts/CardsView/CardsView.tsx
 var import_classnames3 = __toESM(require_classnames());
 
 // src/utils/ui/selection.ts
@@ -46364,7 +46169,7 @@ var selectRange = (currSel, newSel, array) => {
   return array.filter((f4, i4) => i4 < lastIndex && i4 >= newIndex);
 };
 
-// src/components/SpaceView/Contexts/CardsView/CardColumnView.tsx
+// src/react/components/SpaceView/Contexts/CardsView/CardColumnView.tsx
 var import_classnames = __toESM(require_classnames());
 
 // node_modules/@tanstack/table-core/build/lib/index.mjs
@@ -49200,7 +49005,7 @@ function useReactTable(options) {
   return tableRef.current;
 }
 
-// src/components/SpaceView/Contexts/DataTypeView/OptionCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/OptionCell.tsx
 var import_lodash10 = __toESM(require_lodash());
 var OptionCell = (props2) => {
   var _a2, _b2, _c2;
@@ -49355,7 +49160,7 @@ var OptionCellBase = (props2) => {
   }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/ContextCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/ContextCell.tsx
 var ContextCell = (props2) => {
   var _a2, _b2, _c2;
   const stringValueToLink = (strings) => strings.map((f4) => {
@@ -49494,7 +49299,7 @@ var formatDate = (plugin, date, dateFormat) => {
   return dateString;
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/DateCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/DateCell.tsx
 var DateCell = (props2) => {
   const [value, setValue] = h2(props2.initialValue);
   p2(() => {
@@ -49567,7 +49372,7 @@ var DateCell = (props2) => {
   }, date ? formatDate(props2.plugin, date, (format2 == null ? void 0 : format2.length) > 0 ? format2 : null) : value));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/FileCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/FileCell.tsx
 var import_obsidian28 = require("obsidian");
 var FileCell = (props2) => {
   const fileOrCleanPath = (f4) => {
@@ -49707,7 +49512,7 @@ var FileCell = (props2) => {
   }));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/FilePropertyCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/FilePropertyCell.tsx
 var humanFileSize = (bytes, si = false, dp = 1) => {
   const thresh = si ? 1e3 : 1024;
   if (Math.abs(bytes) < thresh) {
@@ -49757,7 +49562,7 @@ var LookUpCell = (props2) => {
   }, initialValue);
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/NumberCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/NumberCell.tsx
 var NumberCell = (props2) => {
   const { initialValue, saveValue } = props2;
   const [value, setValue] = Cn.useState(initialValue);
@@ -49800,7 +49605,7 @@ var NumberCell = (props2) => {
   }, value);
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/TextCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/TextCell.tsx
 var TextCell = (props2) => {
   const { initialValue, saveValue } = props2;
   const [value, setValue] = Cn.useState(initialValue);
@@ -49844,11 +49649,11 @@ var TextCell = (props2) => {
   }, value);
 };
 
-// src/components/SpaceView/Contexts/TableView/TableView.tsx
+// src/react/components/SpaceView/Contexts/TableView/TableView.tsx
 var import_lodash11 = __toESM(require_lodash());
 var import_obsidian29 = require("obsidian");
 
-// src/components/SpaceView/Contexts/DataTypeView/ImageCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/ImageCell.tsx
 var ImageCell = (props2) => {
   const { initialValue, saveValue } = props2;
   const [value, setValue] = Cn.useState(initialValue);
@@ -49892,7 +49697,7 @@ var ImageCell = (props2) => {
   })) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/LinkCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/LinkCell.tsx
 var LinkCell = (props2) => {
   var _a2;
   const initialValue = (props2.multi ? (_a2 = parseMultiString(props2.initialValue)) != null ? _a2 : [] : [props2.initialValue]).filter((f4) => f4);
@@ -49984,7 +49789,7 @@ var LinkCell = (props2) => {
   });
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/ObjectCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/ObjectCell.tsx
 var ObjectEditor = (props2) => {
   const { value, type, saveValue, saveType } = props2;
   const saveKey = (key2, newKey) => {
@@ -50165,7 +49970,7 @@ var ObjectCell = (props2) => {
   })));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/SuperCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/SuperCell.tsx
 var SuperCell = (props2) => {
   const superProperty = F2(() => {
     var _a2;
@@ -50191,7 +49996,7 @@ var SuperCell = (props2) => {
   }));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/TagCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/TagCell.tsx
 var TagCell = (props2) => {
   var _a2;
   const initialValue = ((_a2 = parseMultiString(props2.initialValue)) != null ? _a2 : []).filter(
@@ -50249,7 +50054,7 @@ var TagCell = (props2) => {
   });
 };
 
-// src/components/SpaceView/Contexts/TableView/TableView.tsx
+// src/react/components/SpaceView/Contexts/TableView/TableView.tsx
 var TableView = (props2) => {
   const { spaceInfo, readMode, spaceCache } = q2(SpaceContext);
   const {
@@ -50838,7 +50643,7 @@ var TableView = (props2) => {
   )));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/BooleanCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/BooleanCell.tsx
 var BooleanCell = (props2) => {
   const { initialValue, saveValue } = props2;
   const [value, setValue] = Cn.useState(initialValue == "true");
@@ -50877,7 +50682,7 @@ var BooleanCell = (props2) => {
   }));
 };
 
-// src/components/UI/menus/colorPickerMenu.tsx
+// src/react/components/UI/Menus/colorPickerMenu.tsx
 var import_obsidian30 = require("obsidian");
 
 // src/utils/color.ts
@@ -50893,7 +50698,7 @@ var colors = [
   ["Charcoal", "#4b6584"]
 ];
 
-// src/components/UI/menus/colorPickerMenu.tsx
+// src/react/components/UI/Menus/colorPickerMenu.tsx
 var ColorPicker = (props2) => {
   const [value, setValue] = h2(props2.color);
   return /* @__PURE__ */ Cn.createElement("div", null, colors.map((c4, i4) => /* @__PURE__ */ Cn.createElement("div", {
@@ -50945,7 +50750,7 @@ var showColorPickerMenu = (point, value, setValue) => {
   return menu;
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/ColorCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/ColorCell.tsx
 var ColorCell = (props2) => {
   const showMenu = (e4) => {
     const handleChangeComplete = (color) => {
@@ -50969,7 +50774,7 @@ var ColorCell = (props2) => {
   }));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/IconCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/IconCell.tsx
 var IconCell = (props2) => {
   const value = F2(
     () => {
@@ -51006,7 +50811,7 @@ var IconCell = (props2) => {
   })));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/SpaceCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/SpaceCell.tsx
 var SpaceCell = (props2) => {
   const path = F2(
     () => uriByString(props2.plugin, props2.initialValue),
@@ -51059,7 +50864,7 @@ var SpaceCell = (props2) => {
   })));
 };
 
-// src/components/SpaceView/Contexts/DataTypeView/DataTypeView.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/DataTypeView.tsx
 var DataTypeView = (props2) => {
   const { initialValue, column, row } = props2;
   const saveValue = (value2) => {
@@ -51168,7 +50973,7 @@ var DataTypeView = (props2) => {
   });
 };
 
-// src/components/SpaceView/Contexts/CardsView/CardColumnView.tsx
+// src/react/components/SpaceView/Contexts/CardsView/CardColumnView.tsx
 var CardColumnView = k3(
   ({
     id: id2,
@@ -51243,7 +51048,7 @@ var CardColumnView = k3(
 CardColumnView.displayName = "CardColumnView";
 var CardColumnView_default = CardColumnView;
 
-// src/components/SpaceView/Contexts/CardsView/CardFrame.tsx
+// src/react/components/SpaceView/Contexts/CardsView/CardFrame.tsx
 var CardFrame = (props2) => {
   const mapFramePropsFromDBRow = (predicate, value) => value && predicate.frameProps ? applyFunctionToObject(
     replaceKeysByValue(value, predicate.frameProps),
@@ -51258,10 +51063,10 @@ var CardFrame = (props2) => {
   });
 };
 
-// src/components/SpaceView/Contexts/CardsView/CardView.tsx
+// src/react/components/SpaceView/Contexts/CardsView/CardView.tsx
 var import_classnames2 = __toESM(require_classnames());
 
-// src/components/SpaceView/Contexts/DataTypeView/PreviewCell.tsx
+// src/react/components/SpaceView/Contexts/DataTypeView/PreviewCell.tsx
 var PreviewCell = (props2) => {
   var _a2;
   const [vaultItem, setVaultItem] = h2(null);
@@ -51312,7 +51117,7 @@ var PreviewCell = (props2) => {
   }));
 };
 
-// src/components/SpaceView/Contexts/CardsView/CardView.tsx
+// src/react/components/SpaceView/Contexts/CardsView/CardView.tsx
 var CardView = Cn.memo(
   Cn.forwardRef(
     ({
@@ -51491,7 +51296,7 @@ var CardView = Cn.memo(
   )
 );
 
-// src/components/SpaceView/Contexts/CardsView/CardsView.tsx
+// src/react/components/SpaceView/Contexts/CardsView/CardsView.tsx
 var animateLayoutChanges = (args) => args.isSorting || args.wasDragging ? defaultAnimateLayoutChanges(args) : true;
 function DroppableContainer({
   children,
@@ -51829,7 +51634,7 @@ var CardsView = ({
     strategy
   }, items[Object.keys(items)[parseInt(containerId) * -1]].map(
     (value, index) => {
-      return /* @__PURE__ */ Cn.createElement(SortableItem2, {
+      return /* @__PURE__ */ Cn.createElement(SortableItem, {
         disabled: isSortingContainer,
         key: value,
         id: value,
@@ -51933,7 +51738,7 @@ function getColor(id2) {
   }
   return void 0;
 }
-function SortableItem2({
+function SortableItem({
   disabled,
   id: id2,
   plugin,
@@ -52001,7 +51806,7 @@ function useMountStatus() {
   return isMounted;
 }
 
-// src/components/SpaceView/Contexts/FlowListView/FlowListView.tsx
+// src/react/components/SpaceView/Contexts/FlowListView/FlowListView.tsx
 var import_obsidian31 = require("obsidian");
 var FlowListView = (props2) => {
   const { filteredData: data2 } = q2(ContextEditorContext);
@@ -52020,7 +51825,7 @@ var FlowListView = (props2) => {
   }))));
 };
 
-// src/components/SpaceView/Contexts/ContextListView.tsx
+// src/react/components/SpaceView/Contexts/ContextListView.tsx
 var ContextListView = (props2) => {
   const { predicate } = q2(ContextEditorContext);
   const { dbSchema } = q2(ContextMDBContext);
@@ -52038,7 +51843,7 @@ var ContextListView = (props2) => {
   }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), " ");
 };
 
-// src/components/SpaceView/Editor/EmbedView/EmbedContextViewComponent.tsx
+// src/react/components/SpaceView/Editor/EmbedView/EmbedContextViewComponent.tsx
 var EmbedFrameView = (props2) => {
   var _a2, _b2, _c2;
   const getFileCache = (file) => {
@@ -52112,7 +51917,7 @@ var EmbedViewComponent = (props2) => {
   }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
 };
 
-// src/components/SpaceView/Editor/EmbedView/EmbedContextView.tsx
+// src/react/components/SpaceView/Editor/EmbedView/EmbedContextView.tsx
 var EMBED_CONTEXT_VIEW_TYPE = "make-inline-context";
 var EmbedContextView2 = class extends import_obsidian32.ItemView {
   constructor(leaf, plugin) {
@@ -52173,7 +51978,7 @@ var EmbedContextView2 = class extends import_obsidian32.ItemView {
   }
 };
 
-// src/components/SpaceView/Editor/FlowEditor.tsx
+// src/react/components/SpaceView/Editor/FlowEditor.tsx
 var import_obsidian33 = require("obsidian");
 var popovers = /* @__PURE__ */ new WeakMap();
 var mouseCoords = { x: 0, y: 0 };
@@ -52508,7 +52313,6 @@ var FlowEditor = class extends nosuper(import_obsidian33.HoverPopover) {
 };
 
 // src/utils/flow/flowEditor.ts
-var import_obsidian34 = require("obsidian");
 var parseOutReferences = (ostr) => {
   const str = ostr.split("|")[0];
   const refIndex = str.lastIndexOf("#");
@@ -52853,7 +52657,7 @@ var spawnPortal = (plugin, parentLeaf, initiatingEl, fileName, onShowCallback) =
     );
 };
 
-// src/components/SpaceView/Editor/FlowView.tsx
+// src/react/components/SpaceView/Editor/FlowView.tsx
 var FlowView = k3((props2, ref2) => {
   var _a2;
   A2(ref2, () => ({
@@ -52945,7 +52749,7 @@ var FlowView = k3((props2, ref2) => {
 });
 FlowView.displayName = "FlowView";
 
-// src/components/SpaceView/Frames/EditorNodes/FlowNodeView.tsx
+// src/react/components/SpaceView/Frames/EditorNodes/FlowNodeView.tsx
 function parseContent2(input) {
   const regex1 = /!\[!\[(.*?)\]\]/;
   const regex2 = /!!\[\[(.*?)\]\]/;
@@ -52983,7 +52787,7 @@ var FlowNodeView = (props2) => {
   }, "Select Note");
 };
 
-// src/components/SpaceView/Frames/EditorNodes/FrameNodeView.tsx
+// src/react/components/SpaceView/Frames/EditorNodes/FrameNodeView.tsx
 var defaultFrameStyles = {
   position: "relative"
 };
@@ -53305,10 +53109,10 @@ var SelectableFrameNode = (props2) => {
   }, props2.children);
 };
 
-// src/components/SpaceView/Frames/FrameEditorView.tsx
+// src/react/components/SpaceView/Frames/FrameEditorView.tsx
 var import_obsidian36 = require("obsidian");
 
-// src/components/SpaceView/Frames/Setters/CodeEditorSetter.tsx
+// src/react/components/SpaceView/Frames/Setters/CodeEditorSetter.tsx
 var CodeEditorSetter = (props2) => {
   return /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-setter-code"
@@ -53320,7 +53124,7 @@ var CodeEditorSetter = (props2) => {
   }, props2.value));
 };
 
-// src/components/SpaceView/Frames/Panels/PropsPanel.tsx
+// src/react/components/SpaceView/Frames/Panels/PropsPanel.tsx
 var PropsPanel = (props2) => {
   const { spaceInfo } = q2(SpaceContext);
   const { saveNodes, root, selectedNodes } = q2(FramesEditorContext);
@@ -53428,7 +53232,7 @@ var PropsPanel = (props2) => {
   })));
 };
 
-// src/components/SpaceView/Frames/FrameEditor.tsx
+// src/react/components/SpaceView/Frames/FrameEditor.tsx
 var FrameEditor = (props2) => {
   var _a2;
   const activationConstraint = {
@@ -53506,7 +53310,7 @@ var FrameEditor = (props2) => {
   })))))));
 };
 
-// src/components/SpaceView/Frames/FrameEditorView.tsx
+// src/react/components/SpaceView/Frames/FrameEditorView.tsx
 var FRAME_EDITOR_TYPE = "mk-frame-editor";
 var openFrameEditor = async (plugin, path, schema) => {
   const leaf = plugin.app.workspace.getLeaf(false);
@@ -53600,7 +53404,7 @@ var FrameEditorView = class extends import_obsidian36.ItemView {
   }
 };
 
-// src/components/UI/modals/saveViewModal.ts
+// src/react/components/UI/Modals/saveViewModal.ts
 var import_obsidian37 = require("obsidian");
 var SaveViewModal = class extends import_obsidian37.Modal {
   constructor(schema, saveSchema, action) {
@@ -53659,7 +53463,7 @@ var SaveViewModal = class extends import_obsidian37.Modal {
   }
 };
 
-// src/components/SpaceView/Contexts/ContextBuilder/ContextFrameView.tsx
+// src/react/components/SpaceView/Contexts/ContextBuilder/ContextFrameView.tsx
 var PLACEHOLDER_ID2 = "_placeholder";
 var ContextFrameView = (props2) => {
   const { predicate, savePredicate, cols, data: data2 } = q2(ContextEditorContext);
@@ -54010,8 +53814,260 @@ var FrameListView = (props2) => {
   ));
 };
 
-// src/components/UI/modals/contextEditorModal.tsx
-var import_obsidian38 = require("obsidian");
+// src/react/components/SpaceView/Contexts/ContextBuilder/SpacePropertyEditor.tsx
+var SpacePropertyEditor = (props2) => {
+  const [activeId, setActiveId] = h2("");
+  const items = props2.columns.map((f4) => ({ ...f4, table: "", id: f4.name }));
+  const [openNodes, setOpenNodes] = h2([]);
+  const [overId, setOverId] = h2("");
+  const contextProperties = F2(() => {
+    return props2.contexts.reduce((p3, c4) => {
+      var _a2, _b2;
+      return {
+        ...p3,
+        [c4]: {
+          space: props2.plugin.index.spacesIndex.get(tagSpacePathFromTag(c4)),
+          cols: (_b2 = (_a2 = props2.plugin.index.contextsIndex.get(tagSpacePathFromTag(c4))) == null ? void 0 : _a2.cols) != null ? _b2 : [].map((f4) => ({ ...f4, table: c4 }))
+        }
+      };
+    }, {});
+  }, [props2.contexts]);
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10
+      }
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5
+      }
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates
+    })
+  );
+  const resetState = () => {
+    setActiveId(null);
+    setOverId(null);
+  };
+  const saveNewField = (source, field) => {
+    props2.saveColumn({ ...field, table: "" });
+  };
+  const newProperty = (e4) => {
+    var _a2;
+    const offset2 = e4.target.getBoundingClientRect();
+    showNewPropertyMenu(
+      props2.plugin,
+      { x: offset2.left, y: offset2.top + 30 },
+      (_a2 = props2.contexts) != null ? _a2 : [],
+      [],
+      saveNewField,
+      "files",
+      null,
+      false
+    );
+  };
+  const newContexts = (e4) => {
+    const offset2 = e4.target.getBoundingClientRect();
+    const f4 = loadTags(props2.plugin);
+    const addTag = async (tag) => {
+      const newTag = tagToTagPath(tag);
+      props2.saveContexts([
+        ...props2.contexts.filter((f5) => f5 != newTag),
+        newTag
+      ]);
+    };
+    showSelectMenu(
+      { x: offset2.left, y: offset2.top + 30 },
+      {
+        plugin: props2.plugin,
+        multi: false,
+        editable: true,
+        value: [],
+        options: f4.map((m5) => ({ name: m5, value: m5 })),
+        saveOptions: (_12, value) => addTag(value[0]),
+        placeholder: i18n_default.labels.contextItemSelectPlaceholder,
+        searchable: true,
+        showAll: true
+      }
+    );
+  };
+  return /* @__PURE__ */ Cn.createElement(DndContext, {
+    sensors,
+    collisionDetection: closestCenter,
+    measuring: {
+      droppable: {
+        strategy: MeasuringStrategy.Always
+      }
+    },
+    onDragStart: ({ active }) => {
+      setActiveId(active.id);
+    },
+    onDragOver: ({ active, over }) => {
+      const overId2 = over == null ? void 0 : over.id;
+      if (overId2)
+        setOverId(overId2);
+    },
+    onDragEnd: ({ active, over }) => {
+      const overId2 = over == null ? void 0 : over.id;
+      if (!overId2) {
+        resetState();
+        return;
+      }
+      props2.setColumnOrder(
+        arrayMove(
+          props2.colsOrder,
+          props2.colsOrder.findIndex((f4) => f4 == activeId),
+          props2.colsOrder.findIndex((f4) => f4 == overId2)
+        )
+      );
+      resetState();
+    },
+    onDragCancel: resetState
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-property-editor"
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-property-editor-context"
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-property-editor-context-title"
+  }, /* @__PURE__ */ Cn.createElement("span", null, "Define Properties for your Space Items"), /* @__PURE__ */ Cn.createElement("button", {
+    onClick: (e4) => newProperty(e4)
+  }, "Add Property")), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-property-editor-context-list"
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-property-editor-list"
+  }, /* @__PURE__ */ Cn.createElement(SortableContext, {
+    items,
+    strategy: verticalListSortingStrategy
+  }, items.map((value, index) => {
+    return /* @__PURE__ */ Cn.createElement(SortableItem2, {
+      key: index,
+      id: value.id,
+      field: value,
+      plugin: props2.plugin,
+      saveColumn: (field) => props2.saveColumn(field, value),
+      cols: items,
+      colsHidden: props2.colsHidden,
+      hideColumn: props2.hideColumn,
+      delColumn: props2.delColumn
+    });
+  }))))), props2.contexts.map((f4, i4) => {
+    var _a2;
+    return /* @__PURE__ */ Cn.createElement("div", {
+      key: i4,
+      className: "mk-property-editor-context"
+    }, /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-property-editor-context-title"
+    }, f4, /* @__PURE__ */ Cn.createElement("button", {
+      className: `mk-collapse mk-inline-button mk-icon-xsmall ${!openNodes.some((g4) => g4 == f4) ? "mk-collapsed" : ""}`,
+      dangerouslySetInnerHTML: {
+        __html: stickerFromString("ui//mk-ui-collapse", props2.plugin)
+      },
+      onClick: () => setOpenNodes(
+        (p3) => p3.some((g4) => g4 == f4) ? p3.filter((o3) => o3 != f4) : [...p3, f4]
+      )
+    }), /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("div", null, /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-icon-small",
+      dangerouslySetInnerHTML: {
+        __html: uiIconSet["mk-ui-close"]
+      },
+      onClick: (e4) => {
+        props2.saveContexts(props2.contexts.filter((g4) => g4 != f4));
+      }
+    }))), openNodes.some((g4) => g4 == f4) ? /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-property-editor-list"
+    }, (_a2 = contextProperties[f4]) == null ? void 0 : _a2.cols.filter((f5) => f5.primary != "true").map((g4, h5) => /* @__PURE__ */ Cn.createElement(SortableItem2, {
+      key: h5,
+      id: g4.name + "#" + f4,
+      field: g4,
+      plugin: props2.plugin,
+      saveColumn: (field) => props2.saveColumn(field, g4),
+      cols: contextProperties[f4].cols,
+      colsHidden: props2.colsHidden,
+      hideColumn: props2.hideColumn,
+      delColumn: props2.delColumn
+    }))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    onClick: (e4) => newContexts(e4),
+    className: "mk-property-editor-new"
+  }, "+ Add Context", /* @__PURE__ */ Cn.createElement("span", null, "Contexts lets you connect properties from your tags"))), z3(
+    /* @__PURE__ */ Cn.createElement(DragOverlay, {
+      adjustScale: false
+    }, activeId ? /* @__PURE__ */ Cn.createElement(SortableItem2, {
+      id: items.find((f4) => f4.id == activeId).id,
+      field: items.find((f4) => f4.id == activeId),
+      plugin: props2.plugin,
+      cols: items,
+      colsHidden: props2.colsHidden
+    }) : null),
+    document.body
+  ));
+};
+function SortableItem2(props2) {
+  var _a2, _b2;
+  const { spaceInfo } = q2(SpaceContext);
+  const { field } = props2;
+  const saveField = (field2, oldField) => {
+    if (field2.name.length > 0) {
+      if (field2.name != oldField.name || field2.type != oldField.type || field2.value != oldField.value || field2.attrs != oldField.attrs) {
+        const saveResult = props2.saveColumn(field2, oldField);
+      }
+    }
+  };
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: props2.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  };
+  const icon = ((_a2 = props2.field.attrs) == null ? void 0 : _a2.length) > 0 ? props2.field.attrs : (_b2 = fieldTypeForType(props2.field.type)) == null ? void 0 : _b2.icon;
+  const selectedType = (_12, value) => {
+    const newField = {
+      ...props2.field,
+      type: value[0]
+    };
+    props2.saveColumn(newField);
+  };
+  return /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-property-editor-property",
+    ref: setNodeRef,
+    style,
+    ...attributes,
+    ...listeners
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-file-context-field-icon",
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString(icon, props2.plugin)
+    },
+    onClick: (e4) => {
+      selectPropertyTypeMenu(e4, props2.plugin, selectedType);
+    }
+  }), props2.field.name, /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-icon-small",
+    dangerouslySetInnerHTML: {
+      __html: uiIconSet["mk-ui-options"]
+    },
+    onClick: (e4) => {
+      const offset2 = e4.target.getBoundingClientRect();
+      showPropertyMenu({
+        plugin: props2.plugin,
+        position: { x: offset2.left, y: offset2.top + 30 },
+        editable: true,
+        options: [],
+        field,
+        fields: props2.cols,
+        contextPath: spaceInfo == null ? void 0 : spaceInfo.path,
+        saveField: (newField) => saveField(newField, field),
+        hide: props2.hideColumn,
+        deleteColumn: props2.delColumn,
+        hidden: props2.colsHidden.includes(field.name + field.table)
+      });
+    }
+  }));
+}
+
+// src/react/components/UI/Modals/contextEditorModal.tsx
 var ContextEditorModal = class extends import_obsidian38.Modal {
   constructor(plugin, space, db, view, type) {
     super(plugin.app);
@@ -54085,10 +54141,7 @@ var SpacePropertyEditorContext = (props2) => {
   });
 };
 
-// src/components/SpaceView/Contexts/FilterBar/FilterBar.tsx
-var import_obsidian39 = require("obsidian");
-
-// src/components/SpaceView/Contexts/FilterBar/SearchBar.tsx
+// src/react/components/SpaceView/Contexts/FilterBar/SearchBar.tsx
 var SearchBar = (props2) => {
   const clearSearch = () => {
     props2.setSearchString("");
@@ -54107,7 +54160,7 @@ var SearchBar = (props2) => {
   })));
 };
 
-// src/components/SpaceView/Contexts/FilterBar/FilterBar.tsx
+// src/react/components/SpaceView/Contexts/FilterBar/FilterBar.tsx
 var FilterBar = (props2) => {
   const ctxRef = _2(null);
   const { spaceInfo, spaceCache } = q2(SpaceContext);
@@ -54741,7 +54794,7 @@ var FilterValueSpan = (props2) => {
   }, filter.value);
 };
 
-// src/components/Navigator/SpaceQuery.tsx
+// src/react/components/Navigator/SpaceQuery.tsx
 var SpaceQuery = (props2) => {
   const { filters, setFilters } = props2;
   const selectFilterValue = (e4, filter, i4, k5) => {
@@ -55165,9 +55218,17 @@ var DefFilterGroup = (props2) => {
   }));
 };
 
-// src/components/Navigator/SpaceEditor.tsx
+// src/react/components/Navigator/SpaceEditor.tsx
 var SpaceEditor = (props2) => {
-  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k, _l, _m, _n2;
+  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j;
+  const onKeyDown = (e4) => {
+    e4.stopPropagation();
+    if (e4.key == "Enter") {
+      saveSpace();
+      e4.preventDefault();
+    }
+  };
+  const ref2 = _2(null);
   const [metadata, setMetadata] = h2((_a2 = props2.metadata) != null ? _a2 : {});
   const [columns, setColumns] = h2([]);
   const [predicate, setPredicate] = h2(defaultPredicate);
@@ -55191,7 +55252,7 @@ var SpaceEditor = (props2) => {
   const saveSpace = async () => {
     var _a3, _b3;
     const newName = name.replace(/\//g, "");
-    const parentPath = (_b3 = (_a3 = props2.space) == null ? void 0 : _a3.parent) != null ? _b3 : props2.parent.path;
+    const parentPath = ((_b3 = (_a3 = props2.space) == null ? void 0 : _a3.parent) != null ? _b3 : props2.parent.type == "folder") ? props2.parent.path : "/";
     const newPath = !parentPath || parentPath == "/" ? newName : parentPath + "/" + newName;
     if (newName.length == 0) {
       new import_obsidian41.Notice(i18n_default.notice.newSpaceName);
@@ -55223,8 +55284,13 @@ var SpaceEditor = (props2) => {
       if (!props2.dontOpen)
         openSpace(newPath, props2.plugin, false);
     }
+    props2.close();
   };
-  const folderContents = ((_d2 = props2.space) == null ? void 0 : _d2.type) == "folder" ? (_f = (_e2 = getAbstractFileAtPath(props2.plugin, props2.space.path)) == null ? void 0 : _e2.children) != null ? _f : [] : [];
+  p2(() => {
+    if (ref2.current && name.length == 0) {
+      ref2.current.focus();
+    }
+  }, []);
   return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-space-editor"
   }, /* @__PURE__ */ Cn.createElement("div", {
@@ -55233,7 +55299,7 @@ var SpaceEditor = (props2) => {
     className: `mk-file-icon`
   }, /* @__PURE__ */ Cn.createElement("button", {
     "aria-label": i18n_default.buttons.changeIcon,
-    style: ((_g = metadata.color) == null ? void 0 : _g.length) > 0 ? {
+    style: ((_d2 = metadata.color) == null ? void 0 : _d2.length) > 0 ? {
       "--label-color": `${metadata.color}`,
       "--icon-color": `#ffffff`
     } : {
@@ -55244,8 +55310,8 @@ var SpaceEditor = (props2) => {
     } : {
       __html: stickerFromString(
         iconForSpaceType(
-          (_i = (_h = props2.space) == null ? void 0 : _h.type) != null ? _i : "folder",
-          (_j = props2.space) == null ? void 0 : _j.path,
+          (_f = (_e2 = props2.space) == null ? void 0 : _e2.type) != null ? _f : "folder",
+          (_g = props2.space) == null ? void 0 : _g.path,
           true
         ),
         props2.plugin
@@ -55262,15 +55328,16 @@ var SpaceEditor = (props2) => {
   })), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-space-editor-input"
   }, /* @__PURE__ */ Cn.createElement("input", {
-    autoFocus: true,
+    ref: ref2,
     placeholder: "Space Name",
     value: name,
+    onKeyDown: (e4) => onKeyDown(e4),
     onChange: (e4) => setName(e4.target.value)
   }))), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-space-editor-section"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-space-editor-title"
-  }, "Items", /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("button", {
+  }, "Pinned Items", /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("button", {
     "aria-label": "Add Smart Search",
     onClick: (e4) => {
       var _a3;
@@ -55301,15 +55368,9 @@ var SpaceEditor = (props2) => {
         });
       }
     )
-  }, "Add Item")), ((_k = props2.space) == null ? void 0 : _k.type) == "tag" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null) : /* @__PURE__ */ Cn.createElement("div", {
+  }, "Add Item")), ((_h = props2.space) == null ? void 0 : _h.type) == "tag" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null) : /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-space-editor-contents"
-  }, folderContents.map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
-    key: i4,
-    className: "mk-space-editor-link"
-  }, /* @__PURE__ */ Cn.createElement(FileStickerContainer, {
-    plugin: props2.plugin,
-    path: uriByString(props2.plugin, f4.path)
-  }), f4.name, /* @__PURE__ */ Cn.createElement("span", null))), linkCaches.map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
+  }, linkCaches.map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
     key: i4,
     className: "mk-space-editor-link"
   }, /* @__PURE__ */ Cn.createElement(FileSticker, {
@@ -55329,59 +55390,24 @@ var SpaceEditor = (props2) => {
         ]
       });
     }
-  }))), ((_l = metadata == null ? void 0 : metadata.filters) == null ? void 0 : _l.length) > 0 && /* @__PURE__ */ Cn.createElement(SpaceQuery, {
+  }))), ((_i = metadata == null ? void 0 : metadata.filters) == null ? void 0 : _i.length) > 0 && /* @__PURE__ */ Cn.createElement(SpaceQuery, {
     plugin: props2.plugin,
-    filters: (_m = metadata.filters) != null ? _m : [],
+    filters: (_j = metadata.filters) != null ? _j : [],
     setFilters: saveQuery
-  }))), !props2.space && /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-space-editor-section"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-space-editor-title"
-  }, "Properties"), /* @__PURE__ */ Cn.createElement(SpacePropertyEditor, {
-    plugin: props2.plugin,
-    colsOrder: predicate.colsOrder,
-    setColumnOrder: function(cols) {
-      setPredicate({ ...predicate, colsOrder: cols });
-    },
-    colsHidden: predicate.colsHidden,
-    columns,
-    contexts: (_n2 = metadata.contexts) != null ? _n2 : [],
-    saveContexts: function(contexts) {
-      setMetadata({ ...metadata, contexts });
-    },
-    hideColumn: function(col, hidden) {
-      setPredicate({
-        ...predicate,
-        colsHidden: hidden ? [
-          ...predicate.colsHidden.filter((s5) => s5 != col.name),
-          col.name
-        ] : predicate.colsHidden.filter((s5) => s5 != col.name)
-      });
-    },
-    delColumn: function(column) {
-      setColumns(columns.filter((f4, i4) => f4.name != column.name));
-    },
-    saveColumn: function(column, oldColumn) {
-      const oldFieldIndex = oldColumn ? columns.findIndex((f4) => f4.name == oldColumn.name) : -1;
-      const newFields = oldFieldIndex == -1 ? [...columns, column] : columns.map((f4, i4) => i4 == oldFieldIndex ? column : f4);
-      setColumns(newFields);
-    }
-  }))), /* @__PURE__ */ Cn.createElement("div", {
+  })))), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-space-editor-controls"
   }, /* @__PURE__ */ Cn.createElement("button", {
     className: "mod-cta",
     onClick: () => {
       saveSpace();
-      props2.close();
     }
-  }, "Save"), /* @__PURE__ */ Cn.createElement("button", {
+  }, i18n_default.buttons.saveSpace), /* @__PURE__ */ Cn.createElement("button", {
     onClick: () => props2.close()
-  }, "Cancel")));
+  }, i18n_default.buttons.cancel)));
 };
 var SpaceEditor_default = SpaceEditor;
 
-// src/components/UI/modals/editSpaceModal.tsx
-var import_obsidian42 = require("obsidian");
+// src/react/components/UI/Modals/editSpaceModal.tsx
 var EditSpaceModal = class extends import_obsidian42.Modal {
   constructor(plugin, space, action, metadata, parent, dontOpen) {
     super(plugin.app);
@@ -55422,10 +55448,48 @@ var EditSpaceModal = class extends import_obsidian42.Modal {
   }
 };
 
-// src/components/UI/menus/fileMenu.tsx
+// src/react/components/UI/Modals/deleteModal.tsx
 var import_obsidian43 = require("obsidian");
+var DeleteModal = class extends import_obsidian43.Modal {
+  constructor(plugin, confirmAction, title, message) {
+    super(plugin.app);
+    this.confirmAction = confirmAction;
+    this.title = title;
+    this.message = message;
+  }
+  onOpen() {
+    const { contentEl } = this;
+    const headerEl = contentEl.createEl("div", { text: this.title });
+    headerEl.addClass("modal-title");
+    const messageEl = contentEl.createEl("div", { text: this.message });
+    messageEl.addClass("modal-subtitle");
+    messageEl.style.cssText = "width: 100%;  margin-bottom: 10px;";
+    const changeButton = contentEl.createEl("button", {
+      text: i18n_default.buttons.delete
+    });
+    changeButton.addClass("mod-warning");
+    const cancelButton = contentEl.createEl("button", {
+      text: i18n_default.buttons.cancel
+    });
+    cancelButton.style.cssText = "float: right;";
+    cancelButton.addEventListener("click", () => {
+      this.close();
+    });
+    const onClickAction = async () => {
+      this.confirmAction();
+      this.close();
+    };
+    changeButton.addEventListener("click", onClickAction);
+  }
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+};
+
+// src/react/components/UI/Menus/fileMenu.tsx
 var showSpaceAddMenu = (plugin, e4, space, dontOpen) => {
-  const fileMenu = new import_obsidian43.Menu();
+  const fileMenu = new import_obsidian44.Menu();
   fileMenu.addItem((menuItem) => {
     menuItem.setIcon("edit");
     menuItem.setTitle(i18n_default.buttons.createNote);
@@ -55455,6 +55519,15 @@ var showSpaceAddMenu = (plugin, e4, space, dontOpen) => {
       vaultChangeModal.open();
     });
   });
+  fileMenu.addItem((menuItem) => {
+    menuItem.setIcon("pin");
+    menuItem.setTitle(i18n_default.buttons.addIntoSpace);
+    menuItem.onClick((ev) => {
+      showLinkMenu(e4, plugin, (link) => {
+        insertSpaceItemAtIndex(plugin, space, link);
+      });
+    });
+  });
   if (isMouseEvent(e4)) {
     fileMenu.showAtPosition({ x: e4.pageX, y: e4.pageY });
   } else {
@@ -55468,259 +55541,264 @@ var showSpaceAddMenu = (plugin, e4, space, dontOpen) => {
 var triggerSpaceMenu = (plugin, space, e4, activeFile, parentSpace) => {
   if (!space)
     return;
-  const spaceMenu = new import_obsidian43.Menu();
-  spaceMenu.addItem((menuItem) => {
-    menuItem.setIcon("arrow-up-right");
-    menuItem.setTitle("Open Space");
-    menuItem.onClick((ev) => {
-      openSpace(space.path, plugin, false);
+  const spaceMenu = new import_obsidian44.Menu();
+  if (space.type != "default") {
+    spaceMenu.addItem((menuItem) => {
+      menuItem.setIcon("arrow-up-right");
+      menuItem.setTitle(i18n_default.menu.openSpace);
+      menuItem.onClick((ev) => {
+        openSpace(space.path, plugin, false);
+      });
     });
-  });
-  spaceMenu.addItem((menuItem) => {
-    menuItem.setIcon("arrow-up-right");
-    menuItem.setTitle("Reveal in Finder");
-    menuItem.onClick((ev) => {
-      const file = getAbstractFileAtPath(
-        plugin,
-        space.type == "folder" ? space.path : `${plugin.settings.spacesFolder}/${space.name}`
-      );
-      if (file instanceof import_obsidian43.TFolder) {
-        const leaf = plugin.app.workspace.getLeaf(false);
-        app.workspace.setActiveLeaf(leaf, { focus: true });
-        leaf.openFile(file, { eState: { focus: true } });
-      }
-    });
-  });
-  spaceMenu.addSeparator();
-  spaceMenu.addItem((menuItem) => {
-    menuItem.setIcon("edit");
-    menuItem.setTitle(i18n_default.buttons.createNote);
-    menuItem.onClick((ev) => {
-      newFileInSpace(plugin, space, activeFile);
-    });
-  });
-  spaceMenu.addItem((menuItem) => {
-    menuItem.setIcon("layout-dashboard");
-    menuItem.setTitle(i18n_default.buttons.createCanvas);
-    menuItem.onClick((ev) => {
-      newFileInSpace(plugin, space, activeFile, true);
-    });
-  });
-  spaceMenu.addItem((menuItem) => {
-    menuItem.setIcon("folder-plus");
-    menuItem.setTitle(i18n_default.buttons.createFolder);
-    menuItem.onClick((ev) => {
-      const vaultChangeModal = new EditSpaceModal(
-        plugin,
-        null,
-        "create",
-        null,
-        space
-      );
-      vaultChangeModal.open();
-    });
-  });
-  spaceMenu.addSeparator();
-  spaceMenu.addItem((menuItem) => {
-    menuItem.setIcon("plus-square");
-    menuItem.setTitle("Add to Space");
-    menuItem.onClick((ev) => {
-      showSpacesMenu(e4, plugin, (link) => {
-        movePathsToSpace(
+    spaceMenu.addSeparator();
+    spaceMenu.addItem((menuItem) => {
+      menuItem.setIcon("arrow-up-right");
+      menuItem.setTitle(i18n_default.menu.revealInDefault);
+      menuItem.onClick((ev) => {
+        const file = getAbstractFileAtPath(
           plugin,
-          [space.path],
-          plugin.index.spacesIndex.get(link),
-          -1,
-          "link"
+          space.type == "folder" ? space.path : `${plugin.settings.spacesFolder}/${space.name}`
+        );
+        if (file instanceof import_obsidian44.TFolder) {
+          const leaf = plugin.app.workspace.getLeaf(false);
+          app.workspace.setActiveLeaf(leaf, { focus: true });
+          leaf.openFile(file, { eState: { focus: true } });
+        }
+      });
+    });
+    spaceMenu.addSeparator();
+    spaceMenu.addItem((menuItem) => {
+      menuItem.setIcon("pin");
+      menuItem.setTitle(i18n_default.buttons.addToSpace);
+      menuItem.onClick((ev) => {
+        showSpacesMenu(
+          e4,
+          plugin,
+          (link) => {
+            movePathsToSpace(
+              plugin,
+              [space.path],
+              plugin.index.spacesIndex.get(link),
+              -1,
+              "link"
+            );
+          },
+          true
         );
       });
     });
-  });
-  spaceMenu.addItem((menuItem) => {
-    const pinned = plugin.settings.waypoints.some((f4) => f4 == space.path);
-    menuItem.setTitle(pinned ? i18n_default.menu.unpinSpace : i18n_default.menu.pinSpace);
-    menuItem.setIcon("pin");
-    menuItem.onClick((ev) => {
-      toggleSpacePin(plugin, space.path, "pinned", pinned);
+    spaceMenu.addSeparator();
+    spaceMenu.addItem((menuItem) => {
+      menuItem.setIcon("edit");
+      menuItem.setTitle(i18n_default.buttons.createNote);
+      menuItem.onClick((ev) => {
+        newFileInSpace(plugin, space, activeFile);
+      });
     });
-  });
+    spaceMenu.addItem((menuItem) => {
+      menuItem.setIcon("layout-dashboard");
+      menuItem.setTitle(i18n_default.buttons.createCanvas);
+      menuItem.onClick((ev) => {
+        newFileInSpace(plugin, space, activeFile, true);
+      });
+    });
+    spaceMenu.addItem((menuItem) => {
+      menuItem.setIcon("folder-plus");
+      menuItem.setTitle(i18n_default.buttons.createFolder);
+      menuItem.onClick((ev) => {
+        const vaultChangeModal = new EditSpaceModal(
+          plugin,
+          null,
+          "create",
+          null,
+          space
+        );
+        vaultChangeModal.open();
+      });
+    });
+    spaceMenu.addSeparator();
+    if (plugin.settings.spacesStickers) {
+      spaceMenu.addSeparator();
+      spaceMenu.addItem((menuItem) => {
+        menuItem.setIcon("palette");
+        disclosureMenuItem(
+          plugin,
+          menuItem,
+          false,
+          false,
+          i18n_default.menu.changeColor,
+          "",
+          [
+            { name: "None", value: "" },
+            ...colors.map((f4) => ({ name: f4[0], value: f4[1] }))
+          ],
+          (_12, values) => {
+            saveSpaceColor(plugin, space.path, values[0]);
+          }
+        );
+      });
+      spaceMenu.addItem((menuItem) => {
+        menuItem.setTitle(i18n_default.buttons.changeIcon);
+        menuItem.setIcon("lucide-sticker");
+        menuItem.onClick((ev) => {
+          const vaultChangeModal = new stickerModal(
+            plugin.app,
+            plugin,
+            (emoji) => saveSpaceSticker(plugin, space.path, emoji)
+          );
+          vaultChangeModal.open();
+        });
+      });
+      spaceMenu.addItem((menuItem) => {
+        menuItem.setTitle(i18n_default.buttons.removeIcon);
+        menuItem.setIcon("lucide-file-minus");
+        menuItem.onClick((ev) => {
+          removeSpaceIcon(plugin, space.path);
+        });
+      });
+    }
+    spaceMenu.addSeparator();
+    spaceMenu.addItem((menuItem) => {
+      menuItem.setTitle(i18n_default.menu.sortBy);
+      menuItem.setIcon("sort-desc");
+      menuItem.onClick((ev) => {
+        const sortMenu = new import_obsidian44.Menu();
+        sortMenu.addItem((menuItem2) => {
+          menuItem2.setIcon("arrow-up-down");
+          menuItem2.setTitle(i18n_default.menu.groupSpaces);
+          menuItem2.setChecked(space.metadata.sort.group == true);
+          menuItem2.onClick((ev2) => {
+            updateSpaceSort(plugin, space.path, {
+              field: space.metadata.sort.field,
+              asc: space.metadata.sort.asc,
+              group: !space.metadata.sort.group
+            });
+          });
+        });
+        sortMenu.addSeparator();
+        sortMenu.addItem((menuItem2) => {
+          const sortOption = {
+            field: "rank",
+            asc: true,
+            group: space.metadata.sort.group
+          };
+          menuItem2.setIcon("arrow-up-down");
+          menuItem2.setTitle(i18n_default.menu.customSort);
+          menuItem2.setChecked(
+            space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
+          );
+          menuItem2.onClick((ev2) => {
+            updateSpaceSort(plugin, space.path, sortOption);
+          });
+        });
+        sortMenu.addSeparator();
+        sortMenu.addItem((menuItem2) => {
+          const sortOption = {
+            field: "name",
+            asc: true,
+            group: space.metadata.sort.group
+          };
+          menuItem2.setTitle(i18n_default.menu.fileNameSortAlphaAsc);
+          menuItem2.setChecked(
+            space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
+          );
+          menuItem2.onClick((ev2) => {
+            updateSpaceSort(plugin, space.path, sortOption);
+          });
+        });
+        sortMenu.addItem((menuItem2) => {
+          const sortOption = {
+            field: "name",
+            asc: false,
+            group: space.metadata.sort.group
+          };
+          menuItem2.setTitle(i18n_default.menu.fileNameSortAlphaDesc);
+          menuItem2.setChecked(
+            space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
+          );
+          menuItem2.onClick((ev2) => {
+            updateSpaceSort(plugin, space.path, sortOption);
+          });
+        });
+        sortMenu.addSeparator();
+        sortMenu.addItem((menuItem2) => {
+          const sortOption = {
+            field: "ctime",
+            asc: false,
+            group: space.metadata.sort.group
+          };
+          menuItem2.setTitle(i18n_default.menu.createdTimeSortAsc);
+          menuItem2.setChecked(
+            space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
+          );
+          menuItem2.onClick((ev2) => {
+            updateSpaceSort(plugin, space.path, sortOption);
+          });
+        });
+        sortMenu.addItem((menuItem2) => {
+          const sortOption = {
+            field: "ctime",
+            asc: true,
+            group: space.metadata.sort.group
+          };
+          menuItem2.setTitle(i18n_default.menu.createdTimeSortDesc);
+          menuItem2.setChecked(
+            space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
+          );
+          menuItem2.onClick((ev2) => {
+            updateSpaceSort(plugin, space.path, sortOption);
+          });
+        });
+        const offset2 = e4.target.getBoundingClientRect();
+        if (isMouseEvent(e4)) {
+          sortMenu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
+        } else {
+          sortMenu.showAtPosition({
+            x: e4.nativeEvent.locationX,
+            y: e4.nativeEvent.locationY
+          });
+        }
+      });
+    });
+    spaceMenu.addSeparator();
+    if (space.type == "folder")
+      spaceMenu.addItem((menuItem) => {
+        menuItem.setTitle(i18n_default.menu.edit);
+        menuItem.setIcon("pencil");
+        menuItem.onClick((ev) => {
+          const vaultChangeModal = new EditSpaceModal(
+            plugin,
+            space,
+            "rename",
+            space.metadata
+          );
+          vaultChangeModal.open();
+        });
+      });
+  }
   if (parentSpace && parentSpace != space.parent) {
     const spaceCache = plugin.index.spacesIndex.get(parentSpace);
     if (spaceCache) {
       spaceMenu.addItem((menuItem) => {
-        menuItem.setIcon("minus-square");
+        menuItem.setIcon("pin-off");
         menuItem.setTitle(i18n_default.menu.removeFromSpace);
         menuItem.onClick((ev) => {
           removePathsFromSpace(plugin, spaceCache, [space.path]);
         });
       });
     }
-  }
-  spaceMenu.addSeparator();
-  if (plugin.settings.spacesStickers) {
-    spaceMenu.addSeparator();
-    spaceMenu.addItem((menuItem) => {
-      menuItem.setIcon("palette");
-      disclosureMenuItem(
-        plugin,
-        menuItem,
-        false,
-        false,
-        i18n_default.menu.changeColor,
-        "",
-        [
-          { name: "None", value: "" },
-          ...colors.map((f4) => ({ name: f4[0], value: f4[1] }))
-        ],
-        (_12, values) => {
-          saveSpaceColor(plugin, space.path, values[0]);
-        }
-      );
-    });
-    spaceMenu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.buttons.changeIcon);
-      menuItem.setIcon("lucide-sticker");
-      menuItem.onClick((ev) => {
-        const vaultChangeModal = new stickerModal(
-          plugin.app,
-          plugin,
-          (emoji) => saveSpaceSticker(plugin, space.path, emoji)
-        );
-        vaultChangeModal.open();
-      });
-    });
-    spaceMenu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.buttons.removeIcon);
-      menuItem.setIcon("lucide-file-minus");
-      menuItem.onClick((ev) => {
-        removeSpaceIcon(plugin, space.path);
-      });
-    });
-  }
-  spaceMenu.addSeparator();
-  spaceMenu.addItem((menuItem) => {
-    menuItem.setTitle(i18n_default.menu.sortBy);
-    menuItem.setIcon("sort-desc");
-    menuItem.onClick((ev) => {
-      const sortMenu = new import_obsidian43.Menu();
-      sortMenu.addItem((menuItem2) => {
-        menuItem2.setIcon("arrow-up-down");
-        menuItem2.setTitle(i18n_default.menu.groupSpaces);
-        menuItem2.setChecked(space.metadata.sort.group == true);
-        menuItem2.onClick((ev2) => {
-          updateSpaceSort(plugin, space.path, {
-            field: space.metadata.sort.field,
-            asc: space.metadata.sort.asc,
-            group: !space.metadata.sort.group
-          });
-        });
-      });
-      sortMenu.addSeparator();
-      sortMenu.addItem((menuItem2) => {
-        const sortOption = {
-          field: "rank",
-          asc: true,
-          group: space.metadata.sort.group
-        };
-        menuItem2.setIcon("arrow-up-down");
-        menuItem2.setTitle(i18n_default.menu.customSort);
-        menuItem2.setChecked(
-          space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
-        );
-        menuItem2.onClick((ev2) => {
-          updateSpaceSort(plugin, space.path, sortOption);
-        });
-      });
-      sortMenu.addSeparator();
-      sortMenu.addItem((menuItem2) => {
-        const sortOption = {
-          field: "name",
-          asc: true,
-          group: space.metadata.sort.group
-        };
-        menuItem2.setTitle(i18n_default.menu.fileNameSortAlphaAsc);
-        menuItem2.setChecked(
-          space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
-        );
-        menuItem2.onClick((ev2) => {
-          updateSpaceSort(plugin, space.path, sortOption);
-        });
-      });
-      sortMenu.addItem((menuItem2) => {
-        const sortOption = {
-          field: "name",
-          asc: false,
-          group: space.metadata.sort.group
-        };
-        menuItem2.setTitle(i18n_default.menu.fileNameSortAlphaDesc);
-        menuItem2.setChecked(
-          space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
-        );
-        menuItem2.onClick((ev2) => {
-          updateSpaceSort(plugin, space.path, sortOption);
-        });
-      });
-      sortMenu.addSeparator();
-      sortMenu.addItem((menuItem2) => {
-        const sortOption = {
-          field: "ctime",
-          asc: false,
-          group: space.metadata.sort.group
-        };
-        menuItem2.setTitle(i18n_default.menu.createdTimeSortAsc);
-        menuItem2.setChecked(
-          space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
-        );
-        menuItem2.onClick((ev2) => {
-          updateSpaceSort(plugin, space.path, sortOption);
-        });
-      });
-      sortMenu.addItem((menuItem2) => {
-        const sortOption = {
-          field: "ctime",
-          asc: true,
-          group: space.metadata.sort.group
-        };
-        menuItem2.setTitle(i18n_default.menu.createdTimeSortDesc);
-        menuItem2.setChecked(
-          space.metadata.sort.field == sortOption.field && space.metadata.sort.asc == sortOption.asc
-        );
-        menuItem2.onClick((ev2) => {
-          updateSpaceSort(plugin, space.path, sortOption);
-        });
-      });
-      const offset2 = e4.target.getBoundingClientRect();
-      if (isMouseEvent(e4)) {
-        sortMenu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
-      } else {
-        sortMenu.showAtPosition({
-          x: e4.nativeEvent.locationX,
-          y: e4.nativeEvent.locationY
-        });
-      }
-    });
-  });
-  spaceMenu.addSeparator();
-  if (space.type == "folder")
-    spaceMenu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.menu.edit);
-      menuItem.setIcon("pencil");
-      menuItem.onClick((ev) => {
-        const vaultChangeModal = new EditSpaceModal(
-          plugin,
-          space,
-          "rename",
-          space.metadata
-        );
-        vaultChangeModal.open();
-      });
-    });
-  if (space.type != "vault")
+  } else if (space.type == "folder" || space.type == "tag")
     spaceMenu.addItem((menuItem) => {
       menuItem.setTitle(i18n_default.menu.deleteSpace);
       menuItem.setIcon("trash");
       menuItem.onClick((ev) => {
-        removeSpace(plugin, space.path);
+        const deleteModal = new DeleteModal(
+          plugin,
+          () => removeSpace(plugin, space.path),
+          "Delete Space",
+          "Deleting the space will also delete the folder and its contents."
+        );
+        deleteModal.open();
       });
     });
   if (isMouseEvent(e4)) {
@@ -55735,21 +55813,26 @@ var triggerSpaceMenu = (plugin, space, e4, activeFile, parentSpace) => {
 };
 var triggerMultiFileMenu = (plugin, selectedFiles, e4) => {
   const files = selectedFiles.map((s5) => s5.item.path);
-  const fileMenu = new import_obsidian43.Menu();
+  const fileMenu = new import_obsidian44.Menu();
   fileMenu.addSeparator();
   fileMenu.addItem((menuItem) => {
-    menuItem.setIcon("plus");
-    menuItem.setTitle("Add to Space");
+    menuItem.setIcon("pin");
+    menuItem.setTitle(i18n_default.buttons.addToSpace);
     menuItem.onClick((ev) => {
-      showSpacesMenu(ev, plugin, (link) => {
-        movePathsToSpace(
-          plugin,
-          selectedFiles.map((f4) => f4.path),
-          plugin.index.spacesIndex.get(link),
-          -1,
-          "link"
-        );
-      });
+      showSpacesMenu(
+        e4,
+        plugin,
+        (link) => {
+          movePathsToSpace(
+            plugin,
+            selectedFiles.map((f4) => f4.path),
+            plugin.index.spacesIndex.get(link),
+            -1,
+            "link"
+          );
+        },
+        true
+      );
     });
   });
   if (plugin.settings.spacesStickers) {
@@ -55764,7 +55847,7 @@ var triggerMultiFileMenu = (plugin, selectedFiles, e4) => {
         i18n_default.menu.changeColor,
         "",
         [
-          { name: "None", value: "" },
+          { name: i18n_default.menu.setNone, value: "" },
           ...colors.map((f4) => ({ name: f4[0], value: f4[1] }))
         ],
         (_12, values) => {
@@ -55797,7 +55880,13 @@ var triggerMultiFileMenu = (plugin, selectedFiles, e4) => {
     menuItem.setTitle(i18n_default.menu.deleteFiles);
     menuItem.setIcon("trash");
     menuItem.onClick((ev) => {
-      deleteFiles(plugin, files);
+      const deleteModal = new DeleteModal(
+        plugin,
+        () => deleteFiles(plugin, files),
+        "Delete Files",
+        `Delete ${files.length} files/folders and their contents?`
+      );
+      deleteModal.open();
     });
   });
   fileMenu.addItem((menuItem) => {
@@ -55831,29 +55920,34 @@ var triggerMultiFileMenu = (plugin, selectedFiles, e4) => {
 };
 var triggerFileMenu = (plugin, file, isFolder, e4, space) => {
   const cache = plugin.index.filesIndex.get(file.path);
-  const fileMenu = new import_obsidian43.Menu();
+  const fileMenu = new import_obsidian44.Menu();
   fileMenu.addSeparator();
   fileMenu.addItem((menuItem) => {
-    menuItem.setIcon("plus-square");
-    menuItem.setTitle("Add to Space");
+    menuItem.setIcon("pin");
+    menuItem.setTitle(i18n_default.buttons.addToSpace);
     menuItem.onClick((ev) => {
-      showSpacesMenu(ev, plugin, (link) => {
-        movePathsToSpace(
-          plugin,
-          [file.path],
-          plugin.index.spacesIndex.get(link),
-          -1,
-          "link"
-        );
-      });
+      showSpacesMenu(
+        e4,
+        plugin,
+        (link) => {
+          movePathsToSpace(
+            plugin,
+            [file.path],
+            plugin.index.spacesIndex.get(link),
+            -1,
+            "link"
+          );
+        },
+        true
+      );
     });
   });
-  if (file instanceof import_obsidian43.TFile && file.extension == "md")
+  if (file instanceof import_obsidian44.TFile && file.extension == "md")
     fileMenu.addItem((menuItem) => {
       menuItem.setTitle(i18n_default.menu.changeToFolderNote);
       menuItem.setIcon("file-plus-2");
       menuItem.onClick((ev) => {
-        if (file instanceof import_obsidian43.TFile)
+        if (file instanceof import_obsidian44.TFile)
           noteToFolderNote(plugin, file, true);
       });
     });
@@ -55869,7 +55963,7 @@ var triggerFileMenu = (plugin, file, isFolder, e4, space) => {
         i18n_default.menu.changeColor,
         "",
         [
-          { name: "None", value: "" },
+          { name: i18n_default.menu.setNone, value: "" },
           ...colors.map((f4) => ({ name: f4[0], value: f4[1] }))
         ],
         (_12, values) => {
@@ -55960,13 +56054,10 @@ var triggerFileMenu = (plugin, file, isFolder, e4, space) => {
   return false;
 };
 
-// src/components/InlineFileContext/InlineFileContextView.tsx
-var import_he = __toESM(require_he());
-
-// src/components/UI/menus/fmMenu.tsx
-var import_obsidian44 = require("obsidian");
+// src/react/components/UI/Menus/fmMenu.tsx
+var import_obsidian45 = require("obsidian");
 var showFMMenu = (plugin, position, property, deleteProperty, syncProperty, renameProperty, changeType) => {
-  const menu = new import_obsidian44.Menu();
+  const menu = new import_obsidian45.Menu();
   menu.setUseNativeMenu(false);
   menu.addItem((menuItem) => {
     var _a2;
@@ -56008,7 +56099,7 @@ var showFMMenu = (plugin, position, property, deleteProperty, syncProperty, rena
 // src/utils/obsidian/obsidian.ts
 var corePluginEnabled = (app2, plugin) => app2.internalPlugins.getPluginById(plugin) ? true : false;
 
-// src/components/Explorer/FrontmatterView.tsx
+// src/react/components/Explorer/FrontmatterView.tsx
 var FrontmatterView = (props2) => {
   const { metadataPath, path } = props2;
   const [values, setValues] = h2({});
@@ -56199,7 +56290,7 @@ var FrontmatterView = (props2) => {
       }`) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null);
 };
 
-// src/components/Explorer/ContextPropertiesView.tsx
+// src/react/components/Explorer/ContextPropertiesView.tsx
 var ContextPropertiesView = (props2) => {
   var _a2;
   const spaces = F2(
@@ -56371,8 +56462,8 @@ var FileContextList = (props2) => {
   }));
 };
 
-// src/components/InlineFileContext/NoteBannerView.tsx
-var import_obsidian46 = require("obsidian");
+// src/react/components/MarkdownEditor/ReadingViewHeader.tsx
+var import_obsidian47 = require("obsidian");
 var NoteBannerView = (props2) => {
   var _a2;
   const [banner, setBanner] = h2(null);
@@ -56390,7 +56481,7 @@ var NoteBannerView = (props2) => {
     if (!props2.path || props2.path.type == "file")
       return;
     e4.preventDefault();
-    const fileMenu = new import_obsidian46.Menu();
+    const fileMenu = new import_obsidian47.Menu();
     fileMenu.addSeparator();
     fileMenu.addItem((menuItem) => {
       menuItem.setTitle(i18n_default.buttons.changeBanner);
@@ -56447,14 +56538,14 @@ var NoteBannerView = (props2) => {
   }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null)) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null);
 };
 
-// src/components/InlineFileContext/InlineFileContextView.tsx
+// src/react/components/MarkdownEditor/EditorHeader.tsx
 var InlineFileContextView = (props2) => {
   const [metadataFilePath, setMetadataFilePath] = h2();
   const refreshCache = (path) => {
     if (!path)
       return null;
     const uri = uriByString(props2.plugin, path);
-    if (uri.type == "space" || uri.type == "tag") {
+    if (uri.type == "space" || uri.type == "folder" || uri.type == "tag") {
       const cache3 = props2.plugin.index.spacesIndex.get(path);
       if (cache3) {
         setMetadataFilePath(cache3.space.defPath);
@@ -56487,9 +56578,7 @@ var InlineFileContextView = (props2) => {
     !showHeader ? false : !props2.plugin.settings.inlineContextExpanded
   );
   const spaces = F2(
-    () => (cache == null ? void 0 : cache.cacheType) == "file" ? spacesFromFileCache(cache, props2.plugin).map(
-      (f4) => f4.path
-    ) : [],
+    () => cache ? [...props2.plugin.index.spacesMap.get(cache.path)].map((f4) => props2.plugin.index.spacesIndex.get(f4)).filter((f4) => f4).map((f4) => f4.path) : [],
     [cache]
   );
   const banner = cache == null ? void 0 : cache.banner;
@@ -56742,24 +56831,21 @@ var InlineFileContextView = (props2) => {
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-icon-xsmall",
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-plus"] }
-  }), platformIsMobile() ? "Property" : "Property"), /* @__PURE__ */ Cn.createElement("button", {
+  }), platformIsMobile() ? i18n_default.labels.newPropertyShort : i18n_default.labels.newProperty), /* @__PURE__ */ Cn.createElement("button", {
     onClick: (e4) => showAddMenu(e4)
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-icon-xsmall",
     dangerouslySetInnerHTML: {
-      __html: stickerFromString(
-        "lucide//plus-square",
-        props2.plugin
-      )
+      __html: stickerFromString("lucide//pin", props2.plugin)
     }
-  }), platformIsMobile() ? "Space" : "Space"), cache && /* @__PURE__ */ Cn.createElement("button", {
+  }), platformIsMobile() ? i18n_default.buttons.addToSpaceShort : i18n_default.buttons.addToSpace), cache && /* @__PURE__ */ Cn.createElement("button", {
     onClick: (e4) => changeCover(e4)
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-icon-xsmall",
     dangerouslySetInnerHTML: {
       __html: uiIconSet["mk-make-image"]
     }
-  }), platformIsMobile() ? "Cover" : "Cover"), (cache == null ? void 0 : cache.cacheType) == "space" && /* @__PURE__ */ Cn.createElement("button", {
+  }), platformIsMobile() ? i18n_default.buttons.changeBannerShort : i18n_default.buttons.changeBanner), (cache == null ? void 0 : cache.cacheType) == "space" && /* @__PURE__ */ Cn.createElement("button", {
     "aria-label": i18n_default.buttons.moreOptions,
     className: "mk-icon-xsmall mk-inline-button",
     onClick: (e4) => {
@@ -56788,6 +56874,19 @@ var InlineFileContextView = (props2) => {
 
 // src/types/space.ts
 var FMMetadataKeys = (plugin) => [plugin.settings.fmKeyBanner, plugin.settings.fmKeySticker, plugin.settings.fmKeyColor];
+var waypointsSpace = {
+  name: "Waypoints",
+  alias: "Waypoints",
+  path: "spaces://$waypoints",
+  metadata: {
+    contexts: []
+  },
+  sticker: "lucide//tags",
+  space: null,
+  contexts: [],
+  type: "default",
+  cacheType: "space"
+};
 var tagsSpace = {
   name: "Tags",
   alias: "Tags",
@@ -56903,7 +57002,7 @@ var dropFrame = (activeNode, overNode, root, nodes, newColumn) => {
   return [saveNodes, deleteNodes];
 };
 
-// src/components/SpaceView/Contexts/SpaceBodyView.tsx
+// src/react/components/SpaceView/Contexts/SpaceBodyView.tsx
 var PLACEHOLDER_ID3 = "_placeholder";
 var SpaceBodyView = (props2) => {
   const { frameSchema } = q2(FramesMDBContext);
@@ -57020,7 +57119,7 @@ var SpaceBodyView = (props2) => {
   ));
 };
 
-// src/components/SpaceView/TitleComponent.tsx
+// src/react/components/SpaceView/TitleComponent.tsx
 var TitleComponent = (props2) => {
   const fileNameRef = _2(null);
   const name = pathDisplayName(props2.space.space.uri, props2.plugin);
@@ -57078,7 +57177,7 @@ var TitleComponent = (props2) => {
   })));
 };
 
-// src/components/SpaceView/SpaceComponent.tsx
+// src/react/components/SpaceView/SpaceComponent.tsx
 var SpaceComponent = (props2) => {
   const path = props2.path;
   const [spaceCache, setSpaceCache] = h2(null);
@@ -57235,9 +57334,9 @@ var SpaceOuter = (props2) => {
   }, props2.children);
 };
 
-// src/components/SpaceView/Contexts/SpaceView.tsx
+// src/react/components/SpaceView/Contexts/SpaceView.tsx
 var SPACE_VIEW_TYPE = "mk-space";
-var SpaceView = class extends import_obsidian47.ItemView {
+var SpaceView = class extends import_obsidian48.ItemView {
   constructor(leaf, plugin, viewType) {
     super(leaf);
     this.navigation = true;
@@ -57323,12 +57422,11 @@ var SpaceView = class extends import_obsidian47.ItemView {
 };
 
 // src/utils/file.ts
-var import_obsidian48 = require("obsidian");
 var tFileToAFile = (file) => {
   var _a2, _b2, _c2;
   if (!file)
     return null;
-  if (file instanceof import_obsidian48.TFile && file.stat) {
+  if (file instanceof import_obsidian49.TFile && file.stat) {
     return {
       isFolder: false,
       name: file.basename,
@@ -57353,7 +57451,7 @@ var defaultNoteFolder = (plugin, activeFile) => {
 };
 var defaultConfigFile = async (plugin) => {
   return await plugin.app.vault.adapter.read(
-    (0, import_obsidian48.normalizePath)(plugin.app.vault.configDir + "/app.json")
+    (0, import_obsidian49.normalizePath)(plugin.app.vault.configDir + "/app.json")
   );
 };
 var appendFilesMetaData = (plugin, propType, filesString) => {
@@ -57391,11 +57489,9 @@ var moveFile = async (plugin, folder, file) => {
 };
 var copyFile = async (plugin, folder, file) => {
   const newPath = folder.path + "/" + file.name;
-  if (file instanceof import_obsidian48.TFolder) {
-    if (!abstractFileAtPathExists(plugin, newPath)) {
-      plugin.app.vault.createFolder(newPath);
-    }
-  } else if (file instanceof import_obsidian48.TFile) {
+  if (file instanceof import_obsidian49.TFolder) {
+    await plugin.files.createFolder(newPath);
+  } else if (file instanceof import_obsidian49.TFile) {
     await plugin.app.vault.copy(file, folder.path + "/" + file.name);
   }
 };
@@ -57459,7 +57555,7 @@ function getAllAbstractFilesInVault(plugin) {
   const rootFolder = plugin.app.vault.getRoot();
   function recursiveFx(folder) {
     for (const child of folderChildren(plugin, folder)) {
-      if (child instanceof import_obsidian48.TFolder) {
+      if (child instanceof import_obsidian49.TFolder) {
         const childFolder = child;
         if (childFolder.children)
           recursiveFx(childFolder);
@@ -57477,7 +57573,7 @@ var getFolderFromPath = (plugin, path) => {
   const afile = getAbstractFileAtPath(plugin, removeTrailingSlashFromFolder(path));
   if (!afile)
     return null;
-  return afile instanceof import_obsidian48.TFolder ? afile : afile.parent;
+  return afile instanceof import_obsidian49.TFolder ? afile : afile.parent;
 };
 var getFolderPathFromString = (plugin, file) => {
   var _a2;
@@ -57589,7 +57685,7 @@ function getAllFoldersInVault(plugin) {
   folders.push(rootFolder);
   function recursiveFx(folder) {
     for (const child of folder.children) {
-      if (child instanceof import_obsidian48.TFolder) {
+      if (child instanceof import_obsidian49.TFolder) {
         const childFolder = child;
         folders.push(childFolder);
         if (childFolder.children)
@@ -57601,9 +57697,9 @@ function getAllFoldersInVault(plugin) {
   return folders;
 }
 var openAFile = async (file, plugin, newLeaf) => {
-  if (file instanceof import_obsidian48.TFolder) {
+  if (file instanceof import_obsidian49.TFolder) {
     openTFolder(file, plugin, newLeaf);
-  } else if (file instanceof import_obsidian48.TFile) {
+  } else if (file instanceof import_obsidian49.TFile) {
     openTFile(file, plugin, newLeaf);
   } else {
     return;
@@ -57680,10 +57776,9 @@ var createNewCanvasFile = async (plugin, folder, newFileName, dontOpen) => {
 };
 var createMarkdownFileAtPath = async (plugin, path) => {
   const folderPath = filePathToFolderPath(path);
-  let folder = getAbstractFileAtPath(plugin, folderPath);
-  if (!folder || !(folder instanceof import_obsidian48.TFolder)) {
-    folder = await plugin.app.vault.createFolder(folderPath);
-  }
+  const folder = await plugin.files.createFolder(folderPath);
+  if (!folder)
+    return;
   return plugin.files.newFile(folder.path, folderPathToString(path), "md");
 };
 var createNewMarkdownFile = async (plugin, folder, newFileName, content, dontOpen) => {
@@ -57713,18 +57808,18 @@ var createNewMarkdownFile = async (plugin, folder, newFileName, content, dontOpe
   return newFile;
 };
 var platformIsMobile = () => {
-  return import_obsidian48.Platform.isMobile;
+  return import_obsidian49.Platform.isMobile;
 };
 var noteToFolderNote = async (plugin, file, open) => {
   const folderPath = fileNameToString(file.path);
   const folder = getAbstractFileAtPath(plugin, folderPath);
-  if (folder && folder instanceof import_obsidian48.TFolder) {
+  if (folder && folder instanceof import_obsidian49.TFolder) {
     if (open) {
       openTFolder(folder, plugin, false);
     }
     return;
   }
-  await plugin.app.vault.createFolder(folderPath);
+  await plugin.files.createFolder(folderPath);
   plugin.index.filesIndex.delete(file.path);
   const newFolderNotePath = folderNotePathFromAFile(plugin.settings, tFileToAFile(getAbstractFileAtPath(plugin, folderPath)));
   if (newFolderNotePath != file.path) {
@@ -57748,7 +57843,7 @@ var folderNoteCache = (plugin, file) => {
     if (!folderPath)
       return null;
     const folder = getAbstractFileAtPath(plugin, folderPath);
-    if (folder instanceof import_obsidian48.TFolder && folder.name == file.name) {
+    if (folder instanceof import_obsidian49.TFolder && folder.name == file.name) {
       return {
         folderNotePath: file.path,
         folderPath: folder.path
@@ -57775,11 +57870,7 @@ var spaceFolderPathFromSpace = (path, plugin) => {
   }
   return path;
 };
-var folderForSpace = (space, plugin) => getFolderPathFromString(plugin, plugin.settings.spacesFolder) + "/" + space;
-var spacesFromFileCache = (cache, plugin) => {
-  var _a2;
-  return ((_a2 = cache == null ? void 0 : cache.spaces) != null ? _a2 : []).map((f4) => plugin.index.spacesIndex.get(f4)).filter((f4) => f4).map((f4) => f4.space);
-};
+var folderForTagSpace = (space, plugin) => getFolderPathFromString(plugin, plugin.settings.spacesFolder) + "/" + space;
 
 // src/utils/contexts/contexts.ts
 var renamePath = async (plugin, path, newName) => {
@@ -57910,7 +58001,7 @@ var linkContextProp = (propType, rows, contextTableRows) => {
   return serializeMultiString(uniq(contextRows.map((f4) => f4[propType]).filter((f4) => f4)));
 };
 
-// src/components/SpaceView/Editor/FlowEditorHover.tsx
+// src/react/components/SpaceView/Editor/FlowEditorHover.tsx
 var FlowEditorHover = (props2) => {
   var _a2, _b2;
   const fields = (_b2 = (_a2 = props2.plugin.index.framesIndex.get(props2.path.path)) == null ? void 0 : _a2.frames[props2.path.ref]) == null ? void 0 : _b2.cols;
@@ -57996,8 +58087,7 @@ var FlowEditorHover = (props2) => {
   })), " "));
 };
 
-// src/cm-extensions/flowEditor/flowEditor.tsx
-var import_obsidian49 = require("obsidian");
+// src/codemirror/extensions/flowEditor/flowEditor.tsx
 var toggleFlowEditor = import_state6.Annotation.define();
 var cacheFlowEditorHeight = import_state6.Annotation.define();
 var preloadFlowEditor = import_state6.EditorState.transactionFilter.of(
@@ -58239,8 +58329,8 @@ var FlowEditorSelector = class extends import_view4.WidgetType {
     const div = document.createElement("div");
     div.toggleClass("mk-floweditor-selector", true);
     const reactEl = createRoot(div);
-    if (this.info.link && view.state.field(import_obsidian49.editorInfoField, false)) {
-      const infoField = view.state.field(import_obsidian49.editorInfoField, false);
+    if (this.info.link && view.state.field(import_obsidian50.editorInfoField, false)) {
+      const infoField = view.state.field(import_obsidian50.editorInfoField, false);
       const file = infoField.file;
       const path = uriByString(this.plugin, this.info.link, file.path);
       reactEl.render(
@@ -58272,7 +58362,7 @@ var flowEditorWidgetDecoration = (info) => import_view4.Decoration.widget({
   block: true
 });
 
-// src/cm-extensions/flowEditor/flowViewUpdates.ts
+// src/codemirror/extensions/flowEditor/flowViewUpdates.ts
 var import_view5 = require("@codemirror/view");
 var flowViewUpdates = (plugin) => import_view5.EditorView.updateListener.of((v3) => {
   if (v3.heightChanged) {
@@ -58314,16 +58404,16 @@ var flowViewUpdates = (plugin) => import_view5.EditorView.updateListener.of((v3)
   }
 });
 
-// src/cm-extensions/inlineStylerView/inlineStyler.tsx
+// src/codemirror/extensions/inlineStylerView/inlineStyler.tsx
 var import_state8 = require("@codemirror/state");
 
-// src/cm-extensions/inlineStylerView/InlineMenu.tsx
+// src/codemirror/extensions/inlineStylerView/InlineMenu.tsx
 var import_classnames5 = __toESM(require_classnames());
 
-// src/cm-extensions/inlineStylerView/marks.ts
+// src/codemirror/extensions/inlineStylerView/marks.ts
 var import_state7 = require("@codemirror/state");
 
-// src/cm-extensions/markSans/obsidianSyntax.ts
+// src/codemirror/extensions/markSans/obsidianSyntax.ts
 var oMarks = [
   {
     mark: "em",
@@ -58348,7 +58438,7 @@ var oMarks = [
   }
 ];
 
-// src/cm-extensions/inlineStylerView/marks.ts
+// src/codemirror/extensions/inlineStylerView/marks.ts
 var toggleMark = import_state7.Annotation.define();
 var trimSpace = (pos, moveDirLeft, state) => {
   if (moveDirLeft && state.sliceDoc(pos, pos + 1) == " ")
@@ -58506,7 +58596,7 @@ var toggleMarkExtension = import_state7.EditorState.transactionFilter.of(
   }
 );
 
-// src/cm-extensions/inlineStylerView/Mark.tsx
+// src/codemirror/extensions/inlineStylerView/Mark.tsx
 var Mark = (props2) => {
   const { i: i4, style, active, toggleMarkAction } = props2;
   return /* @__PURE__ */ Cn.createElement("div", {
@@ -58518,7 +58608,7 @@ var Mark = (props2) => {
   });
 };
 
-// src/cm-extensions/inlineStylerView/styles/default.ts
+// src/codemirror/extensions/inlineStylerView/styles/default.ts
 var default_default = [
   {
     label: "bold",
@@ -58563,12 +58653,12 @@ var default_default = [
   }
 ];
 
-// src/cm-extensions/inlineStylerView/styles/index.ts
+// src/codemirror/extensions/inlineStylerView/styles/index.ts
 function resolveStyles() {
   return default_default;
 }
 
-// src/cm-extensions/inlineStylerView/InlineMenu.tsx
+// src/codemirror/extensions/inlineStylerView/InlineMenu.tsx
 var loadStylerIntoContainer = (el, plugin) => {
   const root = createRoot(el);
   root.render(
@@ -58759,7 +58849,7 @@ var InlineMenuComponent = (props2) => {
   }, mode == 0 && props2.mobile ? makeMode() : mode == 2 ? colorsMode() : marksMode());
 };
 
-// src/cm-extensions/inlineStylerView/inlineStyler.tsx
+// src/codemirror/extensions/inlineStylerView/inlineStyler.tsx
 var cursorTooltipField = (plugin) => import_state8.StateField.define({
   create: getCursorTooltips(plugin),
   update(tooltips2, tr) {
@@ -58800,7 +58890,7 @@ function cursorTooltip(plugin) {
   return cursorTooltipField(plugin);
 }
 
-// src/cm-extensions/placeholder.ts
+// src/codemirror/extensions/placeholder.ts
 var import_state9 = require("@codemirror/state");
 var import_view6 = require("@codemirror/view");
 var placeholderLine = (plugin) => import_view6.Decoration.line({
@@ -58822,9 +58912,9 @@ var placeholderExtension = (plugin) => import_state9.StateField.define({
   provide: (f4) => import_view6.EditorView.decorations.from(f4)
 });
 
-// src/cm-extensions/inlineContext/inlineContext.tsx
+// src/codemirror/extensions/inlineContext/inlineContext.tsx
 var import_state10 = require("@codemirror/state");
-var import_obsidian50 = require("obsidian");
+var import_obsidian51 = require("obsidian");
 var frontmatterHider = (plugin) => import_state10.EditorState.transactionFilter.of((tr) => {
   const newTrans = [];
   const isFM = (typeString) => {
@@ -58842,7 +58932,7 @@ var frontmatterHider = (plugin) => import_state10.EditorState.transactionFilter.
       }
     }
   });
-  const livePreview = tr.state.field(import_obsidian50.editorLivePreviewField, false);
+  const livePreview = tr.state.field(import_obsidian51.editorLivePreviewField, false);
   if (fmStart > 1 && fmStart <= tr.state.doc.lines && plugin.settings.hideFrontmatter && livePreview) {
     newTrans.push({
       annotations: [contentRange.of([fmStart, fmEnd])]
@@ -58855,39 +58945,10 @@ var frontmatterHider = (plugin) => import_state10.EditorState.transactionFilter.
   return [tr, ...newTrans];
 });
 
-// src/cm-extensions/lineNumbers.ts
-var import_view7 = require("@codemirror/view");
-var lineNumberExtension = (plugin) => (0, import_view7.lineNumbers)({
-  formatNumber: (lineNo, state) => {
-    if (!plugin.settings.inlineContext) {
-      return lineNo.toString();
-    }
-    const isFM = (state2, typeString, from, to) => {
-      if (typeString.contains("hmd-frontmatter")) {
-        return true;
-      }
-      return false;
-    };
-    let fmEnd = 0;
-    iterateTreeInDocument(state, {
-      enter: ({ type, from, to }) => {
-        if (isFM(state, type.name, from, to)) {
-          fmEnd = to;
-        }
-      }
-    });
-    const newLine = fmEnd > 0 ? lineNo - state.doc.lineAt(Math.min(fmEnd, state.doc.length - 1)).number : lineNo;
-    return newLine > 0 ? newLine.toString() : lineNo.toString();
-  }
-});
-
-// src/cm-extensions/cmExtensions.ts
+// src/codemirror/extensions/cmExtensions.ts
 var cmExtensions = (plugin, mobile) => {
   const extensions = [...editBlockExtensions()];
   if (plugin.settings.makerMode) {
-    if (plugin.settings.inlineContext && plugin.settings.lineNumbers) {
-      extensions.push(lineNumberExtension(plugin));
-    }
     if (plugin.settings.inlineContext && plugin.settings.makerMode && !corePluginEnabled(plugin.app, "properties"))
       extensions.push(...[frontmatterHider(plugin)]);
     extensions.push(
@@ -58917,10 +58978,13 @@ var cmExtensions = (plugin, mobile) => {
   return extensions;
 };
 
-// src/components/SpaceView/Editor/MakeMenu/MakeMenu.tsx
-var import_obsidian52 = require("obsidian");
+// src/main.ts
+var import_obsidian68 = require("obsidian");
 
-// src/components/SpaceView/Editor/MakeMenu/commands/default.ts
+// src/react/components/SpaceView/Editor/MakeMenu/MakeMenu.tsx
+var import_obsidian53 = require("obsidian");
+
+// src/react/components/SpaceView/Editor/MakeMenu/commands/default.ts
 var default_default2 = [
   {
     label: "todo",
@@ -59017,7 +59081,7 @@ Type/Paste Your Code
   }
 ];
 
-// src/components/SpaceView/Editor/MakeMenu/commands/index.ts
+// src/react/components/SpaceView/Editor/MakeMenu/commands/index.ts
 function resolveCommands(plugin) {
   const allFrames = plugin.settings.quickFrames.flatMap((f4) => {
     var _a2;
@@ -59033,8 +59097,8 @@ function resolveCommands(plugin) {
   return [...default_default2];
 }
 
-// src/components/SpaceView/Editor/MakeMenu/MakeMenu.tsx
-var MakeMenu = class extends import_obsidian52.EditorSuggest {
+// src/react/components/SpaceView/Editor/MakeMenu/MakeMenu.tsx
+var MakeMenu = class extends import_obsidian53.EditorSuggest {
   constructor(app2, plugin) {
     super(app2);
     this.inCmd = false;
@@ -59127,9 +59191,9 @@ var MakeMenu = class extends import_obsidian52.EditorSuggest {
   }
 };
 
-// src/components/SpaceView/Editor/StickerMenu/StickerMenu.tsx
-var import_obsidian53 = require("obsidian");
-var StickerMenu = class extends import_obsidian53.EditorSuggest {
+// src/react/components/SpaceView/Editor/StickerMenu/StickerMenu.tsx
+var import_obsidian54 = require("obsidian");
+var StickerMenu = class extends import_obsidian54.EditorSuggest {
   constructor(app2, plugin) {
     super(app2);
     this.inCmd = false;
@@ -59197,9 +59261,6 @@ var StickerMenu = class extends import_obsidian53.EditorSuggest {
     this.close();
   }
 };
-
-// src/main.ts
-var import_obsidian67 = require("obsidian");
 
 // src/utils/flow/markdownPost.tsx
 var getCMFromElement = (el, plugin) => {
@@ -59295,10 +59356,10 @@ var replaceAllEmbed = (el, ctx, plugin) => {
   });
 };
 
-// src/components/Navigator/FileTreeView.tsx
-var import_obsidian56 = require("obsidian");
+// src/react/components/Navigator/FileTreeView.tsx
+var import_obsidian57 = require("obsidian");
 
-// src/context/SidebarContext.tsx
+// src/react/context/SidebarContext.tsx
 var import_lodash12 = __toESM(require_lodash());
 var NavigatorContext = F({
   dragPaths: [],
@@ -59408,7 +59469,7 @@ var SidebarProvider = (props2) => {
   }, props2.children);
 };
 
-// src/components/Navigator/SpaceTree/SpaceTreeItem.tsx
+// src/react/components/Navigator/SpaceTree/SpaceTreeItem.tsx
 var import_classnames6 = __toESM(require_classnames());
 
 // node_modules/react-dropzone/dist/es/index.js
@@ -60570,7 +60631,7 @@ function reducer2(state, action) {
 function noop2() {
 }
 
-// src/components/Navigator/SpaceTree/SpaceTreeItem.tsx
+// src/react/components/Navigator/SpaceTree/SpaceTreeItem.tsx
 var eventToModifier = (e4) => e4.altKey ? "copy" : e4.shiftKey ? "link" : "move";
 var TreeItem = k3(
   ({
@@ -60616,9 +60677,6 @@ var TreeItem = k3(
         return;
       }
       if (file.item.cacheType == "space") {
-        if (plugin.settings.expandFolderOnClick) {
-          onCollapse(data2, true);
-        }
         openSpace(
           file.item.path,
           plugin,
@@ -60626,27 +60684,18 @@ var TreeItem = k3(
         );
         setActiveFile(uriByString(plugin, file.item.path));
         setSelectedFiles([file]);
+        if (plugin.settings.expandFolderOnClick) {
+          onCollapse(data2, true);
+        }
         return;
       }
-      if (!plugin.settings.contextEnabled) {
-        if (!file.item.isFolder) {
-          openAFile(
-            getAbstractFileAtPath(plugin, file.item.path),
-            plugin,
-            e4.ctrlKey || e4.metaKey || e4.button == 1 ? e4.altKey ? "split" : "tab" : false
-          );
-          setActiveFile(uriByString(plugin, file.item.path));
-          setSelectedFiles([file]);
-        }
-      } else {
-        openAFile(
-          getAbstractFileAtPath(plugin, file.item.path),
-          plugin,
-          e4.ctrlKey || e4.metaKey ? e4.altKey ? "split" : "tab" : false
-        );
-        setActiveFile(uriByString(plugin, file.item.path));
-        setSelectedFiles([file]);
-      }
+      openAFile(
+        getAbstractFileAtPath(plugin, file.item.path),
+        plugin,
+        e4.ctrlKey || e4.metaKey || e4.button == 1 ? e4.altKey ? "split" : "tab" : false
+      );
+      setActiveFile(uriByString(plugin, file.item.path));
+      setSelectedFiles([file]);
     };
     const onDragStarted = (e4) => {
       if (selectedFiles.length > 1) {
@@ -60748,6 +60797,17 @@ var TreeItem = k3(
     };
     const newAction = (e4) => {
       const space = data2.item;
+      if (e4.shiftKey) {
+        showLinkMenu(
+          e4,
+          plugin,
+          (link) => {
+            insertSpaceItemAtIndex(plugin, space, link);
+          },
+          "Select a Note or Space to Pin"
+        );
+        return;
+      }
       newFileInSpace(plugin, space, space.space.uri);
     };
     const handleRightClick = (e4) => {
@@ -60878,13 +60938,10 @@ var TreeItem = k3(
       fileCache
     }), /* @__PURE__ */ Cn.createElement("div", {
       className: `mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`
-    }, plugin.settings.spacesUseAlias ? fileCache.alias : fileCache.name, isLink && /* @__PURE__ */ Cn.createElement("span", {
+    }, plugin.settings.spacesUseAlias ? fileCache.alias : fileCache.name, isLink && plugin.settings.showSpacePinIcon && /* @__PURE__ */ Cn.createElement("span", {
       className: "mk-file-link",
       dangerouslySetInnerHTML: {
-        __html: stickerFromString(
-          "lucide//arrow-up-right",
-          plugin
-        )
+        __html: stickerFromString("lucide//pin", plugin)
       }
     })), !isFolder && extension != "md" && /* @__PURE__ */ Cn.createElement("span", {
       className: "nav-file-tag"
@@ -60913,7 +60970,7 @@ var TreeItem = k3(
 );
 TreeItem.displayName = "TreeItem";
 
-// src/components/Navigator/SpaceTree/SpaceTreeSectionItem.tsx
+// src/react/components/Navigator/SpaceTree/SpaceTreeSectionItem.tsx
 var TreeSectionItem = k3(
   ({
     childCount,
@@ -60948,7 +61005,7 @@ var TreeSectionItem = k3(
 );
 TreeSectionItem.displayName = "TreeSectionItem";
 
-// src/components/Navigator/SpaceTree/SpaceTreeNodeView.tsx
+// src/react/components/Navigator/SpaceTree/SpaceTreeNodeView.tsx
 var animateLayoutChanges2 = ({
   isSorting,
   wasDragging
@@ -61019,7 +61076,7 @@ var SortableTreeItem = ({
   });
 };
 
-// src/hooks/ForceUpdate.tsx
+// src/react/hooks/ForceUpdate.tsx
 function useForceUpdate() {
   const [value, setValue] = h2(0);
   return () => setValue((value2) => value2 + 1);
@@ -61540,7 +61597,7 @@ function calculateRange(_ref4) {
   };
 }
 
-// src/components/Navigator/SpaceTree/SpaceTreeVirtualized.tsx
+// src/react/components/Navigator/SpaceTree/SpaceTreeVirtualized.tsx
 var VirtualizedList = Cn.memo(function VirtualizedList2(props2) {
   const {
     flattenedTree,
@@ -61675,7 +61732,7 @@ var VirtualizedList = Cn.memo(function VirtualizedList2(props2) {
   })));
 });
 
-// src/components/Navigator/SpaceTree/SpaceTreeView.tsx
+// src/react/components/Navigator/SpaceTree/SpaceTreeView.tsx
 var FileExplorerComponent = (props2) => {
   const { plugin } = props2;
   const indentationWidth = 16;
@@ -62106,7 +62163,7 @@ var FileExplorerComponent = (props2) => {
     e4.dataTransfer.dropEffect = modifier2;
     if (projected) {
       plugin.app.dragManager.setAction(
-        `${projected.reorder && !projected.insert ? "Reorder in" : modifier2 == "move" || !modifier2 ? `Move to` : modifier2 == "link" ? `Add to` : `Copy to`} ${projected.insert ? overName : parentName}`
+        `${projected.reorder && !projected.insert ? i18n_default.labels.reorderIn : modifier2 == "move" || !modifier2 ? i18n_default.labels.moveTo : modifier2 == "link" ? i18n_default.labels.addTo : i18n_default.labels.copyTo} ${projected.insert ? overName : parentName}`
       );
     }
     if (dragPaths.length > 1) {
@@ -62283,17 +62340,16 @@ var FileExplorerComponent = (props2) => {
       color: "var(--text-on-accent)",
       fontSize: "var(--font-ui-smaller)"
     }
-  }, /* @__PURE__ */ Cn.createElement("div", null, "Hold", " ", /* @__PURE__ */ Cn.createElement("span", {
-    style: { fontFamily: "var(--font-monospace)" }
-  }, "shift"), " ", "to Add and ", normalizedAltName(), " to Copy")));
+  }, /* @__PURE__ */ Cn.createElement("div", null, i18n_default.hintText.dragDropModifierKeys.replace("${1}", "shift").replace("${2}", normalizedAltName()))));
 };
 
-// src/components/Navigator/MainMenu.tsx
+// src/react/components/Navigator/MainMenu.tsx
 var import_classnames7 = __toESM(require_classnames());
+var import_obsidian56 = require("obsidian");
 
-// src/components/UI/modals/hiddenFilesModal.tsx
-var import_obsidian54 = require("obsidian");
-var HiddenItemsModal = class extends import_obsidian54.Modal {
+// src/react/components/UI/Modals/hiddenFilesModal.tsx
+var import_obsidian55 = require("obsidian");
+var HiddenItemsModal = class extends import_obsidian55.Modal {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -62438,8 +62494,7 @@ var HiddenFiles = (props2) => {
   }, "+ ", i18n_default.buttons.addFile)));
 };
 
-// src/components/Navigator/MainMenu.tsx
-var import_obsidian55 = require("obsidian");
+// src/react/components/Navigator/MainMenu.tsx
 var replaceMobileMainMenu = (plugin) => {
   if (platformIsMobile()) {
     const header = app.workspace.containerEl.querySelector(
@@ -62527,7 +62582,7 @@ var MainMenu = (props2) => {
   };
   const showMenu = () => {
     const { spaceActive, leafs } = refreshLeafs();
-    const menu = new import_obsidian55.Menu();
+    const menu = new import_obsidian56.Menu();
     !spaceActive && menu.addItem((menuItem) => {
       menuItem.setIcon("lucide-arrow-left");
       menuItem.setTitle(i18n_default.menu.backToSpace);
@@ -62538,26 +62593,65 @@ var MainMenu = (props2) => {
         }
       });
     });
-    menu.addItem((menuItem) => {
-      menuItem.setTitle("Open Space");
-      menuItem.setIcon("layout");
-      menuItem.onClick((ev) => {
-        openSpace(activeViewSpace.path, props2.plugin, false);
+    if (activeViewSpace.type != "default") {
+      menu.addItem((menuItem) => {
+        menuItem.setTitle("Open Space");
+        menuItem.setIcon("layout");
+        menuItem.onClick((ev) => {
+          openSpace(activeViewSpace.path, props2.plugin, false);
+        });
       });
-    });
+      menu.addSeparator();
+      menu.addItem((menuItem) => {
+        menuItem.setIcon("folder-plus");
+        menuItem.setTitle(i18n_default.buttons.createFolder);
+        menuItem.onClick((ev) => {
+          const vaultChangeModal = new EditSpaceModal(
+            plugin,
+            null,
+            "create",
+            null,
+            activeViewSpace
+          );
+          vaultChangeModal.open();
+        });
+      });
+      menu.addItem((menuItem) => {
+        menuItem.setIcon("pin");
+        menuItem.setTitle(i18n_default.buttons.addIntoSpace);
+        menuItem.onClick((ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          showLinkMenu(ev, plugin, (link) => {
+            insertSpaceItemAtIndex(plugin, activeViewSpace, link);
+          });
+        });
+      });
+    }
     menu.addSeparator();
+    if (plugin.settings.enableDefaultSpaces) {
+      if (plugin.settings.enableHomeSpace)
+        menu.addItem((menuItem) => {
+          menuItem.setTitle("Home");
+          menuItem.setIcon("home");
+          menuItem.onClick((ev) => {
+            setActiveViewSpaceByPath("Spaces/Home");
+          });
+        });
+      if (plugin.settings.enableTagSpaces)
+        menu.addItem((menuItem) => {
+          menuItem.setTitle(i18n_default.menu.tags);
+          menuItem.setIcon("tags");
+          menuItem.onClick((ev) => {
+            setActiveViewSpaceByPath("spaces://$tags");
+          });
+        });
+    }
     menu.addItem((menuItem) => {
       menuItem.setTitle("Vault");
       menuItem.setIcon("vault");
       menuItem.onClick((ev) => {
         setActiveViewSpaceByPath("/");
-      });
-    });
-    menu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.menu.tags);
-      menuItem.setIcon("tags");
-      menuItem.onClick((ev) => {
-        setActiveViewSpaceByPath("spaces://$tags");
       });
     });
     menu.addSeparator();
@@ -62739,7 +62833,7 @@ var MainMenu = (props2) => {
   }));
 };
 
-// src/components/Navigator/Waypoints/Waypoint.tsx
+// src/react/components/Navigator/Waypoints/Waypoint.tsx
 var import_classnames8 = __toESM(require_classnames());
 var animateLayoutChanges3 = ({
   isSorting,
@@ -62825,7 +62919,7 @@ var PinnedSpace = k3(
           openSpace(pin.path, plugin, false);
         saveActiveSpace(pin.path);
       },
-      onContextMenu: (e4) => triggerSpaceMenu(plugin, pin, e4, activeFile, null),
+      onContextMenu: (e4) => triggerSpaceMenu(plugin, pin, e4, activeFile, "spaces://$waypoints"),
       onDragOver: (e4) => {
         e4.preventDefault();
         setModifier(eventToModifier(e4));
@@ -62887,7 +62981,7 @@ var PinnedSpace = k3(
 );
 PinnedSpace.displayName = "PinnedSpace";
 
-// src/components/Navigator/Waypoints/Waypoints.tsx
+// src/react/components/Navigator/Waypoints/Waypoints.tsx
 var SpaceSwitcher = (props2) => {
   const {
     activeFile,
@@ -63093,7 +63187,27 @@ var SpaceSwitcher = (props2) => {
     dragEnded,
     dragActive: activeId !== null,
     ghost: activeId === pin.path
-  })), overId != null && activeId === null && /* @__PURE__ */ Cn.createElement(SortablePinnedSpaceItem, {
+  })), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-waypoint-new",
+    onClick: (e4) => showSpacesMenu(
+      e4,
+      props2.plugin,
+      (link) => {
+        toggleSpacePin(
+          props2.plugin,
+          link,
+          "waypoints",
+          false,
+          waypoints.length
+        );
+      },
+      true,
+      true
+    ),
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//plus", props2.plugin)
+    }
+  }), overId != null && activeId === null && /* @__PURE__ */ Cn.createElement(SortablePinnedSpaceItem, {
     id: waypoints.length,
     plugin: props2.plugin,
     highlighted: false,
@@ -63117,7 +63231,7 @@ var SpaceSwitcher = (props2) => {
   )));
 };
 
-// src/components/Navigator/MainList.tsx
+// src/react/components/Navigator/MainList.tsx
 var MainList = (props2) => {
   const { activeViewSpace } = q2(NavigatorContext);
   const [error, resetError] = P2();
@@ -63154,18 +63268,18 @@ var MainList = (props2) => {
   }));
 };
 
-// src/components/Navigator/FileTreeView.tsx
+// src/react/components/Navigator/FileTreeView.tsx
 var FILE_TREE_VIEW_TYPE = "mk-file-view";
 var VIEW_DISPLAY_TEXT = "Spaces";
 var ICON = "layout-grid";
-var FileTreeView = class extends import_obsidian56.ItemView {
+var FileTreeView = class extends import_obsidian57.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.navigation = false;
     this.plugin = plugin;
   }
   revealInFolder(file) {
-    if (file instanceof import_obsidian56.TFolder) {
+    if (file instanceof import_obsidian57.TFolder) {
       this.plugin.app.workspace.activeLeaf.setViewState({
         type: SPACE_VIEW_TYPE,
         state: { path: file.path }
@@ -63219,7 +63333,7 @@ var FileTreeView = class extends import_obsidian56.ItemView {
 };
 
 // src/settings/settings.ts
-var import_obsidian57 = require("obsidian");
+var import_obsidian58 = require("obsidian");
 var DEFAULT_SETTINGS = {
   defaultInitialization: false,
   filePreviewOnHover: false,
@@ -63275,7 +63389,7 @@ var DEFAULT_SETTINGS = {
   inlineContextSectionsExpanded: true,
   dataviewInlineContext: false,
   inlineContextNameLayout: "vertical",
-  waypoints: [],
+  waypoints: ["Spaces/Home", "/", "spaces://$tags"],
   rootSpaces: [],
   spacesUseAlias: false,
   fmKeyAlias: "aliases",
@@ -63292,9 +63406,13 @@ var DEFAULT_SETTINGS = {
   readableLineWidth: true,
   autoAddContextsToSubtags: true,
   autoMigration08: false,
-  releaseNotesPrompt: 0.8
+  releaseNotesPrompt: 0.8,
+  enableDefaultSpaces: true,
+  enableTagSpaces: true,
+  enableHomeSpace: true,
+  showSpacePinIcon: true
 };
-var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
+var MakeMDPluginSettingsTab = class extends import_obsidian58.PluginSettingTab {
   constructor(app2, plugin) {
     super(app2, plugin);
     this.plugin = plugin;
@@ -63306,7 +63424,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h1", { text: i18n_default.settings.sectionSidebar });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.spaces.name).setDesc(i18n_default.settings.spaces.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.spaces.name).setDesc(i18n_default.settings.spaces.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.spacesEnabled).onChange((value) => {
         this.plugin.settings.spacesEnabled = value;
         this.plugin.saveSettings();
@@ -63319,56 +63437,78 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
       })
     );
     if (this.plugin.settings.spacesEnabled) {
+      containerEl.createEl("h3", { text: i18n_default.settings.sectionDefault });
+      const defaultSpaces = containerEl.createEl("div");
+      new import_obsidian58.Setting(defaultSpaces).setName(i18n_default.settings.defaultSpaces.name).setDesc(i18n_default.settings.defaultSpaces.desc).addToggle(
+        (toggle) => toggle.setValue(this.plugin.settings.enableDefaultSpaces).onChange((value) => {
+          this.plugin.settings.enableDefaultSpaces = value;
+          this.plugin.saveSettings();
+        })
+      );
+      if (this.plugin.settings.enableDefaultSpaces) {
+        new import_obsidian58.Setting(defaultSpaces).setName(i18n_default.settings.homeSpace.name).setDesc(i18n_default.settings.homeSpace.desc).addToggle(
+          (toggle) => toggle.setValue(this.plugin.settings.enableHomeSpace).onChange((value) => {
+            this.plugin.settings.enableHomeSpace = value;
+            this.plugin.saveSettings();
+          })
+        );
+        new import_obsidian58.Setting(defaultSpaces).setName(i18n_default.settings.tagSpaces.name).setDesc(i18n_default.settings.tagSpaces.desc).addToggle(
+          (toggle) => toggle.setValue(this.plugin.settings.enableTagSpaces).onChange((value) => {
+            this.plugin.settings.enableTagSpaces = value;
+            this.plugin.saveSettings();
+          })
+        );
+      }
       containerEl.createEl("h3", { text: i18n_default.settings.sectionAppearance });
       const spaceAppearances = containerEl.createEl("div");
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.sidebarTabs.name).setDesc(i18n_default.settings.sidebarTabs.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.sidebarTabs.name).setDesc(i18n_default.settings.sidebarTabs.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.sidebarTabs).onChange((value) => {
           this.plugin.settings.sidebarTabs = value;
           this.plugin.saveSettings();
           document.body.classList.toggle("mk-hide-tabs", !value);
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.hideRibbon.name).setDesc(i18n_default.settings.hideRibbon.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.hideRibbon.name).setDesc(i18n_default.settings.hideRibbon.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.showRibbon).onChange((value) => {
           this.plugin.settings.showRibbon = value;
           this.plugin.saveSettings();
           document.body.classList.toggle("mk-hide-ribbon", !value);
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.folderIndentationLines.name).setDesc(i18n_default.settings.folderIndentationLines.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.folderIndentationLines.name).setDesc(i18n_default.settings.folderIndentationLines.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.folderIndentationLines).onChange((value) => {
           this.plugin.settings.folderIndentationLines = value;
           this.plugin.saveSettings();
           document.body.classList.toggle("mk-folder-lines", value);
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.spacesStickers.name).setDesc(i18n_default.settings.spacesStickers.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.spacesStickers.name).setDesc(i18n_default.settings.spacesStickers.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.spacesStickers).onChange((value) => {
           this.plugin.settings.spacesStickers = value;
           this.plugin.saveSettings();
           this.refreshView();
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.spacesAlias.name).setDesc(i18n_default.settings.spacesAlias.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.spacesAlias.name).setDesc(i18n_default.settings.spacesAlias.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.spacesUseAlias).onChange((value) => {
           this.plugin.settings.spacesUseAlias = value;
           this.plugin.saveSettings();
           this.refreshView();
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.readableLineWidth.name).setDesc(i18n_default.settings.readableLineWidth.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.readableLineWidth.name).setDesc(i18n_default.settings.readableLineWidth.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.readableLineWidth).onChange((value) => {
           this.plugin.settings.readableLineWidth = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.openSpacesOnLaunch.name).setDesc(i18n_default.settings.openSpacesOnLaunch.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.openSpacesOnLaunch.name).setDesc(i18n_default.settings.openSpacesOnLaunch.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.openSpacesOnLaunch).onChange((value) => {
           this.plugin.settings.openSpacesOnLaunch = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.spaceRowHeight.name).setDesc(i18n_default.settings.spaceRowHeight.desc).addText((text2) => {
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.spaceRowHeight.name).setDesc(i18n_default.settings.spaceRowHeight.desc).addText((text2) => {
         text2.setValue(this.plugin.settings.spaceRowHeight.toString()).onChange(async (value) => {
           text2.setValue(parseInt(value).toString());
           this.plugin.settings.spaceRowHeight = parseInt(value);
@@ -63376,43 +63516,43 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         });
       });
       containerEl.createEl("h3", { text: "Advanced" });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.expandFolder.name).setDesc(i18n_default.settings.expandFolder.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.expandFolder.name).setDesc(i18n_default.settings.expandFolder.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.expandFolderOnClick).onChange((value) => {
           this.plugin.settings.expandFolderOnClick = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.hoverPreview.name).setDesc(i18n_default.settings.hoverPreview.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.hoverPreview.name).setDesc(i18n_default.settings.hoverPreview.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.filePreviewOnHover).onChange((value) => {
           this.plugin.settings.filePreviewOnHover = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.activeFile.name).setDesc(i18n_default.settings.activeFile.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.activeFile.name).setDesc(i18n_default.settings.activeFile.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.revealActiveFile).onChange((value) => {
           this.plugin.settings.revealActiveFile = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.spacesFileExplorerDual.name).setDesc(i18n_default.settings.spacesFileExplorerDual.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.spacesFileExplorerDual.name).setDesc(i18n_default.settings.spacesFileExplorerDual.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.spacesDisablePatch).onChange((value) => {
           this.plugin.settings.spacesDisablePatch = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.spacesPerformance.name).setDesc(i18n_default.settings.spacesPerformance.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.spacesPerformance.name).setDesc(i18n_default.settings.spacesPerformance.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.spacesPerformance).onChange((value) => {
           this.plugin.settings.spacesPerformance = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.indexSVG.name).setDesc(i18n_default.settings.indexSVG.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.indexSVG.name).setDesc(i18n_default.settings.indexSVG.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.indexSVG).onChange((value) => {
           this.plugin.settings.indexSVG = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.spacesDeleteOption.name).setDesc(i18n_default.settings.spacesDeleteOption.desc).addDropdown((dropdown) => {
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.spacesDeleteOption.name).setDesc(i18n_default.settings.spacesDeleteOption.desc).addDropdown((dropdown) => {
         dropdown.addOption(
           "permanent",
           i18n_default.settings.spacesDeleteOptions.permanant
@@ -63430,7 +63570,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
       });
     }
     containerEl.createEl("h1", { text: "Context" });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.contexts.name).setDesc(i18n_default.settings.contexts.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.contexts.name).setDesc(i18n_default.settings.contexts.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.contextEnabled).onChange((value) => {
         this.plugin.settings.contextEnabled = value;
         this.plugin.saveSettings();
@@ -63438,27 +63578,27 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
       })
     );
     containerEl.createEl("h3", { text: i18n_default.settings.sectionAppearance });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.defaultDateFormat.name).setDesc(i18n_default.settings.defaultDateFormat.desc).addText((text2) => {
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.defaultDateFormat.name).setDesc(i18n_default.settings.defaultDateFormat.desc).addText((text2) => {
       text2.setValue(this.plugin.settings.defaultDateFormat).onChange(async (value) => {
         this.plugin.settings.defaultDateFormat = value;
         await this.plugin.saveSettings();
       });
     });
     containerEl.createEl("h3", { text: i18n_default.settings.sectionAdvanced });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.openFileContext.name).setDesc(i18n_default.settings.openFileContext.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.openFileContext.name).setDesc(i18n_default.settings.openFileContext.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.autoOpenFileContext).onChange((value) => {
         this.plugin.settings.autoOpenFileContext = value;
         this.plugin.saveSettings();
       })
     );
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.syncContextToFrontmatter.name).setDesc(i18n_default.settings.syncContextToFrontmatter.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.syncContextToFrontmatter.name).setDesc(i18n_default.settings.syncContextToFrontmatter.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.saveAllContextToFrontmatter).onChange((value) => {
         this.plugin.settings.saveAllContextToFrontmatter = value;
         this.plugin.saveSettings();
       })
     );
     containerEl.createEl("h1", { text: "Blink" });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.blink.name).setDesc(i18n_default.settings.blink.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.blink.name).setDesc(i18n_default.settings.blink.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.blinkEnabled).onChange(async (value) => {
         this.plugin.settings.blinkEnabled = value;
         await this.plugin.saveSettings();
@@ -63466,7 +63606,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
       })
     );
     containerEl.createEl("h1", { text: i18n_default.settings.sectionFlow });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorMakerMode.name).setDesc(i18n_default.settings.editorMakerMode.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorMakerMode.name).setDesc(i18n_default.settings.editorMakerMode.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.makerMode).onChange((value) => {
         this.plugin.settings.makerMode = value;
         this.plugin.saveSettings();
@@ -63475,27 +63615,27 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
     );
     if (this.plugin.settings.makerMode) {
       containerEl.createEl("h3", { text: "Inline Context" });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineContextExplorer.name).setDesc(i18n_default.settings.inlineContextExplorer.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineContextExplorer.name).setDesc(i18n_default.settings.inlineContextExplorer.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineContext).onChange((value) => {
           this.plugin.settings.inlineContext = value;
           this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.lineNumbers.name).setDesc(i18n_default.settings.lineNumbers.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.lineNumbers.name).setDesc(i18n_default.settings.lineNumbers.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.lineNumbers).onChange(async (value) => {
           this.plugin.settings.lineNumbers = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineContextExpanded.name).setDesc(i18n_default.settings.inlineContextExpanded.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineContextExpanded.name).setDesc(i18n_default.settings.inlineContextExpanded.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineContextSectionsExpanded).onChange((value) => {
           this.plugin.settings.inlineContextSectionsExpanded = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineContextHorizontal.name).setDesc(i18n_default.settings.inlineContextHorizontal.desc).addDropdown((dropdown) => {
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineContextHorizontal.name).setDesc(i18n_default.settings.inlineContextHorizontal.desc).addDropdown((dropdown) => {
         dropdown.addOption("vertical", i18n_default.settings.layoutVertical);
         dropdown.addOption("horizontal", i18n_default.settings.layoutHorizontal);
         dropdown.setValue(this.plugin.settings.inlineContextNameLayout);
@@ -63504,20 +63644,20 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
           this.plugin.saveSettings();
         });
       });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.hideFrontmatter.name).setDesc(i18n_default.settings.hideFrontmatter.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.hideFrontmatter.name).setDesc(i18n_default.settings.hideFrontmatter.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.hideFrontmatter).onChange(async (value) => {
           this.plugin.settings.hideFrontmatter = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.dataviewInlineContext.name).setDesc(i18n_default.settings.dataviewInlineContext.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.dataviewInlineContext.name).setDesc(i18n_default.settings.dataviewInlineContext.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.dataviewInlineContext).onChange((value) => {
           this.plugin.settings.dataviewInlineContext = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineBacklinks.name).setDesc(i18n_default.settings.inlineBacklinks.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineBacklinks.name).setDesc(i18n_default.settings.inlineBacklinks.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineBacklinks).onChange(async (value) => {
           this.plugin.settings.inlineBacklinks = value;
           await this.plugin.saveSettings();
@@ -63525,21 +63665,21 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         })
       );
       containerEl.createEl("h3", { text: "Flow Block" });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorFlowReplace.name).setDesc(i18n_default.settings.editorFlowReplace.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorFlowReplace.name).setDesc(i18n_default.settings.editorFlowReplace.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.editorFlow).onChange((value) => {
           this.plugin.settings.editorFlow = value;
           this.plugin.saveSettings();
           this.refreshView();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.internalLinkFlowEditor.name).setDesc(i18n_default.settings.internalLinkFlowEditor.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.internalLinkFlowEditor.name).setDesc(i18n_default.settings.internalLinkFlowEditor.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.internalLinkClickFlow).onChange(async (value) => {
           this.plugin.settings.internalLinkClickFlow = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorFlowStyle.name).setDesc(i18n_default.settings.editorFlowStyle.desc).addDropdown((dropdown) => {
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorFlowStyle.name).setDesc(i18n_default.settings.editorFlowStyle.desc).addDropdown((dropdown) => {
         dropdown.addOption("classic", i18n_default.settings.editorFlowStyle.classic);
         dropdown.addOption("seamless", i18n_default.settings.editorFlowStyle.seamless);
         dropdown.addOption("minimal", i18n_default.settings.editorFlowStyle.minimal);
@@ -63557,14 +63697,14 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         });
       });
       containerEl.createEl("h3", { text: "Flow Menu" });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorMakeMenu.name).setDesc(i18n_default.settings.editorMakeMenu.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorMakeMenu.name).setDesc(i18n_default.settings.editorMakeMenu.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.flowMenuEnabled).onChange(async (value) => {
           this.plugin.settings.flowMenuEnabled = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.makeChar.name).setDesc(i18n_default.settings.makeChar.desc).addText((text2) => {
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.makeChar.name).setDesc(i18n_default.settings.makeChar.desc).addText((text2) => {
         text2.setValue(this.plugin.settings.menuTriggerChar).onChange(async (value) => {
           if (value.length < 1) {
             text2.setValue(this.plugin.settings.menuTriggerChar);
@@ -63579,7 +63719,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorMakePlacholder.name).setDesc(i18n_default.settings.editorMakePlacholder.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorMakePlacholder.name).setDesc(i18n_default.settings.editorMakePlacholder.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.makeMenuPlaceholder).onChange(async (value) => {
           this.plugin.settings.makeMenuPlaceholder = value;
           await this.plugin.saveSettings();
@@ -63587,28 +63727,28 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         })
       );
       containerEl.createEl("h3", { text: "Flow Styler" });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineStyler.name).setDesc(i18n_default.settings.inlineStyler.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineStyler.name).setDesc(i18n_default.settings.inlineStyler.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineStyler).onChange(async (value) => {
           this.plugin.settings.inlineStyler = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineStickerMenu.name).setDesc(i18n_default.settings.inlineStickerMenu.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineStickerMenu.name).setDesc(i18n_default.settings.inlineStickerMenu.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineStickerMenu).onChange(async (value) => {
           this.plugin.settings.inlineStickerMenu = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineStylerColor.name).setDesc(i18n_default.settings.inlineStylerColor.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineStylerColor.name).setDesc(i18n_default.settings.inlineStylerColor.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineStylerColors).onChange((value) => {
           this.plugin.settings.inlineStylerColors = value;
           this.plugin.saveSettings();
           this.refreshView();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.mobileMakeBar.name).setDesc(i18n_default.settings.mobileMakeBar.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.mobileMakeBar.name).setDesc(i18n_default.settings.mobileMakeBar.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.mobileMakeBar).onChange((value) => {
           this.plugin.settings.mobileMakeBar = value;
           this.plugin.saveSettings();
@@ -63619,10 +63759,10 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
   }
 };
 
-// src/components/Blink/Blink.tsx
-var import_obsidian58 = require("obsidian");
+// src/react/components/Blink/Blink.tsx
+var import_obsidian59 = require("obsidian");
 
-// src/components/Blink/BlinkComponent.tsx
+// src/react/components/Blink/BlinkComponent.tsx
 var BlinkComponent = Cn.forwardRef(
   (props2, ref2) => {
     const [previewPath, setPreviewPath] = h2(null);
@@ -63695,8 +63835,8 @@ var BlinkComponent = Cn.forwardRef(
 BlinkComponent.displayName = "BlinkComponent";
 var BlinkComponent_default = BlinkComponent;
 
-// src/components/Blink/Blink.tsx
-var Blink = class extends import_obsidian58.Modal {
+// src/react/components/Blink/Blink.tsx
+var Blink = class extends import_obsidian59.Modal {
   constructor(app2, plugin) {
     super(app2);
     this.ref = Cn.createRef();
@@ -63728,12 +63868,12 @@ var Blink = class extends import_obsidian58.Modal {
   }
 };
 
-// src/components/Explorer/Explorer.tsx
-var import_obsidian59 = require("obsidian");
+// src/react/components/Explorer/Explorer.tsx
+var import_obsidian60 = require("obsidian");
 var FILE_CONTEXT_VIEW_TYPE = "make-context-view";
 var ICON2 = "component";
 var VIEW_DISPLAY_TEXT2 = "Explorer";
-var ContextExplorerLeafView = class extends import_obsidian59.ItemView {
+var ContextExplorerLeafView = class extends import_obsidian60.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.navigation = false;
@@ -63790,27 +63930,31 @@ var childrenForNode = (plugin, node, index, depth) => {
     const metadataTypes = [];
     metadataTypes.push({
       type: "properties",
-      label: "Properties",
+      label: i18n_default.labels.properties,
       sticker: "ui//mk-ui-note"
     });
     if (depth != 0) {
       metadataTypes.push({
         type: "flow",
-        label: "Content",
+        label: i18n_default.labels.content,
         sticker: "ui//mk-ui-note"
       });
     }
     metadataTypes.push(
       ...[
-        { type: "spaces", label: "Spaces", sticker: "ui//mk-ui-note" },
+        {
+          type: "spaces",
+          label: i18n_default.labels.spaces,
+          sticker: "ui//mk-ui-note"
+        },
         {
           type: "inlinks",
-          label: "Backlinks",
+          label: i18n_default.labels.backlinks,
           sticker: "lucide//links-coming-in"
         },
         {
           type: "outlinks",
-          label: "Outgoing Links",
+          label: i18n_default.labels.outgoingLinks,
           sticker: "lucide//links-going-out"
         }
       ]
@@ -64005,7 +64149,6 @@ var ExplorerFlowRow = (props2) => {
       return spaceCache.space.defPath;
     return props2.path;
   }, [props2.path]);
-  const [collapsed, setCollapsed] = h2(true);
   const [block, setBlock] = h2([null, null]);
   const refreshBlock = (path2) => {
     var _a3, _b2;
@@ -64070,10 +64213,10 @@ var ExplorerContextRow = (props2) => {
   });
 };
 
-// src/components/SpaceView/Contexts/MDBFileViewer.tsx
-var import_obsidian60 = require("obsidian");
+// src/react/components/SpaceView/Contexts/MDBFileViewer.tsx
+var import_obsidian61 = require("obsidian");
 var MDB_FILE_VIEWER_TYPE = "make-mdb-viewer";
-var MDBFileViewer = class extends import_obsidian60.FileView {
+var MDBFileViewer = class extends import_obsidian61.FileView {
   constructor(leaf, plugin) {
     super(leaf);
     this.navigation = true;
@@ -64209,7 +64352,7 @@ var import_obsidian_dataview = __toESM(require_lib());
 
 // src/superstate/superstate.ts
 var import_lodash13 = __toESM(require_lodash());
-var import_obsidian62 = require("obsidian");
+var import_obsidian63 = require("obsidian");
 
 // src/types/indexMap.ts
 var _IndexMap = class {
@@ -64440,7 +64583,7 @@ var LocalStorageCache = class {
 };
 
 // src/superstate/workers/manager.ts
-var import_obsidian61 = require("obsidian");
+var import_obsidian62 = require("obsidian");
 
 // inline-worker:__inline-worker
 function inlineWorker(scriptText) {
@@ -64453,11 +64596,11 @@ function inlineWorker(scriptText) {
 
 // src/superstate/workers/entry.worker.ts
 function Worker2() {
-  return inlineWorker('var qd=Object.create;var ru=Object.defineProperty,$d=Object.defineProperties,kd=Object.getOwnPropertyDescriptor,Hd=Object.getOwnPropertyDescriptors,Kd=Object.getOwnPropertyNames,Uo=Object.getOwnPropertySymbols,zd=Object.getPrototypeOf,Go=Object.prototype.hasOwnProperty,Yd=Object.prototype.propertyIsEnumerable;var No=(i,l,m)=>l in i?ru(i,l,{enumerable:!0,configurable:!0,writable:!0,value:m}):i[l]=m,Rt=(i,l)=>{for(var m in l||(l={}))Go.call(l,m)&&No(i,m,l[m]);if(Uo)for(var m of Uo(l))Yd.call(l,m)&&No(i,m,l[m]);return i},Lt=(i,l)=>$d(i,Hd(l));var Zd=(i,l)=>()=>(l||i((l={exports:{}}).exports,l),l.exports);var Xd=(i,l,m,w)=>{if(l&&typeof l=="object"||typeof l=="function")for(let y of Kd(l))!Go.call(i,y)&&y!==m&&ru(i,y,{get:()=>l[y],enumerable:!(w=kd(l,y))||w.enumerable});return i};var Jd=(i,l,m)=>(m=i!=null?qd(zd(i)):{},Xd(l||!i||!i.__esModule?ru(m,"default",{value:i,enumerable:!0}):m,i));var qo=Zd((oe,Me)=>{(function(){var i,l="4.17.21",m=200,w="Unsupported core-js use. Try https://npms.io/search?q=ponyfill.",y="Expected a function",O="Invalid `variable` option passed into `_.template`",J="__lodash_hash_undefined__",V=500,Y="__lodash_placeholder__",B=1,an=2,j=4,fn=1,Pn=2,nn=1,q=2,vt=4,hn=8,Bn=16,pn=32,gn=64,yn=128,W=256,dn=512,_n=30,Kn="...",Kt=800,Et=16,zn=1,Le=2,Ee=3,nt=1/0,Yn=9007199254740991,Oe=17976931348623157e292,Ot=0/0,Mn=4294967295,De=Mn-1,Pe=Mn>>>1,Be=[["ary",yn],["bind",nn],["bindKey",q],["curry",hn],["curryRight",Bn],["flip",dn],["partial",pn],["partialRight",gn],["rearg",W]],ft="[object Arguments]",Dt="[object Array]",We="[object AsyncFunction]",mt="[object Boolean]",xt="[object Date]",Ue="[object DOMException]",k="[object Error]",tn="[object Function]",un="[object GeneratorFunction]",K="[object Map]",tt="[object Number]",Ne="[object Null]",Zn="[object Object]",Ge="[object Promise]",zt="[object Proxy]",ae="[object RegExp]",Xn="[object Set]",le="[object String]",qe="[object Symbol]",fs="[object Undefined]",ce="[object WeakMap]",os="[object WeakSet]",he="[object ArrayBuffer]",Yt="[object DataView]",Br="[object Float32Array]",Wr="[object Float64Array]",Ur="[object Int8Array]",Nr="[object Int16Array]",Gr="[object Int32Array]",qr="[object Uint8Array]",$r="[object Uint8ClampedArray]",kr="[object Uint16Array]",Hr="[object Uint32Array]",ss=/\\b__p \\+= \'\';/g,as=/\\b(__p \\+=) \'\' \\+/g,ls=/(__e\\(.*?\\)|\\b__t\\)) \\+\\n\'\';/g,ou=/&(?:amp|lt|gt|quot|#39);/g,su=/[&<>"\']/g,cs=RegExp(ou.source),hs=RegExp(su.source),ps=/<%-([\\s\\S]+?)%>/g,gs=/<%([\\s\\S]+?)%>/g,au=/<%=([\\s\\S]+?)%>/g,ds=/\\.|\\[(?:[^[\\]]*|(["\'])(?:(?!\\1)[^\\\\]|\\\\.)*?\\1)\\]/,_s=/^\\w*$/,vs=/[^.[\\]]+|\\[(?:(-?\\d+(?:\\.\\d+)?)|(["\'])((?:(?!\\2)[^\\\\]|\\\\.)*?)\\2)\\]|(?=(?:\\.|\\[\\])(?:\\.|\\[\\]|$))/g,Kr=/[\\\\^$.*+?()[\\]{}|]/g,ms=RegExp(Kr.source),zr=/^\\s+/,xs=/\\s/,ys=/\\{(?:\\n\\/\\* \\[wrapped with .+\\] \\*\\/)?\\n?/,ws=/\\{\\n\\/\\* \\[wrapped with (.+)\\] \\*/,As=/,? & /,Ss=/[^\\x00-\\x2f\\x3a-\\x40\\x5b-\\x60\\x7b-\\x7f]+/g,Ts=/[()=,{}\\[\\]\\/\\s]/,Fs=/\\\\(\\\\)?/g,Cs=/\\$\\{([^\\\\}]*(?:\\\\.[^\\\\}]*)*)\\}/g,lu=/\\w*$/,Is=/^[-+]0x[0-9a-f]+$/i,Ms=/^0b[01]+$/i,bs=/^\\[object .+?Constructor\\]$/,Rs=/^0o[0-7]+$/i,Ls=/^(?:0|[1-9]\\d*)$/,Es=/[\\xc0-\\xd6\\xd8-\\xf6\\xf8-\\xff\\u0100-\\u017f]/g,$e=/($^)/,Os=/[\'\\n\\r\\u2028\\u2029\\\\]/g,ke="\\\\ud800-\\\\udfff",Ds="\\\\u0300-\\\\u036f",Ps="\\\\ufe20-\\\\ufe2f",Bs="\\\\u20d0-\\\\u20ff",cu=Ds+Ps+Bs,hu="\\\\u2700-\\\\u27bf",pu="a-z\\\\xdf-\\\\xf6\\\\xf8-\\\\xff",Ws="\\\\xac\\\\xb1\\\\xd7\\\\xf7",Us="\\\\x00-\\\\x2f\\\\x3a-\\\\x40\\\\x5b-\\\\x60\\\\x7b-\\\\xbf",Ns="\\\\u2000-\\\\u206f",Gs=" \\\\t\\\\x0b\\\\f\\\\xa0\\\\ufeff\\\\n\\\\r\\\\u2028\\\\u2029\\\\u1680\\\\u180e\\\\u2000\\\\u2001\\\\u2002\\\\u2003\\\\u2004\\\\u2005\\\\u2006\\\\u2007\\\\u2008\\\\u2009\\\\u200a\\\\u202f\\\\u205f\\\\u3000",gu="A-Z\\\\xc0-\\\\xd6\\\\xd8-\\\\xde",du="\\\\ufe0e\\\\ufe0f",_u=Ws+Us+Ns+Gs,Yr="[\'\\u2019]",qs="["+ke+"]",vu="["+_u+"]",He="["+cu+"]",mu="\\\\d+",$s="["+hu+"]",xu="["+pu+"]",yu="[^"+ke+_u+mu+hu+pu+gu+"]",Zr="\\\\ud83c[\\\\udffb-\\\\udfff]",ks="(?:"+He+"|"+Zr+")",wu="[^"+ke+"]",Xr="(?:\\\\ud83c[\\\\udde6-\\\\uddff]){2}",Jr="[\\\\ud800-\\\\udbff][\\\\udc00-\\\\udfff]",Zt="["+gu+"]",Au="\\\\u200d",Su="(?:"+xu+"|"+yu+")",Hs="(?:"+Zt+"|"+yu+")",Tu="(?:"+Yr+"(?:d|ll|m|re|s|t|ve))?",Fu="(?:"+Yr+"(?:D|LL|M|RE|S|T|VE))?",Cu=ks+"?",Iu="["+du+"]?",Ks="(?:"+Au+"(?:"+[wu,Xr,Jr].join("|")+")"+Iu+Cu+")*",zs="\\\\d*(?:1st|2nd|3rd|(?![123])\\\\dth)(?=\\\\b|[A-Z_])",Ys="\\\\d*(?:1ST|2ND|3RD|(?![123])\\\\dTH)(?=\\\\b|[a-z_])",Mu=Iu+Cu+Ks,Zs="(?:"+[$s,Xr,Jr].join("|")+")"+Mu,Xs="(?:"+[wu+He+"?",He,Xr,Jr,qs].join("|")+")",Js=RegExp(Yr,"g"),Qs=RegExp(He,"g"),Qr=RegExp(Zr+"(?="+Zr+")|"+Xs+Mu,"g"),Vs=RegExp([Zt+"?"+xu+"+"+Tu+"(?="+[vu,Zt,"$"].join("|")+")",Hs+"+"+Fu+"(?="+[vu,Zt+Su,"$"].join("|")+")",Zt+"?"+Su+"+"+Tu,Zt+"+"+Fu,Ys,zs,mu,Zs].join("|"),"g"),js=RegExp("["+Au+ke+cu+du+"]"),na=/[a-z][A-Z]|[A-Z]{2}[a-z]|[0-9][a-zA-Z]|[a-zA-Z][0-9]|[^a-zA-Z0-9 ]/,ta=["Array","Buffer","DataView","Date","Error","Float32Array","Float64Array","Function","Int8Array","Int16Array","Int32Array","Map","Math","Object","Promise","RegExp","Set","String","Symbol","TypeError","Uint8Array","Uint8ClampedArray","Uint16Array","Uint32Array","WeakMap","_","clearTimeout","isFinite","parseInt","setTimeout"],ea=-1,z={};z[Br]=z[Wr]=z[Ur]=z[Nr]=z[Gr]=z[qr]=z[$r]=z[kr]=z[Hr]=!0,z[ft]=z[Dt]=z[he]=z[mt]=z[Yt]=z[xt]=z[k]=z[tn]=z[K]=z[tt]=z[Zn]=z[ae]=z[Xn]=z[le]=z[ce]=!1;var H={};H[ft]=H[Dt]=H[he]=H[Yt]=H[mt]=H[xt]=H[Br]=H[Wr]=H[Ur]=H[Nr]=H[Gr]=H[K]=H[tt]=H[Zn]=H[ae]=H[Xn]=H[le]=H[qe]=H[qr]=H[$r]=H[kr]=H[Hr]=!0,H[k]=H[tn]=H[ce]=!1;var ra={\\u00C0:"A",\\u00C1:"A",\\u00C2:"A",\\u00C3:"A",\\u00C4:"A",\\u00C5:"A",\\u00E0:"a",\\u00E1:"a",\\u00E2:"a",\\u00E3:"a",\\u00E4:"a",\\u00E5:"a",\\u00C7:"C",\\u00E7:"c",\\u00D0:"D",\\u00F0:"d",\\u00C8:"E",\\u00C9:"E",\\u00CA:"E",\\u00CB:"E",\\u00E8:"e",\\u00E9:"e",\\u00EA:"e",\\u00EB:"e",\\u00CC:"I",\\u00CD:"I",\\u00CE:"I",\\u00CF:"I",\\u00EC:"i",\\u00ED:"i",\\u00EE:"i",\\u00EF:"i",\\u00D1:"N",\\u00F1:"n",\\u00D2:"O",\\u00D3:"O",\\u00D4:"O",\\u00D5:"O",\\u00D6:"O",\\u00D8:"O",\\u00F2:"o",\\u00F3:"o",\\u00F4:"o",\\u00F5:"o",\\u00F6:"o",\\u00F8:"o",\\u00D9:"U",\\u00DA:"U",\\u00DB:"U",\\u00DC:"U",\\u00F9:"u",\\u00FA:"u",\\u00FB:"u",\\u00FC:"u",\\u00DD:"Y",\\u00FD:"y",\\u00FF:"y",\\u00C6:"Ae",\\u00E6:"ae",\\u00DE:"Th",\\u00FE:"th",\\u00DF:"ss",\\u0100:"A",\\u0102:"A",\\u0104:"A",\\u0101:"a",\\u0103:"a",\\u0105:"a",\\u0106:"C",\\u0108:"C",\\u010A:"C",\\u010C:"C",\\u0107:"c",\\u0109:"c",\\u010B:"c",\\u010D:"c",\\u010E:"D",\\u0110:"D",\\u010F:"d",\\u0111:"d",\\u0112:"E",\\u0114:"E",\\u0116:"E",\\u0118:"E",\\u011A:"E",\\u0113:"e",\\u0115:"e",\\u0117:"e",\\u0119:"e",\\u011B:"e",\\u011C:"G",\\u011E:"G",\\u0120:"G",\\u0122:"G",\\u011D:"g",\\u011F:"g",\\u0121:"g",\\u0123:"g",\\u0124:"H",\\u0126:"H",\\u0125:"h",\\u0127:"h",\\u0128:"I",\\u012A:"I",\\u012C:"I",\\u012E:"I",\\u0130:"I",\\u0129:"i",\\u012B:"i",\\u012D:"i",\\u012F:"i",\\u0131:"i",\\u0134:"J",\\u0135:"j",\\u0136:"K",\\u0137:"k",\\u0138:"k",\\u0139:"L",\\u013B:"L",\\u013D:"L",\\u013F:"L",\\u0141:"L",\\u013A:"l",\\u013C:"l",\\u013E:"l",\\u0140:"l",\\u0142:"l",\\u0143:"N",\\u0145:"N",\\u0147:"N",\\u014A:"N",\\u0144:"n",\\u0146:"n",\\u0148:"n",\\u014B:"n",\\u014C:"O",\\u014E:"O",\\u0150:"O",\\u014D:"o",\\u014F:"o",\\u0151:"o",\\u0154:"R",\\u0156:"R",\\u0158:"R",\\u0155:"r",\\u0157:"r",\\u0159:"r",\\u015A:"S",\\u015C:"S",\\u015E:"S",\\u0160:"S",\\u015B:"s",\\u015D:"s",\\u015F:"s",\\u0161:"s",\\u0162:"T",\\u0164:"T",\\u0166:"T",\\u0163:"t",\\u0165:"t",\\u0167:"t",\\u0168:"U",\\u016A:"U",\\u016C:"U",\\u016E:"U",\\u0170:"U",\\u0172:"U",\\u0169:"u",\\u016B:"u",\\u016D:"u",\\u016F:"u",\\u0171:"u",\\u0173:"u",\\u0174:"W",\\u0175:"w",\\u0176:"Y",\\u0177:"y",\\u0178:"Y",\\u0179:"Z",\\u017B:"Z",\\u017D:"Z",\\u017A:"z",\\u017C:"z",\\u017E:"z",\\u0132:"IJ",\\u0133:"ij",\\u0152:"Oe",\\u0153:"oe",\\u0149:"\'n",\\u017F:"s"},ia={"&":"&amp;","<":"&lt;",">":"&gt;",\'"\':"&quot;","\'":"&#39;"},ua={"&amp;":"&","&lt;":"<","&gt;":">","&quot;":\'"\',"&#39;":"\'"},fa={"\\\\":"\\\\","\'":"\'","\\n":"n","\\r":"r","\\u2028":"u2028","\\u2029":"u2029"},oa=parseFloat,sa=parseInt,bu=typeof global=="object"&&global&&global.Object===Object&&global,aa=typeof self=="object"&&self&&self.Object===Object&&self,ln=bu||aa||Function("return this")(),Vr=typeof oe=="object"&&oe&&!oe.nodeType&&oe,Pt=Vr&&typeof Me=="object"&&Me&&!Me.nodeType&&Me,Ru=Pt&&Pt.exports===Vr,jr=Ru&&bu.process,Wn=function(){try{var c=Pt&&Pt.require&&Pt.require("util").types;return c||jr&&jr.binding&&jr.binding("util")}catch(g){}}(),Lu=Wn&&Wn.isArrayBuffer,Eu=Wn&&Wn.isDate,Ou=Wn&&Wn.isMap,Du=Wn&&Wn.isRegExp,Pu=Wn&&Wn.isSet,Bu=Wn&&Wn.isTypedArray;function bn(c,g,p){switch(p.length){case 0:return c.call(g);case 1:return c.call(g,p[0]);case 2:return c.call(g,p[0],p[1]);case 3:return c.call(g,p[0],p[1],p[2])}return c.apply(g,p)}function la(c,g,p,A){for(var I=-1,U=c==null?0:c.length;++I<U;){var on=c[I];g(A,on,p(on),c)}return A}function Un(c,g){for(var p=-1,A=c==null?0:c.length;++p<A&&g(c[p],p,c)!==!1;);return c}function ca(c,g){for(var p=c==null?0:c.length;p--&&g(c[p],p,c)!==!1;);return c}function Wu(c,g){for(var p=-1,A=c==null?0:c.length;++p<A;)if(!g(c[p],p,c))return!1;return!0}function yt(c,g){for(var p=-1,A=c==null?0:c.length,I=0,U=[];++p<A;){var on=c[p];g(on,p,c)&&(U[I++]=on)}return U}function Ke(c,g){var p=c==null?0:c.length;return!!p&&Xt(c,g,0)>-1}function ni(c,g,p){for(var A=-1,I=c==null?0:c.length;++A<I;)if(p(g,c[A]))return!0;return!1}function Z(c,g){for(var p=-1,A=c==null?0:c.length,I=Array(A);++p<A;)I[p]=g(c[p],p,c);return I}function wt(c,g){for(var p=-1,A=g.length,I=c.length;++p<A;)c[I+p]=g[p];return c}function ti(c,g,p,A){var I=-1,U=c==null?0:c.length;for(A&&U&&(p=c[++I]);++I<U;)p=g(p,c[I],I,c);return p}function ha(c,g,p,A){var I=c==null?0:c.length;for(A&&I&&(p=c[--I]);I--;)p=g(p,c[I],I,c);return p}function ei(c,g){for(var p=-1,A=c==null?0:c.length;++p<A;)if(g(c[p],p,c))return!0;return!1}var pa=ri("length");function ga(c){return c.split("")}function da(c){return c.match(Ss)||[]}function Uu(c,g,p){var A;return p(c,function(I,U,on){if(g(I,U,on))return A=U,!1}),A}function ze(c,g,p,A){for(var I=c.length,U=p+(A?1:-1);A?U--:++U<I;)if(g(c[U],U,c))return U;return-1}function Xt(c,g,p){return g===g?Ia(c,g,p):ze(c,Nu,p)}function _a(c,g,p,A){for(var I=p-1,U=c.length;++I<U;)if(A(c[I],g))return I;return-1}function Nu(c){return c!==c}function Gu(c,g){var p=c==null?0:c.length;return p?ui(c,g)/p:Ot}function ri(c){return function(g){return g==null?i:g[c]}}function ii(c){return function(g){return c==null?i:c[g]}}function qu(c,g,p,A,I){return I(c,function(U,on,$){p=A?(A=!1,U):g(p,U,on,$)}),p}function va(c,g){var p=c.length;for(c.sort(g);p--;)c[p]=c[p].value;return c}function ui(c,g){for(var p,A=-1,I=c.length;++A<I;){var U=g(c[A]);U!==i&&(p=p===i?U:p+U)}return p}function fi(c,g){for(var p=-1,A=Array(c);++p<c;)A[p]=g(p);return A}function ma(c,g){return Z(g,function(p){return[p,c[p]]})}function $u(c){return c&&c.slice(0,zu(c)+1).replace(zr,"")}function Rn(c){return function(g){return c(g)}}function oi(c,g){return Z(g,function(p){return c[p]})}function pe(c,g){return c.has(g)}function ku(c,g){for(var p=-1,A=c.length;++p<A&&Xt(g,c[p],0)>-1;);return p}function Hu(c,g){for(var p=c.length;p--&&Xt(g,c[p],0)>-1;);return p}function xa(c,g){for(var p=c.length,A=0;p--;)c[p]===g&&++A;return A}var ya=ii(ra),wa=ii(ia);function Aa(c){return"\\\\"+fa[c]}function Sa(c,g){return c==null?i:c[g]}function Jt(c){return js.test(c)}function Ta(c){return na.test(c)}function Fa(c){for(var g,p=[];!(g=c.next()).done;)p.push(g.value);return p}function si(c){var g=-1,p=Array(c.size);return c.forEach(function(A,I){p[++g]=[I,A]}),p}function Ku(c,g){return function(p){return c(g(p))}}function At(c,g){for(var p=-1,A=c.length,I=0,U=[];++p<A;){var on=c[p];(on===g||on===Y)&&(c[p]=Y,U[I++]=p)}return U}function Ye(c){var g=-1,p=Array(c.size);return c.forEach(function(A){p[++g]=A}),p}function Ca(c){var g=-1,p=Array(c.size);return c.forEach(function(A){p[++g]=[A,A]}),p}function Ia(c,g,p){for(var A=p-1,I=c.length;++A<I;)if(c[A]===g)return A;return-1}function Ma(c,g,p){for(var A=p+1;A--;)if(c[A]===g)return A;return A}function Qt(c){return Jt(c)?Ra(c):pa(c)}function Jn(c){return Jt(c)?La(c):ga(c)}function zu(c){for(var g=c.length;g--&&xs.test(c.charAt(g)););return g}var ba=ii(ua);function Ra(c){for(var g=Qr.lastIndex=0;Qr.test(c);)++g;return g}function La(c){return c.match(Qr)||[]}function Ea(c){return c.match(Vs)||[]}var Oa=function c(g){g=g==null?ln:St.defaults(ln.Object(),g,St.pick(ln,ta));var p=g.Array,A=g.Date,I=g.Error,U=g.Function,on=g.Math,$=g.Object,ai=g.RegExp,Da=g.String,Nn=g.TypeError,Ze=p.prototype,Pa=U.prototype,Vt=$.prototype,Xe=g["__core-js_shared__"],Je=Pa.toString,G=Vt.hasOwnProperty,Ba=0,Yu=function(){var n=/[^.]+$/.exec(Xe&&Xe.keys&&Xe.keys.IE_PROTO||"");return n?"Symbol(src)_1."+n:""}(),Qe=Vt.toString,Wa=Je.call($),Ua=ln._,Na=ai("^"+Je.call(G).replace(Kr,"\\\\$&").replace(/hasOwnProperty|(function).*?(?=\\\\\\()| for .+?(?=\\\\\\])/g,"$1.*?")+"$"),Ve=Ru?g.Buffer:i,Tt=g.Symbol,je=g.Uint8Array,Zu=Ve?Ve.allocUnsafe:i,nr=Ku($.getPrototypeOf,$),Xu=$.create,Ju=Vt.propertyIsEnumerable,tr=Ze.splice,Qu=Tt?Tt.isConcatSpreadable:i,ge=Tt?Tt.iterator:i,Bt=Tt?Tt.toStringTag:i,er=function(){try{var n=qt($,"defineProperty");return n({},"",{}),n}catch(t){}}(),Ga=g.clearTimeout!==ln.clearTimeout&&g.clearTimeout,qa=A&&A.now!==ln.Date.now&&A.now,$a=g.setTimeout!==ln.setTimeout&&g.setTimeout,rr=on.ceil,ir=on.floor,li=$.getOwnPropertySymbols,ka=Ve?Ve.isBuffer:i,Vu=g.isFinite,Ha=Ze.join,Ka=Ku($.keys,$),sn=on.max,mn=on.min,za=A.now,Ya=g.parseInt,ju=on.random,Za=Ze.reverse,ci=qt(g,"DataView"),de=qt(g,"Map"),hi=qt(g,"Promise"),jt=qt(g,"Set"),_e=qt(g,"WeakMap"),ve=qt($,"create"),ur=_e&&new _e,ne={},Xa=$t(ci),Ja=$t(de),Qa=$t(hi),Va=$t(jt),ja=$t(_e),fr=Tt?Tt.prototype:i,me=fr?fr.valueOf:i,nf=fr?fr.toString:i;function f(n){if(Q(n)&&!M(n)&&!(n instanceof D)){if(n instanceof Gn)return n;if(G.call(n,"__wrapped__"))return eo(n)}return new Gn(n)}var te=function(){function n(){}return function(t){if(!X(t))return{};if(Xu)return Xu(t);n.prototype=t;var e=new n;return n.prototype=i,e}}();function or(){}function Gn(n,t){this.__wrapped__=n,this.__actions__=[],this.__chain__=!!t,this.__index__=0,this.__values__=i}f.templateSettings={escape:ps,evaluate:gs,interpolate:au,variable:"",imports:{_:f}},f.prototype=or.prototype,f.prototype.constructor=f,Gn.prototype=te(or.prototype),Gn.prototype.constructor=Gn;function D(n){this.__wrapped__=n,this.__actions__=[],this.__dir__=1,this.__filtered__=!1,this.__iteratees__=[],this.__takeCount__=Mn,this.__views__=[]}function nl(){var n=new D(this.__wrapped__);return n.__actions__=Tn(this.__actions__),n.__dir__=this.__dir__,n.__filtered__=this.__filtered__,n.__iteratees__=Tn(this.__iteratees__),n.__takeCount__=this.__takeCount__,n.__views__=Tn(this.__views__),n}function tl(){if(this.__filtered__){var n=new D(this);n.__dir__=-1,n.__filtered__=!0}else n=this.clone(),n.__dir__*=-1;return n}function el(){var n=this.__wrapped__.value(),t=this.__dir__,e=M(n),r=t<0,u=e?n.length:0,o=gc(0,u,this.__views__),s=o.start,a=o.end,h=a-s,d=r?a:s-1,_=this.__iteratees__,v=_.length,x=0,S=mn(h,this.__takeCount__);if(!e||!r&&u==h&&S==h)return Ff(n,this.__actions__);var F=[];n:for(;h--&&x<S;){d+=t;for(var R=-1,C=n[d];++R<v;){var E=_[R],P=E.iteratee,On=E.type,Sn=P(C);if(On==Le)C=Sn;else if(!Sn){if(On==zn)continue n;break n}}F[x++]=C}return F}D.prototype=te(or.prototype),D.prototype.constructor=D;function Wt(n){var t=-1,e=n==null?0:n.length;for(this.clear();++t<e;){var r=n[t];this.set(r[0],r[1])}}function rl(){this.__data__=ve?ve(null):{},this.size=0}function il(n){var t=this.has(n)&&delete this.__data__[n];return this.size-=t?1:0,t}function ul(n){var t=this.__data__;if(ve){var e=t[n];return e===J?i:e}return G.call(t,n)?t[n]:i}function fl(n){var t=this.__data__;return ve?t[n]!==i:G.call(t,n)}function ol(n,t){var e=this.__data__;return this.size+=this.has(n)?0:1,e[n]=ve&&t===i?J:t,this}Wt.prototype.clear=rl,Wt.prototype.delete=il,Wt.prototype.get=ul,Wt.prototype.has=fl,Wt.prototype.set=ol;function ot(n){var t=-1,e=n==null?0:n.length;for(this.clear();++t<e;){var r=n[t];this.set(r[0],r[1])}}function sl(){this.__data__=[],this.size=0}function al(n){var t=this.__data__,e=sr(t,n);if(e<0)return!1;var r=t.length-1;return e==r?t.pop():tr.call(t,e,1),--this.size,!0}function ll(n){var t=this.__data__,e=sr(t,n);return e<0?i:t[e][1]}function cl(n){return sr(this.__data__,n)>-1}function hl(n,t){var e=this.__data__,r=sr(e,n);return r<0?(++this.size,e.push([n,t])):e[r][1]=t,this}ot.prototype.clear=sl,ot.prototype.delete=al,ot.prototype.get=ll,ot.prototype.has=cl,ot.prototype.set=hl;function st(n){var t=-1,e=n==null?0:n.length;for(this.clear();++t<e;){var r=n[t];this.set(r[0],r[1])}}function pl(){this.size=0,this.__data__={hash:new Wt,map:new(de||ot),string:new Wt}}function gl(n){var t=yr(this,n).delete(n);return this.size-=t?1:0,t}function dl(n){return yr(this,n).get(n)}function _l(n){return yr(this,n).has(n)}function vl(n,t){var e=yr(this,n),r=e.size;return e.set(n,t),this.size+=e.size==r?0:1,this}st.prototype.clear=pl,st.prototype.delete=gl,st.prototype.get=dl,st.prototype.has=_l,st.prototype.set=vl;function Ut(n){var t=-1,e=n==null?0:n.length;for(this.__data__=new st;++t<e;)this.add(n[t])}function ml(n){return this.__data__.set(n,J),this}function xl(n){return this.__data__.has(n)}Ut.prototype.add=Ut.prototype.push=ml,Ut.prototype.has=xl;function Qn(n){var t=this.__data__=new ot(n);this.size=t.size}function yl(){this.__data__=new ot,this.size=0}function wl(n){var t=this.__data__,e=t.delete(n);return this.size=t.size,e}function Al(n){return this.__data__.get(n)}function Sl(n){return this.__data__.has(n)}function Tl(n,t){var e=this.__data__;if(e instanceof ot){var r=e.__data__;if(!de||r.length<m-1)return r.push([n,t]),this.size=++e.size,this;e=this.__data__=new st(r)}return e.set(n,t),this.size=e.size,this}Qn.prototype.clear=yl,Qn.prototype.delete=wl,Qn.prototype.get=Al,Qn.prototype.has=Sl,Qn.prototype.set=Tl;function tf(n,t){var e=M(n),r=!e&&kt(n),u=!e&&!r&&bt(n),o=!e&&!r&&!u&&ue(n),s=e||r||u||o,a=s?fi(n.length,Da):[],h=a.length;for(var d in n)(t||G.call(n,d))&&!(s&&(d=="length"||u&&(d=="offset"||d=="parent")||o&&(d=="buffer"||d=="byteLength"||d=="byteOffset")||ht(d,h)))&&a.push(d);return a}function ef(n){var t=n.length;return t?n[Si(0,t-1)]:i}function Fl(n,t){return wr(Tn(n),Nt(t,0,n.length))}function Cl(n){return wr(Tn(n))}function pi(n,t,e){(e!==i&&!Vn(n[t],e)||e===i&&!(t in n))&&at(n,t,e)}function xe(n,t,e){var r=n[t];(!(G.call(n,t)&&Vn(r,e))||e===i&&!(t in n))&&at(n,t,e)}function sr(n,t){for(var e=n.length;e--;)if(Vn(n[e][0],t))return e;return-1}function Il(n,t,e,r){return Ft(n,function(u,o,s){t(r,u,e(u),s)}),r}function rf(n,t){return n&&rt(t,cn(t),n)}function Ml(n,t){return n&&rt(t,Cn(t),n)}function at(n,t,e){t=="__proto__"&&er?er(n,t,{configurable:!0,enumerable:!0,value:e,writable:!0}):n[t]=e}function gi(n,t){for(var e=-1,r=t.length,u=p(r),o=n==null;++e<r;)u[e]=o?i:Zi(n,t[e]);return u}function Nt(n,t,e){return n===n&&(e!==i&&(n=n<=e?n:e),t!==i&&(n=n>=t?n:t)),n}function qn(n,t,e,r,u,o){var s,a=t&B,h=t&an,d=t&j;if(e&&(s=u?e(n,r,u,o):e(n)),s!==i)return s;if(!X(n))return n;var _=M(n);if(_){if(s=_c(n),!a)return Tn(n,s)}else{var v=xn(n),x=v==tn||v==un;if(bt(n))return Mf(n,a);if(v==Zn||v==ft||x&&!u){if(s=h||x?{}:Yf(n),!a)return h?uc(n,Ml(s,n)):ic(n,rf(s,n))}else{if(!H[v])return u?n:{};s=vc(n,v,a)}}o||(o=new Qn);var S=o.get(n);if(S)return S;o.set(n,s),So(n)?n.forEach(function(C){s.add(qn(C,t,e,C,n,o))}):wo(n)&&n.forEach(function(C,E){s.set(E,qn(C,t,e,E,n,o))});var F=d?h?Di:Oi:h?Cn:cn,R=_?i:F(n);return Un(R||n,function(C,E){R&&(E=C,C=n[E]),xe(s,E,qn(C,t,e,E,n,o))}),s}function bl(n){var t=cn(n);return function(e){return uf(e,n,t)}}function uf(n,t,e){var r=e.length;if(n==null)return!r;for(n=$(n);r--;){var u=e[r],o=t[u],s=n[u];if(s===i&&!(u in n)||!o(s))return!1}return!0}function ff(n,t,e){if(typeof n!="function")throw new Nn(y);return Ce(function(){n.apply(i,e)},t)}function ye(n,t,e,r){var u=-1,o=Ke,s=!0,a=n.length,h=[],d=t.length;if(!a)return h;e&&(t=Z(t,Rn(e))),r?(o=ni,s=!1):t.length>=m&&(o=pe,s=!1,t=new Ut(t));n:for(;++u<a;){var _=n[u],v=e==null?_:e(_);if(_=r||_!==0?_:0,s&&v===v){for(var x=d;x--;)if(t[x]===v)continue n;h.push(_)}else o(t,v,r)||h.push(_)}return h}var Ft=Of(et),of=Of(_i,!0);function Rl(n,t){var e=!0;return Ft(n,function(r,u,o){return e=!!t(r,u,o),e}),e}function ar(n,t,e){for(var r=-1,u=n.length;++r<u;){var o=n[r],s=t(o);if(s!=null&&(a===i?s===s&&!En(s):e(s,a)))var a=s,h=o}return h}function Ll(n,t,e,r){var u=n.length;for(e=b(e),e<0&&(e=-e>u?0:u+e),r=r===i||r>u?u:b(r),r<0&&(r+=u),r=e>r?0:Fo(r);e<r;)n[e++]=t;return n}function sf(n,t){var e=[];return Ft(n,function(r,u,o){t(r,u,o)&&e.push(r)}),e}function vn(n,t,e,r,u){var o=-1,s=n.length;for(e||(e=xc),u||(u=[]);++o<s;){var a=n[o];t>0&&e(a)?t>1?vn(a,t-1,e,r,u):wt(u,a):r||(u[u.length]=a)}return u}var di=Df(),af=Df(!0);function et(n,t){return n&&di(n,t,cn)}function _i(n,t){return n&&af(n,t,cn)}function lr(n,t){return yt(t,function(e){return pt(n[e])})}function Gt(n,t){t=It(t,n);for(var e=0,r=t.length;n!=null&&e<r;)n=n[it(t[e++])];return e&&e==r?n:i}function lf(n,t,e){var r=t(n);return M(n)?r:wt(r,e(n))}function wn(n){return n==null?n===i?fs:Ne:Bt&&Bt in $(n)?pc(n):Cc(n)}function vi(n,t){return n>t}function El(n,t){return n!=null&&G.call(n,t)}function Ol(n,t){return n!=null&&t in $(n)}function Dl(n,t,e){return n>=mn(t,e)&&n<sn(t,e)}function mi(n,t,e){for(var r=e?ni:Ke,u=n[0].length,o=n.length,s=o,a=p(o),h=1/0,d=[];s--;){var _=n[s];s&&t&&(_=Z(_,Rn(t))),h=mn(_.length,h),a[s]=!e&&(t||u>=120&&_.length>=120)?new Ut(s&&_):i}_=n[0];var v=-1,x=a[0];n:for(;++v<u&&d.length<h;){var S=_[v],F=t?t(S):S;if(S=e||S!==0?S:0,!(x?pe(x,F):r(d,F,e))){for(s=o;--s;){var R=a[s];if(!(R?pe(R,F):r(n[s],F,e)))continue n}x&&x.push(F),d.push(S)}}return d}function Pl(n,t,e,r){return et(n,function(u,o,s){t(r,e(u),o,s)}),r}function we(n,t,e){t=It(t,n),n=Qf(n,t);var r=n==null?n:n[it(kn(t))];return r==null?i:bn(r,n,e)}function cf(n){return Q(n)&&wn(n)==ft}function Bl(n){return Q(n)&&wn(n)==he}function Wl(n){return Q(n)&&wn(n)==xt}function Ae(n,t,e,r,u){return n===t?!0:n==null||t==null||!Q(n)&&!Q(t)?n!==n&&t!==t:Ul(n,t,e,r,Ae,u)}function Ul(n,t,e,r,u,o){var s=M(n),a=M(t),h=s?Dt:xn(n),d=a?Dt:xn(t);h=h==ft?Zn:h,d=d==ft?Zn:d;var _=h==Zn,v=d==Zn,x=h==d;if(x&&bt(n)){if(!bt(t))return!1;s=!0,_=!1}if(x&&!_)return o||(o=new Qn),s||ue(n)?Hf(n,t,e,r,u,o):cc(n,t,h,e,r,u,o);if(!(e&fn)){var S=_&&G.call(n,"__wrapped__"),F=v&&G.call(t,"__wrapped__");if(S||F){var R=S?n.value():n,C=F?t.value():t;return o||(o=new Qn),u(R,C,e,r,o)}}return x?(o||(o=new Qn),hc(n,t,e,r,u,o)):!1}function Nl(n){return Q(n)&&xn(n)==K}function xi(n,t,e,r){var u=e.length,o=u,s=!r;if(n==null)return!o;for(n=$(n);u--;){var a=e[u];if(s&&a[2]?a[1]!==n[a[0]]:!(a[0]in n))return!1}for(;++u<o;){a=e[u];var h=a[0],d=n[h],_=a[1];if(s&&a[2]){if(d===i&&!(h in n))return!1}else{var v=new Qn;if(r)var x=r(d,_,h,n,t,v);if(!(x===i?Ae(_,d,fn|Pn,r,v):x))return!1}}return!0}function hf(n){if(!X(n)||wc(n))return!1;var t=pt(n)?Na:bs;return t.test($t(n))}function Gl(n){return Q(n)&&wn(n)==ae}function ql(n){return Q(n)&&xn(n)==Xn}function $l(n){return Q(n)&&Ir(n.length)&&!!z[wn(n)]}function pf(n){return typeof n=="function"?n:n==null?In:typeof n=="object"?M(n)?_f(n[0],n[1]):df(n):Bo(n)}function yi(n){if(!Fe(n))return Ka(n);var t=[];for(var e in $(n))G.call(n,e)&&e!="constructor"&&t.push(e);return t}function kl(n){if(!X(n))return Fc(n);var t=Fe(n),e=[];for(var r in n)r=="constructor"&&(t||!G.call(n,r))||e.push(r);return e}function wi(n,t){return n<t}function gf(n,t){var e=-1,r=Fn(n)?p(n.length):[];return Ft(n,function(u,o,s){r[++e]=t(u,o,s)}),r}function df(n){var t=Bi(n);return t.length==1&&t[0][2]?Xf(t[0][0],t[0][1]):function(e){return e===n||xi(e,n,t)}}function _f(n,t){return Ui(n)&&Zf(t)?Xf(it(n),t):function(e){var r=Zi(e,n);return r===i&&r===t?Xi(e,n):Ae(t,r,fn|Pn)}}function cr(n,t,e,r,u){n!==t&&di(t,function(o,s){if(u||(u=new Qn),X(o))Hl(n,t,s,e,cr,r,u);else{var a=r?r(Gi(n,s),o,s+"",n,t,u):i;a===i&&(a=o),pi(n,s,a)}},Cn)}function Hl(n,t,e,r,u,o,s){var a=Gi(n,e),h=Gi(t,e),d=s.get(h);if(d){pi(n,e,d);return}var _=o?o(a,h,e+"",n,t,s):i,v=_===i;if(v){var x=M(h),S=!x&&bt(h),F=!x&&!S&&ue(h);_=h,x||S||F?M(a)?_=a:en(a)?_=Tn(a):S?(v=!1,_=Mf(h,!0)):F?(v=!1,_=bf(h,!0)):_=[]:Ie(h)||kt(h)?(_=a,kt(a)?_=Co(a):(!X(a)||pt(a))&&(_=Yf(h))):v=!1}v&&(s.set(h,_),u(_,h,r,o,s),s.delete(h)),pi(n,e,_)}function vf(n,t){var e=n.length;if(!!e)return t+=t<0?e:0,ht(t,e)?n[t]:i}function mf(n,t,e){t.length?t=Z(t,function(o){return M(o)?function(s){return Gt(s,o.length===1?o[0]:o)}:o}):t=[In];var r=-1;t=Z(t,Rn(T()));var u=gf(n,function(o,s,a){var h=Z(t,function(d){return d(o)});return{criteria:h,index:++r,value:o}});return va(u,function(o,s){return rc(o,s,e)})}function Kl(n,t){return xf(n,t,function(e,r){return Xi(n,r)})}function xf(n,t,e){for(var r=-1,u=t.length,o={};++r<u;){var s=t[r],a=Gt(n,s);e(a,s)&&Se(o,It(s,n),a)}return o}function zl(n){return function(t){return Gt(t,n)}}function Ai(n,t,e,r){var u=r?_a:Xt,o=-1,s=t.length,a=n;for(n===t&&(t=Tn(t)),e&&(a=Z(n,Rn(e)));++o<s;)for(var h=0,d=t[o],_=e?e(d):d;(h=u(a,_,h,r))>-1;)a!==n&&tr.call(a,h,1),tr.call(n,h,1);return n}function yf(n,t){for(var e=n?t.length:0,r=e-1;e--;){var u=t[e];if(e==r||u!==o){var o=u;ht(u)?tr.call(n,u,1):Ci(n,u)}}return n}function Si(n,t){return n+ir(ju()*(t-n+1))}function Yl(n,t,e,r){for(var u=-1,o=sn(rr((t-n)/(e||1)),0),s=p(o);o--;)s[r?o:++u]=n,n+=e;return s}function Ti(n,t){var e="";if(!n||t<1||t>Yn)return e;do t%2&&(e+=n),t=ir(t/2),t&&(n+=n);while(t);return e}function L(n,t){return qi(Jf(n,t,In),n+"")}function Zl(n){return ef(fe(n))}function Xl(n,t){var e=fe(n);return wr(e,Nt(t,0,e.length))}function Se(n,t,e,r){if(!X(n))return n;t=It(t,n);for(var u=-1,o=t.length,s=o-1,a=n;a!=null&&++u<o;){var h=it(t[u]),d=e;if(h==="__proto__"||h==="constructor"||h==="prototype")return n;if(u!=s){var _=a[h];d=r?r(_,h,a):i,d===i&&(d=X(_)?_:ht(t[u+1])?[]:{})}xe(a,h,d),a=a[h]}return n}var wf=ur?function(n,t){return ur.set(n,t),n}:In,Jl=er?function(n,t){return er(n,"toString",{configurable:!0,enumerable:!1,value:Qi(t),writable:!0})}:In;function Ql(n){return wr(fe(n))}function $n(n,t,e){var r=-1,u=n.length;t<0&&(t=-t>u?0:u+t),e=e>u?u:e,e<0&&(e+=u),u=t>e?0:e-t>>>0,t>>>=0;for(var o=p(u);++r<u;)o[r]=n[r+t];return o}function Vl(n,t){var e;return Ft(n,function(r,u,o){return e=t(r,u,o),!e}),!!e}function hr(n,t,e){var r=0,u=n==null?r:n.length;if(typeof t=="number"&&t===t&&u<=Pe){for(;r<u;){var o=r+u>>>1,s=n[o];s!==null&&!En(s)&&(e?s<=t:s<t)?r=o+1:u=o}return u}return Fi(n,t,In,e)}function Fi(n,t,e,r){var u=0,o=n==null?0:n.length;if(o===0)return 0;t=e(t);for(var s=t!==t,a=t===null,h=En(t),d=t===i;u<o;){var _=ir((u+o)/2),v=e(n[_]),x=v!==i,S=v===null,F=v===v,R=En(v);if(s)var C=r||F;else d?C=F&&(r||x):a?C=F&&x&&(r||!S):h?C=F&&x&&!S&&(r||!R):S||R?C=!1:C=r?v<=t:v<t;C?u=_+1:o=_}return mn(o,De)}function Af(n,t){for(var e=-1,r=n.length,u=0,o=[];++e<r;){var s=n[e],a=t?t(s):s;if(!e||!Vn(a,h)){var h=a;o[u++]=s===0?0:s}}return o}function Sf(n){return typeof n=="number"?n:En(n)?Ot:+n}function Ln(n){if(typeof n=="string")return n;if(M(n))return Z(n,Ln)+"";if(En(n))return nf?nf.call(n):"";var t=n+"";return t=="0"&&1/n==-nt?"-0":t}function Ct(n,t,e){var r=-1,u=Ke,o=n.length,s=!0,a=[],h=a;if(e)s=!1,u=ni;else if(o>=m){var d=t?null:ac(n);if(d)return Ye(d);s=!1,u=pe,h=new Ut}else h=t?[]:a;n:for(;++r<o;){var _=n[r],v=t?t(_):_;if(_=e||_!==0?_:0,s&&v===v){for(var x=h.length;x--;)if(h[x]===v)continue n;t&&h.push(v),a.push(_)}else u(h,v,e)||(h!==a&&h.push(v),a.push(_))}return a}function Ci(n,t){return t=It(t,n),n=Qf(n,t),n==null||delete n[it(kn(t))]}function Tf(n,t,e,r){return Se(n,t,e(Gt(n,t)),r)}function pr(n,t,e,r){for(var u=n.length,o=r?u:-1;(r?o--:++o<u)&&t(n[o],o,n););return e?$n(n,r?0:o,r?o+1:u):$n(n,r?o+1:0,r?u:o)}function Ff(n,t){var e=n;return e instanceof D&&(e=e.value()),ti(t,function(r,u){return u.func.apply(u.thisArg,wt([r],u.args))},e)}function Ii(n,t,e){var r=n.length;if(r<2)return r?Ct(n[0]):[];for(var u=-1,o=p(r);++u<r;)for(var s=n[u],a=-1;++a<r;)a!=u&&(o[u]=ye(o[u]||s,n[a],t,e));return Ct(vn(o,1),t,e)}function Cf(n,t,e){for(var r=-1,u=n.length,o=t.length,s={};++r<u;){var a=r<o?t[r]:i;e(s,n[r],a)}return s}function Mi(n){return en(n)?n:[]}function bi(n){return typeof n=="function"?n:In}function It(n,t){return M(n)?n:Ui(n,t)?[n]:to(N(n))}var jl=L;function Mt(n,t,e){var r=n.length;return e=e===i?r:e,!t&&e>=r?n:$n(n,t,e)}var If=Ga||function(n){return ln.clearTimeout(n)};function Mf(n,t){if(t)return n.slice();var e=n.length,r=Zu?Zu(e):new n.constructor(e);return n.copy(r),r}function Ri(n){var t=new n.constructor(n.byteLength);return new je(t).set(new je(n)),t}function nc(n,t){var e=t?Ri(n.buffer):n.buffer;return new n.constructor(e,n.byteOffset,n.byteLength)}function tc(n){var t=new n.constructor(n.source,lu.exec(n));return t.lastIndex=n.lastIndex,t}function ec(n){return me?$(me.call(n)):{}}function bf(n,t){var e=t?Ri(n.buffer):n.buffer;return new n.constructor(e,n.byteOffset,n.length)}function Rf(n,t){if(n!==t){var e=n!==i,r=n===null,u=n===n,o=En(n),s=t!==i,a=t===null,h=t===t,d=En(t);if(!a&&!d&&!o&&n>t||o&&s&&h&&!a&&!d||r&&s&&h||!e&&h||!u)return 1;if(!r&&!o&&!d&&n<t||d&&e&&u&&!r&&!o||a&&e&&u||!s&&u||!h)return-1}return 0}function rc(n,t,e){for(var r=-1,u=n.criteria,o=t.criteria,s=u.length,a=e.length;++r<s;){var h=Rf(u[r],o[r]);if(h){if(r>=a)return h;var d=e[r];return h*(d=="desc"?-1:1)}}return n.index-t.index}function Lf(n,t,e,r){for(var u=-1,o=n.length,s=e.length,a=-1,h=t.length,d=sn(o-s,0),_=p(h+d),v=!r;++a<h;)_[a]=t[a];for(;++u<s;)(v||u<o)&&(_[e[u]]=n[u]);for(;d--;)_[a++]=n[u++];return _}function Ef(n,t,e,r){for(var u=-1,o=n.length,s=-1,a=e.length,h=-1,d=t.length,_=sn(o-a,0),v=p(_+d),x=!r;++u<_;)v[u]=n[u];for(var S=u;++h<d;)v[S+h]=t[h];for(;++s<a;)(x||u<o)&&(v[S+e[s]]=n[u++]);return v}function Tn(n,t){var e=-1,r=n.length;for(t||(t=p(r));++e<r;)t[e]=n[e];return t}function rt(n,t,e,r){var u=!e;e||(e={});for(var o=-1,s=t.length;++o<s;){var a=t[o],h=r?r(e[a],n[a],a,e,n):i;h===i&&(h=n[a]),u?at(e,a,h):xe(e,a,h)}return e}function ic(n,t){return rt(n,Wi(n),t)}function uc(n,t){return rt(n,Kf(n),t)}function gr(n,t){return function(e,r){var u=M(e)?la:Il,o=t?t():{};return u(e,n,T(r,2),o)}}function ee(n){return L(function(t,e){var r=-1,u=e.length,o=u>1?e[u-1]:i,s=u>2?e[2]:i;for(o=n.length>3&&typeof o=="function"?(u--,o):i,s&&An(e[0],e[1],s)&&(o=u<3?i:o,u=1),t=$(t);++r<u;){var a=e[r];a&&n(t,a,r,o)}return t})}function Of(n,t){return function(e,r){if(e==null)return e;if(!Fn(e))return n(e,r);for(var u=e.length,o=t?u:-1,s=$(e);(t?o--:++o<u)&&r(s[o],o,s)!==!1;);return e}}function Df(n){return function(t,e,r){for(var u=-1,o=$(t),s=r(t),a=s.length;a--;){var h=s[n?a:++u];if(e(o[h],h,o)===!1)break}return t}}function fc(n,t,e){var r=t&nn,u=Te(n);function o(){var s=this&&this!==ln&&this instanceof o?u:n;return s.apply(r?e:this,arguments)}return o}function Pf(n){return function(t){t=N(t);var e=Jt(t)?Jn(t):i,r=e?e[0]:t.charAt(0),u=e?Mt(e,1).join(""):t.slice(1);return r[n]()+u}}function re(n){return function(t){return ti(Do(Oo(t).replace(Js,"")),n,"")}}function Te(n){return function(){var t=arguments;switch(t.length){case 0:return new n;case 1:return new n(t[0]);case 2:return new n(t[0],t[1]);case 3:return new n(t[0],t[1],t[2]);case 4:return new n(t[0],t[1],t[2],t[3]);case 5:return new n(t[0],t[1],t[2],t[3],t[4]);case 6:return new n(t[0],t[1],t[2],t[3],t[4],t[5]);case 7:return new n(t[0],t[1],t[2],t[3],t[4],t[5],t[6])}var e=te(n.prototype),r=n.apply(e,t);return X(r)?r:e}}function oc(n,t,e){var r=Te(n);function u(){for(var o=arguments.length,s=p(o),a=o,h=ie(u);a--;)s[a]=arguments[a];var d=o<3&&s[0]!==h&&s[o-1]!==h?[]:At(s,h);if(o-=d.length,o<e)return Gf(n,t,dr,u.placeholder,i,s,d,i,i,e-o);var _=this&&this!==ln&&this instanceof u?r:n;return bn(_,this,s)}return u}function Bf(n){return function(t,e,r){var u=$(t);if(!Fn(t)){var o=T(e,3);t=cn(t),e=function(a){return o(u[a],a,u)}}var s=n(t,e,r);return s>-1?u[o?t[s]:s]:i}}function Wf(n){return ct(function(t){var e=t.length,r=e,u=Gn.prototype.thru;for(n&&t.reverse();r--;){var o=t[r];if(typeof o!="function")throw new Nn(y);if(u&&!s&&xr(o)=="wrapper")var s=new Gn([],!0)}for(r=s?r:e;++r<e;){o=t[r];var a=xr(o),h=a=="wrapper"?Pi(o):i;h&&Ni(h[0])&&h[1]==(yn|hn|pn|W)&&!h[4].length&&h[9]==1?s=s[xr(h[0])].apply(s,h[3]):s=o.length==1&&Ni(o)?s[a]():s.thru(o)}return function(){var d=arguments,_=d[0];if(s&&d.length==1&&M(_))return s.plant(_).value();for(var v=0,x=e?t[v].apply(this,d):_;++v<e;)x=t[v].call(this,x);return x}})}function dr(n,t,e,r,u,o,s,a,h,d){var _=t&yn,v=t&nn,x=t&q,S=t&(hn|Bn),F=t&dn,R=x?i:Te(n);function C(){for(var E=arguments.length,P=p(E),On=E;On--;)P[On]=arguments[On];if(S)var Sn=ie(C),Dn=xa(P,Sn);if(r&&(P=Lf(P,r,u,S)),o&&(P=Ef(P,o,s,S)),E-=Dn,S&&E<d){var rn=At(P,Sn);return Gf(n,t,dr,C.placeholder,e,P,rn,a,h,d-E)}var jn=v?e:this,dt=x?jn[n]:n;return E=P.length,a?P=Ic(P,a):F&&E>1&&P.reverse(),_&&h<E&&(P.length=h),this&&this!==ln&&this instanceof C&&(dt=R||Te(dt)),dt.apply(jn,P)}return C}function Uf(n,t){return function(e,r){return Pl(e,n,t(r),{})}}function _r(n,t){return function(e,r){var u;if(e===i&&r===i)return t;if(e!==i&&(u=e),r!==i){if(u===i)return r;typeof e=="string"||typeof r=="string"?(e=Ln(e),r=Ln(r)):(e=Sf(e),r=Sf(r)),u=n(e,r)}return u}}function Li(n){return ct(function(t){return t=Z(t,Rn(T())),L(function(e){var r=this;return n(t,function(u){return bn(u,r,e)})})})}function vr(n,t){t=t===i?" ":Ln(t);var e=t.length;if(e<2)return e?Ti(t,n):t;var r=Ti(t,rr(n/Qt(t)));return Jt(t)?Mt(Jn(r),0,n).join(""):r.slice(0,n)}function sc(n,t,e,r){var u=t&nn,o=Te(n);function s(){for(var a=-1,h=arguments.length,d=-1,_=r.length,v=p(_+h),x=this&&this!==ln&&this instanceof s?o:n;++d<_;)v[d]=r[d];for(;h--;)v[d++]=arguments[++a];return bn(x,u?e:this,v)}return s}function Nf(n){return function(t,e,r){return r&&typeof r!="number"&&An(t,e,r)&&(e=r=i),t=gt(t),e===i?(e=t,t=0):e=gt(e),r=r===i?t<e?1:-1:gt(r),Yl(t,e,r,n)}}function mr(n){return function(t,e){return typeof t=="string"&&typeof e=="string"||(t=Hn(t),e=Hn(e)),n(t,e)}}function Gf(n,t,e,r,u,o,s,a,h,d){var _=t&hn,v=_?s:i,x=_?i:s,S=_?o:i,F=_?i:o;t|=_?pn:gn,t&=~(_?gn:pn),t&vt||(t&=~(nn|q));var R=[n,t,u,S,v,F,x,a,h,d],C=e.apply(i,R);return Ni(n)&&Vf(C,R),C.placeholder=r,jf(C,n,t)}function Ei(n){var t=on[n];return function(e,r){if(e=Hn(e),r=r==null?0:mn(b(r),292),r&&Vu(e)){var u=(N(e)+"e").split("e"),o=t(u[0]+"e"+(+u[1]+r));return u=(N(o)+"e").split("e"),+(u[0]+"e"+(+u[1]-r))}return t(e)}}var ac=jt&&1/Ye(new jt([,-0]))[1]==nt?function(n){return new jt(n)}:nu;function qf(n){return function(t){var e=xn(t);return e==K?si(t):e==Xn?Ca(t):ma(t,n(t))}}function lt(n,t,e,r,u,o,s,a){var h=t&q;if(!h&&typeof n!="function")throw new Nn(y);var d=r?r.length:0;if(d||(t&=~(pn|gn),r=u=i),s=s===i?s:sn(b(s),0),a=a===i?a:b(a),d-=u?u.length:0,t&gn){var _=r,v=u;r=u=i}var x=h?i:Pi(n),S=[n,t,e,r,u,_,v,o,s,a];if(x&&Tc(S,x),n=S[0],t=S[1],e=S[2],r=S[3],u=S[4],a=S[9]=S[9]===i?h?0:n.length:sn(S[9]-d,0),!a&&t&(hn|Bn)&&(t&=~(hn|Bn)),!t||t==nn)var F=fc(n,t,e);else t==hn||t==Bn?F=oc(n,t,a):(t==pn||t==(nn|pn))&&!u.length?F=sc(n,t,e,r):F=dr.apply(i,S);var R=x?wf:Vf;return jf(R(F,S),n,t)}function $f(n,t,e,r){return n===i||Vn(n,Vt[e])&&!G.call(r,e)?t:n}function kf(n,t,e,r,u,o){return X(n)&&X(t)&&(o.set(t,n),cr(n,t,i,kf,o),o.delete(t)),n}function lc(n){return Ie(n)?i:n}function Hf(n,t,e,r,u,o){var s=e&fn,a=n.length,h=t.length;if(a!=h&&!(s&&h>a))return!1;var d=o.get(n),_=o.get(t);if(d&&_)return d==t&&_==n;var v=-1,x=!0,S=e&Pn?new Ut:i;for(o.set(n,t),o.set(t,n);++v<a;){var F=n[v],R=t[v];if(r)var C=s?r(R,F,v,t,n,o):r(F,R,v,n,t,o);if(C!==i){if(C)continue;x=!1;break}if(S){if(!ei(t,function(E,P){if(!pe(S,P)&&(F===E||u(F,E,e,r,o)))return S.push(P)})){x=!1;break}}else if(!(F===R||u(F,R,e,r,o))){x=!1;break}}return o.delete(n),o.delete(t),x}function cc(n,t,e,r,u,o,s){switch(e){case Yt:if(n.byteLength!=t.byteLength||n.byteOffset!=t.byteOffset)return!1;n=n.buffer,t=t.buffer;case he:return!(n.byteLength!=t.byteLength||!o(new je(n),new je(t)));case mt:case xt:case tt:return Vn(+n,+t);case k:return n.name==t.name&&n.message==t.message;case ae:case le:return n==t+"";case K:var a=si;case Xn:var h=r&fn;if(a||(a=Ye),n.size!=t.size&&!h)return!1;var d=s.get(n);if(d)return d==t;r|=Pn,s.set(n,t);var _=Hf(a(n),a(t),r,u,o,s);return s.delete(n),_;case qe:if(me)return me.call(n)==me.call(t)}return!1}function hc(n,t,e,r,u,o){var s=e&fn,a=Oi(n),h=a.length,d=Oi(t),_=d.length;if(h!=_&&!s)return!1;for(var v=h;v--;){var x=a[v];if(!(s?x in t:G.call(t,x)))return!1}var S=o.get(n),F=o.get(t);if(S&&F)return S==t&&F==n;var R=!0;o.set(n,t),o.set(t,n);for(var C=s;++v<h;){x=a[v];var E=n[x],P=t[x];if(r)var On=s?r(P,E,x,t,n,o):r(E,P,x,n,t,o);if(!(On===i?E===P||u(E,P,e,r,o):On)){R=!1;break}C||(C=x=="constructor")}if(R&&!C){var Sn=n.constructor,Dn=t.constructor;Sn!=Dn&&"constructor"in n&&"constructor"in t&&!(typeof Sn=="function"&&Sn instanceof Sn&&typeof Dn=="function"&&Dn instanceof Dn)&&(R=!1)}return o.delete(n),o.delete(t),R}function ct(n){return qi(Jf(n,i,uo),n+"")}function Oi(n){return lf(n,cn,Wi)}function Di(n){return lf(n,Cn,Kf)}var Pi=ur?function(n){return ur.get(n)}:nu;function xr(n){for(var t=n.name+"",e=ne[t],r=G.call(ne,t)?e.length:0;r--;){var u=e[r],o=u.func;if(o==null||o==n)return u.name}return t}function ie(n){var t=G.call(f,"placeholder")?f:n;return t.placeholder}function T(){var n=f.iteratee||Vi;return n=n===Vi?pf:n,arguments.length?n(arguments[0],arguments[1]):n}function yr(n,t){var e=n.__data__;return yc(t)?e[typeof t=="string"?"string":"hash"]:e.map}function Bi(n){for(var t=cn(n),e=t.length;e--;){var r=t[e],u=n[r];t[e]=[r,u,Zf(u)]}return t}function qt(n,t){var e=Sa(n,t);return hf(e)?e:i}function pc(n){var t=G.call(n,Bt),e=n[Bt];try{n[Bt]=i;var r=!0}catch(o){}var u=Qe.call(n);return r&&(t?n[Bt]=e:delete n[Bt]),u}var Wi=li?function(n){return n==null?[]:(n=$(n),yt(li(n),function(t){return Ju.call(n,t)}))}:tu,Kf=li?function(n){for(var t=[];n;)wt(t,Wi(n)),n=nr(n);return t}:tu,xn=wn;(ci&&xn(new ci(new ArrayBuffer(1)))!=Yt||de&&xn(new de)!=K||hi&&xn(hi.resolve())!=Ge||jt&&xn(new jt)!=Xn||_e&&xn(new _e)!=ce)&&(xn=function(n){var t=wn(n),e=t==Zn?n.constructor:i,r=e?$t(e):"";if(r)switch(r){case Xa:return Yt;case Ja:return K;case Qa:return Ge;case Va:return Xn;case ja:return ce}return t});function gc(n,t,e){for(var r=-1,u=e.length;++r<u;){var o=e[r],s=o.size;switch(o.type){case"drop":n+=s;break;case"dropRight":t-=s;break;case"take":t=mn(t,n+s);break;case"takeRight":n=sn(n,t-s);break}}return{start:n,end:t}}function dc(n){var t=n.match(ws);return t?t[1].split(As):[]}function zf(n,t,e){t=It(t,n);for(var r=-1,u=t.length,o=!1;++r<u;){var s=it(t[r]);if(!(o=n!=null&&e(n,s)))break;n=n[s]}return o||++r!=u?o:(u=n==null?0:n.length,!!u&&Ir(u)&&ht(s,u)&&(M(n)||kt(n)))}function _c(n){var t=n.length,e=new n.constructor(t);return t&&typeof n[0]=="string"&&G.call(n,"index")&&(e.index=n.index,e.input=n.input),e}function Yf(n){return typeof n.constructor=="function"&&!Fe(n)?te(nr(n)):{}}function vc(n,t,e){var r=n.constructor;switch(t){case he:return Ri(n);case mt:case xt:return new r(+n);case Yt:return nc(n,e);case Br:case Wr:case Ur:case Nr:case Gr:case qr:case $r:case kr:case Hr:return bf(n,e);case K:return new r;case tt:case le:return new r(n);case ae:return tc(n);case Xn:return new r;case qe:return ec(n)}}function mc(n,t){var e=t.length;if(!e)return n;var r=e-1;return t[r]=(e>1?"& ":"")+t[r],t=t.join(e>2?", ":" "),n.replace(ys,`{\n/* [wrapped with `+t+`] */\n`)}function xc(n){return M(n)||kt(n)||!!(Qu&&n&&n[Qu])}function ht(n,t){var e=typeof n;return t=t==null?Yn:t,!!t&&(e=="number"||e!="symbol"&&Ls.test(n))&&n>-1&&n%1==0&&n<t}function An(n,t,e){if(!X(e))return!1;var r=typeof t;return(r=="number"?Fn(e)&&ht(t,e.length):r=="string"&&t in e)?Vn(e[t],n):!1}function Ui(n,t){if(M(n))return!1;var e=typeof n;return e=="number"||e=="symbol"||e=="boolean"||n==null||En(n)?!0:_s.test(n)||!ds.test(n)||t!=null&&n in $(t)}function yc(n){var t=typeof n;return t=="string"||t=="number"||t=="symbol"||t=="boolean"?n!=="__proto__":n===null}function Ni(n){var t=xr(n),e=f[t];if(typeof e!="function"||!(t in D.prototype))return!1;if(n===e)return!0;var r=Pi(e);return!!r&&n===r[0]}function wc(n){return!!Yu&&Yu in n}var Ac=Xe?pt:eu;function Fe(n){var t=n&&n.constructor,e=typeof t=="function"&&t.prototype||Vt;return n===e}function Zf(n){return n===n&&!X(n)}function Xf(n,t){return function(e){return e==null?!1:e[n]===t&&(t!==i||n in $(e))}}function Sc(n){var t=Fr(n,function(r){return e.size===V&&e.clear(),r}),e=t.cache;return t}function Tc(n,t){var e=n[1],r=t[1],u=e|r,o=u<(nn|q|yn),s=r==yn&&e==hn||r==yn&&e==W&&n[7].length<=t[8]||r==(yn|W)&&t[7].length<=t[8]&&e==hn;if(!(o||s))return n;r&nn&&(n[2]=t[2],u|=e&nn?0:vt);var a=t[3];if(a){var h=n[3];n[3]=h?Lf(h,a,t[4]):a,n[4]=h?At(n[3],Y):t[4]}return a=t[5],a&&(h=n[5],n[5]=h?Ef(h,a,t[6]):a,n[6]=h?At(n[5],Y):t[6]),a=t[7],a&&(n[7]=a),r&yn&&(n[8]=n[8]==null?t[8]:mn(n[8],t[8])),n[9]==null&&(n[9]=t[9]),n[0]=t[0],n[1]=u,n}function Fc(n){var t=[];if(n!=null)for(var e in $(n))t.push(e);return t}function Cc(n){return Qe.call(n)}function Jf(n,t,e){return t=sn(t===i?n.length-1:t,0),function(){for(var r=arguments,u=-1,o=sn(r.length-t,0),s=p(o);++u<o;)s[u]=r[t+u];u=-1;for(var a=p(t+1);++u<t;)a[u]=r[u];return a[t]=e(s),bn(n,this,a)}}function Qf(n,t){return t.length<2?n:Gt(n,$n(t,0,-1))}function Ic(n,t){for(var e=n.length,r=mn(t.length,e),u=Tn(n);r--;){var o=t[r];n[r]=ht(o,e)?u[o]:i}return n}function Gi(n,t){if(!(t==="constructor"&&typeof n[t]=="function")&&t!="__proto__")return n[t]}var Vf=no(wf),Ce=$a||function(n,t){return ln.setTimeout(n,t)},qi=no(Jl);function jf(n,t,e){var r=t+"";return qi(n,mc(r,Mc(dc(r),e)))}function no(n){var t=0,e=0;return function(){var r=za(),u=Et-(r-e);if(e=r,u>0){if(++t>=Kt)return arguments[0]}else t=0;return n.apply(i,arguments)}}function wr(n,t){var e=-1,r=n.length,u=r-1;for(t=t===i?r:t;++e<t;){var o=Si(e,u),s=n[o];n[o]=n[e],n[e]=s}return n.length=t,n}var to=Sc(function(n){var t=[];return n.charCodeAt(0)===46&&t.push(""),n.replace(vs,function(e,r,u,o){t.push(u?o.replace(Fs,"$1"):r||e)}),t});function it(n){if(typeof n=="string"||En(n))return n;var t=n+"";return t=="0"&&1/n==-nt?"-0":t}function $t(n){if(n!=null){try{return Je.call(n)}catch(t){}try{return n+""}catch(t){}}return""}function Mc(n,t){return Un(Be,function(e){var r="_."+e[0];t&e[1]&&!Ke(n,r)&&n.push(r)}),n.sort()}function eo(n){if(n instanceof D)return n.clone();var t=new Gn(n.__wrapped__,n.__chain__);return t.__actions__=Tn(n.__actions__),t.__index__=n.__index__,t.__values__=n.__values__,t}function bc(n,t,e){(e?An(n,t,e):t===i)?t=1:t=sn(b(t),0);var r=n==null?0:n.length;if(!r||t<1)return[];for(var u=0,o=0,s=p(rr(r/t));u<r;)s[o++]=$n(n,u,u+=t);return s}function Rc(n){for(var t=-1,e=n==null?0:n.length,r=0,u=[];++t<e;){var o=n[t];o&&(u[r++]=o)}return u}function Lc(){var n=arguments.length;if(!n)return[];for(var t=p(n-1),e=arguments[0],r=n;r--;)t[r-1]=arguments[r];return wt(M(e)?Tn(e):[e],vn(t,1))}var Ec=L(function(n,t){return en(n)?ye(n,vn(t,1,en,!0)):[]}),Oc=L(function(n,t){var e=kn(t);return en(e)&&(e=i),en(n)?ye(n,vn(t,1,en,!0),T(e,2)):[]}),Dc=L(function(n,t){var e=kn(t);return en(e)&&(e=i),en(n)?ye(n,vn(t,1,en,!0),i,e):[]});function Pc(n,t,e){var r=n==null?0:n.length;return r?(t=e||t===i?1:b(t),$n(n,t<0?0:t,r)):[]}function Bc(n,t,e){var r=n==null?0:n.length;return r?(t=e||t===i?1:b(t),t=r-t,$n(n,0,t<0?0:t)):[]}function Wc(n,t){return n&&n.length?pr(n,T(t,3),!0,!0):[]}function Uc(n,t){return n&&n.length?pr(n,T(t,3),!0):[]}function Nc(n,t,e,r){var u=n==null?0:n.length;return u?(e&&typeof e!="number"&&An(n,t,e)&&(e=0,r=u),Ll(n,t,e,r)):[]}function ro(n,t,e){var r=n==null?0:n.length;if(!r)return-1;var u=e==null?0:b(e);return u<0&&(u=sn(r+u,0)),ze(n,T(t,3),u)}function io(n,t,e){var r=n==null?0:n.length;if(!r)return-1;var u=r-1;return e!==i&&(u=b(e),u=e<0?sn(r+u,0):mn(u,r-1)),ze(n,T(t,3),u,!0)}function uo(n){var t=n==null?0:n.length;return t?vn(n,1):[]}function Gc(n){var t=n==null?0:n.length;return t?vn(n,nt):[]}function qc(n,t){var e=n==null?0:n.length;return e?(t=t===i?1:b(t),vn(n,t)):[]}function $c(n){for(var t=-1,e=n==null?0:n.length,r={};++t<e;){var u=n[t];r[u[0]]=u[1]}return r}function fo(n){return n&&n.length?n[0]:i}function kc(n,t,e){var r=n==null?0:n.length;if(!r)return-1;var u=e==null?0:b(e);return u<0&&(u=sn(r+u,0)),Xt(n,t,u)}function Hc(n){var t=n==null?0:n.length;return t?$n(n,0,-1):[]}var Kc=L(function(n){var t=Z(n,Mi);return t.length&&t[0]===n[0]?mi(t):[]}),zc=L(function(n){var t=kn(n),e=Z(n,Mi);return t===kn(e)?t=i:e.pop(),e.length&&e[0]===n[0]?mi(e,T(t,2)):[]}),Yc=L(function(n){var t=kn(n),e=Z(n,Mi);return t=typeof t=="function"?t:i,t&&e.pop(),e.length&&e[0]===n[0]?mi(e,i,t):[]});function Zc(n,t){return n==null?"":Ha.call(n,t)}function kn(n){var t=n==null?0:n.length;return t?n[t-1]:i}function Xc(n,t,e){var r=n==null?0:n.length;if(!r)return-1;var u=r;return e!==i&&(u=b(e),u=u<0?sn(r+u,0):mn(u,r-1)),t===t?Ma(n,t,u):ze(n,Nu,u,!0)}function Jc(n,t){return n&&n.length?vf(n,b(t)):i}var Qc=L(oo);function oo(n,t){return n&&n.length&&t&&t.length?Ai(n,t):n}function Vc(n,t,e){return n&&n.length&&t&&t.length?Ai(n,t,T(e,2)):n}function jc(n,t,e){return n&&n.length&&t&&t.length?Ai(n,t,i,e):n}var nh=ct(function(n,t){var e=n==null?0:n.length,r=gi(n,t);return yf(n,Z(t,function(u){return ht(u,e)?+u:u}).sort(Rf)),r});function th(n,t){var e=[];if(!(n&&n.length))return e;var r=-1,u=[],o=n.length;for(t=T(t,3);++r<o;){var s=n[r];t(s,r,n)&&(e.push(s),u.push(r))}return yf(n,u),e}function $i(n){return n==null?n:Za.call(n)}function eh(n,t,e){var r=n==null?0:n.length;return r?(e&&typeof e!="number"&&An(n,t,e)?(t=0,e=r):(t=t==null?0:b(t),e=e===i?r:b(e)),$n(n,t,e)):[]}function rh(n,t){return hr(n,t)}function ih(n,t,e){return Fi(n,t,T(e,2))}function uh(n,t){var e=n==null?0:n.length;if(e){var r=hr(n,t);if(r<e&&Vn(n[r],t))return r}return-1}function fh(n,t){return hr(n,t,!0)}function oh(n,t,e){return Fi(n,t,T(e,2),!0)}function sh(n,t){var e=n==null?0:n.length;if(e){var r=hr(n,t,!0)-1;if(Vn(n[r],t))return r}return-1}function ah(n){return n&&n.length?Af(n):[]}function lh(n,t){return n&&n.length?Af(n,T(t,2)):[]}function ch(n){var t=n==null?0:n.length;return t?$n(n,1,t):[]}function hh(n,t,e){return n&&n.length?(t=e||t===i?1:b(t),$n(n,0,t<0?0:t)):[]}function ph(n,t,e){var r=n==null?0:n.length;return r?(t=e||t===i?1:b(t),t=r-t,$n(n,t<0?0:t,r)):[]}function gh(n,t){return n&&n.length?pr(n,T(t,3),!1,!0):[]}function dh(n,t){return n&&n.length?pr(n,T(t,3)):[]}var _h=L(function(n){return Ct(vn(n,1,en,!0))}),vh=L(function(n){var t=kn(n);return en(t)&&(t=i),Ct(vn(n,1,en,!0),T(t,2))}),mh=L(function(n){var t=kn(n);return t=typeof t=="function"?t:i,Ct(vn(n,1,en,!0),i,t)});function xh(n){return n&&n.length?Ct(n):[]}function yh(n,t){return n&&n.length?Ct(n,T(t,2)):[]}function wh(n,t){return t=typeof t=="function"?t:i,n&&n.length?Ct(n,i,t):[]}function ki(n){if(!(n&&n.length))return[];var t=0;return n=yt(n,function(e){if(en(e))return t=sn(e.length,t),!0}),fi(t,function(e){return Z(n,ri(e))})}function so(n,t){if(!(n&&n.length))return[];var e=ki(n);return t==null?e:Z(e,function(r){return bn(t,i,r)})}var Ah=L(function(n,t){return en(n)?ye(n,t):[]}),Sh=L(function(n){return Ii(yt(n,en))}),Th=L(function(n){var t=kn(n);return en(t)&&(t=i),Ii(yt(n,en),T(t,2))}),Fh=L(function(n){var t=kn(n);return t=typeof t=="function"?t:i,Ii(yt(n,en),i,t)}),Ch=L(ki);function Ih(n,t){return Cf(n||[],t||[],xe)}function Mh(n,t){return Cf(n||[],t||[],Se)}var bh=L(function(n){var t=n.length,e=t>1?n[t-1]:i;return e=typeof e=="function"?(n.pop(),e):i,so(n,e)});function ao(n){var t=f(n);return t.__chain__=!0,t}function Rh(n,t){return t(n),n}function Ar(n,t){return t(n)}var Lh=ct(function(n){var t=n.length,e=t?n[0]:0,r=this.__wrapped__,u=function(o){return gi(o,n)};return t>1||this.__actions__.length||!(r instanceof D)||!ht(e)?this.thru(u):(r=r.slice(e,+e+(t?1:0)),r.__actions__.push({func:Ar,args:[u],thisArg:i}),new Gn(r,this.__chain__).thru(function(o){return t&&!o.length&&o.push(i),o}))});function Eh(){return ao(this)}function Oh(){return new Gn(this.value(),this.__chain__)}function Dh(){this.__values__===i&&(this.__values__=To(this.value()));var n=this.__index__>=this.__values__.length,t=n?i:this.__values__[this.__index__++];return{done:n,value:t}}function Ph(){return this}function Bh(n){for(var t,e=this;e instanceof or;){var r=eo(e);r.__index__=0,r.__values__=i,t?u.__wrapped__=r:t=r;var u=r;e=e.__wrapped__}return u.__wrapped__=n,t}function Wh(){var n=this.__wrapped__;if(n instanceof D){var t=n;return this.__actions__.length&&(t=new D(this)),t=t.reverse(),t.__actions__.push({func:Ar,args:[$i],thisArg:i}),new Gn(t,this.__chain__)}return this.thru($i)}function Uh(){return Ff(this.__wrapped__,this.__actions__)}var Nh=gr(function(n,t,e){G.call(n,e)?++n[e]:at(n,e,1)});function Gh(n,t,e){var r=M(n)?Wu:Rl;return e&&An(n,t,e)&&(t=i),r(n,T(t,3))}function qh(n,t){var e=M(n)?yt:sf;return e(n,T(t,3))}var $h=Bf(ro),kh=Bf(io);function Hh(n,t){return vn(Sr(n,t),1)}function Kh(n,t){return vn(Sr(n,t),nt)}function zh(n,t,e){return e=e===i?1:b(e),vn(Sr(n,t),e)}function lo(n,t){var e=M(n)?Un:Ft;return e(n,T(t,3))}function co(n,t){var e=M(n)?ca:of;return e(n,T(t,3))}var Yh=gr(function(n,t,e){G.call(n,e)?n[e].push(t):at(n,e,[t])});function Zh(n,t,e,r){n=Fn(n)?n:fe(n),e=e&&!r?b(e):0;var u=n.length;return e<0&&(e=sn(u+e,0)),Mr(n)?e<=u&&n.indexOf(t,e)>-1:!!u&&Xt(n,t,e)>-1}var Xh=L(function(n,t,e){var r=-1,u=typeof t=="function",o=Fn(n)?p(n.length):[];return Ft(n,function(s){o[++r]=u?bn(t,s,e):we(s,t,e)}),o}),Jh=gr(function(n,t,e){at(n,e,t)});function Sr(n,t){var e=M(n)?Z:gf;return e(n,T(t,3))}function Qh(n,t,e,r){return n==null?[]:(M(t)||(t=t==null?[]:[t]),e=r?i:e,M(e)||(e=e==null?[]:[e]),mf(n,t,e))}var Vh=gr(function(n,t,e){n[e?0:1].push(t)},function(){return[[],[]]});function jh(n,t,e){var r=M(n)?ti:qu,u=arguments.length<3;return r(n,T(t,4),e,u,Ft)}function np(n,t,e){var r=M(n)?ha:qu,u=arguments.length<3;return r(n,T(t,4),e,u,of)}function tp(n,t){var e=M(n)?yt:sf;return e(n,Cr(T(t,3)))}function ep(n){var t=M(n)?ef:Zl;return t(n)}function rp(n,t,e){(e?An(n,t,e):t===i)?t=1:t=b(t);var r=M(n)?Fl:Xl;return r(n,t)}function ip(n){var t=M(n)?Cl:Ql;return t(n)}function up(n){if(n==null)return 0;if(Fn(n))return Mr(n)?Qt(n):n.length;var t=xn(n);return t==K||t==Xn?n.size:yi(n).length}function fp(n,t,e){var r=M(n)?ei:Vl;return e&&An(n,t,e)&&(t=i),r(n,T(t,3))}var op=L(function(n,t){if(n==null)return[];var e=t.length;return e>1&&An(n,t[0],t[1])?t=[]:e>2&&An(t[0],t[1],t[2])&&(t=[t[0]]),mf(n,vn(t,1),[])}),Tr=qa||function(){return ln.Date.now()};function sp(n,t){if(typeof t!="function")throw new Nn(y);return n=b(n),function(){if(--n<1)return t.apply(this,arguments)}}function ho(n,t,e){return t=e?i:t,t=n&&t==null?n.length:t,lt(n,yn,i,i,i,i,t)}function po(n,t){var e;if(typeof t!="function")throw new Nn(y);return n=b(n),function(){return--n>0&&(e=t.apply(this,arguments)),n<=1&&(t=i),e}}var Hi=L(function(n,t,e){var r=nn;if(e.length){var u=At(e,ie(Hi));r|=pn}return lt(n,r,t,e,u)}),go=L(function(n,t,e){var r=nn|q;if(e.length){var u=At(e,ie(go));r|=pn}return lt(t,r,n,e,u)});function _o(n,t,e){t=e?i:t;var r=lt(n,hn,i,i,i,i,i,t);return r.placeholder=_o.placeholder,r}function vo(n,t,e){t=e?i:t;var r=lt(n,Bn,i,i,i,i,i,t);return r.placeholder=vo.placeholder,r}function mo(n,t,e){var r,u,o,s,a,h,d=0,_=!1,v=!1,x=!0;if(typeof n!="function")throw new Nn(y);t=Hn(t)||0,X(e)&&(_=!!e.leading,v="maxWait"in e,o=v?sn(Hn(e.maxWait)||0,t):o,x="trailing"in e?!!e.trailing:x);function S(rn){var jn=r,dt=u;return r=u=i,d=rn,s=n.apply(dt,jn),s}function F(rn){return d=rn,a=Ce(E,t),_?S(rn):s}function R(rn){var jn=rn-h,dt=rn-d,Wo=t-jn;return v?mn(Wo,o-dt):Wo}function C(rn){var jn=rn-h,dt=rn-d;return h===i||jn>=t||jn<0||v&&dt>=o}function E(){var rn=Tr();if(C(rn))return P(rn);a=Ce(E,R(rn))}function P(rn){return a=i,x&&r?S(rn):(r=u=i,s)}function On(){a!==i&&If(a),d=0,r=h=u=a=i}function Sn(){return a===i?s:P(Tr())}function Dn(){var rn=Tr(),jn=C(rn);if(r=arguments,u=this,h=rn,jn){if(a===i)return F(h);if(v)return If(a),a=Ce(E,t),S(h)}return a===i&&(a=Ce(E,t)),s}return Dn.cancel=On,Dn.flush=Sn,Dn}var ap=L(function(n,t){return ff(n,1,t)}),lp=L(function(n,t,e){return ff(n,Hn(t)||0,e)});function cp(n){return lt(n,dn)}function Fr(n,t){if(typeof n!="function"||t!=null&&typeof t!="function")throw new Nn(y);var e=function(){var r=arguments,u=t?t.apply(this,r):r[0],o=e.cache;if(o.has(u))return o.get(u);var s=n.apply(this,r);return e.cache=o.set(u,s)||o,s};return e.cache=new(Fr.Cache||st),e}Fr.Cache=st;function Cr(n){if(typeof n!="function")throw new Nn(y);return function(){var t=arguments;switch(t.length){case 0:return!n.call(this);case 1:return!n.call(this,t[0]);case 2:return!n.call(this,t[0],t[1]);case 3:return!n.call(this,t[0],t[1],t[2])}return!n.apply(this,t)}}function hp(n){return po(2,n)}var pp=jl(function(n,t){t=t.length==1&&M(t[0])?Z(t[0],Rn(T())):Z(vn(t,1),Rn(T()));var e=t.length;return L(function(r){for(var u=-1,o=mn(r.length,e);++u<o;)r[u]=t[u].call(this,r[u]);return bn(n,this,r)})}),Ki=L(function(n,t){var e=At(t,ie(Ki));return lt(n,pn,i,t,e)}),xo=L(function(n,t){var e=At(t,ie(xo));return lt(n,gn,i,t,e)}),gp=ct(function(n,t){return lt(n,W,i,i,i,t)});function dp(n,t){if(typeof n!="function")throw new Nn(y);return t=t===i?t:b(t),L(n,t)}function _p(n,t){if(typeof n!="function")throw new Nn(y);return t=t==null?0:sn(b(t),0),L(function(e){var r=e[t],u=Mt(e,0,t);return r&&wt(u,r),bn(n,this,u)})}function vp(n,t,e){var r=!0,u=!0;if(typeof n!="function")throw new Nn(y);return X(e)&&(r="leading"in e?!!e.leading:r,u="trailing"in e?!!e.trailing:u),mo(n,t,{leading:r,maxWait:t,trailing:u})}function mp(n){return ho(n,1)}function xp(n,t){return Ki(bi(t),n)}function yp(){if(!arguments.length)return[];var n=arguments[0];return M(n)?n:[n]}function wp(n){return qn(n,j)}function Ap(n,t){return t=typeof t=="function"?t:i,qn(n,j,t)}function Sp(n){return qn(n,B|j)}function Tp(n,t){return t=typeof t=="function"?t:i,qn(n,B|j,t)}function Fp(n,t){return t==null||uf(n,t,cn(t))}function Vn(n,t){return n===t||n!==n&&t!==t}var Cp=mr(vi),Ip=mr(function(n,t){return n>=t}),kt=cf(function(){return arguments}())?cf:function(n){return Q(n)&&G.call(n,"callee")&&!Ju.call(n,"callee")},M=p.isArray,Mp=Lu?Rn(Lu):Bl;function Fn(n){return n!=null&&Ir(n.length)&&!pt(n)}function en(n){return Q(n)&&Fn(n)}function bp(n){return n===!0||n===!1||Q(n)&&wn(n)==mt}var bt=ka||eu,Rp=Eu?Rn(Eu):Wl;function Lp(n){return Q(n)&&n.nodeType===1&&!Ie(n)}function Ep(n){if(n==null)return!0;if(Fn(n)&&(M(n)||typeof n=="string"||typeof n.splice=="function"||bt(n)||ue(n)||kt(n)))return!n.length;var t=xn(n);if(t==K||t==Xn)return!n.size;if(Fe(n))return!yi(n).length;for(var e in n)if(G.call(n,e))return!1;return!0}function Op(n,t){return Ae(n,t)}function Dp(n,t,e){e=typeof e=="function"?e:i;var r=e?e(n,t):i;return r===i?Ae(n,t,i,e):!!r}function zi(n){if(!Q(n))return!1;var t=wn(n);return t==k||t==Ue||typeof n.message=="string"&&typeof n.name=="string"&&!Ie(n)}function Pp(n){return typeof n=="number"&&Vu(n)}function pt(n){if(!X(n))return!1;var t=wn(n);return t==tn||t==un||t==We||t==zt}function yo(n){return typeof n=="number"&&n==b(n)}function Ir(n){return typeof n=="number"&&n>-1&&n%1==0&&n<=Yn}function X(n){var t=typeof n;return n!=null&&(t=="object"||t=="function")}function Q(n){return n!=null&&typeof n=="object"}var wo=Ou?Rn(Ou):Nl;function Bp(n,t){return n===t||xi(n,t,Bi(t))}function Wp(n,t,e){return e=typeof e=="function"?e:i,xi(n,t,Bi(t),e)}function Up(n){return Ao(n)&&n!=+n}function Np(n){if(Ac(n))throw new I(w);return hf(n)}function Gp(n){return n===null}function qp(n){return n==null}function Ao(n){return typeof n=="number"||Q(n)&&wn(n)==tt}function Ie(n){if(!Q(n)||wn(n)!=Zn)return!1;var t=nr(n);if(t===null)return!0;var e=G.call(t,"constructor")&&t.constructor;return typeof e=="function"&&e instanceof e&&Je.call(e)==Wa}var Yi=Du?Rn(Du):Gl;function $p(n){return yo(n)&&n>=-Yn&&n<=Yn}var So=Pu?Rn(Pu):ql;function Mr(n){return typeof n=="string"||!M(n)&&Q(n)&&wn(n)==le}function En(n){return typeof n=="symbol"||Q(n)&&wn(n)==qe}var ue=Bu?Rn(Bu):$l;function kp(n){return n===i}function Hp(n){return Q(n)&&xn(n)==ce}function Kp(n){return Q(n)&&wn(n)==os}var zp=mr(wi),Yp=mr(function(n,t){return n<=t});function To(n){if(!n)return[];if(Fn(n))return Mr(n)?Jn(n):Tn(n);if(ge&&n[ge])return Fa(n[ge]());var t=xn(n),e=t==K?si:t==Xn?Ye:fe;return e(n)}function gt(n){if(!n)return n===0?n:0;if(n=Hn(n),n===nt||n===-nt){var t=n<0?-1:1;return t*Oe}return n===n?n:0}function b(n){var t=gt(n),e=t%1;return t===t?e?t-e:t:0}function Fo(n){return n?Nt(b(n),0,Mn):0}function Hn(n){if(typeof n=="number")return n;if(En(n))return Ot;if(X(n)){var t=typeof n.valueOf=="function"?n.valueOf():n;n=X(t)?t+"":t}if(typeof n!="string")return n===0?n:+n;n=$u(n);var e=Ms.test(n);return e||Rs.test(n)?sa(n.slice(2),e?2:8):Is.test(n)?Ot:+n}function Co(n){return rt(n,Cn(n))}function Zp(n){return n?Nt(b(n),-Yn,Yn):n===0?n:0}function N(n){return n==null?"":Ln(n)}var Xp=ee(function(n,t){if(Fe(t)||Fn(t)){rt(t,cn(t),n);return}for(var e in t)G.call(t,e)&&xe(n,e,t[e])}),Io=ee(function(n,t){rt(t,Cn(t),n)}),br=ee(function(n,t,e,r){rt(t,Cn(t),n,r)}),Jp=ee(function(n,t,e,r){rt(t,cn(t),n,r)}),Qp=ct(gi);function Vp(n,t){var e=te(n);return t==null?e:rf(e,t)}var jp=L(function(n,t){n=$(n);var e=-1,r=t.length,u=r>2?t[2]:i;for(u&&An(t[0],t[1],u)&&(r=1);++e<r;)for(var o=t[e],s=Cn(o),a=-1,h=s.length;++a<h;){var d=s[a],_=n[d];(_===i||Vn(_,Vt[d])&&!G.call(n,d))&&(n[d]=o[d])}return n}),ng=L(function(n){return n.push(i,kf),bn(Mo,i,n)});function tg(n,t){return Uu(n,T(t,3),et)}function eg(n,t){return Uu(n,T(t,3),_i)}function rg(n,t){return n==null?n:di(n,T(t,3),Cn)}function ig(n,t){return n==null?n:af(n,T(t,3),Cn)}function ug(n,t){return n&&et(n,T(t,3))}function fg(n,t){return n&&_i(n,T(t,3))}function og(n){return n==null?[]:lr(n,cn(n))}function sg(n){return n==null?[]:lr(n,Cn(n))}function Zi(n,t,e){var r=n==null?i:Gt(n,t);return r===i?e:r}function ag(n,t){return n!=null&&zf(n,t,El)}function Xi(n,t){return n!=null&&zf(n,t,Ol)}var lg=Uf(function(n,t,e){t!=null&&typeof t.toString!="function"&&(t=Qe.call(t)),n[t]=e},Qi(In)),cg=Uf(function(n,t,e){t!=null&&typeof t.toString!="function"&&(t=Qe.call(t)),G.call(n,t)?n[t].push(e):n[t]=[e]},T),hg=L(we);function cn(n){return Fn(n)?tf(n):yi(n)}function Cn(n){return Fn(n)?tf(n,!0):kl(n)}function pg(n,t){var e={};return t=T(t,3),et(n,function(r,u,o){at(e,t(r,u,o),r)}),e}function gg(n,t){var e={};return t=T(t,3),et(n,function(r,u,o){at(e,u,t(r,u,o))}),e}var dg=ee(function(n,t,e){cr(n,t,e)}),Mo=ee(function(n,t,e,r){cr(n,t,e,r)}),_g=ct(function(n,t){var e={};if(n==null)return e;var r=!1;t=Z(t,function(o){return o=It(o,n),r||(r=o.length>1),o}),rt(n,Di(n),e),r&&(e=qn(e,B|an|j,lc));for(var u=t.length;u--;)Ci(e,t[u]);return e});function vg(n,t){return bo(n,Cr(T(t)))}var mg=ct(function(n,t){return n==null?{}:Kl(n,t)});function bo(n,t){if(n==null)return{};var e=Z(Di(n),function(r){return[r]});return t=T(t),xf(n,e,function(r,u){return t(r,u[0])})}function xg(n,t,e){t=It(t,n);var r=-1,u=t.length;for(u||(u=1,n=i);++r<u;){var o=n==null?i:n[it(t[r])];o===i&&(r=u,o=e),n=pt(o)?o.call(n):o}return n}function yg(n,t,e){return n==null?n:Se(n,t,e)}function wg(n,t,e,r){return r=typeof r=="function"?r:i,n==null?n:Se(n,t,e,r)}var Ro=qf(cn),Lo=qf(Cn);function Ag(n,t,e){var r=M(n),u=r||bt(n)||ue(n);if(t=T(t,4),e==null){var o=n&&n.constructor;u?e=r?new o:[]:X(n)?e=pt(o)?te(nr(n)):{}:e={}}return(u?Un:et)(n,function(s,a,h){return t(e,s,a,h)}),e}function Sg(n,t){return n==null?!0:Ci(n,t)}function Tg(n,t,e){return n==null?n:Tf(n,t,bi(e))}function Fg(n,t,e,r){return r=typeof r=="function"?r:i,n==null?n:Tf(n,t,bi(e),r)}function fe(n){return n==null?[]:oi(n,cn(n))}function Cg(n){return n==null?[]:oi(n,Cn(n))}function Ig(n,t,e){return e===i&&(e=t,t=i),e!==i&&(e=Hn(e),e=e===e?e:0),t!==i&&(t=Hn(t),t=t===t?t:0),Nt(Hn(n),t,e)}function Mg(n,t,e){return t=gt(t),e===i?(e=t,t=0):e=gt(e),n=Hn(n),Dl(n,t,e)}function bg(n,t,e){if(e&&typeof e!="boolean"&&An(n,t,e)&&(t=e=i),e===i&&(typeof t=="boolean"?(e=t,t=i):typeof n=="boolean"&&(e=n,n=i)),n===i&&t===i?(n=0,t=1):(n=gt(n),t===i?(t=n,n=0):t=gt(t)),n>t){var r=n;n=t,t=r}if(e||n%1||t%1){var u=ju();return mn(n+u*(t-n+oa("1e-"+((u+"").length-1))),t)}return Si(n,t)}var Rg=re(function(n,t,e){return t=t.toLowerCase(),n+(e?Eo(t):t)});function Eo(n){return Ji(N(n).toLowerCase())}function Oo(n){return n=N(n),n&&n.replace(Es,ya).replace(Qs,"")}function Lg(n,t,e){n=N(n),t=Ln(t);var r=n.length;e=e===i?r:Nt(b(e),0,r);var u=e;return e-=t.length,e>=0&&n.slice(e,u)==t}function Eg(n){return n=N(n),n&&hs.test(n)?n.replace(su,wa):n}function Og(n){return n=N(n),n&&ms.test(n)?n.replace(Kr,"\\\\$&"):n}var Dg=re(function(n,t,e){return n+(e?"-":"")+t.toLowerCase()}),Pg=re(function(n,t,e){return n+(e?" ":"")+t.toLowerCase()}),Bg=Pf("toLowerCase");function Wg(n,t,e){n=N(n),t=b(t);var r=t?Qt(n):0;if(!t||r>=t)return n;var u=(t-r)/2;return vr(ir(u),e)+n+vr(rr(u),e)}function Ug(n,t,e){n=N(n),t=b(t);var r=t?Qt(n):0;return t&&r<t?n+vr(t-r,e):n}function Ng(n,t,e){n=N(n),t=b(t);var r=t?Qt(n):0;return t&&r<t?vr(t-r,e)+n:n}function Gg(n,t,e){return e||t==null?t=0:t&&(t=+t),Ya(N(n).replace(zr,""),t||0)}function qg(n,t,e){return(e?An(n,t,e):t===i)?t=1:t=b(t),Ti(N(n),t)}function $g(){var n=arguments,t=N(n[0]);return n.length<3?t:t.replace(n[1],n[2])}var kg=re(function(n,t,e){return n+(e?"_":"")+t.toLowerCase()});function Hg(n,t,e){return e&&typeof e!="number"&&An(n,t,e)&&(t=e=i),e=e===i?Mn:e>>>0,e?(n=N(n),n&&(typeof t=="string"||t!=null&&!Yi(t))&&(t=Ln(t),!t&&Jt(n))?Mt(Jn(n),0,e):n.split(t,e)):[]}var Kg=re(function(n,t,e){return n+(e?" ":"")+Ji(t)});function zg(n,t,e){return n=N(n),e=e==null?0:Nt(b(e),0,n.length),t=Ln(t),n.slice(e,e+t.length)==t}function Yg(n,t,e){var r=f.templateSettings;e&&An(n,t,e)&&(t=i),n=N(n),t=br({},t,r,$f);var u=br({},t.imports,r.imports,$f),o=cn(u),s=oi(u,o),a,h,d=0,_=t.interpolate||$e,v="__p += \'",x=ai((t.escape||$e).source+"|"+_.source+"|"+(_===au?Cs:$e).source+"|"+(t.evaluate||$e).source+"|$","g"),S="//# sourceURL="+(G.call(t,"sourceURL")?(t.sourceURL+"").replace(/\\s/g," "):"lodash.templateSources["+ ++ea+"]")+`\n`;n.replace(x,function(C,E,P,On,Sn,Dn){return P||(P=On),v+=n.slice(d,Dn).replace(Os,Aa),E&&(a=!0,v+=`\' +\n__e(`+E+`) +\n\'`),Sn&&(h=!0,v+=`\';\n`+Sn+`;\n__p += \'`),P&&(v+=`\' +\n((__t = (`+P+`)) == null ? \'\' : __t) +\n\'`),d=Dn+C.length,C}),v+=`\';\n`;var F=G.call(t,"variable")&&t.variable;if(!F)v=`with (obj) {\n`+v+`\n}\n`;else if(Ts.test(F))throw new I(O);v=(h?v.replace(ss,""):v).replace(as,"$1").replace(ls,"$1;"),v="function("+(F||"obj")+`) {\n`+(F?"":`obj || (obj = {});\n`)+"var __t, __p = \'\'"+(a?", __e = _.escape":"")+(h?`, __j = Array.prototype.join;\nfunction print() { __p += __j.call(arguments, \'\') }\n`:`;\n`)+v+`return __p\n}`;var R=Po(function(){return U(o,S+"return "+v).apply(i,s)});if(R.source=v,zi(R))throw R;return R}function Zg(n){return N(n).toLowerCase()}function Xg(n){return N(n).toUpperCase()}function Jg(n,t,e){if(n=N(n),n&&(e||t===i))return $u(n);if(!n||!(t=Ln(t)))return n;var r=Jn(n),u=Jn(t),o=ku(r,u),s=Hu(r,u)+1;return Mt(r,o,s).join("")}function Qg(n,t,e){if(n=N(n),n&&(e||t===i))return n.slice(0,zu(n)+1);if(!n||!(t=Ln(t)))return n;var r=Jn(n),u=Hu(r,Jn(t))+1;return Mt(r,0,u).join("")}function Vg(n,t,e){if(n=N(n),n&&(e||t===i))return n.replace(zr,"");if(!n||!(t=Ln(t)))return n;var r=Jn(n),u=ku(r,Jn(t));return Mt(r,u).join("")}function jg(n,t){var e=_n,r=Kn;if(X(t)){var u="separator"in t?t.separator:u;e="length"in t?b(t.length):e,r="omission"in t?Ln(t.omission):r}n=N(n);var o=n.length;if(Jt(n)){var s=Jn(n);o=s.length}if(e>=o)return n;var a=e-Qt(r);if(a<1)return r;var h=s?Mt(s,0,a).join(""):n.slice(0,a);if(u===i)return h+r;if(s&&(a+=h.length-a),Yi(u)){if(n.slice(a).search(u)){var d,_=h;for(u.global||(u=ai(u.source,N(lu.exec(u))+"g")),u.lastIndex=0;d=u.exec(_);)var v=d.index;h=h.slice(0,v===i?a:v)}}else if(n.indexOf(Ln(u),a)!=a){var x=h.lastIndexOf(u);x>-1&&(h=h.slice(0,x))}return h+r}function nd(n){return n=N(n),n&&cs.test(n)?n.replace(ou,ba):n}var td=re(function(n,t,e){return n+(e?" ":"")+t.toUpperCase()}),Ji=Pf("toUpperCase");function Do(n,t,e){return n=N(n),t=e?i:t,t===i?Ta(n)?Ea(n):da(n):n.match(t)||[]}var Po=L(function(n,t){try{return bn(n,i,t)}catch(e){return zi(e)?e:new I(e)}}),ed=ct(function(n,t){return Un(t,function(e){e=it(e),at(n,e,Hi(n[e],n))}),n});function rd(n){var t=n==null?0:n.length,e=T();return n=t?Z(n,function(r){if(typeof r[1]!="function")throw new Nn(y);return[e(r[0]),r[1]]}):[],L(function(r){for(var u=-1;++u<t;){var o=n[u];if(bn(o[0],this,r))return bn(o[1],this,r)}})}function id(n){return bl(qn(n,B))}function Qi(n){return function(){return n}}function ud(n,t){return n==null||n!==n?t:n}var fd=Wf(),od=Wf(!0);function In(n){return n}function Vi(n){return pf(typeof n=="function"?n:qn(n,B))}function sd(n){return df(qn(n,B))}function ad(n,t){return _f(n,qn(t,B))}var ld=L(function(n,t){return function(e){return we(e,n,t)}}),cd=L(function(n,t){return function(e){return we(n,e,t)}});function ji(n,t,e){var r=cn(t),u=lr(t,r);e==null&&!(X(t)&&(u.length||!r.length))&&(e=t,t=n,n=this,u=lr(t,cn(t)));var o=!(X(e)&&"chain"in e)||!!e.chain,s=pt(n);return Un(u,function(a){var h=t[a];n[a]=h,s&&(n.prototype[a]=function(){var d=this.__chain__;if(o||d){var _=n(this.__wrapped__),v=_.__actions__=Tn(this.__actions__);return v.push({func:h,args:arguments,thisArg:n}),_.__chain__=d,_}return h.apply(n,wt([this.value()],arguments))})}),n}function hd(){return ln._===this&&(ln._=Ua),this}function nu(){}function pd(n){return n=b(n),L(function(t){return vf(t,n)})}var gd=Li(Z),dd=Li(Wu),_d=Li(ei);function Bo(n){return Ui(n)?ri(it(n)):zl(n)}function vd(n){return function(t){return n==null?i:Gt(n,t)}}var md=Nf(),xd=Nf(!0);function tu(){return[]}function eu(){return!1}function yd(){return{}}function wd(){return""}function Ad(){return!0}function Sd(n,t){if(n=b(n),n<1||n>Yn)return[];var e=Mn,r=mn(n,Mn);t=T(t),n-=Mn;for(var u=fi(r,t);++e<n;)t(e);return u}function Td(n){return M(n)?Z(n,it):En(n)?[n]:Tn(to(N(n)))}function Fd(n){var t=++Ba;return N(n)+t}var Cd=_r(function(n,t){return n+t},0),Id=Ei("ceil"),Md=_r(function(n,t){return n/t},1),bd=Ei("floor");function Rd(n){return n&&n.length?ar(n,In,vi):i}function Ld(n,t){return n&&n.length?ar(n,T(t,2),vi):i}function Ed(n){return Gu(n,In)}function Od(n,t){return Gu(n,T(t,2))}function Dd(n){return n&&n.length?ar(n,In,wi):i}function Pd(n,t){return n&&n.length?ar(n,T(t,2),wi):i}var Bd=_r(function(n,t){return n*t},1),Wd=Ei("round"),Ud=_r(function(n,t){return n-t},0);function Nd(n){return n&&n.length?ui(n,In):0}function Gd(n,t){return n&&n.length?ui(n,T(t,2)):0}return f.after=sp,f.ary=ho,f.assign=Xp,f.assignIn=Io,f.assignInWith=br,f.assignWith=Jp,f.at=Qp,f.before=po,f.bind=Hi,f.bindAll=ed,f.bindKey=go,f.castArray=yp,f.chain=ao,f.chunk=bc,f.compact=Rc,f.concat=Lc,f.cond=rd,f.conforms=id,f.constant=Qi,f.countBy=Nh,f.create=Vp,f.curry=_o,f.curryRight=vo,f.debounce=mo,f.defaults=jp,f.defaultsDeep=ng,f.defer=ap,f.delay=lp,f.difference=Ec,f.differenceBy=Oc,f.differenceWith=Dc,f.drop=Pc,f.dropRight=Bc,f.dropRightWhile=Wc,f.dropWhile=Uc,f.fill=Nc,f.filter=qh,f.flatMap=Hh,f.flatMapDeep=Kh,f.flatMapDepth=zh,f.flatten=uo,f.flattenDeep=Gc,f.flattenDepth=qc,f.flip=cp,f.flow=fd,f.flowRight=od,f.fromPairs=$c,f.functions=og,f.functionsIn=sg,f.groupBy=Yh,f.initial=Hc,f.intersection=Kc,f.intersectionBy=zc,f.intersectionWith=Yc,f.invert=lg,f.invertBy=cg,f.invokeMap=Xh,f.iteratee=Vi,f.keyBy=Jh,f.keys=cn,f.keysIn=Cn,f.map=Sr,f.mapKeys=pg,f.mapValues=gg,f.matches=sd,f.matchesProperty=ad,f.memoize=Fr,f.merge=dg,f.mergeWith=Mo,f.method=ld,f.methodOf=cd,f.mixin=ji,f.negate=Cr,f.nthArg=pd,f.omit=_g,f.omitBy=vg,f.once=hp,f.orderBy=Qh,f.over=gd,f.overArgs=pp,f.overEvery=dd,f.overSome=_d,f.partial=Ki,f.partialRight=xo,f.partition=Vh,f.pick=mg,f.pickBy=bo,f.property=Bo,f.propertyOf=vd,f.pull=Qc,f.pullAll=oo,f.pullAllBy=Vc,f.pullAllWith=jc,f.pullAt=nh,f.range=md,f.rangeRight=xd,f.rearg=gp,f.reject=tp,f.remove=th,f.rest=dp,f.reverse=$i,f.sampleSize=rp,f.set=yg,f.setWith=wg,f.shuffle=ip,f.slice=eh,f.sortBy=op,f.sortedUniq=ah,f.sortedUniqBy=lh,f.split=Hg,f.spread=_p,f.tail=ch,f.take=hh,f.takeRight=ph,f.takeRightWhile=gh,f.takeWhile=dh,f.tap=Rh,f.throttle=vp,f.thru=Ar,f.toArray=To,f.toPairs=Ro,f.toPairsIn=Lo,f.toPath=Td,f.toPlainObject=Co,f.transform=Ag,f.unary=mp,f.union=_h,f.unionBy=vh,f.unionWith=mh,f.uniq=xh,f.uniqBy=yh,f.uniqWith=wh,f.unset=Sg,f.unzip=ki,f.unzipWith=so,f.update=Tg,f.updateWith=Fg,f.values=fe,f.valuesIn=Cg,f.without=Ah,f.words=Do,f.wrap=xp,f.xor=Sh,f.xorBy=Th,f.xorWith=Fh,f.zip=Ch,f.zipObject=Ih,f.zipObjectDeep=Mh,f.zipWith=bh,f.entries=Ro,f.entriesIn=Lo,f.extend=Io,f.extendWith=br,ji(f,f),f.add=Cd,f.attempt=Po,f.camelCase=Rg,f.capitalize=Eo,f.ceil=Id,f.clamp=Ig,f.clone=wp,f.cloneDeep=Sp,f.cloneDeepWith=Tp,f.cloneWith=Ap,f.conformsTo=Fp,f.deburr=Oo,f.defaultTo=ud,f.divide=Md,f.endsWith=Lg,f.eq=Vn,f.escape=Eg,f.escapeRegExp=Og,f.every=Gh,f.find=$h,f.findIndex=ro,f.findKey=tg,f.findLast=kh,f.findLastIndex=io,f.findLastKey=eg,f.floor=bd,f.forEach=lo,f.forEachRight=co,f.forIn=rg,f.forInRight=ig,f.forOwn=ug,f.forOwnRight=fg,f.get=Zi,f.gt=Cp,f.gte=Ip,f.has=ag,f.hasIn=Xi,f.head=fo,f.identity=In,f.includes=Zh,f.indexOf=kc,f.inRange=Mg,f.invoke=hg,f.isArguments=kt,f.isArray=M,f.isArrayBuffer=Mp,f.isArrayLike=Fn,f.isArrayLikeObject=en,f.isBoolean=bp,f.isBuffer=bt,f.isDate=Rp,f.isElement=Lp,f.isEmpty=Ep,f.isEqual=Op,f.isEqualWith=Dp,f.isError=zi,f.isFinite=Pp,f.isFunction=pt,f.isInteger=yo,f.isLength=Ir,f.isMap=wo,f.isMatch=Bp,f.isMatchWith=Wp,f.isNaN=Up,f.isNative=Np,f.isNil=qp,f.isNull=Gp,f.isNumber=Ao,f.isObject=X,f.isObjectLike=Q,f.isPlainObject=Ie,f.isRegExp=Yi,f.isSafeInteger=$p,f.isSet=So,f.isString=Mr,f.isSymbol=En,f.isTypedArray=ue,f.isUndefined=kp,f.isWeakMap=Hp,f.isWeakSet=Kp,f.join=Zc,f.kebabCase=Dg,f.last=kn,f.lastIndexOf=Xc,f.lowerCase=Pg,f.lowerFirst=Bg,f.lt=zp,f.lte=Yp,f.max=Rd,f.maxBy=Ld,f.mean=Ed,f.meanBy=Od,f.min=Dd,f.minBy=Pd,f.stubArray=tu,f.stubFalse=eu,f.stubObject=yd,f.stubString=wd,f.stubTrue=Ad,f.multiply=Bd,f.nth=Jc,f.noConflict=hd,f.noop=nu,f.now=Tr,f.pad=Wg,f.padEnd=Ug,f.padStart=Ng,f.parseInt=Gg,f.random=bg,f.reduce=jh,f.reduceRight=np,f.repeat=qg,f.replace=$g,f.result=xg,f.round=Wd,f.runInContext=c,f.sample=ep,f.size=up,f.snakeCase=kg,f.some=fp,f.sortedIndex=rh,f.sortedIndexBy=ih,f.sortedIndexOf=uh,f.sortedLastIndex=fh,f.sortedLastIndexBy=oh,f.sortedLastIndexOf=sh,f.startCase=Kg,f.startsWith=zg,f.subtract=Ud,f.sum=Nd,f.sumBy=Gd,f.template=Yg,f.times=Sd,f.toFinite=gt,f.toInteger=b,f.toLength=Fo,f.toLower=Zg,f.toNumber=Hn,f.toSafeInteger=Zp,f.toString=N,f.toUpper=Xg,f.trim=Jg,f.trimEnd=Qg,f.trimStart=Vg,f.truncate=jg,f.unescape=nd,f.uniqueId=Fd,f.upperCase=td,f.upperFirst=Ji,f.each=lo,f.eachRight=co,f.first=fo,ji(f,function(){var n={};return et(f,function(t,e){G.call(f.prototype,e)||(n[e]=t)}),n}(),{chain:!1}),f.VERSION=l,Un(["bind","bindKey","curry","curryRight","partial","partialRight"],function(n){f[n].placeholder=f}),Un(["drop","take"],function(n,t){D.prototype[n]=function(e){e=e===i?1:sn(b(e),0);var r=this.__filtered__&&!t?new D(this):this.clone();return r.__filtered__?r.__takeCount__=mn(e,r.__takeCount__):r.__views__.push({size:mn(e,Mn),type:n+(r.__dir__<0?"Right":"")}),r},D.prototype[n+"Right"]=function(e){return this.reverse()[n](e).reverse()}}),Un(["filter","map","takeWhile"],function(n,t){var e=t+1,r=e==zn||e==Ee;D.prototype[n]=function(u){var o=this.clone();return o.__iteratees__.push({iteratee:T(u,3),type:e}),o.__filtered__=o.__filtered__||r,o}}),Un(["head","last"],function(n,t){var e="take"+(t?"Right":"");D.prototype[n]=function(){return this[e](1).value()[0]}}),Un(["initial","tail"],function(n,t){var e="drop"+(t?"":"Right");D.prototype[n]=function(){return this.__filtered__?new D(this):this[e](1)}}),D.prototype.compact=function(){return this.filter(In)},D.prototype.find=function(n){return this.filter(n).head()},D.prototype.findLast=function(n){return this.reverse().find(n)},D.prototype.invokeMap=L(function(n,t){return typeof n=="function"?new D(this):this.map(function(e){return we(e,n,t)})}),D.prototype.reject=function(n){return this.filter(Cr(T(n)))},D.prototype.slice=function(n,t){n=b(n);var e=this;return e.__filtered__&&(n>0||t<0)?new D(e):(n<0?e=e.takeRight(-n):n&&(e=e.drop(n)),t!==i&&(t=b(t),e=t<0?e.dropRight(-t):e.take(t-n)),e)},D.prototype.takeRightWhile=function(n){return this.reverse().takeWhile(n).reverse()},D.prototype.toArray=function(){return this.take(Mn)},et(D.prototype,function(n,t){var e=/^(?:filter|find|map|reject)|While$/.test(t),r=/^(?:head|last)$/.test(t),u=f[r?"take"+(t=="last"?"Right":""):t],o=r||/^find/.test(t);!u||(f.prototype[t]=function(){var s=this.__wrapped__,a=r?[1]:arguments,h=s instanceof D,d=a[0],_=h||M(s),v=function(E){var P=u.apply(f,wt([E],a));return r&&x?P[0]:P};_&&e&&typeof d=="function"&&d.length!=1&&(h=_=!1);var x=this.__chain__,S=!!this.__actions__.length,F=o&&!x,R=h&&!S;if(!o&&_){s=R?s:new D(this);var C=n.apply(s,a);return C.__actions__.push({func:Ar,args:[v],thisArg:i}),new Gn(C,x)}return F&&R?n.apply(this,a):(C=this.thru(v),F?r?C.value()[0]:C.value():C)})}),Un(["pop","push","shift","sort","splice","unshift"],function(n){var t=Ze[n],e=/^(?:push|sort|unshift)$/.test(n)?"tap":"thru",r=/^(?:pop|shift)$/.test(n);f.prototype[n]=function(){var u=arguments;if(r&&!this.__chain__){var o=this.value();return t.apply(M(o)?o:[],u)}return this[e](function(s){return t.apply(M(s)?s:[],u)})}}),et(D.prototype,function(n,t){var e=f[t];if(e){var r=e.name+"";G.call(ne,r)||(ne[r]=[]),ne[r].push({name:t,func:e})}}),ne[dr(i,q).name]=[{name:"wrapper",func:i}],D.prototype.clone=nl,D.prototype.reverse=tl,D.prototype.value=el,f.prototype.at=Lh,f.prototype.chain=Eh,f.prototype.commit=Oh,f.prototype.next=Dh,f.prototype.plant=Bh,f.prototype.reverse=Wh,f.prototype.toJSON=f.prototype.valueOf=f.prototype.value=Uh,f.prototype.first=f.prototype.head,ge&&(f.prototype[ge]=Ph),f},St=Oa();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(ln._=St,define(function(){return St})):Pt?((Pt.exports=St)._=St,Vr._=St):ln._=St}).call(oe)});var Pr=Jd(qo());var _t=i=>[...new Set(i)],$o=i=>[...new Map(i.map(l=>[l.toLowerCase(),l])).values()];var ko=(i,l)=>{if(!i)return l?"ui//mk-ui-folder-solid":"ui//mk-ui-folder";switch(i){case"png":case"jpg":case"jpeg":case"svg":return"ui//mk-make-image";case"mov":case"webm":return"ui//mk-ui-video";case"canvas":return"ui//mk-ui-canvas";default:return l?"ui//mk-ui-file-solid":"ui//mk-ui-file"}};function Ho(i){return Array.isArray(i)?i:[]}var Ko=(i,l)=>l.indexOf(i)>0?l.indexOf(i):l.length;var Rr=i=>"spaces://"+i;var ut=i=>{var l;return(l=i==null?void 0:i.match(/(\\\\.|[^,])+/g))!=null?l:[]},Ht=i=>{if(!i)return"";let l=/\\[\\[(.*?)\\]\\]/g.exec(i),m=(l==null?void 0:l.length)>1?l[1].substring(0,Ko("|",l[1])):i;return m||i};var be=(i,l)=>{if(typeof i=="string"){if(/\\/\\/(\\S+?(?:jpe?g|png|gif|svg))/gi.test(i)||i.includes("unsplash"))return"image";if(/^\\d{4}-\\d{2}-\\d{2}$/.test(i))return"date";if(l=="tag"||l=="tags")return"tag";if(/\\[\\[.*?\\]\\]/.test(i))return"link"}else{if(typeof i=="number")return"number";if(typeof i=="boolean")return"boolean";if(i)if(Array.isArray(i)||typeof i=="string"&&i.indexOf(",")>-1){let m=Array.isArray(i)?i:[];if(typeof i=="string"&&i.indexOf(",")>-1&&(m=ut(i)),l=="tag"||l=="tags")return"tag-multi";if(m.length==1&&Array.isArray(m[0])&&m[0].length==1&&typeof m[0][0]=="string")return"link";let w=_t(m.map(y=>be(y,l)));return w.length==1&&w[0]=="link"?"link-multi":"option-multi"}else{if(i.isLuxonDateTime)return"date";if(i.isLuxonDuration)return"duration";if(i.type=="file")return"link";if(typeof i=="object"&&!Array.isArray(i)&&i!==null)return"object"}else return"unknown"}return"text"};var zo=i=>Object.keys(i!=null?i:{}).filter(l=>l!="position").filter(l=>l!="tag"&&l!="tags");var se=i=>i.join(","),Yo=i=>i.join(", ");var Lr=(i,l)=>{switch(be(l,i)){case"object":return JSON.stringify(l);case"number":return l.toString();case"boolean":return l?"true":"false";case"date":return l;case"duration":return Yo(Object.keys(l.values).reduce((w,y)=>[...w,...l.values[y]>0?[l.values[y]+" "+y]:[]],[]));case"option-multi":case"link-multi":return typeof l=="string"?Ht(l):se(l.map(w=>w?typeof w=="string"?Ht(w):w.path?w.path:Array.isArray(l)&&w.length==1&&Array.isArray(w[0])&&w[0].length==1&&typeof w[0][0]=="string"?w[0][0]:JSON.stringify(w):""));case"link":return Array.isArray(l)&&l.length==1&&Array.isArray(l[0])&&l[0].length==1&&typeof l[0][0]=="string"?l[0][0]:typeof l=="string"?Ht(l):l.path;case"text":case"tag":case"image":return l}return""};var Zo=i=>{switch(i){case"duration":return"text";case"unknown":return"text"}return i};var Er=(i,l)=>i==l,iu=(i,l)=>(i!=null?i:"").length==0,uu=(i,l)=>(i!=null?i:"").toLowerCase().includes((l!=null?l:"").toLowerCase()),Or=(i,l)=>parseFloat(i)>parseFloat(l),Dr=(i,l)=>parseInt(i)>parseInt(l),fu=(i,l)=>{let m=i?ut(i):[];return(l?ut(l):[]).some(y=>m.some(O=>O==y))},Xo=i=>{let l=new Date(`${i}T00:00`),m=new Date;return l.getMonth()===m.getMonth()&&l.getDate()===m.getDate()};var Re={isNotEmpty:{type:["text","file","link","link-multi","fileprop","image"],fn:(i,l)=>!iu(i,""),valueType:"none"},isEmpty:{type:["text","file","link","link-multi","fileprop","image"],fn:(i,l)=>iu(i,""),valueType:"none"},include:{fn:(i,l)=>uu(i,l),type:["text","file","link","link-multi","fileprop","image"],valueType:"text"},notInclude:{type:["text","file","link","link-multi","fileprop","image"],fn:(i,l)=>!uu(i,l),valueType:"text"},is:{type:["text","file","link","context","fileprop"],fn:(i,l)=>Er(i,l),valueType:"text"},isNot:{type:["text","file","link","context","fileprop"],fn:(i,l)=>!Er(i,l),valueType:"text"},equal:{type:["number"],fn:(i,l)=>Er(i,l),valueType:"number"},isGreatThan:{type:["number"],fn:(i,l)=>Or(i,l),valueType:"number"},isLessThan:{type:["number"],fn:(i,l)=>Dr(i,l),valueType:"number"},isLessThanOrEqual:{type:["number"],fn:(i,l)=>!Or(i,l),valueType:"number"},isGreatThanOrEqual:{type:["number"],fn:(i,l)=>!Dr(i,l),valueType:"number"},dateBefore:{type:["date","fileprop"],fn:(i,l)=>Dr(i,l),valueType:"date"},dateAfter:{type:["date","fileprop"],fn:(i,l)=>Or(i,l),valueType:"date"},isSameDateAsToday:{type:["date"],fn:(i,l)=>Xo(i,l),valueType:"none"},isAnyInList:{type:["option","context","option-multi","context-multi","tags-multi","tags"],fn:(i,l)=>fu(i,l),valueType:"list"},isNoneInList:{type:["option","context","option-multi","context-multi","tags-multi","tags"],fn:(i,l)=>!fu(i,l),valueType:"list"},isTrue:{type:["boolean"],fn:(i,l)=>i=="true",valueType:"none"},isFalse:{type:["boolean"],fn:(i,l)=>i!="true",valueType:"none"}};var Qd=(i,l)=>l.reduce((w,y)=>{let[O,J]=w,V=y.type=="fileprop"?Vo(J,y):y.type=="filemeta"?Qo(J,y):y.type=="frontmatter"?Jo(J,y):[],Y=J.filter(B=>!V.includes(B));return[[...O,...V],Y]},[[],i])[0],Vd=(i,l)=>l.reduce((m,w)=>w.type=="fileprop"?Vo(m,w):w.type=="filemeta"?Qo(m,w):w.type=="frontmatter"?Jo(m,w):[],i),Jo=(i,l)=>i.filter(m=>{let w=m.frontmatter;if(!w||!w[l.field])return!1;let y=Re[l.fn],O=!0;return y&&(O=y.fn(Lr(l.field,w[l.field]),l.value)),O}),Qo=(i,l)=>i.filter(m=>{let w="";l.field=="outlinks"?w=se(m.outlinks):l.field=="inlinks"?w=se(m.inlinks):l.field=="tags"&&(w=se(m.tags));let y=Re[l.fn],O=!0;return y&&(O=y.fn(w,l.value)),O}),Vo=(i,l)=>i.filter(m=>{if(["name","path","sticker","color","isFolder","extension","ctime","mtime","size","parent"].includes(l.field)){let y=Re[l.fn],O=!0;return y&&(O=y.fn(m[l.field],l.value)),O}return!0}),jo=(i,l)=>i.reduce((w,y)=>!w||y.filters.length==0?w:y.type=="any"?Qd([l],y.filters).length>0:Vd([l],y.filters).length>0,!0);var ns=(i,l,m)=>{if(!l)return{changed:!1,cache:{path:i.path,frames:{},schemas:[],listitems:{}}};let w=l.schemas,y=w.filter(Y=>Y.type=="frame").reduce((Y,B)=>{var an,j;return Lt(Rt({},Y),{[B.id]:{schema:B,cols:l.fields.filter(fn=>fn.schemaId==B.id),rows:(j=(an=l.tables[B.id])==null?void 0:an.rows)!=null?j:[]}})},{}),O=w.filter(Y=>Y.type=="listitem").reduce((Y,B)=>{var an,j;return Lt(Rt({},Y),{[B.id]:{schema:B,cols:l.fields.filter(fn=>fn.schemaId==B.id),rows:(j=(an=l.tables[B.id])==null?void 0:an.rows)!=null?j:[]}})},{}),J={path:i.path,frames:y,schemas:w,listitems:O},V=!0;return m&&Pr.default.isEqual(J,m)&&(V=!1),{changed:V,cache:J}},ts=(i,l,m)=>{var Pn,nn,q,vt,hn,Bn,pn,gn,yn;let w={};if(!l)return{changed:!1,cache:{cols:[],path:i.path,schemas:[],outlinks:[],contexts:[],files:[],tables:{},space:i,spaceMap:w}};let y=l.schemas.find(W=>W.primary=="true"),O={schema:y,cols:l.fields.filter(W=>W.schemaId==y.id),rows:(nn=(Pn=l.tables[y.id])==null?void 0:Pn.rows)!=null?nn:[]},J=l.schemas.filter(W=>W.type=="db").reduce((W,dn)=>{var _n,Kn;return Lt(Rt({},W),{[dn.id]:{schema:dn,cols:l.fields.filter(Kt=>Kt.schemaId==dn.id),rows:(Kn=(_n=l.tables[dn.id])==null?void 0:_n.rows)!=null?Kn:[]}})},{}),V=(vt=(q=O.cols)==null?void 0:q.filter(W=>W.type.startsWith("context")))!=null?vt:[],Y=(Bn=(hn=O.cols)==null?void 0:hn.filter(W=>W.type.startsWith("link")))!=null?Bn:[],B=_t(V.map(W=>W.value));V.forEach(W=>{w[W.name]={},O.rows.forEach(dn=>{ut(dn[W.name]).forEach(_n=>{var Kn;return w[W.name][_n]=[...(Kn=w[W.name][_n])!=null?Kn:[],dn.File]})})});let an=_t(O.rows.reduce((W,dn)=>_t([...W,...[...V,...Y].flatMap(_n=>ut(dn[_n.name]).map(Kn=>Ht(Kn)))]),[])),j={cols:l.fields.filter(W=>W.schemaId==y.id),path:i.path,contexts:B,outlinks:an,files:(yn=(gn=(pn=J.files)==null?void 0:pn.rows)==null?void 0:gn.map(W=>W.File))!=null?yn:[],tables:J,schemas:l.schemas,space:i,spaceMap:w},fn=!0;return m&&Pr.default.isEqual(j,m)&&(fn=!0),{changed:fn,cache:j}},jd=i=>{var m,w,y,O,J,V,Y,B,an,j,fn,Pn,nn;let l=[];return i&&i.tags&&l.push(...(w=(m=i.tags)==null?void 0:m.map(q=>q.tag))!=null?w:[]),i&&((y=i.frontmatter)==null?void 0:y.tags)&&l.push(...(typeof((O=i.frontmatter)==null?void 0:O.tags)=="string"?ut(i.frontmatter.tags.replace(/ /g,"")):Array.isArray((J=i.frontmatter)==null?void 0:J.tags)?(Y=(V=i.frontmatter)==null?void 0:V.tags)!=null?Y:[]:[]).filter(q=>typeof q=="string").map(q=>"#"+q)),i&&((B=i.frontmatter)==null?void 0:B.tag)&&l.push(...(typeof((an=i.frontmatter)==null?void 0:an.tag)=="string"?ut(i.frontmatter.tag.replace(/ /g,"")):Array.isArray((j=i.frontmatter)==null?void 0:j.tag)?(Pn=(fn=i.frontmatter)==null?void 0:fn.tag)!=null?Pn:[]:[]).filter(q=>typeof q=="string").map(q=>"#"+q)),(nn=_t(l))!=null?nn:[]};var es=(i,l,m,w,y,O,J,V,Y)=>{var Oe,Ot,Mn,De,Pe,Be,ft,Dt,We,mt,xt,Ue;let B={cacheType:"file",path:i.path,name:i.name,filename:i.filename};i.stat&&(B.ctime=i.stat.ctime,B.mtime=i.stat.mtime,B.size=i.stat.size,B.extension=i.extension);let an=[],j=jd(O),fn=(k,tn,un=new Set)=>{var tt,Ne;let K=[];for(let Zn of tn){let Ge=(Ne=(tt=k.get(Zn))==null?void 0:tt.contexts)!=null?Ne:[];for(let zt of Ge)un.has(zt)||(K.push(zt),un.add(zt),K.push(...fn(k,[Rr(zt)],un)))}return K};if(m.has(i.parent))for(let k of(Oe=m.get(i.parent).contexts)!=null?Oe:[])an.push(k);an.push(...j);let Pn=i.name,nn=i.name,q=(Ot=y==null?void 0:y.sticker)!=null?Ot:"",vt=(Mn=y==null?void 0:y.color)!=null?Mn:"",hn=(De=y==null?void 0:y.folder)!=null?De:"";hn=="true"&&(hn="");let Bn=i.parent,pn=i.isFolder,gn={},yn={},W=[],dn=[],_n=O==null?void 0:O.frontmatter;O!=null&&O.links&&dn.push(...O.links.map(k=>k.link));let Kn=V&&pn?V.folderNotePath:i.path;for(let k of Object.keys(J))Kn in J[k]&&W.push(k);let Kt="";if(_n){let tn=$o(zo(_n)).reduce((un,K)=>Lt(Rt({},un),{[K]:{name:K,type:Zo(be(_n[K],K))}}),{});Object.keys(tn).forEach(un=>{gn[un]=Lr(un,_n[un]),yn[un]=tn[un].type,tn[un].type.startsWith("link")&&dn.push(Ht(gn[un]))}),Kt=(Pe=gn[l.fmKeyBanner])!=null?Pe:"",gn[l.fmKeySticker]&&(q=_n[l.fmKeySticker]),gn[l.fmKeyColor]&&(vt=_n[l.fmKeyColor]),gn[l.fmKeyAlias]&&(nn=(Be=Ho(_n[l.fmKeyAlias]))==null?void 0:Be[0])}q=(q==null?void 0:q.length)>0?q:ko(B.extension,!1);let Et=Lt(Rt({},B),{name:Pn,tags:_t(an),alias:nn,fileTags:j,folderNote:V,sticker:q,color:vt,parent:Bn,banner:Kt,isFolder:pn,sortBy:hn,frontmatter:gn,frontmatterTypes:yn,inlinks:W,outlinks:dn}),zn=[],Le={};for(let k of an)zn.push(Rr(k));for(let[k,tn]of m){if(tn.space&&tn.space.folderPath==Bn&&tn.space.defPath!=i.path){zn.push(k);continue}if(((Dt=(ft=tn.metadata)==null?void 0:ft.filters)==null?void 0:Dt.length)>0&&jo(tn.metadata.filters,Et)){zn.push(k);continue}if(((mt=(We=tn.metadata)==null?void 0:We.links)==null?void 0:mt.length)>0&&((Ue=(xt=tn.metadata)==null?void 0:xt.links)!=null?Ue:[]).find(K=>K==Et.path)){zn.push(k);continue}}let Ee=fn(m,zn);zn.push(...Ee.map(k=>Rr(k))),zn.forEach(k=>{var tn,un,K;Le[k]=(K=(un=(tn=w.get(k))==null?void 0:tn.tables)==null?void 0:un.files)==null?void 0:K.rows.findIndex(tt=>tt.File==i.path)}),Et.tags.push(...Ee);let nt=V&&!pn?Lt(Rt({},Et),{spaces:[],contexts:[]}):Lt(Rt({},Et),{spaces:_t(zn),spaceRanks:Le}),Yn=!0;return Y&&Pr.default.isEqual(nt,Y)&&(Yn=!1),{changed:Yn,cache:nt}};function rs(i){let{file:l,settings:m,spacesCache:w,vaultItem:y,metadataCache:O,contextsCache:J,resolvedLinks:V,folderNote:Y,oldMetadata:B}=i;return es(l,m,w,J,y,O,V,Y,B)}function is(i){let{space:l,mdb:m,oldCache:w}=i;return ts(l,m,w)}function us(i){let{space:l,mdb:m,oldCache:w}=i;return ns(l,m,w)}var n_=self;n_.onmessage=async i=>{let{payload:l,job:m}=i.data,w;m.type=="file"?w=rs(l):m.type=="context"?w=is(l):m.type=="frames"&&(w=us(l));try{postMessage({job:m,result:w})}catch(y){console.log(y),postMessage({job:m,result:{$error:`Failed to index ${m.type} ${m.path}: ${y}`}})}};\n/**\n * @license\n * Lodash <https://lodash.com/>\n * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>\n * Released under MIT license <https://lodash.com/license>\n * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>\n * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors\n */\n');
+  return inlineWorker('var qd=Object.create;var ru=Object.defineProperty,kd=Object.defineProperties,$d=Object.getOwnPropertyDescriptor,Hd=Object.getOwnPropertyDescriptors,Kd=Object.getOwnPropertyNames,Uo=Object.getOwnPropertySymbols,zd=Object.getPrototypeOf,Go=Object.prototype.hasOwnProperty,Yd=Object.prototype.propertyIsEnumerable;var No=(i,l,m)=>l in i?ru(i,l,{enumerable:!0,configurable:!0,writable:!0,value:m}):i[l]=m,Rt=(i,l)=>{for(var m in l||(l={}))Go.call(l,m)&&No(i,m,l[m]);if(Uo)for(var m of Uo(l))Yd.call(l,m)&&No(i,m,l[m]);return i},Lt=(i,l)=>kd(i,Hd(l));var Zd=(i,l)=>()=>(l||i((l={exports:{}}).exports,l),l.exports);var Xd=(i,l,m,w)=>{if(l&&typeof l=="object"||typeof l=="function")for(let y of Kd(l))!Go.call(i,y)&&y!==m&&ru(i,y,{get:()=>l[y],enumerable:!(w=$d(l,y))||w.enumerable});return i};var Jd=(i,l,m)=>(m=i!=null?qd(zd(i)):{},Xd(l||!i||!i.__esModule?ru(m,"default",{value:i,enumerable:!0}):m,i));var qo=Zd((oe,Me)=>{(function(){var i,l="4.17.21",m=200,w="Unsupported core-js use. Try https://npms.io/search?q=ponyfill.",y="Expected a function",O="Invalid `variable` option passed into `_.template`",J="__lodash_hash_undefined__",V=500,Y="__lodash_placeholder__",P=1,an=2,j=4,fn=1,Pn=2,nn=1,q=2,vt=4,hn=8,Bn=16,pn=32,gn=64,yn=128,W=256,dn=512,_n=30,Kn="...",Kt=800,Et=16,zn=1,Le=2,Ee=3,nt=1/0,Yn=9007199254740991,Oe=17976931348623157e292,Ot=0/0,Mn=4294967295,De=Mn-1,Pe=Mn>>>1,Be=[["ary",yn],["bind",nn],["bindKey",q],["curry",hn],["curryRight",Bn],["flip",dn],["partial",pn],["partialRight",gn],["rearg",W]],ft="[object Arguments]",Dt="[object Array]",We="[object AsyncFunction]",mt="[object Boolean]",xt="[object Date]",Ue="[object DOMException]",$="[object Error]",tn="[object Function]",un="[object GeneratorFunction]",K="[object Map]",tt="[object Number]",Ne="[object Null]",Zn="[object Object]",Ge="[object Promise]",zt="[object Proxy]",ae="[object RegExp]",Xn="[object Set]",le="[object String]",qe="[object Symbol]",fs="[object Undefined]",ce="[object WeakMap]",os="[object WeakSet]",he="[object ArrayBuffer]",Yt="[object DataView]",Br="[object Float32Array]",Wr="[object Float64Array]",Ur="[object Int8Array]",Nr="[object Int16Array]",Gr="[object Int32Array]",qr="[object Uint8Array]",kr="[object Uint8ClampedArray]",$r="[object Uint16Array]",Hr="[object Uint32Array]",ss=/\\b__p \\+= \'\';/g,as=/\\b(__p \\+=) \'\' \\+/g,ls=/(__e\\(.*?\\)|\\b__t\\)) \\+\\n\'\';/g,ou=/&(?:amp|lt|gt|quot|#39);/g,su=/[&<>"\']/g,cs=RegExp(ou.source),hs=RegExp(su.source),ps=/<%-([\\s\\S]+?)%>/g,gs=/<%([\\s\\S]+?)%>/g,au=/<%=([\\s\\S]+?)%>/g,ds=/\\.|\\[(?:[^[\\]]*|(["\'])(?:(?!\\1)[^\\\\]|\\\\.)*?\\1)\\]/,_s=/^\\w*$/,vs=/[^.[\\]]+|\\[(?:(-?\\d+(?:\\.\\d+)?)|(["\'])((?:(?!\\2)[^\\\\]|\\\\.)*?)\\2)\\]|(?=(?:\\.|\\[\\])(?:\\.|\\[\\]|$))/g,Kr=/[\\\\^$.*+?()[\\]{}|]/g,ms=RegExp(Kr.source),zr=/^\\s+/,xs=/\\s/,ys=/\\{(?:\\n\\/\\* \\[wrapped with .+\\] \\*\\/)?\\n?/,ws=/\\{\\n\\/\\* \\[wrapped with (.+)\\] \\*/,As=/,? & /,Ss=/[^\\x00-\\x2f\\x3a-\\x40\\x5b-\\x60\\x7b-\\x7f]+/g,Ts=/[()=,{}\\[\\]\\/\\s]/,Fs=/\\\\(\\\\)?/g,Cs=/\\$\\{([^\\\\}]*(?:\\\\.[^\\\\}]*)*)\\}/g,lu=/\\w*$/,Is=/^[-+]0x[0-9a-f]+$/i,Ms=/^0b[01]+$/i,bs=/^\\[object .+?Constructor\\]$/,Rs=/^0o[0-7]+$/i,Ls=/^(?:0|[1-9]\\d*)$/,Es=/[\\xc0-\\xd6\\xd8-\\xf6\\xf8-\\xff\\u0100-\\u017f]/g,ke=/($^)/,Os=/[\'\\n\\r\\u2028\\u2029\\\\]/g,$e="\\\\ud800-\\\\udfff",Ds="\\\\u0300-\\\\u036f",Ps="\\\\ufe20-\\\\ufe2f",Bs="\\\\u20d0-\\\\u20ff",cu=Ds+Ps+Bs,hu="\\\\u2700-\\\\u27bf",pu="a-z\\\\xdf-\\\\xf6\\\\xf8-\\\\xff",Ws="\\\\xac\\\\xb1\\\\xd7\\\\xf7",Us="\\\\x00-\\\\x2f\\\\x3a-\\\\x40\\\\x5b-\\\\x60\\\\x7b-\\\\xbf",Ns="\\\\u2000-\\\\u206f",Gs=" \\\\t\\\\x0b\\\\f\\\\xa0\\\\ufeff\\\\n\\\\r\\\\u2028\\\\u2029\\\\u1680\\\\u180e\\\\u2000\\\\u2001\\\\u2002\\\\u2003\\\\u2004\\\\u2005\\\\u2006\\\\u2007\\\\u2008\\\\u2009\\\\u200a\\\\u202f\\\\u205f\\\\u3000",gu="A-Z\\\\xc0-\\\\xd6\\\\xd8-\\\\xde",du="\\\\ufe0e\\\\ufe0f",_u=Ws+Us+Ns+Gs,Yr="[\'\\u2019]",qs="["+$e+"]",vu="["+_u+"]",He="["+cu+"]",mu="\\\\d+",ks="["+hu+"]",xu="["+pu+"]",yu="[^"+$e+_u+mu+hu+pu+gu+"]",Zr="\\\\ud83c[\\\\udffb-\\\\udfff]",$s="(?:"+He+"|"+Zr+")",wu="[^"+$e+"]",Xr="(?:\\\\ud83c[\\\\udde6-\\\\uddff]){2}",Jr="[\\\\ud800-\\\\udbff][\\\\udc00-\\\\udfff]",Zt="["+gu+"]",Au="\\\\u200d",Su="(?:"+xu+"|"+yu+")",Hs="(?:"+Zt+"|"+yu+")",Tu="(?:"+Yr+"(?:d|ll|m|re|s|t|ve))?",Fu="(?:"+Yr+"(?:D|LL|M|RE|S|T|VE))?",Cu=$s+"?",Iu="["+du+"]?",Ks="(?:"+Au+"(?:"+[wu,Xr,Jr].join("|")+")"+Iu+Cu+")*",zs="\\\\d*(?:1st|2nd|3rd|(?![123])\\\\dth)(?=\\\\b|[A-Z_])",Ys="\\\\d*(?:1ST|2ND|3RD|(?![123])\\\\dTH)(?=\\\\b|[a-z_])",Mu=Iu+Cu+Ks,Zs="(?:"+[ks,Xr,Jr].join("|")+")"+Mu,Xs="(?:"+[wu+He+"?",He,Xr,Jr,qs].join("|")+")",Js=RegExp(Yr,"g"),Qs=RegExp(He,"g"),Qr=RegExp(Zr+"(?="+Zr+")|"+Xs+Mu,"g"),Vs=RegExp([Zt+"?"+xu+"+"+Tu+"(?="+[vu,Zt,"$"].join("|")+")",Hs+"+"+Fu+"(?="+[vu,Zt+Su,"$"].join("|")+")",Zt+"?"+Su+"+"+Tu,Zt+"+"+Fu,Ys,zs,mu,Zs].join("|"),"g"),js=RegExp("["+Au+$e+cu+du+"]"),na=/[a-z][A-Z]|[A-Z]{2}[a-z]|[0-9][a-zA-Z]|[a-zA-Z][0-9]|[^a-zA-Z0-9 ]/,ta=["Array","Buffer","DataView","Date","Error","Float32Array","Float64Array","Function","Int8Array","Int16Array","Int32Array","Map","Math","Object","Promise","RegExp","Set","String","Symbol","TypeError","Uint8Array","Uint8ClampedArray","Uint16Array","Uint32Array","WeakMap","_","clearTimeout","isFinite","parseInt","setTimeout"],ea=-1,z={};z[Br]=z[Wr]=z[Ur]=z[Nr]=z[Gr]=z[qr]=z[kr]=z[$r]=z[Hr]=!0,z[ft]=z[Dt]=z[he]=z[mt]=z[Yt]=z[xt]=z[$]=z[tn]=z[K]=z[tt]=z[Zn]=z[ae]=z[Xn]=z[le]=z[ce]=!1;var H={};H[ft]=H[Dt]=H[he]=H[Yt]=H[mt]=H[xt]=H[Br]=H[Wr]=H[Ur]=H[Nr]=H[Gr]=H[K]=H[tt]=H[Zn]=H[ae]=H[Xn]=H[le]=H[qe]=H[qr]=H[kr]=H[$r]=H[Hr]=!0,H[$]=H[tn]=H[ce]=!1;var ra={\\u00C0:"A",\\u00C1:"A",\\u00C2:"A",\\u00C3:"A",\\u00C4:"A",\\u00C5:"A",\\u00E0:"a",\\u00E1:"a",\\u00E2:"a",\\u00E3:"a",\\u00E4:"a",\\u00E5:"a",\\u00C7:"C",\\u00E7:"c",\\u00D0:"D",\\u00F0:"d",\\u00C8:"E",\\u00C9:"E",\\u00CA:"E",\\u00CB:"E",\\u00E8:"e",\\u00E9:"e",\\u00EA:"e",\\u00EB:"e",\\u00CC:"I",\\u00CD:"I",\\u00CE:"I",\\u00CF:"I",\\u00EC:"i",\\u00ED:"i",\\u00EE:"i",\\u00EF:"i",\\u00D1:"N",\\u00F1:"n",\\u00D2:"O",\\u00D3:"O",\\u00D4:"O",\\u00D5:"O",\\u00D6:"O",\\u00D8:"O",\\u00F2:"o",\\u00F3:"o",\\u00F4:"o",\\u00F5:"o",\\u00F6:"o",\\u00F8:"o",\\u00D9:"U",\\u00DA:"U",\\u00DB:"U",\\u00DC:"U",\\u00F9:"u",\\u00FA:"u",\\u00FB:"u",\\u00FC:"u",\\u00DD:"Y",\\u00FD:"y",\\u00FF:"y",\\u00C6:"Ae",\\u00E6:"ae",\\u00DE:"Th",\\u00FE:"th",\\u00DF:"ss",\\u0100:"A",\\u0102:"A",\\u0104:"A",\\u0101:"a",\\u0103:"a",\\u0105:"a",\\u0106:"C",\\u0108:"C",\\u010A:"C",\\u010C:"C",\\u0107:"c",\\u0109:"c",\\u010B:"c",\\u010D:"c",\\u010E:"D",\\u0110:"D",\\u010F:"d",\\u0111:"d",\\u0112:"E",\\u0114:"E",\\u0116:"E",\\u0118:"E",\\u011A:"E",\\u0113:"e",\\u0115:"e",\\u0117:"e",\\u0119:"e",\\u011B:"e",\\u011C:"G",\\u011E:"G",\\u0120:"G",\\u0122:"G",\\u011D:"g",\\u011F:"g",\\u0121:"g",\\u0123:"g",\\u0124:"H",\\u0126:"H",\\u0125:"h",\\u0127:"h",\\u0128:"I",\\u012A:"I",\\u012C:"I",\\u012E:"I",\\u0130:"I",\\u0129:"i",\\u012B:"i",\\u012D:"i",\\u012F:"i",\\u0131:"i",\\u0134:"J",\\u0135:"j",\\u0136:"K",\\u0137:"k",\\u0138:"k",\\u0139:"L",\\u013B:"L",\\u013D:"L",\\u013F:"L",\\u0141:"L",\\u013A:"l",\\u013C:"l",\\u013E:"l",\\u0140:"l",\\u0142:"l",\\u0143:"N",\\u0145:"N",\\u0147:"N",\\u014A:"N",\\u0144:"n",\\u0146:"n",\\u0148:"n",\\u014B:"n",\\u014C:"O",\\u014E:"O",\\u0150:"O",\\u014D:"o",\\u014F:"o",\\u0151:"o",\\u0154:"R",\\u0156:"R",\\u0158:"R",\\u0155:"r",\\u0157:"r",\\u0159:"r",\\u015A:"S",\\u015C:"S",\\u015E:"S",\\u0160:"S",\\u015B:"s",\\u015D:"s",\\u015F:"s",\\u0161:"s",\\u0162:"T",\\u0164:"T",\\u0166:"T",\\u0163:"t",\\u0165:"t",\\u0167:"t",\\u0168:"U",\\u016A:"U",\\u016C:"U",\\u016E:"U",\\u0170:"U",\\u0172:"U",\\u0169:"u",\\u016B:"u",\\u016D:"u",\\u016F:"u",\\u0171:"u",\\u0173:"u",\\u0174:"W",\\u0175:"w",\\u0176:"Y",\\u0177:"y",\\u0178:"Y",\\u0179:"Z",\\u017B:"Z",\\u017D:"Z",\\u017A:"z",\\u017C:"z",\\u017E:"z",\\u0132:"IJ",\\u0133:"ij",\\u0152:"Oe",\\u0153:"oe",\\u0149:"\'n",\\u017F:"s"},ia={"&":"&amp;","<":"&lt;",">":"&gt;",\'"\':"&quot;","\'":"&#39;"},ua={"&amp;":"&","&lt;":"<","&gt;":">","&quot;":\'"\',"&#39;":"\'"},fa={"\\\\":"\\\\","\'":"\'","\\n":"n","\\r":"r","\\u2028":"u2028","\\u2029":"u2029"},oa=parseFloat,sa=parseInt,bu=typeof global=="object"&&global&&global.Object===Object&&global,aa=typeof self=="object"&&self&&self.Object===Object&&self,ln=bu||aa||Function("return this")(),Vr=typeof oe=="object"&&oe&&!oe.nodeType&&oe,Pt=Vr&&typeof Me=="object"&&Me&&!Me.nodeType&&Me,Ru=Pt&&Pt.exports===Vr,jr=Ru&&bu.process,Wn=function(){try{var c=Pt&&Pt.require&&Pt.require("util").types;return c||jr&&jr.binding&&jr.binding("util")}catch(g){}}(),Lu=Wn&&Wn.isArrayBuffer,Eu=Wn&&Wn.isDate,Ou=Wn&&Wn.isMap,Du=Wn&&Wn.isRegExp,Pu=Wn&&Wn.isSet,Bu=Wn&&Wn.isTypedArray;function bn(c,g,p){switch(p.length){case 0:return c.call(g);case 1:return c.call(g,p[0]);case 2:return c.call(g,p[0],p[1]);case 3:return c.call(g,p[0],p[1],p[2])}return c.apply(g,p)}function la(c,g,p,A){for(var I=-1,U=c==null?0:c.length;++I<U;){var on=c[I];g(A,on,p(on),c)}return A}function Un(c,g){for(var p=-1,A=c==null?0:c.length;++p<A&&g(c[p],p,c)!==!1;);return c}function ca(c,g){for(var p=c==null?0:c.length;p--&&g(c[p],p,c)!==!1;);return c}function Wu(c,g){for(var p=-1,A=c==null?0:c.length;++p<A;)if(!g(c[p],p,c))return!1;return!0}function yt(c,g){for(var p=-1,A=c==null?0:c.length,I=0,U=[];++p<A;){var on=c[p];g(on,p,c)&&(U[I++]=on)}return U}function Ke(c,g){var p=c==null?0:c.length;return!!p&&Xt(c,g,0)>-1}function ni(c,g,p){for(var A=-1,I=c==null?0:c.length;++A<I;)if(p(g,c[A]))return!0;return!1}function Z(c,g){for(var p=-1,A=c==null?0:c.length,I=Array(A);++p<A;)I[p]=g(c[p],p,c);return I}function wt(c,g){for(var p=-1,A=g.length,I=c.length;++p<A;)c[I+p]=g[p];return c}function ti(c,g,p,A){var I=-1,U=c==null?0:c.length;for(A&&U&&(p=c[++I]);++I<U;)p=g(p,c[I],I,c);return p}function ha(c,g,p,A){var I=c==null?0:c.length;for(A&&I&&(p=c[--I]);I--;)p=g(p,c[I],I,c);return p}function ei(c,g){for(var p=-1,A=c==null?0:c.length;++p<A;)if(g(c[p],p,c))return!0;return!1}var pa=ri("length");function ga(c){return c.split("")}function da(c){return c.match(Ss)||[]}function Uu(c,g,p){var A;return p(c,function(I,U,on){if(g(I,U,on))return A=U,!1}),A}function ze(c,g,p,A){for(var I=c.length,U=p+(A?1:-1);A?U--:++U<I;)if(g(c[U],U,c))return U;return-1}function Xt(c,g,p){return g===g?Ia(c,g,p):ze(c,Nu,p)}function _a(c,g,p,A){for(var I=p-1,U=c.length;++I<U;)if(A(c[I],g))return I;return-1}function Nu(c){return c!==c}function Gu(c,g){var p=c==null?0:c.length;return p?ui(c,g)/p:Ot}function ri(c){return function(g){return g==null?i:g[c]}}function ii(c){return function(g){return c==null?i:c[g]}}function qu(c,g,p,A,I){return I(c,function(U,on,k){p=A?(A=!1,U):g(p,U,on,k)}),p}function va(c,g){var p=c.length;for(c.sort(g);p--;)c[p]=c[p].value;return c}function ui(c,g){for(var p,A=-1,I=c.length;++A<I;){var U=g(c[A]);U!==i&&(p=p===i?U:p+U)}return p}function fi(c,g){for(var p=-1,A=Array(c);++p<c;)A[p]=g(p);return A}function ma(c,g){return Z(g,function(p){return[p,c[p]]})}function ku(c){return c&&c.slice(0,zu(c)+1).replace(zr,"")}function Rn(c){return function(g){return c(g)}}function oi(c,g){return Z(g,function(p){return c[p]})}function pe(c,g){return c.has(g)}function $u(c,g){for(var p=-1,A=c.length;++p<A&&Xt(g,c[p],0)>-1;);return p}function Hu(c,g){for(var p=c.length;p--&&Xt(g,c[p],0)>-1;);return p}function xa(c,g){for(var p=c.length,A=0;p--;)c[p]===g&&++A;return A}var ya=ii(ra),wa=ii(ia);function Aa(c){return"\\\\"+fa[c]}function Sa(c,g){return c==null?i:c[g]}function Jt(c){return js.test(c)}function Ta(c){return na.test(c)}function Fa(c){for(var g,p=[];!(g=c.next()).done;)p.push(g.value);return p}function si(c){var g=-1,p=Array(c.size);return c.forEach(function(A,I){p[++g]=[I,A]}),p}function Ku(c,g){return function(p){return c(g(p))}}function At(c,g){for(var p=-1,A=c.length,I=0,U=[];++p<A;){var on=c[p];(on===g||on===Y)&&(c[p]=Y,U[I++]=p)}return U}function Ye(c){var g=-1,p=Array(c.size);return c.forEach(function(A){p[++g]=A}),p}function Ca(c){var g=-1,p=Array(c.size);return c.forEach(function(A){p[++g]=[A,A]}),p}function Ia(c,g,p){for(var A=p-1,I=c.length;++A<I;)if(c[A]===g)return A;return-1}function Ma(c,g,p){for(var A=p+1;A--;)if(c[A]===g)return A;return A}function Qt(c){return Jt(c)?Ra(c):pa(c)}function Jn(c){return Jt(c)?La(c):ga(c)}function zu(c){for(var g=c.length;g--&&xs.test(c.charAt(g)););return g}var ba=ii(ua);function Ra(c){for(var g=Qr.lastIndex=0;Qr.test(c);)++g;return g}function La(c){return c.match(Qr)||[]}function Ea(c){return c.match(Vs)||[]}var Oa=function c(g){g=g==null?ln:St.defaults(ln.Object(),g,St.pick(ln,ta));var p=g.Array,A=g.Date,I=g.Error,U=g.Function,on=g.Math,k=g.Object,ai=g.RegExp,Da=g.String,Nn=g.TypeError,Ze=p.prototype,Pa=U.prototype,Vt=k.prototype,Xe=g["__core-js_shared__"],Je=Pa.toString,G=Vt.hasOwnProperty,Ba=0,Yu=function(){var n=/[^.]+$/.exec(Xe&&Xe.keys&&Xe.keys.IE_PROTO||"");return n?"Symbol(src)_1."+n:""}(),Qe=Vt.toString,Wa=Je.call(k),Ua=ln._,Na=ai("^"+Je.call(G).replace(Kr,"\\\\$&").replace(/hasOwnProperty|(function).*?(?=\\\\\\()| for .+?(?=\\\\\\])/g,"$1.*?")+"$"),Ve=Ru?g.Buffer:i,Tt=g.Symbol,je=g.Uint8Array,Zu=Ve?Ve.allocUnsafe:i,nr=Ku(k.getPrototypeOf,k),Xu=k.create,Ju=Vt.propertyIsEnumerable,tr=Ze.splice,Qu=Tt?Tt.isConcatSpreadable:i,ge=Tt?Tt.iterator:i,Bt=Tt?Tt.toStringTag:i,er=function(){try{var n=qt(k,"defineProperty");return n({},"",{}),n}catch(t){}}(),Ga=g.clearTimeout!==ln.clearTimeout&&g.clearTimeout,qa=A&&A.now!==ln.Date.now&&A.now,ka=g.setTimeout!==ln.setTimeout&&g.setTimeout,rr=on.ceil,ir=on.floor,li=k.getOwnPropertySymbols,$a=Ve?Ve.isBuffer:i,Vu=g.isFinite,Ha=Ze.join,Ka=Ku(k.keys,k),sn=on.max,mn=on.min,za=A.now,Ya=g.parseInt,ju=on.random,Za=Ze.reverse,ci=qt(g,"DataView"),de=qt(g,"Map"),hi=qt(g,"Promise"),jt=qt(g,"Set"),_e=qt(g,"WeakMap"),ve=qt(k,"create"),ur=_e&&new _e,ne={},Xa=kt(ci),Ja=kt(de),Qa=kt(hi),Va=kt(jt),ja=kt(_e),fr=Tt?Tt.prototype:i,me=fr?fr.valueOf:i,nf=fr?fr.toString:i;function f(n){if(Q(n)&&!M(n)&&!(n instanceof D)){if(n instanceof Gn)return n;if(G.call(n,"__wrapped__"))return eo(n)}return new Gn(n)}var te=function(){function n(){}return function(t){if(!X(t))return{};if(Xu)return Xu(t);n.prototype=t;var e=new n;return n.prototype=i,e}}();function or(){}function Gn(n,t){this.__wrapped__=n,this.__actions__=[],this.__chain__=!!t,this.__index__=0,this.__values__=i}f.templateSettings={escape:ps,evaluate:gs,interpolate:au,variable:"",imports:{_:f}},f.prototype=or.prototype,f.prototype.constructor=f,Gn.prototype=te(or.prototype),Gn.prototype.constructor=Gn;function D(n){this.__wrapped__=n,this.__actions__=[],this.__dir__=1,this.__filtered__=!1,this.__iteratees__=[],this.__takeCount__=Mn,this.__views__=[]}function nl(){var n=new D(this.__wrapped__);return n.__actions__=Tn(this.__actions__),n.__dir__=this.__dir__,n.__filtered__=this.__filtered__,n.__iteratees__=Tn(this.__iteratees__),n.__takeCount__=this.__takeCount__,n.__views__=Tn(this.__views__),n}function tl(){if(this.__filtered__){var n=new D(this);n.__dir__=-1,n.__filtered__=!0}else n=this.clone(),n.__dir__*=-1;return n}function el(){var n=this.__wrapped__.value(),t=this.__dir__,e=M(n),r=t<0,u=e?n.length:0,o=gc(0,u,this.__views__),s=o.start,a=o.end,h=a-s,d=r?a:s-1,_=this.__iteratees__,v=_.length,x=0,S=mn(h,this.__takeCount__);if(!e||!r&&u==h&&S==h)return Ff(n,this.__actions__);var F=[];n:for(;h--&&x<S;){d+=t;for(var R=-1,C=n[d];++R<v;){var E=_[R],B=E.iteratee,On=E.type,Sn=B(C);if(On==Le)C=Sn;else if(!Sn){if(On==zn)continue n;break n}}F[x++]=C}return F}D.prototype=te(or.prototype),D.prototype.constructor=D;function Wt(n){var t=-1,e=n==null?0:n.length;for(this.clear();++t<e;){var r=n[t];this.set(r[0],r[1])}}function rl(){this.__data__=ve?ve(null):{},this.size=0}function il(n){var t=this.has(n)&&delete this.__data__[n];return this.size-=t?1:0,t}function ul(n){var t=this.__data__;if(ve){var e=t[n];return e===J?i:e}return G.call(t,n)?t[n]:i}function fl(n){var t=this.__data__;return ve?t[n]!==i:G.call(t,n)}function ol(n,t){var e=this.__data__;return this.size+=this.has(n)?0:1,e[n]=ve&&t===i?J:t,this}Wt.prototype.clear=rl,Wt.prototype.delete=il,Wt.prototype.get=ul,Wt.prototype.has=fl,Wt.prototype.set=ol;function ot(n){var t=-1,e=n==null?0:n.length;for(this.clear();++t<e;){var r=n[t];this.set(r[0],r[1])}}function sl(){this.__data__=[],this.size=0}function al(n){var t=this.__data__,e=sr(t,n);if(e<0)return!1;var r=t.length-1;return e==r?t.pop():tr.call(t,e,1),--this.size,!0}function ll(n){var t=this.__data__,e=sr(t,n);return e<0?i:t[e][1]}function cl(n){return sr(this.__data__,n)>-1}function hl(n,t){var e=this.__data__,r=sr(e,n);return r<0?(++this.size,e.push([n,t])):e[r][1]=t,this}ot.prototype.clear=sl,ot.prototype.delete=al,ot.prototype.get=ll,ot.prototype.has=cl,ot.prototype.set=hl;function st(n){var t=-1,e=n==null?0:n.length;for(this.clear();++t<e;){var r=n[t];this.set(r[0],r[1])}}function pl(){this.size=0,this.__data__={hash:new Wt,map:new(de||ot),string:new Wt}}function gl(n){var t=yr(this,n).delete(n);return this.size-=t?1:0,t}function dl(n){return yr(this,n).get(n)}function _l(n){return yr(this,n).has(n)}function vl(n,t){var e=yr(this,n),r=e.size;return e.set(n,t),this.size+=e.size==r?0:1,this}st.prototype.clear=pl,st.prototype.delete=gl,st.prototype.get=dl,st.prototype.has=_l,st.prototype.set=vl;function Ut(n){var t=-1,e=n==null?0:n.length;for(this.__data__=new st;++t<e;)this.add(n[t])}function ml(n){return this.__data__.set(n,J),this}function xl(n){return this.__data__.has(n)}Ut.prototype.add=Ut.prototype.push=ml,Ut.prototype.has=xl;function Qn(n){var t=this.__data__=new ot(n);this.size=t.size}function yl(){this.__data__=new ot,this.size=0}function wl(n){var t=this.__data__,e=t.delete(n);return this.size=t.size,e}function Al(n){return this.__data__.get(n)}function Sl(n){return this.__data__.has(n)}function Tl(n,t){var e=this.__data__;if(e instanceof ot){var r=e.__data__;if(!de||r.length<m-1)return r.push([n,t]),this.size=++e.size,this;e=this.__data__=new st(r)}return e.set(n,t),this.size=e.size,this}Qn.prototype.clear=yl,Qn.prototype.delete=wl,Qn.prototype.get=Al,Qn.prototype.has=Sl,Qn.prototype.set=Tl;function tf(n,t){var e=M(n),r=!e&&$t(n),u=!e&&!r&&bt(n),o=!e&&!r&&!u&&ue(n),s=e||r||u||o,a=s?fi(n.length,Da):[],h=a.length;for(var d in n)(t||G.call(n,d))&&!(s&&(d=="length"||u&&(d=="offset"||d=="parent")||o&&(d=="buffer"||d=="byteLength"||d=="byteOffset")||ht(d,h)))&&a.push(d);return a}function ef(n){var t=n.length;return t?n[Si(0,t-1)]:i}function Fl(n,t){return wr(Tn(n),Nt(t,0,n.length))}function Cl(n){return wr(Tn(n))}function pi(n,t,e){(e!==i&&!Vn(n[t],e)||e===i&&!(t in n))&&at(n,t,e)}function xe(n,t,e){var r=n[t];(!(G.call(n,t)&&Vn(r,e))||e===i&&!(t in n))&&at(n,t,e)}function sr(n,t){for(var e=n.length;e--;)if(Vn(n[e][0],t))return e;return-1}function Il(n,t,e,r){return Ft(n,function(u,o,s){t(r,u,e(u),s)}),r}function rf(n,t){return n&&rt(t,cn(t),n)}function Ml(n,t){return n&&rt(t,Cn(t),n)}function at(n,t,e){t=="__proto__"&&er?er(n,t,{configurable:!0,enumerable:!0,value:e,writable:!0}):n[t]=e}function gi(n,t){for(var e=-1,r=t.length,u=p(r),o=n==null;++e<r;)u[e]=o?i:Zi(n,t[e]);return u}function Nt(n,t,e){return n===n&&(e!==i&&(n=n<=e?n:e),t!==i&&(n=n>=t?n:t)),n}function qn(n,t,e,r,u,o){var s,a=t&P,h=t&an,d=t&j;if(e&&(s=u?e(n,r,u,o):e(n)),s!==i)return s;if(!X(n))return n;var _=M(n);if(_){if(s=_c(n),!a)return Tn(n,s)}else{var v=xn(n),x=v==tn||v==un;if(bt(n))return Mf(n,a);if(v==Zn||v==ft||x&&!u){if(s=h||x?{}:Yf(n),!a)return h?uc(n,Ml(s,n)):ic(n,rf(s,n))}else{if(!H[v])return u?n:{};s=vc(n,v,a)}}o||(o=new Qn);var S=o.get(n);if(S)return S;o.set(n,s),So(n)?n.forEach(function(C){s.add(qn(C,t,e,C,n,o))}):wo(n)&&n.forEach(function(C,E){s.set(E,qn(C,t,e,E,n,o))});var F=d?h?Di:Oi:h?Cn:cn,R=_?i:F(n);return Un(R||n,function(C,E){R&&(E=C,C=n[E]),xe(s,E,qn(C,t,e,E,n,o))}),s}function bl(n){var t=cn(n);return function(e){return uf(e,n,t)}}function uf(n,t,e){var r=e.length;if(n==null)return!r;for(n=k(n);r--;){var u=e[r],o=t[u],s=n[u];if(s===i&&!(u in n)||!o(s))return!1}return!0}function ff(n,t,e){if(typeof n!="function")throw new Nn(y);return Ce(function(){n.apply(i,e)},t)}function ye(n,t,e,r){var u=-1,o=Ke,s=!0,a=n.length,h=[],d=t.length;if(!a)return h;e&&(t=Z(t,Rn(e))),r?(o=ni,s=!1):t.length>=m&&(o=pe,s=!1,t=new Ut(t));n:for(;++u<a;){var _=n[u],v=e==null?_:e(_);if(_=r||_!==0?_:0,s&&v===v){for(var x=d;x--;)if(t[x]===v)continue n;h.push(_)}else o(t,v,r)||h.push(_)}return h}var Ft=Of(et),of=Of(_i,!0);function Rl(n,t){var e=!0;return Ft(n,function(r,u,o){return e=!!t(r,u,o),e}),e}function ar(n,t,e){for(var r=-1,u=n.length;++r<u;){var o=n[r],s=t(o);if(s!=null&&(a===i?s===s&&!En(s):e(s,a)))var a=s,h=o}return h}function Ll(n,t,e,r){var u=n.length;for(e=b(e),e<0&&(e=-e>u?0:u+e),r=r===i||r>u?u:b(r),r<0&&(r+=u),r=e>r?0:Fo(r);e<r;)n[e++]=t;return n}function sf(n,t){var e=[];return Ft(n,function(r,u,o){t(r,u,o)&&e.push(r)}),e}function vn(n,t,e,r,u){var o=-1,s=n.length;for(e||(e=xc),u||(u=[]);++o<s;){var a=n[o];t>0&&e(a)?t>1?vn(a,t-1,e,r,u):wt(u,a):r||(u[u.length]=a)}return u}var di=Df(),af=Df(!0);function et(n,t){return n&&di(n,t,cn)}function _i(n,t){return n&&af(n,t,cn)}function lr(n,t){return yt(t,function(e){return pt(n[e])})}function Gt(n,t){t=It(t,n);for(var e=0,r=t.length;n!=null&&e<r;)n=n[it(t[e++])];return e&&e==r?n:i}function lf(n,t,e){var r=t(n);return M(n)?r:wt(r,e(n))}function wn(n){return n==null?n===i?fs:Ne:Bt&&Bt in k(n)?pc(n):Cc(n)}function vi(n,t){return n>t}function El(n,t){return n!=null&&G.call(n,t)}function Ol(n,t){return n!=null&&t in k(n)}function Dl(n,t,e){return n>=mn(t,e)&&n<sn(t,e)}function mi(n,t,e){for(var r=e?ni:Ke,u=n[0].length,o=n.length,s=o,a=p(o),h=1/0,d=[];s--;){var _=n[s];s&&t&&(_=Z(_,Rn(t))),h=mn(_.length,h),a[s]=!e&&(t||u>=120&&_.length>=120)?new Ut(s&&_):i}_=n[0];var v=-1,x=a[0];n:for(;++v<u&&d.length<h;){var S=_[v],F=t?t(S):S;if(S=e||S!==0?S:0,!(x?pe(x,F):r(d,F,e))){for(s=o;--s;){var R=a[s];if(!(R?pe(R,F):r(n[s],F,e)))continue n}x&&x.push(F),d.push(S)}}return d}function Pl(n,t,e,r){return et(n,function(u,o,s){t(r,e(u),o,s)}),r}function we(n,t,e){t=It(t,n),n=Qf(n,t);var r=n==null?n:n[it($n(t))];return r==null?i:bn(r,n,e)}function cf(n){return Q(n)&&wn(n)==ft}function Bl(n){return Q(n)&&wn(n)==he}function Wl(n){return Q(n)&&wn(n)==xt}function Ae(n,t,e,r,u){return n===t?!0:n==null||t==null||!Q(n)&&!Q(t)?n!==n&&t!==t:Ul(n,t,e,r,Ae,u)}function Ul(n,t,e,r,u,o){var s=M(n),a=M(t),h=s?Dt:xn(n),d=a?Dt:xn(t);h=h==ft?Zn:h,d=d==ft?Zn:d;var _=h==Zn,v=d==Zn,x=h==d;if(x&&bt(n)){if(!bt(t))return!1;s=!0,_=!1}if(x&&!_)return o||(o=new Qn),s||ue(n)?Hf(n,t,e,r,u,o):cc(n,t,h,e,r,u,o);if(!(e&fn)){var S=_&&G.call(n,"__wrapped__"),F=v&&G.call(t,"__wrapped__");if(S||F){var R=S?n.value():n,C=F?t.value():t;return o||(o=new Qn),u(R,C,e,r,o)}}return x?(o||(o=new Qn),hc(n,t,e,r,u,o)):!1}function Nl(n){return Q(n)&&xn(n)==K}function xi(n,t,e,r){var u=e.length,o=u,s=!r;if(n==null)return!o;for(n=k(n);u--;){var a=e[u];if(s&&a[2]?a[1]!==n[a[0]]:!(a[0]in n))return!1}for(;++u<o;){a=e[u];var h=a[0],d=n[h],_=a[1];if(s&&a[2]){if(d===i&&!(h in n))return!1}else{var v=new Qn;if(r)var x=r(d,_,h,n,t,v);if(!(x===i?Ae(_,d,fn|Pn,r,v):x))return!1}}return!0}function hf(n){if(!X(n)||wc(n))return!1;var t=pt(n)?Na:bs;return t.test(kt(n))}function Gl(n){return Q(n)&&wn(n)==ae}function ql(n){return Q(n)&&xn(n)==Xn}function kl(n){return Q(n)&&Ir(n.length)&&!!z[wn(n)]}function pf(n){return typeof n=="function"?n:n==null?In:typeof n=="object"?M(n)?_f(n[0],n[1]):df(n):Bo(n)}function yi(n){if(!Fe(n))return Ka(n);var t=[];for(var e in k(n))G.call(n,e)&&e!="constructor"&&t.push(e);return t}function $l(n){if(!X(n))return Fc(n);var t=Fe(n),e=[];for(var r in n)r=="constructor"&&(t||!G.call(n,r))||e.push(r);return e}function wi(n,t){return n<t}function gf(n,t){var e=-1,r=Fn(n)?p(n.length):[];return Ft(n,function(u,o,s){r[++e]=t(u,o,s)}),r}function df(n){var t=Bi(n);return t.length==1&&t[0][2]?Xf(t[0][0],t[0][1]):function(e){return e===n||xi(e,n,t)}}function _f(n,t){return Ui(n)&&Zf(t)?Xf(it(n),t):function(e){var r=Zi(e,n);return r===i&&r===t?Xi(e,n):Ae(t,r,fn|Pn)}}function cr(n,t,e,r,u){n!==t&&di(t,function(o,s){if(u||(u=new Qn),X(o))Hl(n,t,s,e,cr,r,u);else{var a=r?r(Gi(n,s),o,s+"",n,t,u):i;a===i&&(a=o),pi(n,s,a)}},Cn)}function Hl(n,t,e,r,u,o,s){var a=Gi(n,e),h=Gi(t,e),d=s.get(h);if(d){pi(n,e,d);return}var _=o?o(a,h,e+"",n,t,s):i,v=_===i;if(v){var x=M(h),S=!x&&bt(h),F=!x&&!S&&ue(h);_=h,x||S||F?M(a)?_=a:en(a)?_=Tn(a):S?(v=!1,_=Mf(h,!0)):F?(v=!1,_=bf(h,!0)):_=[]:Ie(h)||$t(h)?(_=a,$t(a)?_=Co(a):(!X(a)||pt(a))&&(_=Yf(h))):v=!1}v&&(s.set(h,_),u(_,h,r,o,s),s.delete(h)),pi(n,e,_)}function vf(n,t){var e=n.length;if(!!e)return t+=t<0?e:0,ht(t,e)?n[t]:i}function mf(n,t,e){t.length?t=Z(t,function(o){return M(o)?function(s){return Gt(s,o.length===1?o[0]:o)}:o}):t=[In];var r=-1;t=Z(t,Rn(T()));var u=gf(n,function(o,s,a){var h=Z(t,function(d){return d(o)});return{criteria:h,index:++r,value:o}});return va(u,function(o,s){return rc(o,s,e)})}function Kl(n,t){return xf(n,t,function(e,r){return Xi(n,r)})}function xf(n,t,e){for(var r=-1,u=t.length,o={};++r<u;){var s=t[r],a=Gt(n,s);e(a,s)&&Se(o,It(s,n),a)}return o}function zl(n){return function(t){return Gt(t,n)}}function Ai(n,t,e,r){var u=r?_a:Xt,o=-1,s=t.length,a=n;for(n===t&&(t=Tn(t)),e&&(a=Z(n,Rn(e)));++o<s;)for(var h=0,d=t[o],_=e?e(d):d;(h=u(a,_,h,r))>-1;)a!==n&&tr.call(a,h,1),tr.call(n,h,1);return n}function yf(n,t){for(var e=n?t.length:0,r=e-1;e--;){var u=t[e];if(e==r||u!==o){var o=u;ht(u)?tr.call(n,u,1):Ci(n,u)}}return n}function Si(n,t){return n+ir(ju()*(t-n+1))}function Yl(n,t,e,r){for(var u=-1,o=sn(rr((t-n)/(e||1)),0),s=p(o);o--;)s[r?o:++u]=n,n+=e;return s}function Ti(n,t){var e="";if(!n||t<1||t>Yn)return e;do t%2&&(e+=n),t=ir(t/2),t&&(n+=n);while(t);return e}function L(n,t){return qi(Jf(n,t,In),n+"")}function Zl(n){return ef(fe(n))}function Xl(n,t){var e=fe(n);return wr(e,Nt(t,0,e.length))}function Se(n,t,e,r){if(!X(n))return n;t=It(t,n);for(var u=-1,o=t.length,s=o-1,a=n;a!=null&&++u<o;){var h=it(t[u]),d=e;if(h==="__proto__"||h==="constructor"||h==="prototype")return n;if(u!=s){var _=a[h];d=r?r(_,h,a):i,d===i&&(d=X(_)?_:ht(t[u+1])?[]:{})}xe(a,h,d),a=a[h]}return n}var wf=ur?function(n,t){return ur.set(n,t),n}:In,Jl=er?function(n,t){return er(n,"toString",{configurable:!0,enumerable:!1,value:Qi(t),writable:!0})}:In;function Ql(n){return wr(fe(n))}function kn(n,t,e){var r=-1,u=n.length;t<0&&(t=-t>u?0:u+t),e=e>u?u:e,e<0&&(e+=u),u=t>e?0:e-t>>>0,t>>>=0;for(var o=p(u);++r<u;)o[r]=n[r+t];return o}function Vl(n,t){var e;return Ft(n,function(r,u,o){return e=t(r,u,o),!e}),!!e}function hr(n,t,e){var r=0,u=n==null?r:n.length;if(typeof t=="number"&&t===t&&u<=Pe){for(;r<u;){var o=r+u>>>1,s=n[o];s!==null&&!En(s)&&(e?s<=t:s<t)?r=o+1:u=o}return u}return Fi(n,t,In,e)}function Fi(n,t,e,r){var u=0,o=n==null?0:n.length;if(o===0)return 0;t=e(t);for(var s=t!==t,a=t===null,h=En(t),d=t===i;u<o;){var _=ir((u+o)/2),v=e(n[_]),x=v!==i,S=v===null,F=v===v,R=En(v);if(s)var C=r||F;else d?C=F&&(r||x):a?C=F&&x&&(r||!S):h?C=F&&x&&!S&&(r||!R):S||R?C=!1:C=r?v<=t:v<t;C?u=_+1:o=_}return mn(o,De)}function Af(n,t){for(var e=-1,r=n.length,u=0,o=[];++e<r;){var s=n[e],a=t?t(s):s;if(!e||!Vn(a,h)){var h=a;o[u++]=s===0?0:s}}return o}function Sf(n){return typeof n=="number"?n:En(n)?Ot:+n}function Ln(n){if(typeof n=="string")return n;if(M(n))return Z(n,Ln)+"";if(En(n))return nf?nf.call(n):"";var t=n+"";return t=="0"&&1/n==-nt?"-0":t}function Ct(n,t,e){var r=-1,u=Ke,o=n.length,s=!0,a=[],h=a;if(e)s=!1,u=ni;else if(o>=m){var d=t?null:ac(n);if(d)return Ye(d);s=!1,u=pe,h=new Ut}else h=t?[]:a;n:for(;++r<o;){var _=n[r],v=t?t(_):_;if(_=e||_!==0?_:0,s&&v===v){for(var x=h.length;x--;)if(h[x]===v)continue n;t&&h.push(v),a.push(_)}else u(h,v,e)||(h!==a&&h.push(v),a.push(_))}return a}function Ci(n,t){return t=It(t,n),n=Qf(n,t),n==null||delete n[it($n(t))]}function Tf(n,t,e,r){return Se(n,t,e(Gt(n,t)),r)}function pr(n,t,e,r){for(var u=n.length,o=r?u:-1;(r?o--:++o<u)&&t(n[o],o,n););return e?kn(n,r?0:o,r?o+1:u):kn(n,r?o+1:0,r?u:o)}function Ff(n,t){var e=n;return e instanceof D&&(e=e.value()),ti(t,function(r,u){return u.func.apply(u.thisArg,wt([r],u.args))},e)}function Ii(n,t,e){var r=n.length;if(r<2)return r?Ct(n[0]):[];for(var u=-1,o=p(r);++u<r;)for(var s=n[u],a=-1;++a<r;)a!=u&&(o[u]=ye(o[u]||s,n[a],t,e));return Ct(vn(o,1),t,e)}function Cf(n,t,e){for(var r=-1,u=n.length,o=t.length,s={};++r<u;){var a=r<o?t[r]:i;e(s,n[r],a)}return s}function Mi(n){return en(n)?n:[]}function bi(n){return typeof n=="function"?n:In}function It(n,t){return M(n)?n:Ui(n,t)?[n]:to(N(n))}var jl=L;function Mt(n,t,e){var r=n.length;return e=e===i?r:e,!t&&e>=r?n:kn(n,t,e)}var If=Ga||function(n){return ln.clearTimeout(n)};function Mf(n,t){if(t)return n.slice();var e=n.length,r=Zu?Zu(e):new n.constructor(e);return n.copy(r),r}function Ri(n){var t=new n.constructor(n.byteLength);return new je(t).set(new je(n)),t}function nc(n,t){var e=t?Ri(n.buffer):n.buffer;return new n.constructor(e,n.byteOffset,n.byteLength)}function tc(n){var t=new n.constructor(n.source,lu.exec(n));return t.lastIndex=n.lastIndex,t}function ec(n){return me?k(me.call(n)):{}}function bf(n,t){var e=t?Ri(n.buffer):n.buffer;return new n.constructor(e,n.byteOffset,n.length)}function Rf(n,t){if(n!==t){var e=n!==i,r=n===null,u=n===n,o=En(n),s=t!==i,a=t===null,h=t===t,d=En(t);if(!a&&!d&&!o&&n>t||o&&s&&h&&!a&&!d||r&&s&&h||!e&&h||!u)return 1;if(!r&&!o&&!d&&n<t||d&&e&&u&&!r&&!o||a&&e&&u||!s&&u||!h)return-1}return 0}function rc(n,t,e){for(var r=-1,u=n.criteria,o=t.criteria,s=u.length,a=e.length;++r<s;){var h=Rf(u[r],o[r]);if(h){if(r>=a)return h;var d=e[r];return h*(d=="desc"?-1:1)}}return n.index-t.index}function Lf(n,t,e,r){for(var u=-1,o=n.length,s=e.length,a=-1,h=t.length,d=sn(o-s,0),_=p(h+d),v=!r;++a<h;)_[a]=t[a];for(;++u<s;)(v||u<o)&&(_[e[u]]=n[u]);for(;d--;)_[a++]=n[u++];return _}function Ef(n,t,e,r){for(var u=-1,o=n.length,s=-1,a=e.length,h=-1,d=t.length,_=sn(o-a,0),v=p(_+d),x=!r;++u<_;)v[u]=n[u];for(var S=u;++h<d;)v[S+h]=t[h];for(;++s<a;)(x||u<o)&&(v[S+e[s]]=n[u++]);return v}function Tn(n,t){var e=-1,r=n.length;for(t||(t=p(r));++e<r;)t[e]=n[e];return t}function rt(n,t,e,r){var u=!e;e||(e={});for(var o=-1,s=t.length;++o<s;){var a=t[o],h=r?r(e[a],n[a],a,e,n):i;h===i&&(h=n[a]),u?at(e,a,h):xe(e,a,h)}return e}function ic(n,t){return rt(n,Wi(n),t)}function uc(n,t){return rt(n,Kf(n),t)}function gr(n,t){return function(e,r){var u=M(e)?la:Il,o=t?t():{};return u(e,n,T(r,2),o)}}function ee(n){return L(function(t,e){var r=-1,u=e.length,o=u>1?e[u-1]:i,s=u>2?e[2]:i;for(o=n.length>3&&typeof o=="function"?(u--,o):i,s&&An(e[0],e[1],s)&&(o=u<3?i:o,u=1),t=k(t);++r<u;){var a=e[r];a&&n(t,a,r,o)}return t})}function Of(n,t){return function(e,r){if(e==null)return e;if(!Fn(e))return n(e,r);for(var u=e.length,o=t?u:-1,s=k(e);(t?o--:++o<u)&&r(s[o],o,s)!==!1;);return e}}function Df(n){return function(t,e,r){for(var u=-1,o=k(t),s=r(t),a=s.length;a--;){var h=s[n?a:++u];if(e(o[h],h,o)===!1)break}return t}}function fc(n,t,e){var r=t&nn,u=Te(n);function o(){var s=this&&this!==ln&&this instanceof o?u:n;return s.apply(r?e:this,arguments)}return o}function Pf(n){return function(t){t=N(t);var e=Jt(t)?Jn(t):i,r=e?e[0]:t.charAt(0),u=e?Mt(e,1).join(""):t.slice(1);return r[n]()+u}}function re(n){return function(t){return ti(Do(Oo(t).replace(Js,"")),n,"")}}function Te(n){return function(){var t=arguments;switch(t.length){case 0:return new n;case 1:return new n(t[0]);case 2:return new n(t[0],t[1]);case 3:return new n(t[0],t[1],t[2]);case 4:return new n(t[0],t[1],t[2],t[3]);case 5:return new n(t[0],t[1],t[2],t[3],t[4]);case 6:return new n(t[0],t[1],t[2],t[3],t[4],t[5]);case 7:return new n(t[0],t[1],t[2],t[3],t[4],t[5],t[6])}var e=te(n.prototype),r=n.apply(e,t);return X(r)?r:e}}function oc(n,t,e){var r=Te(n);function u(){for(var o=arguments.length,s=p(o),a=o,h=ie(u);a--;)s[a]=arguments[a];var d=o<3&&s[0]!==h&&s[o-1]!==h?[]:At(s,h);if(o-=d.length,o<e)return Gf(n,t,dr,u.placeholder,i,s,d,i,i,e-o);var _=this&&this!==ln&&this instanceof u?r:n;return bn(_,this,s)}return u}function Bf(n){return function(t,e,r){var u=k(t);if(!Fn(t)){var o=T(e,3);t=cn(t),e=function(a){return o(u[a],a,u)}}var s=n(t,e,r);return s>-1?u[o?t[s]:s]:i}}function Wf(n){return ct(function(t){var e=t.length,r=e,u=Gn.prototype.thru;for(n&&t.reverse();r--;){var o=t[r];if(typeof o!="function")throw new Nn(y);if(u&&!s&&xr(o)=="wrapper")var s=new Gn([],!0)}for(r=s?r:e;++r<e;){o=t[r];var a=xr(o),h=a=="wrapper"?Pi(o):i;h&&Ni(h[0])&&h[1]==(yn|hn|pn|W)&&!h[4].length&&h[9]==1?s=s[xr(h[0])].apply(s,h[3]):s=o.length==1&&Ni(o)?s[a]():s.thru(o)}return function(){var d=arguments,_=d[0];if(s&&d.length==1&&M(_))return s.plant(_).value();for(var v=0,x=e?t[v].apply(this,d):_;++v<e;)x=t[v].call(this,x);return x}})}function dr(n,t,e,r,u,o,s,a,h,d){var _=t&yn,v=t&nn,x=t&q,S=t&(hn|Bn),F=t&dn,R=x?i:Te(n);function C(){for(var E=arguments.length,B=p(E),On=E;On--;)B[On]=arguments[On];if(S)var Sn=ie(C),Dn=xa(B,Sn);if(r&&(B=Lf(B,r,u,S)),o&&(B=Ef(B,o,s,S)),E-=Dn,S&&E<d){var rn=At(B,Sn);return Gf(n,t,dr,C.placeholder,e,B,rn,a,h,d-E)}var jn=v?e:this,dt=x?jn[n]:n;return E=B.length,a?B=Ic(B,a):F&&E>1&&B.reverse(),_&&h<E&&(B.length=h),this&&this!==ln&&this instanceof C&&(dt=R||Te(dt)),dt.apply(jn,B)}return C}function Uf(n,t){return function(e,r){return Pl(e,n,t(r),{})}}function _r(n,t){return function(e,r){var u;if(e===i&&r===i)return t;if(e!==i&&(u=e),r!==i){if(u===i)return r;typeof e=="string"||typeof r=="string"?(e=Ln(e),r=Ln(r)):(e=Sf(e),r=Sf(r)),u=n(e,r)}return u}}function Li(n){return ct(function(t){return t=Z(t,Rn(T())),L(function(e){var r=this;return n(t,function(u){return bn(u,r,e)})})})}function vr(n,t){t=t===i?" ":Ln(t);var e=t.length;if(e<2)return e?Ti(t,n):t;var r=Ti(t,rr(n/Qt(t)));return Jt(t)?Mt(Jn(r),0,n).join(""):r.slice(0,n)}function sc(n,t,e,r){var u=t&nn,o=Te(n);function s(){for(var a=-1,h=arguments.length,d=-1,_=r.length,v=p(_+h),x=this&&this!==ln&&this instanceof s?o:n;++d<_;)v[d]=r[d];for(;h--;)v[d++]=arguments[++a];return bn(x,u?e:this,v)}return s}function Nf(n){return function(t,e,r){return r&&typeof r!="number"&&An(t,e,r)&&(e=r=i),t=gt(t),e===i?(e=t,t=0):e=gt(e),r=r===i?t<e?1:-1:gt(r),Yl(t,e,r,n)}}function mr(n){return function(t,e){return typeof t=="string"&&typeof e=="string"||(t=Hn(t),e=Hn(e)),n(t,e)}}function Gf(n,t,e,r,u,o,s,a,h,d){var _=t&hn,v=_?s:i,x=_?i:s,S=_?o:i,F=_?i:o;t|=_?pn:gn,t&=~(_?gn:pn),t&vt||(t&=~(nn|q));var R=[n,t,u,S,v,F,x,a,h,d],C=e.apply(i,R);return Ni(n)&&Vf(C,R),C.placeholder=r,jf(C,n,t)}function Ei(n){var t=on[n];return function(e,r){if(e=Hn(e),r=r==null?0:mn(b(r),292),r&&Vu(e)){var u=(N(e)+"e").split("e"),o=t(u[0]+"e"+(+u[1]+r));return u=(N(o)+"e").split("e"),+(u[0]+"e"+(+u[1]-r))}return t(e)}}var ac=jt&&1/Ye(new jt([,-0]))[1]==nt?function(n){return new jt(n)}:nu;function qf(n){return function(t){var e=xn(t);return e==K?si(t):e==Xn?Ca(t):ma(t,n(t))}}function lt(n,t,e,r,u,o,s,a){var h=t&q;if(!h&&typeof n!="function")throw new Nn(y);var d=r?r.length:0;if(d||(t&=~(pn|gn),r=u=i),s=s===i?s:sn(b(s),0),a=a===i?a:b(a),d-=u?u.length:0,t&gn){var _=r,v=u;r=u=i}var x=h?i:Pi(n),S=[n,t,e,r,u,_,v,o,s,a];if(x&&Tc(S,x),n=S[0],t=S[1],e=S[2],r=S[3],u=S[4],a=S[9]=S[9]===i?h?0:n.length:sn(S[9]-d,0),!a&&t&(hn|Bn)&&(t&=~(hn|Bn)),!t||t==nn)var F=fc(n,t,e);else t==hn||t==Bn?F=oc(n,t,a):(t==pn||t==(nn|pn))&&!u.length?F=sc(n,t,e,r):F=dr.apply(i,S);var R=x?wf:Vf;return jf(R(F,S),n,t)}function kf(n,t,e,r){return n===i||Vn(n,Vt[e])&&!G.call(r,e)?t:n}function $f(n,t,e,r,u,o){return X(n)&&X(t)&&(o.set(t,n),cr(n,t,i,$f,o),o.delete(t)),n}function lc(n){return Ie(n)?i:n}function Hf(n,t,e,r,u,o){var s=e&fn,a=n.length,h=t.length;if(a!=h&&!(s&&h>a))return!1;var d=o.get(n),_=o.get(t);if(d&&_)return d==t&&_==n;var v=-1,x=!0,S=e&Pn?new Ut:i;for(o.set(n,t),o.set(t,n);++v<a;){var F=n[v],R=t[v];if(r)var C=s?r(R,F,v,t,n,o):r(F,R,v,n,t,o);if(C!==i){if(C)continue;x=!1;break}if(S){if(!ei(t,function(E,B){if(!pe(S,B)&&(F===E||u(F,E,e,r,o)))return S.push(B)})){x=!1;break}}else if(!(F===R||u(F,R,e,r,o))){x=!1;break}}return o.delete(n),o.delete(t),x}function cc(n,t,e,r,u,o,s){switch(e){case Yt:if(n.byteLength!=t.byteLength||n.byteOffset!=t.byteOffset)return!1;n=n.buffer,t=t.buffer;case he:return!(n.byteLength!=t.byteLength||!o(new je(n),new je(t)));case mt:case xt:case tt:return Vn(+n,+t);case $:return n.name==t.name&&n.message==t.message;case ae:case le:return n==t+"";case K:var a=si;case Xn:var h=r&fn;if(a||(a=Ye),n.size!=t.size&&!h)return!1;var d=s.get(n);if(d)return d==t;r|=Pn,s.set(n,t);var _=Hf(a(n),a(t),r,u,o,s);return s.delete(n),_;case qe:if(me)return me.call(n)==me.call(t)}return!1}function hc(n,t,e,r,u,o){var s=e&fn,a=Oi(n),h=a.length,d=Oi(t),_=d.length;if(h!=_&&!s)return!1;for(var v=h;v--;){var x=a[v];if(!(s?x in t:G.call(t,x)))return!1}var S=o.get(n),F=o.get(t);if(S&&F)return S==t&&F==n;var R=!0;o.set(n,t),o.set(t,n);for(var C=s;++v<h;){x=a[v];var E=n[x],B=t[x];if(r)var On=s?r(B,E,x,t,n,o):r(E,B,x,n,t,o);if(!(On===i?E===B||u(E,B,e,r,o):On)){R=!1;break}C||(C=x=="constructor")}if(R&&!C){var Sn=n.constructor,Dn=t.constructor;Sn!=Dn&&"constructor"in n&&"constructor"in t&&!(typeof Sn=="function"&&Sn instanceof Sn&&typeof Dn=="function"&&Dn instanceof Dn)&&(R=!1)}return o.delete(n),o.delete(t),R}function ct(n){return qi(Jf(n,i,uo),n+"")}function Oi(n){return lf(n,cn,Wi)}function Di(n){return lf(n,Cn,Kf)}var Pi=ur?function(n){return ur.get(n)}:nu;function xr(n){for(var t=n.name+"",e=ne[t],r=G.call(ne,t)?e.length:0;r--;){var u=e[r],o=u.func;if(o==null||o==n)return u.name}return t}function ie(n){var t=G.call(f,"placeholder")?f:n;return t.placeholder}function T(){var n=f.iteratee||Vi;return n=n===Vi?pf:n,arguments.length?n(arguments[0],arguments[1]):n}function yr(n,t){var e=n.__data__;return yc(t)?e[typeof t=="string"?"string":"hash"]:e.map}function Bi(n){for(var t=cn(n),e=t.length;e--;){var r=t[e],u=n[r];t[e]=[r,u,Zf(u)]}return t}function qt(n,t){var e=Sa(n,t);return hf(e)?e:i}function pc(n){var t=G.call(n,Bt),e=n[Bt];try{n[Bt]=i;var r=!0}catch(o){}var u=Qe.call(n);return r&&(t?n[Bt]=e:delete n[Bt]),u}var Wi=li?function(n){return n==null?[]:(n=k(n),yt(li(n),function(t){return Ju.call(n,t)}))}:tu,Kf=li?function(n){for(var t=[];n;)wt(t,Wi(n)),n=nr(n);return t}:tu,xn=wn;(ci&&xn(new ci(new ArrayBuffer(1)))!=Yt||de&&xn(new de)!=K||hi&&xn(hi.resolve())!=Ge||jt&&xn(new jt)!=Xn||_e&&xn(new _e)!=ce)&&(xn=function(n){var t=wn(n),e=t==Zn?n.constructor:i,r=e?kt(e):"";if(r)switch(r){case Xa:return Yt;case Ja:return K;case Qa:return Ge;case Va:return Xn;case ja:return ce}return t});function gc(n,t,e){for(var r=-1,u=e.length;++r<u;){var o=e[r],s=o.size;switch(o.type){case"drop":n+=s;break;case"dropRight":t-=s;break;case"take":t=mn(t,n+s);break;case"takeRight":n=sn(n,t-s);break}}return{start:n,end:t}}function dc(n){var t=n.match(ws);return t?t[1].split(As):[]}function zf(n,t,e){t=It(t,n);for(var r=-1,u=t.length,o=!1;++r<u;){var s=it(t[r]);if(!(o=n!=null&&e(n,s)))break;n=n[s]}return o||++r!=u?o:(u=n==null?0:n.length,!!u&&Ir(u)&&ht(s,u)&&(M(n)||$t(n)))}function _c(n){var t=n.length,e=new n.constructor(t);return t&&typeof n[0]=="string"&&G.call(n,"index")&&(e.index=n.index,e.input=n.input),e}function Yf(n){return typeof n.constructor=="function"&&!Fe(n)?te(nr(n)):{}}function vc(n,t,e){var r=n.constructor;switch(t){case he:return Ri(n);case mt:case xt:return new r(+n);case Yt:return nc(n,e);case Br:case Wr:case Ur:case Nr:case Gr:case qr:case kr:case $r:case Hr:return bf(n,e);case K:return new r;case tt:case le:return new r(n);case ae:return tc(n);case Xn:return new r;case qe:return ec(n)}}function mc(n,t){var e=t.length;if(!e)return n;var r=e-1;return t[r]=(e>1?"& ":"")+t[r],t=t.join(e>2?", ":" "),n.replace(ys,`{\n/* [wrapped with `+t+`] */\n`)}function xc(n){return M(n)||$t(n)||!!(Qu&&n&&n[Qu])}function ht(n,t){var e=typeof n;return t=t==null?Yn:t,!!t&&(e=="number"||e!="symbol"&&Ls.test(n))&&n>-1&&n%1==0&&n<t}function An(n,t,e){if(!X(e))return!1;var r=typeof t;return(r=="number"?Fn(e)&&ht(t,e.length):r=="string"&&t in e)?Vn(e[t],n):!1}function Ui(n,t){if(M(n))return!1;var e=typeof n;return e=="number"||e=="symbol"||e=="boolean"||n==null||En(n)?!0:_s.test(n)||!ds.test(n)||t!=null&&n in k(t)}function yc(n){var t=typeof n;return t=="string"||t=="number"||t=="symbol"||t=="boolean"?n!=="__proto__":n===null}function Ni(n){var t=xr(n),e=f[t];if(typeof e!="function"||!(t in D.prototype))return!1;if(n===e)return!0;var r=Pi(e);return!!r&&n===r[0]}function wc(n){return!!Yu&&Yu in n}var Ac=Xe?pt:eu;function Fe(n){var t=n&&n.constructor,e=typeof t=="function"&&t.prototype||Vt;return n===e}function Zf(n){return n===n&&!X(n)}function Xf(n,t){return function(e){return e==null?!1:e[n]===t&&(t!==i||n in k(e))}}function Sc(n){var t=Fr(n,function(r){return e.size===V&&e.clear(),r}),e=t.cache;return t}function Tc(n,t){var e=n[1],r=t[1],u=e|r,o=u<(nn|q|yn),s=r==yn&&e==hn||r==yn&&e==W&&n[7].length<=t[8]||r==(yn|W)&&t[7].length<=t[8]&&e==hn;if(!(o||s))return n;r&nn&&(n[2]=t[2],u|=e&nn?0:vt);var a=t[3];if(a){var h=n[3];n[3]=h?Lf(h,a,t[4]):a,n[4]=h?At(n[3],Y):t[4]}return a=t[5],a&&(h=n[5],n[5]=h?Ef(h,a,t[6]):a,n[6]=h?At(n[5],Y):t[6]),a=t[7],a&&(n[7]=a),r&yn&&(n[8]=n[8]==null?t[8]:mn(n[8],t[8])),n[9]==null&&(n[9]=t[9]),n[0]=t[0],n[1]=u,n}function Fc(n){var t=[];if(n!=null)for(var e in k(n))t.push(e);return t}function Cc(n){return Qe.call(n)}function Jf(n,t,e){return t=sn(t===i?n.length-1:t,0),function(){for(var r=arguments,u=-1,o=sn(r.length-t,0),s=p(o);++u<o;)s[u]=r[t+u];u=-1;for(var a=p(t+1);++u<t;)a[u]=r[u];return a[t]=e(s),bn(n,this,a)}}function Qf(n,t){return t.length<2?n:Gt(n,kn(t,0,-1))}function Ic(n,t){for(var e=n.length,r=mn(t.length,e),u=Tn(n);r--;){var o=t[r];n[r]=ht(o,e)?u[o]:i}return n}function Gi(n,t){if(!(t==="constructor"&&typeof n[t]=="function")&&t!="__proto__")return n[t]}var Vf=no(wf),Ce=ka||function(n,t){return ln.setTimeout(n,t)},qi=no(Jl);function jf(n,t,e){var r=t+"";return qi(n,mc(r,Mc(dc(r),e)))}function no(n){var t=0,e=0;return function(){var r=za(),u=Et-(r-e);if(e=r,u>0){if(++t>=Kt)return arguments[0]}else t=0;return n.apply(i,arguments)}}function wr(n,t){var e=-1,r=n.length,u=r-1;for(t=t===i?r:t;++e<t;){var o=Si(e,u),s=n[o];n[o]=n[e],n[e]=s}return n.length=t,n}var to=Sc(function(n){var t=[];return n.charCodeAt(0)===46&&t.push(""),n.replace(vs,function(e,r,u,o){t.push(u?o.replace(Fs,"$1"):r||e)}),t});function it(n){if(typeof n=="string"||En(n))return n;var t=n+"";return t=="0"&&1/n==-nt?"-0":t}function kt(n){if(n!=null){try{return Je.call(n)}catch(t){}try{return n+""}catch(t){}}return""}function Mc(n,t){return Un(Be,function(e){var r="_."+e[0];t&e[1]&&!Ke(n,r)&&n.push(r)}),n.sort()}function eo(n){if(n instanceof D)return n.clone();var t=new Gn(n.__wrapped__,n.__chain__);return t.__actions__=Tn(n.__actions__),t.__index__=n.__index__,t.__values__=n.__values__,t}function bc(n,t,e){(e?An(n,t,e):t===i)?t=1:t=sn(b(t),0);var r=n==null?0:n.length;if(!r||t<1)return[];for(var u=0,o=0,s=p(rr(r/t));u<r;)s[o++]=kn(n,u,u+=t);return s}function Rc(n){for(var t=-1,e=n==null?0:n.length,r=0,u=[];++t<e;){var o=n[t];o&&(u[r++]=o)}return u}function Lc(){var n=arguments.length;if(!n)return[];for(var t=p(n-1),e=arguments[0],r=n;r--;)t[r-1]=arguments[r];return wt(M(e)?Tn(e):[e],vn(t,1))}var Ec=L(function(n,t){return en(n)?ye(n,vn(t,1,en,!0)):[]}),Oc=L(function(n,t){var e=$n(t);return en(e)&&(e=i),en(n)?ye(n,vn(t,1,en,!0),T(e,2)):[]}),Dc=L(function(n,t){var e=$n(t);return en(e)&&(e=i),en(n)?ye(n,vn(t,1,en,!0),i,e):[]});function Pc(n,t,e){var r=n==null?0:n.length;return r?(t=e||t===i?1:b(t),kn(n,t<0?0:t,r)):[]}function Bc(n,t,e){var r=n==null?0:n.length;return r?(t=e||t===i?1:b(t),t=r-t,kn(n,0,t<0?0:t)):[]}function Wc(n,t){return n&&n.length?pr(n,T(t,3),!0,!0):[]}function Uc(n,t){return n&&n.length?pr(n,T(t,3),!0):[]}function Nc(n,t,e,r){var u=n==null?0:n.length;return u?(e&&typeof e!="number"&&An(n,t,e)&&(e=0,r=u),Ll(n,t,e,r)):[]}function ro(n,t,e){var r=n==null?0:n.length;if(!r)return-1;var u=e==null?0:b(e);return u<0&&(u=sn(r+u,0)),ze(n,T(t,3),u)}function io(n,t,e){var r=n==null?0:n.length;if(!r)return-1;var u=r-1;return e!==i&&(u=b(e),u=e<0?sn(r+u,0):mn(u,r-1)),ze(n,T(t,3),u,!0)}function uo(n){var t=n==null?0:n.length;return t?vn(n,1):[]}function Gc(n){var t=n==null?0:n.length;return t?vn(n,nt):[]}function qc(n,t){var e=n==null?0:n.length;return e?(t=t===i?1:b(t),vn(n,t)):[]}function kc(n){for(var t=-1,e=n==null?0:n.length,r={};++t<e;){var u=n[t];r[u[0]]=u[1]}return r}function fo(n){return n&&n.length?n[0]:i}function $c(n,t,e){var r=n==null?0:n.length;if(!r)return-1;var u=e==null?0:b(e);return u<0&&(u=sn(r+u,0)),Xt(n,t,u)}function Hc(n){var t=n==null?0:n.length;return t?kn(n,0,-1):[]}var Kc=L(function(n){var t=Z(n,Mi);return t.length&&t[0]===n[0]?mi(t):[]}),zc=L(function(n){var t=$n(n),e=Z(n,Mi);return t===$n(e)?t=i:e.pop(),e.length&&e[0]===n[0]?mi(e,T(t,2)):[]}),Yc=L(function(n){var t=$n(n),e=Z(n,Mi);return t=typeof t=="function"?t:i,t&&e.pop(),e.length&&e[0]===n[0]?mi(e,i,t):[]});function Zc(n,t){return n==null?"":Ha.call(n,t)}function $n(n){var t=n==null?0:n.length;return t?n[t-1]:i}function Xc(n,t,e){var r=n==null?0:n.length;if(!r)return-1;var u=r;return e!==i&&(u=b(e),u=u<0?sn(r+u,0):mn(u,r-1)),t===t?Ma(n,t,u):ze(n,Nu,u,!0)}function Jc(n,t){return n&&n.length?vf(n,b(t)):i}var Qc=L(oo);function oo(n,t){return n&&n.length&&t&&t.length?Ai(n,t):n}function Vc(n,t,e){return n&&n.length&&t&&t.length?Ai(n,t,T(e,2)):n}function jc(n,t,e){return n&&n.length&&t&&t.length?Ai(n,t,i,e):n}var nh=ct(function(n,t){var e=n==null?0:n.length,r=gi(n,t);return yf(n,Z(t,function(u){return ht(u,e)?+u:u}).sort(Rf)),r});function th(n,t){var e=[];if(!(n&&n.length))return e;var r=-1,u=[],o=n.length;for(t=T(t,3);++r<o;){var s=n[r];t(s,r,n)&&(e.push(s),u.push(r))}return yf(n,u),e}function ki(n){return n==null?n:Za.call(n)}function eh(n,t,e){var r=n==null?0:n.length;return r?(e&&typeof e!="number"&&An(n,t,e)?(t=0,e=r):(t=t==null?0:b(t),e=e===i?r:b(e)),kn(n,t,e)):[]}function rh(n,t){return hr(n,t)}function ih(n,t,e){return Fi(n,t,T(e,2))}function uh(n,t){var e=n==null?0:n.length;if(e){var r=hr(n,t);if(r<e&&Vn(n[r],t))return r}return-1}function fh(n,t){return hr(n,t,!0)}function oh(n,t,e){return Fi(n,t,T(e,2),!0)}function sh(n,t){var e=n==null?0:n.length;if(e){var r=hr(n,t,!0)-1;if(Vn(n[r],t))return r}return-1}function ah(n){return n&&n.length?Af(n):[]}function lh(n,t){return n&&n.length?Af(n,T(t,2)):[]}function ch(n){var t=n==null?0:n.length;return t?kn(n,1,t):[]}function hh(n,t,e){return n&&n.length?(t=e||t===i?1:b(t),kn(n,0,t<0?0:t)):[]}function ph(n,t,e){var r=n==null?0:n.length;return r?(t=e||t===i?1:b(t),t=r-t,kn(n,t<0?0:t,r)):[]}function gh(n,t){return n&&n.length?pr(n,T(t,3),!1,!0):[]}function dh(n,t){return n&&n.length?pr(n,T(t,3)):[]}var _h=L(function(n){return Ct(vn(n,1,en,!0))}),vh=L(function(n){var t=$n(n);return en(t)&&(t=i),Ct(vn(n,1,en,!0),T(t,2))}),mh=L(function(n){var t=$n(n);return t=typeof t=="function"?t:i,Ct(vn(n,1,en,!0),i,t)});function xh(n){return n&&n.length?Ct(n):[]}function yh(n,t){return n&&n.length?Ct(n,T(t,2)):[]}function wh(n,t){return t=typeof t=="function"?t:i,n&&n.length?Ct(n,i,t):[]}function $i(n){if(!(n&&n.length))return[];var t=0;return n=yt(n,function(e){if(en(e))return t=sn(e.length,t),!0}),fi(t,function(e){return Z(n,ri(e))})}function so(n,t){if(!(n&&n.length))return[];var e=$i(n);return t==null?e:Z(e,function(r){return bn(t,i,r)})}var Ah=L(function(n,t){return en(n)?ye(n,t):[]}),Sh=L(function(n){return Ii(yt(n,en))}),Th=L(function(n){var t=$n(n);return en(t)&&(t=i),Ii(yt(n,en),T(t,2))}),Fh=L(function(n){var t=$n(n);return t=typeof t=="function"?t:i,Ii(yt(n,en),i,t)}),Ch=L($i);function Ih(n,t){return Cf(n||[],t||[],xe)}function Mh(n,t){return Cf(n||[],t||[],Se)}var bh=L(function(n){var t=n.length,e=t>1?n[t-1]:i;return e=typeof e=="function"?(n.pop(),e):i,so(n,e)});function ao(n){var t=f(n);return t.__chain__=!0,t}function Rh(n,t){return t(n),n}function Ar(n,t){return t(n)}var Lh=ct(function(n){var t=n.length,e=t?n[0]:0,r=this.__wrapped__,u=function(o){return gi(o,n)};return t>1||this.__actions__.length||!(r instanceof D)||!ht(e)?this.thru(u):(r=r.slice(e,+e+(t?1:0)),r.__actions__.push({func:Ar,args:[u],thisArg:i}),new Gn(r,this.__chain__).thru(function(o){return t&&!o.length&&o.push(i),o}))});function Eh(){return ao(this)}function Oh(){return new Gn(this.value(),this.__chain__)}function Dh(){this.__values__===i&&(this.__values__=To(this.value()));var n=this.__index__>=this.__values__.length,t=n?i:this.__values__[this.__index__++];return{done:n,value:t}}function Ph(){return this}function Bh(n){for(var t,e=this;e instanceof or;){var r=eo(e);r.__index__=0,r.__values__=i,t?u.__wrapped__=r:t=r;var u=r;e=e.__wrapped__}return u.__wrapped__=n,t}function Wh(){var n=this.__wrapped__;if(n instanceof D){var t=n;return this.__actions__.length&&(t=new D(this)),t=t.reverse(),t.__actions__.push({func:Ar,args:[ki],thisArg:i}),new Gn(t,this.__chain__)}return this.thru(ki)}function Uh(){return Ff(this.__wrapped__,this.__actions__)}var Nh=gr(function(n,t,e){G.call(n,e)?++n[e]:at(n,e,1)});function Gh(n,t,e){var r=M(n)?Wu:Rl;return e&&An(n,t,e)&&(t=i),r(n,T(t,3))}function qh(n,t){var e=M(n)?yt:sf;return e(n,T(t,3))}var kh=Bf(ro),$h=Bf(io);function Hh(n,t){return vn(Sr(n,t),1)}function Kh(n,t){return vn(Sr(n,t),nt)}function zh(n,t,e){return e=e===i?1:b(e),vn(Sr(n,t),e)}function lo(n,t){var e=M(n)?Un:Ft;return e(n,T(t,3))}function co(n,t){var e=M(n)?ca:of;return e(n,T(t,3))}var Yh=gr(function(n,t,e){G.call(n,e)?n[e].push(t):at(n,e,[t])});function Zh(n,t,e,r){n=Fn(n)?n:fe(n),e=e&&!r?b(e):0;var u=n.length;return e<0&&(e=sn(u+e,0)),Mr(n)?e<=u&&n.indexOf(t,e)>-1:!!u&&Xt(n,t,e)>-1}var Xh=L(function(n,t,e){var r=-1,u=typeof t=="function",o=Fn(n)?p(n.length):[];return Ft(n,function(s){o[++r]=u?bn(t,s,e):we(s,t,e)}),o}),Jh=gr(function(n,t,e){at(n,e,t)});function Sr(n,t){var e=M(n)?Z:gf;return e(n,T(t,3))}function Qh(n,t,e,r){return n==null?[]:(M(t)||(t=t==null?[]:[t]),e=r?i:e,M(e)||(e=e==null?[]:[e]),mf(n,t,e))}var Vh=gr(function(n,t,e){n[e?0:1].push(t)},function(){return[[],[]]});function jh(n,t,e){var r=M(n)?ti:qu,u=arguments.length<3;return r(n,T(t,4),e,u,Ft)}function np(n,t,e){var r=M(n)?ha:qu,u=arguments.length<3;return r(n,T(t,4),e,u,of)}function tp(n,t){var e=M(n)?yt:sf;return e(n,Cr(T(t,3)))}function ep(n){var t=M(n)?ef:Zl;return t(n)}function rp(n,t,e){(e?An(n,t,e):t===i)?t=1:t=b(t);var r=M(n)?Fl:Xl;return r(n,t)}function ip(n){var t=M(n)?Cl:Ql;return t(n)}function up(n){if(n==null)return 0;if(Fn(n))return Mr(n)?Qt(n):n.length;var t=xn(n);return t==K||t==Xn?n.size:yi(n).length}function fp(n,t,e){var r=M(n)?ei:Vl;return e&&An(n,t,e)&&(t=i),r(n,T(t,3))}var op=L(function(n,t){if(n==null)return[];var e=t.length;return e>1&&An(n,t[0],t[1])?t=[]:e>2&&An(t[0],t[1],t[2])&&(t=[t[0]]),mf(n,vn(t,1),[])}),Tr=qa||function(){return ln.Date.now()};function sp(n,t){if(typeof t!="function")throw new Nn(y);return n=b(n),function(){if(--n<1)return t.apply(this,arguments)}}function ho(n,t,e){return t=e?i:t,t=n&&t==null?n.length:t,lt(n,yn,i,i,i,i,t)}function po(n,t){var e;if(typeof t!="function")throw new Nn(y);return n=b(n),function(){return--n>0&&(e=t.apply(this,arguments)),n<=1&&(t=i),e}}var Hi=L(function(n,t,e){var r=nn;if(e.length){var u=At(e,ie(Hi));r|=pn}return lt(n,r,t,e,u)}),go=L(function(n,t,e){var r=nn|q;if(e.length){var u=At(e,ie(go));r|=pn}return lt(t,r,n,e,u)});function _o(n,t,e){t=e?i:t;var r=lt(n,hn,i,i,i,i,i,t);return r.placeholder=_o.placeholder,r}function vo(n,t,e){t=e?i:t;var r=lt(n,Bn,i,i,i,i,i,t);return r.placeholder=vo.placeholder,r}function mo(n,t,e){var r,u,o,s,a,h,d=0,_=!1,v=!1,x=!0;if(typeof n!="function")throw new Nn(y);t=Hn(t)||0,X(e)&&(_=!!e.leading,v="maxWait"in e,o=v?sn(Hn(e.maxWait)||0,t):o,x="trailing"in e?!!e.trailing:x);function S(rn){var jn=r,dt=u;return r=u=i,d=rn,s=n.apply(dt,jn),s}function F(rn){return d=rn,a=Ce(E,t),_?S(rn):s}function R(rn){var jn=rn-h,dt=rn-d,Wo=t-jn;return v?mn(Wo,o-dt):Wo}function C(rn){var jn=rn-h,dt=rn-d;return h===i||jn>=t||jn<0||v&&dt>=o}function E(){var rn=Tr();if(C(rn))return B(rn);a=Ce(E,R(rn))}function B(rn){return a=i,x&&r?S(rn):(r=u=i,s)}function On(){a!==i&&If(a),d=0,r=h=u=a=i}function Sn(){return a===i?s:B(Tr())}function Dn(){var rn=Tr(),jn=C(rn);if(r=arguments,u=this,h=rn,jn){if(a===i)return F(h);if(v)return If(a),a=Ce(E,t),S(h)}return a===i&&(a=Ce(E,t)),s}return Dn.cancel=On,Dn.flush=Sn,Dn}var ap=L(function(n,t){return ff(n,1,t)}),lp=L(function(n,t,e){return ff(n,Hn(t)||0,e)});function cp(n){return lt(n,dn)}function Fr(n,t){if(typeof n!="function"||t!=null&&typeof t!="function")throw new Nn(y);var e=function(){var r=arguments,u=t?t.apply(this,r):r[0],o=e.cache;if(o.has(u))return o.get(u);var s=n.apply(this,r);return e.cache=o.set(u,s)||o,s};return e.cache=new(Fr.Cache||st),e}Fr.Cache=st;function Cr(n){if(typeof n!="function")throw new Nn(y);return function(){var t=arguments;switch(t.length){case 0:return!n.call(this);case 1:return!n.call(this,t[0]);case 2:return!n.call(this,t[0],t[1]);case 3:return!n.call(this,t[0],t[1],t[2])}return!n.apply(this,t)}}function hp(n){return po(2,n)}var pp=jl(function(n,t){t=t.length==1&&M(t[0])?Z(t[0],Rn(T())):Z(vn(t,1),Rn(T()));var e=t.length;return L(function(r){for(var u=-1,o=mn(r.length,e);++u<o;)r[u]=t[u].call(this,r[u]);return bn(n,this,r)})}),Ki=L(function(n,t){var e=At(t,ie(Ki));return lt(n,pn,i,t,e)}),xo=L(function(n,t){var e=At(t,ie(xo));return lt(n,gn,i,t,e)}),gp=ct(function(n,t){return lt(n,W,i,i,i,t)});function dp(n,t){if(typeof n!="function")throw new Nn(y);return t=t===i?t:b(t),L(n,t)}function _p(n,t){if(typeof n!="function")throw new Nn(y);return t=t==null?0:sn(b(t),0),L(function(e){var r=e[t],u=Mt(e,0,t);return r&&wt(u,r),bn(n,this,u)})}function vp(n,t,e){var r=!0,u=!0;if(typeof n!="function")throw new Nn(y);return X(e)&&(r="leading"in e?!!e.leading:r,u="trailing"in e?!!e.trailing:u),mo(n,t,{leading:r,maxWait:t,trailing:u})}function mp(n){return ho(n,1)}function xp(n,t){return Ki(bi(t),n)}function yp(){if(!arguments.length)return[];var n=arguments[0];return M(n)?n:[n]}function wp(n){return qn(n,j)}function Ap(n,t){return t=typeof t=="function"?t:i,qn(n,j,t)}function Sp(n){return qn(n,P|j)}function Tp(n,t){return t=typeof t=="function"?t:i,qn(n,P|j,t)}function Fp(n,t){return t==null||uf(n,t,cn(t))}function Vn(n,t){return n===t||n!==n&&t!==t}var Cp=mr(vi),Ip=mr(function(n,t){return n>=t}),$t=cf(function(){return arguments}())?cf:function(n){return Q(n)&&G.call(n,"callee")&&!Ju.call(n,"callee")},M=p.isArray,Mp=Lu?Rn(Lu):Bl;function Fn(n){return n!=null&&Ir(n.length)&&!pt(n)}function en(n){return Q(n)&&Fn(n)}function bp(n){return n===!0||n===!1||Q(n)&&wn(n)==mt}var bt=$a||eu,Rp=Eu?Rn(Eu):Wl;function Lp(n){return Q(n)&&n.nodeType===1&&!Ie(n)}function Ep(n){if(n==null)return!0;if(Fn(n)&&(M(n)||typeof n=="string"||typeof n.splice=="function"||bt(n)||ue(n)||$t(n)))return!n.length;var t=xn(n);if(t==K||t==Xn)return!n.size;if(Fe(n))return!yi(n).length;for(var e in n)if(G.call(n,e))return!1;return!0}function Op(n,t){return Ae(n,t)}function Dp(n,t,e){e=typeof e=="function"?e:i;var r=e?e(n,t):i;return r===i?Ae(n,t,i,e):!!r}function zi(n){if(!Q(n))return!1;var t=wn(n);return t==$||t==Ue||typeof n.message=="string"&&typeof n.name=="string"&&!Ie(n)}function Pp(n){return typeof n=="number"&&Vu(n)}function pt(n){if(!X(n))return!1;var t=wn(n);return t==tn||t==un||t==We||t==zt}function yo(n){return typeof n=="number"&&n==b(n)}function Ir(n){return typeof n=="number"&&n>-1&&n%1==0&&n<=Yn}function X(n){var t=typeof n;return n!=null&&(t=="object"||t=="function")}function Q(n){return n!=null&&typeof n=="object"}var wo=Ou?Rn(Ou):Nl;function Bp(n,t){return n===t||xi(n,t,Bi(t))}function Wp(n,t,e){return e=typeof e=="function"?e:i,xi(n,t,Bi(t),e)}function Up(n){return Ao(n)&&n!=+n}function Np(n){if(Ac(n))throw new I(w);return hf(n)}function Gp(n){return n===null}function qp(n){return n==null}function Ao(n){return typeof n=="number"||Q(n)&&wn(n)==tt}function Ie(n){if(!Q(n)||wn(n)!=Zn)return!1;var t=nr(n);if(t===null)return!0;var e=G.call(t,"constructor")&&t.constructor;return typeof e=="function"&&e instanceof e&&Je.call(e)==Wa}var Yi=Du?Rn(Du):Gl;function kp(n){return yo(n)&&n>=-Yn&&n<=Yn}var So=Pu?Rn(Pu):ql;function Mr(n){return typeof n=="string"||!M(n)&&Q(n)&&wn(n)==le}function En(n){return typeof n=="symbol"||Q(n)&&wn(n)==qe}var ue=Bu?Rn(Bu):kl;function $p(n){return n===i}function Hp(n){return Q(n)&&xn(n)==ce}function Kp(n){return Q(n)&&wn(n)==os}var zp=mr(wi),Yp=mr(function(n,t){return n<=t});function To(n){if(!n)return[];if(Fn(n))return Mr(n)?Jn(n):Tn(n);if(ge&&n[ge])return Fa(n[ge]());var t=xn(n),e=t==K?si:t==Xn?Ye:fe;return e(n)}function gt(n){if(!n)return n===0?n:0;if(n=Hn(n),n===nt||n===-nt){var t=n<0?-1:1;return t*Oe}return n===n?n:0}function b(n){var t=gt(n),e=t%1;return t===t?e?t-e:t:0}function Fo(n){return n?Nt(b(n),0,Mn):0}function Hn(n){if(typeof n=="number")return n;if(En(n))return Ot;if(X(n)){var t=typeof n.valueOf=="function"?n.valueOf():n;n=X(t)?t+"":t}if(typeof n!="string")return n===0?n:+n;n=ku(n);var e=Ms.test(n);return e||Rs.test(n)?sa(n.slice(2),e?2:8):Is.test(n)?Ot:+n}function Co(n){return rt(n,Cn(n))}function Zp(n){return n?Nt(b(n),-Yn,Yn):n===0?n:0}function N(n){return n==null?"":Ln(n)}var Xp=ee(function(n,t){if(Fe(t)||Fn(t)){rt(t,cn(t),n);return}for(var e in t)G.call(t,e)&&xe(n,e,t[e])}),Io=ee(function(n,t){rt(t,Cn(t),n)}),br=ee(function(n,t,e,r){rt(t,Cn(t),n,r)}),Jp=ee(function(n,t,e,r){rt(t,cn(t),n,r)}),Qp=ct(gi);function Vp(n,t){var e=te(n);return t==null?e:rf(e,t)}var jp=L(function(n,t){n=k(n);var e=-1,r=t.length,u=r>2?t[2]:i;for(u&&An(t[0],t[1],u)&&(r=1);++e<r;)for(var o=t[e],s=Cn(o),a=-1,h=s.length;++a<h;){var d=s[a],_=n[d];(_===i||Vn(_,Vt[d])&&!G.call(n,d))&&(n[d]=o[d])}return n}),ng=L(function(n){return n.push(i,$f),bn(Mo,i,n)});function tg(n,t){return Uu(n,T(t,3),et)}function eg(n,t){return Uu(n,T(t,3),_i)}function rg(n,t){return n==null?n:di(n,T(t,3),Cn)}function ig(n,t){return n==null?n:af(n,T(t,3),Cn)}function ug(n,t){return n&&et(n,T(t,3))}function fg(n,t){return n&&_i(n,T(t,3))}function og(n){return n==null?[]:lr(n,cn(n))}function sg(n){return n==null?[]:lr(n,Cn(n))}function Zi(n,t,e){var r=n==null?i:Gt(n,t);return r===i?e:r}function ag(n,t){return n!=null&&zf(n,t,El)}function Xi(n,t){return n!=null&&zf(n,t,Ol)}var lg=Uf(function(n,t,e){t!=null&&typeof t.toString!="function"&&(t=Qe.call(t)),n[t]=e},Qi(In)),cg=Uf(function(n,t,e){t!=null&&typeof t.toString!="function"&&(t=Qe.call(t)),G.call(n,t)?n[t].push(e):n[t]=[e]},T),hg=L(we);function cn(n){return Fn(n)?tf(n):yi(n)}function Cn(n){return Fn(n)?tf(n,!0):$l(n)}function pg(n,t){var e={};return t=T(t,3),et(n,function(r,u,o){at(e,t(r,u,o),r)}),e}function gg(n,t){var e={};return t=T(t,3),et(n,function(r,u,o){at(e,u,t(r,u,o))}),e}var dg=ee(function(n,t,e){cr(n,t,e)}),Mo=ee(function(n,t,e,r){cr(n,t,e,r)}),_g=ct(function(n,t){var e={};if(n==null)return e;var r=!1;t=Z(t,function(o){return o=It(o,n),r||(r=o.length>1),o}),rt(n,Di(n),e),r&&(e=qn(e,P|an|j,lc));for(var u=t.length;u--;)Ci(e,t[u]);return e});function vg(n,t){return bo(n,Cr(T(t)))}var mg=ct(function(n,t){return n==null?{}:Kl(n,t)});function bo(n,t){if(n==null)return{};var e=Z(Di(n),function(r){return[r]});return t=T(t),xf(n,e,function(r,u){return t(r,u[0])})}function xg(n,t,e){t=It(t,n);var r=-1,u=t.length;for(u||(u=1,n=i);++r<u;){var o=n==null?i:n[it(t[r])];o===i&&(r=u,o=e),n=pt(o)?o.call(n):o}return n}function yg(n,t,e){return n==null?n:Se(n,t,e)}function wg(n,t,e,r){return r=typeof r=="function"?r:i,n==null?n:Se(n,t,e,r)}var Ro=qf(cn),Lo=qf(Cn);function Ag(n,t,e){var r=M(n),u=r||bt(n)||ue(n);if(t=T(t,4),e==null){var o=n&&n.constructor;u?e=r?new o:[]:X(n)?e=pt(o)?te(nr(n)):{}:e={}}return(u?Un:et)(n,function(s,a,h){return t(e,s,a,h)}),e}function Sg(n,t){return n==null?!0:Ci(n,t)}function Tg(n,t,e){return n==null?n:Tf(n,t,bi(e))}function Fg(n,t,e,r){return r=typeof r=="function"?r:i,n==null?n:Tf(n,t,bi(e),r)}function fe(n){return n==null?[]:oi(n,cn(n))}function Cg(n){return n==null?[]:oi(n,Cn(n))}function Ig(n,t,e){return e===i&&(e=t,t=i),e!==i&&(e=Hn(e),e=e===e?e:0),t!==i&&(t=Hn(t),t=t===t?t:0),Nt(Hn(n),t,e)}function Mg(n,t,e){return t=gt(t),e===i?(e=t,t=0):e=gt(e),n=Hn(n),Dl(n,t,e)}function bg(n,t,e){if(e&&typeof e!="boolean"&&An(n,t,e)&&(t=e=i),e===i&&(typeof t=="boolean"?(e=t,t=i):typeof n=="boolean"&&(e=n,n=i)),n===i&&t===i?(n=0,t=1):(n=gt(n),t===i?(t=n,n=0):t=gt(t)),n>t){var r=n;n=t,t=r}if(e||n%1||t%1){var u=ju();return mn(n+u*(t-n+oa("1e-"+((u+"").length-1))),t)}return Si(n,t)}var Rg=re(function(n,t,e){return t=t.toLowerCase(),n+(e?Eo(t):t)});function Eo(n){return Ji(N(n).toLowerCase())}function Oo(n){return n=N(n),n&&n.replace(Es,ya).replace(Qs,"")}function Lg(n,t,e){n=N(n),t=Ln(t);var r=n.length;e=e===i?r:Nt(b(e),0,r);var u=e;return e-=t.length,e>=0&&n.slice(e,u)==t}function Eg(n){return n=N(n),n&&hs.test(n)?n.replace(su,wa):n}function Og(n){return n=N(n),n&&ms.test(n)?n.replace(Kr,"\\\\$&"):n}var Dg=re(function(n,t,e){return n+(e?"-":"")+t.toLowerCase()}),Pg=re(function(n,t,e){return n+(e?" ":"")+t.toLowerCase()}),Bg=Pf("toLowerCase");function Wg(n,t,e){n=N(n),t=b(t);var r=t?Qt(n):0;if(!t||r>=t)return n;var u=(t-r)/2;return vr(ir(u),e)+n+vr(rr(u),e)}function Ug(n,t,e){n=N(n),t=b(t);var r=t?Qt(n):0;return t&&r<t?n+vr(t-r,e):n}function Ng(n,t,e){n=N(n),t=b(t);var r=t?Qt(n):0;return t&&r<t?vr(t-r,e)+n:n}function Gg(n,t,e){return e||t==null?t=0:t&&(t=+t),Ya(N(n).replace(zr,""),t||0)}function qg(n,t,e){return(e?An(n,t,e):t===i)?t=1:t=b(t),Ti(N(n),t)}function kg(){var n=arguments,t=N(n[0]);return n.length<3?t:t.replace(n[1],n[2])}var $g=re(function(n,t,e){return n+(e?"_":"")+t.toLowerCase()});function Hg(n,t,e){return e&&typeof e!="number"&&An(n,t,e)&&(t=e=i),e=e===i?Mn:e>>>0,e?(n=N(n),n&&(typeof t=="string"||t!=null&&!Yi(t))&&(t=Ln(t),!t&&Jt(n))?Mt(Jn(n),0,e):n.split(t,e)):[]}var Kg=re(function(n,t,e){return n+(e?" ":"")+Ji(t)});function zg(n,t,e){return n=N(n),e=e==null?0:Nt(b(e),0,n.length),t=Ln(t),n.slice(e,e+t.length)==t}function Yg(n,t,e){var r=f.templateSettings;e&&An(n,t,e)&&(t=i),n=N(n),t=br({},t,r,kf);var u=br({},t.imports,r.imports,kf),o=cn(u),s=oi(u,o),a,h,d=0,_=t.interpolate||ke,v="__p += \'",x=ai((t.escape||ke).source+"|"+_.source+"|"+(_===au?Cs:ke).source+"|"+(t.evaluate||ke).source+"|$","g"),S="//# sourceURL="+(G.call(t,"sourceURL")?(t.sourceURL+"").replace(/\\s/g," "):"lodash.templateSources["+ ++ea+"]")+`\n`;n.replace(x,function(C,E,B,On,Sn,Dn){return B||(B=On),v+=n.slice(d,Dn).replace(Os,Aa),E&&(a=!0,v+=`\' +\n__e(`+E+`) +\n\'`),Sn&&(h=!0,v+=`\';\n`+Sn+`;\n__p += \'`),B&&(v+=`\' +\n((__t = (`+B+`)) == null ? \'\' : __t) +\n\'`),d=Dn+C.length,C}),v+=`\';\n`;var F=G.call(t,"variable")&&t.variable;if(!F)v=`with (obj) {\n`+v+`\n}\n`;else if(Ts.test(F))throw new I(O);v=(h?v.replace(ss,""):v).replace(as,"$1").replace(ls,"$1;"),v="function("+(F||"obj")+`) {\n`+(F?"":`obj || (obj = {});\n`)+"var __t, __p = \'\'"+(a?", __e = _.escape":"")+(h?`, __j = Array.prototype.join;\nfunction print() { __p += __j.call(arguments, \'\') }\n`:`;\n`)+v+`return __p\n}`;var R=Po(function(){return U(o,S+"return "+v).apply(i,s)});if(R.source=v,zi(R))throw R;return R}function Zg(n){return N(n).toLowerCase()}function Xg(n){return N(n).toUpperCase()}function Jg(n,t,e){if(n=N(n),n&&(e||t===i))return ku(n);if(!n||!(t=Ln(t)))return n;var r=Jn(n),u=Jn(t),o=$u(r,u),s=Hu(r,u)+1;return Mt(r,o,s).join("")}function Qg(n,t,e){if(n=N(n),n&&(e||t===i))return n.slice(0,zu(n)+1);if(!n||!(t=Ln(t)))return n;var r=Jn(n),u=Hu(r,Jn(t))+1;return Mt(r,0,u).join("")}function Vg(n,t,e){if(n=N(n),n&&(e||t===i))return n.replace(zr,"");if(!n||!(t=Ln(t)))return n;var r=Jn(n),u=$u(r,Jn(t));return Mt(r,u).join("")}function jg(n,t){var e=_n,r=Kn;if(X(t)){var u="separator"in t?t.separator:u;e="length"in t?b(t.length):e,r="omission"in t?Ln(t.omission):r}n=N(n);var o=n.length;if(Jt(n)){var s=Jn(n);o=s.length}if(e>=o)return n;var a=e-Qt(r);if(a<1)return r;var h=s?Mt(s,0,a).join(""):n.slice(0,a);if(u===i)return h+r;if(s&&(a+=h.length-a),Yi(u)){if(n.slice(a).search(u)){var d,_=h;for(u.global||(u=ai(u.source,N(lu.exec(u))+"g")),u.lastIndex=0;d=u.exec(_);)var v=d.index;h=h.slice(0,v===i?a:v)}}else if(n.indexOf(Ln(u),a)!=a){var x=h.lastIndexOf(u);x>-1&&(h=h.slice(0,x))}return h+r}function nd(n){return n=N(n),n&&cs.test(n)?n.replace(ou,ba):n}var td=re(function(n,t,e){return n+(e?" ":"")+t.toUpperCase()}),Ji=Pf("toUpperCase");function Do(n,t,e){return n=N(n),t=e?i:t,t===i?Ta(n)?Ea(n):da(n):n.match(t)||[]}var Po=L(function(n,t){try{return bn(n,i,t)}catch(e){return zi(e)?e:new I(e)}}),ed=ct(function(n,t){return Un(t,function(e){e=it(e),at(n,e,Hi(n[e],n))}),n});function rd(n){var t=n==null?0:n.length,e=T();return n=t?Z(n,function(r){if(typeof r[1]!="function")throw new Nn(y);return[e(r[0]),r[1]]}):[],L(function(r){for(var u=-1;++u<t;){var o=n[u];if(bn(o[0],this,r))return bn(o[1],this,r)}})}function id(n){return bl(qn(n,P))}function Qi(n){return function(){return n}}function ud(n,t){return n==null||n!==n?t:n}var fd=Wf(),od=Wf(!0);function In(n){return n}function Vi(n){return pf(typeof n=="function"?n:qn(n,P))}function sd(n){return df(qn(n,P))}function ad(n,t){return _f(n,qn(t,P))}var ld=L(function(n,t){return function(e){return we(e,n,t)}}),cd=L(function(n,t){return function(e){return we(n,e,t)}});function ji(n,t,e){var r=cn(t),u=lr(t,r);e==null&&!(X(t)&&(u.length||!r.length))&&(e=t,t=n,n=this,u=lr(t,cn(t)));var o=!(X(e)&&"chain"in e)||!!e.chain,s=pt(n);return Un(u,function(a){var h=t[a];n[a]=h,s&&(n.prototype[a]=function(){var d=this.__chain__;if(o||d){var _=n(this.__wrapped__),v=_.__actions__=Tn(this.__actions__);return v.push({func:h,args:arguments,thisArg:n}),_.__chain__=d,_}return h.apply(n,wt([this.value()],arguments))})}),n}function hd(){return ln._===this&&(ln._=Ua),this}function nu(){}function pd(n){return n=b(n),L(function(t){return vf(t,n)})}var gd=Li(Z),dd=Li(Wu),_d=Li(ei);function Bo(n){return Ui(n)?ri(it(n)):zl(n)}function vd(n){return function(t){return n==null?i:Gt(n,t)}}var md=Nf(),xd=Nf(!0);function tu(){return[]}function eu(){return!1}function yd(){return{}}function wd(){return""}function Ad(){return!0}function Sd(n,t){if(n=b(n),n<1||n>Yn)return[];var e=Mn,r=mn(n,Mn);t=T(t),n-=Mn;for(var u=fi(r,t);++e<n;)t(e);return u}function Td(n){return M(n)?Z(n,it):En(n)?[n]:Tn(to(N(n)))}function Fd(n){var t=++Ba;return N(n)+t}var Cd=_r(function(n,t){return n+t},0),Id=Ei("ceil"),Md=_r(function(n,t){return n/t},1),bd=Ei("floor");function Rd(n){return n&&n.length?ar(n,In,vi):i}function Ld(n,t){return n&&n.length?ar(n,T(t,2),vi):i}function Ed(n){return Gu(n,In)}function Od(n,t){return Gu(n,T(t,2))}function Dd(n){return n&&n.length?ar(n,In,wi):i}function Pd(n,t){return n&&n.length?ar(n,T(t,2),wi):i}var Bd=_r(function(n,t){return n*t},1),Wd=Ei("round"),Ud=_r(function(n,t){return n-t},0);function Nd(n){return n&&n.length?ui(n,In):0}function Gd(n,t){return n&&n.length?ui(n,T(t,2)):0}return f.after=sp,f.ary=ho,f.assign=Xp,f.assignIn=Io,f.assignInWith=br,f.assignWith=Jp,f.at=Qp,f.before=po,f.bind=Hi,f.bindAll=ed,f.bindKey=go,f.castArray=yp,f.chain=ao,f.chunk=bc,f.compact=Rc,f.concat=Lc,f.cond=rd,f.conforms=id,f.constant=Qi,f.countBy=Nh,f.create=Vp,f.curry=_o,f.curryRight=vo,f.debounce=mo,f.defaults=jp,f.defaultsDeep=ng,f.defer=ap,f.delay=lp,f.difference=Ec,f.differenceBy=Oc,f.differenceWith=Dc,f.drop=Pc,f.dropRight=Bc,f.dropRightWhile=Wc,f.dropWhile=Uc,f.fill=Nc,f.filter=qh,f.flatMap=Hh,f.flatMapDeep=Kh,f.flatMapDepth=zh,f.flatten=uo,f.flattenDeep=Gc,f.flattenDepth=qc,f.flip=cp,f.flow=fd,f.flowRight=od,f.fromPairs=kc,f.functions=og,f.functionsIn=sg,f.groupBy=Yh,f.initial=Hc,f.intersection=Kc,f.intersectionBy=zc,f.intersectionWith=Yc,f.invert=lg,f.invertBy=cg,f.invokeMap=Xh,f.iteratee=Vi,f.keyBy=Jh,f.keys=cn,f.keysIn=Cn,f.map=Sr,f.mapKeys=pg,f.mapValues=gg,f.matches=sd,f.matchesProperty=ad,f.memoize=Fr,f.merge=dg,f.mergeWith=Mo,f.method=ld,f.methodOf=cd,f.mixin=ji,f.negate=Cr,f.nthArg=pd,f.omit=_g,f.omitBy=vg,f.once=hp,f.orderBy=Qh,f.over=gd,f.overArgs=pp,f.overEvery=dd,f.overSome=_d,f.partial=Ki,f.partialRight=xo,f.partition=Vh,f.pick=mg,f.pickBy=bo,f.property=Bo,f.propertyOf=vd,f.pull=Qc,f.pullAll=oo,f.pullAllBy=Vc,f.pullAllWith=jc,f.pullAt=nh,f.range=md,f.rangeRight=xd,f.rearg=gp,f.reject=tp,f.remove=th,f.rest=dp,f.reverse=ki,f.sampleSize=rp,f.set=yg,f.setWith=wg,f.shuffle=ip,f.slice=eh,f.sortBy=op,f.sortedUniq=ah,f.sortedUniqBy=lh,f.split=Hg,f.spread=_p,f.tail=ch,f.take=hh,f.takeRight=ph,f.takeRightWhile=gh,f.takeWhile=dh,f.tap=Rh,f.throttle=vp,f.thru=Ar,f.toArray=To,f.toPairs=Ro,f.toPairsIn=Lo,f.toPath=Td,f.toPlainObject=Co,f.transform=Ag,f.unary=mp,f.union=_h,f.unionBy=vh,f.unionWith=mh,f.uniq=xh,f.uniqBy=yh,f.uniqWith=wh,f.unset=Sg,f.unzip=$i,f.unzipWith=so,f.update=Tg,f.updateWith=Fg,f.values=fe,f.valuesIn=Cg,f.without=Ah,f.words=Do,f.wrap=xp,f.xor=Sh,f.xorBy=Th,f.xorWith=Fh,f.zip=Ch,f.zipObject=Ih,f.zipObjectDeep=Mh,f.zipWith=bh,f.entries=Ro,f.entriesIn=Lo,f.extend=Io,f.extendWith=br,ji(f,f),f.add=Cd,f.attempt=Po,f.camelCase=Rg,f.capitalize=Eo,f.ceil=Id,f.clamp=Ig,f.clone=wp,f.cloneDeep=Sp,f.cloneDeepWith=Tp,f.cloneWith=Ap,f.conformsTo=Fp,f.deburr=Oo,f.defaultTo=ud,f.divide=Md,f.endsWith=Lg,f.eq=Vn,f.escape=Eg,f.escapeRegExp=Og,f.every=Gh,f.find=kh,f.findIndex=ro,f.findKey=tg,f.findLast=$h,f.findLastIndex=io,f.findLastKey=eg,f.floor=bd,f.forEach=lo,f.forEachRight=co,f.forIn=rg,f.forInRight=ig,f.forOwn=ug,f.forOwnRight=fg,f.get=Zi,f.gt=Cp,f.gte=Ip,f.has=ag,f.hasIn=Xi,f.head=fo,f.identity=In,f.includes=Zh,f.indexOf=$c,f.inRange=Mg,f.invoke=hg,f.isArguments=$t,f.isArray=M,f.isArrayBuffer=Mp,f.isArrayLike=Fn,f.isArrayLikeObject=en,f.isBoolean=bp,f.isBuffer=bt,f.isDate=Rp,f.isElement=Lp,f.isEmpty=Ep,f.isEqual=Op,f.isEqualWith=Dp,f.isError=zi,f.isFinite=Pp,f.isFunction=pt,f.isInteger=yo,f.isLength=Ir,f.isMap=wo,f.isMatch=Bp,f.isMatchWith=Wp,f.isNaN=Up,f.isNative=Np,f.isNil=qp,f.isNull=Gp,f.isNumber=Ao,f.isObject=X,f.isObjectLike=Q,f.isPlainObject=Ie,f.isRegExp=Yi,f.isSafeInteger=kp,f.isSet=So,f.isString=Mr,f.isSymbol=En,f.isTypedArray=ue,f.isUndefined=$p,f.isWeakMap=Hp,f.isWeakSet=Kp,f.join=Zc,f.kebabCase=Dg,f.last=$n,f.lastIndexOf=Xc,f.lowerCase=Pg,f.lowerFirst=Bg,f.lt=zp,f.lte=Yp,f.max=Rd,f.maxBy=Ld,f.mean=Ed,f.meanBy=Od,f.min=Dd,f.minBy=Pd,f.stubArray=tu,f.stubFalse=eu,f.stubObject=yd,f.stubString=wd,f.stubTrue=Ad,f.multiply=Bd,f.nth=Jc,f.noConflict=hd,f.noop=nu,f.now=Tr,f.pad=Wg,f.padEnd=Ug,f.padStart=Ng,f.parseInt=Gg,f.random=bg,f.reduce=jh,f.reduceRight=np,f.repeat=qg,f.replace=kg,f.result=xg,f.round=Wd,f.runInContext=c,f.sample=ep,f.size=up,f.snakeCase=$g,f.some=fp,f.sortedIndex=rh,f.sortedIndexBy=ih,f.sortedIndexOf=uh,f.sortedLastIndex=fh,f.sortedLastIndexBy=oh,f.sortedLastIndexOf=sh,f.startCase=Kg,f.startsWith=zg,f.subtract=Ud,f.sum=Nd,f.sumBy=Gd,f.template=Yg,f.times=Sd,f.toFinite=gt,f.toInteger=b,f.toLength=Fo,f.toLower=Zg,f.toNumber=Hn,f.toSafeInteger=Zp,f.toString=N,f.toUpper=Xg,f.trim=Jg,f.trimEnd=Qg,f.trimStart=Vg,f.truncate=jg,f.unescape=nd,f.uniqueId=Fd,f.upperCase=td,f.upperFirst=Ji,f.each=lo,f.eachRight=co,f.first=fo,ji(f,function(){var n={};return et(f,function(t,e){G.call(f.prototype,e)||(n[e]=t)}),n}(),{chain:!1}),f.VERSION=l,Un(["bind","bindKey","curry","curryRight","partial","partialRight"],function(n){f[n].placeholder=f}),Un(["drop","take"],function(n,t){D.prototype[n]=function(e){e=e===i?1:sn(b(e),0);var r=this.__filtered__&&!t?new D(this):this.clone();return r.__filtered__?r.__takeCount__=mn(e,r.__takeCount__):r.__views__.push({size:mn(e,Mn),type:n+(r.__dir__<0?"Right":"")}),r},D.prototype[n+"Right"]=function(e){return this.reverse()[n](e).reverse()}}),Un(["filter","map","takeWhile"],function(n,t){var e=t+1,r=e==zn||e==Ee;D.prototype[n]=function(u){var o=this.clone();return o.__iteratees__.push({iteratee:T(u,3),type:e}),o.__filtered__=o.__filtered__||r,o}}),Un(["head","last"],function(n,t){var e="take"+(t?"Right":"");D.prototype[n]=function(){return this[e](1).value()[0]}}),Un(["initial","tail"],function(n,t){var e="drop"+(t?"":"Right");D.prototype[n]=function(){return this.__filtered__?new D(this):this[e](1)}}),D.prototype.compact=function(){return this.filter(In)},D.prototype.find=function(n){return this.filter(n).head()},D.prototype.findLast=function(n){return this.reverse().find(n)},D.prototype.invokeMap=L(function(n,t){return typeof n=="function"?new D(this):this.map(function(e){return we(e,n,t)})}),D.prototype.reject=function(n){return this.filter(Cr(T(n)))},D.prototype.slice=function(n,t){n=b(n);var e=this;return e.__filtered__&&(n>0||t<0)?new D(e):(n<0?e=e.takeRight(-n):n&&(e=e.drop(n)),t!==i&&(t=b(t),e=t<0?e.dropRight(-t):e.take(t-n)),e)},D.prototype.takeRightWhile=function(n){return this.reverse().takeWhile(n).reverse()},D.prototype.toArray=function(){return this.take(Mn)},et(D.prototype,function(n,t){var e=/^(?:filter|find|map|reject)|While$/.test(t),r=/^(?:head|last)$/.test(t),u=f[r?"take"+(t=="last"?"Right":""):t],o=r||/^find/.test(t);!u||(f.prototype[t]=function(){var s=this.__wrapped__,a=r?[1]:arguments,h=s instanceof D,d=a[0],_=h||M(s),v=function(E){var B=u.apply(f,wt([E],a));return r&&x?B[0]:B};_&&e&&typeof d=="function"&&d.length!=1&&(h=_=!1);var x=this.__chain__,S=!!this.__actions__.length,F=o&&!x,R=h&&!S;if(!o&&_){s=R?s:new D(this);var C=n.apply(s,a);return C.__actions__.push({func:Ar,args:[v],thisArg:i}),new Gn(C,x)}return F&&R?n.apply(this,a):(C=this.thru(v),F?r?C.value()[0]:C.value():C)})}),Un(["pop","push","shift","sort","splice","unshift"],function(n){var t=Ze[n],e=/^(?:push|sort|unshift)$/.test(n)?"tap":"thru",r=/^(?:pop|shift)$/.test(n);f.prototype[n]=function(){var u=arguments;if(r&&!this.__chain__){var o=this.value();return t.apply(M(o)?o:[],u)}return this[e](function(s){return t.apply(M(s)?s:[],u)})}}),et(D.prototype,function(n,t){var e=f[t];if(e){var r=e.name+"";G.call(ne,r)||(ne[r]=[]),ne[r].push({name:t,func:e})}}),ne[dr(i,q).name]=[{name:"wrapper",func:i}],D.prototype.clone=nl,D.prototype.reverse=tl,D.prototype.value=el,f.prototype.at=Lh,f.prototype.chain=Eh,f.prototype.commit=Oh,f.prototype.next=Dh,f.prototype.plant=Bh,f.prototype.reverse=Wh,f.prototype.toJSON=f.prototype.valueOf=f.prototype.value=Uh,f.prototype.first=f.prototype.head,ge&&(f.prototype[ge]=Ph),f},St=Oa();typeof define=="function"&&typeof define.amd=="object"&&define.amd?(ln._=St,define(function(){return St})):Pt?((Pt.exports=St)._=St,Vr._=St):ln._=St}).call(oe)});var Pr=Jd(qo());var _t=i=>[...new Set(i)],ko=i=>[...new Map(i.map(l=>[l.toLowerCase(),l])).values()];var $o=(i,l,m)=>{if(i=="Spaces/Home")return"ui//mk-ui-spaces";if(!l)return m?"ui//mk-ui-folder-solid":"ui//mk-ui-folder";switch(l){case"png":case"jpg":case"jpeg":case"svg":return"ui//mk-make-image";case"mov":case"webm":return"ui//mk-ui-video";case"canvas":return"ui//mk-ui-canvas";default:return m?"ui//mk-ui-file-solid":"ui//mk-ui-file"}};function Ho(i){return Array.isArray(i)?i:[]}var Ko=(i,l)=>l.indexOf(i)>0?l.indexOf(i):l.length;var Rr=i=>"spaces://"+i;var ut=i=>{var l;return(l=i==null?void 0:i.match(/(\\\\.|[^,])+/g))!=null?l:[]},Ht=i=>{if(!i)return"";let l=/\\[\\[(.*?)\\]\\]/g.exec(i),m=(l==null?void 0:l.length)>1?l[1].substring(0,Ko("|",l[1])):i;return m||i};var be=(i,l)=>{if(typeof i=="string"){if(/\\/\\/(\\S+?(?:jpe?g|png|gif|svg))/gi.test(i)||i.includes("unsplash"))return"image";if(/^\\d{4}-\\d{2}-\\d{2}$/.test(i))return"date";if(l=="tag"||l=="tags")return"tag";if(/\\[\\[.*?\\]\\]/.test(i))return"link"}else{if(typeof i=="number")return"number";if(typeof i=="boolean")return"boolean";if(i)if(Array.isArray(i)||typeof i=="string"&&i.indexOf(",")>-1){let m=Array.isArray(i)?i:[];if(typeof i=="string"&&i.indexOf(",")>-1&&(m=ut(i)),l=="tag"||l=="tags")return"tag-multi";if(m.length==1&&Array.isArray(m[0])&&m[0].length==1&&typeof m[0][0]=="string")return"link";let w=_t(m.map(y=>be(y,l)));return w.length==1&&w[0]=="link"?"link-multi":"option-multi"}else{if(i.isLuxonDateTime)return"date";if(i.isLuxonDuration)return"duration";if(i.type=="file")return"link";if(typeof i=="object"&&!Array.isArray(i)&&i!==null)return"object"}else return"unknown"}return"text"};var zo=i=>Object.keys(i!=null?i:{}).filter(l=>l!="position").filter(l=>l!="tag"&&l!="tags");var se=i=>i.join(","),Yo=i=>i.join(", ");var Lr=(i,l)=>{switch(be(l,i)){case"object":return JSON.stringify(l);case"number":return l.toString();case"boolean":return l?"true":"false";case"date":return l;case"duration":return Yo(Object.keys(l.values).reduce((w,y)=>[...w,...l.values[y]>0?[l.values[y]+" "+y]:[]],[]));case"option-multi":case"link-multi":return typeof l=="string"?Ht(l):se(l.map(w=>w?typeof w=="string"?Ht(w):w.path?w.path:Array.isArray(l)&&w.length==1&&Array.isArray(w[0])&&w[0].length==1&&typeof w[0][0]=="string"?w[0][0]:JSON.stringify(w):""));case"link":return Array.isArray(l)&&l.length==1&&Array.isArray(l[0])&&l[0].length==1&&typeof l[0][0]=="string"?l[0][0]:typeof l=="string"?Ht(l):l.path;case"text":case"tag":case"image":return l}return""};var Zo=i=>{switch(i){case"duration":return"text";case"unknown":return"text"}return i};var Er=(i,l)=>i==l,iu=(i,l)=>(i!=null?i:"").length==0,uu=(i,l)=>(i!=null?i:"").toLowerCase().includes((l!=null?l:"").toLowerCase()),Or=(i,l)=>parseFloat(i)>parseFloat(l),Dr=(i,l)=>parseInt(i)>parseInt(l),fu=(i,l)=>{let m=i?ut(i):[];return(l?ut(l):[]).some(y=>m.some(O=>O==y))},Xo=i=>{let l=new Date(`${i}T00:00`),m=new Date;return l.getMonth()===m.getMonth()&&l.getDate()===m.getDate()};var Re={isNotEmpty:{type:["text","file","link","link-multi","fileprop","image"],fn:(i,l)=>!iu(i,""),valueType:"none"},isEmpty:{type:["text","file","link","link-multi","fileprop","image"],fn:(i,l)=>iu(i,""),valueType:"none"},include:{fn:(i,l)=>uu(i,l),type:["text","file","link","link-multi","fileprop","image"],valueType:"text"},notInclude:{type:["text","file","link","link-multi","fileprop","image"],fn:(i,l)=>!uu(i,l),valueType:"text"},is:{type:["text","file","link","context","fileprop"],fn:(i,l)=>Er(i,l),valueType:"text"},isNot:{type:["text","file","link","context","fileprop"],fn:(i,l)=>!Er(i,l),valueType:"text"},equal:{type:["number"],fn:(i,l)=>Er(i,l),valueType:"number"},isGreatThan:{type:["number"],fn:(i,l)=>Or(i,l),valueType:"number"},isLessThan:{type:["number"],fn:(i,l)=>Dr(i,l),valueType:"number"},isLessThanOrEqual:{type:["number"],fn:(i,l)=>!Or(i,l),valueType:"number"},isGreatThanOrEqual:{type:["number"],fn:(i,l)=>!Dr(i,l),valueType:"number"},dateBefore:{type:["date","fileprop"],fn:(i,l)=>Dr(i,l),valueType:"date"},dateAfter:{type:["date","fileprop"],fn:(i,l)=>Or(i,l),valueType:"date"},isSameDateAsToday:{type:["date"],fn:(i,l)=>Xo(i,l),valueType:"none"},isAnyInList:{type:["option","context","option-multi","context-multi","tags-multi","tags"],fn:(i,l)=>fu(i,l),valueType:"list"},isNoneInList:{type:["option","context","option-multi","context-multi","tags-multi","tags"],fn:(i,l)=>!fu(i,l),valueType:"list"},isTrue:{type:["boolean"],fn:(i,l)=>i=="true",valueType:"none"},isFalse:{type:["boolean"],fn:(i,l)=>i!="true",valueType:"none"}};var Qd=(i,l)=>l.reduce((w,y)=>{let[O,J]=w,V=y.type=="fileprop"?Vo(J,y):y.type=="filemeta"?Qo(J,y):y.type=="frontmatter"?Jo(J,y):[],Y=J.filter(P=>!V.includes(P));return[[...O,...V],Y]},[[],i])[0],Vd=(i,l)=>l.reduce((m,w)=>w.type=="fileprop"?Vo(m,w):w.type=="filemeta"?Qo(m,w):w.type=="frontmatter"?Jo(m,w):[],i),Jo=(i,l)=>i.filter(m=>{let w=m.frontmatter;if(!w||!w[l.field])return!1;let y=Re[l.fn],O=!0;return y&&(O=y.fn(Lr(l.field,w[l.field]),l.value)),O}),Qo=(i,l)=>i.filter(m=>{let w="";l.field=="outlinks"?w=se(m.outlinks):l.field=="inlinks"?w=se(m.inlinks):l.field=="tags"&&(w=se(m.tags));let y=Re[l.fn],O=!0;return y&&(O=y.fn(w,l.value)),O}),Vo=(i,l)=>i.filter(m=>{if(["name","path","sticker","color","isFolder","extension","ctime","mtime","size","parent"].includes(l.field)){let y=Re[l.fn],O=!0;return y&&(O=y.fn(m[l.field],l.value)),O}return!0}),jo=(i,l)=>i.reduce((w,y)=>!w||y.filters.length==0?w:y.type=="any"?Qd([l],y.filters).length>0:Vd([l],y.filters).length>0,!0);var ns=(i,l,m)=>{if(!l)return{changed:!1,cache:{path:i.path,frames:{},schemas:[],listitems:{}}};let w=l.schemas,y=w.filter(Y=>Y.type=="frame").reduce((Y,P)=>{var an,j;return Lt(Rt({},Y),{[P.id]:{schema:P,cols:l.fields.filter(fn=>fn.schemaId==P.id),rows:(j=(an=l.tables[P.id])==null?void 0:an.rows)!=null?j:[]}})},{}),O=w.filter(Y=>Y.type=="listitem").reduce((Y,P)=>{var an,j;return Lt(Rt({},Y),{[P.id]:{schema:P,cols:l.fields.filter(fn=>fn.schemaId==P.id),rows:(j=(an=l.tables[P.id])==null?void 0:an.rows)!=null?j:[]}})},{}),J={path:i.path,frames:y,schemas:w,listitems:O},V=!0;return m&&Pr.default.isEqual(J,m)&&(V=!1),{changed:V,cache:J}},ts=(i,l,m)=>{var Pn,nn,q,vt,hn,Bn,pn,gn,yn;let w={};if(!l)return{changed:!1,cache:{cols:[],path:i.path,schemas:[],outlinks:[],contexts:[],files:[],tables:{},space:i,spaceMap:w}};let y=l.schemas.find(W=>W.primary=="true"),O={schema:y,cols:l.fields.filter(W=>W.schemaId==y.id),rows:(nn=(Pn=l.tables[y.id])==null?void 0:Pn.rows)!=null?nn:[]},J=l.schemas.filter(W=>W.type=="db").reduce((W,dn)=>{var _n,Kn;return Lt(Rt({},W),{[dn.id]:{schema:dn,cols:l.fields.filter(Kt=>Kt.schemaId==dn.id),rows:(Kn=(_n=l.tables[dn.id])==null?void 0:_n.rows)!=null?Kn:[]}})},{}),V=(vt=(q=O.cols)==null?void 0:q.filter(W=>W.type.startsWith("context")))!=null?vt:[],Y=(Bn=(hn=O.cols)==null?void 0:hn.filter(W=>W.type.startsWith("link")))!=null?Bn:[],P=_t(V.map(W=>W.value));V.forEach(W=>{w[W.name]={},O.rows.forEach(dn=>{ut(dn[W.name]).forEach(_n=>{var Kn;return w[W.name][_n]=[...(Kn=w[W.name][_n])!=null?Kn:[],dn.File]})})});let an=_t(O.rows.reduce((W,dn)=>_t([...W,...[...V,...Y].flatMap(_n=>ut(dn[_n.name]).map(Kn=>Ht(Kn)))]),[])),j={cols:l.fields.filter(W=>W.schemaId==y.id),path:i.path,contexts:P,outlinks:an,files:(yn=(gn=(pn=J.files)==null?void 0:pn.rows)==null?void 0:gn.map(W=>W.File))!=null?yn:[],tables:J,schemas:l.schemas,space:i,spaceMap:w},fn=!0;return m&&Pr.default.isEqual(j,m)&&(fn=!0),{changed:fn,cache:j}},jd=i=>{var m,w,y,O,J,V,Y,P,an,j,fn,Pn,nn;let l=[];return i&&i.tags&&l.push(...(w=(m=i.tags)==null?void 0:m.map(q=>q.tag))!=null?w:[]),i&&((y=i.frontmatter)==null?void 0:y.tags)&&l.push(...(typeof((O=i.frontmatter)==null?void 0:O.tags)=="string"?ut(i.frontmatter.tags.replace(/ /g,"")):Array.isArray((J=i.frontmatter)==null?void 0:J.tags)?(Y=(V=i.frontmatter)==null?void 0:V.tags)!=null?Y:[]:[]).filter(q=>typeof q=="string").map(q=>"#"+q)),i&&((P=i.frontmatter)==null?void 0:P.tag)&&l.push(...(typeof((an=i.frontmatter)==null?void 0:an.tag)=="string"?ut(i.frontmatter.tag.replace(/ /g,"")):Array.isArray((j=i.frontmatter)==null?void 0:j.tag)?(Pn=(fn=i.frontmatter)==null?void 0:fn.tag)!=null?Pn:[]:[]).filter(q=>typeof q=="string").map(q=>"#"+q)),(nn=_t(l))!=null?nn:[]};var es=(i,l,m,w,y,O,J,V,Y)=>{var Oe,Ot,Mn,De,Pe,Be,ft,Dt,We,mt,xt,Ue;let P={cacheType:"file",path:i.path,name:i.name,filename:i.filename};i.stat&&(P.ctime=i.stat.ctime,P.mtime=i.stat.mtime,P.size=i.stat.size,P.extension=i.extension);let an=[],j=jd(O),fn=($,tn,un=new Set)=>{var tt,Ne;let K=[];for(let Zn of tn){let Ge=(Ne=(tt=$.get(Zn))==null?void 0:tt.contexts)!=null?Ne:[];for(let zt of Ge)un.has(zt)||(K.push(zt),un.add(zt),K.push(...fn($,[Rr(zt)],un)))}return K};if(m.has(i.parent))for(let $ of(Oe=m.get(i.parent).contexts)!=null?Oe:[])an.push($);an.push(...j);let Pn=i.name,nn=i.name,q=(Ot=y==null?void 0:y.sticker)!=null?Ot:"",vt=(Mn=y==null?void 0:y.color)!=null?Mn:"",hn=(De=y==null?void 0:y.folder)!=null?De:"";hn=="true"&&(hn="");let Bn=i.parent,pn=i.isFolder,gn={},yn={},W=[],dn=[],_n=O==null?void 0:O.frontmatter;O!=null&&O.links&&dn.push(...O.links.map($=>$.link));let Kn=V&&pn?V.folderNotePath:i.path;for(let $ of Object.keys(J))Kn in J[$]&&W.push($);let Kt="";if(_n){let tn=ko(zo(_n)).reduce((un,K)=>Lt(Rt({},un),{[K]:{name:K,type:Zo(be(_n[K],K))}}),{});Object.keys(tn).forEach(un=>{gn[un]=Lr(un,_n[un]),yn[un]=tn[un].type,tn[un].type.startsWith("link")&&dn.push(Ht(gn[un]))}),Kt=(Pe=gn[l.fmKeyBanner])!=null?Pe:"",gn[l.fmKeySticker]&&(q=_n[l.fmKeySticker]),gn[l.fmKeyColor]&&(vt=_n[l.fmKeyColor]),gn[l.fmKeyAlias]&&(nn=(Be=Ho(_n[l.fmKeyAlias]))==null?void 0:Be[0])}q=(q==null?void 0:q.length)>0?q:$o(P.path,P.extension,!1);let Et=Lt(Rt({},P),{name:Pn,tags:_t(an),alias:nn,fileTags:j,folderNote:V,sticker:q,color:vt,parent:Bn,banner:Kt,isFolder:pn,sortBy:hn,frontmatter:gn,frontmatterTypes:yn,inlinks:W,outlinks:dn}),zn=[],Le={};for(let $ of an)zn.push(Rr($));for(let[$,tn]of m){if(tn.space&&tn.space.folderPath==Bn&&tn.space.defPath!=i.path){zn.push($);continue}if(((Dt=(ft=tn.metadata)==null?void 0:ft.filters)==null?void 0:Dt.length)>0&&jo(tn.metadata.filters,Et)){zn.push($);continue}if(((mt=(We=tn.metadata)==null?void 0:We.links)==null?void 0:mt.length)>0&&((Ue=(xt=tn.metadata)==null?void 0:xt.links)!=null?Ue:[]).find(K=>K==Et.path)){zn.push($);continue}}let Ee=fn(m,zn);zn.push(...Ee.map($=>Rr($))),zn.forEach($=>{var tn,un,K;Le[$]=(K=(un=(tn=w.get($))==null?void 0:tn.tables)==null?void 0:un.files)==null?void 0:K.rows.findIndex(tt=>tt.File==i.path)}),Et.tags.push(...Ee);let nt=V&&!pn?Lt(Rt({},Et),{spaces:[],contexts:[]}):Lt(Rt({},Et),{spaces:_t(zn),spaceRanks:Le}),Yn=!0;return Y&&Pr.default.isEqual(nt,Y)&&(Yn=!1),{changed:Yn,cache:nt}};function rs(i){let{file:l,settings:m,spacesCache:w,vaultItem:y,metadataCache:O,contextsCache:J,resolvedLinks:V,folderNote:Y,oldMetadata:P}=i;return es(l,m,w,J,y,O,V,Y,P)}function is(i){let{space:l,mdb:m,oldCache:w}=i;return ts(l,m,w)}function us(i){let{space:l,mdb:m,oldCache:w}=i;return ns(l,m,w)}var n_=self;n_.onmessage=async i=>{let{payload:l,job:m}=i.data,w;m.type=="file"?w=rs(l):m.type=="context"?w=is(l):m.type=="frames"&&(w=us(l));try{postMessage({job:m,result:w})}catch(y){console.log(y),postMessage({job:m,result:{$error:`Failed to index ${m.type} ${m.path}: ${y}`}})}};\n/**\n * @license\n * Lodash <https://lodash.com/>\n * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>\n * Released under MIT license <https://lodash.com/license>\n * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>\n * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors\n */\n');
 }
 
 // src/superstate/workers/manager.ts
-var Manager = class extends import_obsidian61.Component {
+var Manager = class extends import_obsidian62.Component {
   constructor(numWorkers, cache) {
     super();
     this.numWorkers = numWorkers;
@@ -64586,7 +64729,7 @@ var loadSpaces = (plugin) => {
       getFolderPathFromString(plugin2, plugin2.settings.spacesFolder)
     );
     const allcontexts = (_b2 = uniq([...Object.keys(plugin2.app.metadataCache.getTags()), ...(_a2 = folder == null ? void 0 : folder.children.filter(
-      (f4) => f4 instanceof import_obsidian62.TFolder && f4.name.charAt(0) == "#"
+      (f4) => f4 instanceof import_obsidian63.TFolder && f4.name.charAt(0) == "#"
     ).map((g4) => g4.name)) != null ? _a2 : []]).map((f4) => spaceFromTag(plugin2, tagPathToTag(f4)))) != null ? _b2 : [];
     return allcontexts;
   };
@@ -64595,7 +64738,7 @@ var loadSpaces = (plugin) => {
     const rootFolder = plugin2.app.vault.getRoot();
     function recursiveFx(folder) {
       for (const child of folder.children) {
-        if (child instanceof import_obsidian62.TFolder) {
+        if (child instanceof import_obsidian63.TFolder) {
           if (!child.path.startsWith(plugin2.settings.spacesFolder + "/#")) {
             const childFolder = child;
             folders.push(child);
@@ -64608,11 +64751,11 @@ var loadSpaces = (plugin) => {
     recursiveFx(rootFolder);
     return folders.map((f4) => spaceFromFolder(plugin2, f4.path));
   };
-  const allTagSpaces = getAllTagContextFiles(plugin);
+  const allTagSpaces = plugin.settings.enableTagSpaces && plugin.settings.enableDefaultSpaces ? getAllTagContextFiles(plugin) : [];
   const allFolders = getAllFolderContextFiles(plugin);
   return [...allTagSpaces, ...allFolders];
 };
-var Superstate = class extends import_obsidian62.Component {
+var Superstate = class extends import_obsidian63.Component {
   constructor(app2, indexVersion, onChange, plugin) {
     super();
     this.app = app2;
@@ -64676,8 +64819,9 @@ var Superstate = class extends import_obsidian62.Component {
     this.contextStoreQueue = this.contextStoreQueue.then(operation).catch(() => {
     });
   }
-  async migrate08(db) {
+  async migrate08() {
     var _a2, _b2, _c2, _d2;
+    const db = await getDB(this.plugin, await this.plugin.sqlJS(), this.plugin.spacesDBPath);
     const currentSpaces = (_b2 = (_a2 = selectDB(db, "spaces")) == null ? void 0 : _a2.rows) != null ? _b2 : [];
     const currentSpaceItems = (_d2 = (_c2 = selectDB(db, "spaceItems")) == null ? void 0 : _c2.rows) != null ? _d2 : [];
     const oldSpaceDefToSpaceMetadata = (name, oldDef) => {
@@ -64724,9 +64868,9 @@ var Superstate = class extends import_obsidian62.Component {
       }
     });
     const spaceFolder = getAbstractFileAtPath(this.plugin, "Context");
-    if (spaceFolder instanceof import_obsidian62.TFolder) {
+    if (spaceFolder instanceof import_obsidian63.TFolder) {
       promises.push(...spaceFolder.children.map((f4) => {
-        if (f4 instanceof import_obsidian62.TFile && f4.extension == "mdb") {
+        if (f4 instanceof import_obsidian63.TFile && f4.extension == "mdb") {
           const folderPath = `${this.plugin.settings.spacesFolder}/${f4.basename}/.space`;
           return this.plugin.app.vault.adapter.exists(folderPath).then((g4) => {
             if (!g4)
@@ -64741,7 +64885,7 @@ var Superstate = class extends import_obsidian62.Component {
       function recursiveFx(folder) {
         for (const child of folder.children) {
           if (!folder.path.startsWith(plugin.settings.spacesFolder)) {
-            if (child instanceof import_obsidian62.TFolder) {
+            if (child instanceof import_obsidian63.TFolder) {
               const childFolder = child;
               folders.push(child);
               if (childFolder.children)
@@ -64755,39 +64899,37 @@ var Superstate = class extends import_obsidian62.Component {
     };
     promises.push(...getAllFolders(this.plugin).map((f4) => {
       const folderPath = f4.path == "/" ? ".space" : `${f4.path}/.space`;
-      return this.plugin.app.vault.adapter.exists(folderPath).then((f5) => {
-        if (!f5)
-          return this.plugin.app.vault.createFolder(folderPath);
-      }).then((g4) => this.plugin.app.vault.rename(getAbstractFileAtPath(this.plugin, f4.path == "/" ? "context.mdb" : `${f4.path}/context.mdb`), folderPath + "/context.mdb"));
+      return this.plugin.files.createFolder(folderPath).then((g4) => this.plugin.app.vault.rename(getAbstractFileAtPath(this.plugin, f4.path == "/" ? "context.mdb" : `${f4.path}/context.mdb`), folderPath + "/context.mdb"));
     }));
     await Promise.all(promises);
     await insertSpaceAtIndex(this.plugin, this.plugin.settings.spacesFolder + "/Home", {
       links: homeSpaces,
       sticker: "lucide//home"
     });
-    this.plugin.settings.waypoints = [this.plugin.settings.spacesFolder + "/Home", "/", "spaces://$tags", ...pinnedSpaces];
+    this.plugin.settings.waypoints = uniq([this.plugin.settings.spacesFolder + "/Home", "/", "spaces://$tags", ...pinnedSpaces]);
     this.plugin.settings.activeView = "/";
-    this.plugin.settings.autoMigration08 = true;
     this.plugin.saveSettings();
-    return;
+    db.close();
   }
   async loadSpacesDatabaseFromDisk() {
     var _a2, _b2;
     const db = await getDB(this.plugin, await this.plugin.sqlJS(), this.plugin.spacesDBPath);
-    const tables = dbResultsToDBTables(
-      db.exec(
-        "SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
-      )
-    );
+    let tables;
+    try {
+      tables = dbResultsToDBTables(
+        db.exec(
+          "SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
+        )
+      );
+    } catch (e4) {
+      console.log(e4);
+      tables = [];
+    }
     if (tables.length == 0) {
       initiateDB(db);
       await saveDBToPath(this.plugin, this.plugin.spacesDBPath, {
         vault: vaultSchema
       });
-    } else {
-      if (!this.plugin.settings.autoMigration08) {
-        await this.migrate08(db);
-      }
     }
     this.vaultDBCache = (_b2 = (_a2 = selectDB(db, "vault")) == null ? void 0 : _a2.rows) != null ? _b2 : [];
     db.close();
@@ -64795,7 +64937,7 @@ var Superstate = class extends import_obsidian62.Component {
     rebuildIndex(this.plugin, true);
   }
   async saveSpacesDatabaseToDisk(tables, save = true) {
-    if (await this.plugin.app.vault.adapter.exists((0, import_obsidian62.normalizePath)(this.plugin.spacesDBPath)) && !this.spacesDBLoaded) {
+    if (await this.plugin.app.vault.adapter.exists((0, import_obsidian63.normalizePath)(this.plugin.spacesDBPath)) && !this.spacesDBLoaded) {
       return;
     }
     this.spacesDBLoaded = true;
@@ -64817,7 +64959,12 @@ var Superstate = class extends import_obsidian62.Component {
   }
   async initializeSpaces() {
     this.spacesIndex = /* @__PURE__ */ new Map();
-    this.spacesIndex.set(tagsSpace.path, tagsSpace);
+    if (this.plugin.settings.enableDefaultSpaces) {
+      if (this.plugin.settings.enableTagSpaces) {
+        this.spacesIndex.set(tagsSpace.path, tagsSpace);
+      }
+    }
+    this.spacesIndex.set(waypointsSpace.path, waypointsSpace);
     const promises = loadSpaces(this.plugin).map((f4) => this.reloadSpace(f4, null, true));
     await Promise.all(promises);
   }
@@ -64879,7 +65026,7 @@ var Superstate = class extends import_obsidian62.Component {
   async loadFromCache() {
     const allFiles = getAllAbstractFilesInVault(this.plugin);
     if (this.plugin.settings.indexSVG) {
-      const cacheIcons = allFiles.filter((f4) => f4 instanceof import_obsidian62.TFile && f4.extension == "svg").map((s5) => this.persister.load(s5.path, "icon").then((string) => {
+      const cacheIcons = allFiles.filter((f4) => f4 instanceof import_obsidian63.TFile && f4.extension == "svg").map((s5) => this.persister.load(s5.path, "icon").then((string) => {
         if ((string == null ? void 0 : string.length) > 0)
           this.iconsCache.set(s5.path, string);
       }));
@@ -64917,7 +65064,7 @@ var Superstate = class extends import_obsidian62.Component {
     this.broadcast("vault");
   }
   async renameTag(tag, newTag) {
-    await renameSpaceFolder(this.plugin, tag, newTag);
+    await renameTagSpaceFolder(this.plugin, tag, newTag);
     const oldPath = spacePathFromName(tag);
     const newSpaceInfo = spaceFromTag(this.plugin, newTag);
     await this.spaceRenamed(oldPath, newSpaceInfo);
@@ -64954,13 +65101,16 @@ var Superstate = class extends import_obsidian62.Component {
     this.fileReloaded(file.path);
     this.broadcast("file", "change", file.path);
   }
-  deleteTag(tag) {
+  async deleteTag(tag) {
     this.tagsMap.getInverse(tag).forEach((file) => {
       const tFile = getAbstractFileAtPath(this.plugin, file);
       if (tFile)
         this.deleteTagInFile(tag, tFile);
     });
-    deleteSpaceFolder(this.plugin, tag);
+    const spacePath = folderForTagSpace(tag, this.plugin);
+    if (getAbstractFileAtPath(this.plugin, spacePath)) {
+      await deleteFile(this.plugin, getAbstractFileAtPath(this.plugin, spacePath));
+    }
     this.plugin.index.deleteSpace(tagSpacePathFromTag(tag));
     for (const [contextPath, spaceCache] of this.spacesIndex) {
       if (spaceCache.metadata.contexts.includes(tag)) {
@@ -65101,7 +65251,7 @@ var Superstate = class extends import_obsidian62.Component {
   }
   async createFile(path) {
     const file = getAbstractFileAtPath(this.plugin, path);
-    if (file instanceof import_obsidian62.TFolder) {
+    if (file instanceof import_obsidian63.TFolder) {
       await this.reloadSpace(spaceFromFolder(this.plugin, path));
     }
     await this.reloadFile(file);
@@ -65112,17 +65262,8 @@ var Superstate = class extends import_obsidian62.Component {
     this.addToContextStoreQueue(() => updateContextValue(this.plugin, context, row, field, value).then((f4) => this.reloadContext(context)));
   }
   deleteFile(path) {
-    var _a2;
     const fileCache = this.filesIndex.get(path);
     if (!fileCache) {
-      if (path.startsWith(this.plugin.settings.spacesFolder)) {
-        for (const [contextPath, spaceCache] of this.spacesIndex) {
-          if (((_a2 = spaceCache.space) == null ? void 0 : _a2.folderPath) == path) {
-            this.deleteSpace(spaceCache.path);
-            break;
-          }
-        }
-      }
       return;
     }
     if (fileCache.isFolder) {
@@ -65396,7 +65537,10 @@ var Superstate = class extends import_obsidian62.Component {
   }
 };
 
-// src/components/InlineFileContext/FileHeaderContextView.tsx
+// src/utils/contexts/markdownPost.tsx
+var import_obsidian64 = require("obsidian");
+
+// src/react/components/MarkdownEditor/FileHeaderContextView.tsx
 var FileHeaderContextView = (props2) => {
   var _a2;
   const { name, fm } = props2;
@@ -65473,7 +65617,7 @@ var FileHeaderContextView = (props2) => {
   })))))))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
 };
 
-// src/components/InlineFileContext/ReadingModeHeader.tsx
+// src/react/components/MarkdownEditor/ReadingModeHeader.tsx
 var ReadingModeHeader = (props2) => {
   const [path, setPath] = h2(props2.filePath);
   const ref2 = _2(null);
@@ -65503,7 +65647,6 @@ var ReadingModeHeader = (props2) => {
 };
 
 // src/utils/contexts/markdownPost.tsx
-var import_obsidian63 = require("obsidian");
 var replaceInlineContext = (plugin, el, ctx) => {
   replaceMarkdownForReadingMode(el, async (dom) => {
     let element = dom.querySelector(".mod-header");
@@ -65521,7 +65664,7 @@ var replaceInlineContext = (plugin, el, ctx) => {
         element.setAttribute("data-path", ctx.sourcePath);
         element.toggleClass("mk-inline-context", true);
         const reactEl = createRoot(element);
-        ctx.addChild(new import_obsidian63.MarkdownRenderChild(element));
+        ctx.addChild(new import_obsidian64.MarkdownRenderChild(element));
         if (ctx.sourcePath.match(urlRegex)) {
           reactEl.render(
             /* @__PURE__ */ Cn.createElement(FileHeaderContextView, {
@@ -65562,7 +65705,7 @@ var loadSQL = async () => {
 };
 
 // src/middleware/filesystem.ts
-var import_obsidian64 = require("obsidian");
+var import_obsidian65 = require("obsidian");
 var FilesystemMiddleware = class {
   constructor(type, plugin) {
     this.type = type;
@@ -65592,7 +65735,7 @@ var FilesystemMiddleware = class {
       if (type == "md") {
         const parentFolder = getAbstractFileAtPath(this.plugin, parent);
         return this.plugin.app.fileManager.createNewMarkdownFile(
-          parentFolder instanceof import_obsidian64.TFolder ? parentFolder : parentFolder.parent,
+          parentFolder instanceof import_obsidian65.TFolder ? parentFolder : parentFolder.parent,
           name
         );
       } else if (type == "canvas") {
@@ -65605,11 +65748,22 @@ var FilesystemMiddleware = class {
       }
     }
   }
-  fileExists() {
+  async createFolder(path) {
     if (this.type == 0 /* Obsidian */) {
+      if (!await this.fileExists(path)) {
+        return await this.plugin.app.vault.createFolder(path);
+      } else {
+        return this.getFile(path);
+      }
+    }
+    return null;
+  }
+  async fileExists(path) {
+    if (this.type == 0 /* Obsidian */) {
+      return this.plugin.app.vault.adapter.exists(path);
     }
   }
-  getFile() {
+  getFile(path) {
     if (this.type == 0 /* Obsidian */) {
     }
   }
@@ -65620,7 +65774,7 @@ var FilesystemMiddleware = class {
 };
 
 // src/middleware/metadata.ts
-var import_obsidian65 = require("obsidian");
+var import_obsidian66 = require("obsidian");
 var MetadataMiddleware = class {
   constructor(type, plugin) {
     this.type = type;
@@ -65638,7 +65792,7 @@ var MetadataMiddleware = class {
   async processFrontMatter(path, fn2) {
     if (this.type == 0 /* Obsidian */) {
       const afile = getAbstractFileAtPath(this.plugin, path);
-      if (afile && afile instanceof import_obsidian65.TFile) {
+      if (afile && afile instanceof import_obsidian66.TFile) {
         if (this.plugin.app.fileManager.processFrontMatter) {
           return this.plugin.app.fileManager.processFrontMatter(afile, fn2);
         }
@@ -65685,10 +65839,10 @@ function around1(obj, method, createWrapper) {
 }
 
 // src/utils/spaces/patches.ts
-var import_obsidian66 = require("obsidian");
+var import_obsidian67 = require("obsidian");
 var patchFilesPlugin = (plugin) => {
   plugin.register(
-    around(import_obsidian66.Workspace.prototype, {
+    around(import_obsidian67.Workspace.prototype, {
       getLeavesOfType(old) {
         return function(type) {
           if (type == "file-explorer") {
@@ -65702,7 +65856,7 @@ var patchFilesPlugin = (plugin) => {
 };
 var patchWorkspace = (plugin) => {
   let layoutChanging = false;
-  const uninstaller = around(import_obsidian66.Workspace.prototype, {
+  const uninstaller = around(import_obsidian67.Workspace.prototype, {
     changeLayout(old) {
       return async function(workspace) {
         layoutChanging = true;
@@ -65723,7 +65877,7 @@ var patchWorkspace = (plugin) => {
           return false;
         if (layoutChanging)
           return false;
-        if (parent === plugin.app.workspace.rootSplit || import_obsidian66.WorkspaceContainer && parent instanceof import_obsidian66.WorkspaceContainer) {
+        if (parent === plugin.app.workspace.rootSplit || import_obsidian67.WorkspaceContainer && parent instanceof import_obsidian67.WorkspaceContainer) {
           for (const popover of FlowEditor.popoversForWindow(
             parent.win
           )) {
@@ -65775,7 +65929,7 @@ var patchWorkspace = (plugin) => {
   plugin.register(uninstaller);
 };
 
-// src/components/FileContextView/Backlinks.tsx
+// src/react/components/MarkdownEditor/Backlinks.tsx
 var BacklinkItem = (props2) => {
   const file = F2(
     () => getAbstractFileAtPath(props2.plugin, props2.path),
@@ -65946,7 +66100,7 @@ var modifyFlowDom = (plugin) => {
 
 // src/main.ts
 var makeMDVersion = 0.804;
-var MakeMDPlugin = class extends import_obsidian67.Plugin {
+var MakeMDPlugin = class extends import_obsidian68.Plugin {
   constructor() {
     super(...arguments);
     this.dataViewAPI = () => (0, import_obsidian_dataview.getAPI)();
@@ -65958,20 +66112,20 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
     this.onCreate = async (file) => {
       if (!file)
         return;
-      this.index.addToVaultQueue(() => onFileCreated(this, file.path, file instanceof import_obsidian67.TFolder));
+      this.index.addToVaultQueue(() => onFileCreated(this, file.path, file instanceof import_obsidian68.TFolder));
     };
     this.onDelete = async (file) => {
-      if (file instanceof import_obsidian67.TFile && file.extension != "mdb") {
+      if (file instanceof import_obsidian68.TFile && file.extension != "mdb") {
         this.index.addToVaultQueue(() => onFileDeleted(this, file.path));
-      } else if (file instanceof import_obsidian67.TFolder) {
+      } else if (file instanceof import_obsidian68.TFolder) {
         this.index.addToVaultQueue(() => onFolderDeleted(this, file.path));
       }
       this.activeFileChange();
     };
     this.onRename = async (file, oldPath) => {
-      if (file instanceof import_obsidian67.TFile && file.extension != "mdb") {
+      if (file instanceof import_obsidian68.TFile && file.extension != "mdb") {
         this.index.addToVaultQueue(() => onFileChanged(this, oldPath, file.path));
-      } else if (file instanceof import_obsidian67.TFolder) {
+      } else if (file instanceof import_obsidian68.TFolder) {
         this.index.addToVaultQueue(() => onFolderChanged(this, oldPath, file.path));
       }
       this.activeFileChange();
@@ -66118,7 +66272,7 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
             "dataview:metadata-change",
             (type, file, oldPath) => {
               if (type === "update" && this.app.metadataCache.fileCache[file.path].mtime >= this.loadTime && this.dataViewAPI().index.revision !== this.dataViewLastIndex && this.dataViewReady) {
-                if (file instanceof import_obsidian67.TFile) {
+                if (file instanceof import_obsidian68.TFile) {
                   this.metadataChange(file);
                 }
                 this.dataViewLastIndex = this.dataViewAPI().index.revision;
@@ -66154,18 +66308,18 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
   convertFolderNote() {
     const activeLeaf = this.app.workspace.activeLeaf;
     if ((activeLeaf == null ? void 0 : activeLeaf.view.getViewType()) == "markdown") {
-      const view = this.app.workspace.getActiveViewOfType(import_obsidian67.MarkdownView);
-      if (view instanceof import_obsidian67.MarkdownView && view.file instanceof import_obsidian67.TFile) {
+      const view = this.app.workspace.getActiveViewOfType(import_obsidian68.MarkdownView);
+      if (view instanceof import_obsidian68.MarkdownView && view.file instanceof import_obsidian68.TFile) {
         noteToFolderNote(this, view.file, true);
       }
     } else {
-      new import_obsidian67.Notice("The view is not a note");
+      new import_obsidian68.Notice("The view is not a note");
     }
   }
   getActiveFile() {
     var _a2, _b2, _c2;
     let filePath = null;
-    let leaf = (_a2 = this.app.workspace.getActiveViewOfType(import_obsidian67.MarkdownView)) == null ? void 0 : _a2.leaf;
+    let leaf = (_a2 = this.app.workspace.getActiveViewOfType(import_obsidian68.MarkdownView)) == null ? void 0 : _a2.leaf;
     if (!leaf) {
       leaf = (_b2 = this.app.workspace.getActiveViewOfType(SpaceView)) == null ? void 0 : _b2.leaf;
     }
@@ -66222,9 +66376,9 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
         }
       });
       this.addCommand({
-        id: "mk-spaces-reload",
+        id: "mk-spaces-migrate",
         name: i18n_default.commandPalette.reloadSpaces,
-        callback: () => this.index.loadSpacesDatabaseFromDisk()
+        callback: () => this.index.migrate08()
       });
       this.addCommand({
         id: "mk-spaces",
@@ -66297,11 +66451,11 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
         return new FrameEditorView(leaf, this, FRAME_EDITOR_TYPE);
       });
       this.app.workspace.onLayoutReady(async () => {
-        if (!getAbstractFileAtPath(
-          this,
-          getFolderPathFromString(this, this.settings.spacesFolder)
-        )) {
-          this.app.vault.createFolder(this.settings.spacesFolder);
+        if (this.settings.enableDefaultSpaces) {
+          await this.files.createFolder(getFolderPathFromString(this, this.settings.spacesFolder));
+          if (this.settings.enableHomeSpace) {
+            await this.files.createFolder(this.settings.spacesFolder + "/Home");
+          }
         }
       });
       this.registerView(FILE_CONTEXT_VIEW_TYPE, (leaf) => {
@@ -66385,14 +66539,14 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
     this.loadTime = Date.now();
     this.metadata = MetadataMiddleware.create(this, 0 /* Obsidian */);
     this.files = FilesystemMiddleware.create(this, 0 /* Obsidian */);
-    (0, import_obsidian67.addIcon)("mk-logo", mkLogo);
+    (0, import_obsidian68.addIcon)("mk-logo", mkLogo);
     await this.loadSettings();
     this.index = this.addChild(
       Superstate.create(this.app, "0.9", () => {
         this.debouncedRefresh();
       }, this)
     );
-    this.spacesDBPath = (0, import_obsidian67.normalizePath)(
+    this.spacesDBPath = (0, import_obsidian68.normalizePath)(
       this.app.vault.configDir + "/plugins/make-md/Spaces.mdb"
     );
     this.loadSuperState();
