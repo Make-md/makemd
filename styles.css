@@ -1430,7 +1430,7 @@ mark {
   text-align: center;
 }
 
-/* src/css/Table.css */
+/* src/css/TableView.css */
 .mk-space-view {
   height: 100%;
 }
@@ -2604,7 +2604,12 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   flex-direction: column;
   align-items: flex-start;
   gap: 4px;
-  margin-bottom: 12px;
+}
+.mk-file-context-properties:empty {
+  display: none;
+}
+.mk-file-context-section:empty {
+  display: none;
 }
 .mk-file-context-section {
   display: flex;
@@ -2882,6 +2887,7 @@ c .mk-section-title,
   display: flex;
   flex-direction: column;
   border-top: none !important;
+  margin-bottom: 8px;
 }
 .mk-inline-context .mk-fold.mk-collapsed {
   opacity: 1;
