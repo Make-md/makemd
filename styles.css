@@ -213,8 +213,10 @@ body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .mk-sp
 }
 .mk-flow-container > div > span {
   font-size: var(--font-smallest);
-  padding: var(--size-4-1) var(--context-padding);
   color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  padding: var(--size-4-1);
 }
 .mk-space-scroller .mk-flowspace-editor {
   padding: 0;
@@ -837,14 +839,6 @@ body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .mk-sp
   border: none;
   box-shadow: none;
   color: var(--text-faint);
-}
-body:not(.is-mobile) .mk-view-config .mk-view-options,
-body:not(.is-mobile) .mk-view-config .mk-view-selector > *:not(.mk-is-active) {
-  opacity: 0;
-}
-body:not(.is-mobile) .mk-view-config:hover .mk-view-options,
-body:not(.is-mobile) .mk-view-config:hover .mk-view-selector > *:not(.mk-is-active) {
-  opacity: 1;
 }
 .mk-view-config button:hover {
   color: var(--text-normal);
@@ -1480,6 +1474,8 @@ body {
 .mk-col-header > div {
   display: flex;
   gap: 4px;
+  width: 100%;
+  align-items: center;
 }
 .mk-col-header-context {
   margin-left: 4px;
@@ -1648,6 +1644,7 @@ body {
 }
 .mk-cell-link,
 .mk-cell-context,
+.mk-cell-tags,
 .mk-cell-option {
   width: 100%;
   min-height: 24px;
@@ -1818,6 +1815,7 @@ body {
   display: flex;
   border-radius: 4px;
 }
+.mk-cell-tags:hover .mk-cell-option-new,
 .mk-cell-link:hover .mk-cell-option-new,
 .mk-cell-context:hover .mk-cell-option-new,
 .mk-cell-option:hover .mk-cell-option-new {
@@ -2651,10 +2649,11 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   gap: 10px;
 }
 .mk-file-context-field-key {
-  padding: var(--size-4-1) var(--size-4-2);
-  min-width: 122px;
-  display: flex;
-  gap: 6px;
+  padding: var(--size-4-1);
+  display: inline-block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .mk-file-context-field-space {
   display: flex;
@@ -2698,7 +2697,8 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   color: var(--text-normal) !important;
 }
 .mk-file-context-field {
-  min-width: 100px;
+  max-width: 140px;
+  min-width: 140px;
   font-size: var(--font-ui-small);
   color: var(--text-faint);
   min-height: 24px;
