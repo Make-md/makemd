@@ -38831,7 +38831,6 @@ var ContextMDBProvider = (props2) => {
           getMDBData();
         }
       } else if ((dbSchema == null ? void 0 : dbSchema.primary) == "true" && (tableData == null ? void 0 : tableData.rows.some((f4) => f4.File == file.path))) {
-        console.log("yoo", file);
         runDef();
       }
     },
@@ -49066,7 +49065,6 @@ var OptionCell = (props2) => {
     [props2.options]
   );
   const serializeValue = (newOptions, value2) => {
-    console.log(newOptions, value2);
     return JSON.stringify({
       ...value2,
       options: newOptions.map((f4) => ({ name: f4.name, value: f4.value }))
@@ -50913,7 +50911,6 @@ var DataTypeView = (props2) => {
     props2.updateValue(value2);
   };
   const saveFieldValue = (fieldValue, value2) => {
-    console.log(fieldValue, value2);
     props2.updateFieldValue(fieldValue, value2);
   };
   const viewProps = {
@@ -60773,6 +60770,7 @@ var TreeItem = k3(
     dragOver,
     dragEnded
   }, ref2) => {
+    var _a2;
     const {
       activeFile,
       setActiveFile,
@@ -61051,7 +61049,7 @@ var TreeItem = k3(
       fileCache
     }), /* @__PURE__ */ Cn.createElement("div", {
       className: `mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`
-    }, fileCache.displayName, isLink && plugin.settings.showSpacePinIcon && /* @__PURE__ */ Cn.createElement("span", {
+    }, (_a2 = fileCache.displayName) != null ? _a2 : fileCache.name, isLink && plugin.settings.showSpacePinIcon && /* @__PURE__ */ Cn.createElement("span", {
       className: "mk-file-link",
       dangerouslySetInnerHTML: {
         __html: stickerFromString("lucide//pin", plugin)
@@ -64865,9 +64863,7 @@ var loadSpaces = (plugin) => {
     return folders.map((f4) => spaceFromFolder(plugin2, f4.path));
   };
   const allTagSpaces = plugin.settings.enableTagSpaces && plugin.settings.enableDefaultSpaces ? getAllTagContextFiles(plugin) : [];
-  console.log(allTagSpaces);
   const allFolders = getAllFolderContextFiles(plugin);
-  console.log(allFolders);
   return [...allTagSpaces, ...allFolders];
 };
 var Superstate = class extends import_obsidian65.Component {
@@ -65898,7 +65894,6 @@ var FilesystemMiddleware = class {
     }
   }
   async createFolder(path) {
-    console.log("create", path);
     if (this.type == 0 /* Obsidian */) {
       if (!await this.fileExists(path)) {
         const newFolder = await this.plugin.app.vault.createFolder(path);
