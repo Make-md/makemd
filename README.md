@@ -1,6 +1,6 @@
 # Make.md helps you make the perfect personal system on Obsidian tailored to your workflow and style.
 
-[![Discord Chat](https://img.shields.io/discord/799706244264362024?color=748AD9&label=discord%20chat)](https://make.md/community) [![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=downloads&query=%24%5B%22make-md%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)(obsidian://show-plugin?id=make-md)]
+[![Discord Chat](https://img.shields.io/discord/799706244264362024?color=748AD9&label=discord%20chat)](https://make.md/community) [![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=downloads&query=%24%5B%22make-md%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)](obsidian://show-plugin?id=make-md)
 
 Experience a combination of intuitive and powerful features that helps you keep track and stay focused. Dive right into make.md or see a preview below.
 
