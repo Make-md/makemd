@@ -22,6 +22,10 @@ An editor experience that helps you stay in the flow while writing, editing your
 
 ---
 
+Learn more about the features in our [documentation](http://make.md/docs)
+
+---
+
 Join [our Discord community](https://make.md/community), so we can hear your feedback and use cases.
 
 ---
