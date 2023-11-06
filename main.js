@@ -51854,7 +51854,7 @@ var EmbedViewComponent = (props2) => {
           frameSchema: schema.id
         });
       }
-      if (schema.type == "view") {
+      if ((schema == null ? void 0 : schema.type) == "view") {
         setEmbedType({
           type: "context",
           path: path.basePath,
@@ -54218,7 +54218,7 @@ var FilterBar = (props2) => {
       menuItem.setTitle("Copy Embed Link");
       menuItem.onClick(() => {
         navigator.clipboard.writeText(
-          contextEmbedStringFromContext(spaceInfo, _schema.id)
+          contextViewEmbedStringFromContext(spaceInfo, _schema.id)
         );
       });
     });
@@ -57922,6 +57922,7 @@ var uriForFolder = (path) => {
       basePath: path,
       fullPath: path,
       space: null,
+      scheme: "vault",
       path,
       alias: null,
       ref: null,
@@ -57935,6 +57936,7 @@ var uriForFolder = (path) => {
     fullPath: path,
     space: null,
     path,
+    scheme: "vault",
     alias: null,
     ref: null,
     refStr: null,
@@ -57968,8 +57970,10 @@ function uriByString(plugin, uri, source) {
   let reference = null;
   let refType = null;
   let query = null;
-  if (uri.startsWith("spaces://")) {
-    const spaceStr = uri.slice("spaces://".length);
+  let scheme = "vault";
+  if (uri.indexOf("://") != -1) {
+    scheme = uri.slice(0, uri.indexOf("://"));
+    const spaceStr = uri.slice(uri.indexOf("://") + 3);
     if (spaceStr.charAt(0) == "#") {
       const endIndex = spaceStr.lastIndexOf("/#");
       if (endIndex != -1) {
@@ -58012,6 +58016,7 @@ function uriByString(plugin, uri, source) {
     type: uriTypeByString(plugin, space, path, source),
     space,
     fullPath,
+    scheme,
     path: removeTrailingSlashFromFolder(uri),
     alias,
     ref: reference,
@@ -58076,7 +58081,7 @@ var renamePath = async (plugin, path, newName) => {
     return await renameFile(plugin, getAbstractFileAtPath(plugin, path.path), newName);
   }
 };
-var contextEmbedStringFromContext = (space, schema) => {
+var contextViewEmbedStringFromContext = (space, schema) => {
   if (space.uri.type == "folder") {
     return `![![${space.path}/#*${schema}]]`;
   }
@@ -58084,6 +58089,15 @@ var contextEmbedStringFromContext = (space, schema) => {
     return `![![/#*${schema}]]`;
   }
   return `![![${space.path}#*${schema}]]`;
+};
+var contextEmbedStringFromContext = (space, schema) => {
+  if (space.uri.type == "folder") {
+    return `![![${space.path}/#^${schema}]]`;
+  }
+  if (space.uri.type == "vault") {
+    return `![![/#^${schema}]]`;
+  }
+  return `![![${space.path}#^${schema}]]`;
 };
 var spaceFromTag = (plugin, tag, readOnly) => {
   const path = tagSpacePathFromTag(tag);
