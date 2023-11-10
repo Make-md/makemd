@@ -3822,7 +3822,7 @@ var require_lodash = __commonJS({
           result2.placeholder = curryRight.placeholder;
           return result2;
         }
-        function debounce4(func, wait, options) {
+        function debounce5(func, wait, options) {
           var lastArgs, lastThis, maxWait, result2, timerId, lastCallTime, lastInvokeTime = 0, leading = false, maxing = false, trailing = true;
           if (typeof func != "function") {
             throw new TypeError2(FUNC_ERROR_TEXT);
@@ -4002,7 +4002,7 @@ var require_lodash = __commonJS({
             leading = "leading" in options ? !!options.leading : leading;
             trailing = "trailing" in options ? !!options.trailing : trailing;
           }
-          return debounce4(func, wait, {
+          return debounce5(func, wait, {
             "leading": leading,
             "maxWait": wait,
             "trailing": trailing
@@ -5016,7 +5016,7 @@ var require_lodash = __commonJS({
         lodash.create = create;
         lodash.curry = curry;
         lodash.curryRight = curryRight;
-        lodash.debounce = debounce4;
+        lodash.debounce = debounce5;
         lodash.defaults = defaults;
         lodash.defaultsDeep = defaultsDeep;
         lodash.defer = defer;
@@ -13905,23 +13905,40 @@ var T4 = class {
         hintText: {
           dragDropModifierKeys: "Hold ${1} to Pin and ${2} to Copy"
         },
+        defaults: {
+          newNotePlaceholder: "New Note",
+          spaceNote: "Space Note",
+          spaceContext: "Space Files"
+        },
         commands: {
           h1: "Heading 1",
           h2: "Heading 2",
           h3: "Heading 3",
+          h4: "Heading 4",
+          h5: "Heading 5",
+          h6: "Heading 6",
+          columns: "Columns",
+          button: "Button",
+          label: "Label",
+          column: "Column",
+          group: "Group",
+          paragraph: "Text",
+          card: "Card",
+          progress: "Progress",
           list: "Bullet List",
           "ordered-list": "Numbered List",
           todo: "To-do List",
           quote: "Quote",
           divider: "Divider",
           note: "Link to Note",
-          link: "Web Link",
+          link: "Link",
           callout: "Callout",
           table: "Table",
           codeblock: "Code Block",
           emoji: "Emoji",
           image: "Image",
-          flow: "Flow Block",
+          flow: "Existing Note",
+          newNote: "New Note",
           tag: "Tag",
           makeMenu: "Flow Menu",
           selectStyle: "Style",
@@ -13960,6 +13977,7 @@ var T4 = class {
           removeFileSpace: "Remove File from Space"
         },
         menu: {
+          openSpace: "Open Space",
           revealInDefault: "Reveal in Finder",
           setNone: "None",
           fileMetadataDescription: "This note only",
@@ -13983,6 +14001,7 @@ var T4 = class {
           expandAllFolders: "Expand All Folders",
           spaceTitle: "Add/Remove in Space",
           home: "Home",
+          waypoints: "Waypoints",
           none: "None",
           tableView: "Table View",
           cardView: "Card View",
@@ -13996,7 +14015,6 @@ var T4 = class {
           importDataview: "Import All Dataview Properties",
           saveAllProperties: "Save All Properties to Files",
           mergeProperties: "Merge Properties",
-          openSpace: "Open",
           removeFromSpace: "Unpin from Space",
           editCode: "Edit Code",
           deleteProperty: "Delete Property",
@@ -14025,23 +14043,38 @@ var T4 = class {
           createFolderSpace: "Create Space from Folder",
           folder: "Folder",
           syncToContext: "Add Property to Context",
-          setIcon: "Set Icon"
+          setIcon: "Set Icon",
+          copyEmbedLink: "Copy Embed Link",
+          moveUp: "Move Up",
+          moveDown: "Move Down",
+          moveTo: "Move To",
+          groupNodes: "Group Nodes",
+          moveFrame: "Move Frame",
+          renameFrame: "Rename Frame",
+          deleteFrame: "Delete Frame"
         },
         buttons: {
           moreOptions: "More Options",
+          saveProperty: "Save Property",
           newNote: "New Note",
           changeIcon: "Change Sticker",
           removeIcon: "Remove Sticker",
           changeBanner: "Change Cover",
           changeBannerShort: "Cover",
+          saveChanges: "Save Changes",
           removeBanner: "Remove Cover",
           rename: "Change Name",
+          editFrame: "Edit Frame",
           saveSpace: "Save Space",
           createSpace: "New Space",
           createFolder: "New Folder/Space",
           createNote: "New Note",
           createCanvas: "New Canvas",
           addIntoSpace: "New Pin",
+          addSmartSearch: "Add Smart Search",
+          addItem: "Add Item",
+          addProperty: "Add Property",
+          addContext: "Add Context",
           cancel: "Cancel",
           search: "Search",
           delete: "Delete",
@@ -14063,9 +14096,27 @@ var T4 = class {
           saveView: "Save View",
           saveTable: "Save Table",
           renameView: "Rename View",
+          deleteView: "Delete View",
           renameTable: "Rename Table",
+          renameTag: "Rename Tag",
+          createTag: "Create Tag",
           currentFolder: "Current Folder",
-          sync: "Sync"
+          sync: "Sync",
+          pasteCSS: "Paste CSS"
+        },
+        metadataTypes: {
+          fileName: "File Name",
+          path: "Path",
+          folder: "Folder",
+          sticker: "Sticker",
+          color: "Color",
+          created: "Created",
+          lastModified: "Last Modified",
+          extension: "Extension",
+          size: "Size",
+          tags: "Tags",
+          inlinks: "Linked Mentions",
+          outlinks: "Links"
         },
         filterTypes: {
           contains: "contains",
@@ -14138,7 +14189,16 @@ var T4 = class {
           icon: {
             label: "Icon"
           },
+          super: {
+            label: "Super Property",
+            links: "Links",
+            obsidianCommands: "Obsidian Commands",
+            runCommand: "Run Command",
+            performAction: "Perform Action",
+            whenClicked: "When Clicked"
+          },
           fileProperty: {
+            name: "Name",
             label: "Look Up",
             createdTime: "Created",
             modifiedTime: "Last Edited",
@@ -14151,6 +14211,9 @@ var T4 = class {
         labels: {
           createFolder: "New Folder Name",
           rename: "Rename",
+          createNew: "New",
+          default: "Default",
+          tables: "Tables",
           selectDateFormat: "Select/Type Date Format",
           renameSectionSmart: "Edit Smart Space",
           renameSection: "Edit Space",
@@ -14159,16 +14222,33 @@ var T4 = class {
           createNote: "New Note Name",
           contextMaker: "Context Maker",
           select: "Select",
+          pinnedItems: "Pinned Items",
           collapse: "Collapse",
           expand: "Expand",
+          all: "All",
+          none: "None",
+          view: "View",
           findStickers: "Find Sticker",
           mergeProperties: "Merge Properties",
           placeholder: "Type '${1}' for commands",
+          itemsSelected: "${1} Selected",
+          selectNote: "Select Note",
+          selectIcon: "Select Icon",
+          selectImage: "Select Image",
+          selectSpace: "Select Space",
+          styleSmall: "Small",
+          styleMedium: "Medium",
+          styleLarge: "Large",
+          hiddenFilePattern: "Name, Suffixes and Extension",
+          hiddenFileSpecific: "Exclude specific files and folders",
+          textPlaceholder: "Enter Text",
           noFile: "is not created yet. Click to create.",
+          navigatorSearchPlaceholder: "Search by Text or Filters",
           blinkPlaceholder: "Quickly Search a File, Folder, Tag... Press Tab to Edit",
           searchPlaceholder: "Type to search...",
           contextItemSelectPlaceholder: "Find Item",
           linkItemSelectPlaceholder: "Find or Create Note",
+          pinNotePlaceholder: "Select a Note or Space to Pin",
           optionItemSelectPlaceholder: "Select Option",
           viewItemSelectPlaceholder: "Select View",
           tagItemSelectPlaceholder: "Find Tag",
@@ -14176,6 +14256,8 @@ var T4 = class {
           propertyItemSelectPlaceholder: "Select Property",
           sortItemSelectPlaceholder: "Select Sort",
           filterItemSelectPlaceholder: "Select Filter",
+          imageSelectPlaceholder: "Select an image or paste a URL",
+          imageNotFoundPlaceholder: "No Images Found",
           syncFrontmatterProperty: "Sync Frontmatter Property",
           newProperty: "New Property",
           newPropertyShort: "New Property",
@@ -14201,13 +14283,48 @@ var T4 = class {
           context: "Context",
           properties: "Properties",
           content: "Content",
+          deleteSpace: "Delete Space",
+          deleteFiles: "Delete Files",
           outgoingLinks: "Outgoing Links",
           moveTo: "Move to",
           addTo: "Pin to",
           copyTo: "Copy to",
-          reorderIn: "Reorder in"
+          reorderIn: "Reorder in",
+          border: "Border",
+          corners: "Corners",
+          color: "Color",
+          backgroundColor: "Background",
+          cornerRadius: "Radius",
+          onClick: "On Click",
+          layout: "Layout",
+          element: "Element",
+          name: "Name",
+          display: "Display",
+          alignment: "Alignment",
+          margin: "Margin",
+          padding: "Padding",
+          gap: "Gap",
+          width: "Width",
+          height: "Height",
+          opacity: "Opacity",
+          shadow: "Shadow",
+          shadowBlur: "Blur",
+          shadowSpread: "Spread",
+          typography: "Typography",
+          layers: "Layers",
+          fontSize: "Size",
+          props: "Props",
+          styles: "Styles",
+          events: "Events",
+          code: "Code",
+          selectedLayers: "${1} Layers"
         },
         descriptions: {
+          hiddenFileOptions: "Exclude any files and folders by name, suffix or extension.",
+          deleteSpace: "Deleting the space will also delete the folder and its contents.",
+          deleteFiles: "Delete ${1} files/folders and their contents?",
+          addContext: "Contexts lets you connect properties from your tags",
+          spaceProperties: "Define Properties for your Space Items",
           syncMetadata: "Select which fields from your notes to start syncing with the context.",
           syncProperties: "Contexts defines and syncs the same fields across your notes depending on their folder or tag.",
           selectContext: "Select which folder or tag context you want to sync the fields."
@@ -14225,7 +14342,8 @@ var T4 = class {
           noPropertyName: "Property Name is Required",
           duplicatePropertyName: "Duplicate Property Name",
           newSpaceName: "Enter a name for your space",
-          duplicateSpaceName: "Space name already exists"
+          duplicateSpaceName: "Space name already exists",
+          cantConvertNoteToSpace: "The view is not a note"
         },
         settings: {
           layoutVertical: "Vertical",
@@ -14235,9 +14353,18 @@ var T4 = class {
           sectionFlow: "Flow",
           sectionAdvanced: "Advanced",
           sectionDataview: "Dataview",
+          sectionContext: "Context",
           sectionAppearance: "Appearance",
           sectionDefault: "Default Spaces",
-          sectionContext: "Context",
+          sectionBlink: "Blink",
+          sectionInlineContext: "Inline Context",
+          sectionFlowBlock: "Flow Block",
+          sectionFlowMenu: "Flow Menu",
+          sectionFlowStyler: "Flow Styler",
+          minimalThemeFix: {
+            name: "Minimal Theme Fix",
+            description: "Apply fixes for the popular theme Minimal"
+          },
           inlineStickerMenu: {
             name: "Inline Stickers",
             desc: "Add inline stickers by typing :"
@@ -14313,10 +14440,6 @@ var T4 = class {
           activeFile: {
             name: "Reveal Active File",
             desc: "Automatically reveal the active file in Spaces"
-          },
-          lineNumbers: {
-            name: "Line Numbers",
-            desc: "Display line numbers"
           },
           contexts: {
             name: "Contexts",
@@ -21291,7 +21414,7 @@ var groupNode = {
   node: {
     id: "group",
     schemaId: "group",
-    name: "Group",
+    name: i18n_default.commands.group,
     rank: 0,
     parentId: "",
     styles: {
@@ -21308,7 +21431,7 @@ var columnsNode = {
   node: {
     id: "container",
     schemaId: "container",
-    name: "Columns",
+    name: i18n_default.commands.columns,
     rank: 0,
     parentId: "",
     styles: {
@@ -21327,7 +21450,7 @@ var columnNode = {
     icon: "lucide//columns",
     id: "column",
     schemaId: "column",
-    name: "Column",
+    name: i18n_default.commands.column,
     rank: 0,
     parentId: "",
     styles: {
@@ -21349,7 +21472,7 @@ var flowNode = {
     icon: "lucide//file-text",
     schemaId: "flow",
     parentId: "",
-    name: "Existing Note",
+    name: i18n_default.commands.flow,
     rank: 0,
     id: "flow",
     type: "flow",
@@ -21372,7 +21495,7 @@ var iconNode = {
     icon: "lucide//gem",
     schemaId: "icon",
     parentId: "",
-    name: "Icon",
+    name: i18n_default.properties.icon.label,
     rank: 0,
     id: "icon",
     styles: {},
@@ -21393,7 +21516,7 @@ var spaceNode = {
     icon: "lucide//layout-grid",
     schemaId: "space",
     parentId: "",
-    name: "Space",
+    name: i18n_default.properties.space.label,
     rank: 0,
     id: "space",
     styles: { width: `'100%'` },
@@ -21414,7 +21537,7 @@ var imageNode = {
     icon: "lucide//image",
     schemaId: "image",
     parentId: "",
-    name: "Image",
+    name: i18n_default.properties.image.label,
     rank: 0,
     id: "image",
     type: "image",
@@ -21435,7 +21558,7 @@ var textNode = {
     icon: "lucide//type",
     schemaId: "text",
     parentId: "",
-    name: "Label",
+    name: i18n_default.commands.label,
     rank: 0,
     id: "text",
     type: "text",
@@ -21455,7 +21578,7 @@ var dividerNode = {
     icon: "lucide//type",
     schemaId: "hr",
     parentId: "",
-    name: "Divider",
+    name: i18n_default.commands.divider,
     rank: 0,
     id: "hr",
     type: "hr",
@@ -21473,7 +21596,7 @@ var buttonNode = {
     icon: "lucide//mouse-pointer-click",
     schemaId: "button",
     parentId: "",
-    name: "Button",
+    name: i18n_default.commands.button,
     rank: 0,
     id: "button",
     type: "group",
@@ -21491,16 +21614,16 @@ var buttonNode = {
     },
     propsAttrs: {
       action: JSON.stringify({
-        name: "When Clicked",
+        name: i18n_default.properties.super.whenClicked,
         icon: "lucide//mouse-pointer-click"
       }),
       actionValue: JSON.stringify({
-        name: "Perform Action"
+        name: i18n_default.properties.super.performAction
       })
     },
     propsValue: {
       action: JSON.stringify({
-        options: [{ name: "Run Command", value: "$commands" }, { name: "Open Link", value: "$links" }]
+        options: [{ name: i18n_default.properties.super.runCommand, value: "$commands" }, { name: "Open Link", value: "$links" }]
       }),
       actionValue: JSON.stringify({
         dynamic: true,
@@ -21531,7 +21654,7 @@ var progressNode = {
     icon: "lucide//pie-chart",
     schemaId: "progress",
     parentId: "",
-    name: "Progress",
+    name: i18n_default.commands.progress,
     rank: 0,
     id: "progress",
     type: "group",
@@ -21569,7 +21692,7 @@ var cardNode = {
     icon: "lucide//mouse-pointer-click",
     schemaId: "card",
     parentId: "",
-    name: "Card",
+    name: i18n_default.commands.card,
     rank: 0,
     id: "card",
     type: "group",
@@ -21607,7 +21730,7 @@ var linkNode = {
     icon: "lucide//link",
     schemaId: "link",
     parentId: "",
-    name: "Link",
+    name: i18n_default.commands.link,
     rank: 0,
     id: "link",
     type: "group",
@@ -21665,54 +21788,6 @@ var parsePropString = (str) => {
 };
 
 // src/schemas/mdb.ts
-var parseFieldValue = (value, type) => {
-  var _a2;
-  let valueProp = safelyParseJSON(value);
-  if (valueProp) {
-    return [...(_a2 = fieldTypeForType(type).configKeys) != null ? _a2 : [], "alias", "default"].reduce((p3, c4) => ({ ...p3, [c4]: valueProp[c4] }), {});
-  }
-  if (!type)
-    return {};
-  if (!valueProp) {
-    if (type == "context") {
-      if ((value == null ? void 0 : value.length) > 0) {
-        valueProp = {
-          space: value
-        };
-      } else {
-        valueProp = {};
-      }
-    } else if (type.startsWith("date")) {
-      if ((value == null ? void 0 : value.length) > 0) {
-        valueProp = {
-          format: value
-        };
-      } else {
-        valueProp = {};
-      }
-    } else if (type.startsWith("fileprop")) {
-      if ((value == null ? void 0 : value.length) > 0) {
-        const [field, val] = value.split(".");
-        valueProp = {
-          field,
-          value: val
-        };
-      } else {
-        valueProp = {};
-      }
-    } else if (type.startsWith("option")) {
-      if ((value == null ? void 0 : value.length) > 0) {
-        const options = parseMultiString(value).map((f4) => ({ name: f4, value: f4 }));
-        valueProp = {
-          options
-        };
-      } else {
-        valueProp = {};
-      }
-    }
-  }
-  return valueProp != null ? valueProp : {};
-};
 var stickerForField = (f4) => {
   var _a2, _b2, _c2, _d2, _e2;
   return ((_a2 = f4.attrs) == null ? void 0 : _a2.length) > 0 ? (_d2 = (_b2 = safelyParseJSON(f4.attrs)) == null ? void 0 : _b2.icon) != null ? _d2 : (_c2 = fieldTypeForType(f4.type, f4.name)) == null ? void 0 : _c2.icon : (_e2 = fieldTypeForType(f4.type, f4.name)) == null ? void 0 : _e2.icon;
@@ -21830,7 +21905,7 @@ var fieldTypes = [
   },
   {
     type: "super",
-    label: "Super Property",
+    label: i18n_default.properties.super.label,
     icon: "lucide//zap",
     restricted: true,
     configKeys: ["dynamic", "field"]
@@ -22009,10 +22084,10 @@ var defaultMainFrame = [
     },
     propsValue: {
       note: JSON.stringify({
-        alias: "Space Note"
+        alias: i18n_default.defaults.spaceNote
       }),
       space: JSON.stringify({
-        alias: "Space Files"
+        alias: i18n_default.defaults.spaceContext
       })
     },
     styles: {
@@ -22046,9 +22121,9 @@ var DefaultMDBTables = {
   main: {
     schema: defaultMainFrameSchema(mainFrameID),
     cols: [{ name: "space", type: "space", schemaId: "main", value: JSON.stringify({
-      alias: "Space Files"
+      alias: i18n_default.defaults.spaceContext
     }) }, { name: "note", type: "link", schemaId: "main", value: JSON.stringify({
-      alias: "Space Note"
+      alias: i18n_default.defaults.spaceNote
     }) }],
     rows: defaultMainFrame.map((f4) => nodeToFrame(f4))
   },
@@ -22352,7 +22427,7 @@ var getMDBTable = async (plugin, space, table, dbType) => {
   if (!space)
     return null;
   const sqlJS = await plugin.sqlJS();
-  const buf = await getDBFile(plugin, space.dbPath, space.isRemote);
+  const buf = await getDBFile(plugin, dbType == "context" ? space.dbPath : space.framePath, space.isRemote);
   if (!buf) {
     return null;
   }
@@ -22368,6 +22443,7 @@ var getMDBTable = async (plugin, space, table, dbType) => {
       db.exec(`SELECT * FROM m_schema WHERE id = '${table}'`)
     )[0].rows[0];
   } catch (e4) {
+    console.log(e4);
     db.close();
     return null;
   }
@@ -22574,6 +22650,78 @@ var renameTagSpaceFolder = async (plugin, space, newSpace) => {
 };
 
 // src/utils/frames/mdb.ts
+var addNodes = async (plugin, tableData, space, treeNode, target) => {
+  var _a2, _b2, _c2, _d2, _e2;
+  if (!tableData)
+    return;
+  const frameSchema = mdbSchemaToFrameSchema(tableData.schema);
+  const nodes = (_a2 = tableData == null ? void 0 : tableData.rows.map(
+    (f4) => f4.id == frameSchema.id ? {
+      ...frameToNode(f4),
+      types: tableData.cols.reduce(
+        (p3, c4) => ({ ...p3, [c4.name]: c4.type }),
+        {}
+      ),
+      propsValue: tableData.cols.reduce(
+        (p3, c4) => ({ ...p3, [c4.name]: c4.value }),
+        {}
+      )
+    } : frameToNode(f4)
+  )) != null ? _a2 : [];
+  const root = buildRoot(
+    frameSchema,
+    (_b2 = tableData == null ? void 0 : tableData.cols) != null ? _b2 : [],
+    nodes,
+    plugin
+  );
+  const id2 = uniqueNameFromString(
+    treeNode.id,
+    nodes.map((f4) => f4.id)
+  );
+  let parent = target ? target : root.node;
+  let rank = target ? target.rank + 1 : parent.rank;
+  if (!groupableTypes.some((f4) => parent.type == f4)) {
+    parent = findParent(root, parent.id).node;
+  } else {
+    rank = nodes.filter((f4) => f4.parentId == parent.id).length;
+  }
+  const newTreeNode = {
+    ...treeNode,
+    id: id2,
+    schemaId: frameSchema.id,
+    parentId: parent.id
+  };
+  const newNodes = insert(
+    nodes.filter((f4) => f4.parentId == parent.id).sort((a5, b4) => a5.rank - b4.rank),
+    rank,
+    newTreeNode
+  ).map((f4, i4) => ({ ...f4, rank: i4 }));
+  const newRows = ((_c2 = tableData == null ? void 0 : tableData.rows) == null ? void 0 : _c2.some((f4) => f4.id == root.id)) ? tableData.rows : [...(_d2 = tableData == null ? void 0 : tableData.rows) != null ? _d2 : [], nodeToFrame(root.node)];
+  const insertRows = newNodes.filter((f4) => !newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
+  const modRows = newNodes.filter((f4) => newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
+  const newTable = {
+    ...tableData,
+    cols: (_e2 = tableData.cols) != null ? _e2 : [],
+    rows: [
+      ...newRows.map((f4) => {
+        var _a3;
+        return (_a3 = modRows.find((g4) => g4.id == f4.id)) != null ? _a3 : f4;
+      }),
+      ...insertRows
+    ]
+  };
+  await saveMFramesToPath(plugin, space, newTable);
+};
+var addNodeToMFrame = async (plugin, space, schema, treeNode, target) => {
+  const tagFileExists = await plugin.files.fileExists(space.dbPath);
+  if (!tagFileExists) {
+    return;
+  }
+  if (tagFileExists)
+    await getMDBTable(plugin, space, schema, "frames").then(
+      (tagDB) => addNodes(plugin, tagDB, space, treeNode, target)
+    );
+};
 var getMFrameTables = async (plugin, space) => {
   if (!frames)
     return null;
@@ -32697,7 +32845,7 @@ var SelectMenuComponent = Cn.forwardRef(
       key: i4,
       onClick: () => setSection(f4),
       className: `${section == f4 ? "is-active" : ""} mk-options-menu-section`
-    }, f4 == "" ? "All" : f4))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), options.length || props2.allowNew ? /* @__PURE__ */ Cn.createElement(SelectMenuSuggestions_default, {
+    }, f4 == "" ? i18n_default.labels.all : f4))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), options.length || props2.allowNew ? /* @__PURE__ */ Cn.createElement(SelectMenuSuggestions_default, {
       plugin: props2.plugin,
       options,
       hoverSelect: props2.hoverSelect,
@@ -38708,6 +38856,95 @@ var showPropertyMenu = (props2) => {
 var import_lodash5 = __toESM(require_lodash());
 var import_obsidian14 = require("obsidian");
 
+// src/schemas/parseFieldValue.ts
+var parseFieldValue = (value, type) => {
+  var _a2;
+  let valueProp = safelyParseJSON(value);
+  if (valueProp) {
+    return [...(_a2 = fieldTypeForType(type).configKeys) != null ? _a2 : [], "alias", "default"].reduce((p3, c4) => ({ ...p3, [c4]: valueProp[c4] }), {});
+  }
+  if (!type)
+    return {};
+  if (!valueProp) {
+    if (type == "context") {
+      if ((value == null ? void 0 : value.length) > 0) {
+        valueProp = {
+          space: value
+        };
+      } else {
+        valueProp = {};
+      }
+    } else if (type.startsWith("date")) {
+      if ((value == null ? void 0 : value.length) > 0) {
+        valueProp = {
+          format: value
+        };
+      } else {
+        valueProp = {};
+      }
+    } else if (type.startsWith("fileprop")) {
+      if ((value == null ? void 0 : value.length) > 0) {
+        const [field, val] = value.split(".");
+        valueProp = {
+          field,
+          value: val
+        };
+      } else {
+        valueProp = {};
+      }
+    } else if (type.startsWith("option")) {
+      if ((value == null ? void 0 : value.length) > 0) {
+        const options = parseMultiString(value).map((f4) => ({ name: f4, value: f4 }));
+        valueProp = {
+          options
+        };
+      } else {
+        valueProp = {};
+      }
+    }
+  }
+  return valueProp != null ? valueProp : {};
+};
+
+// src/utils/contexts/linkContextRow.ts
+var linkContextRow = (plugin, row, fields) => {
+  return {
+    ...row,
+    ...fields.filter((f4) => f4.type == "fileprop" || f4.name == "tags").reduce((p3, c4) => {
+      var _a2;
+      if (c4.name == "tags") {
+        return { ...p3, "tags": serializeMultiString([...(_a2 = plugin.index.tagsMap.get(row["File"])) != null ? _a2 : []]) };
+      }
+      const { field, value } = parseFieldValue(c4.value, c4.type);
+      const col = fields.find((f4) => f4.name == field);
+      if (!col || !value) {
+        return p3;
+      }
+      if (col.type == "file" || col.type == "link") {
+        return {
+          ...p3,
+          [c4.name]: appendFilesMetaData(plugin, value, row[col.name])
+        };
+      }
+      if (col.type.includes("context")) {
+        const context = col.value;
+        const contextCache = plugin.index.contextsIndex.get(context);
+        if (contextCache.tables["files"]) {
+          return {
+            ...p3,
+            [c4.name]: linkContextProp(
+              value,
+              row[col.name],
+              contextCache.tables["files"].rows
+            )
+          };
+        }
+      }
+      return p3;
+    }, {})
+  };
+};
+
 // src/utils/contexts/predicate/filterFns/filterFnTypes.ts
 var filterFnTypes = {
   isNotEmpty: {
@@ -39502,6 +39739,10 @@ function useCombinedRefs2(...refs) {
 // src/react/components/SpaceView/Contexts/TableView/ColumnHeader.tsx
 var filePropTypes = [
   {
+    name: i18n_default.properties.fileProperty.name,
+    value: "name"
+  },
+  {
     name: i18n_default.properties.fileProperty.createdTime,
     value: "ctime"
   },
@@ -39780,7 +40021,7 @@ var PropertyValueComponent = (props2) => {
       })),
       "field"
     )
-  }, /* @__PURE__ */ Cn.createElement("span", null, "Field"), /* @__PURE__ */ Cn.createElement("span", null, parsedValue.field)) : /* @__PURE__ */ Cn.createElement("div", {
+  }, /* @__PURE__ */ Cn.createElement("span", null, i18n_default.labels.propertyValueProperty), /* @__PURE__ */ Cn.createElement("span", null, parsedValue.field)) : /* @__PURE__ */ Cn.createElement("div", {
     className: "menu-item",
     onClick: (e4) => selectProperty(e4)
   }, /* @__PURE__ */ Cn.createElement("span", null, i18n_default.labels.propertyFileProp), /* @__PURE__ */ Cn.createElement("span", null, parsedValue.field))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null);
@@ -39936,10 +40177,10 @@ var NewPropertyMenuComponent = (props2) => {
   }), /* @__PURE__ */ Cn.createElement("div", {
     className: "menu-item",
     onClick: (e4) => saveField()
-  }, /* @__PURE__ */ Cn.createElement("span", null, "Save Property")), /* @__PURE__ */ Cn.createElement("div", {
+  }, /* @__PURE__ */ Cn.createElement("span", null, i18n_default.buttons.saveProperty)), /* @__PURE__ */ Cn.createElement("div", {
     className: "menu-item",
     onClick: (e4) => props2.hide()
-  }, /* @__PURE__ */ Cn.createElement("span", null, "Cancel")));
+  }, /* @__PURE__ */ Cn.createElement("span", null, i18n_default.buttons.cancel)));
 };
 var showNewPropertyMenu = (plugin, position, spaces, fields, saveField, schemaId, contextPath, fileMetadata) => {
   const menu = new import_obsidian15.Menu();
@@ -40597,7 +40838,7 @@ var nodeIsAncestorOfTarget = (path, target) => {
 var excludeVaultItemPredicate = (settings) => (f4, index, folder) => !(f4.folder != "true" && settings.hiddenExtensions.find(
   (e4) => f4.path.endsWith(e4)
 )) && !settings.hiddenFiles.find((e4) => e4 == f4.path) && (!settings.enableFolderNote || !settings.folderNoteInsideFolder && !folder.some((g4) => g4.path + ".md" == f4.path) || settings.folderNoteInsideFolder && !(f4.parent + "/" + folderPathToString(f4.parent) + ".md" == f4.path));
-var excludeFilePredicate = (plugin) => (f4) => f4 && !(f4 instanceof import_obsidian19.TFile && plugin.settings.hiddenExtensions.some((e4) => f4.extension == e4)) && !f4.path.startsWith(plugin.settings.spacesFolder + "/#") && !plugin.settings.hiddenFiles.some((e4) => e4 == f4.path) && (!f4.parent || !plugin.settings.enableFolderNote || !plugin.settings.folderNoteInsideFolder && !f4.parent.children.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !((f4.parent.path == "/" ? plugin.systemName() + ".md" : f4.parent.path + "/" + f4.parent.name + ".md") == f4.path));
+var excludeFilePredicate = (plugin) => (f4) => f4 && !(f4 instanceof import_obsidian19.TFile && plugin.settings.hiddenExtensions.find((e4) => f4.path.endsWith(e4))) && !f4.path.startsWith(plugin.settings.spacesFolder + "/#") && !plugin.settings.hiddenFiles.some((e4) => e4 == f4.path) && (!f4.parent || !plugin.settings.enableFolderNote || !plugin.settings.folderNoteInsideFolder && !f4.parent.children.some((g4) => g4.path + ".md" == f4.path) || plugin.settings.folderNoteInsideFolder && !((f4.parent.path == "/" ? plugin.systemName() + ".md" : f4.parent.path + "/" + f4.parent.name + ".md") == f4.path));
 var folderChildren = (plugin, f4, exclusionList) => {
   var _a2, _b2;
   return (_b2 = (_a2 = f4 == null ? void 0 : f4.children) == null ? void 0 : _a2.filter(excludeFilePredicate(plugin))) != null ? _b2 : [];
@@ -42982,55 +43223,55 @@ var showDatePickerMenu = (point, value, setValue, format2) => {
 // src/types/metadata.ts
 var fileProps = {
   "name": {
-    label: "File Name",
+    label: i18n_default.metadataTypes.fileName,
     field: "name",
     vType: "text",
     type: "fileprop"
   },
   "path": {
-    label: "Path",
+    label: i18n_default.metadataTypes.path,
     field: "path",
     vType: "text",
     type: "fileprop"
   },
   "parent": {
-    label: "Folder",
+    label: i18n_default.metadataTypes.folder,
     field: "parent",
     vType: "text",
     type: "fileprop"
   },
   "sticker": {
-    label: "Sticker",
+    label: i18n_default.metadataTypes.sticker,
     field: "sticker",
     vType: "text",
     type: "fileprop"
   },
   "color": {
-    label: "Color",
+    label: i18n_default.metadataTypes.color,
     field: "color",
     vType: "text",
     type: "fileprop"
   },
   "ctime": {
-    label: "Created",
+    label: i18n_default.metadataTypes.created,
     field: "ctime",
     vType: "date",
     type: "fileprop"
   },
   "mtime": {
-    label: "Last Modified",
+    label: i18n_default.metadataTypes.lastModified,
     field: "mtime",
     vType: "date",
     type: "fileprop"
   },
   "extension": {
-    label: "Extension",
+    label: i18n_default.metadataTypes.extension,
     field: "extension",
     vType: "text",
     type: "fileprop"
   },
   "size": {
-    label: "Size",
+    label: i18n_default.metadataTypes.size,
     field: "size",
     vType: "number",
     type: "fileprop"
@@ -43038,19 +43279,19 @@ var fileProps = {
 };
 var fileMeta = {
   "tags": {
-    label: "Tags",
+    label: i18n_default.metadataTypes.tags,
     field: "tags",
     vType: "tags-multi",
     type: "filemeta"
   },
   "inlinks": {
-    label: "Linked Mentions",
+    label: i18n_default.metadataTypes.inlinks,
     field: "inlinks",
     vType: "link-multi",
     type: "filemeta"
   },
   "outlinks": {
-    label: "Links",
+    label: i18n_default.metadataTypes.outlinks,
     field: "outlinks",
     vType: "link-multi",
     type: "filemeta"
@@ -44110,25 +44351,13 @@ function executeCodeBlocks(node, type, results) {
       const isMultiLine = typeof codeBlockStore[key2] === "string" || codeBlockStore[key2] instanceof String ? codeBlockStore[key2].includes("\n") : false;
       const func = isMultiLine && !(type == "actions") ? new Function(`with(this) { ${codeBlockStore[key2]} }`) : new Function(`with(this) { return ${codeBlockStore[key2]}; }`);
       const result = func.call(results.state);
-      parseKeyResult(results.state[node.id][type], key2, result);
+      results.state[node.id][type][key2] = result;
     } catch (error) {
       console.log(error);
     }
   }
   return results;
 }
-var parseKeyResult = (resultStore, key2, result) => {
-  if (key2 == "layout") {
-    if (result == "row" || result == "column") {
-      resultStore["display"] = "flex";
-      resultStore["flexDirection"] = result;
-      return;
-    }
-    resultStore["display"] = result;
-    return;
-  }
-  resultStore[key2] = result;
-};
 
 // src/react/context/FrameEditorContext.tsx
 var FramesEditorContext = F({
@@ -44590,13 +44819,13 @@ var showNewFrameMenu = (e4, plugin, space, addNode) => {
   });
   const presets = [
     {
-      name: "New Note",
+      name: i18n_default.commands.newNote,
       value: { type: "preset", value: "note" },
       section: "default",
       icon: "ui//mk-make-flow"
     },
     {
-      name: "Table",
+      name: i18n_default.commands.table,
       value: { type: "preset", value: "table" },
       section: "default",
       icon: "ui//mk-make-table"
@@ -44788,7 +45017,10 @@ var HoverMultiMenu = (props2) => {
     dangerouslySetInnerHTML: {
       __html: stickerFromString("lucide//copy-check", props2.plugin)
     }
-  }), selectedNodes.length.toString(), " Selected"), /* @__PURE__ */ Cn.createElement("div", {
+  }), i18n_default.labels.itemsSelected.replace(
+    "${1}",
+    selectedNodes.length.toString()
+  )), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-divider"
   }), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-mark",
@@ -44849,8 +45081,8 @@ var imageModal = class extends import_obsidian25.FuzzySuggestModal {
     this.selectImage = selectImage;
     this.resultContainerEl.toggleClass("mk-image-modal", true);
     this.inputEl.focus();
-    this.inputEl.placeholder = "Select an image or paste a URL";
-    this.emptyStateText = "No Images Found";
+    this.inputEl.placeholder = i18n_default.labels.imageSelectPlaceholder;
+    this.emptyStateText = i18n_default.labels.imageNotFoundPlaceholder;
     this.limit = 30;
   }
   renderSuggestion(item, el) {
@@ -44915,9 +45147,151 @@ function listFonts() {
   return Array.from(new Set(arr));
 }
 
+// src/react/components/SpaceView/Frames/Setters/StepSetter.tsx
+var import_lodash9 = __toESM(require_lodash());
+function countDecimals(value) {
+  if (Math.floor(value) === value)
+    return 0;
+  const valueAsString = value.toString();
+  return valueAsString.split(".")[1].length || valueAsString.split(",")[1].length || 0;
+}
+function InputDrag({
+  style: _style = {},
+  modifiers: _modifiers = {},
+  onChange,
+  onInput,
+  ...props2
+}) {
+  const [value, setValue] = h2(props2.value || 0);
+  const [modifier, setModifier] = h2("");
+  const startValue = _2(0);
+  const inputRef = _2(null);
+  const step = props2.step ? +props2.step : 1;
+  const modifiers = F2(
+    () => ({
+      shiftKey: 0.1,
+      ..._modifiers
+    }),
+    [_modifiers]
+  );
+  const [, setStartPos] = h2([0, 0]);
+  const style = { cursor: "ew-resize", ..._style };
+  const handleChange = (e4) => {
+    const newValue = e4.target.value;
+    if (isNaN(+newValue)) {
+      return;
+    }
+    setValue(+newValue);
+    onChange == null ? void 0 : onChange(+newValue, inputRef.current);
+  };
+  const handleDragEnd = (0, import_lodash9.debounce)((newValue) => {
+    onChange == null ? void 0 : onChange(newValue, inputRef.current);
+  }, 200);
+  const handleInput = T2(
+    (newValue) => {
+      requestAnimationFrame(() => {
+        onInput == null ? void 0 : onInput(newValue, inputRef.current);
+      });
+      handleDragEnd(newValue);
+    },
+    [handleDragEnd, onInput]
+  );
+  const handleMove = T2(
+    (e4) => {
+      setStartPos((pos) => {
+        const { clientX: x22, clientY: y22 } = e4;
+        const [x1, y1] = pos;
+        const a5 = x1 - x22;
+        const b4 = y1 - y22;
+        let mod = 1;
+        if (modifier) {
+          mod = modifiers[modifier] || 1;
+        }
+        const stepModifer = step * mod;
+        const decimals = countDecimals(stepModifer);
+        let delta = Math.sqrt(a5 * a5 + b4 * b4) * stepModifer;
+        if (x22 < x1)
+          delta = -delta;
+        let newValue = startValue.current + delta;
+        if (props2.min)
+          newValue = Math.max(newValue, +props2.min);
+        if (props2.max)
+          newValue = Math.min(newValue, +props2.max);
+        newValue = +newValue.toFixed(decimals);
+        setValue(newValue);
+        handleInput(newValue);
+        return pos;
+      });
+    },
+    [modifier, props2.max, props2.min, step, handleInput, modifiers]
+  );
+  const handleMoveEnd = T2(() => {
+    document.removeEventListener("mousemove", handleMove);
+    document.removeEventListener("mouseup", handleMoveEnd);
+  }, [handleMove]);
+  const handleDown = T2(
+    (e4) => {
+      let _startValue = +value;
+      if (isNaN(_startValue)) {
+        _startValue = +(props2.defaultValue || props2.min || 0);
+      }
+      startValue.current = _startValue;
+      setStartPos([e4.clientX, e4.clientY]);
+      document.addEventListener("mousemove", handleMove);
+      document.addEventListener("mouseup", handleMoveEnd);
+    },
+    [handleMove, handleMoveEnd, value, props2.min, props2.defaultValue]
+  );
+  const handleKeyDown = (e4) => {
+    if (e4.metaKey) {
+      setModifier("metaKey");
+    } else if (e4.ctrlKey) {
+      setModifier("ctrlKey");
+    } else if (e4.altKey) {
+      setModifier("altKey");
+    } else if (e4.shiftKey) {
+      setModifier("shiftKey");
+    }
+  };
+  const handleKeyUp = () => {
+    setModifier("");
+  };
+  p2(() => {
+    if (props2.value !== value && typeof props2.value === "number")
+      setValue(props2.value);
+  }, [props2.value]);
+  p2(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleMoveEnd);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+  return /* @__PURE__ */ Cn.createElement("input", {
+    type: "number",
+    ...props2,
+    value,
+    style,
+    onMouseDown: handleDown,
+    onChange: handleChange,
+    ref: inputRef
+  });
+}
+var StepSetter = (props2) => {
+  return /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-setter-step"
+  }, /* @__PURE__ */ Cn.createElement("span", null, props2.name), /* @__PURE__ */ Cn.createElement(InputDrag, {
+    value: parseInt(props2.value),
+    onChange: (value) => props2.setValue(value.toString())
+  }, props2.name));
+};
+
 // src/react/components/SpaceView/Frames/FrameHoverMenu/HoverPropsMenu.tsx
 var HoverPropsMenu = (props2) => {
-  var _a2;
+  var _a2, _b2, _c2;
   const { deleteFrame, duplicateFrame, fields, saveStyleValue } = props2;
   const { ungroupNode } = q2(FramesEditorContext);
   const [editMode, setEditMode] = h2(0 /* EditModeDefault */);
@@ -44930,7 +45304,7 @@ var HoverPropsMenu = (props2) => {
     props2.savePropValue(prop, value);
   };
   const showValueMenu = (e4, field) => {
-    var _a3, _b2;
+    var _a3, _b3;
     e4.stopPropagation();
     e4.preventDefault();
     const currentValue = removeQuotes(frameProps[field.name]);
@@ -44941,7 +45315,7 @@ var HoverPropsMenu = (props2) => {
           menu.setUseNativeMenu(false);
           menu.addItem((menuItem) => {
             menuItem.setIcon("type");
-            menuItem.setTitle("Select Space");
+            menuItem.setTitle(i18n_default.labels.selectSpace);
             menuItem.onClick(
               (e5) => showSpacesMenu(
                 e5,
@@ -44987,7 +45361,7 @@ var HoverPropsMenu = (props2) => {
           menu.setUseNativeMenu(false);
           menu.addItem((menuItem) => {
             menuItem.setIcon("type");
-            menuItem.setTitle("Select Note");
+            menuItem.setTitle(i18n_default.labels.selectNote);
             menuItem.onClick(
               (e5) => showLinkMenu(
                 e5,
@@ -45004,13 +45378,6 @@ var HoverPropsMenu = (props2) => {
               menuItem.onClick((e5) => {
                 savePropValue(field.name, `${f4.schemaId}.props.${f4.name}`);
               });
-            });
-          });
-          menu.addItem((menuItem) => {
-            menuItem.setTitle("Daily Note");
-            menuItem.setIcon("type");
-            menuItem.onClick((e5) => {
-              savePropValue(field.name, `api.formatDate(api.now())`);
             });
           });
           const offset2 = e4.target.getBoundingClientRect();
@@ -45032,7 +45399,7 @@ var HoverPropsMenu = (props2) => {
           const menu = new import_obsidian26.Menu();
           menu.setUseNativeMenu(false);
           menu.addItem((menuItem) => {
-            menuItem.setTitle("Select Image");
+            menuItem.setTitle(i18n_default.labels.selectImage);
             menuItem.onClick((e5) => {
               const vaultChangeModal = new imageModal(
                 props2.plugin,
@@ -45095,7 +45462,7 @@ var HoverPropsMenu = (props2) => {
       case "super":
         {
           const parsedValue = parseFieldValue(field.value, field.type);
-          const superPropertyName = parsedValue.dynamic ? removeQuotes(frameProps[(_b2 = parsedValue.field) != null ? _b2 : ""]) : parsedValue.field;
+          const superPropertyName = parsedValue.dynamic ? removeQuotes(frameProps[(_b3 = parsedValue.field) != null ? _b3 : ""]) : parsedValue.field;
           if (superPropertyName) {
             const property = props2.plugin.index.superProperties.get(superPropertyName);
             const superProperty = property ? {
@@ -45120,27 +45487,51 @@ var HoverPropsMenu = (props2) => {
     const menu = new import_obsidian26.Menu();
     menu.setUseNativeMenu(false);
     menu.addItem((menuItem) => {
-      menuItem.setTitle("Small");
+      menuItem.setTitle(i18n_default.labels.styleSmall);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("maxWidth", `'50px'`);
-        saveStyleValue("height", `'auto'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle("Medium");
+      menuItem.setTitle(i18n_default.labels.styleMedium);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("maxWidth", `'100px'`);
-        saveStyleValue("height", `'auto'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle("Big");
+      menuItem.setTitle(i18n_default.labels.styleLarge);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("maxWidth", `'200px'`);
-        saveStyleValue("height", `'auto'`);
+      });
+    });
+    const offset2 = e4.target.getBoundingClientRect();
+    menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
+  };
+  const showLayoutMenu = (e4) => {
+    const menu = new import_obsidian26.Menu();
+    menu.setUseNativeMenu(false);
+    menu.addItem((menuItem) => {
+      menuItem.setTitle(i18n_default.commands.h1);
+      menuItem.setIcon("layout");
+      menuItem.onClick((e5) => {
+        saveStyleValue("layout", `'row'`);
+      });
+    });
+    menu.addItem((menuItem) => {
+      menuItem.setTitle(i18n_default.commands.h2);
+      menuItem.setIcon("type");
+      menuItem.onClick((e5) => {
+        saveStyleValue("layout", `'column'`);
+      });
+    });
+    menu.addItem((menuItem) => {
+      menuItem.setTitle(i18n_default.commands.h3);
+      menuItem.setIcon("type");
+      menuItem.onClick((e5) => {
+        saveStyleValue("layout", `'masonry'`);
       });
     });
     const offset2 = e4.target.getBoundingClientRect();
@@ -45150,49 +45541,49 @@ var HoverPropsMenu = (props2) => {
     const menu = new import_obsidian26.Menu();
     menu.setUseNativeMenu(false);
     menu.addItem((menuItem) => {
-      menuItem.setTitle("H1");
+      menuItem.setTitle(i18n_default.commands.h1);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("class", `'mk-t-h1'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle("H2");
+      menuItem.setTitle(i18n_default.commands.h2);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("class", `'mk-t-h2'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle("H3");
+      menuItem.setTitle(i18n_default.commands.h3);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("class", `'mk-t-h3'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle("H4");
+      menuItem.setTitle(i18n_default.commands.h4);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("class", `'mk-t-h4'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle("H5");
+      menuItem.setTitle(i18n_default.commands.h5);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("class", `'mk-t-h5'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle("H6");
+      menuItem.setTitle(i18n_default.commands.h6);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("class", `'mk-t-h6'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle("Text");
+      menuItem.setTitle(i18n_default.commands.paragraph);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("class", `'mk-t-p'`);
@@ -45202,7 +45593,7 @@ var HoverPropsMenu = (props2) => {
     menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
   };
   const showFontMenu = (e4) => {
-    var _a3, _b2;
+    var _a3, _b3;
     const options = listFonts().map((f4) => ({ name: f4, value: f4 }));
     showSelectMenu(e4.target.getBoundingClientRect(), {
       plugin: props2.plugin,
@@ -45212,7 +45603,7 @@ var HoverPropsMenu = (props2) => {
       saveOptions: (_12, v3) => {
         saveStyleValue("--font-text", `'${v3[0]}'`);
       },
-      value: [(_b2 = (_a3 = props2.node.styles) == null ? void 0 : _a3["--font-text"]) != null ? _b2 : ""],
+      value: [(_b3 = (_a3 = props2.node.styles) == null ? void 0 : _a3["--font-text"]) != null ? _b3 : ""],
       options
     });
   };
@@ -45224,13 +45615,13 @@ var HoverPropsMenu = (props2) => {
   return /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-frame-props-editor menu"
   }, editMode == 0 /* EditModeDefault */ ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, fields.map((f4, i4) => {
-    var _a3, _b2;
+    var _a3, _b3;
     return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-mark",
       key: i4,
       onClick: (e4) => showValueMenu(e4, f4)
     }, /* @__PURE__ */ Cn.createElement("div", {
-      "aria-label": (_b2 = (_a3 = safelyParseJSON(f4.attrs)) == null ? void 0 : _a3.name) != null ? _b2 : f4.name,
+      "aria-label": (_b3 = (_a3 = safelyParseJSON(f4.attrs)) == null ? void 0 : _a3.name) != null ? _b3 : f4.name,
       dangerouslySetInnerHTML: {
         __html: stickerFromString(stickerForField(f4), props2.plugin)
       }
@@ -45302,21 +45693,17 @@ var HoverPropsMenu = (props2) => {
     dangerouslySetInnerHTML: {
       __html: stickerFromString("lucide//type", props2.plugin)
     }
-  }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), props2.node.type == "content" || props2.node.type == "group" ? /* @__PURE__ */ Cn.createElement("div", {
+  }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), props2.node.type == "content" || props2.node.type == "group" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-mark",
-    onClick: (e4) => {
-      var _a3;
-      e4.preventDefault();
-      e4.stopPropagation();
-      saveStyleValue(
-        "class",
-        `${removeQuotes((_a3 = props2.node.styles) == null ? void 0 : _a3.class) == "mk-masonry" ? "" : `"mk-masonry"`}`
-      );
-    },
+    onClick: (e4) => setEditMode(2 /* EditModeLayout */)
+  }, /* @__PURE__ */ Cn.createElement("div", {
     dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//type", props2.plugin)
+      __html: stickerFromString(
+        "lucide//case-sensitive",
+        props2.plugin
+      )
     }
-  }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), /* @__PURE__ */ Cn.createElement("div", {
+  }))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-mark",
     onClick: (e4) => {
       e4.preventDefault();
@@ -45402,6 +45789,26 @@ var HoverPropsMenu = (props2) => {
   }), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-color",
     style: { background: removeQuotes((_a2 = props2.node.styles) == null ? void 0 : _a2["color"]) }
+  })) : editMode == 2 /* EditModeLayout */ ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onClick: (e4) => showLayoutMenu(e4)
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString(
+        "lucide//case-sensitive",
+        props2.plugin
+      )
+    }
+  })), /* @__PURE__ */ Cn.createElement(StepSetter, {
+    plugin: props2.plugin,
+    name: "Padding",
+    value: (_b2 = props2.node.styles) == null ? void 0 : _b2["padding"],
+    setValue: (value) => saveStyleValue("padding", value)
+  }), /* @__PURE__ */ Cn.createElement(StepSetter, {
+    plugin: props2.plugin,
+    name: "Gap",
+    value: (_c2 = props2.node.styles) == null ? void 0 : _c2["gap"],
+    setValue: (value) => saveStyleValue("gap", value)
   })) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
 };
 
@@ -45799,7 +46206,7 @@ var atomicSelect = import_state4.EditorState.transactionFilter.of(
 var import_obsidian33 = require("obsidian");
 
 // src/react/components/SpaceView/Frames/ViewNodes/FrameRoot.tsx
-var import_lodash9 = __toESM(require_lodash());
+var import_lodash10 = __toESM(require_lodash());
 
 // src/react/components/SpaceView/Frames/EditorNodes/IconNodeView.tsx
 var IconNodeView = (props2) => {
@@ -45824,7 +46231,7 @@ var IconNodeView = (props2) => {
   }) : props2.editable ? /* @__PURE__ */ Cn.createElement("div", {
     onClick: () => selectIcon(),
     className: "mk-frame-placeholder"
-  }, "Select Icon") : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
+  }, i18n_default.labels.selectIcon) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
 };
 
 // src/react/components/SpaceView/Frames/EditorNodes/ImageNodeView.tsx
@@ -45880,7 +46287,7 @@ var SpaceNodeView = (props2) => {
   })) : /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-frame-placeholder",
     onClick: (e4) => selectLink(e4)
-  }, "Select Space");
+  }, i18n_default.labels.selectSpace);
 };
 
 // src/react/components/SpaceView/Frames/EditorNodes/TextNodeView.tsx
@@ -45927,7 +46334,7 @@ var TextNodeView = (props2) => {
   };
   return props2.instance.state[props2.treeNode.id] && /* @__PURE__ */ Cn.createElement("div", {
     className: `mk-frame-text`,
-    placeholder: "Enter Text",
+    placeholder: i18n_default.labels.textPlaceholder,
     dangerouslySetInnerHTML: {
       __html: (_a2 = props2.instance.state[props2.treeNode.id].props) == null ? void 0 : _a2.value
     },
@@ -45946,7 +46353,7 @@ var TextNodeView = (props2) => {
 
 // src/react/components/SpaceView/Frames/ViewNodes/FrameView.tsx
 var FrameView = (props2) => {
-  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i;
+  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k, _l;
   const innerComponents = props2.treeNode.node.type == "text" ? /* @__PURE__ */ Cn.createElement(TextNodeView, {
     treeNode: props2.treeNode,
     instance: props2.instance,
@@ -45986,8 +46393,9 @@ var FrameView = (props2) => {
   return props2.instance.state[props2.treeNode.id] && Cn.createElement(
     tag,
     {
-      className: `mk-frame-view ${(_h = (_g = (_f = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _f.styles) == null ? void 0 : _g.class) != null ? _h : ""}`,
+      className: `mk-frame ${(_h = (_g = (_f = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _f.styles) == null ? void 0 : _g.class) != null ? _h : ""}`,
       type,
+      layout: (_k = (_j = (_i = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _i.styles) == null ? void 0 : _j.layout) != null ? _k : "",
       onClick: (e4) => {
         var _a3, _b3;
         if (typeof ((_a3 = props2.instance.state[props2.treeNode.id].actions) == null ? void 0 : _a3.onClick) == "function") {
@@ -46002,7 +46410,7 @@ var FrameView = (props2) => {
       },
       style: {
         ...defaultFrameStyles,
-        ...(_i = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _i.styles
+        ...(_l = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _l.styles
       }
     },
     [innerComponents]
@@ -46019,8 +46427,8 @@ var FrameRootView = (props2) => {
   const activeRunID = _2(null);
   const runRoot = () => {
     if (props2.root) {
-      const root = import_lodash9.default.cloneDeep(props2.root);
-      const runID = (0, import_lodash9.uniqueId)();
+      const root = import_lodash10.default.cloneDeep(props2.root);
+      const runID = (0, import_lodash10.uniqueId)();
       activeRunID.current = runID;
       executeTreeNode(
         applyPropsToRoot(root, props2.props),
@@ -48937,7 +49345,7 @@ function useReactTable(options) {
 }
 
 // src/react/components/SpaceView/Contexts/DataTypeView/OptionCell.tsx
-var import_lodash10 = __toESM(require_lodash());
+var import_lodash11 = __toESM(require_lodash());
 var import_obsidian27 = require("obsidian");
 var OptionCell = (props2) => {
   var _a2, _b2, _c2;
@@ -48999,7 +49407,7 @@ var OptionCell = (props2) => {
         serializeMultiString(_value)
       );
     } else {
-      const newValues = (0, import_lodash10.uniq)([...value, _value[0]]);
+      const newValues = (0, import_lodash11.uniq)([...value, _value[0]]);
       setOptions(
         _options.map((t4) => ({ name: t4, value: t4, removeable: true }))
       );
@@ -49613,7 +50021,7 @@ var TextCell = (props2) => {
 };
 
 // src/react/components/SpaceView/Contexts/TableView/TableView.tsx
-var import_lodash11 = __toESM(require_lodash());
+var import_lodash12 = __toESM(require_lodash());
 var import_obsidian30 = require("obsidian");
 
 // src/react/components/SpaceView/Contexts/DataTypeView/ImageCell.tsx
@@ -50049,7 +50457,7 @@ var TableView = (props2) => {
     debouncedSavePredicate(newColSize);
   };
   const debouncedSavePredicate = T2(
-    (0, import_lodash11.debounce)(
+    (0, import_lodash12.debounce)(
       (nextValue) => savePredicate({
         ...predicate,
         colsSize: nextValue
@@ -50949,7 +51357,7 @@ var CardColumnView = k3(
     const { updateValue: updateValue2, updateFieldValue, contextTable } = q2(ContextEditorContext);
     return renderItem ? renderItem({
       children,
-      value: field
+      value: { name: field == null ? void 0 : field.name, value: label }
     }) : /* @__PURE__ */ Cn.createElement(Component5, {
       ...props2,
       ref: ref2,
@@ -51111,7 +51519,6 @@ var CardView = Cn.memo(
             value["_index"]
           );
         } else if (e4.detail === 2) {
-          console.log(e4);
           onSelect(
             {
               doubleClick: true,
@@ -51353,11 +51760,13 @@ var CardsView = ({
   )) != null ? _b2 : [];
   const viewType = predicate.view;
   const items = F2(() => {
-    var _a3, _b3;
+    var _a3, _b3, _c2;
     if (groupBy2) {
       const options = uniq([
         "",
-        ...(_a3 = parseMultiString(groupBy2.value)) != null ? _a3 : [],
+        ...((_b3 = (_a3 = parseFieldValue(groupBy2.value, groupBy2.type)) == null ? void 0 : _a3.options) != null ? _b3 : []).map(
+          (f4) => f4.value
+        ),
         ...filteredData.reduce(
           (p3, c4) => {
             var _a4;
@@ -51366,22 +51775,20 @@ var CardsView = ({
           []
         )
       ]);
-      return options.reduce(
-        (p3, c4) => {
-          return {
-            ...p3,
-            [c4]: filteredData.filter((r3) => r3[groupBy2.name + groupBy2.table] == c4).map((r3) => r3._index)
-          };
-        },
-        { "": [] }
-      );
+      return options.reduce((p3, c4) => {
+        const newItems = filteredData.filter((r3) => r3[groupBy2.name + groupBy2.table] == c4).map((r3) => r3._index);
+        return newItems.length > 0 ? {
+          ...p3,
+          [c4]: newItems
+        } : p3;
+      }, {});
     }
     return {
-      "": (_b3 = filteredData == null ? void 0 : filteredData.map((r3) => r3._index)) != null ? _b3 : []
+      "": (_c2 = filteredData == null ? void 0 : filteredData.map((r3) => r3._index)) != null ? _c2 : []
     };
   }, [filteredData, predicate]);
   const containers = F2(
-    () => Object.keys(items).map((f4, i4) => "-" + i4.toString()),
+    () => Object.keys(items).filter((f4) => items[f4].length > 0).map((f4, i4) => "-" + i4.toString()),
     [items]
   );
   const [activeId, setActiveId] = h2(null);
@@ -52779,7 +53186,7 @@ var FlowNodeView = (props2) => {
   })) : /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-frame-placeholder",
     onClick: (e4) => selectLink(e4)
-  }, "Select Note");
+  }, i18n_default.labels.selectNote);
 };
 
 // src/react/components/SpaceView/Frames/EditorNodes/FrameNodeView.tsx
@@ -52819,7 +53226,7 @@ var FrameEditorNodeView = (props2) => {
   }));
 };
 var FrameNodeView = (props2) => {
-  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k, _l, _m, _n2, _o, _p, _q, _r, _s;
+  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k, _l, _m, _n2, _o, _p, _q, _r, _s, _t, _u, _v;
   const {
     selectedNodes,
     saveState,
@@ -52991,13 +53398,14 @@ var FrameNodeView = (props2) => {
         ref2.current = el;
       },
       className: `mk-frame ${(_k = (_j = (_i = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _i.styles) == null ? void 0 : _j.class) != null ? _k : ""}`,
+      layout: (_n2 = (_m = (_l = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _l.styles) == null ? void 0 : _m.layout) != null ? _n2 : "",
       "data-path": props2.treeNode.id,
       onClick,
       style: {
         ...defaultFrameStyles,
-        ...(_l = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _l.styles,
-        "--translate-x": `${(_m = transform == null ? void 0 : transform.x) != null ? _m : 0}px`,
-        "--translate-y": `${(_n2 = transform == null ? void 0 : transform.y) != null ? _n2 : 0}px`,
+        ...(_o = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _o.styles,
+        "--translate-x": `${(_p = transform == null ? void 0 : transform.x) != null ? _p : 0}px`,
+        "--translate-y": `${(_q = transform == null ? void 0 : transform.y) != null ? _q : 0}px`,
         ...props2.editMode == -1 && props2.treeNode.node.parentId == props2.instance.root.id ? { left: 0, top: 0 } : {}
       }
     },
@@ -53010,7 +53418,7 @@ var FrameNodeView = (props2) => {
           columnInsert: hoverNode == `|${props2.treeNode.node.id}`,
           plugin: props2.plugin,
           height: `100%`,
-          width: `${dropMode != 3 /* DropModeColumnOnly */ ? (_o = ref2.current) == null ? void 0 : _o.parentElement.clientWidth : (_p = ref2.current) == null ? void 0 : _p.clientWidth}px`,
+          width: `${dropMode != 3 /* DropModeColumnOnly */ ? (_r = ref2.current) == null ? void 0 : _r.parentElement.clientWidth : (_s = ref2.current) == null ? void 0 : _s.clientWidth}px`,
           id: `|${props2.treeNode.node.id}`,
           mode: dropMode,
           dropRef: setNodeRef
@@ -53019,7 +53427,7 @@ var FrameNodeView = (props2) => {
       ...props2.editMode > 0 && canResize ? [
         /* @__PURE__ */ Cn.createElement(FrameEditorNodeView, {
           key: props2.treeNode.id,
-          size: (_q = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _q.styles,
+          size: (_t = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _t.styles,
           column: props2.treeNode.node.type == "column",
           resize: onResize
         })
@@ -53041,7 +53449,7 @@ var FrameNodeView = (props2) => {
   );
   return props2.instance.state[props2.treeNode.id] && (props2.editMode != 0 && props2.treeNode.editorProps.dragMode == 1 ? /* @__PURE__ */ Cn.createElement(SelectableFrameNode, {
     node: props2.treeNode.id,
-    maxWidth: (_s = (_r = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _r.styles) == null ? void 0 : _s.maxWidth,
+    maxWidth: (_v = (_u = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _u.styles) == null ? void 0 : _v.maxWidth,
     selected: selectedNodes.some((f4) => props2.treeNode.id == f4.id),
     ...platformIsMobile() ? {
       dragRef: setDraggableNodeRef,
@@ -53194,7 +53602,7 @@ var PropsPanel = (props2) => {
     className: "mk-file-context-component"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-file-context-title"
-  }, "Properties"), properties2.map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
+  }, i18n_default.labels.properties), properties2.map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-file-context-row",
     key: i4
   }, /* @__PURE__ */ Cn.createElement("div", {
@@ -53469,6 +53877,14 @@ var ContextFrameView = (props2) => {
   const { predicate, savePredicate, cols, data: data2 } = q2(ContextEditorContext);
   const { frameSchemas, saveSchema } = q2(FramesMDBContext);
   const { spaceInfo } = q2(SpaceContext);
+  const selectedGroupSpace = F2(
+    () => predicate && predicate["frameGroup"] ? spaceInfoByPath(props2.plugin, predicate["frameGroup"]) : null,
+    [predicate]
+  );
+  const selectedFrameSpace = F2(
+    () => predicate && predicate["frame"] ? spaceInfoByPath(props2.plugin, predicate["frame"]) : null,
+    [predicate]
+  );
   const selectedGroup = F2(
     () => predicate && predicate["frameGroup"] ? uriByString(props2.plugin, predicate["frameGroup"]).ref : null,
     [predicate]
@@ -53521,9 +53937,13 @@ var ContextFrameView = (props2) => {
   return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-context-view-editor"
   }, /* @__PURE__ */ Cn.createElement("div", {
-    onClick: () => setSelectedType("frameGroup")
+    className: "mk-context-view-menu"
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    onClick: () => setSelectedType("frameGroup"),
+    className: selectedType == "frameGroup" ? "mk-is-active" : ""
   }, "Group"), /* @__PURE__ */ Cn.createElement("div", {
-    onClick: () => setSelectedType("frame")
+    onClick: () => setSelectedType("frame"),
+    className: selectedType == "frame" ? "mk-is-active" : ""
   }, "Item"), frameSchemas.filter((f4) => f4.type == "listitem").map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
     key: i4,
     onClick: () => selectFrame(`${spaceInfo.path}/#*${f4.id}`),
@@ -53532,7 +53952,24 @@ var ContextFrameView = (props2) => {
     dangerouslySetInnerHTML: {
       __html: stickerFromString("lucide//square", props2.plugin)
     }
-  }), f4.name)), selectedGroup ? /* @__PURE__ */ Cn.createElement(DndContext, {
+  }), f4.name)), /* @__PURE__ */ Cn.createElement("div", {
+    onClick: (e4) => {
+      showNewFrameMenu(
+        e4,
+        props2.plugin,
+        selectedType == "frameGroup" ? selectedGroupSpace : selectedFrameSpace,
+        (node) => addNodeToMFrame(
+          props2.plugin,
+          selectedType == "frameGroup" ? selectedGroupSpace : selectedFrameSpace,
+          selectedType == "frameGroup" ? selectedGroup : selectedFrame,
+          node
+        )
+      );
+    },
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//plus", props2.plugin)
+    }
+  })), selectedGroup ? /* @__PURE__ */ Cn.createElement(DndContext, {
     sensors,
     measuring: {
       droppable: {
@@ -53544,11 +53981,33 @@ var ContextFrameView = (props2) => {
     schema: selectedGroup
   }, /* @__PURE__ */ Cn.createElement(FramesEditorProvider, {
     plugin: props2.plugin,
-    editMode: 1
+    editMode: selectedType == "frameGroup" ? 1 : 0
   }, /* @__PURE__ */ Cn.createElement(FrameListView, {
     plugin: props2.plugin,
-    cols
+    cols: ["name", "value"],
+    editMode: selectedType == "frameGroup" ? 1 : 0
   }, selectedFrame ? data2.map((f4, i4) => /* @__PURE__ */ Cn.createElement(DndContext, {
+    key: i4,
+    sensors,
+    measuring: {
+      droppable: {
+        strategy: MeasuringStrategy.Always
+      }
+    }
+  }, /* @__PURE__ */ Cn.createElement(FramesMDBProvider, {
+    plugin: props2.plugin,
+    schema: selectedFrame
+  }, /* @__PURE__ */ Cn.createElement(FramesEditorProvider, {
+    plugin: props2.plugin,
+    props: f4,
+    editMode: selectedType == "frame" ? 1 : 0
+  }, /* @__PURE__ */ Cn.createElement(FrameListView, {
+    plugin: props2.plugin,
+    cols: cols.map((f5) => f5.name),
+    editMode: selectedType == "frame" ? 1 : 0
+  }))))) : /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-content-placeholder"
+  }))))) : selectedFrame ? /* @__PURE__ */ Cn.createElement("div", null, data2.map((f4, i4) => /* @__PURE__ */ Cn.createElement(DndContext, {
     key: i4,
     sensors,
     measuring: {
@@ -53565,8 +54024,9 @@ var ContextFrameView = (props2) => {
     editMode: 1
   }, /* @__PURE__ */ Cn.createElement(FrameListView, {
     plugin: props2.plugin,
-    cols
-  }))))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null))))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null)), /* @__PURE__ */ Cn.createElement("div", {
+    cols: cols.map((f5) => f5.name),
+    editMode: selectedType == "frame" ? 1 : 0
+  })))))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null)), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-context-view-selector"
   }, /* @__PURE__ */ Cn.createElement("div", {
     onClick: () => addFrame()
@@ -53574,7 +54034,7 @@ var ContextFrameView = (props2) => {
     dangerouslySetInnerHTML: {
       __html: stickerFromString("lucide//plus", props2.plugin)
     }
-  }), "New")));
+  }), i18n_default.labels.createNew)));
 };
 var FrameListView = (props2) => {
   const { frameSchema } = q2(FramesMDBContext);
@@ -53602,7 +54062,7 @@ var FrameListView = (props2) => {
           props: props2.cols.reduce(
             (p3, c4) => ({
               ...p3,
-              [c4.name]: ""
+              [c4]: ""
             }),
             {}
           )
@@ -53632,7 +54092,7 @@ var FrameListView = (props2) => {
     if (!node)
       return null;
     return /* @__PURE__ */ Cn.createElement(FrameNodeView, {
-      editMode: 1,
+      editMode: props2.editMode,
       plugin: props2.plugin,
       treeNode: node,
       instance
@@ -53789,7 +54249,7 @@ var FrameListView = (props2) => {
     plugin: props2.plugin,
     treeNode: _instance.root,
     instance: _instance
-  }, props2.children), /* @__PURE__ */ Cn.createElement(RowPlaceholder, {
+  }, props2.children), props2.editMode > 0 && /* @__PURE__ */ Cn.createElement(RowPlaceholder, {
     plugin: props2.plugin,
     id: PLACEHOLDER_ID2,
     parentId: frameSchema.id
@@ -53917,9 +54377,9 @@ var SpacePropertyEditor = (props2) => {
     className: "mk-property-editor-context"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-property-editor-context-title"
-  }, /* @__PURE__ */ Cn.createElement("span", null, "Define Properties for your Space Items"), /* @__PURE__ */ Cn.createElement("button", {
+  }, /* @__PURE__ */ Cn.createElement("span", null, i18n_default.descriptions.spaceProperties), /* @__PURE__ */ Cn.createElement("button", {
     onClick: (e4) => newProperty(e4)
-  }, "Add Property")), /* @__PURE__ */ Cn.createElement("div", {
+  }, i18n_default.buttons.addProperty)), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-property-editor-context-list"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-property-editor-list"
@@ -53977,7 +54437,7 @@ var SpacePropertyEditor = (props2) => {
   }), /* @__PURE__ */ Cn.createElement("div", {
     onClick: (e4) => newContexts(e4),
     className: "mk-property-editor-new"
-  }, "+ Add Context", /* @__PURE__ */ Cn.createElement("span", null, "Contexts lets you connect properties from your tags"))), z3(
+  }, "+ ", i18n_default.buttons.addContext, /* @__PURE__ */ Cn.createElement("span", null, i18n_default.descriptions.addContext))), z3(
     /* @__PURE__ */ Cn.createElement(DragOverlay, {
       adjustScale: false
     }, activeId ? /* @__PURE__ */ Cn.createElement(SortableItem2, {
@@ -54067,7 +54527,7 @@ var ContextEditorModal = class extends import_obsidian38.Modal {
     this.modalEl.toggleClass("mod-lg", true);
     const queryEl = contentEl.createDiv("mk-context-maker-container");
     const root = createRoot(queryEl);
-    this.titleEl.textContent = this.type == 0 ? "Properties" : "View";
+    this.titleEl.textContent = this.type == 0 ? i18n_default.labels.properties : i18n_default.labels.view;
     root.render(
       /* @__PURE__ */ Cn.createElement(SpaceContextProvider, {
         plugin: this.plugin,
@@ -54226,7 +54686,7 @@ var FilterBar = (props2) => {
     const fileMenu = new import_obsidian39.Menu();
     fileMenu.addSeparator();
     fileMenu.addItem((menuItem) => {
-      menuItem.setTitle("Copy Embed Link");
+      menuItem.setTitle(i18n_default.menu.copyEmbedLink);
       menuItem.onClick(() => {
         navigator.clipboard.writeText(
           contextViewEmbedStringFromContext(spaceInfo, _schema.id)
@@ -54234,7 +54694,7 @@ var FilterBar = (props2) => {
       });
     });
     fileMenu.addItem((menuItem) => {
-      menuItem.setTitle("Rename View");
+      menuItem.setTitle(i18n_default.buttons.deleteView);
       menuItem.onClick(() => {
         const vaultChangeModal = new SaveViewModal(
           _schema,
@@ -54245,7 +54705,7 @@ var FilterBar = (props2) => {
       });
     });
     fileMenu.addItem((menuItem) => {
-      menuItem.setTitle("Delete View");
+      menuItem.setTitle(i18n_default.buttons.delete);
       menuItem.onClick(() => {
         deleteSchema(_schema);
       });
@@ -55156,9 +55616,9 @@ var DefFilter = (props2) => {
     className: "mk-filter"
   }, /* @__PURE__ */ Cn.createElement("span", {
     onClick: (e4) => selectField(e4, i4, k5)
-  }, filter.field.length == 0 ? "Select" : filter.field), filter.field.length > 0 && /* @__PURE__ */ Cn.createElement("span", {
+  }, filter.field.length == 0 ? i18n_default.labels.select : filter.field), filter.field.length > 0 && /* @__PURE__ */ Cn.createElement("span", {
     onClick: (e4) => selectFilter(e4, i4, k5)
-  }, !filterFnLabels[filter.fn] ? "Select" : filterFnLabels[filter.fn]), filter.field.length > 0 && filterFnLabels[filter.fn] && ((_a2 = filterFnTypes[filter.fn]) == null ? void 0 : _a2.valueType) != "none" && /* @__PURE__ */ Cn.createElement("span", null, /* @__PURE__ */ Cn.createElement(FilterValueSpan, {
+  }, !filterFnLabels[filter.fn] ? i18n_default.labels.select : filterFnLabels[filter.fn]), filter.field.length > 0 && filterFnLabels[filter.fn] && ((_a2 = filterFnTypes[filter.fn]) == null ? void 0 : _a2.valueType) != "none" && /* @__PURE__ */ Cn.createElement("span", null, /* @__PURE__ */ Cn.createElement(FilterValueSpan, {
     fieldType: filter.fType,
     filter,
     selectFilterValue: (e4, h5) => selectFilterValue(e4, h5, i4, k5)
@@ -55329,7 +55789,7 @@ var SpaceEditor = (props2) => {
     className: "mk-space-editor-section"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-space-editor-title"
-  }, "Pinned Items", /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("button", {
+  }, i18n_default.labels.pinnedItems, /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("button", {
     "aria-label": "Add Smart Search",
     onClick: (e4) => {
       var _a3;
@@ -55345,7 +55805,7 @@ var SpaceEditor = (props2) => {
         ]
       });
     }
-  }, "Add Smart Search"), /* @__PURE__ */ Cn.createElement("button", {
+  }, i18n_default.buttons.addSmartSearch), /* @__PURE__ */ Cn.createElement("button", {
     onClick: (e4) => showLinkMenu(
       e4,
       props2.plugin,
@@ -55357,7 +55817,7 @@ var SpaceEditor = (props2) => {
         });
       }
     )
-  }, "Add Item")), ((_h = props2.space) == null ? void 0 : _h.type) == "tag" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null) : /* @__PURE__ */ Cn.createElement("div", {
+  }, i18n_default.buttons.addItem)), ((_h = props2.space) == null ? void 0 : _h.type) == "tag" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null) : /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-space-editor-contents"
   }, linkCaches.map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
     key: i4,
@@ -55504,9 +55964,9 @@ var TagChangeModal = class extends import_obsidian44.Modal {
     inputEl.focus();
     let changeButtonText;
     if (this.action === "rename") {
-      changeButtonText = "Rename Tag";
+      changeButtonText = i18n_default.buttons.renameTag;
     } else if (this.action === "create tag") {
-      changeButtonText = "Create Tag";
+      changeButtonText = i18n_default.buttons.createTag;
     }
     const changeButton = contentEl.createEl("button", {
       text: changeButtonText
@@ -55684,7 +56144,7 @@ var triggerSpaceMenu = (plugin, space, e4, activeFile, parentSpace) => {
           i18n_default.menu.changeColor,
           "",
           [
-            { name: "None", value: "" },
+            { name: i18n_default.labels.none, value: "" },
             ...colors.map((f4) => ({ name: f4[0], value: f4[1] }))
           ],
           (_12, values) => {
@@ -55864,8 +56324,8 @@ var triggerSpaceMenu = (plugin, space, e4, activeFile, parentSpace) => {
         const deleteModal = new DeleteModal(
           plugin,
           () => removeSpace(plugin, space.path),
-          "Delete Space",
-          "Deleting the space will also delete the folder and its contents."
+          i18n_default.labels.deleteSpace,
+          i18n_default.descriptions.deleteSpace
         );
         deleteModal.open();
       });
@@ -55952,8 +56412,8 @@ var triggerMultiFileMenu = (plugin, selectedFiles, e4) => {
       const deleteModal = new DeleteModal(
         plugin,
         () => deleteFiles(plugin, files),
-        "Delete Files",
-        `Delete ${files.length} files/folders and their contents?`
+        i18n_default.labels.deleteFiles,
+        i18n_default.descriptions.deleteFiles.replace("${1}", files.length.toString())
       );
       deleteModal.open();
     });
@@ -56934,8 +57394,8 @@ var InlineFileContextView = (props2) => {
 // src/types/space.ts
 var FMMetadataKeys = (plugin) => [plugin.settings.fmKeyBanner, plugin.settings.fmKeySticker, plugin.settings.fmKeyColor];
 var waypointsSpace = {
-  name: "Waypoints",
-  displayName: "Waypoints",
+  name: i18n_default.menu.waypoints,
+  displayName: i18n_default.menu.waypoints,
   path: "spaces://$waypoints",
   metadata: {
     contexts: []
@@ -56947,13 +57407,26 @@ var waypointsSpace = {
   cacheType: "space"
 };
 var tagsSpace = {
-  name: "Tags",
-  displayName: "Tags",
+  name: i18n_default.menu.tags,
+  displayName: i18n_default.menu.tags,
   path: "spaces://$tags",
   metadata: {
     contexts: []
   },
   sticker: "lucide//tags",
+  space: null,
+  contexts: [],
+  type: "default",
+  cacheType: "space"
+};
+var vaultSpace = {
+  name: i18n_default.menu.vault,
+  displayName: i18n_default.menu.vault,
+  path: "/",
+  metadata: {
+    contexts: []
+  },
+  sticker: "lucide//vault",
   space: null,
   contexts: [],
   type: "default",
@@ -57533,6 +58006,8 @@ var appendFileMetaData = (propType, file) => {
   if (file) {
     if (propType == "folder") {
       value = file.parent;
+    } else if (propType == "name") {
+      value = file.name;
     } else if (propType == "ctime") {
       value = (_a2 = file.ctime) == null ? void 0 : _a2.toString();
     } else if (propType == "mtime") {
@@ -57828,7 +58303,7 @@ var createMarkdownFileAtPath = async (plugin, path) => {
   return plugin.files.newFile(folder.path, folderPathToString(path), "md");
 };
 var createNewMarkdownFile = async (plugin, folder, newFileName, content, dontOpen) => {
-  const fileName = (newFileName == null ? void 0 : newFileName.length) > 0 ? newFileName : "New Note";
+  const fileName = (newFileName == null ? void 0 : newFileName.length) > 0 ? newFileName : i18n_default.defaults.newNotePlaceholder;
   const newFile = await plugin.files.newFile(
     folder.path,
     fileName,
@@ -58183,43 +58658,6 @@ var spaceFromFolder = (plugin, folder, readOnly) => {
     framePath: spaceFolderPathFromSpace(folder + "/", plugin) + "views.mdb"
   };
 };
-var linkContextRow = (plugin, row, fields) => {
-  return {
-    ...row,
-    ...fields.filter((f4) => f4.type == "fileprop" || f4.name == "tags").reduce((p3, c4) => {
-      var _a2;
-      if (c4.name == "tags") {
-        return { ...p3, "tags": serializeMultiString([...(_a2 = plugin.index.tagsMap.get(row["File"])) != null ? _a2 : []]) };
-      }
-      const { field, property } = parsePropString(c4.value);
-      const col = fields.find((f4) => f4.name == field);
-      if (!col || !property) {
-        return p3;
-      }
-      if (col.type == "file" || col.type == "link") {
-        return {
-          ...p3,
-          [c4.name]: appendFilesMetaData(plugin, property, row[col.name])
-        };
-      }
-      if (col.type.includes("context")) {
-        const context = col.value;
-        const contextCache = plugin.index.contextsIndex.get(context);
-        if (contextCache.tables["files"]) {
-          return {
-            ...p3,
-            [c4.name]: linkContextProp(
-              property,
-              row[col.name],
-              contextCache.tables["files"].rows
-            )
-          };
-        }
-      }
-      return p3;
-    }, {})
-  };
-};
 var linkContextProp = (propType, rows, contextTableRows) => {
   const contextRows = contextTableRows.filter(
     (f4) => parseMultiString(rows).contains(f4.File)
@@ -58258,9 +58696,19 @@ var FlowEditorHover = (props2) => {
     });
   };
   const toggleFlow = () => {
-    props2.view.dispatch({
-      changes: { from: props2.pos.from - 4, to: props2.pos.from - 3 }
-    });
+    if (props2.toggleState) {
+      props2.view.dispatch({
+        changes: { from: props2.pos.from - 4, to: props2.pos.from - 3 }
+      });
+    } else {
+      props2.view.dispatch({
+        changes: {
+          from: props2.pos.from - 3,
+          to: props2.pos.from - 3,
+          insert: "!"
+        }
+      });
+    }
   };
   const openLink = () => {
     openFileFlowEditor(props2.path.fullPath, "/");
@@ -58273,7 +58721,7 @@ var FlowEditorHover = (props2) => {
     onClick: toggleFlow,
     className: `mk-hover-button ${props2.toggleState ? "mk-toggle-on" : ""}`,
     dangerouslySetInnerHTML: {
-      __html: uiIconSet["mk-ui-flow-hover"]
+      __html: !props2.toggleState ? lucideIcon("edit-3") : lucideIcon("book-open")
     }
   }), /* @__PURE__ */ Cn.createElement("div", {
     "aria-label": i18n_default.buttons.openLink,
@@ -59532,13 +59980,14 @@ var replaceAllEmbed = (el, ctx, plugin) => {
         const reactEl = createRoot(div);
         const cm = getCMFromElement(dom, plugin);
         const pos = cm == null ? void 0 : cm.posAtDOM(dom);
+        const endPos = cm == null ? void 0 : cm.posAtDOM(dom.nextSibling);
         reactEl.render(
           /* @__PURE__ */ Cn.createElement(FlowEditorHover, {
             toggle: true,
             path: uriByString(plugin, ctx.sourcePath),
             toggleState: false,
             view: cm,
-            pos: { from: pos - 3, to: pos + 4 },
+            pos: { from: pos + 3, to: endPos - 3 },
             plugin
           })
         );
@@ -59551,27 +60000,27 @@ var replaceAllEmbed = (el, ctx, plugin) => {
 var import_obsidian56 = require("obsidian");
 
 // src/react/context/SidebarContext.tsx
-var import_lodash12 = __toESM(require_lodash());
+var import_lodash13 = __toESM(require_lodash());
 var NavigatorContext = F({
   dragPaths: [],
-  setDragPaths: import_lodash12.default.noop,
+  setDragPaths: import_lodash13.default.noop,
   selectedFiles: [],
-  setSelectedFiles: import_lodash12.default.noop,
+  setSelectedFiles: import_lodash13.default.noop,
   activeFile: null,
-  setActiveFile: import_lodash12.default.noop,
+  setActiveFile: import_lodash13.default.noop,
   activeViewSpace: null,
   waypoints: [],
-  setWaypoints: import_lodash12.default.noop,
+  setWaypoints: import_lodash13.default.noop,
   spaces: [],
-  setSpaces: import_lodash12.default.noop,
-  saveActiveSpace: import_lodash12.default.noop,
+  setSpaces: import_lodash13.default.noop,
+  saveActiveSpace: import_lodash13.default.noop,
   activeQuery: [],
-  setActiveQuery: import_lodash12.default.noop,
+  setActiveQuery: import_lodash13.default.noop,
   queryResults: [],
   queryMode: false,
-  setQueryMode: import_lodash12.default.noop,
+  setQueryMode: import_lodash13.default.noop,
   modifier: null,
-  setModifier: import_lodash12.default.noop
+  setModifier: import_lodash13.default.noop
 });
 var SidebarProvider = (props2) => {
   const [modifier, setModifier] = h2(null);
@@ -59661,7 +60110,7 @@ var SidebarProvider = (props2) => {
 };
 
 // src/react/components/Navigator/SpaceTree/SpaceTreeView.tsx
-var import_lodash13 = __toESM(require_lodash());
+var import_lodash14 = __toESM(require_lodash());
 
 // src/react/components/Navigator/SpaceTree/SpaceTreeItem.tsx
 var import_classnames6 = __toESM(require_classnames());
@@ -61002,7 +61451,7 @@ var TreeItem = k3(
           (link) => {
             insertSpaceItemAtIndex(plugin, space, link);
           },
-          "Select a Note or Space to Pin"
+          i18n_default.labels.pinNotePlaceholder
         );
         return;
       }
@@ -62297,7 +62746,7 @@ var FileExplorerComponent = (props2) => {
       activeIndex < overIndex,
       modifier
     ) : null;
-    setProjected((p3) => !(0, import_lodash13.isEqual)(p3, _projected) ? _projected : p3);
+    setProjected((p3) => !(0, import_lodash14.isEqual)(p3, _projected) ? _projected : p3);
   }, [
     activeId,
     flattenedTree,
@@ -62655,9 +63104,9 @@ var HiddenFiles = (props2) => {
     className: "modal-content"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "setting-item setting-item-heading"
-  }, "Name, Suffixes and Extension"), /* @__PURE__ */ Cn.createElement("div", {
+  }, i18n_default.labels.hiddenFilePattern), /* @__PURE__ */ Cn.createElement("div", {
     className: "setting-item-description"
-  }, "Exclude any files and folders by name, suffix or extension."), /* @__PURE__ */ Cn.createElement("div", null, hiddenExtensions.map((f4, index) => /* @__PURE__ */ Cn.createElement("div", {
+  }, i18n_default.descriptions.hiddenFileOptions), /* @__PURE__ */ Cn.createElement("div", null, hiddenExtensions.map((f4, index) => /* @__PURE__ */ Cn.createElement("div", {
     key: index,
     className: "mobile-option-setting-item"
   }, /* @__PURE__ */ Cn.createElement("span", {
@@ -62679,7 +63128,7 @@ var HiddenFiles = (props2) => {
     className: "setting-item setting-item-heading"
   }, "Files and Folders"), /* @__PURE__ */ Cn.createElement("div", {
     className: "setting-item-description"
-  }, "Exclude specific files and folders"), /* @__PURE__ */ Cn.createElement("div", null, hiddenFiles.map((f4, index) => /* @__PURE__ */ Cn.createElement("div", {
+  }, i18n_default.labels.hiddenFileSpecific), /* @__PURE__ */ Cn.createElement("div", null, hiddenFiles.map((f4, index) => /* @__PURE__ */ Cn.createElement("div", {
     key: index,
     className: "mobile-option-setting-item"
   }, /* @__PURE__ */ Cn.createElement("span", {
@@ -62797,7 +63246,7 @@ var MainMenu = (props2) => {
     });
     if (activeViewSpace.type != "default") {
       menu.addItem((menuItem) => {
-        menuItem.setTitle("Open Space");
+        menuItem.setTitle(i18n_default.menu.openSpace);
         menuItem.setIcon("layout");
         menuItem.onClick((ev) => {
           openSpace(activeViewSpace.path, props2.plugin, false);
@@ -62834,7 +63283,7 @@ var MainMenu = (props2) => {
     if (plugin.settings.enableDefaultSpaces) {
       if (plugin.settings.enableHomeSpace)
         menu.addItem((menuItem) => {
-          menuItem.setTitle("Home");
+          menuItem.setTitle(i18n_default.menu.home);
           menuItem.setIcon("home");
           menuItem.onClick((ev) => {
             setActiveViewSpaceByPath("Spaces/Home");
@@ -62850,7 +63299,7 @@ var MainMenu = (props2) => {
         });
     }
     menu.addItem((menuItem) => {
-      menuItem.setTitle("Vault");
+      menuItem.setTitle(i18n_default.menu.vault);
       menuItem.setIcon("vault");
       menuItem.onClick((ev) => {
         setActiveViewSpaceByPath("/");
@@ -62920,7 +63369,7 @@ var MainMenu = (props2) => {
     e4.preventDefault();
     e4.dataTransfer.dropEffect = "none";
     if (dragPaths.length == 1) {
-      plugin.app.dragManager.setAction("Open Space");
+      plugin.app.dragManager.setAction(i18n_default.menu.openSpace);
       setHover(true);
     }
   };
@@ -63006,7 +63455,7 @@ var MainMenu = (props2) => {
   })), /* @__PURE__ */ Cn.createElement("input", {
     onClick: (e4) => e4.stopPropagation(),
     className: "mk-cell-text",
-    placeholder: "Search by Text or Filters",
+    placeholder: i18n_default.labels.navigatorSearchPlaceholder,
     ref: inputRef,
     type: "text",
     value: queryString,
@@ -63579,7 +64028,6 @@ var DEFAULT_SETTINGS = {
   folderFrameFile: "frames",
   spacesFolder: "Spaces",
   hiddenFiles: [],
-  lineNumbers: false,
   hiddenExtensions: [".mdb"],
   newFileLocation: "root",
   newFileFolderPath: "",
@@ -63717,7 +64165,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
-      new import_obsidian57.Setting(spaceAppearances).setName("Minimal Theme Fix").setDesc("Apply fixes for the popular theme Minimal").addToggle(
+      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.minimalThemeFix.name).setDesc(i18n_default.settings.minimalThemeFix.description).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.minimalFix).onChange((value) => {
           this.plugin.settings.minimalFix = value;
           this.plugin.saveSettings();
@@ -63778,7 +64226,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         });
       });
     }
-    containerEl.createEl("h1", { text: "Context" });
+    containerEl.createEl("h1", { text: i18n_default.settings.sectionContext });
     new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.contexts.name).setDesc(i18n_default.settings.contexts.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.contextEnabled).onChange((value) => {
         this.plugin.settings.contextEnabled = value;
@@ -63806,7 +64254,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         this.plugin.saveSettings();
       })
     );
-    containerEl.createEl("h1", { text: "Blink" });
+    containerEl.createEl("h1", { text: i18n_default.settings.sectionBlink });
     new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.blink.name).setDesc(i18n_default.settings.blink.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.blinkEnabled).onChange(async (value) => {
         this.plugin.settings.blinkEnabled = value;
@@ -63823,18 +64271,11 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
       })
     );
     if (this.plugin.settings.makerMode) {
-      containerEl.createEl("h3", { text: "Inline Context" });
+      containerEl.createEl("h3", { text: i18n_default.settings.sectionInlineContext });
       new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineContextExplorer.name).setDesc(i18n_default.settings.inlineContextExplorer.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineContext).onChange((value) => {
           this.plugin.settings.inlineContext = value;
           this.plugin.saveSettings();
-          this.plugin.reloadExtensions(false);
-        })
-      );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.lineNumbers.name).setDesc(i18n_default.settings.lineNumbers.desc).addToggle(
-        (toggle) => toggle.setValue(this.plugin.settings.lineNumbers).onChange(async (value) => {
-          this.plugin.settings.lineNumbers = value;
-          await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
@@ -63873,7 +64314,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
           this.plugin.reloadExtensions(false);
         })
       );
-      containerEl.createEl("h3", { text: "Flow Block" });
+      containerEl.createEl("h3", { text: i18n_default.settings.sectionFlow });
       new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorFlowReplace.name).setDesc(i18n_default.settings.editorFlowReplace.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.editorFlow).onChange((value) => {
           this.plugin.settings.editorFlow = value;
@@ -63905,7 +64346,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
             document.body.classList.toggle("mk-flow-minimal", true);
         });
       });
-      containerEl.createEl("h3", { text: "Flow Menu" });
+      containerEl.createEl("h3", { text: i18n_default.settings.sectionFlowMenu });
       new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorMakeMenu.name).setDesc(i18n_default.settings.editorMakeMenu.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.flowMenuEnabled).onChange(async (value) => {
           this.plugin.settings.flowMenuEnabled = value;
@@ -63935,7 +64376,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
           this.plugin.reloadExtensions(false);
         })
       );
-      containerEl.createEl("h3", { text: "Flow Styler" });
+      containerEl.createEl("h3", { text: i18n_default.settings.sectionFlowStyler });
       new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineStyler.name).setDesc(i18n_default.settings.inlineStyler.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineStyler).onChange(async (value) => {
           this.plugin.settings.inlineStyler = value;
@@ -64560,7 +65001,7 @@ var onFolderDeleted = async (plugin, oldPath) => {
 var import_obsidian_dataview = __toESM(require_lib());
 
 // src/superstate/superstate.ts
-var import_lodash14 = __toESM(require_lodash());
+var import_lodash15 = __toESM(require_lodash());
 var import_obsidian62 = require("obsidian");
 
 // src/types/indexMap.ts
@@ -64971,7 +65412,7 @@ var Superstate = class extends import_obsidian62.Component {
     this.app = app2;
     this.indexVersion = indexVersion;
     this.onChange = onChange;
-    this.debounceSaveSpaceDatabase = (0, import_lodash14.debounce)(
+    this.debounceSaveSpaceDatabase = (0, import_lodash15.debounce)(
       (tables) => {
         saveDBToPath(this.plugin, this.plugin.spacesDBPath, tables);
       },
@@ -65005,8 +65446,8 @@ var Superstate = class extends import_obsidian62.Component {
     return new Superstate(app2, indexVersion, onChange, plugin);
   }
   loadSuperProperties() {
-    this.superProperties.set("$commands", { name: "Obsidian Commands", schemaId: "$super", type: "option" });
-    this.superProperties.set("$links", { name: "Links", schemaId: "$super", type: "option" });
+    this.superProperties.set("$commands", { name: i18n_default.properties.super.obsidianCommands, schemaId: "$super", type: "option" });
+    this.superProperties.set("$links", { name: i18n_default.properties.super.links, schemaId: "$super", type: "option" });
   }
   valueForSuperproperty(superProperty, property) {
     if (superProperty == "$commands") {
@@ -65594,7 +66035,7 @@ var Superstate = class extends import_obsidian62.Component {
     let reinit = false;
     const spaceSort = (_a2 = metadata == null ? void 0 : metadata.sort) != null ? _a2 : { field: "rank", asc: true, group: true };
     const sortable = spaceSort.field == "rank";
-    if (!import_lodash14.default.isEqual(space.metadata.links, metadata.links) || !import_lodash14.default.isEqual(space.metadata.filters, metadata.filters)) {
+    if (!import_lodash15.default.isEqual(space.metadata.links, metadata.links) || !import_lodash15.default.isEqual(space.metadata.filters, metadata.filters)) {
       reinit = true;
     }
     const newSpaceCache = {
@@ -65710,7 +66151,7 @@ var Superstate = class extends import_obsidian62.Component {
         var _a2;
         return (_a2 = this.plugin.app.metadataCache.getFirstLinkpathDest(f4, file.path)) == null ? void 0 : _a2.path;
       }).filter((f4) => f4)));
-      if (!import_lodash14.default.isEqual(cache.spaces, Array.from(this.spacesMap.get(file.path)))) {
+      if (!import_lodash15.default.isEqual(cache.spaces, Array.from(this.spacesMap.get(file.path)))) {
         this.spacesMap.set(file.path, new Set(cache.spaces));
         cache.tags.map((f4) => this.spacesIndex.has(tagSpacePathFromTag(f4)) ? null : spaceFromTag(this.plugin, f4)).filter((f4) => f4).forEach((f4) => this.reloadSpace(f4).then((f5) => this.broadcast("file", "change", file.path)));
         this.broadcast("space");
@@ -66584,7 +67025,7 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
         noteToFolderNote(this, view.file, true);
       }
     } else {
-      new import_obsidian67.Notice("The view is not a note");
+      new import_obsidian67.Notice(i18n_default.notice.cantConvertNoteToSpace);
     }
   }
   getActiveFile() {

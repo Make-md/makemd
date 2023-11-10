@@ -505,7 +505,9 @@
 }
 .mk-context-view-editor {
   flex: 1;
-  padding: 40px;
+}
+.mk-context-view-menu {
+  display: flex;
 }
 .mk-context-view-editor .mk-td {
   white-space: nowrap;
@@ -1626,6 +1628,7 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
 .workspace-leaf > .workspace-leaf-content,
 .workspace-leaf > .workspace-leaf-content > .view-content,
 .workspace-leaf > .workspace-leaf-content > .view-content > .mod-cm6 > .cm-editor > .cm-scroller {
+  overflow: visible !important;
 }
 .mk-floweditor-container > .mk-floweditor {
   border: thin solid transparent;
@@ -1653,43 +1656,30 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   border: none !important;
   z-index: var(--layer-popover) !important;
 }
-.cm-line:hover > .mk-floweditor-selector {
+.cm-line:hover > .mk-floweditor-selector,
+.mk-floweditor-selector:hover {
   visibility: visible;
 }
 .internal-embed.markdown-embed:hover .mk-floweditor-selector,
 .internal-embed > .markdown-embed:hover .mk-floweditor-selector {
   visibility: visible;
 }
-.mk-flow-classic .internal-embed > .markdown-embed > .mk-floweditor-selector,
-.mk-flow-classic .internal-embed.markdown-embed > .mk-floweditor-selector {
-  top: 5px !important;
-}
-.mk-flow-minimal .internal-embed > .markdown-embed > .mk-floweditor-selector,
-.mk-flow-minimal .internal-embed.markdown-embed > .mk-floweditor-selector,
-.mk-flow-seamless .internal-embed > .markdown-embed > .mk-floweditor-selector,
-.mk-flow-seamless .internal-embed.markdown-embed > .mk-floweditor-selector {
-  top: 8px;
-  right: -16px;
-}
-.mk-flow-minimal .cm-line > .mk-floweditor-selector,
-.mk-flow-seamless .cm-line > .mk-floweditor-selector {
-  top: 8px;
-  right: -16px;
-}
 .mk-floweditor-selector {
+  --icon-size: var(--icon-s);
   position: absolute;
-  right: 0px;
-  top: 8px;
+  right: -30px;
+  top: 0px;
   z-index: var(--layer-popover);
   display: flex;
+  visibility: hidden;
 }
 .mk-flowblock-menu {
-  border-radius: var(--radius-s);
   display: flex;
+  flex-direction: column;
   font-size: var(--font-ui-smaller);
-  border: 1px solid var(--background-modifier-border);
-  background: var(--interactive-normal);
-  box-shadow: var(--input-shadow);
+}
+.mk-hover-button:hover {
+  color: var(--text-normal);
 }
 .mk-hover-button {
   padding: var(--size-4-1);
@@ -1699,7 +1689,6 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   padding: var(--size-4-2);
   color: var(--text-muted);
   border: none;
-  border-right: 1px solid var(--background-modifier-border);
 }
 .mk-flowblock-menu .mk-hover-button:last-child {
   border-right: none;
@@ -2122,6 +2111,17 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   white-space: nowrap;
   background-color: var(--interactive-normal);
   box-shadow: var(--input-shadow);
+}
+.mk-frame[layout=row] {
+  display: flex;
+  overflow: scroll;
+}
+.mk-frame[layout=column] {
+  display: flex;
+  flex-direction: column;
+}
+.mk-frame[layout=masonry] {
+  column-count: 3;
 }
 .mk-a {
   color: var(--link-color);
