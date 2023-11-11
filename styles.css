@@ -1628,7 +1628,6 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
 .workspace-leaf > .workspace-leaf-content,
 .workspace-leaf > .workspace-leaf-content > .view-content,
 .workspace-leaf > .workspace-leaf-content > .view-content > .mod-cm6 > .cm-editor > .cm-scroller {
-  overflow: visible !important;
 }
 .mk-floweditor-container > .mk-floweditor {
   border: thin solid transparent;
