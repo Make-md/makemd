@@ -13906,7 +13906,6 @@ var T4 = class {
           dragDropModifierKeys: "Hold ${1} to Pin and ${2} to Copy"
         },
         defaults: {
-          newNotePlaceholder: "New Note",
           spaceNote: "Space Note",
           spaceContext: "Space Files"
         },
@@ -13942,7 +13941,9 @@ var T4 = class {
           tag: "Tag",
           makeMenu: "Flow Menu",
           selectStyle: "Style",
-          toggleKeyboard: "Toggle Keyboard"
+          toggleKeyboard: "Toggle Keyboard",
+          rows: "Rows",
+          masonry: "Gallery"
         },
         styles: {
           bold: "Bold",
@@ -14202,6 +14203,7 @@ var T4 = class {
             label: "Look Up",
             createdTime: "Created",
             modifiedTime: "Last Edited",
+            sticker: "Sticker",
             extension: "Extension",
             size: "Size",
             preview: "Note Preview",
@@ -14213,6 +14215,7 @@ var T4 = class {
           rename: "Rename",
           createNew: "New",
           default: "Default",
+          done: "Done",
           tables: "Tables",
           selectDateFormat: "Select/Type Date Format",
           renameSectionSmart: "Edit Smart Space",
@@ -14354,7 +14357,7 @@ var T4 = class {
           sectionAdvanced: "Advanced",
           sectionDataview: "Dataview",
           sectionContext: "Context",
-          sectionAppearance: "Appearance",
+          sectionNavigator: "Navigator",
           sectionDefault: "Default Spaces",
           sectionBlink: "Blink",
           sectionInlineContext: "Inline Context",
@@ -14376,6 +14379,10 @@ var T4 = class {
           defaultDateFormat: {
             name: "Default Date Format",
             desc: "Set the default date format, example: yyyy-MM-dd (see https://date-fns.org/v2.30.0/docs/format)"
+          },
+          newNotePlaceholder: {
+            name: "New Note Placeholder",
+            desc: "Default name for new notes"
           },
           folderIndentationLines: {
             name: "Show Folder Indentation Lines",
@@ -14446,8 +14453,8 @@ var T4 = class {
             desc: `Contexts allows you to have full control over the metadata of your files`
           },
           spaces: {
-            name: "Spaces",
-            desc: `Spaces gives you control over how you organize your files`
+            name: "Navigator",
+            desc: `The navigator lets you create and organize your spaces`
           },
           spacesStickers: {
             name: "Stickers",
@@ -14474,8 +14481,12 @@ var T4 = class {
             name: "App Ribbon",
             desc: `Show/hide the left menu aka. ribbon`
           },
+          spaceView: {
+            name: "Space View",
+            desc: `Open the space view when you click on a space`
+          },
           defaultSpaces: {
-            name: "Enable Default Spaces",
+            name: "Default Spaces",
             desc: `Recommended spaces for quickly organizing your vault`
           },
           homeSpace: {
@@ -14569,7 +14580,7 @@ var T4 = class {
 var i18n_default = new T4().texts;
 
 // src/codemirror/extensions/flowEditor/flowEditor.tsx
-var import_obsidian51 = require("obsidian");
+var import_obsidian52 = require("obsidian");
 
 // src/utils/array.ts
 var insert = (arr, index, newItem) => !index || index <= 0 ? [
@@ -14783,10 +14794,10 @@ var serializeSQLStatements = (value) => value.join("; ");
 var serializeSQLFieldNames = (value) => value.join(",");
 
 // src/utils/uri.ts
-var import_obsidian50 = require("obsidian");
+var import_obsidian51 = require("obsidian");
 
 // src/midd/obsidian/utils/file.ts
-var import_obsidian49 = require("obsidian");
+var import_obsidian50 = require("obsidian");
 
 // src/react/components/RemoteMarkdownView/FileView.tsx
 var import_obsidian2 = require("obsidian");
@@ -14877,7 +14888,7 @@ var FileLinkView = class extends import_obsidian2.ItemView {
 };
 
 // src/react/components/SpaceView/Contexts/SpaceView.tsx
-var import_obsidian48 = require("obsidian");
+var import_obsidian49 = require("obsidian");
 
 // src/react/context/FramesMDBContext.tsx
 var import_obsidian5 = require("obsidian");
@@ -21000,11 +21011,11 @@ var preprocessCode = (code, oldName, newName) => {
   return string;
 };
 var linkNodes = (parent, schemaId, props2, flattenedTree, uniqueID) => {
-  const relinkProps = (oldParent, newParent2, props3, node) => {
+  const relinkProps = (oldParent, newParent2, node, rootId) => {
     var _a2, _b2, _c2;
     return {
       ...node,
-      parentId: node.parentId == oldParent ? newParent2 : node.parentId,
+      parentId: node.id == rootId ? node.parentId : node.parentId == oldParent ? newParent2 : node.parentId,
       props: Object.keys((_a2 = node == null ? void 0 : node.props) != null ? _a2 : {}).reduce(
         (p3, c4) => {
           return {
@@ -21043,12 +21054,12 @@ var linkNodes = (parent, schemaId, props2, flattenedTree, uniqueID) => {
         type: oldNodes[i4].type,
         id: newNodeID
       };
-      const returnNodes = oldNodes.map((f4) => f4.id != c4.id ? relinkProps(c4.id, newNodeID, props2, f4) : relinkProps(c4.id, newNodeID, props2, newNode));
+      const returnNodes = oldNodes.map((f4) => f4.id != c4.id ? relinkProps(c4.id, newNodeID, f4, parent2.id) : relinkProps(c4.id, newNodeID, newNode, parent2.id));
       return [returnNodes, id2 + 1];
     }, [nodes, uniqueID]);
     return [newNodes, newID];
   };
-  const newParent = schemaId != parent.id ? relinkProps(schemaId, parent.id, props2, parent) : parent;
+  const newParent = schemaId != parent.id ? relinkProps(schemaId, parent.id, parent, parent.id) : parent;
   return assignIDs(newParent, flattenedTree);
 };
 var linkTreeNodes = (parent, uniqueID) => {
@@ -21176,7 +21187,7 @@ var calculateEditorProps = (props2, treeNode) => {
     return props2;
   if (treeNode.isRef)
     return { ...props2, dropMode: 0, dragMode: 0, resizeMode: 0, selectMode: 0 };
-  if (props2.editMode == 2) {
+  if (props2.editMode == 3) {
     return {
       ...props2,
       resizeMode: 1 /* ResizeSelected */,
@@ -21418,8 +21429,7 @@ var groupNode = {
     rank: 0,
     parentId: "",
     styles: {
-      flexDirection: `"column"`,
-      display: `"flex"`
+      layout: `"column"`
     },
     type: "group"
   }
@@ -21455,7 +21465,7 @@ var columnNode = {
     parentId: "",
     styles: {
       layout: `"column"`,
-      alignItems: `'flex-start'`,
+      layoutAlign: `'left'`,
       flex: `1`,
       gap: `'16px'`,
       width: "0"
@@ -21587,6 +21597,20 @@ var dividerNode = {
     }
   }
 };
+var contentNode = {
+  def: {
+    icon: "lucide//type"
+  },
+  node: {
+    icon: "lucide//type",
+    schemaId: "content",
+    parentId: "",
+    name: "Content",
+    rank: 0,
+    id: "content",
+    type: "content"
+  }
+};
 var buttonNode = {
   id: "button",
   def: {
@@ -21660,14 +21684,16 @@ var progressNode = {
     type: "group",
     props: {
       value: "50",
-      total: "100"
+      total: "100",
+      color: "'var(--background-modifier-form-field)'"
     },
     types: {
       total: "number",
-      value: "number"
+      value: "number",
+      color: "color"
     },
     styles: {
-      background: `'var(--background-modifier-form-field)'`,
+      background: `progress.props.color`,
       height: `'10px'`,
       width: `'100px'`,
       borderRadius: `'5px'`
@@ -21774,18 +21800,6 @@ var kit = [rootToFrame(buttonNode), rootToFrame(dividerNode), rootToFrame(progre
 
 // src/types/context.ts
 var FilePropertyName = "File";
-
-// src/utils/contexts/parsers.ts
-var parsePropString = (str) => {
-  var _a2;
-  const [p1, p22] = (_a2 = str == null ? void 0 : str.match(/(\\.|[^.])+/g)) != null ? _a2 : [];
-  if (p22)
-    return {
-      field: p1,
-      property: p22
-    };
-  return { field: "File", property: p1 };
-};
 
 // src/schemas/mdb.ts
 var stickerForField = (f4) => {
@@ -22292,7 +22306,6 @@ var replaceDB = (db, tables) => {
   try {
     db.exec(sqlstr);
   } catch (e4) {
-    console.log(sqlstr);
     console.log(e4);
   }
 };
@@ -23383,7 +23396,7 @@ var FramesMDBProvider = (props2) => {
               }
             }
           } else {
-            if (preselectSchema.id == defaultFileListSchema.id) {
+            if (props2.schema == defaultFileListSchema.id) {
               setFrameSchema(defaultFileListSchema);
               return;
             }
@@ -31148,6 +31161,12 @@ var uiIconSet = {
 <circle cx="14" cy="17" r="1"/>
 </svg>
 `,
+  "mk-ui-props": `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<circle cx="9.5" cy="9.5" r="1" fill="currentColor"/>
+<circle cx="9.5" cy="14.5" r="1" fill="currentColor"/>
+<circle cx="14.5" cy="9.5" r="1" fill="currentColor"/>
+<circle cx="14.5" cy="14.5" r="1" fill="currentColor"/>
+</svg>`,
   "mk-ui-new-space": `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z" />
 </svg>
@@ -32384,6 +32403,32 @@ var lucideIcons = [
 ];
 
 // src/utils/sticker.ts
+var modifyTabSticker = (plugin) => {
+  var _a2, _b2;
+  if (!plugin.settings.spacesStickers)
+    return;
+  let leaf = (_a2 = plugin.app.workspace.getActiveViewOfType(import_obsidian10.MarkdownView)) == null ? void 0 : _a2.leaf;
+  if (leaf) {
+    const file = plugin.app.workspace.getActiveFile();
+    const fileCache = plugin.index.filesIndex.get(file.path);
+    if ((fileCache == null ? void 0 : fileCache.sticker) && leaf.tabHeaderInnerIconEl) {
+      const icon = stickerFromString(fileCache.sticker, plugin);
+      leaf.tabHeaderInnerIconEl.innerHTML = icon;
+    }
+    return;
+  } else {
+    leaf = (_b2 = plugin.app.workspace.getActiveViewOfType(SpaceView)) == null ? void 0 : _b2.leaf;
+    if (leaf) {
+      const spacePath = leaf.view.getState().path;
+      const fileCache = plugin.index.spacesIndex.get(spacePath);
+      if ((fileCache == null ? void 0 : fileCache.sticker) && leaf.tabHeaderInnerIconEl) {
+        const icon = stickerFromString(fileCache.sticker, plugin);
+        leaf.tabHeaderInnerIconEl.innerHTML = icon;
+      }
+      return;
+    }
+  }
+};
 var stickerFromString = (sticker, plugin) => {
   var _a2;
   if (!sticker || typeof sticker != "string")
@@ -39751,6 +39796,10 @@ var filePropTypes = [
     value: "mtime"
   },
   {
+    name: i18n_default.properties.fileProperty.sticker,
+    value: "sticker"
+  },
+  {
     name: i18n_default.properties.fileProperty.extension,
     value: "extension"
   },
@@ -40322,13 +40371,13 @@ var NoteSpacesBar = (props2) => {
 };
 
 // src/react/components/UI/Menus/fileMenu.tsx
-var import_obsidian45 = require("obsidian");
+var import_obsidian46 = require("obsidian");
 
 // src/react/components/UI/Modals/editSpaceModal.tsx
-var import_obsidian42 = require("obsidian");
+var import_obsidian43 = require("obsidian");
 
 // src/react/components/Navigator/SpaceEditor.tsx
-var import_obsidian41 = require("obsidian");
+var import_obsidian42 = require("obsidian");
 
 // src/react/components/UI/Menus/linkMenu.tsx
 var showLinkMenu = (e4, plugin, saveLink, placeholder) => {
@@ -41043,7 +41092,9 @@ var saveFileSticker = async (plugin, path, sticker) => {
     "text",
     true
   );
-  plugin.index.reloadFile(getAbstractFileAtPath(plugin, path)).then((f4) => plugin.index.broadcast("space"));
+  plugin.index.filesIndex.set(path, { ...plugin.index.filesIndex.get(path), sticker });
+  plugin.index.broadcast("space");
+  modifyTabSticker(plugin);
 };
 var saveFileColor = async (plugin, path, color) => {
   if (plugin.settings.spacesEnabled) {
@@ -41067,6 +41118,7 @@ var saveSpaceColor = async (plugin, path, color) => {
 var saveSpaceSticker = async (plugin, path, sticker) => {
   await saveSpaceMetadataValue(plugin, path, "sticker", sticker);
   plugin.index.broadcast("space");
+  modifyTabSticker(plugin);
 };
 var updateFileRank = async (plugin, path, rank, space) => {
   if (space.type == "default")
@@ -41551,7 +41603,7 @@ var FileStickerContainer = (props2) => {
 };
 
 // src/react/components/Navigator/SpaceQuery.tsx
-var import_obsidian40 = require("obsidian");
+var import_obsidian41 = require("obsidian");
 
 // src/react/components/SpaceView/Contexts/ContextBuilder/BuilderMetadataFields.tsx
 var import_obsidian22 = require("obsidian");
@@ -43321,10 +43373,10 @@ var filterFnLabels = {
 };
 
 // src/react/components/SpaceView/Contexts/FilterBar/FilterBar.tsx
-var import_obsidian39 = require("obsidian");
+var import_obsidian40 = require("obsidian");
 
 // src/react/components/UI/Modals/contextEditorModal.tsx
-var import_obsidian38 = require("obsidian");
+var import_obsidian39 = require("obsidian");
 
 // src/react/components/SpaceView/Frames/EditorNodes/FrameNodeView.tsx
 var import_classnames4 = __toESM(require_classnames());
@@ -44777,6 +44829,30 @@ var FramesEditorProvider = (props2) => {
   }, props2.children);
 };
 
+// src/utils/frames/renderer.ts
+var parseStylesToClass = (styles2) => {
+  const classes = [];
+  if (styles2.class) {
+    classes.push(`${styles2.class}`);
+  }
+  if (styles2.layout) {
+    classes.push(`mk-layout-${styles2.layout}`);
+  }
+  if (styles2.layoutAlign) {
+    classes.push(`mk-layout-align-${styles2.layoutAlign}`);
+  }
+  if (styles2.layoutWrap) {
+    classes.push(`mk-layout-wrap-${styles2.layoutWrap}`);
+  }
+  if (styles2.iconSize) {
+    classes.push(`mk-icon-size-${styles2.iconSize}`);
+  }
+  if (styles2.imageSize) {
+    classes.push(`mk-image-size-${styles2.imageSize}`);
+  }
+  return classes.join(" ");
+};
+
 // src/utils/contexts/mdtable.ts
 var createTable = (object, columns) => {
   const columnNames = columns.map((f4) => f4.name);
@@ -44956,6 +45032,10 @@ var FrameHoverMenu = (props2) => {
     ref: props2.dragRef,
     onClick: (e4) => {
       e4.stopPropagation();
+      if (selectedNodes.length == 1 && selectedNodes[0].id == props2.node.id) {
+        selectNodes([]);
+        return;
+      }
       if (e4.shiftKey) {
         selectNodes(
           [...selectedNodes, props2.node].sort(
@@ -45023,6 +45103,25 @@ var HoverMultiMenu = (props2) => {
   )), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-divider"
   }), /* @__PURE__ */ Cn.createElement("div", {
+    "aria-label": "Create Vertical Section",
+    className: "mk-mark",
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("ui//mk-ui-rows", props2.plugin)
+    },
+    onClick: () => groupNodes(selectedNodes, {
+      layoutAlign: `'left'`,
+      gap: `'8px'`
+    })
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    "aria-label": "Create Horizontal Section",
+    className: "mk-mark",
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//columns", props2.plugin)
+    },
+    onClick: () => groupNodes(selectedNodes, { layout: `'row'`, gap: `'8px'` })
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-mark",
     "aria-label": "Delete",
     onClick: () => saveNodes([], selectedNodes),
@@ -45033,7 +45132,7 @@ var HoverMultiMenu = (props2) => {
 };
 
 // src/react/components/SpaceView/Frames/FrameHoverMenu/HoverPropsMenu.tsx
-var import_obsidian26 = require("obsidian");
+var import_obsidian28 = require("obsidian");
 
 // src/react/components/UI/Menus/spaceMenu.tsx
 var showSpacesMenu = (e4, plugin, saveLink, includeDefaults, canAdd) => {
@@ -45130,22 +45229,8 @@ var imageModal = class extends import_obsidian25.FuzzySuggestModal {
   }
 };
 
-// src/utils/fonts.ts
-function listFonts() {
-  const { fonts } = document;
-  const it = fonts.entries();
-  const arr = [];
-  let done = false;
-  while (!done) {
-    const font = it.next();
-    if (!font.done) {
-      arr.push(font.value[0].family);
-    } else {
-      done = font.done;
-    }
-  }
-  return Array.from(new Set(arr));
-}
+// src/react/components/SpaceView/Frames/FrameHoverMenu/Submenus/LayoutSubmenu.tsx
+var import_obsidian26 = require("obsidian");
 
 // src/react/components/SpaceView/Frames/Setters/StepSetter.tsx
 var import_lodash9 = __toESM(require_lodash());
@@ -45162,7 +45247,7 @@ function InputDrag({
   onInput,
   ...props2
 }) {
-  const [value, setValue] = h2(props2.value || 0);
+  const [value, setValue] = h2(props2.value);
   const [modifier, setModifier] = h2("");
   const startValue = _2(0);
   const inputRef = _2(null);
@@ -45271,6 +45356,7 @@ function InputDrag({
     };
   }, []);
   return /* @__PURE__ */ Cn.createElement("input", {
+    placeholder: "auto",
     type: "number",
     ...props2,
     value,
@@ -45281,254 +45367,40 @@ function InputDrag({
   });
 }
 var StepSetter = (props2) => {
+  const match2 = props2.value && stringIsConst(props2.value) ? removeQuotes(props2.value).match(/^(\d+(?:\.\d+)?)\s?([a-zA-Z%]+)$/) : null;
+  const numericValue = match2 ? parseInt(match2[1]) : null;
+  const unit = match2 && match2[2] ? match2[2] : props2.units[0];
   return /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-setter-step"
   }, /* @__PURE__ */ Cn.createElement("span", null, props2.name), /* @__PURE__ */ Cn.createElement(InputDrag, {
-    value: parseInt(props2.value),
-    onChange: (value) => props2.setValue(value.toString())
-  }, props2.name));
+    value: numericValue,
+    onChange: (value) => props2.setValue(`'${value.toString() + unit}'`)
+  }, props2.name), /* @__PURE__ */ Cn.createElement("span", null, unit));
 };
 
-// src/react/components/SpaceView/Frames/FrameHoverMenu/HoverPropsMenu.tsx
-var HoverPropsMenu = (props2) => {
-  var _a2, _b2, _c2;
-  const { deleteFrame, duplicateFrame, fields, saveStyleValue } = props2;
-  const { ungroupNode } = q2(FramesEditorContext);
-  const [editMode, setEditMode] = h2(0 /* EditModeDefault */);
-  const [frameProps, setFrameProps] = h2(props2.node.props);
-  p2(() => {
-    setFrameProps(props2.node.props);
-  }, [props2.node]);
-  const savePropValue = (prop, value) => {
-    setFrameProps((p3) => ({ ...p3, [prop]: value }));
-    props2.savePropValue(prop, value);
-  };
-  const showValueMenu = (e4, field) => {
-    var _a3, _b3;
-    e4.stopPropagation();
-    e4.preventDefault();
-    const currentValue = removeQuotes(frameProps[field.name]);
-    switch (field.type) {
-      case "space":
-        {
-          const menu = new import_obsidian26.Menu();
-          menu.setUseNativeMenu(false);
-          menu.addItem((menuItem) => {
-            menuItem.setIcon("type");
-            menuItem.setTitle(i18n_default.labels.selectSpace);
-            menuItem.onClick(
-              (e5) => showSpacesMenu(
-                e5,
-                props2.plugin,
-                (link) => savePropValue(field.name, wrapQuotes(link + "#^files"))
-              )
-            );
-          });
-          menu.addSeparator();
-          props2.schemaProps.filter((f4) => f4.type == field.type).forEach((f4) => {
-            menu.addItem((menuItem) => {
-              menuItem.setTitle(nameForField(f4));
-              menuItem.setIcon("type");
-              menuItem.onClick((e5) => {
-                savePropValue(field.name, `${f4.schemaId}.props.${f4.name}`);
-              });
-            });
-          });
-          const offset2 = e4.target.getBoundingClientRect();
-          menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
-        }
-        break;
-      case "option":
-        {
-          const parsedValue = parseFieldValue(field.value, field.type);
-          const options = (_a3 = parsedValue.options) != null ? _a3 : [];
-          showSelectMenu(e4.target.getBoundingClientRect(), {
-            plugin: props2.plugin,
-            multi: false,
-            editable: false,
-            searchable: true,
-            saveOptions: (_12, v3) => {
-              savePropValue(field.name, `'${v3[0]}'`);
-            },
-            value: [currentValue != null ? currentValue : ""],
-            options
-          });
-        }
-        break;
-      case "link":
-        {
-          const menu = new import_obsidian26.Menu();
-          menu.setUseNativeMenu(false);
-          menu.addItem((menuItem) => {
-            menuItem.setIcon("type");
-            menuItem.setTitle(i18n_default.labels.selectNote);
-            menuItem.onClick(
-              (e5) => showLinkMenu(
-                e5,
-                props2.plugin,
-                (link) => savePropValue(field.name, wrapQuotes(link))
-              )
-            );
-          });
-          menu.addSeparator();
-          props2.schemaProps.filter((f4) => f4.type == field.type).forEach((f4) => {
-            menu.addItem((menuItem) => {
-              menuItem.setTitle(nameForField(f4));
-              menuItem.setIcon("type");
-              menuItem.onClick((e5) => {
-                savePropValue(field.name, `${f4.schemaId}.props.${f4.name}`);
-              });
-            });
-          });
-          const offset2 = e4.target.getBoundingClientRect();
-          menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
-        }
-        break;
-      case "icon":
-        {
-          const vaultChangeModal = new stickerModal(
-            props2.plugin.app,
-            props2.plugin,
-            (emoji) => savePropValue(field.name, wrapQuotes(emoji))
-          );
-          vaultChangeModal.open();
-        }
-        break;
-      case "image":
-        {
-          const menu = new import_obsidian26.Menu();
-          menu.setUseNativeMenu(false);
-          menu.addItem((menuItem) => {
-            menuItem.setTitle(i18n_default.labels.selectImage);
-            menuItem.onClick((e5) => {
-              const vaultChangeModal = new imageModal(
-                props2.plugin,
-                props2.plugin.app,
-                (image) => savePropValue(field.name, wrapQuotes(image))
-              );
-              vaultChangeModal.open();
-            });
-            menuItem.setIcon("type");
-          });
-          props2.schemaProps.forEach((f4) => {
-            menu.addItem((menuItem) => {
-              menuItem.setTitle(f4.name);
-              menuItem.setIcon("type");
-              menuItem.onClick((e5) => {
-                savePropValue(field.name, `${f4.schemaId}.props.${f4.name}`);
-              });
-            });
-          });
-          const offset2 = e4.target.getBoundingClientRect();
-          menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
-        }
-        break;
-      case "text":
-      case "number":
-        {
-          const menu = new import_obsidian26.Menu();
-          menu.setUseNativeMenu(false);
-          menu.addItem((menuItem) => {
-            inputMenuItem(
-              menuItem,
-              currentValue,
-              (value) => savePropValue(field.name, wrapQuotes(value))
-            );
-            menuItem.setIcon("type");
-          });
-          props2.schemaProps.forEach((f4) => {
-            menu.addItem((menuItem) => {
-              menuItem.setTitle(nameForField(f4));
-              menuItem.setIcon("type");
-              menuItem.onClick((e5) => {
-                savePropValue(field.name, `${f4.schemaId}.props.${f4.name}`);
-              });
-            });
-          });
-          const offset2 = e4.target.getBoundingClientRect();
-          menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
-        }
-        break;
-      case "date": {
-        const offset2 = e4.target.getBoundingClientRect();
-        const date = new Date(currentValue);
-        showDatePickerMenu(
-          { x: offset2.left, y: offset2.top + 30 },
-          date.getTime() ? date : null,
-          (date2) => savePropValue(field.name, date2.valueOf().toString())
-        );
-        break;
-      }
-      case "super":
-        {
-          const parsedValue = parseFieldValue(field.value, field.type);
-          const superPropertyName = parsedValue.dynamic ? removeQuotes(frameProps[(_b3 = parsedValue.field) != null ? _b3 : ""]) : parsedValue.field;
-          if (superPropertyName) {
-            const property = props2.plugin.index.superProperties.get(superPropertyName);
-            const superProperty = property ? {
-              ...property,
-              name: field.name,
-              value: JSON.stringify(
-                props2.plugin.index.valueForSuperproperty(
-                  superPropertyName,
-                  property
-                )
-              )
-            } : null;
-            if (superProperty)
-              showValueMenu(e4, superProperty);
-          }
-          break;
-        }
-        break;
-    }
-  };
-  const showImageSizeMenu = (e4) => {
-    const menu = new import_obsidian26.Menu();
-    menu.setUseNativeMenu(false);
-    menu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.labels.styleSmall);
-      menuItem.setIcon("type");
-      menuItem.onClick((e5) => {
-        saveStyleValue("maxWidth", `'50px'`);
-      });
-    });
-    menu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.labels.styleMedium);
-      menuItem.setIcon("type");
-      menuItem.onClick((e5) => {
-        saveStyleValue("maxWidth", `'100px'`);
-      });
-    });
-    menu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.labels.styleLarge);
-      menuItem.setIcon("type");
-      menuItem.onClick((e5) => {
-        saveStyleValue("maxWidth", `'200px'`);
-      });
-    });
-    const offset2 = e4.target.getBoundingClientRect();
-    menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
-  };
+// src/react/components/SpaceView/Frames/FrameHoverMenu/Submenus/LayoutSubmenu.tsx
+var LayoutSubmenu = (props2) => {
+  var _a2;
+  const { selectedNode, saveStyleValue } = props2;
   const showLayoutMenu = (e4) => {
     const menu = new import_obsidian26.Menu();
     menu.setUseNativeMenu(false);
     menu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.commands.h1);
+      menuItem.setTitle(i18n_default.commands.rows);
       menuItem.setIcon("layout");
       menuItem.onClick((e5) => {
         saveStyleValue("layout", `'row'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.commands.h2);
+      menuItem.setTitle(i18n_default.commands.columns);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("layout", `'column'`);
       });
     });
     menu.addItem((menuItem) => {
-      menuItem.setTitle(i18n_default.commands.h3);
+      menuItem.setTitle(i18n_default.commands.masonry);
       menuItem.setIcon("type");
       menuItem.onClick((e5) => {
         saveStyleValue("layout", `'masonry'`);
@@ -45537,8 +45409,150 @@ var HoverPropsMenu = (props2) => {
     const offset2 = e4.target.getBoundingClientRect();
     menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
   };
+  const setLayoutAlign = (e4, value) => {
+    e4.stopPropagation();
+    e4.preventDefault();
+    saveStyleValue("layoutAlign", `'${value}'`);
+  };
+  return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onMouseDown: () => {
+      props2.exitMenu();
+    },
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-close"] }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onClick: (e4) => showLayoutMenu(e4)
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//case-sensitive", props2.plugin)
+    }
+  })), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onClick: (e4) => {
+      e4.preventDefault();
+      e4.stopPropagation();
+      saveStyleValue(
+        "flexWrap",
+        `${removeQuotes(selectedNode.styles.flexWrap) == "wrap" ? "" : `"wrap"`}`
+      );
+    },
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//wrap-text", props2.plugin)
+    }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onClick: (e4) => setLayoutAlign(e4, "left"),
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//align-left", props2.plugin)
+    }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onClick: (e4) => setLayoutAlign(e4, "center"),
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//align-center", props2.plugin)
+    }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onClick: (e4) => setLayoutAlign(e4, "right"),
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//align-right", props2.plugin)
+    }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement(StepSetter, {
+    plugin: props2.plugin,
+    name: "Gap",
+    value: (_a2 = selectedNode.styles) == null ? void 0 : _a2["gap"],
+    setValue: (value) => saveStyleValue("gap", value),
+    units: ["px"]
+  }));
+};
+
+// src/react/components/SpaceView/Frames/FrameHoverMenu/Submenus/SizeSubmenu.tsx
+var SizeSubmenu = (props2) => {
+  var _a2, _b2;
+  const { selectedNode, saveStyleValue } = props2;
+  return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onMouseDown: () => {
+      props2.exitMenu();
+    },
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-close"] }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement(StepSetter, {
+    plugin: props2.plugin,
+    name: "Width",
+    value: (_a2 = selectedNode.styles) == null ? void 0 : _a2["width"],
+    setValue: (value) => saveStyleValue("width", value),
+    units: ["px", "%", "em"]
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement(StepSetter, {
+    plugin: props2.plugin,
+    name: "Height",
+    value: (_b2 = selectedNode.styles) == null ? void 0 : _b2["height"],
+    setValue: (value) => saveStyleValue("height", value),
+    units: ["px", "%", "em"]
+  }));
+};
+
+// src/react/components/SpaceView/Frames/FrameHoverMenu/Submenus/SpacingSubmenu.tsx
+var SpacingSubmenu = (props2) => {
+  var _a2, _b2;
+  const { selectedNode, saveStyleValue } = props2;
+  return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onMouseDown: () => {
+      props2.exitMenu();
+    },
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-close"] }
+  }), /* @__PURE__ */ Cn.createElement(StepSetter, {
+    plugin: props2.plugin,
+    name: "Margin",
+    value: (_a2 = selectedNode.styles) == null ? void 0 : _a2["margin"],
+    setValue: (value) => saveStyleValue("margin", value),
+    units: ["px", "em"]
+  }), /* @__PURE__ */ Cn.createElement(StepSetter, {
+    plugin: props2.plugin,
+    name: "Padding",
+    value: (_b2 = selectedNode.styles) == null ? void 0 : _b2["padding"],
+    setValue: (value) => saveStyleValue("padding", value),
+    units: ["px", "em"]
+  }));
+};
+
+// src/react/components/SpaceView/Frames/FrameHoverMenu/Submenus/TextSubmenu.tsx
+var import_obsidian27 = require("obsidian");
+
+// src/utils/fonts.ts
+function listFonts() {
+  const { fonts } = document;
+  const it = fonts.entries();
+  const arr = [];
+  let done = false;
+  while (!done) {
+    const font = it.next();
+    if (!font.done) {
+      arr.push(font.value[0].family);
+    } else {
+      done = font.done;
+    }
+  }
+  return Array.from(new Set(arr));
+}
+
+// src/react/components/SpaceView/Frames/FrameHoverMenu/Submenus/TextSubmenu.tsx
+var TextSubmenu = (props2) => {
+  var _a2, _b2, _c2;
+  const { selectedNode, saveStyleValue } = props2;
   const showTypographyMenu = (e4) => {
-    const menu = new import_obsidian26.Menu();
+    const menu = new import_obsidian27.Menu();
     menu.setUseNativeMenu(false);
     menu.addItem((menuItem) => {
       menuItem.setTitle(i18n_default.commands.h1);
@@ -45603,7 +45617,7 @@ var HoverPropsMenu = (props2) => {
       saveOptions: (_12, v3) => {
         saveStyleValue("--font-text", `'${v3[0]}'`);
       },
-      value: [(_b3 = (_a3 = props2.node.styles) == null ? void 0 : _a3["--font-text"]) != null ? _b3 : ""],
+      value: [(_b3 = (_a3 = selectedNode.styles) == null ? void 0 : _a3["--font-text"]) != null ? _b3 : ""],
       options
     });
   };
@@ -45612,137 +45626,10 @@ var HoverPropsMenu = (props2) => {
     e4.preventDefault();
     saveStyleValue("textAlign", `'${value}'`);
   };
-  return /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-frame-props-editor menu"
-  }, editMode == 0 /* EditModeDefault */ ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, fields.map((f4, i4) => {
-    var _a3, _b3;
-    return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
-      className: "mk-mark",
-      key: i4,
-      onClick: (e4) => showValueMenu(e4, f4)
-    }, /* @__PURE__ */ Cn.createElement("div", {
-      "aria-label": (_b3 = (_a3 = safelyParseJSON(f4.attrs)) == null ? void 0 : _a3.name) != null ? _b3 : f4.name,
-      dangerouslySetInnerHTML: {
-        __html: stickerFromString(stickerForField(f4), props2.plugin)
-      }
-    }), !stringIsConst(frameProps == null ? void 0 : frameProps[f4.name]) ? /* @__PURE__ */ Cn.createElement("div", {
-      className: "mk-mark-prop"
-    }, nameForField(
-      propFieldFromString(
-        frameProps == null ? void 0 : frameProps[f4.name],
-        props2.schemaProps
-      )
-    )) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), f4.type == "text" && stringIsConst(frameProps == null ? void 0 : frameProps[f4.name]) && /* @__PURE__ */ Cn.createElement("div", {
-      className: "mk-menu-input"
-    }, /* @__PURE__ */ Cn.createElement("input", {
-      value: removeQuotes(frameProps == null ? void 0 : frameProps[f4.name]),
-      onClick: (e4) => e4.stopPropagation(),
-      onKeyDown: (e4) => {
-        if (e4.key == "Enter")
-          e4.target.blur();
-      },
-      onBlur: (e4) => {
-        savePropValue(f4.name, wrapQuotes(e4.target.value));
-      }
-    }))), props2.node.type == "flow" && /* @__PURE__ */ Cn.createElement("div", {
-      className: "mk-mark",
-      onClick: (e4) => {
-        e4.preventDefault();
-        e4.stopPropagation();
-        props2.triggerMenu && props2.triggerMenu(e4);
-      },
-      dangerouslySetInnerHTML: {
-        __html: stickerFromString(
-          "ui//mk-ui-options",
-          props2.plugin
-        )
-      }
-    }));
-  }), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-divider"
-  }), props2.node.type == "space" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-mark",
-    onClick: (e4) => {
-      e4.preventDefault();
-      e4.stopPropagation();
-      savePropValue(
-        "minMode",
-        `${props2.node.props.minMode == "true" ? "false" : "true"}`
-      );
-    },
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//minimize-2", props2.plugin)
-    }
-  })) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), props2.node.type == "text" || props2.node.type == "flow" ? /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-mark",
-    onClick: (e4) => {
-      e4.preventDefault();
-      e4.stopPropagation();
-      setEditMode(1);
-    },
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//type", props2.plugin)
-    }
-  }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), props2.node.type == "image" ? /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-mark",
-    onClick: (e4) => {
-      e4.preventDefault();
-      e4.stopPropagation();
-      showImageSizeMenu(e4);
-    },
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//type", props2.plugin)
-    }
-  }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), props2.node.type == "content" || props2.node.type == "group" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-mark",
-    onClick: (e4) => setEditMode(2 /* EditModeLayout */)
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString(
-        "lucide//case-sensitive",
-        props2.plugin
-      )
-    }
-  }))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-mark",
-    onClick: (e4) => {
-      e4.preventDefault();
-      e4.stopPropagation();
-      saveStyleValue(
-        "maxWidth",
-        `${removeQuotes(props2.node.styles.maxWidth) == "100%" ? "" : `"100%"`}`
-      );
-    },
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("ui//mk-ui-full-width", props2.plugin)
-    }
-  }), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-divider"
-  }), props2.node.type == "group" || props2.node.type == "container" ? /* @__PURE__ */ Cn.createElement("div", {
-    "aria-label": "Ungroup",
-    className: "mk-mark",
-    onClick: () => ungroupNode(props2.node),
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//copy-x", props2.plugin)
-    }
-  }) : /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-mark",
-    "aria-label": "Duplicate",
-    onClick: () => duplicateFrame(),
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//copy", props2.plugin)
-    }
-  }), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-mark",
-    "aria-label": "Delete",
-    onClick: () => deleteFrame(),
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//trash", props2.plugin)
-    }
-  })) : editMode == 1 /* EditModeText */ ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
+  return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-mark",
     onMouseDown: () => {
-      setEditMode(0);
+      props2.exitMenu();
     },
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-close"] }
   }), /* @__PURE__ */ Cn.createElement("div", {
@@ -45752,10 +45639,7 @@ var HoverPropsMenu = (props2) => {
     onClick: (e4) => showTypographyMenu(e4)
   }, /* @__PURE__ */ Cn.createElement("div", {
     dangerouslySetInnerHTML: {
-      __html: stickerFromString(
-        "lucide//case-sensitive",
-        props2.plugin
-      )
+      __html: stickerFromString("lucide//case-sensitive", props2.plugin)
     }
   }), "Type"), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-mark",
@@ -45766,6 +45650,18 @@ var HoverPropsMenu = (props2) => {
     }
   }), "Font"), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement(StepSetter, {
+    plugin: props2.plugin,
+    name: "Line Count",
+    value: (_a2 = selectedNode.styles) == null ? void 0 : _a2["--line-count"],
+    setValue: (value) => saveStyleValue("--line-count", value),
+    units: [""]
+  }), /* @__PURE__ */ Cn.createElement(StepSetter, {
+    plugin: props2.plugin,
+    name: "Size",
+    value: (_b2 = selectedNode.styles) == null ? void 0 : _b2["--font-text-size"],
+    setValue: (value) => saveStyleValue("--font-text-size", value),
+    units: ["px", "em"]
   }), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-mark",
     onClick: (e4) => setAlign(e4, "left"),
@@ -45788,28 +45684,455 @@ var HoverPropsMenu = (props2) => {
     className: "mk-divider"
   }), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-color",
-    style: { background: removeQuotes((_a2 = props2.node.styles) == null ? void 0 : _a2["color"]) }
-  })) : editMode == 2 /* EditModeLayout */ ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
+    style: { background: removeQuotes((_c2 = selectedNode.styles) == null ? void 0 : _c2["color"]) }
+  }));
+};
+
+// src/react/components/SpaceView/Frames/FrameHoverMenu/HoverPropsMenu.tsx
+var HoverPropsMenu = (props2) => {
+  const { deleteFrame, duplicateFrame } = props2;
+  const { ungroupNode, nodes, saveNodes, moveUp, moveDown } = q2(FramesEditorContext);
+  const saveNodeValue = (values, node) => {
+    const newNodes = {
+      ...node,
+      props: {
+        ...node.props,
+        ...values
+      }
+    };
+    saveNodes([newNodes]);
+  };
+  const saveStyleValue = (prop, value) => {
+    const newNodes = {
+      ...selectedNode,
+      styles: {
+        ...selectedNode.styles,
+        ...{ [prop]: value }
+      }
+    };
+    saveNodes([newNodes]);
+  };
+  const [editMode, setEditMode] = h2(0 /* EditModeDefault */);
+  const [frameProps, setFrameProps] = h2(props2.node.props);
+  const [selectedNode, setSelectedNode] = h2(props2.node);
+  const fields = F2(() => {
+    return Object.keys(selectedNode.types).map((f4) => {
+      var _a2;
+      return {
+        type: selectedNode.types[f4],
+        name: f4,
+        attrs: (_a2 = selectedNode.propsAttrs) == null ? void 0 : _a2[f4],
+        schemaId: selectedNode.schemaId
+      };
+    });
+  }, [selectedNode]);
+  const showSelectNodeMenu = (e4) => {
+    const offset2 = e4.target.getBoundingClientRect();
+    const options = nodes.filter((f4) => f4.parentId == selectedNode.id).map((f4) => ({
+      name: f4.name,
+      value: f4.id
+    }));
+    showSelectMenu(
+      { x: offset2.left, y: offset2.top + 30 },
+      {
+        plugin: props2.plugin,
+        multi: false,
+        editable: false,
+        value: [],
+        options,
+        saveOptions: (_12, value) => {
+          setSelectedNode(nodes.find((f4) => f4.id == value[0]));
+        },
+        placeholder: i18n_default.labels.linkItemSelectPlaceholder,
+        detail: true,
+        searchable: false,
+        showAll: true
+      }
+    );
+  };
+  p2(() => {
+    if (props2.node.type == "group") {
+      if (selectedNode.parentId == props2.node.id)
+        return;
+    }
+    setSelectedNode(props2.node);
+  }, [props2.node]);
+  p2(() => {
+    setFrameProps(selectedNode.props);
+  }, [selectedNode]);
+  const savePropValue = (prop, value) => {
+    setFrameProps((p3) => ({ ...p3, [prop]: value }));
+    saveNodeValue({ [prop]: value }, selectedNode);
+  };
+  const showPropsMenu = (e4, field) => {
+    e4.stopPropagation();
+    e4.preventDefault();
+    const menu = new import_obsidian28.Menu();
+    menu.setUseNativeMenu(false);
+    props2.schemaProps.forEach((f4) => {
+      menu.addItem((menuItem) => {
+        menuItem.setTitle(f4.name);
+        menuItem.setIcon("type");
+        menuItem.onClick((e5) => {
+          savePropValue(field.name, `${f4.schemaId}.props.${f4.name}`);
+        });
+      });
+    });
+    const offset2 = e4.target.getBoundingClientRect();
+    menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
+  };
+  const showValueMenu = (e4, field) => {
+    var _a2, _b2;
+    e4.stopPropagation();
+    e4.preventDefault();
+    const currentValue = removeQuotes(frameProps[field.name]);
+    switch (field.type) {
+      case "space":
+        {
+          showSpacesMenu(
+            e4,
+            props2.plugin,
+            (link) => savePropValue(field.name, wrapQuotes(link + "#^files"))
+          );
+        }
+        break;
+      case "option":
+        {
+          const parsedValue = parseFieldValue(field.value, field.type);
+          const options = (_a2 = parsedValue.options) != null ? _a2 : [];
+          showSelectMenu(e4.target.getBoundingClientRect(), {
+            plugin: props2.plugin,
+            multi: false,
+            editable: false,
+            searchable: true,
+            saveOptions: (_12, v3) => {
+              savePropValue(field.name, `'${v3[0]}'`);
+            },
+            value: [currentValue != null ? currentValue : ""],
+            options
+          });
+        }
+        break;
+      case "link":
+        {
+          showLinkMenu(
+            e4,
+            props2.plugin,
+            (link) => savePropValue(field.name, wrapQuotes(link))
+          );
+        }
+        break;
+      case "icon":
+        {
+          const vaultChangeModal = new stickerModal(
+            props2.plugin.app,
+            props2.plugin,
+            (emoji) => savePropValue(field.name, wrapQuotes(emoji))
+          );
+          vaultChangeModal.open();
+        }
+        break;
+      case "image":
+        {
+          const vaultChangeModal = new imageModal(
+            props2.plugin,
+            props2.plugin.app,
+            (image) => savePropValue(field.name, wrapQuotes(image))
+          );
+          vaultChangeModal.open();
+        }
+        break;
+      case "text":
+      case "number":
+        {
+          const menu = new import_obsidian28.Menu();
+          menu.setUseNativeMenu(false);
+          menu.addItem((menuItem) => {
+            inputMenuItem(
+              menuItem,
+              currentValue,
+              (value) => savePropValue(field.name, wrapQuotes(value))
+            );
+            menuItem.setIcon("type");
+          });
+          const offset2 = e4.target.getBoundingClientRect();
+          menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
+        }
+        break;
+      case "date": {
+        const offset2 = e4.target.getBoundingClientRect();
+        const date = new Date(currentValue);
+        showDatePickerMenu(
+          { x: offset2.left, y: offset2.top + 30 },
+          date.getTime() ? date : null,
+          (date2) => savePropValue(field.name, date2.valueOf().toString())
+        );
+        break;
+      }
+      case "super":
+        {
+          const parsedValue = parseFieldValue(field.value, field.type);
+          const superPropertyName = parsedValue.dynamic ? removeQuotes(frameProps[(_b2 = parsedValue.field) != null ? _b2 : ""]) : parsedValue.field;
+          if (superPropertyName) {
+            const property = props2.plugin.index.superProperties.get(superPropertyName);
+            const superProperty = property ? {
+              ...property,
+              name: field.name,
+              value: JSON.stringify(
+                props2.plugin.index.valueForSuperproperty(
+                  superPropertyName,
+                  property
+                )
+              )
+            } : null;
+            if (superProperty)
+              showValueMenu(e4, superProperty);
+          }
+          break;
+        }
+        break;
+    }
+  };
+  const showImageSizeMenu = (e4, type) => {
+    const prop = type == "icon" ? "iconSize" : "imageSize";
+    const menu = new import_obsidian28.Menu();
+    menu.setUseNativeMenu(false);
+    menu.addItem((menuItem) => {
+      menuItem.setTitle(i18n_default.labels.styleSmall);
+      menuItem.setIcon("type");
+      menuItem.onClick((e5) => {
+        saveStyleValue(prop, `'s'`);
+      });
+    });
+    menu.addItem((menuItem) => {
+      menuItem.setTitle(i18n_default.labels.styleMedium);
+      menuItem.setIcon("type");
+      menuItem.onClick((e5) => {
+        saveStyleValue(prop, `'m'`);
+      });
+    });
+    menu.addItem((menuItem) => {
+      menuItem.setTitle(i18n_default.labels.styleLarge);
+      menuItem.setIcon("type");
+      menuItem.onClick((e5) => {
+        saveStyleValue(prop, `'l'`);
+      });
+    });
+    const offset2 = e4.target.getBoundingClientRect();
+    menu.showAtPosition({ x: offset2.left, y: offset2.top + 30 });
+  };
+  const submenuProps = {
+    plugin: props2.plugin,
+    exitMenu: () => setEditMode(0),
+    saveStyleValue,
+    selectedNode
+  };
+  return /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-frame-props-editor menu"
+  }, editMode == 0 /* EditModeDefault */ ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, fields.map((f4, i4) => {
+    var _a2, _b2;
+    return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-mark",
+      key: i4,
+      onClick: (e4) => showValueMenu(e4, f4)
+    }, /* @__PURE__ */ Cn.createElement("div", {
+      "aria-label": (_b2 = (_a2 = safelyParseJSON(f4.attrs)) == null ? void 0 : _a2.name) != null ? _b2 : f4.name,
+      dangerouslySetInnerHTML: {
+        __html: stickerFromString(stickerForField(f4), props2.plugin)
+      }
+    }), !stringIsConst(frameProps == null ? void 0 : frameProps[f4.name]) ? /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-mark-prop"
+    }, nameForField(
+      propFieldFromString(
+        frameProps == null ? void 0 : frameProps[f4.name],
+        props2.schemaProps
+      )
+    )) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), f4.type == "icon" && /* @__PURE__ */ Cn.createElement("div", {
+      dangerouslySetInnerHTML: {
+        __html: stickerFromString(
+          removeQuotes(frameProps == null ? void 0 : frameProps[f4.name]),
+          props2.plugin
+        )
+      }
+    }), (f4.type == "text" || f4.type == "number") && stringIsConst(frameProps == null ? void 0 : frameProps[f4.name]) && /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-menu-input"
+    }, /* @__PURE__ */ Cn.createElement("input", {
+      value: removeQuotes(frameProps == null ? void 0 : frameProps[f4.name]),
+      onClick: (e4) => e4.stopPropagation(),
+      onKeyDown: (e4) => {
+        if (e4.key == "Enter")
+          e4.target.blur();
+      },
+      onBlur: (e4) => {
+        savePropValue(f4.name, wrapQuotes(e4.target.value));
+      }
+    }))), selectedNode.type == "flow" && /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-mark",
+      onClick: (e4) => {
+        e4.preventDefault();
+        e4.stopPropagation();
+        props2.triggerMenu && props2.triggerMenu(e4);
+      },
+      dangerouslySetInnerHTML: {
+        __html: stickerFromString(
+          "ui//mk-ui-options",
+          props2.plugin
+        )
+      }
+    }), /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-mark-option",
+      key: i4,
+      onClick: (e4) => showPropsMenu(e4, f4)
+    }, /* @__PURE__ */ Cn.createElement("div", {
+      "aria-label": "Select Property",
+      dangerouslySetInnerHTML: {
+        __html: stickerFromString("ui//mk-ui-props", props2.plugin)
+      }
+    })), /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-divider"
+    }));
+  }), selectedNode.type == "space" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-mark",
-    onClick: (e4) => showLayoutMenu(e4)
+    "aria-label": "Toggle Filter Bar",
+    onClick: (e4) => {
+      e4.preventDefault();
+      e4.stopPropagation();
+      savePropValue(
+        "minMode",
+        `${selectedNode.props.minMode == "true" ? "false" : "true"}`
+      );
+    },
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//minimize-2", props2.plugin)
+    }
+  })) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), selectedNode.type == "text" || selectedNode.type == "flow" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
+    "aria-label": "Text Style",
+    className: "mk-mark",
+    onClick: (e4) => {
+      e4.preventDefault();
+      e4.stopPropagation();
+      setEditMode(1 /* EditModeText */);
+    },
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//type", props2.plugin)
+    }
+  })) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), selectedNode.type == "content" || selectedNode.type == "group" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    "aria-label": "Layers",
+    onClick: (e4) => showSelectNodeMenu(e4)
   }, /* @__PURE__ */ Cn.createElement("div", {
     dangerouslySetInnerHTML: {
-      __html: stickerFromString(
-        "lucide//case-sensitive",
-        props2.plugin
-      )
+      __html: stickerFromString("lucide//layers", props2.plugin)
     }
-  })), /* @__PURE__ */ Cn.createElement(StepSetter, {
-    plugin: props2.plugin,
-    name: "Padding",
-    value: (_b2 = props2.node.styles) == null ? void 0 : _b2["padding"],
-    setValue: (value) => saveStyleValue("padding", value)
-  }), /* @__PURE__ */ Cn.createElement(StepSetter, {
-    plugin: props2.plugin,
-    name: "Gap",
-    value: (_c2 = props2.node.styles) == null ? void 0 : _c2["gap"],
-    setValue: (value) => saveStyleValue("gap", value)
-  })) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
+  })), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onClick: (e4) => {
+      e4.preventDefault();
+      e4.stopPropagation();
+      setEditMode(2 /* EditModeLayout */);
+    }
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//layout", props2.plugin)
+    }
+  }))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    onClick: (e4) => {
+      e4.preventDefault();
+      e4.stopPropagation();
+      setEditMode(4 /* EditModeSpacing */);
+    }
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//fullscreen", props2.plugin)
+    }
+  })), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    "aria-label": "Resize",
+    className: "mk-mark",
+    onClick: (e4) => {
+      e4.preventDefault();
+      e4.stopPropagation();
+      setEditMode(3 /* EditModeSize */);
+    }
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//scaling", props2.plugin)
+    }
+  })), selectedNode.type == "image" || selectedNode.type == "icon" ? /* @__PURE__ */ Cn.createElement("div", {
+    "aria-label": "Image Size",
+    className: "mk-mark",
+    onClick: (e4) => {
+      e4.preventDefault();
+      e4.stopPropagation();
+      showImageSizeMenu(e4, selectedNode.type);
+    },
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//type", props2.plugin)
+    }
+  }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    "aria-label": "Page Width",
+    onClick: (e4) => {
+      e4.preventDefault();
+      e4.stopPropagation();
+      saveStyleValue(
+        "maxWidth",
+        `${removeQuotes(selectedNode.styles.maxWidth) == `100%` ? "" : `"100%"`}`
+      );
+    },
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("ui//mk-ui-full-width", props2.plugin)
+    }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    "aria-label": "Move Up",
+    onClick: () => moveUp(selectedNode),
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//arrow-up", props2.plugin)
+    }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    "aria-label": "Move Down",
+    onClick: () => moveDown(selectedNode),
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//arrow-down", props2.plugin)
+    }
+  }), selectedNode.type == "group" || selectedNode.type == "container" ? /* @__PURE__ */ Cn.createElement("div", {
+    "aria-label": "Ungroup",
+    className: "mk-mark",
+    onClick: () => ungroupNode(selectedNode),
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//copy-x", props2.plugin)
+    }
+  }) : /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    "aria-label": "Duplicate",
+    onClick: () => duplicateFrame(),
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//copy", props2.plugin)
+    }
+  }), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-mark",
+    "aria-label": "Delete",
+    onClick: () => deleteFrame(),
+    dangerouslySetInnerHTML: {
+      __html: stickerFromString("lucide//trash", props2.plugin)
+    }
+  })) : editMode == 1 /* EditModeText */ ? /* @__PURE__ */ Cn.createElement(TextSubmenu, {
+    ...submenuProps
+  }) : editMode == 2 /* EditModeLayout */ ? /* @__PURE__ */ Cn.createElement(LayoutSubmenu, {
+    ...submenuProps
+  }) : editMode == 3 /* EditModeSize */ ? /* @__PURE__ */ Cn.createElement(SizeSubmenu, {
+    ...submenuProps
+  }) : editMode == 4 /* EditModeSpacing */ ? /* @__PURE__ */ Cn.createElement(SpacingSubmenu, {
+    ...submenuProps
+  }) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null));
 };
 
 // src/react/components/SpaceView/Frames/Placeholders/ColumnPlaceholder.tsx
@@ -45931,7 +46254,7 @@ var ContentNodeView = (props2) => {
 };
 
 // src/react/components/SpaceView/Editor/FlowView.tsx
-var import_obsidian35 = require("obsidian");
+var import_obsidian37 = require("obsidian");
 
 // src/utils/flow/flowEditor.ts
 var import_state5 = require("@codemirror/state");
@@ -46203,7 +46526,7 @@ var atomicSelect = import_state4.EditorState.transactionFilter.of(
 );
 
 // src/react/components/SpaceView/Editor/EmbedView/EmbedContextView.tsx
-var import_obsidian33 = require("obsidian");
+var import_obsidian35 = require("obsidian");
 
 // src/react/components/SpaceView/Frames/ViewNodes/FrameRoot.tsx
 var import_lodash10 = __toESM(require_lodash());
@@ -46334,7 +46657,7 @@ var TextNodeView = (props2) => {
   };
   return props2.instance.state[props2.treeNode.id] && /* @__PURE__ */ Cn.createElement("div", {
     className: `mk-frame-text`,
-    placeholder: i18n_default.labels.textPlaceholder,
+    placeholder: props2.editable && i18n_default.labels.textPlaceholder,
     dangerouslySetInnerHTML: {
       __html: (_a2 = props2.instance.state[props2.treeNode.id].props) == null ? void 0 : _a2.value
     },
@@ -46353,7 +46676,7 @@ var TextNodeView = (props2) => {
 
 // src/react/components/SpaceView/Frames/ViewNodes/FrameView.tsx
 var FrameView = (props2) => {
-  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k, _l;
+  var _a2, _b2, _c2, _d2, _e2, _f, _g;
   const innerComponents = props2.treeNode.node.type == "text" ? /* @__PURE__ */ Cn.createElement(TextNodeView, {
     treeNode: props2.treeNode,
     instance: props2.instance,
@@ -46393,9 +46716,10 @@ var FrameView = (props2) => {
   return props2.instance.state[props2.treeNode.id] && Cn.createElement(
     tag,
     {
-      className: `mk-frame ${(_h = (_g = (_f = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _f.styles) == null ? void 0 : _g.class) != null ? _h : ""}`,
+      className: `mk-frame ${parseStylesToClass(
+        (_f = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _f.styles
+      )}`,
       type,
-      layout: (_k = (_j = (_i = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _i.styles) == null ? void 0 : _j.layout) != null ? _k : "",
       onClick: (e4) => {
         var _a3, _b3;
         if (typeof ((_a3 = props2.instance.state[props2.treeNode.id].actions) == null ? void 0 : _a3.onClick) == "function") {
@@ -46410,7 +46734,7 @@ var FrameView = (props2) => {
       },
       style: {
         ...defaultFrameStyles,
-        ...(_l = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _l.styles
+        ...(_g = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _g.styles
       }
     },
     [innerComponents]
@@ -49346,7 +49670,7 @@ function useReactTable(options) {
 
 // src/react/components/SpaceView/Contexts/DataTypeView/OptionCell.tsx
 var import_lodash11 = __toESM(require_lodash());
-var import_obsidian27 = require("obsidian");
+var import_obsidian29 = require("obsidian");
 var OptionCell = (props2) => {
   var _a2, _b2, _c2;
   const parsedValue = F2(
@@ -49434,7 +49758,7 @@ var OptionCell = (props2) => {
     );
   };
   const showOptionMenu = (e4, option) => {
-    const menu = new import_obsidian27.Menu();
+    const menu = new import_obsidian29.Menu();
     menu.setUseNativeMenu(false);
     menu.addItem((menuItem) => {
       inputMenuItem(menuItem, option, (value2) => renameOption(option, value2));
@@ -49744,7 +50068,7 @@ var DateCell = (props2) => {
 };
 
 // src/react/components/SpaceView/Contexts/DataTypeView/FileCell.tsx
-var import_obsidian28 = require("obsidian");
+var import_obsidian30 = require("obsidian");
 var FileCell = (props2) => {
   const fileOrCleanPath = (f4) => {
     if (!f4)
@@ -49776,7 +50100,7 @@ var FileCell = (props2) => {
     if (!ref2.current)
       return;
     if (fileExists((_a2 = ref2.current) == null ? void 0 : _a2.value)) {
-      new import_obsidian28.Notice(i18n_default.notice.fileExists);
+      new import_obsidian30.Notice(i18n_default.notice.fileExists);
     } else {
       props2.saveValue(ref2.current.value);
       props2.setEditMode(null);
@@ -49789,7 +50113,7 @@ var FileCell = (props2) => {
       return;
     }
     if (fileExists(path)) {
-      new import_obsidian28.Notice(i18n_default.notice.fileExists);
+      new import_obsidian30.Notice(i18n_default.notice.fileExists);
     } else {
       await createNewMarkdownFile(
         props2.plugin,
@@ -49901,8 +50225,8 @@ var humanFileSize = (bytes, si = false, dp = 1) => {
 var LookUpCell = (props2) => {
   const [cache, setCache] = h2(null);
   const initialValue = props2.initialValue;
-  const { field, property } = parsePropString(props2.propertyValue);
-  if (property == "folder") {
+  const { field, value } = parseFieldValue(props2.propertyValue, "fileprop");
+  if (value == "folder") {
     return /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-cell-fileprop",
       onClick: () => {
@@ -49914,19 +50238,28 @@ var LookUpCell = (props2) => {
       }
     }, folderPathToString(initialValue));
   }
-  if (property == "extension") {
+  if (value == "extension") {
     return /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-cell-fileprop"
     }, initialValue);
-  } else if (property == "ctime" || property == "mtime") {
+  } else if (value == "ctime" || value == "mtime") {
     const date = new Date(parseInt(initialValue)).getTime() ? new Date(parseInt(initialValue)) : null;
     return /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-cell-fileprop"
     }, date && formatDistance3(new Date(date), new Date(), { addSuffix: true }));
-  } else if (property == "size" || property == "File.size") {
+  } else if (value == "size" || value == "File.size") {
     return /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-cell-fileprop"
     }, humanFileSize(parseInt(initialValue)));
+  } else if (value == "sticker") {
+    return /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-cell-fileprop"
+    }, /* @__PURE__ */ Cn.createElement("div", {
+      className: "mk-file-icon",
+      dangerouslySetInnerHTML: {
+        __html: stickerFromString(initialValue, props2.plugin)
+      }
+    }));
   }
   return /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-cell-fileprop"
@@ -50022,7 +50355,7 @@ var TextCell = (props2) => {
 
 // src/react/components/SpaceView/Contexts/TableView/TableView.tsx
 var import_lodash12 = __toESM(require_lodash());
-var import_obsidian30 = require("obsidian");
+var import_obsidian32 = require("obsidian");
 
 // src/react/components/SpaceView/Contexts/DataTypeView/ImageCell.tsx
 var ImageCell = (props2) => {
@@ -50368,7 +50701,7 @@ var SuperCell = (props2) => {
 };
 
 // src/react/components/SpaceView/Contexts/DataTypeView/TagCell.tsx
-var import_obsidian29 = require("obsidian");
+var import_obsidian31 = require("obsidian");
 var TagCell = (props2) => {
   const value = F2(
     () => parseMultiString(props2.initialValue),
@@ -50376,13 +50709,13 @@ var TagCell = (props2) => {
   );
   const removeValue = (v3) => {
     const file = getAbstractFileAtPath(props2.plugin, props2.row["File"]);
-    if (file instanceof import_obsidian29.TFile)
+    if (file instanceof import_obsidian31.TFile)
       removeTagFromFile(props2.plugin, v3, file);
   };
   const saveOptions = (_options, _value) => {
     const newValue = _value[0];
     const file = getAbstractFileAtPath(props2.plugin, props2.row["File"]);
-    if (file instanceof import_obsidian29.TFile)
+    if (file instanceof import_obsidian31.TFile)
       addTagToNote(props2.plugin, newValue, file);
   };
   const menuProps = () => {
@@ -50843,7 +51176,7 @@ var TableView = (props2) => {
   };
   const showContextMenu = (e4, index) => {
     e4.preventDefault();
-    const menu = new import_obsidian30.Menu();
+    const menu = new import_obsidian32.Menu();
     menu.addItem((item) => {
       item.setIcon("trash");
       item.setTitle(i18n_default.menu.deleteRow);
@@ -51041,7 +51374,7 @@ var BooleanCell = (props2) => {
 };
 
 // src/react/components/UI/Menus/colorPickerMenu.tsx
-var import_obsidian31 = require("obsidian");
+var import_obsidian33 = require("obsidian");
 
 // src/utils/color.ts
 var colors = [
@@ -51071,7 +51404,7 @@ var ColorPicker = (props2) => {
   })));
 };
 var showColorPickerMenu = (point, value, setValue) => {
-  const menu = new import_obsidian31.Menu();
+  const menu = new import_obsidian33.Menu();
   menu.dom.toggleClass("mk-menu", true);
   menu.setUseNativeMenu(false);
   const frag = document.createDocumentFragment();
@@ -52168,11 +52501,11 @@ function useMountStatus() {
 }
 
 // src/react/components/SpaceView/Contexts/FlowListView/FlowListView.tsx
-var import_obsidian32 = require("obsidian");
+var import_obsidian34 = require("obsidian");
 var FlowListView = (props2) => {
   const { filteredData: data2 } = q2(ContextEditorContext);
   const flowItems = F2(() => {
-    return data2.map((f4) => getAbstractFileAtPath(props2.plugin, f4.File)).filter((f4) => f4 instanceof import_obsidian32.TFile && f4.extension == "md");
+    return data2.map((f4) => getAbstractFileAtPath(props2.plugin, f4.File)).filter((f4) => f4 instanceof import_obsidian34.TFile && f4.extension == "md");
   }, [data2]);
   return /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-flow-container"
@@ -52330,7 +52663,7 @@ var EmbedViewComponent = (props2) => {
 
 // src/react/components/SpaceView/Editor/EmbedView/EmbedContextView.tsx
 var EMBED_CONTEXT_VIEW_TYPE = "make-inline-context";
-var EmbedContextView2 = class extends import_obsidian33.ItemView {
+var EmbedContextView2 = class extends import_obsidian35.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.navigation = true;
@@ -52390,27 +52723,27 @@ var EmbedContextView2 = class extends import_obsidian33.ItemView {
 };
 
 // src/react/components/SpaceView/Editor/FlowEditor.tsx
-var import_obsidian34 = require("obsidian");
+var import_obsidian36 = require("obsidian");
 var popovers = /* @__PURE__ */ new WeakMap();
 var mouseCoords = { x: 0, y: 0 };
 function nosuper(base2) {
   const derived = function() {
-    return Object.setPrototypeOf(new import_obsidian34.Component(), new.target.prototype);
+    return Object.setPrototypeOf(new import_obsidian36.Component(), new.target.prototype);
   };
   derived.prototype = base2.prototype;
   return Object.setPrototypeOf(derived, base2);
 }
 var _a, _b, _c, _d, _e;
-var FlowEditor = class extends nosuper(import_obsidian34.HoverPopover) {
+var FlowEditor = class extends nosuper(import_obsidian36.HoverPopover) {
   constructor(parent, targetEl, plugin, waitTime, onShowCallback) {
     super();
     this.targetEl = targetEl;
     this.plugin = plugin;
     this.onShowCallback = onShowCallback;
-    this.abortController = this.addChild(new import_obsidian34.Component());
+    this.abortController = this.addChild(new import_obsidian36.Component());
     this.detaching = false;
     this.opening = false;
-    this.rootSplit = new import_obsidian34.WorkspaceSplit(
+    this.rootSplit = new import_obsidian36.WorkspaceSplit(
       this.plugin.app.workspace,
       "vertical"
     );
@@ -52428,7 +52761,7 @@ var FlowEditor = class extends nosuper(import_obsidian34.HoverPopover) {
     this.onTarget = true;
     this.parent = parent;
     this.waitTime = waitTime;
-    this.state = import_obsidian34.PopoverState.Showing;
+    this.state = import_obsidian36.PopoverState.Showing;
     const { hoverEl } = this;
     this.abortController.load();
     this.timer = window.setTimeout(this.show.bind(this), waitTime);
@@ -52526,7 +52859,7 @@ var FlowEditor = class extends nosuper(import_obsidian34.HoverPopover) {
     this.registerEvent(
       app.workspace.on("layout-change", () => {
         this.rootSplit.children.forEach((item, index) => {
-          if (item instanceof import_obsidian34.WorkspaceTabs) {
+          if (item instanceof import_obsidian36.WorkspaceTabs) {
             this.rootSplit.replaceChild(index, item.children[0]);
           }
         });
@@ -52570,16 +52903,16 @@ var FlowEditor = class extends nosuper(import_obsidian34.HoverPopover) {
   }
   transition() {
     if (this.shouldShow()) {
-      if (this.state === import_obsidian34.PopoverState.Hiding) {
-        this.state = import_obsidian34.PopoverState.Shown;
+      if (this.state === import_obsidian36.PopoverState.Hiding) {
+        this.state = import_obsidian36.PopoverState.Shown;
         clearTimeout(this.timer);
       }
     } else {
-      if (this.state === import_obsidian34.PopoverState.Showing) {
+      if (this.state === import_obsidian36.PopoverState.Showing) {
         this.hide();
       } else {
-        if (this.state === import_obsidian34.PopoverState.Shown) {
-          this.state = import_obsidian34.PopoverState.Hiding;
+        if (this.state === import_obsidian36.PopoverState.Shown) {
+          this.state = import_obsidian36.PopoverState.Hiding;
           this.timer = window.setTimeout(() => {
             if (this.shouldShow()) {
               this.transition();
@@ -52603,13 +52936,13 @@ var FlowEditor = class extends nosuper(import_obsidian34.HoverPopover) {
     });
   }
   shouldShowSelf() {
-    return !this.detaching && !!(this.onTarget || this.state == import_obsidian34.PopoverState.Shown || this.document.querySelector(
+    return !this.detaching && !!(this.onTarget || this.state == import_obsidian36.PopoverState.Shown || this.document.querySelector(
       `body>.modal-container, body > #he${this.id} ~ .menu, body > #he${this.id} ~ .suggestion-container`
     ));
   }
   show() {
     if (!this.targetEl || this.document.body.contains(this.targetEl)) {
-      this.state = import_obsidian34.PopoverState.Shown;
+      this.state = import_obsidian36.PopoverState.Shown;
       this.timer = 0;
       this.shownPos = mouseCoords;
       this.targetEl.replaceChildren(this.hoverEl);
@@ -52653,7 +52986,7 @@ var FlowEditor = class extends nosuper(import_obsidian34.HoverPopover) {
   nativeHide() {
     var _a2;
     const { hoverEl, targetEl } = this;
-    this.state = import_obsidian34.PopoverState.Hidden;
+    this.state = import_obsidian36.PopoverState.Hidden;
     hoverEl.detach();
     if (targetEl) {
       const parent = targetEl.matchParent(".mk-hover-popover");
@@ -52664,7 +52997,7 @@ var FlowEditor = class extends nosuper(import_obsidian34.HoverPopover) {
     this.unload();
   }
   resolveLink(linkText, sourcePath) {
-    const link = (0, import_obsidian34.parseLinktext)(linkText);
+    const link = (0, import_obsidian36.parseLinktext)(linkText);
     const tFile = link ? this.plugin.app.metadataCache.getFirstLinkpathDest(
       link.path,
       sourcePath != null ? sourcePath : ""
@@ -52712,7 +53045,7 @@ var FlowEditor = class extends nosuper(import_obsidian34.HoverPopover) {
   }
   buildEphemeralState(file, link) {
     const cache = this.plugin.app.metadataCache.getFileCache(file);
-    const subpath = cache ? (0, import_obsidian34.resolveSubpath)(cache, (link == null ? void 0 : link.subpath) || "") : void 0;
+    const subpath = cache ? (0, import_obsidian36.resolveSubpath)(cache, (link == null ? void 0 : link.subpath) || "") : void 0;
     const eState = { subpath: link == null ? void 0 : link.subpath };
     if (subpath) {
       eState.line = subpath.start.line;
@@ -53069,7 +53402,7 @@ var FlowView = k3((props2, ref2) => {
     triggerMenu(e4) {
       var _a3, _b2;
       if (((_b2 = (_a3 = leafRef.current) == null ? void 0 : _a3.view) == null ? void 0 : _b2.editor) && fileRef.current) {
-        const menu = new import_obsidian35.Menu();
+        const menu = new import_obsidian37.Menu();
         leafRef.current.view.onPaneMenu(menu, "more-options");
         if (isMouseEvent(e4)) {
           menu.showAtPosition({ x: e4.pageX, y: e4.pageY });
@@ -53226,7 +53559,7 @@ var FrameEditorNodeView = (props2) => {
   }));
 };
 var FrameNodeView = (props2) => {
-  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k, _l, _m, _n2, _o, _p, _q, _r, _s, _t, _u, _v;
+  var _a2, _b2, _c2, _d2, _e2, _f, _g, _h, _i, _j, _k, _l, _m, _n2, _o, _p, _q;
   const {
     selectedNodes,
     saveState,
@@ -53264,31 +53597,11 @@ var FrameNodeView = (props2) => {
   });
   const menuRef = _2(null);
   const ref2 = _2(null);
-  const saveNodeValue = (values, node) => {
-    const newNodes = {
-      ...node,
-      props: {
-        ...node.props,
-        ...values
-      }
-    };
-    saveNodes([newNodes]);
-  };
-  const saveStyleValue = (values, node) => {
-    const newNodes = {
-      ...node,
-      styles: {
-        ...node.styles,
-        ...values
-      }
-    };
-    saveNodes([newNodes]);
-  };
   const isSelected = selectedNodes.some((f4) => props2.treeNode.id == f4.id);
   const innerComponents = props2.treeNode.node.type == "text" ? /* @__PURE__ */ Cn.createElement(TextNodeView, {
     treeNode: props2.treeNode,
     instance: props2.instance,
-    editable: !props2.treeNode.isRef
+    editable: props2.editMode > 0 && !props2.treeNode.isRef
   }) : props2.treeNode.node.type == "icon" ? /* @__PURE__ */ Cn.createElement(IconNodeView, {
     plugin: props2.plugin,
     treeNode: props2.treeNode,
@@ -53397,15 +53710,17 @@ var FrameNodeView = (props2) => {
       ref: (el) => {
         ref2.current = el;
       },
-      className: `mk-frame ${(_k = (_j = (_i = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _i.styles) == null ? void 0 : _j.class) != null ? _k : ""}`,
-      layout: (_n2 = (_m = (_l = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _l.styles) == null ? void 0 : _m.layout) != null ? _n2 : "",
+      className: `mk-frame-edit ${parseStylesToClass(
+        (_i = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _i.styles
+      )}`,
       "data-path": props2.treeNode.id,
+      "data-type": props2.treeNode.node.type,
       onClick,
       style: {
         ...defaultFrameStyles,
-        ...(_o = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _o.styles,
-        "--translate-x": `${(_p = transform == null ? void 0 : transform.x) != null ? _p : 0}px`,
-        "--translate-y": `${(_q = transform == null ? void 0 : transform.y) != null ? _q : 0}px`,
+        ...(_j = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _j.styles,
+        "--translate-x": `${(_k = transform == null ? void 0 : transform.x) != null ? _k : 0}px`,
+        "--translate-y": `${(_l = transform == null ? void 0 : transform.y) != null ? _l : 0}px`,
         ...props2.editMode == -1 && props2.treeNode.node.parentId == props2.instance.root.id ? { left: 0, top: 0 } : {}
       }
     },
@@ -53418,7 +53733,7 @@ var FrameNodeView = (props2) => {
           columnInsert: hoverNode == `|${props2.treeNode.node.id}`,
           plugin: props2.plugin,
           height: `100%`,
-          width: `${dropMode != 3 /* DropModeColumnOnly */ ? (_r = ref2.current) == null ? void 0 : _r.parentElement.clientWidth : (_s = ref2.current) == null ? void 0 : _s.clientWidth}px`,
+          width: `${dropMode != 3 /* DropModeColumnOnly */ ? (_m = ref2.current) == null ? void 0 : _m.parentElement.clientWidth : (_n2 = ref2.current) == null ? void 0 : _n2.clientWidth}px`,
           id: `|${props2.treeNode.node.id}`,
           mode: dropMode,
           dropRef: setNodeRef
@@ -53427,7 +53742,7 @@ var FrameNodeView = (props2) => {
       ...props2.editMode > 0 && canResize ? [
         /* @__PURE__ */ Cn.createElement(FrameEditorNodeView, {
           key: props2.treeNode.id,
-          size: (_t = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _t.styles,
+          size: (_o = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _o.styles,
           column: props2.treeNode.node.type == "column",
           resize: onResize
         })
@@ -53449,7 +53764,7 @@ var FrameNodeView = (props2) => {
   );
   return props2.instance.state[props2.treeNode.id] && (props2.editMode != 0 && props2.treeNode.editorProps.dragMode == 1 ? /* @__PURE__ */ Cn.createElement(SelectableFrameNode, {
     node: props2.treeNode.id,
-    maxWidth: (_v = (_u = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _u.styles) == null ? void 0 : _v.maxWidth,
+    maxWidth: (_q = (_p = props2.instance.state[props2.treeNode.id]) == null ? void 0 : _p.styles) == null ? void 0 : _q.maxWidth,
     selected: selectedNodes.some((f4) => props2.treeNode.id == f4.id),
     ...platformIsMobile() ? {
       dragRef: setDraggableNodeRef,
@@ -53475,9 +53790,7 @@ var FrameNodeView = (props2) => {
         type: props2.instance.root.node.types[f4],
         value: props2.instance.root.node.propsValue[f4]
       })
-    ),
-    savePropValue: (key2, value) => saveNodeValue({ [key2]: value }, props2.treeNode.node),
-    saveStyleValue: (key2, value) => saveStyleValue({ [key2]: value }, props2.treeNode.node)
+    )
   }) : selectedNodes.length > 1 && selectedNodes[0].id == props2.treeNode.id && /* @__PURE__ */ Cn.createElement(HoverMultiMenu, {
     plugin: props2.plugin
   }), inner, !platformIsMobile() && /* @__PURE__ */ Cn.createElement(FrameHoverMenu, {
@@ -53514,304 +53827,9 @@ var SelectableFrameNode = (props2) => {
   }, props2.children);
 };
 
-// src/react/components/SpaceView/Frames/FrameEditorView.tsx
-var import_obsidian36 = require("obsidian");
-
-// src/react/components/SpaceView/Frames/Setters/CodeEditorSetter.tsx
-var CodeEditorSetter = (props2) => {
-  return /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-setter-code"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    onClick: () => props2.editCode(props2.node, props2.name, props2.type),
-    dangerouslySetInnerHTML: { __html: uiIconSet["mk-mark-code"] }
-  }), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-setter-code-value"
-  }, props2.value));
-};
-
-// src/react/components/SpaceView/Frames/Panels/PropsPanel.tsx
-var PropsPanel = (props2) => {
-  const { spaceInfo } = q2(SpaceContext);
-  const { saveNodes, root, selectedNodes } = q2(FramesEditorContext);
-  const saveContexts = (values, node) => {
-    const newRoot = {
-      ...node,
-      contexts: {
-        ...node.contexts,
-        ...values
-      }
-    };
-    saveNodes([newRoot]);
-  };
-  const saveNodeValue = (values, node) => {
-    const newNodes = {
-      ...node,
-      props: {
-        ...node.props,
-        ...values
-      }
-    };
-    saveNodes([newNodes]);
-  };
-  const saveRootProperty = (name) => {
-    saveProperty({
-      schemaId: root.node.id,
-      type: "text",
-      name
-    });
-  };
-  const { properties: properties2, saveProperty, delProperty } = q2(FramesEditorContext);
-  const showMenu = (e4, field) => {
-    const offset2 = e4.target.getBoundingClientRect();
-    showPropertyMenu({
-      plugin: props2.plugin,
-      position: { x: offset2.left, y: offset2.top + 30 },
-      editable: true,
-      options: [],
-      field: { ...field, table: "" },
-      fields: properties2.map((f4) => ({ ...f4, table: "" })),
-      contextPath: spaceInfo.path,
-      saveField: (newField) => saveProperty(newField, field),
-      deleteColumn: delProperty,
-      editCode: () => props2.editCode(root.node.id, "props", field.name)
-    });
-  };
-  const showContextMenu = (e4) => {
-    const offset2 = e4.target.getBoundingClientRect();
-    const f4 = loadTags(props2.plugin);
-    showSelectMenu(
-      { x: offset2.left, y: offset2.top + 30 },
-      {
-        plugin: props2.plugin,
-        multi: false,
-        editable: true,
-        value: [],
-        options: f4.map((m5) => ({ name: m5, value: m5 })),
-        saveOptions: (_12, value) => addTag2(value[0]),
-        placeholder: i18n_default.labels.contextItemSelectPlaceholder,
-        searchable: true,
-        showAll: true
-      }
-    );
-  };
-  const addTag2 = (tag) => {
-    saveContexts({ ...props2.contexts, [tag]: "" }, root.node);
-  };
-  const [newProp, setNewProp] = h2("");
-  return /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-file-context-component"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-file-context-title"
-  }, i18n_default.labels.properties), properties2.map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-file-context-row",
-    key: i4
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-file-context-field",
-    onClick: (e4) => showMenu(e4, f4),
-    "aria-label": f4.type
-  }, f4.name), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-file-context-value"
-  }, stringIsConst(root.node.props[f4.name]) ? /* @__PURE__ */ Cn.createElement(DataTypeView, {
-    plugin: props2.plugin,
-    initialValue: removeQuotes(root.node.props[f4.name]),
-    column: { ...f4, table: "" },
-    editable: !spaceInfo.readOnly,
-    updateFieldValue: (fieldValue, value) => {
-      saveProperty({ ...f4, value: fieldValue }, f4);
-      saveNodeValue({ [f4.name]: `"${value}"` }, root.node);
-    },
-    updateValue: (value) => saveNodeValue({ [f4.name]: `"${value}"` }, root.node)
-  }) : /* @__PURE__ */ Cn.createElement(CodeEditorSetter, {
-    name: f4.name,
-    value: root.node.props[f4.name],
-    type: "props",
-    node: root.id,
-    editCode: props2.editCode
-  })))), /* @__PURE__ */ Cn.createElement("div", null, /* @__PURE__ */ Cn.createElement(TextCell, {
-    initialValue: newProp,
-    saveValue: (value) => saveRootProperty(value),
-    editMode: 2 /* EditModeActive */,
-    setEditMode: () => null,
-    plugin: props2.plugin,
-    propertyValue: ""
-  })));
-};
-
-// src/react/components/SpaceView/Frames/FrameEditor.tsx
-var FrameEditor = (props2) => {
-  var _a2;
-  const activationConstraint = {
-    distance: { y: 0 },
-    tolerance: { x: 0 }
-  };
-  const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint
-  });
-  const touchSensor = useSensor(TouchSensor, {
-    activationConstraint
-  });
-  const keyboardSensor = useSensor(KeyboardSensor, {});
-  const sensors = useSensors(mouseSensor, touchSensor, keyboardSensor);
-  const [tab, setTab] = h2(0);
-  const { frameSchema } = q2(FramesMDBContext);
-  const [preselectedProp, setPreselectedProp] = h2(null);
-  const [preselectedPropType, setPreselectedPropType] = h2(null);
-  const {
-    root,
-    instance,
-    nodes,
-    saveNodes: saveFrames,
-    saveProperty,
-    setHoverNode,
-    selectNodes,
-    selectedNodes,
-    properties: properties2
-  } = q2(FramesEditorContext);
-  const nodesSelected = (evt) => {
-    selectNodes(
-      evt.detail.selection.map((f4) => nodes.find((n2) => n2.id == f4)).filter((f4) => f4)
-    );
-  };
-  p2(() => {
-    window.addEventListener(eventTypes.frameLayerSelected, nodesSelected);
-    return () => {
-      window.removeEventListener(eventTypes.frameLayerSelected, nodesSelected);
-    };
-  }, [nodes]);
-  const editCode = (node, key2, type) => {
-    setTab(1);
-    if (!((selectedNodes == null ? void 0 : selectedNodes.length) > 0)) {
-      if (selectedNodes[0].id != node) {
-        selectNodes(nodes);
-      }
-    } else {
-    }
-    setPreselectedProp(key2);
-    setPreselectedPropType(type);
-  };
-  return /* @__PURE__ */ Cn.createElement(DndContext, {
-    sensors
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-frame-editor"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-frame-container"
-  }, instance.root && /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-frame-main"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-frame-canvas"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-frame-props-editor"
-  }, /* @__PURE__ */ Cn.createElement(PropsPanel, {
-    contexts: (_a2 = root.node.contexts) != null ? _a2 : {},
-    plugin: props2.plugin,
-    editCode
-  })), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-frame-canvas-editor"
-  }, /* @__PURE__ */ Cn.createElement(FrameNodeView, {
-    editMode: 2,
-    plugin: props2.plugin,
-    treeNode: instance.root,
-    instance
-  })))))));
-};
-
-// src/react/components/SpaceView/Frames/FrameEditorView.tsx
-var FRAME_EDITOR_TYPE = "mk-frame-editor";
-var openFrameEditor = async (plugin, path, schema) => {
-  const leaf = plugin.app.workspace.getLeaf(false);
-  plugin.openFileContextLeaf();
-  const viewType = FRAME_EDITOR_TYPE;
-  plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.setViewState({
-    type: viewType,
-    state: { path, schema }
-  });
-  await plugin.app.workspace.requestSaveLayout();
-  if (path) {
-    const evt2 = new CustomEvent(eventTypes.activePathChange, {
-      detail: { path: uriByString(plugin, path) }
-    });
-    window.dispatchEvent(evt2);
-    const evt = new CustomEvent(eventTypes.frameSelected, {
-      detail: { path: uriByString(plugin, path + "#*" + schema) }
-    });
-    window.dispatchEvent(evt);
-  }
-};
-var FrameEditorView = class extends import_obsidian36.ItemView {
-  constructor(leaf, plugin, viewType) {
-    super(leaf);
-    this.navigation = true;
-    this.plugin = plugin;
-    this.viewType = viewType;
-  }
-  getViewType() {
-    return FRAME_EDITOR_TYPE;
-  }
-  getDisplayText() {
-    var _a2;
-    return (_a2 = this.space) == null ? void 0 : _a2.name;
-  }
-  async onClose() {
-    this.destroy();
-  }
-  destroy() {
-    if (this.root)
-      this.root.unmount();
-  }
-  async onOpen() {
-    this.destroy();
-  }
-  async setState(state, result) {
-    this.space = spaceInfoByPath(this.plugin, state.path);
-    this.schema = state.schema;
-    if (!this.space)
-      return;
-    this.constructNote(this.space, this.schema);
-    const displayName = pathDisplayName(this.space.uri, this.plugin);
-    await super.setState(state, result);
-    this.leaf.tabHeaderInnerTitleEl.innerText = displayName;
-    this.leaf.view.titleEl = displayName;
-    const headerEl = this.leaf.view.headerEl;
-    if (headerEl) {
-      headerEl.querySelector(".view-header-title").innerText = displayName;
-    }
-    result.history = true;
-    return;
-  }
-  getState() {
-    var _a2, _b2;
-    const state = super.getState();
-    state.path = (_b2 = (_a2 = this.space) == null ? void 0 : _a2.uri) == null ? void 0 : _b2.fullPath;
-    state.schema = this.schema;
-    return state;
-  }
-  constructNote(space, schema) {
-    this.destroy();
-    this.root = createRoot(this.contentEl);
-    this.root.render(
-      /* @__PURE__ */ Cn.createElement("div", {
-        className: "mk-space-view"
-      }, /* @__PURE__ */ Cn.createElement(SpaceContextProvider, {
-        plugin: this.plugin,
-        space
-      }, /* @__PURE__ */ Cn.createElement(FramesMDBProvider, {
-        plugin: this.plugin,
-        schema
-      }, /* @__PURE__ */ Cn.createElement(FramesEditorProvider, {
-        plugin: this.plugin,
-        props: {},
-        editMode: 2
-      }, /* @__PURE__ */ Cn.createElement(FrameEditor, {
-        plugin: this.plugin
-      })))))
-    );
-  }
-};
-
 // src/react/components/UI/Modals/saveViewModal.ts
-var import_obsidian37 = require("obsidian");
-var SaveViewModal = class extends import_obsidian37.Modal {
+var import_obsidian38 = require("obsidian");
+var SaveViewModal = class extends import_obsidian38.Modal {
   constructor(schema, saveSchema, action) {
     super(app);
     this.schema = schema;
@@ -53874,7 +53892,7 @@ var ContextFrameView = (props2) => {
   const [selectedType, setSelectedType] = h2(
     "frame"
   );
-  const { predicate, savePredicate, cols, data: data2 } = q2(ContextEditorContext);
+  const { predicate, savePredicate, cols, data: data2, setEditMode } = q2(ContextEditorContext);
   const { frameSchemas, saveSchema } = q2(FramesMDBContext);
   const { spaceInfo } = q2(SpaceContext);
   const selectedGroupSpace = F2(
@@ -53893,20 +53911,21 @@ var ContextFrameView = (props2) => {
     () => predicate && predicate["frame"] ? uriByString(props2.plugin, predicate["frame"]).ref : null,
     [predicate]
   );
-  const selectFrame = (frameRef) => {
-    savePredicate({ ...predicate, view: "frame", [selectedType]: frameRef });
+  const selectFrame = (frameRef, type) => {
+    savePredicate({ ...predicate, view: "frame", [type]: frameRef });
   };
   const setFrameProps = (frameProps) => {
     savePredicate({ ...predicate, frameProps });
   };
-  const newSchema = (schema) => {
-    selectFrame(schema.id);
-    saveSchema(schema);
+  const newSchema = async (schema, type) => {
+    selectFrame(`${spaceInfo.path}/#*${schema.id}`, type);
+    await saveSchema(schema);
+    return schema;
   };
-  const addFrame = () => {
+  const addFrame = (type) => {
     const vaultChangeModal = new SaveViewModal(
       { name: "", type: "listitem", id: "frame" },
-      newSchema,
+      (schema) => newSchema(schema, type),
       "new view"
     );
     vaultChangeModal.open();
@@ -53927,6 +53946,35 @@ var ContextFrameView = (props2) => {
       coordinateGetter: sortableKeyboardCoordinates
     })
   );
+  const selectFrameMenu = (e4, frame) => {
+    const offset2 = e4.target.getBoundingClientRect();
+    showSelectMenu(
+      { x: offset2.left, y: offset2.top + 30 },
+      {
+        plugin: props2.plugin,
+        multi: false,
+        editable: true,
+        value: [],
+        options: frameSchemas.filter((f4) => f4.type == "listitem").map((f4) => ({ name: f4.name, value: f4.id })),
+        saveOptions: (_12, value, isNew) => {
+          if (!frameSchemas.some((f4) => f4.id == value[0])) {
+            newSchema(
+              { name: value[0], type: "listitem", id: value[0] },
+              frame
+            ).then(
+              (f4) => addNodeToMFrame(props2.plugin, spaceInfo, f4.id, contentNode.node)
+            );
+          } else {
+            selectFrame(`${spaceInfo.path}/#*${value[0]}`, frame);
+          }
+        },
+        placeholder: "Select/Create List Item Frame",
+        detail: true,
+        searchable: false,
+        showAll: true
+      }
+    );
+  };
   const saveViewType = (type) => {
     savePredicate({
       ...predicate,
@@ -53938,38 +53986,26 @@ var ContextFrameView = (props2) => {
     className: "mk-context-view-editor"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-context-view-menu"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    onClick: () => setSelectedType("frameGroup"),
-    className: selectedType == "frameGroup" ? "mk-is-active" : ""
+  }, /* @__PURE__ */ Cn.createElement("div", null, "Edit Mode"), /* @__PURE__ */ Cn.createElement("div", {
+    className: `${selectedType == "frameGroup" ? "mk-is-active" : ""}`,
+    onClick: () => setSelectedType("frameGroup")
   }, "Group"), /* @__PURE__ */ Cn.createElement("div", {
-    onClick: () => setSelectedType("frame"),
-    className: selectedType == "frame" ? "mk-is-active" : ""
-  }, "Item"), frameSchemas.filter((f4) => f4.type == "listitem").map((f4, i4) => /* @__PURE__ */ Cn.createElement("div", {
-    key: i4,
-    onClick: () => selectFrame(`${spaceInfo.path}/#*${f4.id}`),
-    onContextMenu: () => openFrameEditor(props2.plugin, spaceInfo.path, f4.id)
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//square", props2.plugin)
-    }
-  }), f4.name)), /* @__PURE__ */ Cn.createElement("div", {
-    onClick: (e4) => {
-      showNewFrameMenu(
-        e4,
-        props2.plugin,
-        selectedType == "frameGroup" ? selectedGroupSpace : selectedFrameSpace,
-        (node) => addNodeToMFrame(
-          props2.plugin,
-          selectedType == "frameGroup" ? selectedGroupSpace : selectedFrameSpace,
-          selectedType == "frameGroup" ? selectedGroup : selectedFrame,
-          node
-        )
-      );
-    },
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//plus", props2.plugin)
-    }
-  })), selectedGroup ? /* @__PURE__ */ Cn.createElement(DndContext, {
+    className: `${selectedType == "frame" ? "mk-is-active" : ""}`,
+    onClick: () => setSelectedType("frame")
+  }, "Item"), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement("div", null, "Group"), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-button",
+    onClick: (e4) => selectFrameMenu(e4, "frameGroup")
+  }, selectedGroup != null ? selectedGroup : "New Group View"), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-divider"
+  }), /* @__PURE__ */ Cn.createElement("div", null, "Item"), /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-button",
+    onClick: (e4) => selectFrameMenu(e4, "frame")
+  }, selectedFrame != null ? selectedFrame : "New Item View"), /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("div", {
+    onClick: () => setEditMode(0),
+    className: "mk-button mk-cta"
+  }, i18n_default.labels.done)), selectedGroup ? /* @__PURE__ */ Cn.createElement(DndContext, {
     sensors,
     measuring: {
       droppable: {
@@ -53981,11 +54017,11 @@ var ContextFrameView = (props2) => {
     schema: selectedGroup
   }, /* @__PURE__ */ Cn.createElement(FramesEditorProvider, {
     plugin: props2.plugin,
-    editMode: selectedType == "frameGroup" ? 1 : 0
+    editMode: selectedType == "frameGroup" ? 2 : 0
   }, /* @__PURE__ */ Cn.createElement(FrameListView, {
     plugin: props2.plugin,
     cols: ["name", "value"],
-    editMode: selectedType == "frameGroup" ? 1 : 0
+    editMode: selectedType == "frameGroup" ? 2 : 0
   }, selectedFrame ? data2.map((f4, i4) => /* @__PURE__ */ Cn.createElement(DndContext, {
     key: i4,
     sensors,
@@ -54000,11 +54036,11 @@ var ContextFrameView = (props2) => {
   }, /* @__PURE__ */ Cn.createElement(FramesEditorProvider, {
     plugin: props2.plugin,
     props: f4,
-    editMode: selectedType == "frame" ? 1 : 0
+    editMode: selectedType == "frame" ? 2 : 0
   }, /* @__PURE__ */ Cn.createElement(FrameListView, {
     plugin: props2.plugin,
     cols: cols.map((f5) => f5.name),
-    editMode: selectedType == "frame" ? 1 : 0
+    editMode: selectedType == "frame" ? 2 : 0
   }))))) : /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-content-placeholder"
   }))))) : selectedFrame ? /* @__PURE__ */ Cn.createElement("div", null, data2.map((f4, i4) => /* @__PURE__ */ Cn.createElement(DndContext, {
@@ -54025,16 +54061,8 @@ var ContextFrameView = (props2) => {
   }, /* @__PURE__ */ Cn.createElement(FrameListView, {
     plugin: props2.plugin,
     cols: cols.map((f5) => f5.name),
-    editMode: selectedType == "frame" ? 1 : 0
-  })))))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null)), /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-context-view-selector"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    onClick: () => addFrame()
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    dangerouslySetInnerHTML: {
-      __html: stickerFromString("lucide//plus", props2.plugin)
-    }
-  }), i18n_default.labels.createNew)));
+    editMode: selectedType == "frame" ? 2 : 0
+  })))))) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null)));
 };
 var FrameListView = (props2) => {
   const { frameSchema } = q2(FramesMDBContext);
@@ -54244,8 +54272,10 @@ var FrameListView = (props2) => {
       resetState();
     }
   });
-  return (_instance == null ? void 0 : _instance.root) && /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement(FrameNodeView, {
-    editMode: 1,
+  return (_instance == null ? void 0 : _instance.root) && /* @__PURE__ */ Cn.createElement("div", {
+    className: props2.editMode == 2 ? "mk-f-edit" : ""
+  }, /* @__PURE__ */ Cn.createElement(FrameNodeView, {
+    editMode: props2.editMode,
     plugin: props2.plugin,
     treeNode: _instance.root,
     instance: _instance
@@ -54512,7 +54542,7 @@ function SortableItem2(props2) {
 }
 
 // src/react/components/UI/Modals/contextEditorModal.tsx
-var ContextEditorModal = class extends import_obsidian38.Modal {
+var ContextEditorModal = class extends import_obsidian39.Modal {
   constructor(plugin, space, db, view, type) {
     super(plugin.app);
     this.space = space;
@@ -54683,7 +54713,7 @@ var FilterBar = (props2) => {
     });
   };
   const viewContextMenu = (e4, _schema) => {
-    const fileMenu = new import_obsidian39.Menu();
+    const fileMenu = new import_obsidian40.Menu();
     fileMenu.addSeparator();
     fileMenu.addItem((menuItem) => {
       menuItem.setTitle(i18n_default.menu.copyEmbedLink);
@@ -54720,7 +54750,7 @@ var FilterBar = (props2) => {
     }
   };
   const showFilterMenu = (e4) => {
-    const menu = new import_obsidian39.Menu();
+    const menu = new import_obsidian40.Menu();
     menu.addItem((item) => {
       item.setTitle(i18n_default.menu.tableView);
       item.setIcon("table-2");
@@ -55052,7 +55082,7 @@ var FilterBar = (props2) => {
       case "text":
       case "number":
         {
-          const menu = new import_obsidian39.Menu();
+          const menu = new import_obsidian40.Menu();
           menu.setUseNativeMenu(false);
           const saveFilterValue = (value) => {
             const newFilter = {
@@ -55183,6 +55213,9 @@ var FilterBar = (props2) => {
     dangerouslySetInnerHTML: {
       __html: uiIconSet["mk-ui-view-options"]
     }
+  }), props2.plugin.settings.experimental && /* @__PURE__ */ Cn.createElement("button", {
+    onClick: (e4) => setEditMode((p3) => p3 == 0 ? 1 : 0),
+    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-build"] }
   }), /* @__PURE__ */ Cn.createElement("div", null, /* @__PURE__ */ Cn.createElement("button", {
     onClick: (e4) => showColsMenu(e4),
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-list"] }
@@ -55258,7 +55291,7 @@ var SpaceQuery = (props2) => {
       case "text":
       case "number":
         {
-          const menu = new import_obsidian40.Menu();
+          const menu = new import_obsidian41.Menu();
           menu.setUseNativeMenu(false);
           menu.addItem((menuItem) => {
             inputMenuItem(
@@ -55537,7 +55570,7 @@ var SpaceQuery = (props2) => {
     );
     const frontmatter = allMetadataForFiles(
       props2.plugin,
-      allFiles.map((f5) => getAbstractFileAtPath(props2.plugin, f5.path)).filter((f5) => f5 instanceof import_obsidian40.TFile)
+      allFiles.map((f5) => getAbstractFileAtPath(props2.plugin, f5.path)).filter((f5) => f5 instanceof import_obsidian41.TFile)
     );
     const fmTypes = guestimateTypes(
       allFiles.map((f5) => f5.path),
@@ -55707,11 +55740,11 @@ var SpaceEditor = (props2) => {
     const parentPath = ((_a3 = props2.space) == null ? void 0 : _a3.parent) ? props2.space.parent : ((_b3 = props2.parent) == null ? void 0 : _b3.type) == "folder" ? props2.parent.path : "/";
     const newPath = !parentPath || parentPath == "/" ? newName : parentPath + "/" + newName;
     if (newName.length == 0) {
-      new import_obsidian41.Notice(i18n_default.notice.newSpaceName);
+      new import_obsidian42.Notice(i18n_default.notice.newSpaceName);
       return;
     }
     if (props2.plugin.index.spacesIndex.has(newPath) && (!props2.space || newPath != props2.space.path)) {
-      new import_obsidian41.Notice(i18n_default.notice.duplicateSpaceName);
+      new import_obsidian42.Notice(i18n_default.notice.duplicateSpaceName);
       return;
     }
     props2.close();
@@ -55857,7 +55890,7 @@ var SpaceEditor = (props2) => {
 var SpaceEditor_default = SpaceEditor;
 
 // src/react/components/UI/Modals/editSpaceModal.tsx
-var EditSpaceModal = class extends import_obsidian42.Modal {
+var EditSpaceModal = class extends import_obsidian43.Modal {
   constructor(plugin, space, action, metadata, parent, dontOpen) {
     super(plugin.app);
     this.space = space;
@@ -55899,8 +55932,8 @@ var EditSpaceModal = class extends import_obsidian42.Modal {
 };
 
 // src/react/components/UI/Modals/deleteModal.tsx
-var import_obsidian43 = require("obsidian");
-var DeleteModal = class extends import_obsidian43.Modal {
+var import_obsidian44 = require("obsidian");
+var DeleteModal = class extends import_obsidian44.Modal {
   constructor(plugin, confirmAction, title, message) {
     super(plugin.app);
     this.confirmAction = confirmAction;
@@ -55938,8 +55971,8 @@ var DeleteModal = class extends import_obsidian43.Modal {
 };
 
 // src/react/components/UI/Modals/tagChangeModal.tsx
-var import_obsidian44 = require("obsidian");
-var TagChangeModal = class extends import_obsidian44.Modal {
+var import_obsidian45 = require("obsidian");
+var TagChangeModal = class extends import_obsidian45.Modal {
   constructor(plugin, action, tag) {
     super(plugin.app);
     this.action = action;
@@ -56003,7 +56036,7 @@ var TagChangeModal = class extends import_obsidian44.Modal {
 
 // src/react/components/UI/Menus/fileMenu.tsx
 var showSpaceAddMenu = (plugin, e4, space, dontOpen) => {
-  const fileMenu = new import_obsidian45.Menu();
+  const fileMenu = new import_obsidian46.Menu();
   fileMenu.addItem((menuItem) => {
     menuItem.setIcon("edit");
     menuItem.setTitle(i18n_default.buttons.createNote);
@@ -56055,7 +56088,7 @@ var showSpaceAddMenu = (plugin, e4, space, dontOpen) => {
 var triggerSpaceMenu = (plugin, space, e4, activeFile, parentSpace) => {
   if (!space)
     return;
-  const spaceMenu = new import_obsidian45.Menu();
+  const spaceMenu = new import_obsidian46.Menu();
   spaceMenu.addItem((menuItem) => {
     menuItem.setIcon("edit");
     menuItem.setTitle(i18n_default.buttons.createNote);
@@ -56103,7 +56136,7 @@ var triggerSpaceMenu = (plugin, space, e4, activeFile, parentSpace) => {
           plugin,
           space.type == "folder" ? space.path : `${plugin.settings.spacesFolder}/${space.name}`
         );
-        if (file instanceof import_obsidian45.TFolder) {
+        if (file instanceof import_obsidian46.TFolder) {
           const leaf = plugin.app.workspace.getLeaf(false);
           app.workspace.setActiveLeaf(leaf, { focus: true });
           leaf.openFile(file, { eState: { focus: true } });
@@ -56177,7 +56210,7 @@ var triggerSpaceMenu = (plugin, space, e4, activeFile, parentSpace) => {
       menuItem.setTitle(i18n_default.menu.sortBy);
       menuItem.setIcon("sort-desc");
       menuItem.onClick((ev) => {
-        const sortMenu = new import_obsidian45.Menu();
+        const sortMenu = new import_obsidian46.Menu();
         sortMenu.addItem((menuItem2) => {
           menuItem2.setIcon("arrow-up-down");
           menuItem2.setTitle(i18n_default.menu.groupSpaces);
@@ -56342,7 +56375,7 @@ var triggerSpaceMenu = (plugin, space, e4, activeFile, parentSpace) => {
 };
 var triggerMultiFileMenu = (plugin, selectedFiles, e4) => {
   const files = selectedFiles.map((s5) => s5.item.path);
-  const fileMenu = new import_obsidian45.Menu();
+  const fileMenu = new import_obsidian46.Menu();
   fileMenu.addSeparator();
   fileMenu.addItem((menuItem) => {
     menuItem.setIcon("pin");
@@ -56449,7 +56482,7 @@ var triggerMultiFileMenu = (plugin, selectedFiles, e4) => {
 };
 var triggerFileMenu = (plugin, file, isFolder, e4, space) => {
   const cache = plugin.index.filesIndex.get(file.path);
-  const fileMenu = new import_obsidian45.Menu();
+  const fileMenu = new import_obsidian46.Menu();
   fileMenu.addSeparator();
   fileMenu.addItem((menuItem) => {
     menuItem.setIcon("pin");
@@ -56471,12 +56504,12 @@ var triggerFileMenu = (plugin, file, isFolder, e4, space) => {
       );
     });
   });
-  if (file instanceof import_obsidian45.TFile && file.extension == "md")
+  if (file instanceof import_obsidian46.TFile && file.extension == "md")
     fileMenu.addItem((menuItem) => {
       menuItem.setTitle(i18n_default.menu.changeToFolderNote);
       menuItem.setIcon("file-plus-2");
       menuItem.onClick((ev) => {
-        if (file instanceof import_obsidian45.TFile)
+        if (file instanceof import_obsidian46.TFile)
           noteToFolderNote(plugin, file, true);
       });
     });
@@ -56584,9 +56617,9 @@ var triggerFileMenu = (plugin, file, isFolder, e4, space) => {
 };
 
 // src/react/components/UI/Menus/fmMenu.tsx
-var import_obsidian46 = require("obsidian");
+var import_obsidian47 = require("obsidian");
 var showFMMenu = (plugin, position, property, deleteProperty, syncProperty, renameProperty, changeType) => {
-  const menu = new import_obsidian46.Menu();
+  const menu = new import_obsidian47.Menu();
   menu.setUseNativeMenu(false);
   menu.addItem((menuItem) => {
     var _a2;
@@ -56856,6 +56889,7 @@ var FileContextList = (props2) => {
   const { tableData, dbSchema } = q2(ContextMDBContext);
   const {
     newColumn,
+    data: data2,
     cols,
     saveColumn,
     hideColumn,
@@ -56867,14 +56901,14 @@ var FileContextList = (props2) => {
     predicate
   } = q2(ContextEditorContext);
   const fileContext = F2(() => {
-    return tableData ? {
+    return data2 && tableData ? {
       cols: tableData.cols.filter(
         (f4) => f4.primary != "true" && f4.hidden != "true"
       ),
-      data: tableData.rows.find((r3) => r3.File == path),
-      dataIndex: tableData.rows.findIndex((r3) => r3.File == path)
+      data: data2.find((r3) => r3.File == path),
+      dataIndex: data2.findIndex((r3) => r3.File == path)
     } : null;
-  }, [tableData, path]);
+  }, [tableData, path, data2]);
   const saveField = (field, oldField) => {
     if (field.name.length > 0) {
       if (field.name != oldField.name || field.type != oldField.type || field.value != oldField.value || field.attrs != oldField.attrs) {
@@ -56984,7 +57018,7 @@ var FileContextList = (props2) => {
 };
 
 // src/react/components/MarkdownEditor/ReadingViewHeader.tsx
-var import_obsidian47 = require("obsidian");
+var import_obsidian48 = require("obsidian");
 var NoteBannerView = (props2) => {
   var _a2;
   const [banner, setBanner] = h2(null);
@@ -57002,7 +57036,7 @@ var NoteBannerView = (props2) => {
     if (!props2.path)
       return;
     e4.preventDefault();
-    const fileMenu = new import_obsidian47.Menu();
+    const fileMenu = new import_obsidian48.Menu();
     fileMenu.addSeparator();
     fileMenu.addItem((menuItem) => {
       menuItem.setTitle(i18n_default.buttons.changeBanner);
@@ -57291,7 +57325,7 @@ var InlineFileContextView = (props2) => {
   };
   p2(() => {
     var _a2;
-    if ((fileName == null ? void 0 : fileName.startsWith("New Note")) || (fileName == null ? void 0 : fileName.startsWith("Untitled"))) {
+    if ((fileName == null ? void 0 : fileName.startsWith(props2.plugin.settings.newNotePlaceholder)) || (fileName == null ? void 0 : fileName.startsWith("Untitled"))) {
       selectElementContents(fileNameRef.current);
     }
     const pasteEvent = (e4) => {
@@ -57628,11 +57662,32 @@ var SpaceBodyView = (props2) => {
       resetState();
     }
   });
-  return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, instance.root && /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement(FrameNodeView, {
+  const _instance = F2(() => {
+    return instance ? {
+      ...instance,
+      root: instance.root ? {
+        ...instance.root,
+        node: {
+          ...instance.root.node,
+          props: {
+            ...instance.root.node.props,
+            ...props2.cols.reduce(
+              (p3, c4) => ({
+                ...p3,
+                [c4]: ""
+              }),
+              {}
+            )
+          }
+        }
+      } : null
+    } : null;
+  }, [props2.cols, instance]);
+  return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, _instance.root && /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement(FrameNodeView, {
     editMode: 1,
     plugin: props2.plugin,
-    treeNode: instance.root,
-    instance
+    treeNode: _instance.root,
+    instance: _instance
   }), /* @__PURE__ */ Cn.createElement(RowPlaceholder, {
     plugin: props2.plugin,
     id: PLACEHOLDER_ID3,
@@ -57644,7 +57699,7 @@ var SpaceBodyView = (props2) => {
     }, dragTreeNode && /* @__PURE__ */ Cn.createElement(FrameView, {
       plugin: props2.plugin,
       treeNode: dragTreeNode,
-      instance,
+      instance: _instance,
       saveState
     })),
     document.body
@@ -57773,7 +57828,7 @@ var SpaceComponent = (props2) => {
       note: folderNote,
       space: props2.path.fullPath + "/#*filesView"
     };
-  }, [spaceInfo, props2.path]);
+  }, [spaceInfo, props2.path, spaceCache]);
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -57846,7 +57901,8 @@ var SpaceComponent = (props2) => {
     className: "mk-space-body"
   }, /* @__PURE__ */ Cn.createElement(SpaceBodyView, {
     selectedView,
-    plugin: props2.plugin
+    plugin: props2.plugin,
+    cols: (spaceCache == null ? void 0 : spaceCache.frontmatter) ? Object.keys(spaceCache.frontmatter) : []
   }))))));
 };
 var SpaceOuter = (props2) => {
@@ -57878,7 +57934,7 @@ var SpaceOuter = (props2) => {
 
 // src/react/components/SpaceView/Contexts/SpaceView.tsx
 var SPACE_VIEW_TYPE = "mk-space";
-var SpaceView = class extends import_obsidian48.ItemView {
+var SpaceView = class extends import_obsidian49.ItemView {
   constructor(leaf, plugin, viewType) {
     super(leaf);
     this.navigation = true;
@@ -57968,7 +58024,7 @@ var tFileToAFile = (file) => {
   var _a2, _b2, _c2;
   if (!file)
     return null;
-  if (file instanceof import_obsidian49.TFile && file.stat) {
+  if (file instanceof import_obsidian50.TFile && file.stat) {
     return {
       isFolder: false,
       name: file.basename,
@@ -57993,7 +58049,7 @@ var defaultNoteFolder = (plugin, activeFile) => {
 };
 var defaultConfigFile = async (plugin) => {
   return await plugin.app.vault.adapter.read(
-    (0, import_obsidian49.normalizePath)(plugin.app.vault.configDir + "/app.json")
+    (0, import_obsidian50.normalizePath)(plugin.app.vault.configDir + "/app.json")
   );
 };
 var appendFilesMetaData = (plugin, propType, filesString) => {
@@ -58014,6 +58070,8 @@ var appendFileMetaData = (propType, file) => {
       value = (_b2 = file.mtime) == null ? void 0 : _b2.toString();
     } else if (propType == "extension") {
       value = file.extension;
+    } else if (propType == "sticker") {
+      value = file.sticker;
     } else if (propType == "size") {
       value = (_c2 = file.size) == null ? void 0 : _c2.toString();
     } else if (propType == "inlinks") {
@@ -58088,7 +58146,7 @@ function getAllAbstractFilesInVault(plugin) {
   const rootFolder = plugin.app.vault.getRoot();
   function recursiveFx(folder) {
     for (const child of folderChildren(plugin, folder)) {
-      if (child instanceof import_obsidian49.TFolder) {
+      if (child instanceof import_obsidian50.TFolder) {
         const childFolder = child;
         if (childFolder.children)
           recursiveFx(childFolder);
@@ -58106,7 +58164,7 @@ var getFolderFromPath = (plugin, path) => {
   const afile = getAbstractFileAtPath(plugin, removeTrailingSlashFromFolder(path));
   if (!afile)
     return null;
-  return afile instanceof import_obsidian49.TFolder ? afile : afile.parent;
+  return afile instanceof import_obsidian50.TFolder ? afile : afile.parent;
 };
 var getFolderPathFromString = (plugin, file) => {
   var _a2;
@@ -58140,10 +58198,14 @@ var openPath2 = async (path, plugin, newLeaf) => {
   openAFile(getAbstractFileAtPath(plugin, path), plugin, newLeaf);
 };
 var openSpace = async (spacePath, plugin, newLeaf) => {
+  var _a2;
   if (spacePath == tagsSpace.path)
     return;
-  if (!plugin.settings.contextEnabled)
+  if (!plugin.settings.spaceViewEnabled) {
+    const space = (_a2 = plugin.index.spacesIndex.get(spacePath)) == null ? void 0 : _a2.space.defPath;
+    openPath2(space, plugin, newLeaf);
     return;
+  }
   const leaf = getLeaf(plugin, newLeaf);
   const viewType = SPACE_VIEW_TYPE;
   plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
@@ -58161,7 +58223,7 @@ var openSpace = async (spacePath, plugin, newLeaf) => {
   window.dispatchEvent(evt);
 };
 var getLeaf = (plugin, location) => {
-  let leaf = plugin.app.workspace.getLeaf(false);
+  let leaf;
   if (location == "right") {
     leaf = plugin.app.workspace.getRightLeaf(false);
   } else if (location == "left") {
@@ -58206,7 +58268,7 @@ function getAllFoldersInVault(plugin) {
   folders.push(rootFolder);
   function recursiveFx(folder) {
     for (const child of folder.children) {
-      if (child instanceof import_obsidian49.TFolder) {
+      if (child instanceof import_obsidian50.TFolder) {
         const childFolder = child;
         folders.push(childFolder);
         if (childFolder.children)
@@ -58218,9 +58280,9 @@ function getAllFoldersInVault(plugin) {
   return folders;
 }
 var openAFile = async (file, plugin, newLeaf) => {
-  if (file instanceof import_obsidian49.TFolder) {
+  if (file instanceof import_obsidian50.TFolder) {
     openTFolder(file, plugin, newLeaf);
-  } else if (file instanceof import_obsidian49.TFile) {
+  } else if (file instanceof import_obsidian50.TFile) {
     openTFile(file, plugin, newLeaf);
   } else {
     return;
@@ -58235,12 +58297,7 @@ var openTFile = async (file, plugin, newLeaf) => {
     return;
   const leaf = getLeaf(plugin, newLeaf);
   plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.openFile(file, { eState: { focus: true } });
-  const fileCache = plugin.index.filesIndex.get(file.path);
-  if ((fileCache == null ? void 0 : fileCache.sticker) && leaf.tabHeaderInnerIconEl) {
-    const icon = stickerFromString(fileCache.sticker, plugin);
-    leaf.tabHeaderInnerIconEl.innerHTML = icon;
-  }
+  await leaf.openFile(file);
 };
 var openTFolder = async (file, plugin, newLeaf) => {
   const leaf = getLeaf(plugin, newLeaf);
@@ -58303,7 +58360,7 @@ var createMarkdownFileAtPath = async (plugin, path) => {
   return plugin.files.newFile(folder.path, folderPathToString(path), "md");
 };
 var createNewMarkdownFile = async (plugin, folder, newFileName, content, dontOpen) => {
-  const fileName = (newFileName == null ? void 0 : newFileName.length) > 0 ? newFileName : i18n_default.defaults.newNotePlaceholder;
+  const fileName = (newFileName == null ? void 0 : newFileName.length) > 0 ? newFileName : plugin.settings.newNotePlaceholder;
   const newFile = await plugin.files.newFile(
     folder.path,
     fileName,
@@ -58329,12 +58386,12 @@ var createNewMarkdownFile = async (plugin, folder, newFileName, content, dontOpe
   return newFile;
 };
 var platformIsMobile = () => {
-  return import_obsidian49.Platform.isMobile;
+  return import_obsidian50.Platform.isMobile;
 };
 var noteToFolderNote = async (plugin, file, open) => {
   const folderPath = fileNameToString(file.path);
   const folder = getAbstractFileAtPath(plugin, folderPath);
-  if (folder && folder instanceof import_obsidian49.TFolder) {
+  if (folder && folder instanceof import_obsidian50.TFolder) {
     if (open) {
       openTFolder(folder, plugin, false);
     }
@@ -58364,7 +58421,7 @@ var folderNoteCache = (plugin, file) => {
     if (!folderPath)
       return null;
     const folder = getAbstractFileAtPath(plugin, folderPath);
-    if (folder instanceof import_obsidian49.TFolder && folder.name == file.name) {
+    if (folder instanceof import_obsidian50.TFolder && folder.name == file.name) {
       return {
         folderNotePath: file.path,
         folderPath: folder.path
@@ -58530,10 +58587,10 @@ var uriTypeByString = (plugin, space, file, source) => {
   } else {
     portalFile = plugin.app.vault.getAbstractFileByPath(file);
   }
-  if (portalFile instanceof import_obsidian50.TFolder) {
+  if (portalFile instanceof import_obsidian51.TFolder) {
     return "folder";
   }
-  if (portalFile instanceof import_obsidian50.TFile || file.match(relativeURLRegex)) {
+  if (portalFile instanceof import_obsidian51.TFile || file.match(relativeURLRegex)) {
     return "file";
   }
   if (file.match(urlRegex))
@@ -58696,15 +58753,18 @@ var FlowEditorHover = (props2) => {
     });
   };
   const toggleFlow = () => {
+    const domPos = props2.view.posAtDOM(props2.dom);
+    const line = props2.view.state.doc.lineAt(domPos);
+    const pos = line.from;
     if (props2.toggleState) {
       props2.view.dispatch({
-        changes: { from: props2.pos.from - 4, to: props2.pos.from - 3 }
+        changes: { from: pos, to: pos + 1 }
       });
     } else {
       props2.view.dispatch({
         changes: {
-          from: props2.pos.from - 3,
-          to: props2.pos.from - 3,
+          from: pos,
+          to: pos,
           insert: "!"
         }
       });
@@ -58713,7 +58773,6 @@ var FlowEditorHover = (props2) => {
   const openLink = () => {
     openFileFlowEditor(props2.path.fullPath, "/");
   };
-  const [propsEditor, setPropsEditor] = h2(false);
   return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-flowblock-menu"
   }, props2.path.type == "file" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, props2.toggle && /* @__PURE__ */ Cn.createElement("div", {
@@ -58728,35 +58787,20 @@ var FlowEditorHover = (props2) => {
     onClick: openLink,
     className: "mk-hover-button",
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-open-link"] }
-  })) : props2.path.refType == "frame" ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
-    "aria-label": i18n_default.buttons.convertTable,
-    onClick: () => setPropsEditor((p3) => !p3),
-    className: "mk-icon-xsmall mk-hover-button",
-    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-sync"] }
-  }), /* @__PURE__ */ Cn.createElement("div", {
-    "aria-label": i18n_default.buttons.convertTable,
-    onClick: () => openFrameEditor(props2.plugin, props2.path.path, props2.path.ref),
-    className: "mk-icon-xsmall mk-hover-button",
-    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-sync"] }
-  }), /* @__PURE__ */ Cn.createElement("div", {
-    "aria-label": i18n_default.buttons.deleteTable,
-    onClick: deleteTable,
-    className: "mk-icon-xsmall mk-hover-button",
-    dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-close"] }
   })) : /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
     "aria-label": i18n_default.buttons.convertTable,
     onClick: convertTable,
-    className: "mk-icon-xsmall mk-hover-button",
+    className: "mk-icon-small mk-hover-button",
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-sync"] }
   }), /* @__PURE__ */ Cn.createElement("div", {
     "aria-label": i18n_default.buttons.cutTable,
     onClick: cutTable,
-    className: "mk-icon-xsmall mk-hover-button",
+    className: "mk-icon-small mk-hover-button",
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-cut"] }
   }), /* @__PURE__ */ Cn.createElement("div", {
     "aria-label": i18n_default.buttons.deleteTable,
     onClick: deleteTable,
-    className: "mk-icon-xsmall mk-hover-button",
+    className: "mk-icon-small mk-hover-button",
     dangerouslySetInnerHTML: { __html: uiIconSet["mk-ui-close"] }
   })), " "));
 };
@@ -59003,8 +59047,8 @@ var FlowEditorSelector = class extends import_view4.WidgetType {
     const div = document.createElement("div");
     div.toggleClass("mk-floweditor-selector", true);
     const reactEl = createRoot(div);
-    if (this.info.link && view.state.field(import_obsidian51.editorInfoField, false)) {
-      const infoField = view.state.field(import_obsidian51.editorInfoField, false);
+    if (this.info.link && view.state.field(import_obsidian52.editorInfoField, false)) {
+      const infoField = view.state.field(import_obsidian52.editorInfoField, false);
       const file = infoField.file;
       const path = uriByString(this.plugin, this.info.link, file.path);
       reactEl.render(
@@ -59014,7 +59058,8 @@ var FlowEditorSelector = class extends import_view4.WidgetType {
           path,
           toggleState: true,
           view,
-          pos: { from: this.info.from, to: this.info.to }
+          pos: { from: this.info.from, to: this.info.to },
+          dom: div
         })
       );
     }
@@ -59618,10 +59663,10 @@ var cmExtensions = (plugin, mobile) => {
 };
 
 // src/main.ts
-var import_obsidian67 = require("obsidian");
+var import_obsidian68 = require("obsidian");
 
 // src/react/components/SpaceView/Editor/MakeMenu/MakeMenu.tsx
-var import_obsidian52 = require("obsidian");
+var import_obsidian53 = require("obsidian");
 
 // src/react/components/SpaceView/Editor/MakeMenu/commands/default.ts
 var default_default2 = [
@@ -59737,7 +59782,7 @@ function resolveCommands(plugin) {
 }
 
 // src/react/components/SpaceView/Editor/MakeMenu/MakeMenu.tsx
-var MakeMenu = class extends import_obsidian52.EditorSuggest {
+var MakeMenu = class extends import_obsidian53.EditorSuggest {
   constructor(app2, plugin) {
     super(app2);
     this.inCmd = false;
@@ -59831,8 +59876,8 @@ var MakeMenu = class extends import_obsidian52.EditorSuggest {
 };
 
 // src/react/components/SpaceView/Editor/StickerMenu/StickerMenu.tsx
-var import_obsidian53 = require("obsidian");
-var StickerMenu = class extends import_obsidian53.EditorSuggest {
+var import_obsidian54 = require("obsidian");
+var StickerMenu = class extends import_obsidian54.EditorSuggest {
   constructor(app2, plugin) {
     super(app2);
     this.inCmd = false;
@@ -59988,7 +60033,8 @@ var replaceAllEmbed = (el, ctx, plugin) => {
             toggleState: false,
             view: cm,
             pos: { from: pos + 3, to: endPos - 3 },
-            plugin
+            plugin,
+            dom
           })
         );
       }
@@ -59997,7 +60043,7 @@ var replaceAllEmbed = (el, ctx, plugin) => {
 };
 
 // src/react/components/Navigator/FileTreeView.tsx
-var import_obsidian56 = require("obsidian");
+var import_obsidian57 = require("obsidian");
 
 // src/react/context/SidebarContext.tsx
 var import_lodash13 = __toESM(require_lodash());
@@ -62996,11 +63042,11 @@ var FileExplorerComponent = (props2) => {
 
 // src/react/components/Navigator/MainMenu.tsx
 var import_classnames7 = __toESM(require_classnames());
-var import_obsidian55 = require("obsidian");
+var import_obsidian56 = require("obsidian");
 
 // src/react/components/UI/Modals/hiddenFilesModal.tsx
-var import_obsidian54 = require("obsidian");
-var HiddenItemsModal = class extends import_obsidian54.Modal {
+var import_obsidian55 = require("obsidian");
+var HiddenItemsModal = class extends import_obsidian55.Modal {
   constructor(plugin) {
     super(plugin.app);
     this.plugin = plugin;
@@ -63233,7 +63279,7 @@ var MainMenu = (props2) => {
   };
   const showMenu = () => {
     const { spaceActive, leafs } = refreshLeafs();
-    const menu = new import_obsidian55.Menu();
+    const menu = new import_obsidian56.Menu();
     !spaceActive && menu.addItem((menuItem) => {
       menuItem.setIcon("lucide-arrow-left");
       menuItem.setTitle(i18n_default.menu.backToSpace);
@@ -63923,14 +63969,14 @@ var MainList = (props2) => {
 var FILE_TREE_VIEW_TYPE = "mk-file-view";
 var VIEW_DISPLAY_TEXT = "Spaces";
 var ICON = "layout-grid";
-var FileTreeView = class extends import_obsidian56.ItemView {
+var FileTreeView = class extends import_obsidian57.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.navigation = false;
     this.plugin = plugin;
   }
   revealInFolder(file) {
-    if (file instanceof import_obsidian56.TFolder) {
+    if (file instanceof import_obsidian57.TFolder) {
       this.plugin.app.workspace.activeLeaf.setViewState({
         type: SPACE_VIEW_TYPE,
         state: { path: file.path }
@@ -63984,8 +64030,9 @@ var FileTreeView = class extends import_obsidian56.ItemView {
 };
 
 // src/settings/settings.ts
-var import_obsidian57 = require("obsidian");
+var import_obsidian58 = require("obsidian");
 var DEFAULT_SETTINGS = {
+  newNotePlaceholder: "Untitled",
   defaultInitialization: false,
   filePreviewOnHover: false,
   flowMenuEnabled: true,
@@ -64000,6 +64047,7 @@ var DEFAULT_SETTINGS = {
   editorFlow: true,
   internalLinkClickFlow: true,
   contextEnabled: true,
+  spaceViewEnabled: true,
   saveAllContextToFrontmatter: true,
   editorFlowStyle: "seamless",
   autoOpenFileContext: false,
@@ -64060,9 +64108,10 @@ var DEFAULT_SETTINGS = {
   enableTagSpaces: true,
   enableHomeSpace: true,
   showSpacePinIcon: true,
-  minimalFix: false
+  minimalFix: false,
+  experimental: false
 };
-var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
+var MakeMDPluginSettingsTab = class extends import_obsidian58.PluginSettingTab {
   constructor(app2, plugin) {
     super(app2, plugin);
     this.plugin = plugin;
@@ -64074,7 +64123,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     containerEl.createEl("h1", { text: i18n_default.settings.sectionSidebar });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.spaces.name).setDesc(i18n_default.settings.spaces.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.spaces.name).setDesc(i18n_default.settings.spaces.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.spacesEnabled).onChange((value) => {
         this.plugin.settings.spacesEnabled = value;
         this.plugin.saveSettings();
@@ -64086,130 +64135,122 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         this.refreshView();
       })
     );
-    if (this.plugin.settings.spacesEnabled) {
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.defaultSpaces.name).setDesc(i18n_default.settings.defaultSpaces.desc).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.enableDefaultSpaces).onChange((value) => {
+        this.plugin.settings.enableDefaultSpaces = value;
+        this.plugin.saveSettings();
+      })
+    );
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.spacesStickers.name).setDesc(i18n_default.settings.spacesStickers.desc).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.spacesStickers).onChange((value) => {
+        this.plugin.settings.spacesStickers = value;
+        this.plugin.saveSettings();
+        this.refreshView();
+      })
+    );
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.spaceView.name).setDesc(i18n_default.settings.spaceView.desc).addToggle(
+      (toggle) => toggle.setValue(this.plugin.settings.spaceViewEnabled).onChange((value) => {
+        this.plugin.settings.spaceViewEnabled = value;
+        this.plugin.saveSettings();
+      })
+    );
+    if (this.plugin.settings.enableDefaultSpaces) {
       containerEl.createEl("h3", { text: i18n_default.settings.sectionDefault });
       const defaultSpaces = containerEl.createEl("div");
-      new import_obsidian57.Setting(defaultSpaces).setName(i18n_default.settings.defaultSpaces.name).setDesc(i18n_default.settings.defaultSpaces.desc).addToggle(
-        (toggle) => toggle.setValue(this.plugin.settings.enableDefaultSpaces).onChange((value) => {
-          this.plugin.settings.enableDefaultSpaces = value;
+      new import_obsidian58.Setting(defaultSpaces).setName(i18n_default.settings.homeSpace.name).setDesc(i18n_default.settings.homeSpace.desc).addToggle(
+        (toggle) => toggle.setValue(this.plugin.settings.enableHomeSpace).onChange((value) => {
+          this.plugin.settings.enableHomeSpace = value;
           this.plugin.saveSettings();
         })
       );
-      if (this.plugin.settings.enableDefaultSpaces) {
-        new import_obsidian57.Setting(defaultSpaces).setName(i18n_default.settings.homeSpace.name).setDesc(i18n_default.settings.homeSpace.desc).addToggle(
-          (toggle) => toggle.setValue(this.plugin.settings.enableHomeSpace).onChange((value) => {
-            this.plugin.settings.enableHomeSpace = value;
-            this.plugin.saveSettings();
-          })
-        );
-        new import_obsidian57.Setting(defaultSpaces).setName(i18n_default.settings.tagSpaces.name).setDesc(i18n_default.settings.tagSpaces.desc).addToggle(
-          (toggle) => toggle.setValue(this.plugin.settings.enableTagSpaces).onChange((value) => {
-            this.plugin.settings.enableTagSpaces = value;
-            this.plugin.saveSettings();
-          })
-        );
-      }
-      containerEl.createEl("h3", { text: i18n_default.settings.sectionAppearance });
+      new import_obsidian58.Setting(defaultSpaces).setName(i18n_default.settings.tagSpaces.name).setDesc(i18n_default.settings.tagSpaces.desc).addToggle(
+        (toggle) => toggle.setValue(this.plugin.settings.enableTagSpaces).onChange((value) => {
+          this.plugin.settings.enableTagSpaces = value;
+          this.plugin.saveSettings();
+        })
+      );
+    }
+    if (this.plugin.settings.spacesEnabled) {
+      containerEl.createEl("h3", { text: i18n_default.settings.sectionNavigator });
       const spaceAppearances = containerEl.createEl("div");
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.sidebarTabs.name).setDesc(i18n_default.settings.sidebarTabs.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.sidebarTabs.name).setDesc(i18n_default.settings.sidebarTabs.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.sidebarTabs).onChange((value) => {
           this.plugin.settings.sidebarTabs = value;
           this.plugin.saveSettings();
           document.body.classList.toggle("mk-hide-tabs", !value);
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.hideRibbon.name).setDesc(i18n_default.settings.hideRibbon.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.hideRibbon.name).setDesc(i18n_default.settings.hideRibbon.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.showRibbon).onChange((value) => {
           this.plugin.settings.showRibbon = value;
           this.plugin.saveSettings();
           document.body.classList.toggle("mk-hide-ribbon", !value);
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.folderIndentationLines.name).setDesc(i18n_default.settings.folderIndentationLines.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.folderIndentationLines.name).setDesc(i18n_default.settings.folderIndentationLines.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.folderIndentationLines).onChange((value) => {
           this.plugin.settings.folderIndentationLines = value;
           this.plugin.saveSettings();
           document.body.classList.toggle("mk-folder-lines", value);
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.spacesStickers.name).setDesc(i18n_default.settings.spacesStickers.desc).addToggle(
-        (toggle) => toggle.setValue(this.plugin.settings.spacesStickers).onChange((value) => {
-          this.plugin.settings.spacesStickers = value;
-          this.plugin.saveSettings();
-          this.refreshView();
-        })
-      );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.spacesAlias.name).setDesc(i18n_default.settings.spacesAlias.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.spacesAlias.name).setDesc(i18n_default.settings.spacesAlias.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.spacesUseAlias).onChange((value) => {
           this.plugin.settings.spacesUseAlias = value;
           this.plugin.saveSettings();
           this.refreshView();
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.readableLineWidth.name).setDesc(i18n_default.settings.readableLineWidth.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.readableLineWidth.name).setDesc(i18n_default.settings.readableLineWidth.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.readableLineWidth).onChange((value) => {
           this.plugin.settings.readableLineWidth = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.openSpacesOnLaunch.name).setDesc(i18n_default.settings.openSpacesOnLaunch.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.openSpacesOnLaunch.name).setDesc(i18n_default.settings.openSpacesOnLaunch.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.openSpacesOnLaunch).onChange((value) => {
           this.plugin.settings.openSpacesOnLaunch = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.spaceRowHeight.name).setDesc(i18n_default.settings.spaceRowHeight.desc).addText((text2) => {
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.spaceRowHeight.name).setDesc(i18n_default.settings.spaceRowHeight.desc).addText((text2) => {
         text2.setValue(this.plugin.settings.spaceRowHeight.toString()).onChange(async (value) => {
           text2.setValue(parseInt(value).toString());
           this.plugin.settings.spaceRowHeight = parseInt(value);
           await this.plugin.saveSettings();
         });
       });
-      new import_obsidian57.Setting(spaceAppearances).setName(i18n_default.settings.minimalThemeFix.name).setDesc(i18n_default.settings.minimalThemeFix.description).addToggle(
-        (toggle) => toggle.setValue(this.plugin.settings.minimalFix).onChange((value) => {
-          this.plugin.settings.minimalFix = value;
-          this.plugin.saveSettings();
-          document.body.classList.toggle("mk-minimal-fix", !value);
-        })
-      );
-      containerEl.createEl("h3", { text: "Advanced" });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.expandFolder.name).setDesc(i18n_default.settings.expandFolder.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.expandFolder.name).setDesc(i18n_default.settings.expandFolder.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.expandFolderOnClick).onChange((value) => {
           this.plugin.settings.expandFolderOnClick = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.hoverPreview.name).setDesc(i18n_default.settings.hoverPreview.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.hoverPreview.name).setDesc(i18n_default.settings.hoverPreview.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.filePreviewOnHover).onChange((value) => {
           this.plugin.settings.filePreviewOnHover = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.activeFile.name).setDesc(i18n_default.settings.activeFile.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.activeFile.name).setDesc(i18n_default.settings.activeFile.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.revealActiveFile).onChange((value) => {
           this.plugin.settings.revealActiveFile = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.spacesFileExplorerDual.name).setDesc(i18n_default.settings.spacesFileExplorerDual.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.spacesFileExplorerDual.name).setDesc(i18n_default.settings.spacesFileExplorerDual.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.spacesDisablePatch).onChange((value) => {
           this.plugin.settings.spacesDisablePatch = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.spacesPerformance.name).setDesc(i18n_default.settings.spacesPerformance.desc).addToggle(
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.spacesPerformance.name).setDesc(i18n_default.settings.spacesPerformance.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.spacesPerformance).onChange((value) => {
           this.plugin.settings.spacesPerformance = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.indexSVG.name).setDesc(i18n_default.settings.indexSVG.desc).addToggle(
-        (toggle) => toggle.setValue(this.plugin.settings.indexSVG).onChange((value) => {
-          this.plugin.settings.indexSVG = value;
-          this.plugin.saveSettings();
-        })
-      );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.spacesDeleteOption.name).setDesc(i18n_default.settings.spacesDeleteOption.desc).addDropdown((dropdown) => {
+      new import_obsidian58.Setting(spaceAppearances).setName(i18n_default.settings.spacesDeleteOption.name).setDesc(i18n_default.settings.spacesDeleteOption.desc).addDropdown((dropdown) => {
         dropdown.addOption(
           "permanent",
           i18n_default.settings.spacesDeleteOptions.permanant
@@ -64225,37 +64266,61 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
           this.plugin.saveSettings();
         });
       });
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.newNotePlaceholder.name).setDesc(i18n_default.settings.newNotePlaceholder.desc).addText((text2) => {
+        text2.setValue(this.plugin.settings.newNotePlaceholder).onChange(async (value) => {
+          this.plugin.settings.newNotePlaceholder = value;
+          await this.plugin.saveSettings();
+        });
+      });
+    }
+    if (this.plugin.settings.spacesStickers) {
+      containerEl.createEl("h3", { text: "Stickers" });
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.indexSVG.name).setDesc(i18n_default.settings.indexSVG.desc).addToggle(
+        (toggle) => toggle.setValue(this.plugin.settings.indexSVG).onChange((value) => {
+          this.plugin.settings.indexSVG = value;
+          this.plugin.saveSettings();
+        })
+      );
+    }
+    if (this.plugin.settings.spaceViewEnabled) {
+      containerEl.createEl("h3", { text: "Space View" });
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.minimalThemeFix.name).setDesc(i18n_default.settings.minimalThemeFix.description).addToggle(
+        (toggle) => toggle.setValue(this.plugin.settings.minimalFix).onChange((value) => {
+          this.plugin.settings.minimalFix = value;
+          this.plugin.saveSettings();
+          document.body.classList.toggle("mk-minimal-fix", !value);
+        })
+      );
     }
     containerEl.createEl("h1", { text: i18n_default.settings.sectionContext });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.contexts.name).setDesc(i18n_default.settings.contexts.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.contexts.name).setDesc(i18n_default.settings.contexts.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.contextEnabled).onChange((value) => {
         this.plugin.settings.contextEnabled = value;
         this.plugin.saveSettings();
         this.plugin.reloadExtensions(false);
       })
     );
-    containerEl.createEl("h3", { text: i18n_default.settings.sectionAppearance });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.defaultDateFormat.name).setDesc(i18n_default.settings.defaultDateFormat.desc).addText((text2) => {
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.defaultDateFormat.name).setDesc(i18n_default.settings.defaultDateFormat.desc).addText((text2) => {
       text2.setValue(this.plugin.settings.defaultDateFormat).onChange(async (value) => {
         this.plugin.settings.defaultDateFormat = value;
         await this.plugin.saveSettings();
       });
     });
     containerEl.createEl("h3", { text: i18n_default.settings.sectionAdvanced });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.openFileContext.name).setDesc(i18n_default.settings.openFileContext.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.openFileContext.name).setDesc(i18n_default.settings.openFileContext.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.autoOpenFileContext).onChange((value) => {
         this.plugin.settings.autoOpenFileContext = value;
         this.plugin.saveSettings();
       })
     );
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.syncContextToFrontmatter.name).setDesc(i18n_default.settings.syncContextToFrontmatter.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.syncContextToFrontmatter.name).setDesc(i18n_default.settings.syncContextToFrontmatter.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.saveAllContextToFrontmatter).onChange((value) => {
         this.plugin.settings.saveAllContextToFrontmatter = value;
         this.plugin.saveSettings();
       })
     );
     containerEl.createEl("h1", { text: i18n_default.settings.sectionBlink });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.blink.name).setDesc(i18n_default.settings.blink.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.blink.name).setDesc(i18n_default.settings.blink.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.blinkEnabled).onChange(async (value) => {
         this.plugin.settings.blinkEnabled = value;
         await this.plugin.saveSettings();
@@ -64263,7 +64328,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
       })
     );
     containerEl.createEl("h1", { text: i18n_default.settings.sectionFlow });
-    new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorMakerMode.name).setDesc(i18n_default.settings.editorMakerMode.desc).addToggle(
+    new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorMakerMode.name).setDesc(i18n_default.settings.editorMakerMode.desc).addToggle(
       (toggle) => toggle.setValue(this.plugin.settings.makerMode).onChange((value) => {
         this.plugin.settings.makerMode = value;
         this.plugin.saveSettings();
@@ -64272,20 +64337,20 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
     );
     if (this.plugin.settings.makerMode) {
       containerEl.createEl("h3", { text: i18n_default.settings.sectionInlineContext });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineContextExplorer.name).setDesc(i18n_default.settings.inlineContextExplorer.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineContextExplorer.name).setDesc(i18n_default.settings.inlineContextExplorer.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineContext).onChange((value) => {
           this.plugin.settings.inlineContext = value;
           this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineContextExpanded.name).setDesc(i18n_default.settings.inlineContextExpanded.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineContextExpanded.name).setDesc(i18n_default.settings.inlineContextExpanded.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineContextSectionsExpanded).onChange((value) => {
           this.plugin.settings.inlineContextSectionsExpanded = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineContextHorizontal.name).setDesc(i18n_default.settings.inlineContextHorizontal.desc).addDropdown((dropdown) => {
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineContextHorizontal.name).setDesc(i18n_default.settings.inlineContextHorizontal.desc).addDropdown((dropdown) => {
         dropdown.addOption("vertical", i18n_default.settings.layoutVertical);
         dropdown.addOption("horizontal", i18n_default.settings.layoutHorizontal);
         dropdown.setValue(this.plugin.settings.inlineContextNameLayout);
@@ -64294,20 +64359,20 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
           this.plugin.saveSettings();
         });
       });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.hideFrontmatter.name).setDesc(i18n_default.settings.hideFrontmatter.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.hideFrontmatter.name).setDesc(i18n_default.settings.hideFrontmatter.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.hideFrontmatter).onChange(async (value) => {
           this.plugin.settings.hideFrontmatter = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.dataviewInlineContext.name).setDesc(i18n_default.settings.dataviewInlineContext.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.dataviewInlineContext.name).setDesc(i18n_default.settings.dataviewInlineContext.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.dataviewInlineContext).onChange((value) => {
           this.plugin.settings.dataviewInlineContext = value;
           this.plugin.saveSettings();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineBacklinks.name).setDesc(i18n_default.settings.inlineBacklinks.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineBacklinks.name).setDesc(i18n_default.settings.inlineBacklinks.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineBacklinks).onChange(async (value) => {
           this.plugin.settings.inlineBacklinks = value;
           await this.plugin.saveSettings();
@@ -64315,21 +64380,21 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         })
       );
       containerEl.createEl("h3", { text: i18n_default.settings.sectionFlow });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorFlowReplace.name).setDesc(i18n_default.settings.editorFlowReplace.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorFlowReplace.name).setDesc(i18n_default.settings.editorFlowReplace.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.editorFlow).onChange((value) => {
           this.plugin.settings.editorFlow = value;
           this.plugin.saveSettings();
           this.refreshView();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.internalLinkFlowEditor.name).setDesc(i18n_default.settings.internalLinkFlowEditor.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.internalLinkFlowEditor.name).setDesc(i18n_default.settings.internalLinkFlowEditor.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.internalLinkClickFlow).onChange(async (value) => {
           this.plugin.settings.internalLinkClickFlow = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorFlowStyle.name).setDesc(i18n_default.settings.editorFlowStyle.desc).addDropdown((dropdown) => {
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorFlowStyle.name).setDesc(i18n_default.settings.editorFlowStyle.desc).addDropdown((dropdown) => {
         dropdown.addOption("classic", i18n_default.settings.editorFlowStyle.classic);
         dropdown.addOption("seamless", i18n_default.settings.editorFlowStyle.seamless);
         dropdown.addOption("minimal", i18n_default.settings.editorFlowStyle.minimal);
@@ -64347,14 +64412,14 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         });
       });
       containerEl.createEl("h3", { text: i18n_default.settings.sectionFlowMenu });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorMakeMenu.name).setDesc(i18n_default.settings.editorMakeMenu.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorMakeMenu.name).setDesc(i18n_default.settings.editorMakeMenu.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.flowMenuEnabled).onChange(async (value) => {
           this.plugin.settings.flowMenuEnabled = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.makeChar.name).setDesc(i18n_default.settings.makeChar.desc).addText((text2) => {
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.makeChar.name).setDesc(i18n_default.settings.makeChar.desc).addText((text2) => {
         text2.setValue(this.plugin.settings.menuTriggerChar).onChange(async (value) => {
           if (value.length < 1) {
             text2.setValue(this.plugin.settings.menuTriggerChar);
@@ -64369,7 +64434,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
           await this.plugin.saveSettings();
         });
       });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.editorMakePlacholder.name).setDesc(i18n_default.settings.editorMakePlacholder.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.editorMakePlacholder.name).setDesc(i18n_default.settings.editorMakePlacholder.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.makeMenuPlaceholder).onChange(async (value) => {
           this.plugin.settings.makeMenuPlaceholder = value;
           await this.plugin.saveSettings();
@@ -64377,28 +64442,28 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
         })
       );
       containerEl.createEl("h3", { text: i18n_default.settings.sectionFlowStyler });
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineStyler.name).setDesc(i18n_default.settings.inlineStyler.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineStyler.name).setDesc(i18n_default.settings.inlineStyler.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineStyler).onChange(async (value) => {
           this.plugin.settings.inlineStyler = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineStickerMenu.name).setDesc(i18n_default.settings.inlineStickerMenu.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineStickerMenu.name).setDesc(i18n_default.settings.inlineStickerMenu.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineStickerMenu).onChange(async (value) => {
           this.plugin.settings.inlineStickerMenu = value;
           await this.plugin.saveSettings();
           this.plugin.reloadExtensions(false);
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.inlineStylerColor.name).setDesc(i18n_default.settings.inlineStylerColor.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.inlineStylerColor.name).setDesc(i18n_default.settings.inlineStylerColor.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.inlineStylerColors).onChange((value) => {
           this.plugin.settings.inlineStylerColors = value;
           this.plugin.saveSettings();
           this.refreshView();
         })
       );
-      new import_obsidian57.Setting(containerEl).setName(i18n_default.settings.mobileMakeBar.name).setDesc(i18n_default.settings.mobileMakeBar.desc).addToggle(
+      new import_obsidian58.Setting(containerEl).setName(i18n_default.settings.mobileMakeBar.name).setDesc(i18n_default.settings.mobileMakeBar.desc).addToggle(
         (toggle) => toggle.setValue(this.plugin.settings.mobileMakeBar).onChange((value) => {
           this.plugin.settings.mobileMakeBar = value;
           this.plugin.saveSettings();
@@ -64410,7 +64475,7 @@ var MakeMDPluginSettingsTab = class extends import_obsidian57.PluginSettingTab {
 };
 
 // src/react/components/Blink/Blink.tsx
-var import_obsidian58 = require("obsidian");
+var import_obsidian59 = require("obsidian");
 
 // src/react/components/Blink/BlinkComponent.tsx
 var BlinkComponent = Cn.forwardRef(
@@ -64486,7 +64551,7 @@ BlinkComponent.displayName = "BlinkComponent";
 var BlinkComponent_default = BlinkComponent;
 
 // src/react/components/Blink/Blink.tsx
-var Blink = class extends import_obsidian58.Modal {
+var Blink = class extends import_obsidian59.Modal {
   constructor(app2, plugin) {
     super(app2);
     this.ref = Cn.createRef();
@@ -64519,11 +64584,11 @@ var Blink = class extends import_obsidian58.Modal {
 };
 
 // src/react/components/Explorer/Explorer.tsx
-var import_obsidian59 = require("obsidian");
+var import_obsidian60 = require("obsidian");
 var FILE_CONTEXT_VIEW_TYPE = "make-context-view";
 var ICON2 = "component";
 var VIEW_DISPLAY_TEXT2 = "Explorer";
-var ContextExplorerLeafView = class extends import_obsidian59.ItemView {
+var ContextExplorerLeafView = class extends import_obsidian60.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.navigation = false;
@@ -64864,9 +64929,9 @@ var ExplorerContextRow = (props2) => {
 };
 
 // src/react/components/SpaceView/Contexts/MDBFileViewer.tsx
-var import_obsidian60 = require("obsidian");
+var import_obsidian61 = require("obsidian");
 var MDB_FILE_VIEWER_TYPE = "make-mdb-viewer";
-var MDBFileViewer = class extends import_obsidian60.FileView {
+var MDBFileViewer = class extends import_obsidian61.FileView {
   constructor(leaf, plugin) {
     super(leaf);
     this.navigation = true;
@@ -65002,7 +65067,7 @@ var import_obsidian_dataview = __toESM(require_lib());
 
 // src/superstate/superstate.ts
 var import_lodash15 = __toESM(require_lodash());
-var import_obsidian62 = require("obsidian");
+var import_obsidian63 = require("obsidian");
 
 // src/types/indexMap.ts
 var _IndexMap = class {
@@ -65234,7 +65299,7 @@ var LocalStorageCache = class {
 };
 
 // src/superstate/workers/manager.ts
-var import_obsidian61 = require("obsidian");
+var import_obsidian62 = require("obsidian");
 
 // inline-worker:__inline-worker
 function inlineWorker(scriptText) {
@@ -65251,7 +65316,7 @@ function Worker2() {
 }
 
 // src/superstate/workers/manager.ts
-var Manager = class extends import_obsidian61.Component {
+var Manager = class extends import_obsidian62.Component {
   constructor(numWorkers, cache) {
     super();
     this.numWorkers = numWorkers;
@@ -65380,7 +65445,7 @@ var loadSpaces = (plugin) => {
       plugin2.settings.spacesFolder
     );
     const allcontexts = (_b2 = uniq([...Object.keys(plugin2.app.metadataCache.getTags()).map((f4) => tagToTagPath(f4)), ...(_a2 = folder == null ? void 0 : folder.children.filter(
-      (f4) => f4 instanceof import_obsidian62.TFolder && f4.name.charAt(0) == "#"
+      (f4) => f4 instanceof import_obsidian63.TFolder && f4.name.charAt(0) == "#"
     ).map((g4) => g4.name)) != null ? _a2 : []]).map((f4) => spaceFromTag(plugin2, tagPathToTag(f4)))) != null ? _b2 : [];
     return allcontexts;
   };
@@ -65389,7 +65454,7 @@ var loadSpaces = (plugin) => {
     const rootFolder = plugin2.app.vault.getRoot();
     function recursiveFx(folder) {
       for (const child of folder.children) {
-        if (child instanceof import_obsidian62.TFolder) {
+        if (child instanceof import_obsidian63.TFolder) {
           if (!child.path.startsWith(plugin2.settings.spacesFolder + "/#")) {
             const childFolder = child;
             folders.push(child);
@@ -65406,7 +65471,7 @@ var loadSpaces = (plugin) => {
   const allFolders = getAllFolderContextFiles(plugin);
   return [...allTagSpaces, ...allFolders];
 };
-var Superstate = class extends import_obsidian62.Component {
+var Superstate = class extends import_obsidian63.Component {
   constructor(app2, indexVersion, onChange, plugin) {
     super();
     this.app = app2;
@@ -65519,9 +65584,9 @@ var Superstate = class extends import_obsidian62.Component {
       }
     });
     const spaceFolder = getAbstractFileAtPath(this.plugin, "Context");
-    if (spaceFolder instanceof import_obsidian62.TFolder) {
+    if (spaceFolder instanceof import_obsidian63.TFolder) {
       promises.push(...spaceFolder.children.map((f4) => {
-        if (f4 instanceof import_obsidian62.TFile && f4.extension == "mdb") {
+        if (f4 instanceof import_obsidian63.TFile && f4.extension == "mdb") {
           const folderPath = `${this.plugin.settings.spacesFolder}/${f4.basename}/.space`;
           return this.plugin.files.fileExists(folderPath).then((g4) => {
             if (!g4)
@@ -65536,7 +65601,7 @@ var Superstate = class extends import_obsidian62.Component {
       function recursiveFx(folder) {
         for (const child of folder.children) {
           if (!folder.path.startsWith(plugin.settings.spacesFolder)) {
-            if (child instanceof import_obsidian62.TFolder) {
+            if (child instanceof import_obsidian63.TFolder) {
               const childFolder = child;
               folders.push(child);
               if (childFolder.children)
@@ -65593,7 +65658,7 @@ var Superstate = class extends import_obsidian62.Component {
     rebuildIndex(this.plugin, true);
   }
   async saveSpacesDatabaseToDisk(tables, save = true) {
-    if (await this.plugin.files.fileExists((0, import_obsidian62.normalizePath)(this.plugin.spacesDBPath)) && !this.spacesDBLoaded) {
+    if (await this.plugin.files.fileExists((0, import_obsidian63.normalizePath)(this.plugin.spacesDBPath)) && !this.spacesDBLoaded) {
       return;
     }
     this.spacesDBLoaded = true;
@@ -65685,7 +65750,7 @@ var Superstate = class extends import_obsidian62.Component {
   async loadFromCache() {
     const allFiles = getAllAbstractFilesInVault(this.plugin);
     if (this.plugin.settings.indexSVG) {
-      const cacheIcons = allFiles.filter((f4) => f4 instanceof import_obsidian62.TFile && f4.extension == "svg").map((s5) => this.persister.load(s5.path, "icon").then((string) => {
+      const cacheIcons = allFiles.filter((f4) => f4 instanceof import_obsidian63.TFile && f4.extension == "svg").map((s5) => this.persister.load(s5.path, "icon").then((string) => {
         if ((string == null ? void 0 : string.length) > 0)
           this.iconsCache.set(s5.path, string);
       }));
@@ -65916,7 +65981,7 @@ var Superstate = class extends import_obsidian62.Component {
   }
   async createFile(path) {
     const file = getAbstractFileAtPath(this.plugin, path);
-    if (file instanceof import_obsidian62.TFolder) {
+    if (file instanceof import_obsidian63.TFolder) {
       await this.reloadSpace(spaceFromFolder(this.plugin, path));
     }
     await this.reloadFile(file);
@@ -66202,7 +66267,7 @@ var Superstate = class extends import_obsidian62.Component {
 };
 
 // src/utils/contexts/markdownPost.tsx
-var import_obsidian63 = require("obsidian");
+var import_obsidian64 = require("obsidian");
 
 // src/react/components/MarkdownEditor/FileHeaderContextView.tsx
 var FileHeaderContextView = (props2) => {
@@ -66332,7 +66397,7 @@ var replaceInlineContext = (plugin, el, ctx) => {
       if (ctxElement.getAttribute("data-path") != ctx.sourcePath) {
         ctxElement.setAttribute("data-path", ctx.sourcePath);
         const reactEl = createRoot(ctxElement);
-        ctx.addChild(new import_obsidian63.MarkdownRenderChild(element));
+        ctx.addChild(new import_obsidian64.MarkdownRenderChild(element));
         if (ctx.sourcePath.match(urlRegex)) {
           reactEl.render(
             /* @__PURE__ */ Cn.createElement(FileHeaderContextView, {
@@ -66373,7 +66438,7 @@ var loadSQL = async () => {
 };
 
 // src/midd/filesystem.ts
-var import_obsidian64 = require("obsidian");
+var import_obsidian65 = require("obsidian");
 var FilesystemMiddleware = class {
   constructor(type, plugin) {
     this.type = type;
@@ -66428,7 +66493,7 @@ var FilesystemMiddleware = class {
       if (type == "md") {
         const parentFolder = getAbstractFileAtPath(this.plugin, parent);
         return this.plugin.app.fileManager.createNewMarkdownFile(
-          parentFolder instanceof import_obsidian64.TFolder ? parentFolder : parentFolder.parent,
+          parentFolder instanceof import_obsidian65.TFolder ? parentFolder : parentFolder.parent,
           name
         );
       } else if (type == "canvas") {
@@ -66479,7 +66544,7 @@ var FilesystemMiddleware = class {
 };
 
 // src/midd/metadata.ts
-var import_obsidian65 = require("obsidian");
+var import_obsidian66 = require("obsidian");
 var MetadataMiddleware = class {
   static create(plugin, processors, editors) {
     const newMiddleware = new MetadataMiddleware(plugin, processors, editors);
@@ -66498,7 +66563,7 @@ var MetadataMiddleware = class {
   }
   async processFrontMatter(path, fn2) {
     const afile = getAbstractFileAtPath(this.plugin, path);
-    if (afile && afile instanceof import_obsidian65.TFile) {
+    if (afile && afile instanceof import_obsidian66.TFile) {
       if (this.plugin.app.fileManager.processFrontMatter) {
         return this.plugin.app.fileManager.processFrontMatter(afile, fn2);
       }
@@ -66544,10 +66609,10 @@ function around1(obj, method, createWrapper) {
 }
 
 // src/utils/spaces/patches.ts
-var import_obsidian66 = require("obsidian");
+var import_obsidian67 = require("obsidian");
 var patchFilesPlugin = (plugin) => {
   plugin.register(
-    around(import_obsidian66.Workspace.prototype, {
+    around(import_obsidian67.Workspace.prototype, {
       getLeavesOfType(old) {
         return function(type) {
           if (type == "file-explorer") {
@@ -66561,7 +66626,7 @@ var patchFilesPlugin = (plugin) => {
 };
 var patchWorkspace = (plugin) => {
   let layoutChanging = false;
-  const uninstaller = around(import_obsidian66.Workspace.prototype, {
+  const uninstaller = around(import_obsidian67.Workspace.prototype, {
     changeLayout(old) {
       return async function(workspace) {
         layoutChanging = true;
@@ -66582,7 +66647,7 @@ var patchWorkspace = (plugin) => {
           return false;
         if (layoutChanging)
           return false;
-        if (parent === plugin.app.workspace.rootSplit || import_obsidian66.WorkspaceContainer && parent instanceof import_obsidian66.WorkspaceContainer) {
+        if (parent === plugin.app.workspace.rootSplit || import_obsidian67.WorkspaceContainer && parent instanceof import_obsidian67.WorkspaceContainer) {
           for (const popover of FlowEditor.popoversForWindow(
             parent.win
           )) {
@@ -66807,7 +66872,7 @@ var modifyFlowDom = (plugin) => {
 
 // src/main.ts
 var makeMDVersion = 0.804;
-var MakeMDPlugin = class extends import_obsidian67.Plugin {
+var MakeMDPlugin = class extends import_obsidian68.Plugin {
   constructor() {
     super(...arguments);
     this.dataViewAPI = () => (0, import_obsidian_dataview.getAPI)();
@@ -66819,20 +66884,20 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
     this.onCreate = async (file) => {
       if (!file)
         return;
-      this.index.addToVaultQueue(() => onFileCreated(this, file.path, file instanceof import_obsidian67.TFolder));
+      this.index.addToVaultQueue(() => onFileCreated(this, file.path, file instanceof import_obsidian68.TFolder));
     };
     this.onDelete = async (file) => {
-      if (file instanceof import_obsidian67.TFile && file.extension != "mdb") {
+      if (file instanceof import_obsidian68.TFile && file.extension != "mdb") {
         this.index.addToVaultQueue(() => onFileDeleted(this, file.path));
-      } else if (file instanceof import_obsidian67.TFolder) {
+      } else if (file instanceof import_obsidian68.TFolder) {
         this.index.addToVaultQueue(() => onFolderDeleted(this, file.path));
       }
       this.activeFileChange();
     };
     this.onRename = async (file, oldPath) => {
-      if (file instanceof import_obsidian67.TFile && file.extension != "mdb") {
+      if (file instanceof import_obsidian68.TFile && file.extension != "mdb") {
         this.index.addToVaultQueue(() => onFileChanged(this, oldPath, file.path));
-      } else if (file instanceof import_obsidian67.TFolder) {
+      } else if (file instanceof import_obsidian68.TFolder) {
         this.index.addToVaultQueue(() => onFolderChanged(this, oldPath, file.path));
       }
       this.activeFileChange();
@@ -66979,7 +67044,7 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
             "dataview:metadata-change",
             (type, file, oldPath) => {
               if (type === "update" && this.app.metadataCache.fileCache[file.path].mtime >= this.loadTime && this.dataViewAPI().index.revision !== this.dataViewLastIndex && this.dataViewReady) {
-                if (file instanceof import_obsidian67.TFile) {
+                if (file instanceof import_obsidian68.TFile) {
                   this.metadataChange(file);
                 }
                 this.dataViewLastIndex = this.dataViewAPI().index.revision;
@@ -67020,51 +67085,45 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
   convertFolderNote() {
     const activeLeaf = this.app.workspace.activeLeaf;
     if ((activeLeaf == null ? void 0 : activeLeaf.view.getViewType()) == "markdown") {
-      const view = this.app.workspace.getActiveViewOfType(import_obsidian67.MarkdownView);
-      if (view instanceof import_obsidian67.MarkdownView && view.file instanceof import_obsidian67.TFile) {
+      const view = this.app.workspace.getActiveViewOfType(import_obsidian68.MarkdownView);
+      if (view instanceof import_obsidian68.MarkdownView && view.file instanceof import_obsidian68.TFile) {
         noteToFolderNote(this, view.file, true);
       }
     } else {
-      new import_obsidian67.Notice(i18n_default.notice.cantConvertNoteToSpace);
+      new import_obsidian68.Notice(i18n_default.notice.cantConvertNoteToSpace);
     }
   }
+  toggleExperimental() {
+    this.settings.experimental = !this.settings.experimental;
+    this.saveSettings();
+  }
   getActiveFile() {
-    var _a2, _b2, _c2;
+    var _a2, _b2;
     let filePath = null;
-    let leaf = (_a2 = this.app.workspace.getActiveViewOfType(import_obsidian67.MarkdownView)) == null ? void 0 : _a2.leaf;
+    let leaf = (_a2 = this.app.workspace.getActiveViewOfType(import_obsidian68.MarkdownView)) == null ? void 0 : _a2.leaf;
     if (!leaf) {
       leaf = (_b2 = this.app.workspace.getActiveViewOfType(SpaceView)) == null ? void 0 : _b2.leaf;
-    }
-    if (!leaf) {
-      leaf = (_c2 = this.app.workspace.getActiveViewOfType(FrameEditorView)) == null ? void 0 : _c2.leaf;
     }
     const activeView = leaf == null ? void 0 : leaf.view;
     if (!activeView || leaf.isFlowBlock)
       return null;
-    if (activeView.getViewType() == SPACE_VIEW_TYPE || activeView.getViewType() == FRAME_EDITOR_TYPE) {
+    if (activeView.getViewType() == SPACE_VIEW_TYPE) {
+      modifyTabSticker(this);
       return activeView.getState().path;
     } else if (activeView.getViewType() == "markdown") {
       filePath = activeView.file.path;
       modifyFlowDom(this);
+      modifyTabSticker(this);
     }
     return filePath;
   }
   activeFileChange() {
-    var _a2;
     const path = this.getActiveFile();
     if (path) {
       const evt = new CustomEvent(eventTypes.activePathChange, {
         detail: { path: uriByString(this, path) }
       });
       window.dispatchEvent(evt);
-      const leaf = (_a2 = this.app.workspace.getActiveViewOfType(FrameEditorView)) == null ? void 0 : _a2.leaf;
-      if (leaf == null ? void 0 : leaf.view) {
-        const view = leaf.view;
-        const evt2 = new CustomEvent(eventTypes.frameSelected, {
-          detail: { path: uriByString(this, `${view.getState().path}#*${view.getState().schema}`) }
-        });
-        window.dispatchEvent(evt2);
-      }
     }
   }
   releaseTheNotes() {
@@ -67159,9 +67218,6 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
       this.registerView(FILE_VIEW_TYPE, (leaf) => {
         return new FileLinkView(leaf, this, FILE_VIEW_TYPE);
       });
-      this.registerView(FRAME_EDITOR_TYPE, (leaf) => {
-        return new FrameEditorView(leaf, this, FRAME_EDITOR_TYPE);
-      });
       this.app.workspace.onLayoutReady(async () => {
         if (this.settings.enableDefaultSpaces) {
           await this.files.createFolder(this.settings.spacesFolder);
@@ -67251,14 +67307,14 @@ var MakeMDPlugin = class extends import_obsidian67.Plugin {
     this.loadTime = Date.now();
     this.metadata = MetadataMiddleware.create(this, [], []);
     this.files = FilesystemMiddleware.create(this, 0 /* Obsidian */);
-    (0, import_obsidian67.addIcon)("mk-logo", mkLogo);
+    (0, import_obsidian68.addIcon)("mk-logo", mkLogo);
     await this.loadSettings();
     this.index = this.addChild(
       Superstate.create(this.app, "0.9", () => {
         this.debouncedRefresh();
       }, this)
     );
-    this.spacesDBPath = (0, import_obsidian67.normalizePath)(
+    this.spacesDBPath = (0, import_obsidian68.normalizePath)(
       this.app.vault.configDir + "/plugins/make-md/Spaces.mdb"
     );
     this.loadSuperState();
