@@ -95,12 +95,12 @@ export class Superstate extends Component {
     //Obsidian Cache
     public vault: Vault;
     public metadataCache: MetadataCache;
-    
+
     //Index
     public filesIndex: Map<string, FileMetadataCache>
     public contextsIndex: Map<string, ContextsMetadataCache>
     public spacesIndex: Map<string, SpaceCache>
-    
+
     //Persistant Cache
     public vaultDBCache: DBRows
     public spacesDBCache: DBRows
@@ -108,18 +108,18 @@ export class Superstate extends Component {
     public persister: LocalStorageCache;
     public syncStatus: number;
     public spacesDBLoaded: boolean;
-    
+
     //Maps
     public spacesMap: IndexMap //file to space mapping
     public linksMap: IndexMap //link between files
     public iconsCache: Map<string, string>
     public tagsMap: IndexMap //file to tag mapping
     public contextsMap: IndexMap //file to context mapping
-    
+
     //Workers
     private contextStoreQueue: Promise<void>;
     public indexer: Manager;
-    
+
     private constructor(public app: App, public indexVersion: string, public onChange: () => void, plugin: MakeMDPlugin) {
         super();
 
@@ -157,13 +157,13 @@ export class Superstate extends Component {
         this.loadSpacesDatabaseFromDisk();
     }
 
-    
+
 
     private addToContextStoreQueue(operation: () => Promise<any>) {
         //Simple queue (FIFO) for processing context changes
         this.contextStoreQueue = this.contextStoreQueue.then(operation).catch(() => {});
     }
-    
+
     public async resolveSpacesDatabaseSync () {
         //Wait and Resolve Conflicts in Spaces Database Update Time
         if (this.plugin.settings.spacesSyncLastUpdated.length > 0) {
@@ -177,7 +177,7 @@ export class Superstate extends Component {
                 }
                 return true;
             }
-            
+
             const resolverFile = getAbstractFileAtPath(app, this.plugin.settings.spacesSyncLastUpdated);
             if (!resolverFile) {
                 await this.updateSpaceLastUpdated();
@@ -209,12 +209,12 @@ export class Superstate extends Component {
         }
     }
 
-    
+
       public async loadSpacesDatabaseFromDisk () {
         //Load Spaces Database File
         if (this.plugin.settings.spacesEnabled) {
                 await this.resolveSpacesDatabaseSync();
-                
+
             const db = await getDB(await this.plugin.sqlJS(), this.plugin.spacesDBPath);
             const tables = dbResultsToDBTables(
                 db.exec(
@@ -234,7 +234,7 @@ export class Superstate extends Component {
             this.spacesDBCache = selectDB(db, "spaces")?.rows ?? []
             db.close();
             this.spacesDBLoaded = true;
-            
+
             this.spacesDBCache.forEach(f => this.reloadSpace(f.name, false))
             if (!this.plugin.settings.precreateVaultSpace || this.spacesDBCache.length == 0) {
                 insertSpaceAtIndex(
@@ -251,9 +251,9 @@ export class Superstate extends Component {
             }
         }
         rebuildIndex(this.plugin, true);
-        
+
       }
-      
+
       public async updateSpaceLastUpdated () {
         if (this.plugin.settings.spacesSyncLastUpdated.length > 0) {
             return app.vault.adapter.stat(this.plugin.spacesDBPath).then((f) => {
@@ -280,7 +280,7 @@ export class Superstate extends Component {
             if (save && this.plugin.settings.spacesEnabled && this.syncStatus == 0) {
                 this.debounceSaveSpaceDatabase(tables);
             }
-        
+
     }
     private debounceSaveSpaceDatabase = debounce(
         (tables: DBTables) => {
@@ -289,14 +289,14 @@ export class Superstate extends Component {
     {
         leading: false,
       })
-    
+
     public async initialize () {
 
         const start = Date.now();
         if (this.plugin.settings.spacesEnabled)
             await this.initializeSpaces();
         await this.initializeContexts();
-        
+
         await this.initalizeFiles();
         this.cleanContexts();
         console.log(`Make.md Superstate: ${Date.now()-start} ms`);
@@ -327,9 +327,9 @@ export class Superstate extends Component {
     }
 
     public async loadFromCache() {
-        
+
         const allFiles = getAllAbstractFilesInVault(this.plugin, app)
-        if (this.plugin.settings.indexSVG) {
+        if (this.plugin.settings.stickerSVG) {
             const cacheIcons = allFiles.filter(f => (f instanceof TFile) && f.extension == 'svg').map(s => this.persister.load(s.path, 'icon').then(string => {
                 if (string?.length > 0)
                     this.iconsCache.set(s.path, string);
@@ -338,7 +338,7 @@ export class Superstate extends Component {
         }
         const cachePromises = allFiles.map(file => this.persister.load(file.path, 'file').then(f => {
             if (!f) return;
-            
+
             const cache = parseFileCache(f)
             this.filesIndex.set(file.path, cache);
             this.tagsMap.set(file.path, new Set(cache.tags))
@@ -410,7 +410,7 @@ export class Superstate extends Component {
         this.fileReloaded(file.path);
         this.broadcast('file', 'change', file.path)
     }
-    
+
     public deleteTag(tag: string) {
         const contextCache = this.contextsIndex.get(tag);
         this.contextsIndex.delete(tag);
@@ -459,7 +459,7 @@ export class Superstate extends Component {
         }
         if (fileCache)
         {
-            const allContextsWithFile = fileCache.contexts.map(f => this.contextsIndex.get(f)?.info).filter(f => f);   
+            const allContextsWithFile = fileCache.contexts.map(f => this.contextsIndex.get(f)?.info).filter(f => f);
             this.addToContextStoreQueue(() => onMetadataChange(this.plugin, afile, allContextsWithFile));
             this.reloadFile(afile);
         }
@@ -473,7 +473,7 @@ export class Superstate extends Component {
         const newTFile = getAbstractFileAtPath(app, newPath);
         const oldFileCache = this.filesIndex.get(oldPath);
         if (!oldFileCache) {
-            
+
         this.spacesMap.rename(oldPath, newPath)
         this.linksMap.rename(oldPath, newPath)
         this.linksMap.renameInverse(oldPath, newPath)
@@ -481,7 +481,7 @@ export class Superstate extends Component {
         this.reloadFile(newTFile).then(f => this.broadcast('space'));
         return;
         }
-        
+
         const fileCache = { ...this.filesIndex.get(oldPath), path: newPath, parent: newParentPath }
         this.filesIndex.set(newPath, fileCache);
         this.filesIndex.delete(oldPath);
@@ -523,7 +523,7 @@ export class Superstate extends Component {
         }
         this.spacesMap.get(newFilePath).forEach(f => this.reloadSpace(f));
         this.reloadFile(getAbstractFileAtPath(app, newFilePath)).then(f => this.broadcast('space'));
-        
+
         this.addToContextStoreQueue(() => renameLinkInContexts(this.plugin, oldPath, newFilePath, allContextsWithLink).then(f => allContextsWithFile.forEach(c => this.reloadContext(c))))
     }
 
@@ -551,7 +551,7 @@ export class Superstate extends Component {
         this.addToContextStoreQueue(() => removeLinkInContexts(this.plugin, path, allContextsWithLink).then(f => allContextsWithFile.forEach(c => this.reloadContext(c))))
         this.broadcast('space')
     }
-    
+
     public async renameSpace(oldSpace: string, newSpace: string) {
         if (this.spacesIndex.has(oldSpace)) {
             this.spacesIndex.delete(oldSpace);
@@ -570,7 +570,7 @@ export class Superstate extends Component {
             this.plugin.settings.cachedSpaces = this.allSpaces().map(f => f.name)
             this.plugin.saveSettings();
         this.broadcast('space')
-        
+
     }
 
     public async spacesSynced() {
@@ -618,7 +618,7 @@ export class Superstate extends Component {
             } else {
                 return;
             }
-            
+
         }
         const spaceBackupFolder = normalizePath(
             `${app.vault.configDir}/plugins/make-md/backups`
@@ -669,18 +669,18 @@ export class Superstate extends Component {
             this.broadcast('space', 'change', spaceName)
             }
         }
-        
-        
+
+
     }
 
     public async reloadFile(file: TAbstractFile, force?: boolean) : Promise<boolean> {
         if (!file) return false;
 
         return this.indexer.reload<{cache: FileMetadataCache, changed: boolean}>({ type: 'file', path: file.path}).then(r => {
-            
+
             const { changed, cache } = r;
             if (!changed && !force) { return false }
-            
+
             this.filesIndex.set(file.path, cache);
             this.tagsMap.set(file.path, new Set(cache.tags))
             this.contextsMap.set(file.path, new Set(cache.contexts))
@@ -690,20 +690,20 @@ export class Superstate extends Component {
                 this.broadcast('space')
             }
             if (force) {
-                const allContextsWithFile = cache.contexts.map(f => this.contextsIndex.get(f)?.info).filter(f => f);   
+                const allContextsWithFile = cache.contexts.map(f => this.contextsIndex.get(f)?.info).filter(f => f);
             this.addToContextStoreQueue(() => onMetadataChange(this.plugin, file, allContextsWithFile));
             }
-            
-            if (cache.extension == 'svg' && this.plugin.settings.indexSVG) {
+
+            if (cache.extension == 'svg' && this.plugin.settings.stickerSVG) {
                 app.vault.read(file as TFile).then(f => {
                     this.iconsCache.set(file.path, f)
                     this.persister.store(file.path, f, 'icon')
                 })
             }
-            
+
             this.fileReloaded(file.path);
-            
-            
+
+
             this.broadcast('file', 'change', file.path)
         return true;
         });
@@ -717,7 +717,7 @@ export class Superstate extends Component {
         if (!metadata) {
             return false;
         }
-        
+
         let missingContexts : ContextInfo[] = [];
         let removedContexts : ContextInfo[] = [];
         this.contextsIndex.forEach(contextCache => {

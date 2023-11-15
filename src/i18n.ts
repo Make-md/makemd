@@ -404,11 +404,11 @@ class T {
         },
         spacesStickers: {
           name: "Stickers",
-          desc: `Use Emojis to make it easier to find your notes`,
+          desc: `Add stickers to your files to make them easier to find.`,
         },
         spacesAlias: {
           name: "Alias",
-          desc: `Use the alias metadata to show in Spaces`,
+          desc: `Use the file's alias (if specified) instead of the file name in Spaces.`,
         },
         spacesFileExplorerDual: {
           name: "Compatibility Mode",
@@ -435,7 +435,16 @@ class T {
           name: "Performance Mode",
           desc: `Turn on performance mode for Spaces, may affect scrolling appearance. Requires Restart`,
         },
-        indexSVG: {
+
+        stickerEmoji: {
+          name: "Use Emojis as Stickers",
+          desc: `Use vanilla emojis as stickers`,
+        },
+        stickerIcon: {
+          name: "Use Lucide Icons as Stickers",
+          desc: `Use line art Lucide icons as stickers (https://lucide.dev)`,
+        },
+        stickerSvg: {
           name: "Use SVGs as Stickers",
           desc: `Use any svg file in your vault as a sticker`,
         },

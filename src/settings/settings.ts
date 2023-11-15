@@ -74,7 +74,9 @@ export const DEFAULT_SETTINGS: MakeMDPluginSettings = {
   fmKeyColor: 'color',
   fmKeySticker: 'sticker',
   openSpacesOnLaunch: true,
-  indexSVG: false
+  stickerSVG: false,
+  stickerEmoji: true,
+  stickerIcon: true,
 };
 
 export class MakeMDPluginSettingsTab extends PluginSettingTab {
@@ -111,7 +113,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
             this.refreshView();
           })
       );
-    
+
 if (this.plugin.settings.spacesEnabled) {
   containerEl.createEl("h3", { text: t.settings.sectionAppearance });
   const spaceAppearances = containerEl.createEl("div");
@@ -149,7 +151,7 @@ if (this.plugin.settings.spacesEnabled) {
           this.plugin.saveSettings();
         })
     );
-  
+
   new Setting(spaceAppearances)
     .setName(t.settings.folderIndentationLines.name)
     .setDesc(t.settings.folderIndentationLines.desc)
@@ -160,18 +162,6 @@ if (this.plugin.settings.spacesEnabled) {
           this.plugin.settings.folderIndentationLines = value;
           this.plugin.saveSettings();
           document.body.classList.toggle("mk-folder-lines", value);
-        })
-    );
-    new Setting(spaceAppearances)
-    .setName(t.settings.spacesStickers.name)
-    .setDesc(t.settings.spacesStickers.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.settings.spacesStickers)
-        .onChange((value) => {
-          this.plugin.settings.spacesStickers = value;
-          this.plugin.saveSettings();
-          this.refreshView();
         })
     );
     new Setting(spaceAppearances)
@@ -209,7 +199,60 @@ if (this.plugin.settings.spacesEnabled) {
           await this.plugin.saveSettings();
         });
     });
+
+
+    containerEl.createEl("h3", { text: "Stickers" });
+
+    new Setting(containerEl)
+    .setName(t.settings.spacesStickers.name)
+    .setDesc(t.settings.spacesStickers.desc)
+    .addToggle((toggle) =>
+      toggle
+        .setValue(this.plugin.settings.spacesStickers)
+        .onChange((value) => {
+          this.plugin.settings.spacesStickers = value;
+          this.plugin.saveSettings();
+          this.refreshView();
+        })
+    );
+    new Setting(containerEl)
+    .setName(t.settings.stickerSvg.name)
+    .setDesc(t.settings.stickerSvg.desc)
+    .addToggle((toggle) =>
+      toggle
+        .setValue(this.plugin.settings.stickerSVG)
+        .onChange((value) => {
+          this.plugin.settings.stickerSVG = value;
+          this.plugin.saveSettings();
+        })
+    );
+
+    new Setting(containerEl)
+    .setName(t.settings.stickerEmoji.name)
+    .setDesc(t.settings.stickerEmoji.desc)
+    .addToggle((toggle) =>
+      toggle
+        .setValue(this.plugin.settings.stickerEmoji)
+        .onChange((value) => {
+          this.plugin.settings.stickerEmoji = value;
+          this.plugin.saveSettings();
+        })
+    );
+
+    new Setting(containerEl)
+    .setName(t.settings.stickerIcon.name)
+    .setDesc(t.settings.stickerIcon.desc)
+    .addToggle((toggle) =>
+      toggle
+        .setValue(this.plugin.settings.stickerIcon)
+        .onChange((value) => {
+          this.plugin.settings.stickerIcon = value;
+          this.plugin.saveSettings();
+        })
+    );
+
     containerEl.createEl("h3", { text: "Folder Note" });
+
   new Setting(containerEl)
     .setName(t.settings.folderNote.name)
     .setDesc(t.settings.folderNote.desc)
@@ -258,7 +301,7 @@ if (this.plugin.settings.spacesEnabled) {
           await this.plugin.saveSettings();
         });
     });
-    
+
     new Setting(containerEl)
     .setName(t.settings.spaceAutoBackup.name)
     .setDesc(t.settings.spaceAutoBackup.desc)
@@ -270,7 +313,7 @@ if (this.plugin.settings.spacesEnabled) {
           this.plugin.saveSettings();
         })
     );
-    
+
     new Setting(containerEl)
     .setName(t.settings.spaceAutoBackupInterval.name)
     .setDesc(t.settings.spaceAutoBackupInterval.desc)
@@ -308,7 +351,7 @@ if (this.plugin.settings.spacesEnabled) {
           this.plugin.saveSettings();
         })
     );
-  
+
     new Setting(containerEl)
     .setName(t.settings.spacesFileExplorerDual.name)
     .setDesc(t.settings.spacesFileExplorerDual.desc)
@@ -320,7 +363,7 @@ if (this.plugin.settings.spacesEnabled) {
           this.plugin.saveSettings();
         })
     );
-  
+
   new Setting(containerEl)
     .setName(t.settings.spacesPerformance.name)
     .setDesc(t.settings.spacesPerformance.desc)
@@ -329,18 +372,6 @@ if (this.plugin.settings.spacesEnabled) {
         .setValue(this.plugin.settings.spacesPerformance)
         .onChange((value) => {
           this.plugin.settings.spacesPerformance = value;
-          this.plugin.saveSettings();
-        })
-    );
-
-    new Setting(containerEl)
-    .setName(t.settings.indexSVG.name)
-    .setDesc(t.settings.indexSVG.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.settings.indexSVG)
-        .onChange((value) => {
-          this.plugin.settings.indexSVG = value;
           this.plugin.saveSettings();
         })
     );
@@ -365,7 +396,7 @@ if (this.plugin.settings.spacesEnabled) {
       });
     });
 }
-    
+
     containerEl.createEl("h1", { text: "Context" });
     new Setting(containerEl)
       .setName(t.settings.contexts.name)
@@ -391,9 +422,9 @@ if (this.plugin.settings.spacesEnabled) {
             await this.plugin.saveSettings();
           });
       });
-      
-      
-      
+
+
+
       containerEl.createEl("h3", { text: t.settings.sectionAdvanced });
     new Setting(containerEl)
       .setName(t.settings.openFileContext.name)
@@ -406,7 +437,7 @@ if (this.plugin.settings.spacesEnabled) {
             this.plugin.saveSettings();
           })
       );
-      
+
     new Setting(containerEl)
       .setName(t.settings.syncContextToFrontmatter.name)
       .setDesc(t.settings.syncContextToFrontmatter.desc)
@@ -431,7 +462,7 @@ if (this.plugin.settings.spacesEnabled) {
             this.plugin.reloadExtensions(false);
           })
       );
-  
+
     containerEl.createEl("h1", { text: t.settings.sectionFlow });
     new Setting(containerEl)
     .setName(t.settings.editorMakerMode.name)
@@ -445,8 +476,8 @@ if (this.plugin.settings.spacesEnabled) {
     );
     if (this.plugin.settings.makerMode) {
 
-    
-    containerEl.createEl("h3", { text: "Inline Context" });  
+
+    containerEl.createEl("h3", { text: "Inline Context" });
     new Setting(containerEl)
       .setName(t.settings.inlineContextExplorer.name)
       .setDesc(t.settings.inlineContextExplorer.desc)
@@ -530,7 +561,7 @@ if (this.plugin.settings.spacesEnabled) {
             this.plugin.reloadExtensions(false);
           })
       );
-      containerEl.createEl("h3", { text: "Flow Block" });  
+      containerEl.createEl("h3", { text: "Flow Block" });
       new Setting(containerEl)
       .setName(t.settings.editorFlowReplace.name)
       .setDesc(t.settings.editorFlowReplace.desc)
@@ -553,7 +584,7 @@ if (this.plugin.settings.spacesEnabled) {
             this.plugin.reloadExtensions(false);
           })
       );
-   
+
     new Setting(containerEl)
       .setName(t.settings.editorFlowStyle.name)
       .setDesc(t.settings.editorFlowStyle.desc)
@@ -577,10 +608,10 @@ if (this.plugin.settings.spacesEnabled) {
           });
       });
 
-    
 
 
-    
+
+
       containerEl.createEl("h3", { text: "Flow Menu" });
       new Setting(containerEl)
       .setName(t.settings.editorMakeMenu.name)
@@ -619,7 +650,7 @@ if (this.plugin.settings.spacesEnabled) {
             await this.plugin.saveSettings();
           });
       });
-      
+
     new Setting(containerEl)
       .setName(t.settings.editorMakePlacholder.name)
       .setDesc(t.settings.editorMakePlacholder.desc)
@@ -633,7 +664,7 @@ if (this.plugin.settings.spacesEnabled) {
           })
       );
       containerEl.createEl("h3", { text: "Flow Styler" });
-    
+
 
     new Setting(containerEl)
       .setName(t.settings.inlineStyler.name)
@@ -698,7 +729,7 @@ if (this.plugin.settings.spacesEnabled) {
     //     });
     // });
 
-    
+
     // new Setting(containerEl)
     //   .setName(t.settings.editorMarkSans.name)
     //   .setDesc(t.settings.editorMarkSans.desc)
