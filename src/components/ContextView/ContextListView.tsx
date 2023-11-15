@@ -9,6 +9,7 @@ export const ContextListView = (props: { plugin: MakeMDPlugin }) => {
   const { schema } = useContext(MDBContext);
   const [error, resetError] = useErrorBoundary();
   if (error) console.log(error);
+
   return schema ? (
     schema.type == "flow" ? (
       <FlowListView plugin={props.plugin}></FlowListView>

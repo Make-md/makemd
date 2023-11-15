@@ -113,7 +113,7 @@ export const parseFileContetxs = (file: AFile, tags: string[], contextsCache: Ma
     contexts.push(...tags.filter(t => contextsCache.has(t)))
     if (file.parent != '/')
     contexts.push(file.parent);
-    spaces.forEach(space => 
+    spaces.forEach(space =>
     {
         if (contextsCache.has(spaceContextPathFromName(space))) {
             contexts.push(spaceContextPathFromName(space));
@@ -132,12 +132,12 @@ export const parseMetadata = (file: AFile, settings: MakeMDPluginSettings, conte
     }
     const tags : string[] = [];
     const fileTags : string[] = tagsForCachedMetadata(metadataCache);
-    
+
     if (contextsCache.has(file.parent)) {
         for (const def of contextsCache.get(file.parent).def) {
             if (def.type == 'tag') {
                 tags.push(def.value);
-            } 
+            }
         }
     }
 
@@ -169,7 +169,7 @@ export const parseMetadata = (file: AFile, settings: MakeMDPluginSettings, conte
     }
     let banner = '';
     if (fm) {
-        
+
         const fmKeys = uniqCaseInsensitive(frontMatterKeys(fm));
         const cols: Record<string, { type: string, name: string }> = fmKeys.reduce((p, c) => ({
             ...p, [c]: {
@@ -192,6 +192,7 @@ export const parseMetadata = (file: AFile, settings: MakeMDPluginSettings, conte
         }
         if (properties[settings.fmKeyAlias] && settings.spacesUseAlias) {
             name = fm[settings.fmKeyAlias];
+            if (Array.isArray(name)) name = name[0];
         }
     }
     const fileCache = {
@@ -239,7 +240,7 @@ export const parseMetadata = (file: AFile, settings: MakeMDPluginSettings, conte
     let changed = true;
 
     if (oldMetadata && _.isEqual(metadata, oldMetadata)) {
-        
+
         changed = false;
     }
     return {changed, cache: metadata }

@@ -117,6 +117,7 @@ export async function replaceValues(
   input: string,
   previousItemsCount: number = 0
 ): Promise<void> {
+
   let file: TFile;
   if (fileOrFilePath instanceof TFile) {
     file = fileOrFilePath;
@@ -139,6 +140,7 @@ export async function replaceValues(
   } = frontmatter
     ? frontmatter
     : { position: { start: undefined, end: undefined } };
+
   const newContent = content.map((line, i) => {
     const encodedInput = encodeLink(input);
     let encodedLine = encodeLink(line);

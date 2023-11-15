@@ -220,6 +220,7 @@ export const MDBProvider: React.FC<
       ) ?? [],
     [tableData, schema, contextTable]
   );
+
   const sortedColumns = useMemo(() => {
     return cols
       .filter(
@@ -342,6 +343,7 @@ export const MDBProvider: React.FC<
     const col = (table == "" ? tableData : contextTable[table])?.cols.find(
       (f) => f.name == column
     );
+
     if (col)
       saveFrontmatterValue(
         props.plugin,

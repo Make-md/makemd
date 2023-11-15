@@ -154,7 +154,7 @@ export const insertContextColumn = async (
   context: ContextInfo,
   field: MDBField
 ): Promise<void> => {
-  
+
   let tagFileExists = abstractFileAtPathExists(app, context.dbPath);
   if (!tagFileExists) {
     tagFileExists = await createDefaultDB(plugin, context);
@@ -207,7 +207,9 @@ const fileToFM = (afile: TAbstractFile, cols: string[], plugin: MakeMDPlugin) =>
   const fm = frontMatterForFile(file);
   const fmKeys = frontMatterKeys(fm).filter((f) => cols.some((g) => f == g));
   const rows = fmKeys.reduce(
-    (p, c) => ({ ...p, [c]: parseFrontMatter(c, fm[c]) }),
+    (p, c) => {
+      return ({ ...p, [c]: parseFrontMatter(c, fm[c]) })
+    },
     {}
   );
   if (plugin.dataViewAPI()) {
@@ -246,6 +248,7 @@ export const onMetadataChange = async (
   file: TAbstractFile,
   contexts: ContextInfo[]
 ): Promise<void[]> => {
+  // console.log(contexts);
   const promises = contexts.map((context) => {
     return processContextFile(plugin, context, async (mdb, context) => {
       const newDB = {
@@ -327,7 +330,7 @@ export const renameTagInContexts = async ( plugin: MakeMDPlugin,
 export const addFileInContexts = async (plugin: MakeMDPlugin,
   path: string,
   contexts: ContextInfo[]): Promise<void[]> => {
-    
+
     const promises = contexts.map((context) => {
       return processContextFile(plugin, context, async (mdb, context) => {
         const newDB = insertRowsIfUnique(mdb, [{ File: path }]);
@@ -338,7 +341,7 @@ export const addFileInContexts = async (plugin: MakeMDPlugin,
       })
     });
     return Promise.all(promises);
-    
+
 }
 
 export const renameLinkInContexts = async (plugin: MakeMDPlugin,
@@ -406,7 +409,7 @@ export const removeFileInContexts = async (plugin: MakeMDPlugin,
           saveContextToFrontmatter(path, mdb.cols, removeRow, plugin)
         }
         const newDB = removeRowForFile(mdb, path);
-        
+
         if (!_.isEqual(mdb, newDB))
         {
           await saveDB(plugin, context, newDB);}
