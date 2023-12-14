@@ -46,3 +46,15 @@
   display: flex;
   flex-wrap: wrap;
 }
+
+.mk-sticker {
+  display: flex;
+  font-size: calc(var(--icon-size));
+  height: var(--icon-size);
+  align-items: center;
+}
+.mk-sticker svg {
+  height: var(--icon-size);
+    width: var(--icon-size);
+    stroke-width: var(--icon-stroke);
+}

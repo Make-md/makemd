@@ -13,9 +13,6 @@
   gap: 0;
 }
 
-.mk-space-settings {
-  margin-bottom: 12px;
-}
 
 .menu-item-title {
   display: flex;
@@ -29,9 +26,9 @@
 
 .mk-menu-input input {
   padding: 4px;
-  border: 0;
   outline: 0;
   border-radius: 4px;
+  width: 100%;
 }
 
 .is-phone .mk-options-container {
@@ -47,7 +44,7 @@
 }
 .mk-options-menu {
   position: relative;
-  width: 180px;
+  width: 240px;
   /* shared font styles */
   font-size: 1em;
   line-height: 1.2;
@@ -55,6 +52,23 @@
   flex-wrap: wrap;
   /* clicking anywhere will focus the input */
   cursor: text;
+}
+
+.mk-options-menu-sections {
+display: flex;
+padding: 6px 8px;
+width: 100%;
+gap: 8px;
+}
+.mk-options-menu-section {
+  background: var(--background-primary);
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.mk-options-menu-section.is-active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent)
 }
 
 .mk-options-menu__selected-tag {
@@ -128,15 +142,22 @@
 
 .mk-options-menu__suggestions {
   width: 100%;
-  max-height: 200px;
+max-height: var(--mk-menu-max-height);
   overflow: auto;
 }
 
-@media screen and (min-width: 30em) {
+.mk-options-menu__suggestions .menu-item {
+  display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* @media screen and (min-width: 30em) {
   .mk-options-menu__suggestions {
     width: 240px;
   }
-}
+} */
 
 .mk-options-menu__suggestions ul {
   margin: 4px -1px;
@@ -154,13 +175,15 @@
   border-radius: var(--radius-s);
   display: flex;
   flex-direction: row;
-
+align-items: center;
+gap: 6px;
 }
 
 .mk-options-menu__suggestions li .mk-options-menu-inner {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .mk-options-menu__suggestions li .mk-description {
@@ -173,6 +196,7 @@
 .mk-options-menu__suggestions li span {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .mk-options-menu__suggestions li mark {
   text-decoration: underline;
@@ -208,19 +232,30 @@
   --rdp-cell-size: 30px !important;
 }
 
-.mk-properties {
+.mk-menu-custom {
   padding: 0 !important;
   gap: 0 !important;
   background: none !important;
 }
 
-.mk-properties > .menu-item-title > div {
+.mk-menu-custom > .menu-item-title > div {
   width: 100%;
 }
 
-.mk-properties .menu-item span:first-child {
+.mk-menu-custom .menu-item span:first-child {
   flex-grow: 1;
 }
-.mk-properties .menu-item span:last-child {
+.mk-menu-custom .menu-item span:last-child {
   color: var(--text-muted);
+}
+.mk-menu-custom li {
+  border-radius: var(--radius-s);
+  display: flex;
+  flex-direction: row;
+align-items: center;
+gap: 6px;
+}
+
+.mk-menu-custom li > div {
+  width: 100%;
 }

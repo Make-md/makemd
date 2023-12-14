@@ -1,14 +1,61 @@
 .mk-main-menu-container {
   display: flex;
-  padding: 12px 8px 0px 8px;
+  flex-direction: column;
+  margin: 6px;
+  gap: 4px;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.mk-main-menu-inner {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+}
+
+.mk-main-menu {
+  display: flex;
+  transition: all 0.2s ease;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.mk-main-menu.mk-hidden {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mk-main-menu-search {
+  transition: all 0.2s ease;
+  align-items: center;
+  gap: 8px;
+}
+
+.mk-main-menu-search.mk-hidden {
+
+  opacity: 0;
+  pointer-events: none;
+  
 }
 .mk-main-menu-button {
+  padding: 8px 10px;
   text-align: left;
-  padding: 8px 8px;
   border-radius: 4px;
   align-items: center;
   display: flex;
-  width: calc(100% - 50px);
+  gap: 4px;
+  justify-content: center;
+}
+.mk-main-menu-search {
+  position: absolute;
+  display: flex;
+  width: calc(100% - 60px)
+}
+.mk-main-menu-search input {
+  width: 100%;
 }
 .mk-main-menu-icon {
   background: var(--nav-item-background-hover);
@@ -21,22 +68,26 @@
   justify-content: center;
   margin-right: 4px;
 }
-.mk-flow-bar-compact .mk-main-menu-container {
-  flex-grow: 1;
-  padding: 0;
-}
-.mk-flow-bar-compact .mk-main-menu-button {
-  width: 100%;
-  padding: 4px;
-  gap: 4px;
-}
+
+
 .is-mobile .mk-main-menu-button {
   font-size: var(--font-ui-medium);
   font-weight: var(--font-medium);
   gap: 4px;
 }
+
 .mk-main-menu-button > div {
   display: flex;
+}
+
+.mk-main-menu-button.mk-main-menu-button-primary {
+  flex-grow: 1;
+  line-height: 1;
+  justify-content: flex-start;
+}
+
+.mk-main-menu .mk-main-menu-sticker {
+margin-right: 8px;
 }
 
 .mk-main-menu-button svg {
@@ -45,18 +96,6 @@
 }
 body:not(.is-mobile) .mk-main-menu-button:hover {
   background: var(--nav-item-background-hover);
-}
-.mk-main-menu {
-  position: absolute;
-  left: 8px;
-  z-index: var(--layer-menu);
-  margin-top: 2.25rem;
-  margin-left: 2px;
-  background-color: var(--background-secondary);
-  transform-origin: top left;
-  border-radius: var(--radius-m);
-  border: 1px solid var(--background-modifier-border-hover);
-  box-shadow: var(--shadow-s);
 }
 
 .mk-menu-button {
@@ -73,4 +112,8 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 }
 .mk-menu-button:hover {
   background: var(--nav-item-background-hover);
+}
+
+.mk-main-menu-container .mk-query {
+  width: 100%;
 }

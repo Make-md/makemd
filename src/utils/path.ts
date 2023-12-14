@@ -1,82 +1,49 @@
-import MakeMDPlugin from "main";
-import {
-  TFile,
-  TFolder
-} from "obsidian";
-import { Path, PathTypes } from "types/types";
-import { createNewMarkdownFile, defaultNoteFolder, getAbstractFileAtPath, openAFile, openTagContext, openURL } from "./file";
-import { urlRegex } from "./regex";
+import { Superstate } from "core/superstate/superstate";
+import { removeLeadingSlash } from "core/utils/strings";
 
-export const openPath = (plugin: MakeMDPlugin, _path: Path) => {
-  const {type, path } = _path;
-  if (type == "file" || type == "folder") {
-    const afile = getAbstractFileAtPath(app, path);
-    if (afile) {
-      openAFile(afile, plugin, false);
-    } else {
-      if (type == "file")
-        createNewMarkdownFile(
-          plugin,
-          defaultNoteFolder(plugin, null),
-          path
-        );
-    }
-
-    return;
-  }
-  if (type == "tag") {
-    openTagContext(path, plugin, false);
-    return;
-  }
-  if (type == "url") {
-    openURL(path);
-    return;
-  }
-}
-
-export const pathByString = (path: string, source?: string) : Path => {
+export const removeTrailingSlashFromFolder = (path: string) => path == "/"
+  ? path
+  : path.slice(-1) == "/"
+    ? path.substring(0, path.length - 1)
+    : path;
+    
+    export const pathDisplayName = (path: string, superstate: Superstate) => {
+  if (!path) return "";
+  return superstate.pathsIndex.get(path)?.name || path;
   
-  const [str, alias] = path.split("|");
-  const refIndex = str.lastIndexOf("#");
-  const [link, ref] =  refIndex > 0
-    ? [str.substring(0, refIndex), str.substring(refIndex + 1)]
-    : [str, undefined];
+};
+
 
     
-  const type = pathTypeByString(link, source);
+export const folderPathToString = (path: string) => removeLeadingSlash(path.substring(path.lastIndexOf("/"))) || path;
+export const getParentFolderPaths = (path: string): string[] => {
+  const folderPaths: string[] = [];
+  const parts: string[] = path.split("/");
+  let current = "";
+  for (let i = 0; i < parts.length; i++) {
+    current += `${i === 0 ? "" : "/"}` + parts[i];
+    if (current != path) {
+      folderPaths.push(current);
+    }
+  }
 
-  return {
-    fullPath: path,
-    path: link,
-    type,
-    alias,
-    ref
-  }
-}
-
-export const pathTypeByString = (file: string, source?: string): PathTypes => {
-  if (file.charAt(0) == "#") {
-    return "tag";
-  }
-  if (file.slice(-2) == "//") {
-    return "space";
-  }
-  if (file.charAt(file.length - 1) == "/") {
-    return "folder";
-  }
-  let portalFile;
-  if (source) {
-    portalFile = app.metadataCache.getFirstLinkpathDest(file, source)
-  } else {
-    portalFile = app.vault.getAbstractFileByPath(file);
-  }
-  if (portalFile instanceof TFolder) {
-    return "folder";
-  }
-  if (portalFile instanceof TFile) {
-    return "file";
-  }
-  if (file.match(urlRegex))
-    return "url";
-  return "unknown";
+  return folderPaths;
 };
+export const pathToString = (path: string) => {
+  if (path.lastIndexOf("/") != -1) {
+    if (path.lastIndexOf(".") != -1)
+      return removeLeadingSlash(
+        path.substring(
+          path.lastIndexOf("/") + 1,
+          path.lastIndexOf(".")
+        )
+      );
+    return path.substring(path.lastIndexOf("/") + 1);
+  }
+  if (path.lastIndexOf(".") != -1) {
+    return path.substring(0, path.lastIndexOf("."));
+  }
+  return path;
+};
+export const pathNameToString = (path: string) => path.substring(0, path.lastIndexOf(".")) || path;
+

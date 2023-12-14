@@ -1,8 +1,9 @@
-import i18n from "i18n";
-import { FilePropertyName } from "types/context";
-import { ContextInfo } from "types/contextInfo";
-import { DBTable, DBTables, MDBField, MDBSchema, MDBTable } from "types/mdb";
-import { parsePropString } from "utils/contexts/parsers";
+import i18n from "core/i18n";
+import { PathPropertyName } from "core/types/context";
+import { frameSchemaToMDBSchema } from "core/utils/frames/nodes";
+import { DBTable, DBTables, SpaceInfo, SpaceProperty, SpaceTable, SpaceTableSchema } from "types/mdb";
+import { FrameSchema } from "types/mframe";
+import { parsePropString, safelyParseJSON } from "utils/parsers";
 
 export type FieldType = {
   type: string;
@@ -12,11 +13,15 @@ export type FieldType = {
   multi?: boolean;
   metadata?: boolean;
   multiType?: string;
-  defaultValue?: string;
+  configKeys?: string[];
 };
 
-export const fieldTypeForType = (type: string) =>
-    fieldTypes.find((t) => type == t.type) ||
+export const stickerForField = (f: SpaceProperty) => f.attrs?.length > 0
+? safelyParseJSON(f.attrs)?.icon ?? fieldTypeForType(f.type, f.name)?.icon
+: fieldTypeForType(f.type, f.name)?.icon
+
+export const fieldTypeForType = (type: string, name?: string) =>
+    name == PathPropertyName ? fieldTypes.find((t) => t.type == 'file') : name == 'tags' ? fieldTypes.find((t) => t.type == 'tags') : name == 'aliases' ? fieldTypes.find((t) => t.type == 'option-multi') : name == 'sticker' ? fieldTypes.find((t) => type == 'icon') : fieldTypes.find((t) => type == t.type) ||
     fieldTypes.find((t) => type == t.multiType);
 
 export const fieldTypes: FieldType[] = [
@@ -24,52 +29,58 @@ export const fieldTypes: FieldType[] = [
     type: "unknown",
     label: "",
     restricted: true,
-  },
-  {
-    type: "preview",
-    label: i18n.properties.preview.label,
-    restricted: true,
+    icon: 'lucide//file-question'
   },
   {
     type: "text",
     label: i18n.properties.text.label,
     metadata: true,
-    icon: 'mk-make-h3'
+    icon: 'lucide//text'
   },
   {
     type: "number",
     label: i18n.properties.number.label,
     metadata: true,
-    icon: 'mk-make-tag'
+    icon: 'lucide//binary',
+    configKeys: ['unit']
   },
   {
     type: "boolean",
     label: i18n.properties.boolean.label,
     metadata: true,
-    icon: 'mk-make-todo'
+    icon: 'lucide//check-square'
   },
   {
     type: "date",
     label: i18n.properties.date.label,
     metadata: true,
-    icon: 'mk-make-date'
+    icon: 'lucide//calendar',
+    configKeys: ['format']
   },
   {
     type: "option",
     label: i18n.properties.option.label,
     multi: true,
     multiType: "option-multi",
-    icon: 'mk-make-list'
+    icon: 'lucide//list',
+    configKeys: ['options']
+  },
+  {
+    type: "tags",
+    label: i18n.properties.tags.label,
+    icon: 'lucide//tags',
   },
   {
     type: "file",
     label: i18n.properties.file.label,
     restricted: true,
-    icon: 'mk-make-h3'
+    icon: 'ui//mk-make-h3'
   },
   {
     type: "fileprop",
     label: i18n.properties.fileProperty.label,
+    icon: 'lucide//list',
+    configKeys:['field', 'value']
   },
   {
     type: "link",
@@ -77,20 +88,31 @@ export const fieldTypes: FieldType[] = [
     multi: true,
     multiType: "link-multi",
     metadata: true,
-    icon: 'mk-make-note'
+    icon: 'lucide//file-text'
   },
   {
     type: "context",
     label: i18n.properties.context.label,
+    icon: 'ui//mk-make-note',
     multi: true,
     multiType: "context-multi",
-    icon: 'mk-make-note'
+    configKeys: ['space']
   },
   {
     type: "object",
-    label: i18n.properties.context.label,
-    restricted: true,
+    label: i18n.properties.object.label,
+    multi: true,
+    multiType: 'object-multi',
     metadata: true,
+    icon: 'lucide//list-tree'
+  },
+  {
+    type: "icon",
+    label: i18n.properties.icon.label,
+    multi: true,
+    multiType: "icon-multi",
+    icon: 'lucide//gem',
+    restricted: true
   },
   {
     type: "image",
@@ -98,14 +120,32 @@ export const fieldTypes: FieldType[] = [
     multi: true,
     multiType: "image-multi",
     metadata: true,
-    icon: 'mk-make-image'
+    icon: 'ui//mk-make-image'
   },
+  {
+    type: "color",
+    label: i18n.properties.color.label,
+    icon: 'ui//mk-make-image',
+    restricted: true
+  },
+  {
+    type: "space",
+    label: i18n.properties.space.label,
+    icon: 'lucide//layout-grid',
+    restricted: true
+  },
+  {
+    type: 'super',
+    label: i18n.properties.super.label,
+    icon: 'lucide//zap',
+    restricted: true,
+    configKeys: ['dynamic', 'field']
+  }
+  
 ];
 
 export const defaultValueForPropertyType = (name: string, value: string, type: string) => {
-  if (type == "preview") {
-    return "https://images.unsplash.com/photo-1675789652575-0a5d2425b6c2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80";
-  }
+  
   if (type == 'fileprop') {
     const {field, property} = parsePropString(value)
     if (property == 'ctime' || property == 'mtime')
@@ -138,39 +178,40 @@ export const defaultValueForPropertyType = (name: string, value: string, type: s
   }
   return ""
 };
-
-export const defaultFileDBSchema: MDBSchema = {
-  id: "files",
+export const defaultContextSchemaID = "files";
+export const defaultContextDBSchema: SpaceTableSchema = {
+  id: defaultContextSchemaID,
   name: "Files",
   type: "db",
   primary: "true",
 };
 
-export const defaultFileListSchema: MDBSchema = {
-  id: "filesView",
+export const defaultFrameListViewID = "filesView";
+export const defaultFrameListViewSchema: FrameSchema = {
+  id: defaultFrameListViewID,
   name: "Files",
-  type: "list",
-  def: "files",
+  type: "view",
+  def: {db: defaultContextSchemaID},
 };
 
-export const defaultFileTableSchema: MDBSchema = {
-  id: "filesView",
-  name: "Files",
-  type: "table",
-  def: "files",
-};
 
-export const defaultFolderSchema: DBTable = {
+export const mainFrameID = 'main'
+
+export const defaultMainFrameSchema = (id: string) => ({id, name: id, type: 'frame', def: '', predicate: '', primary: "true"})
+
+export const defaultFramesTable: DBTable = {
   uniques: [],
   cols: ["id", "name", "type", "def", "predicate", "primary"],
-  rows: [defaultFileDBSchema, defaultFileListSchema] as MDBSchema[],
+  rows: [defaultMainFrameSchema(mainFrameID), frameSchemaToMDBSchema(defaultFrameListViewSchema)] as SpaceTableSchema[],
 };
 
-export const defaultTagSchema: DBTable = {
+
+export const defaultContextTable: DBTable = {
   uniques: [],
   cols: ["id", "name", "type", "def", "predicate", "primary"],
-  rows: [defaultFileDBSchema, defaultFileTableSchema] as MDBSchema[],
+  rows: [defaultContextDBSchema] as SpaceTableSchema[],
 };
+
 
 export const fieldSchema = {
   uniques: ["name,schemaId"],
@@ -186,22 +227,12 @@ export const fieldSchema = {
   ],
 };
 
-export const defaultFolderFields: DBTable = {
+export const defaultContextFields: DBTable = {
   ...fieldSchema,
   rows: [
     {
-      name: i18n.properties.preview.label,
-      schemaId: "files",
-      type: "preview",
-      hidden: "",
-      unique: "",
-      attrs: "",
-      value: "",
-      primary: "",
-    },
-    {
-      name: FilePropertyName,
-      schemaId: "files",
+      name: PathPropertyName,
+      schemaId: defaultContextSchemaID,
       type: "file",
       primary: "true",
       hidden: "",
@@ -211,27 +242,22 @@ export const defaultFolderFields: DBTable = {
     },
     {
       name: i18n.properties.fileProperty.createdTime,
-      schemaId: "files",
+      schemaId: defaultContextSchemaID,
       type: "fileprop",
-      value: "File.ctime",
+      value: PathPropertyName+".ctime",
       hidden: "",
       unique: "",
       attrs: "",
-      primary: "",
+      primary: "true",
     },
-  ] as MDBField[],
+  ] as SpaceProperty[],
 };
 
-export const defaultFieldsForContext = (context: ContextInfo) => {
-  if (context.type == 'tag') {
-    return defaultTagFields
-  } else if (context.type == 'folder') {
-    return defaultFolderFields;
-  }
-  return defaultFolderFields;
+export const defaultFieldsForContext = (space: SpaceInfo) => {
+  return defaultContextFields;
 };
 
-export const defaultTableFields: MDBField[] = [
+export const defaultTableFields: SpaceProperty[] = [
   {
     name: i18n.properties.defaultField,
     schemaId: "",
@@ -243,8 +269,8 @@ export const defaultTagFields: DBTable = {
   ...fieldSchema,
   rows: [
     {
-      name: FilePropertyName,
-      schemaId: "files",
+      name: PathPropertyName,
+      schemaId: defaultContextSchemaID,
       type: "file",
       primary: "true",
       hidden: "",
@@ -255,36 +281,32 @@ export const defaultTagFields: DBTable = {
   ],
 };
 
-export const defaultMDBTableForContext = (context: ContextInfo) => {
-  if (context.type == 'tag') {
-    return defaultTagMDBTable;
-  } else if (context.type == 'folder') {
-    return defaultFolderMDBTable;
-  }
+export const defaultMDBTableForContext = (space: SpaceInfo) => {
+  
   return defaultFolderMDBTable;
 };
 
-export const defaultFolderMDBTable: MDBTable = {
-  schema: defaultFileDBSchema,
-  cols: defaultFolderFields.rows as MDBField[],
+export const defaultFolderMDBTable: SpaceTable = {
+  schema: defaultContextDBSchema,
+  cols: defaultContextFields.rows as SpaceProperty[],
   rows: [],
 };
 
-export const defaultQueryMDBTable: MDBTable = {
-  schema: defaultFileDBSchema,
-  cols: defaultFolderFields.rows as MDBField[],
+export const defaultQueryMDBTable: SpaceTable = {
+  schema: defaultContextDBSchema,
+  cols: defaultContextFields.rows as SpaceProperty[],
   rows: [],
 };
 
-export const defaultTagMDBTable: MDBTable = {
-  schema: defaultFileDBSchema,
-  cols: defaultTagFields.rows as MDBField[],
+export const defaultTagMDBTable: SpaceTable = {
+  schema: defaultContextDBSchema,
+  cols: defaultTagFields.rows as SpaceProperty[],
   rows: [],
 };
 
 export const fieldsToTable = (
-  fields: MDBField[],
-  schemas: MDBSchema[]
+  fields: SpaceProperty[],
+  schemas: SpaceTableSchema[]
 ): DBTables => {
   return fields
     .filter((s) => schemas.find((g) => g.id == s.schemaId && g.type == "db"))
@@ -313,29 +335,25 @@ export const fieldsToTable = (
     }, {});
 };
 
-export const defaultTablesForContext = (context: ContextInfo) => {
-  if (context.type == "tag") {
-    return defaultTagTables
-  } else if (context.type == 'folder') {
-    return defaultFolderTables
-  } 
+export const defaultTablesForContext = (space: SpaceInfo) => {
+  
   return defaultFolderTables
 };
 
 export const defaultFolderTables = {
-  m_schema: defaultFolderSchema,
-  m_fields: defaultFolderFields,
+  m_schema: defaultContextTable,
+  m_fields: defaultContextFields,
   ...fieldsToTable(
-    defaultFolderFields.rows as MDBField[],
-    defaultFolderSchema.rows as MDBSchema[]
+    defaultContextFields.rows as SpaceProperty[],
+    defaultContextTable.rows as SpaceTableSchema[]
   ),
 };
 
 export const defaultTagTables = {
-  m_schema: defaultTagSchema,
+  m_schema: defaultContextTable,
   m_fields: defaultTagFields,
   ...fieldsToTable(
-    defaultTagFields.rows as MDBField[],
-    defaultTagSchema.rows as MDBSchema[]
+    defaultTagFields.rows as SpaceProperty[],
+    defaultContextTable.rows as SpaceTableSchema[]
   ),
 };

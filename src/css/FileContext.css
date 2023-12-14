@@ -1,22 +1,39 @@
-.mk-file-context {
-  margin-bottom: 12px;
-  gap: 12px;
+.mk-path-context {
   display: flex;
   flex-direction: column;
   --file-context-spacing: 4px;
+  height: 100%;
+  padding: var(--size-4-2) var(--size-4-1);
+  gap: 4px;
 }
 
-.mk-file-context-file {
+.mk-path-context-header {
+  height: var(--mk-header-height);
+    border-bottom: var(--divider-color);
+    background-color: var(--background-primary);
+    z-index: 1;
+    position: relative;
+    gap: var(--size-4-2);
+    padding: 0 var(--size-4-3);
+}
+
+.mk-path-context-file .mk-path-icon button {
+  /* --label-color:var(--background-secondary) */
+}
+
+.mk-path-context-file {
   display: flex;
+  width: 100%;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
   position: relative;
 }
-.mk-header .mk-file-context-file.mk-file-context-file-horizontal {
+.mk-header .mk-path-context-file.mk-path-context-file-horizontal, .mk-space-title.mk-path-context-file-horizontal {
   gap: 12px;
 }
-.mk-file-context-file.mk-file-context-file-horizontal {
+.mk-path-context-file.mk-path-context-file-horizontal, .mk-space-title.mk-path-context-file-horizontal {
+  display: flex;
   flex-direction: row;
   align-items: center;
 }
@@ -25,9 +42,9 @@
   text-indent: 0 !important;
 }
 
-.mk-folder-header .mk-file-icon-placeholder button,
-.mk-header .mk-file-context-component .mk-file-icon-placeholder button {
-  background: var(--background-secondary);
+.mk-space-header .mk-path-icon-placeholder button,
+.mk-inline-context .mk-path-context-component .mk-path-icon-placeholder button {
+  background: var(--label-color);
   border-radius: 8px;
   padding: 8px !important;
 }
@@ -37,60 +54,123 @@
 .mod-left-split .mk-header {
   display: none;
 }
-
-.markdown-reading-view .mk-file-context-file > .mk-inline-title.inline-title,
-.markdown-source-view.mod-cm6.is-readable-line-width .mk-file-context-file > .mk-inline-title.inline-title {
+ .markdown-reading-view .mk-path-context-file > .mk-inline-title.inline-title,
+.markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-path-context-file > .mk-inline-title.inline-title {
   padding-bottom: 0;
   margin-left: 0 !important;
   margin-top: 0;
-  padding-top: 0;
+  padding-top: 0 !important;
   margin-bottom: 0;
+  width: auto;
 }
 
-.mk-file-context-component .mk-tag-selector {
-  margin-top: 4px;
+.mk-inline-title {
+  margin-bottom: 0;
+}
+.mk-path-context-component .mk-tag-selector {
+  margin-top: 0px;
   margin-bottom: 0;
   padding: 0;
 }
 
-.mk-file-context-component {
+.mk-path-context-component {
   display: flex;
   flex-direction: column;
-  padding: 0.15rem var(--file-context-spacing);
   gap: 8px;
+  align-items: flex-start;
 }
-
-.mk-file-context-section {
+.mk-path-context-properties {
   display: flex;
   flex-direction: column;
-  padding: 0.15rem var(--file-context-spacing);
+  align-items: flex-start;
   gap: 4px;
 }
 
-.mk-file-context-row {
+.mk-path-context-properties:empty {
+display: none;
+}
+
+.mk-path-context-section:empty {
+  display: none;
+}
+.mk-path-context-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mk-path-context-section button {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mk-path-context-row {
   display: flex;
   align-items: flex-start;
   gap: 2px;
 }
 
-.mk-file-context-row .mk-cell-option {
+.mk-path-context-row .mk-collapse {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.mk-path-context-row .mk-cell-option {
   width: unset;
   align-items: flex-start;
   padding: 2px 4px;
 }
 
-.mk-file-context-field-new {
+.mk-path-context-field-new {
   font-size: var(--font-ui-small);
 
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.mk-file-context-field-new:hover {
-  color: var(--text-normal);
+.mk-path-context-field-key {
+  padding: var(--size-4-1);
+  display: inline-block;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.mk-path-context-field-space {
+  display: flex;
+  justify-content: center;
+  min-width: 18px;
+    height: 18px;
+    color: var(--tag-color);
+    border-radius: var(--tag-radius);
+    border: var(--tag-border-width) solid var(--tag-border-color);
+    opacity: 0.4;
+}
+.mk-path-context-field-space:hover {
+  opacity: 1;
+}
+.mk-path-context-field-icon {
+  min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+}
+.mk-path-context-field-new:hover, .mk-path-context-field-new button:hover svg {
+  color: var(--text-normal) !important;
 }
 
-.mk-file-context-field-new button {
+.mk-path-context-field-new button {
   background: none !important;
   box-shadow: none !important;
   color: var(--text-faint) !important;
@@ -101,16 +181,16 @@
   border: none !important;
 }
 
-.mk-file-context-field-new button svg {
+.mk-path-context-field-new button svg {
   color: var(--text-faint) !important;
 }
-.mk-file-context-field-new button:hover {
+.mk-path-context-field-new button:hover {
   color: var(--text-normal) !important;
 }
 
-.mk-file-context-field {
-  min-width: 100px;
-  width: 100px;
+.mk-path-context-field {
+  max-width: 140px;
+  min-width: 140px;
   font-size: var(--font-ui-small);
   color: var(--text-faint);
   min-height: 24px;
@@ -133,68 +213,79 @@
   background-color: var(--bullet-color);
   transition: transform 75ms ease-out;
 }
-.mk-file-context-value {
+.mk-path-context .mk-cell-text {
+  background: var(--interactive-hover) !important;
+}
+.mk-path-context .mk-path-context-row {
+  flex-wrap: wrap;
+}
+
+.mk-path-context-value {
   font-size: var(--font-ui-small);
   flex-grow: 1;
   display: flex;
   align-items: center;
   min-height: 24px;
 }
-.mk-file-context-field:hover {
+.mk-path-context-field:hover {
   color: var(--text-normal);
 }
-.mk-file-context-value .mk-cell-text:hover {
+.mk-path-context-value .mk-cell-text:hover {
   background: var(--interactive-hover) !important;
   border-radius: 4px;
 }
 
-.mk-file-context-value .mk-cell-option-new {
+.mk-path-context-value .mk-cell-option-new {
   visibility: visible !important;
 }
 
-.mk-file-context-value input[type="text"],
-.mk-file-context-value input[type="number"] {
-  width: 100%;
+.mk-path-context-value input[type="text"],
+.mk-path-context-value input[type="number"] {
+  width: 130px;
   border: none;
   border-radius: 0px;
   height: 24px;
 }
-.mk-file-context-value input[type="text"]:focus,
-.mk-file-context-value input[type="number"]:focus {
+.mk-path-context-value input[type="text"]:focus,
+.mk-path-context-value input[type="number"]:focus {
   box-shadow: none !important;
 }
 c
 .mk-section-title,
-.mk-file-context-title {
+.mk-path-context-title,
+.mk-path-context-subtitle {
   font-size: var(--font-ui-small);
   font-weight: var(--bold-weight);
   color: var(--text-muted);
 }
-.mk-file-context-title {
+.mk-path-context-title {
   display: flex;
   align-items: center;
-  height: 24px;
+  height: 32px;
   gap: 4px;
+  position: relative;
 }
-.mk-file-context-title:hover {
+.mk-path-context-title:hover {
   color: var(--text-normal);
 }
-.mk-file-context-title .mk-inline-button svg {
+.mk-path-context-title .mk-inline-button svg {
   color: var(--text-faint);
 }
-.mk-file-context-title .mk-collapse:hover {
+.mk-path-context-title .mk-collapse:hover {
   background: none !important;
 }
-.mk-file-context-title .mk-collapse {
+.mk-path-context-title .mk-collapse {
+  position: absolute;
+  left: -25px;
   width: 10px;
   height: 10px;
 }
 
-.mk-file-context-title .mk-collapse svg {
+.mk-path-context-title .mk-collapse svg {
   margin: 0 !important;
 }
 
-.mk-file-context-folder {
+.mk-path-context-folder {
   padding: 0 !important;
   color: var(--color-accent-1);
   background: none !important;
@@ -202,17 +293,68 @@ c
   height: unset !important;
 }
 
-.mk-file-context .mk-tag-selector {
+.mk-path-context .mk-tag-selector {
   padding: 0 !important;
 }
-
-.mk-file-context-backlink {
-  border: thin solid var(--divider-color);
-  padding: 0px 8px;
+.mk-space-icon {
+  display: flex;
+  padding-right: 2px;
 }
 
-.mk-file-context-backlink .cm-content {
+.mk-path-context-backlink {
+  background: var(--background-primary);
+  padding: 8px;
+}
+
+
+.mk-path-context-backlink .cm-content {
   padding-bottom: 0 !important;
+}
+
+.mk-space-gallery-container {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+}
+
+.mk-space-gallery-controls {
+  font-size: var(--font-ui-small);
+position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 100;
+}
+.mk-space-gallery-controls:hover {
+  color: var(--text-normal);
+}
+
+
+.mk-space-scroller>.mk-spacer {
+  min-height: var(--mk-header-height)
+}
+
+.mk-space-gallery-controls button {
+  background: none !important;
+  box-shadow: none !important;
+  color: var(--text-faint) !important;
+  padding: 0 4px !important;
+  display: flex;
+  gap: 4px;
+  height: 20px;
+  border: none !important;
+}
+
+.mk-space-gallery-controls button svg {
+  color: var(--text-faint) !important;
+}
+.mk-space-gallery-controls button:hover {
+  color: var(--text-normal) !important;
+}
+.mk-space-gallery {
+position: fixed;
+  width: 100%;
+  height: 100%;
 }
 
 .mk-note-header {
@@ -222,6 +364,7 @@ c
   right: 0;
   width: 100%;
   user-select: none;
+  height: 200px;
 }
 
 .mk-note-header img {
@@ -230,31 +373,47 @@ c
   object-fit: cover;
   opacity: 1 !important;
 }
-.mk-file-context-collapse {
+.mk-fold {
   opacity: 1;
   position: absolute;
   left: -24px;
-  bottom: 0px;
+  bottom: 4px;
   opacity: 0;
 }
 
-.mk-file-context-file-horizontal .mk-file-context-collapse {
+.mk-smart-note-title {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.mk-path-context-file-horizontal .mk-fold {
   bottom: 8px;
 }
 
-.mk-header .mk-file-context-collapse.mk-collapsed {
+.markdown-source-view:not(.is-live-preview) > .cm-editor > .cm-scroller > .cm-sizer > .mk-inline-context {
+  display: none;
+}
+.mk-inline-context {
+  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    border-top: none !important;
+    margin-bottom: 8px;
+}
+.mk-inline-context .mk-fold.mk-collapsed {
   opacity: 1;
   color: var(--collapse-icon-color-collapsed);
 }
-.mk-header .mk-file-context-collapse.mk-collapsed svg {
+.mk-inline-context .mk-fold.mk-collapsed svg {
   color: var(--collapse-icon-color-collapsed);
 }
-.mk-header:hover .mk-file-context-collapse {
-  opacity: 1;
+.mk-inline-context:hover .mk-fold {
+  opacity: 1 !important;
 }
 
 .markdown-source-view.mod-cm6 .cm-content > .cm-line.mk-has-banner {
-  position: inherit !important;
+  /* position: inherit !important; */
 }
 
 .markdown-source-view.mod-cm6 .mk-has-backlinks img.cm-widgetBuffer {
@@ -262,9 +421,7 @@ c
 }
 
 
-.mk-header .mk-file-context-component {
-  z-index: 1;
-  pointer-events: none;
+.mk-inline-context .mk-path-context-component {
   gap: 8px;
 }
 .markdown-source-view.mod-cm6 .cm-content .mk-note-footer {
@@ -273,7 +430,7 @@ c
   border-top: thin solid var(--divider-color);
 }
 
-.mk-header .mk-file-context-component div {
+.mk-header .mk-path-context-component div {
   pointer-events: all;
 }
 
@@ -288,6 +445,7 @@ c
 
 .mk-note-header .inline-title {
   display: flex !important;
+  margin-bottom: 0;
 }
 
 .mk-header-title {
@@ -302,12 +460,14 @@ c
   margin-top: -34px;
 }
 
-.workspace-leaf-content[data-type="make-folder-view"] .view-content,
+.workspace-leaf-content[data-type="mk-frame-editor"] .view-content,
+.workspace-leaf-content[data-type="mk-space"] .view-content,
+.workspace-leaf-content[data-type="make-context-view"] .view-content,
 .workspace-leaf-content[data-type="make-file-view"] .view-content {
   padding: 0;
 }
 .markdown-source-view.mod-cm6 .cm-content > .mk-header {
-  --header-height: 0px;
+  --mk-header-height: 0px;
   gap: 16px;
   display: flex;
   flex-direction: column;
@@ -320,52 +480,58 @@ c
 .mk-inline-context-enabled .markdown-reading-view .frontmatter-container {
   display: none;
 }
-.markdown-reading-view .mk-file-context-component .mk-spacer,
+.mk-inline-context .mk-path-context-component .mk-spacer,
 .markdown-source-view.mod-cm6 .cm-content > .mk-header .mk-spacer,
-.mk-folder-view .mk-folder-header .mk-spacer{
-  height: var(--header-height) !important;
+.mk-space-view .mk-space-header .mk-spacer{
+  height: var(--mk-header-height) !important;
   pointer-events: none;
 }
 
-.mk-file-context .inline-title {
+.mk-path-context .inline-title {
   font-size: 18px;
+  margin-bottom: 0;
 }
-.mk-file-context-component .mk-file-context-field-new {
+.mk-path-context-component .mk-path-context-field-new {
   opacity: 0.5;
   position: relative;
 }
 
-.mk-file-context-component .mk-file-context-field-new:hover {
+.mk-path-context-component .mk-path-context-field-new:hover {
   opacity: 1;
 }
 
-.mk-folder-header .mk-file-context-file .mk-file-icon,
-.mk-header .mk-file-context-file .mk-file-icon {
+.mk-space-header .mk-path-context-file .mk-space-title .mk-path-icon,
+.mk-inline-context .mk-path-context-file .mk-path-icon {
   width: 48px;
   height: 48px;
   margin-bottom: 8px;
 }
 
-.mk-folder-header .mk-file-context-file.mk-file-context-file-horizontal .mk-file-icon,
-.mk-header .mk-file-context-file.mk-file-context-file-horizontal .mk-file-icon {
+.mk-space-header .mk-space-title.mk-path-context-file-horizontal .mk-path-icon,
+.mk-inline-context .mk-path-context-file.mk-path-context-file-horizontal .mk-path-icon {
   width: 32px;
   height: 32px;
   margin-bottom: 0px;
 }
-.mk-folder-header .mk-file-context-file-horizontal .mk-file-icon svg,
-.mk-folder-header .mk-file-context-file-horizontal .mk-file-icon button,
-.mk-header .mk-file-context-file-horizontal .mk-file-icon svg,
-.mk-header .mk-file-context-file-horizontal .mk-file-icon button {
+.mk-space-header .mk-path-context-file-horizontal .mk-path-icon svg,
+.mk-space-header .mk-path-context-file-horizontal .mk-path-icon button,
+.mk-inline-context .mk-path-context-file-horizontal .mk-path-icon svg,
+.mk-inline-context .mk-path-context-file-horizontal .mk-path-icon button {
   width: 32px;
   height: 32px;
   font-size: 28px;
 }
 
-.mk-folder-header .mk-file-icon svg,
-.mk-folder-header .mk-file-icon button,
-.mk-header .mk-file-icon svg,
-.mk-header .mk-file-icon button {
+.mk-space-header .mk-path-icon svg,
+.mk-space-header .mk-path-icon button,
+.mk-inline-context .mk-path-context-file  .mk-path-icon svg,
+.mk-inline-context .mk-path-icon button {
   width: 48px;
   height: 48px;
+  padding: 6px;
   font-size: 40px;
+}
+.mk-space-header .mk-path-icon svg.svg-icon,
+.mk-inline-context .mk-path-icon svg.svg-icon {
+  padding: 6px;
 }

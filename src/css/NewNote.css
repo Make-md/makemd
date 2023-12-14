@@ -1,25 +1,4 @@
-.mk-flow-bar {
-  display: flex;
-  margin: 8px 12px;
-  gap: 12px;
-  align-items: center;
-}
-.mk-flow-bar-compact {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 8px;
-}
 
-.is-tablet .mk-flow-bar-compact {
-  margin-right: 50px;
-  margin-top: 5px;
-  gap: 24px;
-}
-.is-phone .mk-flow-bar-compact {
-  margin-top: 5px;
-  gap: 24px;
-}
 
 .mk-new-note {
   flex-grow: 1;
@@ -60,47 +39,76 @@
   height: 16px;
 }
 
-.mk-sidebar-switcher {
+.mk-waypoint {
   display: flex;
-  margin: 8px 12px;
-  gap: 4px;
+}
+.mk-waypoint-new {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  opacity: .5
+}
+.mk-waypoint-new:hover {
+  opacity: 1;
 }
 
-.mk-sidebar-spaces .mk-sidebar-item {
+.mk-waypoint .mk-waypoints-item {
   display: flex;
   justify-content: center;
 }
 
-.mk-sidebar-spaces {
+.is-mobile .mk-waypoints {
+  background: var(--background-primary);
+    border-top: thin solid var(--divider-color);
+    box-shadow: var(--input-shadow);
+}
+.is-mobile .mk-waypoints > div {
+  gap: 8px;
+}
+.mk-waypoints {
   display: flex;
   overflow: auto;
-  flex-grow: 1;
-  padding-left: 4px;
+  padding: var(--size-4-3) var(--size-4-3) var(--size-4-1) var(--size-4-3);
 }
 
 .mk-sidebar-expanded {
   flex-grow: 1;
 }
 
-.mk-sidebar-item {
-  height: 32px;
-  min-width: 32px;
-  padding: 8px;
-  margin: 2px;
-  border-radius: 4px;
+.mk-waypoint:hover .mk-waypoints-item:not(.mk-active) {
+  background: var(--nav-item-background-hover);
+}
+.mk-waypoints-item {
+  color: var(--text-muted);
+  height: 30px;
+  min-width: 30px;
+  padding: 6px;
+  border-radius: 15px;
   display: flex;
   align-items: center;
   gap: 4px;
   text-align: center;
-  font-size: var(--font-ui-smaller);
-  color: var(--tab-text-color);
+  font-size: var(--font-ui-normal);
+  color: var(--icon-color);
+  
   transition: transform 250ms ease;
 }
+.mk-waypoints-item svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
 
-.mk-sidebar-item-active {
-  background: var(--background-primary);
-  color: var(--text-normal) !important;
+.is-mobile .mk-waypoints-item {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
 }
-.mk-sidebar-item-active svg {
-  color: var(--text-normal) !important;
+
+
+.mk-waypoints-item.mk-active {
+  --label-color: var(--background-modifier-active-hover);
+  color: var(--text-n);
+    background-color: var(--label-color);
+  opacity: 1;
 }
+

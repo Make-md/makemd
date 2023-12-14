@@ -1,0 +1,80 @@
+body:not(.is-mobile) .mk-frame-props-editor {
+
+  }
+  
+  .mk-frame-props-editor {
+    display: flex;
+    position: absolute;
+    top: -40px;
+    padding: 0;
+    z-index: var(--layer-popover);
+    background: var(--background-primary);
+    max-height: unset;
+  }
+  
+  .is-mobile .mk-frame-props-editor svg {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .is-mobile .mk-frame-props-editor {
+    --mobile-toolbar-height: 48px;
+    border-radius: 0;
+    width: 100%;
+    margin-top: 0;
+    overflow-x: auto;
+    justify-content: center;
+    height: var(--mobile-toolbar-height);
+    border-top: var(--divider-width) solid var(--divider-color);
+  }
+  
+  .mk-frame-props-editor .mk-mark {
+    margin: 4px;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    font-size: var(--font-ui-small);
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mk-frame-props-editor .mk-mark-option {
+    margin: 4px 0;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    font-size: var(--font-ui-small);
+    align-items: center;
+    gap: 4px;
+  }
+
+  .mk-frame-props-editor .mk-mark-option div {
+    display: flex;
+  }
+  
+  .mk-frame-props-editor .mk-mark:hover, .mk-frame-props-editor .mk-mark-option:hover {
+    background: var(--background-modifier-hover);
+  }
+  
+  .mk-frame-props-editor .mk-mark-active {
+    background: var(--background-modifier-hover);
+  }
+  
+  .mk-frame-props-editor svg {
+    color: var(--text-muted);
+width: 16px;
+height: 16px;
+  }
+  
+  .mk-divider {
+    border-left: thin solid var(--background-modifier-hover);
+    width: 1px;
+  }
+  
+  mark {
+    color: unset;
+    border-radius: 2px;
+    margin: 0px 2px;
+    padding: 0px 2px;
+  }
+  

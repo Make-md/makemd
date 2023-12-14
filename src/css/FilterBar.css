@@ -1,5 +1,4 @@
-.mk-view-selector, 
-.mk-table-selector {
+.mk-view-selector {
   margin-right: 0;
   display: flex;
   align-items: center;
@@ -7,11 +6,16 @@
   min-height: 48px;
   max-width: 100%;
   overflow-x: auto;
+  font-size: var(--font-ui-medium)
 }
-.mk-view-selector {
-  margin-left: var(--file-margins)
+.mk-view-selector-spacer {
+  min-width: var(--context-padding);
+  width: var(--file-margins)
 }
-
+.mk-table-selector, .mk-frame-selector {
+  display: flex;
+  flex-direction: column;
+}
 .mk-view-selector::-webkit-scrollbar {
   display: none;
 }
@@ -32,6 +36,7 @@
   display: flex;
   align-items: center;
   border-bottom: thin solid transparent;
+  
   height: 100%;
 }
 
@@ -39,18 +44,22 @@
   color: var(--text-normal);
 }
 .mk-view-config .mk-is-active {
-  border-bottom: thin solid var(--text-normal);
+
   color: var(--text-normal);
   background: none !important;
 }
 
 .mk-table-selector button,
 .mk-view-config button {
+  font-size: max(var(--font-ui-small),1em);
+  font-weight: var(--font-medium);
   background: rgba(var(--nav-item-background-active), 0.3);
   border: none;
   box-shadow: none;
   color: var(--text-faint);
 }
+
+
 
 .mk-view-config button:hover {
   color: var(--text-normal);
@@ -60,8 +69,8 @@
   width: 100%;
   display: flex;
   color: var(--text-faint);
-  align-items: stretch;
-  border-bottom: 1px solid var(--divider-color);
+  align-items: center;
+border-bottom: thin solid var(--divider-color);
   flex-wrap: wrap;
 }
 
@@ -105,8 +114,6 @@
   color: var(--text-normal) !important;
   min-height: 48px;
   padding-left: var(--context-padding);
-  padding-right: var(--size-4-3);
-  flex-grow: 1;
 }
 .mk-view-config span {
   flex-grow: 10;
@@ -119,7 +126,7 @@
 
 .mk-filter-bar {
   display: flex;
-  padding: 8px var(--context-padding);
+  padding: 8px 4px;
   gap: 8px;
   width: 100%;
   border-bottom: 1px solid var(--divider-color);
@@ -135,9 +142,12 @@
 
 .mk-filter {
   display: flex;
-  font-size: var(--font-ui-small);
+  font-size: var(--font-ui-smaller);
   color: var(--text-muted);
   padding: 0px;
+}
+.mk-query .mk-filter > span {
+  background: var(--background-primary);
 }
 .mk-filter > span,
 .mk-filter > div {
@@ -167,7 +177,6 @@
 .mk-filter div {
   display: flex;
   align-items: center;
-  padding-left: 4px;
 }
 .mk-filter div svg {
   width: 14px;
@@ -177,23 +186,25 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 16px;
+    padding: 8px;
+    border-radius: 6px;
 }
 .mk-query-filters {
-  flex-direction: column;
+  flex-wrap: wrap;
   padding: 0;
   border-bottom: none;
 }
 .mk-query-filter, .mk-query-group-type {
   display: flex;
-  width: 100%;
+}
+.mk-query-group {
+  display: flex;
 }
 .mk-query-group-type {
+  width: 32px;
   padding-bottom: 4px;
 }
-.mk-query-group-type .mk-filter {
-  align-items: center;
-}
+
 .mk-query-group button {
   background-color: unset;
   box-shadow: none;
@@ -204,13 +215,10 @@ width: unset;
 }
 .mk-query-group-type > span, 
 .mk-query-filter > span {
+  display: flex;
   flex-grow: 1;
 }
-.mk-folder-note {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
+
 .mk-filter-add {
   border: thin solid var(--divider-color) !important;
   border-radius: 4px;
@@ -233,7 +241,7 @@ width: unset;
 
 .mk-tag-selector {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   margin-top: 8px;
   margin-bottom: 8px;
   flex-wrap: wrap;
@@ -244,8 +252,12 @@ width: unset;
 }
 .mk-tag-selector div {
   cursor: var(--cursor-link);
-  font-size: var(--font-ui-medium);
+  font-size: var(--font-ui-smaller);
   display: flex;
+}
+.mk-tag-selector span {
+  display: flex;
+  align-items: center;
 }
 .mk-tag-selector button {
   height: auto;

@@ -1,9 +1,18 @@
-export const insert = (arr: any[], index: number, newItem: any) => index <= 0 ? [
+export const insert = (arr: any[], index: number, newItem: any) => !index || index <= 0 ? [
   newItem,
   ...arr,
 ] : [
   ...arr.slice(0, index),
   newItem,
+  ...arr.slice(index),
+];
+
+export const insertMulti = (arr: any[], index: number, newItem: any[]) => !index || index <= 0 ? [
+  ...newItem,
+  ...arr,
+] : [
+  ...arr.slice(0, index),
+  ...newItem,
   ...arr.slice(index),
 ];
 
@@ -34,4 +43,48 @@ export const onlyUniquePropCaseInsensitive =
         (v) => value[prop].toLowerCase() == v[prop].toLowerCase()
       ) === index
     );
+  };
+
+  
+  export const orderStringArrayByArray = (array: string[], order: string[]) =>{
+  
+    return array.sort( function (a, b) {
+      const A = order.indexOf(a), B = order.indexOf(b);
+      
+      if (A > B) {
+        if (A != -1 && B == -1) {
+          return -1
+        }
+        return 1;
+      } else {
+        if (B != -1 && A == -1) {
+          return 1
+        }
+        return -1;
+      }
+      
+    });
+    
+  };
+
+  
+  export const orderArrayByArrayWithKey = (array: any[], order: string[], key: string) =>{
+  
+    return array.sort( function (a, b) {
+      const A = order.indexOf(a[key]), B = order.indexOf(b[key]);
+      
+      if (A > B) {
+        if (A != -1 && B == -1) {
+          return -1
+        }
+        return 1;
+      } else {
+        if (B != -1 && A == -1) {
+          return 1
+        }
+        return -1;
+      }
+      
+    });
+    
   };

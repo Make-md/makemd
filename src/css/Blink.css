@@ -1,6 +1,3 @@
-.mk-blink-modal {
-  padding: 0;
-}
 
 .mk-blink-modal .mk-options-menu {
   display: grid !important;
@@ -62,4 +59,21 @@
 }
 .mk-blink-preview .markdown-source-view {
   padding: 12px;
+}
+
+.mk-input {
+  background-color: var(--background-primary);
+  border: none;
+  border-radius: 0;
+}
+
+.mk-border-bottom {
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.mk-input-large {
+  padding: var(--size-4-6);
+  font-size: var(--font-ui-medium);
+  height: 40px;
+  width: 100%;
 }

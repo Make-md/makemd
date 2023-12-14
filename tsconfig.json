@@ -23,10 +23,11 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    "src/components/Spaces/FileTreeView.tsx",
-    "src/utils/autosizer.js",
-    "src/utils/libs/detectElementResize.js",
-    "src/utils/sqljs.ts",
-    "src/components/ui/menus/selectMenu/Suggestions.jsx",
-    "src/utils/uuid.js"  ]
+    "src/adapters/obsidian/ui/navigator/NavigatorView.tsx",
+    "src/core/utils/autosizer.js",
+    "src/core/utils/libs/detectElementResize.js",
+    "src/core/utils/sqljs.ts",
+    "src/core/react/components/UI/Menus/menu/Suggestions.jsx",
+    "src/core/utils/uuid.js"
+  ]
 }

@@ -31,6 +31,10 @@ body:not(.is-mobile) .mk-style-menu {
   display: flex;
 }
 
+.mk-mark div {
+  display: flex;
+}
+
 .mk-style-menu .mk-mark:hover {
   background: var(--background-modifier-hover);
 }
@@ -53,6 +57,7 @@ body:not(.is-mobile) .mk-style-menu {
   height: 24px;
   border-radius: 12px;
   margin: 8px;
+  border: thin solid var(--background-modifier-hover);
 }
 .mk-color:hover {
   opacity: 0.8;

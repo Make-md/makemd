@@ -1,9 +1,9 @@
 {
     "id": "make-md",
     "name": "MAKE.md",
-    "version": "0.8.14",
+    "version": "0.8.15",
     "minAppVersion": "0.16.0",
-    "description": "Make.md brings you features that supercharges Obsidian. Sort your files in custom order and add file icons using Spaces. Edit inline embeds with Flow Editor. And style your text and add new markdown blocks without writing markdown using Maker Mode.",
+    "description": "Make.md brings powerful and modern note-taking features to Obsidian. Capture, organize and connect information with more flexibility without any code.",
     "author": "MAKE.md",
     "authorUrl": "https://www.make.md",
     "isDesktopOnly": false

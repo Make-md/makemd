@@ -5,13 +5,9 @@
   visibility: hidden;
 }
 
-.mk-sync-status {
-  display: flex;
-  font-size: var(--font-ui-small);
-  color: var(--nav-item-color);
-  gap: 4px;
-  margin: 8px 12px;
-}
+.is-phone .mod-root .workspace-tabs:not(.mod-visible) {
+  display: flex !important;
+  }
 
 .mk-spaces-enabled.is-mobile.mk-hide-ribbon
   .workspace-drawer.mod-left
@@ -58,14 +54,14 @@
   .mod-settings {
   display: none;
 }
-.is-mobile .workspace-drawer.mod-left .workspace-drawer-header-left {
-  /* display: none; */
+.is-mobile .workspace-drawer.mod-left .workspace-drawer-header-left .mk-main-menu-container{
+  margin-right: 34px;
 }
 .is-mobile .mk-sidebar button:not(.clickable-icon) {
-  padding: unset;
+
 }
 
-.is-mobile .mk-sidebar .mk-file-icon button {
+.is-mobile .mk-sidebar .mk-path-icon button {
   font-size: 16px;
   margin: 0;
   height: 24px;
@@ -101,7 +97,7 @@ body.is-mobile .sidebar-toggle-button {
   /* flex-direction: column-reverse; */
 }
 
-.mk-file-tree {
+.mk-path-tree {
   flex: 1;
   overflow: hidden;
   /* -webkit-overflow-scrolling: touch; */

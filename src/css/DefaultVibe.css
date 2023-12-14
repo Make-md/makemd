@@ -1,0 +1,8 @@
+body {
+    --mk-sticker-size: 32px;
+    --mk-sticker-font-size: 28px;
+    --mk-ui-border-color: var(--divider-color);
+    --mk-ui-border-style: solid;
+    --mk-ui-border-width: 2px;
+    --mk-ui-background-base: var(--background-primary)
+}

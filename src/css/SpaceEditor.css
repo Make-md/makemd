@@ -1,0 +1,83 @@
+.mk-space-editor {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+    gap: 24px;
+    flex: 1;
+  overflow-y: scroll;
+  }
+  .mk-space-editor-appearance .mk-path-icon, .mk-space-editor-appearance .mk-path-icon button, .mk-space-editor-appearance .mk-path-icon svg {
+    width: 48px;
+    height: 48px;
+    font-size: 36px;
+  }
+  .mk-space-editor-appearance .mk-path-icon svg {
+padding: 6px;
+  }
+  .mk-space-query {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .mk-space-editor-title {
+    font-size: var(--font-ui-large);
+    font-weight: var(--font-semibold);
+    line-height: var(--line-height-tight);
+    padding:var(--size-4-2) var(--size-4-1);
+    display: flex;
+    gap: 8px;
+  }
+  .mk-space-editor-title span{
+flex:1
+  }
+  .mk-space-editor-contents {
+    display: flex;
+    flex-direction:column;
+  gap: 4px;
+  
+  }
+  .mk-space-editor-controls {
+    display: flex;
+justify-content: space-between
+  }
+  .mk-space-editor-link {
+    display: flex;
+    padding: 8px;
+    font-size: var(--font-ui-small);
+    color: var(--text-muted);
+    gap: 6px;
+    align-items: center;
+    background: var(--background-modifier-cover);
+    border-radius: 6px;
+  }
+  .mk-space-editor-link span {
+    flex: 1;
+  }
+  .mk-space-editor-contents .mk-query {
+    background: var(--background-modifier-cover);
+    margin-left: 8px;
+  }
+  .mk-space-editor-contents .mk-query-group-type {
+    width: 24px;
+    padding: 4px;
+  }
+  
+  .mk-space-editor-appearance {
+    display: flex;
+    width: 100%;
+gap: 16px;
+align-items: center;
+  }
+
+  .mk-space-editor-input input {
+    font-weight: var(--inline-title-weight);
+    font-size: var(--inline-title-size);
+    line-height: var(--inline-title-line-height);
+    font-style: var(--inline-title-style);
+    font-variant: var(--inline-title-variant);
+    font-family: var(--inline-title-font);
+    color: var(--inline-title-color);
+    background: none;
+    outline: none;
+    border: none;
+  }
