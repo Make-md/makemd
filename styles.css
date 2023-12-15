@@ -2676,7 +2676,8 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 .mk-options-menu__suggestions {
   width: 100%;
   max-height: var(--mk-menu-max-height);
-  overflow: auto;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 .mk-options-menu__suggestions .menu-item {
   display: flex;

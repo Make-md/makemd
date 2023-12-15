@@ -13323,8 +13323,8 @@ var SpaceManager = class {
   writeToPath(path, content, binary) {
     return this.primarySpaceAdapter.writeToPath(path, content, binary);
   }
-  parentForPath(path) {
-    return this.primarySpaceAdapter.parentForPath(path);
+  parentPathForPath(path) {
+    return this.primarySpaceAdapter.parentPathForPath(path);
   }
   readPathCache(path) {
     return this.primarySpaceAdapter.readPathCache(path);
@@ -28577,7 +28577,7 @@ var Manager = class {
       const cachePath = (_b2 = (_a2 = this.cache.spacesIndex.get(job.path)) == null ? void 0 : _a2.defPath) != null ? _b2 : job.path;
       const pathMetadata = (_c2 = await this.cache.spaceManager.readPathCache(cachePath)) != null ? _c2 : await this.cache.spaceManager.readPathCache(job.path);
       const label = pathMetadata.label;
-      const parent = await this.cache.spaceManager.parentForPath(job.path);
+      const parent = await this.cache.spaceManager.parentPathForPath(job.path);
       const type = this.cache.spacesIndex.has(job.path) ? "space" : (_d2 = pathMetadata == null ? void 0 : pathMetadata.file) == null ? void 0 : _d2.extension;
       const payload = {
         path: job.path,
@@ -29199,14 +29199,13 @@ var Superstate = class {
 
 // src/core/middleware/filesystem.ts
 var FilesystemMiddleware = class {
-  constructor(plugin) {
+  constructor() {
     this.filesystems = [];
     this.filetypes = [];
-    this.plugin = plugin;
     this.eventDispatch = new EventDispatcher();
   }
-  static create(plugin) {
-    return new FilesystemMiddleware(plugin);
+  static create() {
+    return new FilesystemMiddleware();
   }
   resolvePath(path, source) {
     return this.primary.resolvePath(path, source);
@@ -29253,8 +29252,8 @@ var FilesystemMiddleware = class {
   resourcePathForPath(path) {
     return this.adapterForPath(path).resourcePathForPath(path);
   }
-  parentForPath(path) {
-    return this.adapterForPath(path).parentForPath(path);
+  parentPathForPath(path) {
+    return this.adapterForPath(path).parentPathForPath(path);
   }
   async createFileCache(path) {
     const file = await this.getFile(path);
@@ -29374,553 +29373,73 @@ var FilesystemMiddleware = class {
   }
 };
 
-// src/adapters/obsidian/ui/editors/EmbedContextView.tsx
-var import_obsidian2 = require("obsidian");
-var EMBED_CONTEXT_VIEW_TYPE = "make-inline-context";
-var EmbedContextView = class extends import_obsidian2.ItemView {
-  constructor(leaf, superstate) {
-    super(leaf);
-    this.navigation = true;
-    this.superstate = superstate;
-  }
-  getViewType() {
-    return EMBED_CONTEXT_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return this.path;
-  }
-  async onClose() {
-    this.destroy();
-  }
-  onunload() {
-    this.destroy();
-  }
-  destroy() {
-    if (this.root)
-      this.root.unmount();
-  }
-  async onOpen() {
-    this.destroy();
-  }
-  async setState(state, result) {
-    this.path = state.path;
-    this.source = state.source;
-    this.constructInlineContext(this.path);
-    await super.setState(state, result);
-    const title = pathDisplayName(this.path, this.superstate);
-    this.leaf.tabHeaderInnerTitleEl.innerText = title;
-    this.leaf.view.titleEl = title;
-    const headerEl = this.leaf.view.headerEl;
-    if (headerEl) {
-      headerEl.querySelector(".view-header-title").innerText = title;
-    }
+// src/core/utils/frames/frame.ts
+var addNodes = async (superstate, tableData, space, treeNode, target) => {
+  var _a2, _b2, _c2, _d2, _e2;
+  if (!tableData)
     return;
+  const frameSchema = mdbSchemaToFrameSchema(tableData.schema);
+  const nodes = (_a2 = tableData == null ? void 0 : tableData.rows.map(
+    (f4) => f4.id == frameSchema.id ? {
+      ...frameToNode(f4),
+      types: tableData.cols.reduce(
+        (p3, c4) => ({ ...p3, [c4.name]: c4.type }),
+        {}
+      ),
+      propsValue: tableData.cols.reduce(
+        (p3, c4) => ({ ...p3, [c4.name]: c4.value }),
+        {}
+      )
+    } : frameToNode(f4)
+  )) != null ? _a2 : [];
+  const root = buildRoot(
+    frameSchema,
+    (_b2 = tableData == null ? void 0 : tableData.cols) != null ? _b2 : [],
+    nodes,
+    superstate
+  );
+  const id2 = uniqueNameFromString(
+    treeNode.id,
+    nodes.map((f4) => f4.id)
+  );
+  let parent = target ? target : root.node;
+  let rank = target ? target.rank + 1 : parent.rank;
+  if (!groupableTypes.some((f4) => parent.type == f4)) {
+    parent = findParent(root, parent.id).node;
+  } else {
+    rank = nodes.filter((f4) => f4.parentId == parent.id).length;
   }
-  getState() {
-    const state = super.getState();
-    state.path = this.path;
-    state.source = this.source;
-    return state;
-  }
-  constructInlineContext(file) {
-    this.destroy();
-    this.root = createRoot(this.contentEl);
-    this.root.render(
-      /* @__PURE__ */ Cn.createElement("div", null, /* @__PURE__ */ Cn.createElement(EmbedViewComponent, {
-        superstate: this.superstate,
-        path: this.path,
-        source: this.source
-      }))
-    );
-  }
-};
-
-// src/adapters/obsidian/ui/editors/markdownView/FileView.tsx
-var import_obsidian4 = require("obsidian");
-
-// src/adapters/obsidian/ui/editors/markdownView/FileLinkViewComponent.tsx
-var import_obsidian3 = require("obsidian");
-var FileLinkViewComponent = (props2) => {
-  const ref2 = _2(null);
-  const [markdown, setMarkdown] = h2("");
-  p2(() => {
-    if (ref2.current)
-      import_obsidian3.MarkdownRenderer.render(
-        props2.app,
-        markdown,
-        ref2.current,
-        props2.path,
-        props2.component
-      );
-  }, [markdown]);
-  p2(() => {
-    fetch(props2.path).then((res) => res.text()).then((f4) => setMarkdown(f4));
-  }, [props2.path]);
-  return /* @__PURE__ */ Cn.createElement("div", {
-    className: "markdown-preview-view markdown-rendered node-insert-event is-readable-line-width allow-fold-headings show-indentation-guide allow-fold-lists show-frontmatter"
-  }, /* @__PURE__ */ Cn.createElement("div", {
-    className: "markdown-preview-sizer markdown-preview-section",
-    ref: ref2
-  }));
-};
-
-// src/adapters/obsidian/ui/editors/markdownView/FileView.tsx
-var FILE_VIEW_TYPE = "make-file-view";
-var FileLinkView = class extends import_obsidian4.ItemView {
-  constructor(leaf, app2, viewType) {
-    super(leaf);
-    this.navigation = true;
-    this.app = app2;
-    this.viewType = viewType;
-  }
-  getViewType() {
-    return FILE_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return this.path;
-  }
-  async onClose() {
-    this.destroy();
-  }
-  destroy() {
-    if (this.root)
-      this.root.unmount();
-  }
-  async onOpen() {
-    this.destroy();
-  }
-  async setState(state, result) {
-    this.path = state.path;
-    this.constructView(this.path);
-    const displayName = this.path;
-    await super.setState(state, result);
-    this.leaf.tabHeaderInnerTitleEl.innerText = displayName;
-    this.leaf.view.titleEl = displayName;
-    const headerEl = this.leaf.view.headerEl;
-    if (headerEl) {
-      headerEl.querySelector(".view-header-title").innerText = displayName;
-    }
-    result.history = true;
-    return;
-  }
-  getState() {
-    const state = super.getState();
-    state.path = this.path;
-    return state;
-  }
-  constructView(path) {
-    this.destroy();
-    this.root = createRoot(this.contentEl);
-    this.root.render(
-      /* @__PURE__ */ Cn.createElement("div", {
-        className: "markdown-reading-view"
-      }, /* @__PURE__ */ Cn.createElement(FileLinkViewComponent, {
-        path,
-        app: this.app,
-        component: this
-      }))
-    );
-  }
-};
-
-// src/adapters/obsidian/utils/file.ts
-var import_obsidian6 = require("obsidian");
-
-// src/adapters/obsidian/SpaceViewContainer.tsx
-var import_obsidian5 = require("obsidian");
-var SPACE_VIEW_TYPE = "mk-space";
-var SpaceViewContainer = class extends import_obsidian5.ItemView {
-  constructor(leaf, superstate, viewType) {
-    super(leaf);
-    this.navigation = true;
-    this.superstate = superstate;
-    this.viewType = viewType;
-    this.superstate.eventsDispatcher.addListener(
-      "spaceChanged",
-      this.changePath,
-      0,
-      this
-    );
-    this.superstate.eventsDispatcher.addListener(
-      "spaceDeleted",
-      this.closePath,
-      0,
-      this
-    );
-  }
-  getViewType() {
-    return SPACE_VIEW_TYPE;
-  }
-  getDisplayText() {
-    return pathDisplayName(this.path, this.superstate);
-  }
-  async onClose() {
-    this.destroy();
-  }
-  destroy() {
-    this.superstate.eventsDispatcher.removeListener(
-      "spaceChanged",
-      this.changePath
-    );
-    if (this.root)
-      this.root.unmount();
-  }
-  async onOpen() {
-    this.destroy();
-  }
-  changePath(payload) {
-    if (this.path == payload.path) {
-      this.leaf.setViewState({
-        type: SPACE_VIEW_TYPE,
-        state: { path: payload.newPath }
-      });
-    }
-  }
-  closePath(payload) {
-    if ((this == null ? void 0 : this.path) == payload.path) {
-      this.leaf.setViewState({
-        type: null
-      });
-    }
-  }
-  async setState(state, result) {
-    this.path = state.path;
-    if (!this.path)
-      return;
-    this.constructNote(this.path);
-    const displayName = pathDisplayName(this.path, this.superstate);
-    const spaceCache = this.superstate.spacesIndex.get(this.path);
-    await super.setState(state, result);
-    this.leaf.tabHeaderInnerTitleEl.innerText = displayName;
-    this.leaf.view.titleEl = displayName;
-    const headerEl = this.leaf.view.headerEl;
-    if (headerEl && spaceCache) {
-      headerEl.querySelector(".view-header-title").innerText = displayName;
-      if (spaceCache.type == "folder") {
-        const titleParent = headerEl.querySelector(".view-header-title-parent");
-        titleParent.empty();
-        const parentPaths = getParentFolderPaths(spaceCache.path);
-        if (titleParent) {
-          parentPaths.forEach((f4) => {
-            const breadcrumb = titleParent.createEl("span");
-            breadcrumb.addClass("view-header-breadcrumb");
-            breadcrumb.innerText = folderPathToString(f4);
-            breadcrumb.addEventListener(
-              "click",
-              () => this.superstate.ui.openPath(f4, false)
-            );
-            const breadcrumbSeparator = titleParent.createEl("span");
-            breadcrumbSeparator.addClass("view-header-breadcrumb-separator");
-            breadcrumbSeparator.innerText = "/";
-          });
-        }
-      }
-    }
-    result.history = true;
-    return;
-  }
-  getState() {
-    const state = super.getState();
-    state.path = this.path;
-    return state;
-  }
-  constructNote(path) {
-    this.destroy();
-    this.root = createRoot(this.contentEl);
-    this.root.render(
-      /* @__PURE__ */ Cn.createElement(SpaceView, {
-        path,
-        superstate: this.superstate
-      })
-    );
-  }
-};
-
-// src/utils/dom.ts
-function selectElementContents(el) {
-  if (!el)
-    return;
-  const range = document.createRange();
-  range.selectNodeContents(el);
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-}
-
-// src/utils/sanitizers.ts
-var sanitizeSQLStatement = (name) => {
-  return name == null ? void 0 : name.replace(/'/g, `''`);
-};
-var sanitizeColumnName = (name) => {
-  if ((name == null ? void 0 : name.charAt(0)) == "_") {
-    return sanitizeColumnName(name.substring(1));
-  }
-  return name == null ? void 0 : name.replace(/"/g, ``);
-};
-var sanitizeTableName = (name) => {
-  return name == null ? void 0 : name.replace(/[^a-z0-9+]+/gi, "");
-};
-var illegalRe = /[\/\?<>\\:\*\|":]/g;
-var controlRe = /[\x00-\x1f\x80-\x9f]/g;
-var reservedRe = /^\.+$/;
-var windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
-var sanitizeFileName = (name) => {
-  const replacement = "";
-  return name.replace(illegalRe, replacement).replace(controlRe, replacement).replace(reservedRe, replacement).replace(windowsReservedRe, replacement);
-};
-
-// src/adapters/obsidian/utils/file.ts
-var tFileToAFile = (file) => {
-  var _a2, _b2;
-  if (!file)
-    return null;
-  if (file instanceof import_obsidian6.TFile && file.stat) {
-    return {
-      isFolder: false,
-      name: file.basename,
-      filename: file.name,
-      path: file.path,
-      parent: (_a2 = file.parent) == null ? void 0 : _a2.path,
-      stat: file.stat,
-      extension: file.extension
-    };
-  }
-  return {
-    isFolder: true,
-    name: file.name,
-    filename: file.name,
-    path: file.path,
-    parent: (_b2 = file.parent) == null ? void 0 : _b2.path
+  const newTreeNode = {
+    ...treeNode,
+    id: id2,
+    schemaId: frameSchema.id,
+    parentId: parent.id
   };
+  const newNodes = insert(
+    nodes.filter((f4) => f4.parentId == parent.id).sort((a5, b4) => a5.rank - b4.rank),
+    rank,
+    newTreeNode
+  ).map((f4, i4) => ({ ...f4, rank: i4 }));
+  const newRows = ((_c2 = tableData == null ? void 0 : tableData.rows) == null ? void 0 : _c2.some((f4) => f4.id == root.id)) ? tableData.rows : [...(_d2 = tableData == null ? void 0 : tableData.rows) != null ? _d2 : [], nodeToFrame(root.node)];
+  const insertRows = newNodes.filter((f4) => !newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
+  const modRows = newNodes.filter((f4) => newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
+  const newTable = {
+    ...tableData,
+    cols: (_e2 = tableData.cols) != null ? _e2 : [],
+    rows: [
+      ...newRows.map((f4) => {
+        var _a3;
+        return (_a3 = modRows.find((g4) => g4.id == f4.id)) != null ? _a3 : f4;
+      }),
+      ...insertRows
+    ]
+  };
+  await superstate.spaceManager.saveFrame(space.path, newTable);
 };
-var defaultSpace = async (superstate, activeFile) => {
-  var _a2;
-  return (_a2 = superstate.settings.newFileLocation == "folder" ? superstate.spacesIndex.get(superstate.settings.newFileFolderPath) : superstate.settings.newFileLocation == "current" && activeFile && (activeFile.type == "space" ? superstate.spacesIndex.get(activeFile.path) : superstate.spacesIndex.get(activeFile.parent))) != null ? _a2 : superstate.spacesIndex.get("/");
-};
-var defaultConfigFile = async (plugin) => {
-  return await plugin.app.vault.adapter.read(
-    (0, import_obsidian6.normalizePath)(plugin.app.vault.configDir + "/app.json")
+var addNodeToMFrame = async (superstate, space, schema, treeNode, target) => {
+  return superstate.spaceManager.readFrame(space.path, schema).then(
+    (tagDB) => addNodes(superstate, tagDB, space, treeNode, target)
   );
-};
-var fileExtensionForFile = (path) => path == null ? void 0 : path.split(".").pop();
-var uniqueFileName = (oldName, name, extension, folder) => {
-  let newName = sanitizeFileName(name);
-  let uniqueName = false;
-  let append = 1;
-  while (!uniqueName) {
-    if (!folder.children.some((f4) => f4.name == `${newName}.${extension}` && f4.name != oldName)) {
-      uniqueName = true;
-    } else {
-      newName = `${newName} ${append}`;
-      append += 1;
-    }
-  }
-  return `${newName}.${extension}`;
-};
-function getAllAbstractFilesInVault(plugin) {
-  const files = [];
-  const rootFolder = plugin.app.vault.getRoot();
-  function recursiveFx(folder) {
-    for (const child of folder.children) {
-      if (child instanceof import_obsidian6.TFolder) {
-        const childFolder = child;
-        if (childFolder.children)
-          recursiveFx(childFolder);
-      }
-      files.push(child);
-    }
-  }
-  recursiveFx(rootFolder);
-  files.push(rootFolder);
-  return files;
-}
-var getParentPathFromString = (file) => {
-  const indexOfLastSlash = file.lastIndexOf("/");
-  if (indexOfLastSlash == -1) {
-    return "/";
-  }
-  return file.substring(0, indexOfLastSlash + 1);
-};
-var openPath = async (leaf, path, plugin) => {
-  const uri = plugin.superstate.spaceManager.uriByString(path);
-  if (uri.scheme == "obsidian") {
-    await leaf.setViewState({
-      type: uri.authority
-    });
-    return;
-  }
-  if (uri.ref) {
-    const cache = plugin.superstate.pathsIndex.get(uri.path);
-    if (cache && cache.type == "space") {
-      await leaf.setViewState({
-        type: EMBED_CONTEXT_VIEW_TYPE,
-        state: { path: uri.fullPath }
-      });
-      return;
-    }
-  }
-  if (uri.scheme == "spaces") {
-    openTagContext(leaf, uri.authority, plugin.app);
-    return;
-  }
-  plugin.files.getFile(path).then((f4) => {
-    if (f4) {
-      openAFile(leaf, f4, plugin.app);
-    } else {
-      defaultSpace(plugin.superstate, plugin.superstate.pathsIndex.get(plugin.superstate.ui.activePath)).then((f5) => {
-        if (f5)
-          newPathInSpace(
-            plugin.superstate,
-            f5,
-            fileExtensionForFile(path),
-            null
-          );
-      });
-    }
-  });
-};
-var getLeaf = (app2, location) => {
-  let leaf;
-  if (location == "system" || location == "hover") {
-    return null;
-  } else if (location == "right") {
-    leaf = app2.workspace.getRightLeaf(false);
-  } else if (location == "left") {
-    leaf = app2.workspace.getLeftLeaf(false);
-  } else {
-    leaf = app2.workspace.getLeaf(location);
-  }
-  return leaf;
-};
-var openURL = async (url, app2, location) => {
-  if (location == "system") {
-    window.open(url, "_blank");
-    return;
-  }
-  const leaf = getLeaf(app2, location);
-  if (url.endsWith(".md")) {
-    const viewType = FILE_VIEW_TYPE;
-    app2.workspace.setActiveLeaf(leaf, { focus: true });
-    await leaf.setViewState({
-      type: viewType,
-      state: { path: url }
-    });
-    await app2.workspace.requestSaveLayout();
-  } else if (url.endsWith(".mdb")) {
-    const viewType = SPACE_VIEW_TYPE;
-    app2.workspace.setActiveLeaf(leaf, { focus: true });
-    await leaf.setViewState({
-      type: viewType,
-      state: { path: url }
-    });
-    await app2.workspace.requestSaveLayout();
-  } else {
-    app2.workspace.setActiveLeaf(leaf, { focus: true });
-    await leaf.setViewState({
-      type: EMBED_CONTEXT_VIEW_TYPE,
-      state: { path: url }
-    });
-  }
-  if (import_obsidian6.Platform.isMobile) {
-    app2.workspace.leftSplit.collapse();
-  }
-};
-var openAFile = async (leaf, file, app2) => {
-  if (file.isFolder) {
-    openTFolder(leaf, getAbstractFileAtPath(app2, file.path), app2);
-  } else if (file) {
-    openTFile(leaf, getAbstractFileAtPath(app2, file.path), app2);
-  } else {
-    return;
-  }
-};
-var openTFile = async (leaf, file, app2) => {
-  if (!file)
-    return;
-  app2.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.openFile(file);
-};
-var openTFolder = async (leaf, file, app2) => {
-  const viewType = SPACE_VIEW_TYPE;
-  app2.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.setViewState({
-    type: viewType,
-    state: { path: file.path }
-  });
-  await app2.workspace.requestSaveLayout();
-  if (import_obsidian6.Platform.isMobile) {
-    app2.workspace.leftSplit.collapse();
-  }
-};
-var openTagContext = async (leaf, tag, app2) => {
-  const viewType = SPACE_VIEW_TYPE;
-  app2.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.setViewState({ type: viewType, state: { path: "spaces://" + tag } });
-  await app2.workspace.requestSaveLayout();
-  if (import_obsidian6.Platform.isMobile) {
-    app2.workspace.leftSplit.collapse();
-  }
-};
-var getAbstractFileAtPath = (app2, path) => {
-  return app2.vault.getAbstractFileByPath(path);
-};
-
-// src/adapters/mdb/db/db.ts
-var getDBFile = async (plugin, path, isRemote) => {
-  if (isRemote) {
-    return fetch(path).then((res) => res.arrayBuffer());
-  }
-  if (!await plugin.middleware.fileExists(path)) {
-    return null;
-  }
-  const file = await plugin.middleware.readBinaryToFile(
-    path
-  );
-  return file;
-};
-var getDB = async (plugin, sqlJS, path, isRemote) => {
-  const buf = await getDBFile(plugin, path, isRemote);
-  if (buf) {
-    const db = await new sqlJS.Database(new Uint8Array(buf));
-    try {
-      db.exec(
-        "SELECT name FROM sqlite_schema"
-      );
-    } catch (e4) {
-      return new sqlJS.Database();
-    }
-    return db;
-  }
-  return new sqlJS.Database();
-};
-var saveDBFile = async (plugin, path, binary) => {
-  if (!await plugin.middleware.fileExists(
-    removeTrailingSlashFromFolder(getParentPathFromString(path))
-  )) {
-    await plugin.middleware.createFolder(getParentPathFromString(path));
-  }
-  const file = plugin.middleware.writeBinaryToFile(
-    path,
-    binary
-  );
-  return file;
-};
-var mdbTablesToDBTables = (tables, uniques) => {
-  return Object.keys(tables).reduce((p3, c4) => {
-    var _a2;
-    return {
-      ...p3,
-      [c4]: {
-        uniques: (_a2 = uniques == null ? void 0 : uniques[c4]) != null ? _a2 : [],
-        cols: tables[c4].cols.map((f4) => f4.name),
-        rows: tables[c4].rows
-      }
-    };
-  }, { m_fields: {
-    uniques: fieldSchema.uniques,
-    cols: fieldSchema.cols,
-    rows: Object.values(tables).flatMap((f4) => f4.cols)
-  } });
 };
 var mdbFrameToDBTables = (tables, uniques) => {
   return Object.keys(tables).reduce((p3, c4) => {
@@ -29932,11 +29451,13 @@ var mdbFrameToDBTables = (tables, uniques) => {
         rows: tables[c4].rows
       }
     };
-  }, { m_fields: {
-    uniques: fieldSchema.uniques,
-    cols: fieldSchema.cols,
-    rows: Object.values(tables).flatMap((f4) => f4.cols)
-  } });
+  }, {
+    m_fields: {
+      uniques: fieldSchema.uniques,
+      cols: fieldSchema.cols,
+      rows: Object.values(tables).flatMap((f4) => f4.cols)
+    }
+  });
 };
 var schemasAndFields = (tables) => {
   return {
@@ -29947,122 +29468,6 @@ var schemasAndFields = (tables) => {
     },
     m_schema: defaultFramesTable
   };
-};
-var dbResultsToDBTables = (res) => {
-  return res.reduce(
-    (p3, c4, i4) => [
-      ...p3,
-      {
-        cols: c4.columns,
-        rows: c4 ? c4.values.map(
-          (r3) => c4.columns.reduce(
-            (prev, curr, index) => ({ ...prev, [curr]: r3[index] }),
-            {}
-          )
-        ) : []
-      }
-    ],
-    []
-  );
-};
-var selectDB = (db, table, condition, fields) => {
-  const fieldsStr = fields != null ? fields : "*";
-  const sqlstr = condition ? `SELECT ${fieldsStr} FROM "${table}" WHERE ${condition};` : `SELECT ${fieldsStr} FROM ${table};`;
-  let tables;
-  try {
-    tables = dbResultsToDBTables(db.exec(sqlstr));
-  } catch (e4) {
-    return null;
-  }
-  if (tables.length == 1)
-    return tables[0];
-  return null;
-};
-var insertIntoDB = (db, tables, replace) => {
-  const sqlstr = serializeSQLStatements(
-    Object.keys(tables).map((t4) => {
-      const tableFields = tables[t4].cols;
-      const rowsQuery = tables[t4].rows.reduce((prev, curr) => {
-        return `${prev} ${replace ? "REPLACE" : "INSERT"} INTO "${t4}" VALUES (${serializeSQLValues(
-          tableFields.map((c4) => {
-            var _a2;
-            return `'${(_a2 = sanitizeSQLStatement(curr == null ? void 0 : curr[c4])) != null ? _a2 : ""}'`;
-          })
-        )});`;
-      }, "");
-      return rowsQuery;
-    })
-  );
-  try {
-    db.exec(`${sqlstr}`);
-  } catch (e4) {
-    console.log(e4);
-  }
-};
-var deleteFromDB = (db, table, condition) => {
-  const sqlstr = `DELETE FROM "${table}" WHERE ${condition};`;
-  try {
-    db.exec(sqlstr);
-  } catch (e4) {
-    console.log(e4);
-  }
-};
-var dropTable = (db, table) => {
-  const sqlstr = `DROP TABLE IF EXISTS "${table}";`;
-  try {
-    db.exec(sqlstr);
-  } catch (e4) {
-    console.log(e4);
-  }
-};
-var replaceDB = (db, tables) => {
-  const sqlStatements = [];
-  Object.keys(tables).forEach((t4) => {
-    const tableFields = tables[t4].cols;
-    const fieldQuery = serializeSQLFieldNames(uniq(tableFields).filter((f4) => f4).map((f4) => `'${sanitizeSQLStatement(f4)}' char`));
-    const createQuery = `CREATE TABLE IF NOT EXISTS "${t4}" (${fieldQuery}); `;
-    const idxQuery = tables[t4].uniques.filter((f4) => f4).reduce((p3, c4) => {
-      return `${p3} CREATE UNIQUE INDEX IF NOT EXISTS "idx_${t4}_${c4.replace(
-        /,/g,
-        "_"
-      )}" ON "${t4}"(${c4});`;
-    }, "");
-    const beginTransaction = `BEGIN TRANSACTION;`;
-    const rowsQuery = tables[t4].rows.map((curr) => {
-      return `REPLACE INTO "${t4}" VALUES (${serializeSQLValues(tableFields.map((c4) => {
-        var _a2;
-        return `'${sanitizeSQLStatement((_a2 = curr == null ? void 0 : curr[c4]) != null ? _a2 : "")}'`;
-      }))});`;
-    });
-    const commitQuery = `COMMIT;`;
-    sqlStatements.push(`DROP INDEX IF EXISTS "idx_${t4}__id"; DROP TABLE IF EXISTS "${t4}";`);
-    if (fieldQuery.length > 0) {
-      sqlStatements.push(createQuery);
-      sqlStatements.push(idxQuery);
-      sqlStatements.push(beginTransaction);
-      sqlStatements.push(...rowsQuery);
-      sqlStatements.push(commitQuery);
-    }
-  });
-  try {
-    for (const s5 of sqlStatements) {
-      db.exec(s5);
-    }
-  } catch (e4) {
-    console.log(e4);
-  }
-};
-var saveDBToPath = async (plugin, path, tables) => {
-  const sqlJS = await plugin.sqlJS();
-  const db = await getDB(plugin, sqlJS, path);
-  if (!db) {
-    db.close();
-    return false;
-  }
-  replaceDB(db, tables);
-  await saveDBFile(plugin, path, db.export().buffer);
-  db.close();
-  return true;
 };
 
 // src/core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames.ts
@@ -30272,13 +29677,8 @@ var FilesystemSpaceAdapter = class {
     }
     return this.fileSystem.writeTextToFile(path, content);
   }
-  async parentForPath(path) {
-    const uri = this.uriByPath(path);
-    const file = await this.fileSystem.getFile(uri.path);
-    if (uri.refStr) {
-      return file.path;
-    }
-    return this.fileSystem.parentForPath(path).then((f4) => f4 == null ? void 0 : f4.path);
+  parentPathForPath(path) {
+    return this.fileSystem.parentPathForPath(path);
   }
   async readFrame(path, schema) {
     const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath);
@@ -30605,7 +30005,7 @@ var UIManager = class {
     this.mainFrame.openCustomMenu(position, fc);
   }
   notify(content, destination) {
-    if (destination == "console" && this.mainFrame.getScreenType() == "desktop") {
+    if (destination == "console") {
       console.log(content);
       return;
     }
@@ -32710,8 +32110,8 @@ var PathView = k3((props2, ref2) => {
         setLoaded(false);
         return;
       } else {
-        const parent = removeTrailingSlashFromFolder(
-          getParentPathFromString(path.path)
+        const parent = props2.superstate.spaceManager.parentPathForPath(
+          path.path
         );
         if (!parent)
           return;
@@ -35584,6 +34984,28 @@ function useReactTable(options) {
   return tableRef.current;
 }
 
+// src/utils/sanitizers.ts
+var sanitizeSQLStatement = (name) => {
+  return name == null ? void 0 : name.replace(/'/g, `''`);
+};
+var sanitizeColumnName = (name) => {
+  if ((name == null ? void 0 : name.charAt(0)) == "_") {
+    return sanitizeColumnName(name.substring(1));
+  }
+  return name == null ? void 0 : name.replace(/"/g, ``);
+};
+var sanitizeTableName = (name) => {
+  return name == null ? void 0 : name.replace(/[^a-z0-9+]+/gi, "");
+};
+var illegalRe = /[\/\?<>\\:\*\|":]/g;
+var controlRe = /[\x00-\x1f\x80-\x9f]/g;
+var reservedRe = /^\.+$/;
+var windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+var sanitizeFileName = (name) => {
+  const replacement = "";
+  return name.replace(illegalRe, replacement).replace(controlRe, replacement).replace(reservedRe, replacement).replace(windowsReservedRe, replacement);
+};
+
 // src/core/react/context/SpaceContext.tsx
 var SpaceContext = F({
   spaceInfo: null,
@@ -35877,7 +35299,7 @@ var ContextMDBProvider = (props2) => {
       getContextTags(tableData);
   }, [tableData]);
   const getContextTags = async (_tableData) => {
-    const contextFields = _tableData.cols.filter((f4) => f4.type.contains("context")).map((f4) => f4.value).filter((f4) => !contexts.some((g4) => g4 == f4));
+    const contextFields = _tableData.cols.filter((f4) => f4.type.includes("context")).map((f4) => f4.value).filter((f4) => !contexts.some((g4) => g4 == f4));
     for (const c4 of contextFields) {
       loadContextFields(c4);
     }
@@ -35885,7 +35307,7 @@ var ContextMDBProvider = (props2) => {
   const loadTagContext = async (tag) => {
     props2.superstate.spaceManager.contextForSpace(props2.superstate.spaceManager.spaceInfoForPath(tag).path).then((f4) => {
       if (f4) {
-        const contextFields = f4.cols.filter((g4) => g4.type.contains("context")).map((g4) => g4.value).filter((g4) => !contexts.some((h5) => h5 == g4));
+        const contextFields = f4.cols.filter((g4) => g4.type.includes("context")).map((g4) => g4.value).filter((g4) => !contexts.some((h5) => h5 == g4));
         for (const c4 of contextFields) {
           loadContextFields(c4);
         }
@@ -37740,7 +37162,7 @@ function Month(props2) {
     Cn.createElement(Table, { "aria-labelledby": captionId, displayMonth: props2.displayMonth })
   );
 }
-function Root4() {
+function Root() {
   var dayPicker = useDayPicker();
   var focusContext = useFocusContext();
   var navigation = useNavigation();
@@ -37809,7 +37231,7 @@ function DayPicker(props2) {
   return Cn.createElement(
     RootProvider,
     __assign({}, props2),
-    Cn.createElement(Root4, null)
+    Cn.createElement(Root, null)
   );
 }
 
@@ -39616,7 +39038,7 @@ var appendPathMetaData = (propType, pathState) => {
 // src/core/utils/contexts/linkContextRow.ts
 var linkContextProp = (propType, rows, contextTableRows) => {
   const contextRows = contextTableRows.filter(
-    (f4) => parseMultiString(rows).contains(f4[PathPropertyName])
+    (f4) => parseMultiString(rows).includes(f4[PathPropertyName])
   );
   return serializeMultiString(uniq(contextRows.map((f4) => f4[propType]).filter((f4) => f4)));
 };
@@ -40430,7 +39852,7 @@ var ContextEditorProvider = (props2) => {
     }
   };
   const getContextTags = async (_tableData) => {
-    const contextFields = _tableData.cols.filter((f4) => f4.type.contains("context")).map((f4) => f4.value).filter((f4) => !contexts.some((g4) => g4 == f4));
+    const contextFields = _tableData.cols.filter((f4) => f4.type.includes("context")).map((f4) => f4.value).filter((f4) => !contexts.some((g4) => g4 == f4));
     for (const c4 of contextFields) {
       loadContextFields(c4);
     }
@@ -40445,7 +39867,7 @@ var ContextEditorProvider = (props2) => {
   const loadTagContext = async (tag) => {
     props2.superstate.spaceManager.contextForSpace(props2.superstate.spaceManager.spaceInfoForPath(tag).path).then((f4) => {
       if (f4) {
-        const contextFields = f4.cols.filter((g4) => g4.type.contains("context")).map((g4) => g4.value).filter((g4) => !contexts.some((h5) => h5 == g4));
+        const contextFields = f4.cols.filter((g4) => g4.type.includes("context")).map((g4) => g4.value).filter((g4) => !contexts.some((h5) => h5 == g4));
         for (const c4 of contextFields) {
           loadContextFields(c4);
         }
@@ -45426,7 +44848,11 @@ var HoverPropsMenu = (props2) => {
     selectedNode
   };
   return /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-frame-props-editor menu"
+    className: "mk-frame-props-editor menu",
+    onClick: (e4) => {
+      e4.preventDefault();
+      e4.stopPropagation();
+    }
   }, editMode == 0 /* EditModeDefault */ ? /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, fields.map((f4, i4) => {
     var _a2, _b2;
     return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
@@ -45827,7 +45253,7 @@ var EmbedFrameView = (props2) => {
     source: props2.source
   }));
 };
-var EmbedContextView2 = (props2) => {
+var EmbedContextView = (props2) => {
   var _a2;
   const context = (_a2 = props2.superstate.spacesIndex.get(props2.path)) == null ? void 0 : _a2.space;
   return context && /* @__PURE__ */ Cn.createElement(SpaceContextProvider, {
@@ -45887,7 +45313,7 @@ var EmbedViewComponent = (props2) => {
       setEmbedType(null);
     }
   }, [path]);
-  return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, (embedType == null ? void 0 : embedType.path) && ((embedType == null ? void 0 : embedType.type) == "context" ? /* @__PURE__ */ Cn.createElement(EmbedContextView2, {
+  return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, (embedType == null ? void 0 : embedType.path) && ((embedType == null ? void 0 : embedType.type) == "context" ? /* @__PURE__ */ Cn.createElement(EmbedContextView, {
     superstate: props2.superstate,
     path: embedType.path,
     schema: embedType.contextSchema,
@@ -46447,9 +45873,9 @@ var PreviewCell = (props2) => {
   var _a2;
   const [vaultItem, setVaultItem] = h2(null);
   const previewImage = F2(() => {
-    var _a3;
-    if ((_a3 = vaultItem == null ? void 0 : vaultItem.metadata) == null ? void 0 : _a3.banner)
-      return vaultItem.metadata.banner;
+    var _a3, _b2;
+    if ((_b2 = (_a3 = vaultItem == null ? void 0 : vaultItem.metadata) == null ? void 0 : _a3.property) == null ? void 0 : _b2[props2.superstate.settings.fmKeyBanner])
+      return vaultItem.metadata.property[props2.superstate.settings.fmKeyBanner];
     if (props2.initialValue)
       return props2.initialValue;
     if (!props2.row || !props2.columns)
@@ -46458,7 +45884,7 @@ var PreviewCell = (props2) => {
     if (!imageCol)
       return null;
     return props2.row[imageCol.name + imageCol.table];
-  }, [props2.row, props2.columns]);
+  }, [props2.row, props2.columns, vaultItem]);
   const loadIcon = (payload) => {
     if (payload.path == props2.path)
       setVaultItem(props2.superstate.pathsIndex.get(props2.path));
@@ -47175,75 +46601,6 @@ function useMountStatus() {
   }, []);
   return isMounted;
 }
-
-// src/core/utils/frames/frame.ts
-var addNodes = async (superstate, tableData, space, treeNode, target) => {
-  var _a2, _b2, _c2, _d2, _e2;
-  if (!tableData)
-    return;
-  const frameSchema = mdbSchemaToFrameSchema(tableData.schema);
-  const nodes = (_a2 = tableData == null ? void 0 : tableData.rows.map(
-    (f4) => f4.id == frameSchema.id ? {
-      ...frameToNode(f4),
-      types: tableData.cols.reduce(
-        (p3, c4) => ({ ...p3, [c4.name]: c4.type }),
-        {}
-      ),
-      propsValue: tableData.cols.reduce(
-        (p3, c4) => ({ ...p3, [c4.name]: c4.value }),
-        {}
-      )
-    } : frameToNode(f4)
-  )) != null ? _a2 : [];
-  const root = buildRoot(
-    frameSchema,
-    (_b2 = tableData == null ? void 0 : tableData.cols) != null ? _b2 : [],
-    nodes,
-    superstate
-  );
-  const id2 = uniqueNameFromString(
-    treeNode.id,
-    nodes.map((f4) => f4.id)
-  );
-  let parent = target ? target : root.node;
-  let rank = target ? target.rank + 1 : parent.rank;
-  if (!groupableTypes.some((f4) => parent.type == f4)) {
-    parent = findParent(root, parent.id).node;
-  } else {
-    rank = nodes.filter((f4) => f4.parentId == parent.id).length;
-  }
-  const newTreeNode = {
-    ...treeNode,
-    id: id2,
-    schemaId: frameSchema.id,
-    parentId: parent.id
-  };
-  const newNodes = insert(
-    nodes.filter((f4) => f4.parentId == parent.id).sort((a5, b4) => a5.rank - b4.rank),
-    rank,
-    newTreeNode
-  ).map((f4, i4) => ({ ...f4, rank: i4 }));
-  const newRows = ((_c2 = tableData == null ? void 0 : tableData.rows) == null ? void 0 : _c2.some((f4) => f4.id == root.id)) ? tableData.rows : [...(_d2 = tableData == null ? void 0 : tableData.rows) != null ? _d2 : [], nodeToFrame(root.node)];
-  const insertRows = newNodes.filter((f4) => !newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
-  const modRows = newNodes.filter((f4) => newRows.some((g4) => g4.id == f4.id)).map((f4) => nodeToFrame(f4));
-  const newTable = {
-    ...tableData,
-    cols: (_e2 = tableData.cols) != null ? _e2 : [],
-    rows: [
-      ...newRows.map((f4) => {
-        var _a3;
-        return (_a3 = modRows.find((g4) => g4.id == f4.id)) != null ? _a3 : f4;
-      }),
-      ...insertRows
-    ]
-  };
-  await superstate.spaceManager.saveFrame(space.path, newTable);
-};
-var addNodeToMFrame = async (superstate, space, schema, treeNode, target) => {
-  return superstate.spaceManager.readFrame(space.path, schema).then(
-    (tagDB) => addNodes(superstate, tagDB, space, treeNode, target)
-  );
-};
 
 // src/core/react/components/SpaceView/Contexts/ContextBuilder/ContextFrameView.tsx
 var PLACEHOLDER_ID2 = "_placeholder";
@@ -48805,7 +48162,7 @@ var FilterBar = (props2) => {
       }
     });
     menuOptions.push({
-      name: i18n_default.buttons.deleteView,
+      name: i18n_default.buttons.renameView,
       icon: "lucide//edit",
       onClick: (e5) => {
         props2.superstate.ui.openModal(
@@ -49685,6 +49042,17 @@ var NoteSpacesBar = (props2) => {
 
 // src/core/react/components/MarkdownEditor/MarkdownHeaderView.tsx
 var import_he = __toESM(require_he());
+
+// src/utils/dom.ts
+function selectElementContents(el) {
+  if (!el)
+    return;
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
 
 // src/core/react/components/UI/Menus/navigator/spaceContextMenu.tsx
 var triggerSpaceMenu = (superstate, path, e4, activePath, parentSpace) => {
@@ -52853,7 +52221,7 @@ var SpaceTreeComponent = (props2) => {
   }, [activeViewSpace]);
   const revealPath = (path) => {
     var _a2;
-    if (!path || activeViewSpace.path != "/")
+    if (!path || (activeViewSpace == null ? void 0 : activeViewSpace.path) != "/")
       return;
     const folders = path.split("/");
     const openPaths = folders.reduce(
@@ -54380,7 +53748,7 @@ var FlowEditorHover = (props2) => {
 var import_state5 = require("@codemirror/state");
 
 // src/adapters/obsidian/ui/editors/FlowEditor.tsx
-var import_obsidian7 = require("obsidian");
+var import_obsidian2 = require("obsidian");
 
 // src/core/utils/uuid.js
 function genId2() {
@@ -54395,22 +53763,22 @@ var popovers = /* @__PURE__ */ new WeakMap();
 var mouseCoords = { x: 0, y: 0 };
 function nosuper(base2) {
   const derived = function() {
-    return Object.setPrototypeOf(new import_obsidian7.Component(), new.target.prototype);
+    return Object.setPrototypeOf(new import_obsidian2.Component(), new.target.prototype);
   };
   derived.prototype = base2.prototype;
   return Object.setPrototypeOf(derived, base2);
 }
 var _a, _b, _c, _d, _e;
-var FlowEditor = class extends nosuper(import_obsidian7.HoverPopover) {
+var FlowEditor = class extends nosuper(import_obsidian2.HoverPopover) {
   constructor(parent, targetEl, plugin, waitTime, onShowCallback) {
     super();
     this.targetEl = targetEl;
     this.plugin = plugin;
     this.onShowCallback = onShowCallback;
-    this.abortController = this.addChild(new import_obsidian7.Component());
+    this.abortController = this.addChild(new import_obsidian2.Component());
     this.detaching = false;
     this.opening = false;
-    this.rootSplit = new import_obsidian7.WorkspaceSplit(
+    this.rootSplit = new import_obsidian2.WorkspaceSplit(
       this.plugin.app.workspace,
       "vertical"
     );
@@ -54428,7 +53796,7 @@ var FlowEditor = class extends nosuper(import_obsidian7.HoverPopover) {
     this.onTarget = true;
     this.parent = parent;
     this.waitTime = waitTime;
-    this.state = import_obsidian7.PopoverState.Showing;
+    this.state = import_obsidian2.PopoverState.Showing;
     const { hoverEl } = this;
     this.abortController.load();
     this.timer = window.setTimeout(this.show.bind(this), waitTime);
@@ -54526,7 +53894,7 @@ var FlowEditor = class extends nosuper(import_obsidian7.HoverPopover) {
     this.registerEvent(
       app.workspace.on("layout-change", () => {
         this.rootSplit.children.forEach((item, index) => {
-          if (item instanceof import_obsidian7.WorkspaceTabs) {
+          if (item instanceof import_obsidian2.WorkspaceTabs) {
             this.rootSplit.replaceChild(index, item.children[0]);
           }
         });
@@ -54570,16 +53938,16 @@ var FlowEditor = class extends nosuper(import_obsidian7.HoverPopover) {
   }
   transition() {
     if (this.shouldShow()) {
-      if (this.state === import_obsidian7.PopoverState.Hiding) {
-        this.state = import_obsidian7.PopoverState.Shown;
+      if (this.state === import_obsidian2.PopoverState.Hiding) {
+        this.state = import_obsidian2.PopoverState.Shown;
         clearTimeout(this.timer);
       }
     } else {
-      if (this.state === import_obsidian7.PopoverState.Showing) {
+      if (this.state === import_obsidian2.PopoverState.Showing) {
         this.hide();
       } else {
-        if (this.state === import_obsidian7.PopoverState.Shown) {
-          this.state = import_obsidian7.PopoverState.Hiding;
+        if (this.state === import_obsidian2.PopoverState.Shown) {
+          this.state = import_obsidian2.PopoverState.Hiding;
           this.timer = window.setTimeout(() => {
             if (this.shouldShow()) {
               this.transition();
@@ -54603,13 +53971,13 @@ var FlowEditor = class extends nosuper(import_obsidian7.HoverPopover) {
     });
   }
   shouldShowSelf() {
-    return !this.detaching && !!(this.onTarget || this.state == import_obsidian7.PopoverState.Shown || this.document.querySelector(
+    return !this.detaching && !!(this.onTarget || this.state == import_obsidian2.PopoverState.Shown || this.document.querySelector(
       `body>.modal-container, body > #he${this.id} ~ .menu, body > #he${this.id} ~ .suggestion-container`
     ));
   }
   show() {
     if (!this.targetEl || this.document.body.contains(this.targetEl)) {
-      this.state = import_obsidian7.PopoverState.Shown;
+      this.state = import_obsidian2.PopoverState.Shown;
       this.timer = 0;
       this.shownPos = mouseCoords;
       this.targetEl.replaceChildren(this.hoverEl);
@@ -54653,7 +54021,7 @@ var FlowEditor = class extends nosuper(import_obsidian7.HoverPopover) {
   nativeHide() {
     var _a2;
     const { hoverEl, targetEl } = this;
-    this.state = import_obsidian7.PopoverState.Hidden;
+    this.state = import_obsidian2.PopoverState.Hidden;
     hoverEl.detach();
     if (targetEl) {
       const parent = targetEl.matchParent(".mk-hover-popover");
@@ -54704,7 +54072,7 @@ var FlowEditor = class extends nosuper(import_obsidian7.HoverPopover) {
   }
   buildEphemeralState(file, link) {
     const cache = this.plugin.app.metadataCache.getFileCache(file);
-    const subpath = cache ? (0, import_obsidian7.resolveSubpath)(cache, (link == null ? void 0 : link.subpath) || "") : void 0;
+    const subpath = cache ? (0, import_obsidian2.resolveSubpath)(cache, (link == null ? void 0 : link.subpath) || "") : void 0;
     const eState = { subpath: link == null ? void 0 : link.subpath };
     if (subpath) {
       eState.line = subpath.start.line;
@@ -54908,6 +54276,466 @@ var arrowKeyAnnotation = import_state4.Annotation.define();
 
 // src/adapters/obsidian/utils/flow/flowEditor.ts
 var import_obsidian8 = require("obsidian");
+
+// src/adapters/obsidian/ui/editors/EmbedContextView.tsx
+var import_obsidian3 = require("obsidian");
+var EMBED_CONTEXT_VIEW_TYPE = "make-inline-context";
+var EmbedContextView2 = class extends import_obsidian3.ItemView {
+  constructor(leaf, superstate) {
+    super(leaf);
+    this.navigation = true;
+    this.superstate = superstate;
+  }
+  getViewType() {
+    return EMBED_CONTEXT_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return this.path;
+  }
+  async onClose() {
+    this.destroy();
+  }
+  onunload() {
+    this.destroy();
+  }
+  destroy() {
+    if (this.root)
+      this.root.unmount();
+  }
+  async onOpen() {
+    this.destroy();
+  }
+  async setState(state, result) {
+    this.path = state.path;
+    this.source = state.source;
+    this.constructInlineContext(this.path);
+    await super.setState(state, result);
+    const title = pathDisplayName(this.path, this.superstate);
+    this.leaf.tabHeaderInnerTitleEl.innerText = title;
+    this.leaf.view.titleEl = title;
+    const headerEl = this.leaf.view.headerEl;
+    if (headerEl) {
+      headerEl.querySelector(".view-header-title").innerText = title;
+    }
+    return;
+  }
+  getState() {
+    const state = super.getState();
+    state.path = this.path;
+    state.source = this.source;
+    return state;
+  }
+  constructInlineContext(file) {
+    this.destroy();
+    this.root = createRoot(this.contentEl);
+    this.root.render(
+      /* @__PURE__ */ Cn.createElement("div", null, /* @__PURE__ */ Cn.createElement(EmbedViewComponent, {
+        superstate: this.superstate,
+        path: this.path,
+        source: this.source
+      }))
+    );
+  }
+};
+
+// src/adapters/obsidian/ui/editors/markdownView/FileView.tsx
+var import_obsidian5 = require("obsidian");
+
+// src/adapters/obsidian/ui/editors/markdownView/FileLinkViewComponent.tsx
+var import_obsidian4 = require("obsidian");
+var FileLinkViewComponent = (props2) => {
+  const ref2 = _2(null);
+  const [markdown, setMarkdown] = h2("");
+  p2(() => {
+    if (ref2.current)
+      import_obsidian4.MarkdownRenderer.render(
+        props2.app,
+        markdown,
+        ref2.current,
+        props2.path,
+        props2.component
+      );
+  }, [markdown]);
+  p2(() => {
+    fetch(props2.path).then((res) => res.text()).then((f4) => setMarkdown(f4));
+  }, [props2.path]);
+  return /* @__PURE__ */ Cn.createElement("div", {
+    className: "markdown-preview-view markdown-rendered node-insert-event is-readable-line-width allow-fold-headings show-indentation-guide allow-fold-lists show-frontmatter"
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    className: "markdown-preview-sizer markdown-preview-section",
+    ref: ref2
+  }));
+};
+
+// src/adapters/obsidian/ui/editors/markdownView/FileView.tsx
+var FILE_VIEW_TYPE = "make-file-view";
+var FileLinkView = class extends import_obsidian5.ItemView {
+  constructor(leaf, app2, viewType) {
+    super(leaf);
+    this.navigation = true;
+    this.app = app2;
+    this.viewType = viewType;
+  }
+  getViewType() {
+    return FILE_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return this.path;
+  }
+  async onClose() {
+    this.destroy();
+  }
+  destroy() {
+    if (this.root)
+      this.root.unmount();
+  }
+  async onOpen() {
+    this.destroy();
+  }
+  async setState(state, result) {
+    this.path = state.path;
+    this.constructView(this.path);
+    const displayName = this.path;
+    await super.setState(state, result);
+    this.leaf.tabHeaderInnerTitleEl.innerText = displayName;
+    this.leaf.view.titleEl = displayName;
+    const headerEl = this.leaf.view.headerEl;
+    if (headerEl) {
+      headerEl.querySelector(".view-header-title").innerText = displayName;
+    }
+    result.history = true;
+    return;
+  }
+  getState() {
+    const state = super.getState();
+    state.path = this.path;
+    return state;
+  }
+  constructView(path) {
+    this.destroy();
+    this.root = createRoot(this.contentEl);
+    this.root.render(
+      /* @__PURE__ */ Cn.createElement("div", {
+        className: "markdown-reading-view"
+      }, /* @__PURE__ */ Cn.createElement(FileLinkViewComponent, {
+        path,
+        app: this.app,
+        component: this
+      }))
+    );
+  }
+};
+
+// src/adapters/obsidian/utils/file.ts
+var import_obsidian7 = require("obsidian");
+
+// src/adapters/obsidian/SpaceViewContainer.tsx
+var import_obsidian6 = require("obsidian");
+var SPACE_VIEW_TYPE = "mk-space";
+var SpaceViewContainer = class extends import_obsidian6.ItemView {
+  constructor(leaf, superstate, viewType) {
+    super(leaf);
+    this.navigation = true;
+    this.superstate = superstate;
+    this.viewType = viewType;
+    this.superstate.eventsDispatcher.addListener(
+      "spaceChanged",
+      this.changePath,
+      0,
+      this
+    );
+    this.superstate.eventsDispatcher.addListener(
+      "spaceDeleted",
+      this.closePath,
+      0,
+      this
+    );
+  }
+  getViewType() {
+    return SPACE_VIEW_TYPE;
+  }
+  getDisplayText() {
+    return pathDisplayName(this.path, this.superstate);
+  }
+  async onClose() {
+    this.destroy();
+  }
+  destroy() {
+    this.superstate.eventsDispatcher.removeListener(
+      "spaceChanged",
+      this.changePath
+    );
+    if (this.root)
+      this.root.unmount();
+  }
+  async onOpen() {
+    this.destroy();
+  }
+  changePath(payload) {
+    if (this.path == payload.path) {
+      this.leaf.setViewState({
+        type: SPACE_VIEW_TYPE,
+        state: { path: payload.newPath }
+      });
+    }
+  }
+  closePath(payload) {
+    if ((this == null ? void 0 : this.path) == payload.path) {
+      this.leaf.setViewState({
+        type: null
+      });
+    }
+  }
+  async setState(state, result) {
+    this.path = state.path;
+    if (!this.path)
+      return;
+    this.constructNote(this.path);
+    const displayName = pathDisplayName(this.path, this.superstate);
+    const spaceCache = this.superstate.spacesIndex.get(this.path);
+    await super.setState(state, result);
+    this.leaf.tabHeaderInnerTitleEl.innerText = displayName;
+    this.leaf.view.titleEl = displayName;
+    const headerEl = this.leaf.view.headerEl;
+    if (headerEl && spaceCache) {
+      headerEl.querySelector(".view-header-title").innerText = displayName;
+      if (spaceCache.type == "folder") {
+        const titleParent = headerEl.querySelector(".view-header-title-parent");
+        titleParent.empty();
+        const parentPaths = getParentFolderPaths(spaceCache.path);
+        if (titleParent) {
+          parentPaths.forEach((f4) => {
+            const breadcrumb = titleParent.createEl("span");
+            breadcrumb.addClass("view-header-breadcrumb");
+            breadcrumb.innerText = folderPathToString(f4);
+            breadcrumb.addEventListener(
+              "click",
+              () => this.superstate.ui.openPath(f4, false)
+            );
+            const breadcrumbSeparator = titleParent.createEl("span");
+            breadcrumbSeparator.addClass("view-header-breadcrumb-separator");
+            breadcrumbSeparator.innerText = "/";
+          });
+        }
+      }
+    }
+    result.history = true;
+    return;
+  }
+  getState() {
+    const state = super.getState();
+    state.path = this.path;
+    return state;
+  }
+  constructNote(path) {
+    this.destroy();
+    this.root = createRoot(this.contentEl);
+    this.root.render(
+      /* @__PURE__ */ Cn.createElement(SpaceView, {
+        path,
+        superstate: this.superstate
+      })
+    );
+  }
+};
+
+// src/adapters/obsidian/utils/file.ts
+var tFileToAFile = (file) => {
+  var _a2, _b2;
+  if (!file)
+    return null;
+  if (file instanceof import_obsidian7.TFile && file.stat) {
+    return {
+      isFolder: false,
+      name: file.basename,
+      filename: file.name,
+      path: file.path,
+      parent: (_a2 = file.parent) == null ? void 0 : _a2.path,
+      stat: file.stat,
+      extension: file.extension
+    };
+  }
+  return {
+    isFolder: true,
+    name: file.name,
+    filename: file.name,
+    path: file.path,
+    parent: (_b2 = file.parent) == null ? void 0 : _b2.path
+  };
+};
+var defaultSpace = async (superstate, activeFile) => {
+  var _a2;
+  return (_a2 = superstate.settings.newFileLocation == "folder" ? superstate.spacesIndex.get(superstate.settings.newFileFolderPath) : superstate.settings.newFileLocation == "current" && activeFile && (activeFile.type == "space" ? superstate.spacesIndex.get(activeFile.path) : superstate.spacesIndex.get(activeFile.parent))) != null ? _a2 : superstate.spacesIndex.get("/");
+};
+var defaultConfigFile = async (plugin) => {
+  return await plugin.app.vault.adapter.read(
+    (0, import_obsidian7.normalizePath)(plugin.app.vault.configDir + "/app.json")
+  );
+};
+var fileExtensionForFile = (path) => path == null ? void 0 : path.split(".").pop();
+var uniqueFileName = (oldName, name, extension, folder) => {
+  let newName = sanitizeFileName(name);
+  let uniqueName = false;
+  let append = 1;
+  while (!uniqueName) {
+    if (!folder.children.some((f4) => f4.name == `${newName}.${extension}` && f4.name != oldName)) {
+      uniqueName = true;
+    } else {
+      newName = `${newName} ${append}`;
+      append += 1;
+    }
+  }
+  return `${newName}.${extension}`;
+};
+function getAllAbstractFilesInVault(plugin) {
+  const files = [];
+  const rootFolder = plugin.app.vault.getRoot();
+  function recursiveFx(folder) {
+    for (const child of folder.children) {
+      if (child instanceof import_obsidian7.TFolder) {
+        const childFolder = child;
+        if (childFolder.children)
+          recursiveFx(childFolder);
+      }
+      files.push(child);
+    }
+  }
+  recursiveFx(rootFolder);
+  files.push(rootFolder);
+  return files;
+}
+var getParentPathFromString = (file) => {
+  const indexOfLastSlash = file.lastIndexOf("/");
+  if (indexOfLastSlash == -1) {
+    return "/";
+  }
+  return file.substring(0, indexOfLastSlash + 1);
+};
+var openPath = async (leaf, path, plugin) => {
+  const uri = plugin.superstate.spaceManager.uriByString(path);
+  if (uri.scheme == "obsidian") {
+    await leaf.setViewState({
+      type: uri.authority
+    });
+    return;
+  }
+  if (uri.ref) {
+    const cache = plugin.superstate.pathsIndex.get(uri.path);
+    if (cache && cache.type == "space") {
+      await leaf.setViewState({
+        type: EMBED_CONTEXT_VIEW_TYPE,
+        state: { path: uri.fullPath }
+      });
+      return;
+    }
+  }
+  if (uri.scheme == "spaces") {
+    openTagContext(leaf, uri.authority, plugin.app);
+    return;
+  }
+  plugin.files.getFile(path).then((f4) => {
+    if (f4) {
+      openAFile(leaf, f4, plugin.app);
+    } else {
+      defaultSpace(plugin.superstate, plugin.superstate.pathsIndex.get(plugin.superstate.ui.activePath)).then((f5) => {
+        if (f5)
+          newPathInSpace(
+            plugin.superstate,
+            f5,
+            fileExtensionForFile(path),
+            null
+          );
+      });
+    }
+  });
+};
+var getLeaf = (app2, location) => {
+  let leaf;
+  if (location == "system" || location == "hover") {
+    return null;
+  } else if (location == "right") {
+    leaf = app2.workspace.getRightLeaf(false);
+  } else if (location == "left") {
+    leaf = app2.workspace.getLeftLeaf(false);
+  } else {
+    leaf = app2.workspace.getLeaf(location);
+  }
+  return leaf;
+};
+var openURL = async (url, app2, location) => {
+  if (location == "system") {
+    window.open(url, "_blank");
+    return;
+  }
+  const leaf = getLeaf(app2, location);
+  if (url.endsWith(".md")) {
+    const viewType = FILE_VIEW_TYPE;
+    app2.workspace.setActiveLeaf(leaf, { focus: true });
+    await leaf.setViewState({
+      type: viewType,
+      state: { path: url }
+    });
+    await app2.workspace.requestSaveLayout();
+  } else if (url.endsWith(".mdb")) {
+    const viewType = SPACE_VIEW_TYPE;
+    app2.workspace.setActiveLeaf(leaf, { focus: true });
+    await leaf.setViewState({
+      type: viewType,
+      state: { path: url }
+    });
+    await app2.workspace.requestSaveLayout();
+  } else {
+    app2.workspace.setActiveLeaf(leaf, { focus: true });
+    await leaf.setViewState({
+      type: EMBED_CONTEXT_VIEW_TYPE,
+      state: { path: url }
+    });
+  }
+  if (import_obsidian7.Platform.isMobile) {
+    app2.workspace.leftSplit.collapse();
+  }
+};
+var openAFile = async (leaf, file, app2) => {
+  if (file.isFolder) {
+    openTFolder(leaf, getAbstractFileAtPath(app2, file.path), app2);
+  } else if (file) {
+    openTFile(leaf, getAbstractFileAtPath(app2, file.path), app2);
+  } else {
+    return;
+  }
+};
+var openTFile = async (leaf, file, app2) => {
+  if (!file)
+    return;
+  app2.workspace.setActiveLeaf(leaf, { focus: true });
+  await leaf.openFile(file);
+};
+var openTFolder = async (leaf, file, app2) => {
+  const viewType = SPACE_VIEW_TYPE;
+  app2.workspace.setActiveLeaf(leaf, { focus: true });
+  await leaf.setViewState({
+    type: viewType,
+    state: { path: file.path }
+  });
+  await app2.workspace.requestSaveLayout();
+  if (import_obsidian7.Platform.isMobile) {
+    app2.workspace.leftSplit.collapse();
+  }
+};
+var openTagContext = async (leaf, tag, app2) => {
+  const viewType = SPACE_VIEW_TYPE;
+  app2.workspace.setActiveLeaf(leaf, { focus: true });
+  await leaf.setViewState({ type: viewType, state: { path: "spaces://" + tag } });
+  await app2.workspace.requestSaveLayout();
+  if (import_obsidian7.Platform.isMobile) {
+    app2.workspace.leftSplit.collapse();
+  }
+};
+var getAbstractFileAtPath = (app2, path) => {
+  return app2.vault.getAbstractFileByPath(path);
+};
+
+// src/adapters/obsidian/utils/flow/flowEditor.ts
 var getLineRangeFromRef = (path, ref2, plugin) => {
   var _a2;
   if (!ref2) {
@@ -55117,7 +54945,7 @@ var internalLinkHover = hoverTooltip((view, pos, side) => {
   let hovObject = null;
   iterateTreeInSelection({ from: lineFrom, to: lineTo }, view.state, {
     enter: ({ name, from, to }) => {
-      if (name.contains("hmd-internal-link") && pos <= to && pos >= from) {
+      if (name.includes("hmd-internal-link") && pos <= to && pos >= from) {
         const stateField = view.state.field(flowEditorInfo, false);
         const info = stateField.find((f4) => f4.to == to);
         if (info) {
@@ -55436,7 +55264,7 @@ var newPosAfterFormatting = (pos, moveDirLeft, state) => {
     enter: (node) => {
       if (exitFormatRange)
         return false;
-      if (node.name.contains("formatting")) {
+      if (node.name.includes("formatting")) {
         if (!moveDirLeft && node.from > start) {
           return false;
         }
@@ -55482,7 +55310,7 @@ var posIsMark = (pos, state, markString) => {
   return isMark;
 };
 var nodeNameContainsMark = (name, markString) => {
-  return name.contains(markString);
+  return name.includes(markString);
 };
 var edgeIsMark = (pos, state, mark) => posIsMark(pos, state, mark.mark);
 var edgeIsMarkFormat = (pos, state, mark) => posIsMark(pos, state, mark.formatting) ? true : mark.altFormatting ? posIsMark(pos, state, mark.altFormatting) : false;
@@ -57002,6 +56830,180 @@ var modifyFlowDom = (plugin) => {
   }
 };
 
+// src/adapters/mdb/db/db.ts
+var getDBFile = async (plugin, path, isRemote) => {
+  if (isRemote) {
+    return fetch(path).then((res) => res.arrayBuffer());
+  }
+  if (!await plugin.middleware.fileExists(path)) {
+    return null;
+  }
+  const file = await plugin.middleware.readBinaryToFile(
+    path
+  );
+  return file;
+};
+var getDB = async (plugin, sqlJS, path, isRemote) => {
+  const buf = await getDBFile(plugin, path, isRemote);
+  if (buf) {
+    const db = await new sqlJS.Database(new Uint8Array(buf));
+    try {
+      db.exec(
+        "SELECT name FROM sqlite_schema"
+      );
+    } catch (e4) {
+      return new sqlJS.Database();
+    }
+    return db;
+  }
+  return new sqlJS.Database();
+};
+var saveDBFile = async (plugin, path, binary) => {
+  if (!await plugin.middleware.fileExists(
+    removeTrailingSlashFromFolder(getParentPathFromString(path))
+  )) {
+    await plugin.middleware.createFolder(getParentPathFromString(path));
+  }
+  const file = plugin.middleware.writeBinaryToFile(
+    path,
+    binary
+  );
+  return file;
+};
+var mdbTablesToDBTables = (tables, uniques) => {
+  return Object.keys(tables).reduce((p3, c4) => {
+    var _a2;
+    return {
+      ...p3,
+      [c4]: {
+        uniques: (_a2 = uniques == null ? void 0 : uniques[c4]) != null ? _a2 : [],
+        cols: tables[c4].cols.map((f4) => f4.name),
+        rows: tables[c4].rows
+      }
+    };
+  }, { m_fields: {
+    uniques: fieldSchema.uniques,
+    cols: fieldSchema.cols,
+    rows: Object.values(tables).flatMap((f4) => f4.cols)
+  } });
+};
+var dbResultsToDBTables = (res) => {
+  return res.reduce(
+    (p3, c4, i4) => [
+      ...p3,
+      {
+        cols: c4.columns,
+        rows: c4 ? c4.values.map(
+          (r3) => c4.columns.reduce(
+            (prev, curr, index) => ({ ...prev, [curr]: r3[index] }),
+            {}
+          )
+        ) : []
+      }
+    ],
+    []
+  );
+};
+var selectDB = (db, table, condition, fields) => {
+  const fieldsStr = fields != null ? fields : "*";
+  const sqlstr = condition ? `SELECT ${fieldsStr} FROM "${table}" WHERE ${condition};` : `SELECT ${fieldsStr} FROM ${table};`;
+  let tables;
+  try {
+    tables = dbResultsToDBTables(db.exec(sqlstr));
+  } catch (e4) {
+    return null;
+  }
+  if (tables.length == 1)
+    return tables[0];
+  return null;
+};
+var insertIntoDB = (db, tables, replace) => {
+  const sqlstr = serializeSQLStatements(
+    Object.keys(tables).map((t4) => {
+      const tableFields = tables[t4].cols;
+      const rowsQuery = tables[t4].rows.reduce((prev, curr) => {
+        return `${prev} ${replace ? "REPLACE" : "INSERT"} INTO "${t4}" VALUES (${serializeSQLValues(
+          tableFields.map((c4) => {
+            var _a2;
+            return `'${(_a2 = sanitizeSQLStatement(curr == null ? void 0 : curr[c4])) != null ? _a2 : ""}'`;
+          })
+        )});`;
+      }, "");
+      return rowsQuery;
+    })
+  );
+  try {
+    db.exec(`${sqlstr}`);
+  } catch (e4) {
+    console.log(e4);
+  }
+};
+var deleteFromDB = (db, table, condition) => {
+  const sqlstr = `DELETE FROM "${table}" WHERE ${condition};`;
+  try {
+    db.exec(sqlstr);
+  } catch (e4) {
+    console.log(e4);
+  }
+};
+var dropTable = (db, table) => {
+  const sqlstr = `DROP TABLE IF EXISTS "${table}";`;
+  try {
+    db.exec(sqlstr);
+  } catch (e4) {
+    console.log(e4);
+  }
+};
+var replaceDB = (db, tables) => {
+  const sqlStatements = [];
+  Object.keys(tables).forEach((t4) => {
+    const tableFields = tables[t4].cols;
+    const fieldQuery = serializeSQLFieldNames(uniq(tableFields).filter((f4) => f4).map((f4) => `'${sanitizeSQLStatement(f4)}' char`));
+    const createQuery = `CREATE TABLE IF NOT EXISTS "${t4}" (${fieldQuery}); `;
+    const idxQuery = tables[t4].uniques.filter((f4) => f4).reduce((p3, c4) => {
+      return `${p3} CREATE UNIQUE INDEX IF NOT EXISTS "idx_${t4}_${c4.replace(
+        /,/g,
+        "_"
+      )}" ON "${t4}"(${c4});`;
+    }, "");
+    const beginTransaction = `BEGIN TRANSACTION;`;
+    const rowsQuery = tables[t4].rows.map((curr) => {
+      return `REPLACE INTO "${t4}" VALUES (${serializeSQLValues(tableFields.map((c4) => {
+        var _a2;
+        return `'${sanitizeSQLStatement((_a2 = curr == null ? void 0 : curr[c4]) != null ? _a2 : "")}'`;
+      }))});`;
+    });
+    const commitQuery = `COMMIT;`;
+    sqlStatements.push(`DROP INDEX IF EXISTS "idx_${t4}__id"; DROP TABLE IF EXISTS "${t4}";`);
+    if (fieldQuery.length > 0) {
+      sqlStatements.push(createQuery);
+      sqlStatements.push(idxQuery);
+      sqlStatements.push(beginTransaction);
+      sqlStatements.push(...rowsQuery);
+      sqlStatements.push(commitQuery);
+    }
+  });
+  try {
+    for (const s5 of sqlStatements) {
+      db.exec(s5);
+    }
+  } catch (e4) {
+    console.log(e4);
+  }
+};
+var saveDBToPath = async (plugin, path, tables) => {
+  const sqlJS = await plugin.sqlJS();
+  const db = await getDB(plugin, sqlJS, path);
+  if (!db) {
+    db.close();
+    return false;
+  }
+  replaceDB(db, tables);
+  await saveDBFile(plugin, path, db.export().buffer);
+  db.close();
+  return true;
+};
+
 // src/adapters/obsidian/filesystem/schemas/vaultSchema.ts
 var vaultSchema = {
   uniques: ["path"],
@@ -57423,14 +57425,14 @@ var indexCurrentFileTree = (plugin, vaultDB) => {
 };
 
 // src/adapters/obsidian/filesystem/rebuildIndex.ts
-var rebuildIndex = async (filesystem, save) => {
+var rebuildIndex = async (filesystem, plugin, save) => {
   var _a2;
   const start = Date.now();
-  const newTables = indexCurrentFileTree(filesystem.plugin, (_a2 = filesystem.vaultDBCache) != null ? _a2 : []);
+  const newTables = indexCurrentFileTree(plugin, (_a2 = filesystem.vaultDBCache) != null ? _a2 : []);
   if (save && !import_lodash12.default.isEqual(newTables.vault.rows, filesystem.vaultDBCache)) {
     await filesystem.saveSpacesDatabaseToDisk(newTables, save);
   }
-  filesystem.plugin.superstate.ui.notify(`Make.md - Vault Reindexed in ${(Date.now() - start) / 1e3} seconds`, "console");
+  plugin.superstate.ui.notify(`Make.md - Vault Reindexed in ${(Date.now() - start) / 1e3} seconds`, "console");
 };
 
 // src/adapters/obsidian/utils/tags.ts
@@ -57617,13 +57619,13 @@ var editTagInFileBody = async (plugin, oldTag, newTag, positions, file) => {
 var import_lodash15 = __toESM(require_lodash());
 var import_obsidian18 = require("obsidian");
 
-// src/core/superstate/localCache/localCache.ts
+// src/adapters/mdb/localCache/localCache.ts
 var import_lodash13 = __toESM(require_lodash());
 
 // src/schemas/cache.ts
 var CacheDBSchema = { uniques: ["path"], cols: ["path", "cache", "version"], rows: [] };
 
-// src/core/superstate/localCache/localCache.ts
+// src/adapters/mdb/localCache/localCache.ts
 var LocalStorageCache = class {
   constructor(storageDBPath, mdbAdapter, types2) {
     this.storageDBPath = storageDBPath;
@@ -57687,7 +57689,7 @@ var LocalStorageCache = class {
   }
 };
 
-// src/core/superstate/localCache/localCacheMobile.ts
+// src/adapters/mdb/localCache/localCacheMobile.ts
 var import_lodash14 = __toESM(require_lodash());
 var MobileCachePersister = class {
   constructor(storageDBPath, mdbAdapter, types2) {
@@ -57931,7 +57933,7 @@ var ObsidianFileSystem = class {
     this.vaultDBCache = (_b2 = (_a2 = selectDB(db, "vault")) == null ? void 0 : _a2.rows) != null ? _b2 : [];
     db.close();
     this.vaultDBLoaded = true;
-    await rebuildIndex(this, true);
+    await rebuildIndex(this, this.plugin, true);
     const allPaths = await this.persister.loadAll("file");
     this.vaultDBCache.forEach((f4) => {
       const file = tFileToAFile(getAbstractFileAtPath(this.plugin.app, f4.path));
@@ -57966,12 +57968,10 @@ var ObsidianFileSystem = class {
   getFileCache(path, source) {
     return this.cache.get(path);
   }
-  parentForPath(path) {
-    return this.getFile(path).then((file) => {
-      if (!(file == null ? void 0 : file.parent))
-        return null;
-      return this.getFile(file.parent);
-    });
+  parentPathForPath(path) {
+    return removeTrailingSlashFromFolder(
+      getParentPathFromString(path)
+    );
   }
   resolvePath(path, source) {
     var _a2, _b2;
@@ -58162,12 +58162,12 @@ var frontMatterForFile = (app2, file) => {
 
 // src/adapters/obsidian/filetypes/markdownAdapter.ts
 var ObsidianMarkdownFiletypeAdapter = class {
-  constructor(app2) {
-    this.app = app2;
+  constructor(plugin) {
+    this.plugin = plugin;
     this.id = "metadata.obsidian.md";
     this.supportedFileTypes = ["md"];
     this.metadataKeys = ["property", "links", "embeds", "tags", "headings", "sections", "listItems", "frontmatter", "frontmatterPostion", "frontmatterLinks", "blocks"];
-    this.app = app2;
+    this.app = plugin.app;
   }
   initiate(middleware) {
     this.middleware = middleware;
@@ -58200,8 +58200,8 @@ var ObsidianMarkdownFiletypeAdapter = class {
       property: fCache.frontmatter,
       label: {
         name: file.name,
-        sticker: (_m = fCache.frontmatter) == null ? void 0 : _m[this.middleware.plugin.superstate.settings.fmKeySticker],
-        color: (_n2 = fCache.frontmatter) == null ? void 0 : _n2[this.middleware.plugin.superstate.settings.fmKeyColor]
+        sticker: (_m = fCache.frontmatter) == null ? void 0 : _m[this.plugin.superstate.settings.fmKeySticker],
+        color: (_n2 = fCache.frontmatter) == null ? void 0 : _n2[this.plugin.superstate.settings.fmKeyColor]
       }
     };
     this.cache.set(file.path, updatedCache);
@@ -58271,9 +58271,9 @@ var ObsidianMarkdownFiletypeAdapter = class {
         if (this.app.fileManager.processFrontMatter) {
           await this.app.fileManager.processFrontMatter(afile, (frontmatter) => {
             if (fragmentId == "sticker") {
-              frontmatter[this.middleware.plugin.superstate.settings.fmKeySticker] = content(frontmatter);
+              frontmatter[this.plugin.superstate.settings.fmKeySticker] = content(frontmatter);
             } else if (fragmentId == "color") {
-              frontmatter[this.middleware.plugin.superstate.settings.fmKeyColor] = content(frontmatter);
+              frontmatter[this.plugin.superstate.settings.fmKeyColor] = content(frontmatter);
             }
           });
           await this.parseCache(file, true);
@@ -64893,7 +64893,50 @@ var ObsidianCommands = class {
   }
 };
 
+// src/adapters/text/removemd.js
+function removemd(md, options) {
+  options = options || {};
+  options.listUnicodeChar = options.hasOwnProperty("listUnicodeChar") ? options.listUnicodeChar : false;
+  options.stripListLeaders = options.hasOwnProperty("stripListLeaders") ? options.stripListLeaders : true;
+  options.gfm = options.hasOwnProperty("gfm") ? options.gfm : true;
+  options.useImgAltText = options.hasOwnProperty("useImgAltText") ? options.useImgAltText : true;
+  options.abbr = options.hasOwnProperty("abbr") ? options.abbr : false;
+  options.replaceLinksWithURL = options.hasOwnProperty("replaceLinksWithURL") ? options.replaceLinksWithURL : false;
+  options.htmlTagsToSkip = options.hasOwnProperty("htmlTagsToSkip") ? options.htmlTagsToSkip : [];
+  var output = md || "";
+  output = output.replace(/^(-\s*?|\*\s*?|_\s*?){3,}\s*/gm, "");
+  try {
+    if (options.stripListLeaders) {
+      if (options.listUnicodeChar)
+        output = output.replace(/^([\s\t]*)([\*\-\+]|\d+\.)\s+/gm, options.listUnicodeChar + " $1");
+      else
+        output = output.replace(/^([\s\t]*)([\*\-\+]|\d+\.)\s+/gm, "$1");
+    }
+    if (options.gfm) {
+      output = output.replace(/\n={2,}/g, "\n").replace(/~{3}.*\n/g, "").replace(/~~/g, "").replace(/`{3}.*\n/g, "");
+    }
+    if (options.abbr) {
+      output = output.replace(/\*\[.*\]:.*\n/, "");
+    }
+    output = output.replace(/<[^>]*>/g, "");
+    var htmlReplaceRegex = new RegExp("<[^>]*>", "g");
+    if (options.htmlTagsToSkip.length > 0) {
+      var joinedHtmlTagsToSkip = "(?!" + options.htmlTagsToSkip.join("|") + ")";
+      htmlReplaceRegex = new RegExp(
+        "<" + joinedHtmlTagsToSkip + "[^>]*>",
+        "ig"
+      );
+    }
+    output = output.replace(htmlReplaceRegex, "").replace(/^[=\-]{2,}\s*$/g, "").replace(/\[\^.+?\](\: .*?$)?/g, "").replace(/\s{0,2}\[.*?\]: .*?$/g, "").replace(/\!\[(.*?)\][\[\(].*?[\]\)]/g, options.useImgAltText ? "$1" : "").replace(/\[([^\]]*?)\][\[\(].*?[\]\)]/g, options.replaceLinksWithURL ? "$2" : "$1").replace(/^(\n)?\s{0,3}>\s?/gm, "$1").replace(/^\s{1,2}\[(.*?)\]: (\S+)( ".*?")?\s*$/g, "").replace(/^(\n)?\s{0,}#{1,6}\s*( (.+))? +#+$|^(\n)?\s{0,}#{1,6}\s*( (.+))?$/gm, "$1$3$4$6").replace(/([\*]+)(\S)(.*?\S)??\1/g, "$2$3").replace(/(^|\W)([_]+)(\S)(.*?\S)??\2($|\W)/g, "$1$3$4$5").replace(/(`{3,})(.*?)\1/gm, "$2").replace(/`(.+?)`/g, "$1").replace(/~(.*?)~/g, "$1");
+  } catch (e4) {
+    console.error(e4);
+    return md;
+  }
+  return output;
+}
+
 // src/adapters/text/textCacher.ts
+var regexYaml = /^---\s*\n(.*?)\n?^---\s?/ms;
 var textCacheExperimental = {
   wordCount: (str) => {
     const spaceDelimitedChars = /'’A-Za-z\u00AA\u00B5\u00BA\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0370-\u0374\u0376\u0377\u037A-\u037D\u037F\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03F5\u03F7-\u0481\u048A-\u052F\u0531-\u0556\u0559\u0561-\u0587\u05D0-\u05EA\u05F0-\u05F2\u0620-\u064A\u066E\u066F\u0671-\u06D3\u06D5\u06E5\u06E6\u06EE\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u07F4\u07F5\u07FA\u0800-\u0815\u081A\u0824\u0828\u0840-\u0858\u08A0-\u08B4\u0904-\u0939\u093D\u0950\u0958-\u0961\u0971-\u0980\u0985-\u098C\u098F\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC\u09DD\u09DF-\u09E1\u09F0\u09F1\u0A05-\u0A0A\u0A0F\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32\u0A33\u0A35\u0A36\u0A38\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32\u0B33\u0B35-\u0B39\u0B3D\u0B5C\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99\u0B9A\u0B9C\u0B9E\u0B9F\u0BA3\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C60\u0C61\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDE\u0CE0\u0CE1\u0CF1\u0CF2\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32\u0E33\u0E40-\u0E46\u0E81\u0E82\u0E84\u0E87\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA\u0EAB\u0EAD-\u0EB0\u0EB2\u0EB3\u0EBD\u0EC0-\u0EC4\u0EC6\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065\u1066\u106E-\u1070\u1075-\u1081\u108E\u10A0-\u10C5\u10C7\u10CD\u10D0-\u10FA\u10FC-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u13A0-\u13F5\u13F8-\u13FD\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u170C\u170E-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17D7\u17DC\u1820-\u1877\u1880-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1AA7\u1B05-\u1B33\u1B45-\u1B4B\u1B83-\u1BA0\u1BAE\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C7D\u1CE9-\u1CEC\u1CEE-\u1CF1\u1CF5\u1CF6\u1D00-\u1DBF\u1E00-\u1F15\u1F18-\u1F1D\u1F20-\u1F45\u1F48-\u1F4D\u1F50-\u1F57\u1F59\u1F5B\u1F5D\u1F5F-\u1F7D\u1F80-\u1FB4\u1FB6-\u1FBC\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FCC\u1FD0-\u1FD3\u1FD6-\u1FDB\u1FE0-\u1FEC\u1FF2-\u1FF4\u1FF6-\u1FFC\u2071\u207F\u2090-\u209C\u2102\u2107\u210A-\u2113\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u212F-\u2139\u213C-\u213F\u2145-\u2149\u214E\u2183\u2184\u2C00-\u2C2E\u2C30-\u2C5E\u2C60-\u2CE4\u2CEB-\u2CEE\u2CF2\u2CF3\u2D00-\u2D25\u2D27\u2D2D\u2D30-\u2D67\u2D6F\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u2E2F\u3005\u3006\u3031-\u3035\u303B\u303C\u3105-\u312D\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DB5\uA000-\uA48C\uA4D0-\uA4FD\uA500-\uA60C\uA610-\uA61F\uA62A\uA62B\uA640-\uA66E\uA67F-\uA69D\uA6A0-\uA6E5\uA717-\uA71F\uA722-\uA788\uA78B-\uA7AD\uA7B0-\uA7B7\uA7F7-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9CF\uA9E0-\uA9E4\uA9E6-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADD\uAAE0-\uAAEA\uAAF2-\uAAF4\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uAB30-\uAB5A\uAB5C-\uAB65\uAB70-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB00-\uFB06\uFB13-\uFB17\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40\uFB41\uFB43\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF21-\uFF3A\uFF41-\uFF5A\uFF66-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC/.source;
@@ -64907,7 +64950,10 @@ var textCacheExperimental = {
       ].join("|"),
       "g"
     );
-    return (str.match(pattern) || []).length;
+    return (str.replace(regexYaml, "").match(pattern) || []).length;
+  },
+  preview: (str) => {
+    return removemd(str.replace(regexYaml, ""));
   }
 };
 var TextCacher = class {
@@ -65441,6 +65487,19 @@ var MakeMDPlugin = class extends import_obsidian30.Plugin {
         }
       });
       this.addCommand({
+        id: "mk-reveal-file",
+        name: i18n_default.commandPalette.revealFile,
+        callback: () => {
+          const file = this.superstate.ui.activePath;
+          if (!file)
+            return;
+          const evt = new CustomEvent(eventTypes.revealPath, {
+            detail: { path: file }
+          });
+          window.dispatchEvent(evt);
+        }
+      });
+      this.addCommand({
         id: "mk-spaces-migrate",
         name: i18n_default.commandPalette.migrateData,
         callback: () => migrate08(this)
@@ -65475,12 +65534,6 @@ var MakeMDPlugin = class extends import_obsidian30.Plugin {
         }
       });
     }
-    this.addCommand({
-      id: "mk-test",
-      name: "Open Test Page",
-      callback: () => this.testPage(),
-      hotkeys: []
-    });
     if (this.superstate.settings.blinkEnabled) {
       this.addCommand({
         id: "mk-blink",
@@ -65512,7 +65565,7 @@ var MakeMDPlugin = class extends import_obsidian30.Plugin {
       return new SpaceViewContainer(leaf, this.superstate, SPACE_VIEW_TYPE);
     });
     this.registerView(EMBED_CONTEXT_VIEW_TYPE, (leaf) => {
-      return new EmbedContextView(leaf, this.superstate);
+      return new EmbedContextView2(leaf, this.superstate);
     });
     if (this.superstate.settings.contextEnabled) {
       this.registerView(FILE_VIEW_TYPE, (leaf) => {
@@ -65582,12 +65635,12 @@ var MakeMDPlugin = class extends import_obsidian30.Plugin {
   async onload() {
     const start = Date.now();
     this.mdbFileAdapter = new MDBFileTypeAdapter(this);
-    this.files = FilesystemMiddleware.create(this);
+    this.files = FilesystemMiddleware.create();
     this.obsidianAdapter = new ObsidianFileSystem(this, this.files, (0, import_obsidian30.normalizePath)(
       this.app.vault.configDir + "/plugins/make-md/Spaces.mdb"
     ));
     this.files.initiateFileSystemAdapter(this.obsidianAdapter, true);
-    this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this.app);
+    this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     this.files.initiateFiletypeAdapter(this.mdbFileAdapter);
     this.files.initiateFiletypeAdapter(this.markdownAdapter);
     this.files.initiateFiletypeAdapter(new ObsidianCanvasFiletypeAdapter(this));
