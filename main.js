@@ -65563,12 +65563,6 @@ var MakeMDPlugin = class extends import_obsidian31.Plugin {
         }
       });
     }
-    this.addCommand({
-      id: "mk-test",
-      name: "Open Test Page",
-      callback: () => this.testPage(),
-      hotkeys: []
-    });
     if (this.superstate.settings.blinkEnabled) {
       this.addCommand({
         id: "mk-blink",
