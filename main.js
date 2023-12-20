@@ -57861,10 +57861,11 @@ var ObsidianFileSystem = class {
         }
       });
       const newFile = tFileToAFile(file);
+      const oldCache = this.cache.get(oldPath);
       this.cache.set(newFile.path, {
         ...this.cache.get(oldPath),
         file: newFile,
-        label: { ...this.vaultDBCache.find((f4) => f4.path == oldPath), name: (_a2 = file.basename) != null ? _a2 : file.name },
+        label: { ...oldCache.label, name: (_a2 = file.basename) != null ? _a2 : file.name },
         parent: newFile.parent,
         type: newFile.isFolder ? "space" : "file",
         subtype: newFile.isFolder ? "folder" : newFile.extension
@@ -57960,6 +57961,7 @@ var ObsidianFileSystem = class {
     await rebuildIndex(this, this.plugin, true);
     const allPaths = await this.persister.loadAll("file");
     this.vaultDBCache.forEach((f4) => {
+      var _a3, _b3;
       const file = tFileToAFile(getAbstractFileAtPath(this.plugin.app, f4.path));
       let cache = {
         metadata: {},
@@ -57974,6 +57976,7 @@ var ObsidianFileSystem = class {
           ...cache,
           file,
           contentTypes: file.isFolder ? [] : ["md", "canvas", "folder"],
+          label: { name: file.name, sticker: (_a3 = cache.label.sticker) != null ? _a3 : "", color: (_b3 = cache.label.color) != null ? _b3 : "" },
           parent: file.parent,
           type: file.isFolder ? "space" : "file",
           subtype: file.isFolder ? "folder" : file.extension
@@ -58152,14 +58155,14 @@ var ObsidianCanvasFiletypeAdapter = class {
     this.middleware = middleware;
   }
   async parseCache(file, refresh) {
-    var _a2;
+    var _a2, _b2;
     if (!file)
       return;
     const label = (_a2 = this.middleware.getFileCache(file.path)) == null ? void 0 : _a2.label;
     const updatedCache = {
       label: {
         name: file.name,
-        sticker: (label == null ? void 0 : label.sticker.length) > 0 ? label.sticker : "ui//mk-ui-canvas",
+        sticker: ((_b2 = label == null ? void 0 : label.sticker) == null ? void 0 : _b2.length) > 0 ? label.sticker : "ui//mk-ui-canvas",
         color: label == null ? void 0 : label.color
       }
     };
