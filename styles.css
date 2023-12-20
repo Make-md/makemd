@@ -1708,16 +1708,16 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   visibility: visible;
 }
 .mk-floweditor-selector {
-  --icon-size: var(--icon-s);
+  --icon-size: 14px;
   position: absolute;
-  right: -30px;
+  left: -30px;
   top: 0px;
   z-index: var(--layer-popover);
   display: flex;
   visibility: hidden;
 }
 .mk-flowblock-menu {
-  padding-left: 6px;
+  padding: 0 6px;
   display: flex;
   flex-direction: column;
   font-size: var(--font-ui-smaller);
@@ -1730,9 +1730,12 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   color: var(--text-muted);
 }
 .mk-flowblock-menu .mk-hover-button {
-  padding: var(--size-4-2);
   color: var(--text-muted);
   border: none;
+}
+.mk-flowblock-menu .mk-hover-button svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
 }
 .mk-flowblock-menu .mk-hover-button:last-child {
   border-right: none;
@@ -2695,7 +2698,7 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 }
 .mk-options-menu__suggestions li {
   margin: 0px 6px;
-  padding: 6px 8px;
+  padding: 4px 8px;
   border-radius: var(--radius-s);
   display: flex;
   flex-direction: row;
@@ -3513,6 +3516,10 @@ body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .mk-sp
 }
 .mk-minimal-fix .mk-floweditor .markdown-source-view.mod-cm6.is-readable-line-width .cm-contentContainer.cm-contentContainer > .cm-content > div {
   margin-inline: inherit !important;
+}
+.mk-minimal-fix .mk-floweditor-container .mk-floweditor .markdown-source-view.mod-cm6.is-readable-line-width .cm-line {
+  padding: var(--embed-padding) !important;
+  margin: 0 !important;
 }
 
 /* src/css/StickerMenu.css */
