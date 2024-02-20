@@ -33999,7 +33999,7 @@ var progressNode = {
       backgroundColor: "color"
     },
     styles: {
-      background: `progress.props.color`,
+      background: `$root.props.color`,
       height: `'10px'`,
       width: `'100px'`,
       borderRadius: `'5px'`
@@ -34011,10 +34011,10 @@ var progressNode = {
       node: {
         ...groupNode.node,
         styles: {
-          width: `progress.props.value/progress.props.total*100+'%'`,
+          width: `$root.props.value/$root.props.max*100+'%'`,
           height: `'100%'`,
           borderRadius: `'5px'`,
-          background: `progress.props.backgroundColor`,
+          background: `$root.props.backgroundColor`,
           display: `'block'`
         }
       }
@@ -34038,8 +34038,8 @@ var circularProgressNode = {
     props: {
       value: "50",
       max: "100",
-      color: "'var(--background-modifier-form-field)'",
-      backgroundColor: `'var(--color-orange)'`,
+      color: `'var(--color-orange)'`,
+      backgroundColor: "'var(--background-modifier-form-field)'",
       ringWidth: "5"
     },
     types: {
@@ -58228,7 +58228,9 @@ var triggerSpaceMenu = (superstate, path, e4, activePath, parentSpace, triggerRe
         e5,
         superstate,
         (link) => {
-          addPathToSpaceAtIndex(superstate, space, link, -1);
+          const spaceCache = superstate.spacesIndex.get(link);
+          if (spaceCache)
+            addPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
         },
         true
       );

@@ -3432,6 +3432,7 @@ body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
   max-width: 100% !important;
 }
 .mk-node-link {
+  max-width: 100%;
   display: flex;
   gap: 4px;
   align-items: center;
