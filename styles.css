@@ -87,7 +87,7 @@ body {
   background: var(--mk-ui-background);
   max-height: unset;
   -webkit-app-region: no-drag;
-  padding: 6px;
+  padding: 6px 10px;
   border: 1px solid var(--mk-ui-border);
   background-color: var(--mk-ui-background-menu);
   user-select: none;
@@ -95,6 +95,7 @@ body {
   align-items: center;
   height: 50px;
   white-space: nowrap;
+  gap: 8px;
 }
 .mk-editor-context-group-select {
   background: rgba(var(--mono-rgb-100), 0.025);
@@ -119,6 +120,12 @@ body {
 .mk-editor-context-group {
   display: flex;
   gap: 8px;
+  align-items: center;
+  padding: 0 8px;
+  border: thin solid var(--mk-ui-divider);
+  border-radius: 4px;
+  height: 32px;
+  background: var(--mk-ui-background);
 }
 .mk-editor-context-properties {
   display: flex;
@@ -685,10 +692,10 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
   background: var(--tag-background);
   color: var(--tag-color);
   align-items: center;
-  padding: 2px 6px;
+  padding: 2px 8px;
   font-size: 12px;
   gap: 4px;
-  border-radius: 4px;
+  border-radius: 12px;
 }
 .mk-props-contexts-space-add {
   display: flex;

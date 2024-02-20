@@ -18723,6 +18723,8 @@ var SpaceManager = class {
     };
   }
   resolvePath(path, source) {
+    if (!source)
+      return path;
     return this.primarySpaceAdapter.resolvePath(path, source);
   }
   uriByString(uri, source) {
@@ -35084,6 +35086,51 @@ var rowGroup = {
     )
   ]
 };
+var gridGroup = {
+  def: {
+    id: "gridGroup",
+    type: "listGroup"
+  },
+  node: {
+    type: "group",
+    props: {
+      _groupType: ``,
+      _groupField: "",
+      _groupValue: ``
+    },
+    types: {
+      _groupType: "text",
+      _groupField: "text",
+      _groupValue: "text"
+    },
+    styles: {
+      layout: `'column'`,
+      padding: `'6px'`,
+      gap: `'8px'`
+    },
+    id: "$root",
+    schemaId: "$root",
+    name: "Grid Group",
+    rank: 0
+  },
+  id: "$root",
+  children: [
+    kitWithProps(fieldNode, {
+      type: `$root.props['_groupType']`,
+      value: `$root.props['_groupValue']`
+    }),
+    frameRootWithProps(
+      contentNode,
+      {},
+      {
+        gap: `'8px'`,
+        layout: `'row'`,
+        width: `'100%'`,
+        flexWrap: `'wrap'`
+      }
+    )
+  ]
+};
 var masonryGroup = {
   def: {
     id: "masonryGroup",
@@ -35231,7 +35278,7 @@ var Manager = class {
     }
   }
   async send(job, workerId) {
-    var _a2, _b2, _c2, _d2, _e2;
+    var _a2, _b2, _c2, _d2;
     if (job.type == "search") {
       this.message(workerId, {
         job,
@@ -35264,7 +35311,7 @@ var Manager = class {
       const label = pathMetadata == null ? void 0 : pathMetadata.label;
       const parent = await this.cache.spaceManager.parentPathForPath(job.path);
       const type = spaceState ? "space" : "file";
-      const subtype = spaceState ? spaceState.type : (_c2 = pathMetadata == null ? void 0 : pathMetadata.file) == null ? void 0 : _c2.extension;
+      const subtype = spaceState ? spaceState.type : pathMetadata.subtype;
       const payload = {
         path: job.path,
         settings: this.cache.settings,
@@ -35284,7 +35331,7 @@ var Manager = class {
       return;
     }
     if (job.type == "context") {
-      const space = (_d2 = this.cache.spacesIndex.get(job.path)) == null ? void 0 : _d2.space;
+      const space = (_c2 = this.cache.spacesIndex.get(job.path)) == null ? void 0 : _c2.space;
       if (!space || !space.path) {
         this.message(workerId, {
           job,
@@ -35313,7 +35360,7 @@ var Manager = class {
       return;
     }
     if (job.type == "frames") {
-      const space = (_e2 = this.cache.spacesIndex.get(job.path)) == null ? void 0 : _e2.space;
+      const space = (_d2 = this.cache.spacesIndex.get(job.path)) == null ? void 0 : _d2.space;
       if (!space) {
         this.message(workerId, {
           job,
@@ -35375,6 +35422,7 @@ var Superstate = class {
       calendarView,
       dateGroup,
       fieldNode,
+      gridGroup,
       newItemNode,
       ratingNode,
       fieldsView,
@@ -40040,7 +40088,11 @@ var ContextEditorProvider = (props2) => {
         }
       });
     if (table == "") {
-      syncAllProperties(newTable);
+      if (dbSchema.id == defaultContextSchemaID) {
+        syncAllProperties(newTable);
+      } else {
+        saveDB(newTable);
+      }
     } else if (contextTable[table]) {
       saveContextDB(newTable, table);
     }
@@ -46253,12 +46305,17 @@ var LinkCell = (props2) => {
   const initialValue = (props2.multi ? (_a2 = parseMultiString(props2.initialValue)) != null ? _a2 : [] : [props2.initialValue]).filter((f4) => f4);
   const stringValueToLink = (strings) => strings.map((f4) => {
     var _a3;
-    const pathState = props2.superstate.pathsIndex.get(f4);
+    const resolvedLink = props2.superstate.spaceManager.resolvePath(
+      f4,
+      props2.source
+    );
+    const pathState = props2.superstate.pathsIndex.get(resolvedLink);
     if (pathState) {
       return {
         label: pathState.name,
         sticker: (_a3 = pathState.label) == null ? void 0 : _a3.sticker,
-        value: f4
+        value: resolvedLink,
+        state: pathState
       };
     }
     return {
@@ -46269,20 +46326,13 @@ var LinkCell = (props2) => {
   p2(() => {
     var _a3;
     setValue(
-      resolveLinks(
-        stringValueToLink(
-          props2.multi ? (_a3 = parseMultiString(props2.initialValue)) != null ? _a3 : [] : [props2.initialValue]
-        )
+      stringValueToLink(
+        props2.multi ? (_a3 = parseMultiString(props2.initialValue)) != null ? _a3 : [] : [props2.initialValue]
       )
     );
   }, [props2.initialValue]);
-  const resolveLinks = (links) => links.map((f4) => ({
-    value: f4.value,
-    label: pathToString(f4.value)
-  }));
-  const ref2 = _2(null);
   const [value, setValue] = h2(
-    resolveLinks(stringValueToLink(initialValue))
+    stringValueToLink(initialValue)
   );
   const removeValue = (v4) => {
     const newValues = value.filter((f4) => f4.value != v4.value);
@@ -46291,13 +46341,13 @@ var LinkCell = (props2) => {
   };
   const saveOptions = (_16, _value) => {
     if (!props2.multi) {
-      setValue(resolveLinks(stringValueToLink(_value)));
+      setValue(stringValueToLink(_value));
       props2.saveValue(serializeMultiString(_value));
     } else {
       const newValue = _value[0];
       if (newValue) {
         const newValues = uniq([...value.map((f4) => f4.value), newValue]);
-        setValue(resolveLinks(stringValueToLink(newValues)));
+        setValue(stringValueToLink(newValues));
         props2.saveValue(serializeMultiString(newValues));
       }
     }
@@ -46334,10 +46384,10 @@ var LinkCell = (props2) => {
     superstate: props2.superstate,
     baseClass: "mk-cell-link",
     menuProps,
-    labelElement: (_props) => /* @__PURE__ */ Cn.createElement("div", null, /* @__PURE__ */ Cn.createElement(PathCrumb, {
+    labelElement: (_props) => /* @__PURE__ */ Cn.createElement("div", null, _props.value.state ? /* @__PURE__ */ Cn.createElement(PathCrumb, {
       superstate: props2.superstate,
       path: _props.value.value
-    }), props2.editMode && props2.multi ? /* @__PURE__ */ Cn.createElement("div", {
+    }) : _props.value.label, props2.editMode && props2.multi ? /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-icon-xsmall",
       onClick: () => removeValue(_props.value),
       dangerouslySetInnerHTML: {
@@ -46584,9 +46634,8 @@ var ContextListEditSelector = (props2) => {
     className: "mk-editor-context-selector"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-editor-context-groups"
-  }, loaded && /* @__PURE__ */ Cn.createElement("div", {
-    className: "mk-editor-context-group",
-    style: isPending ? { transform: "translateY(-100%)" } : { transform: "translateY(0)" }
+  }, /* @__PURE__ */ Cn.createElement("div", {
+    className: "mk-editor-context-group"
   }, /* @__PURE__ */ Cn.createElement(ToggleSetter, {
     superstate: props2.superstate,
     name: "Rows",
@@ -46632,7 +46681,32 @@ var ContextListEditSelector = (props2) => {
         listGroup: "spaces://$kit/#*rowGroup"
       });
     }
-  })), /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("div", {
+  }), /* @__PURE__ */ Cn.createElement(ToggleSetter, {
+    superstate: props2.superstate,
+    name: "Grid",
+    icon: "lucide//layout-grid",
+    value: predicate.listGroup,
+    defaultValue: "spaces://$kit/#*gridGroup",
+    onValue: "spaces://$kit/#*gridGroup",
+    setValue: (value) => {
+      savePredicate({
+        ...predicate,
+        view: "list",
+        listView: "spaces://$kit/#*listView",
+        listGroup: "spaces://$kit/#*gridGroup"
+      });
+    }
+  }), /* @__PURE__ */ Cn.createElement("button", {
+    onClick: (e4) => {
+      editItem("listGroup");
+    },
+    "aria-label": "Customize",
+    className: "mk-icon-xsmall mk-button-new",
+    dangerouslySetInnerHTML: {
+      __html: props2.superstate.ui.getSticker("lucide//brush")
+    },
+    style: { height: "20px", padding: "8px" }
+  })), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-editor-context-group"
   }, /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-editor-context-group-select",
@@ -46647,11 +46721,17 @@ var ContextListEditSelector = (props2) => {
       selectFrameMenu(e4, "listItem");
       e4.stopPropagation();
     }
-  })), /* @__PURE__ */ Cn.createElement("div", {
+  })), /* @__PURE__ */ Cn.createElement("button", {
     onClick: (e4) => {
       editItem("listItem");
+    },
+    "aria-label": "Customize",
+    className: "mk-icon-xsmall mk-button-new",
+    style: { height: "20px", padding: "8px" },
+    dangerouslySetInnerHTML: {
+      __html: props2.superstate.ui.getSticker("lucide//brush")
     }
-  }, "Edit")), /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("div", {
+  })), /* @__PURE__ */ Cn.createElement("span", null), /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-editor-frame-node-button-primary",
     onClick: (e4) => {
       props2.setEditMode(0 /* Read */);
@@ -46840,12 +46920,11 @@ var PropertiesView = (props2) => {
     var _a2;
     if (saveProperty) {
       const property = (_a2 = tableData == null ? void 0 : tableData.cols) == null ? void 0 : _a2.find((g4) => g4.name == f4.name);
-      console.log(value, f4);
       if (property)
         saveProperty(f4, property);
     }
     saveProperties(props2.superstate, pathState.path, {
-      [f4.name]: value
+      [f4.name]: parseMDBValue(value, f4.type)
     });
   };
   const deletePropertyValue = (property) => {
@@ -47041,7 +47120,8 @@ var PropertyView = (props2) => {
       ...props2.property,
       value: fieldValue
     }),
-    contextTable: {}
+    contextTable: {},
+    source: props2.path
   }))), !props2.compactMode && isObjectType && /* @__PURE__ */ Cn.createElement("div", {
     className: "mk-path-context-value"
   }, /* @__PURE__ */ Cn.createElement(DataTypeView, {
@@ -47057,7 +47137,8 @@ var PropertyView = (props2) => {
       ...props2.property,
       value: fieldValue
     }),
-    contextTable: {}
+    contextTable: {},
+    source: props2.path
   })));
 };
 
@@ -47212,7 +47293,8 @@ var SuperCell = (props2) => {
     updateFieldValue: (_16, f4) => props2.saveValue(f4),
     updateValue: props2.saveValue,
     column: { ...superProperty, table: "" },
-    editMode: props2.editMode
+    editMode: props2.editMode,
+    source: props2.source
   }));
 };
 
@@ -47519,7 +47601,7 @@ var TableView = (props2) => {
                 setEditMode: setCurrentEdit,
                 editMode,
                 propertyValue: f4.value,
-                path: data2[index][PathPropertyName]
+                source: data2[index][PathPropertyName]
               };
               const fieldType = fieldTypeForType(f4.type, f4.name);
               if (!fieldType) {
@@ -48105,7 +48187,8 @@ var DataTypeView = (props2) => {
   } else if (fieldType.type == "context") {
     return /* @__PURE__ */ Cn.createElement(ContextCell, {
       ...viewProps,
-      multi: fieldType.multiType == column.type
+      multi: fieldType.multiType == column.type,
+      source: props2.source
     });
   } else if (fieldType.type == "fileprop") {
     return /* @__PURE__ */ Cn.createElement(LookUpCell, {
@@ -48118,7 +48201,8 @@ var DataTypeView = (props2) => {
   } else if (fieldType.type == "link") {
     return /* @__PURE__ */ Cn.createElement(LinkCell, {
       ...viewProps,
-      multi: fieldType.multiType == column.type
+      multi: fieldType.multiType == column.type,
+      source: props2.source
     });
   } else if (fieldType.type == "tags") {
     return /* @__PURE__ */ Cn.createElement(TagCell, {
@@ -48150,7 +48234,8 @@ var DataTypeView = (props2) => {
       ...viewProps,
       row,
       columns: props2.columns,
-      compactMode: props2.compactMode
+      compactMode: props2.compactMode,
+      source: props2.source
     });
   } else if (fieldType.type == "input") {
     return /* @__PURE__ */ Cn.createElement(PropertySelectCell, {
@@ -48212,7 +48297,7 @@ var PathContextList = (props2) => {
     });
   };
   return pathContext && pathContext.cols.length > 0 && /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, pathContext.cols.map((f4, i5) => {
-    var _a2, _b2, _c2, _d2;
+    var _a2, _b2, _c2, _d2, _e2, _f;
     return /* @__PURE__ */ Cn.createElement(Cn.Fragment, null, /* @__PURE__ */ Cn.createElement("div", {
       key: i5,
       className: "mk-path-context-row"
@@ -48252,13 +48337,14 @@ var PathContextList = (props2) => {
           (_a3 = pathContext.data) == null ? void 0 : _a3[PathPropertyName]
         );
       },
-      contextTable: {}
+      contextTable: {},
+      source: (_c2 = pathContext.data) == null ? void 0 : _c2[PathPropertyName]
     }))), f4.type.startsWith("object") && /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-path-context-row"
     }, /* @__PURE__ */ Cn.createElement(DataTypeView, {
       superstate: props2.superstate,
-      initialValue: (_c2 = pathContext.data) == null ? void 0 : _c2[f4.name],
-      row: (_d2 = pathContext.data) != null ? _d2 : {},
+      initialValue: (_d2 = pathContext.data) == null ? void 0 : _d2[f4.name],
+      row: (_e2 = pathContext.data) != null ? _e2 : {},
       compactMode: true,
       column: { ...f4, table: "" },
       editMode: spaceInfo.readOnly ? 2 /* EditModeView */ : 5 /* EditModeAlways */,
@@ -48283,7 +48369,8 @@ var PathContextList = (props2) => {
           (_a3 = pathContext.data) == null ? void 0 : _a3[PathPropertyName]
         );
       },
-      contextTable: {}
+      contextTable: {},
+      source: (_f = pathContext.data) == null ? void 0 : _f[PathPropertyName]
     })));
   }));
 };
@@ -49986,7 +50073,6 @@ var StepSetter = (props2) => {
     min: props2.min,
     max: props2.max,
     value: numericValue,
-    onBlur: (e4) => console.log(e4.relatedTarget),
     onKeyDown: (e4) => {
       if (e4.key == "Backspace") {
         if (e4.currentTarget.value.length == 1)
@@ -50568,6 +50654,7 @@ var PropertiesSubmenu = (props2) => {
           savePropValue(f4.name, wrapQuotes(value));
         }
       },
+      source: pathState.path,
       columns: frameProperties
     }) : /* @__PURE__ */ Cn.createElement("div", {
       className: "mk-active"
@@ -57225,43 +57312,13 @@ var FilterBar = (props2) => {
       case "text":
       case "number":
         {
-          const saveFilterValue = (value) => {
-            const newFilter = {
-              ...filter,
-              value
-            };
-            savePredicate({
-              ...predicate,
-              filters: [
-                ...predicate.filters.filter((s6) => s6.field != newFilter.field),
-                newFilter
-              ]
-            });
-          };
-          const menuOptions = [];
-          menuOptions.push(
-            menuInput(filter.value, (value) => {
-              const newFilter = {
-                ...filter,
-                value
-              };
-              savePredicate({
-                ...predicate,
-                filters: [
-                  ...predicate.filters.filter(
-                    (s6) => s6.field != newFilter.field
-                  ),
-                  newFilter
-                ]
-              });
-            })
-          );
-          const offset2 = e4.target.getBoundingClientRect();
-          props2.superstate.ui.openMenu(
-            offset2,
-            defaultMenu(props2.superstate.ui, menuOptions),
-            "bottom"
-          );
+          savePredicate({
+            ...predicate,
+            filters: [
+              ...predicate.filters.filter((s6) => s6.field != filter.field),
+              filter
+            ]
+          });
         }
         break;
       case "date": {
@@ -67353,12 +67410,14 @@ var ObsidianFileSystem = class {
       this.cache.set(afile.path, {
         file: afile,
         metadata: {},
-        label: { sticker: null, thumbnail: null, color: null, name: (_a2 = file.basename) != null ? _a2 : file.name },
+        label: { sticker: "", thumbnail: "", color: "", name: (_a2 = file.basename) != null ? _a2 : file.name },
         tags: [],
         parent: afile.parent,
         type: afile.isFolder ? "space" : "file",
         subtype: afile.isFolder ? "folder" : afile.extension
       });
+      await this.middleware.createFileCache(afile.path);
+      console.log(this.cache.get(afile.path));
       this.middleware.onCreate(afile);
     };
     this.onModify = async (file) => {
@@ -74727,6 +74786,30 @@ var ObsidianUI = class {
 
 // src/adapters/obsidian/utils/migration.ts
 var import_obsidian26 = require("obsidian");
+var migrate09 = async (plugin) => {
+  const allFrames = [...plugin.superstate.framesIndex.values()];
+  for (const f4 of allFrames) {
+    const needsMigrate = f4.frames[mainFrameID].rows.some((r3) => {
+      var _a2, _b2;
+      return (_b2 = (_a2 = frameToNode(r3).props) == null ? void 0 : _a2["value"]) == null ? void 0 : _b2.contains("main.props");
+    });
+    if (needsMigrate) {
+      const updatedFrames = { ...f4.frames[mainFrameID], cols: f4.frames[mainFrameID].cols.filter((f5) => f5.name != "space" && f5.name != "note"), rows: f4.frames[mainFrameID].rows.map(
+        (r3) => {
+          var _a2, _b2;
+          const node = frameToNode(r3);
+          if (((_a2 = node.props) == null ? void 0 : _a2.value) == "main.props.note" || ((_b2 = node.props) == null ? void 0 : _b2.value) == "main.props.space") {
+            const newNode2 = { ...node, props: { ...node.props, value: node.props.value.replace("main.props", "$contexts.$space") } };
+            return nodeToFrame(newNode2);
+          }
+          return r3;
+        }
+      ) };
+      await plugin.superstate.spaceManager.saveFrame(f4.path, updatedFrames);
+    }
+  }
+  plugin.superstate.ui.notify("Migration to 0.9 complete");
+};
 var migrate08 = async (plugin) => {
   var _a2, _b2, _c2, _d2;
   const db = await getDB(plugin.mdbFileAdapter, await plugin.mdbFileAdapter.sqlJS(), plugin.obsidianAdapter.spacesDBPath);
@@ -75634,9 +75717,14 @@ var MakeMDPlugin = class extends import_obsidian28.Plugin {
         }
       });
       this.addCommand({
-        id: "mk-spaces-migrate",
-        name: i18n_default.commandPalette.migrateData,
+        id: "mk-spaces-migrate-07",
+        name: "Migrate From 0.7",
         callback: () => migrate08(this)
+      });
+      this.addCommand({
+        id: "mk-spaces-migrate-08",
+        name: "Migrate From 0.8",
+        callback: () => migrate09(this)
       });
       this.addCommand({
         id: "mk-spaces",
