@@ -881,6 +881,7 @@ body:not(.is-mobile) .mk-frame-props-editor {
   --icon-container-size: 16px;
   --icon-size: 14px;
   align-items: flex-start;
+  height: 100%;
 }
 .mk-path-view {
   display: flex;
@@ -2988,7 +2989,8 @@ body.is-mobile .sidebar-toggle-button {
 .mk-tree-section .mk-tree-item:hover {
   opacity: 1;
 }
-.mk-tree-new {
+.mk-tree-new:hover {
+  opacity: 1;
 }
 .mk-tree-section .mk-collapse {
   --icon-size: 12px;
@@ -2997,6 +2999,7 @@ body.is-mobile .sidebar-toggle-button {
   font-size: 14px;
   display: flex;
   gap: 4px;
+  flex-grow: 0 !important;
 }
 .mk-tree-new {
   opacity: .5;
@@ -3737,10 +3740,16 @@ body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
   height: 100%;
   position: relative;
   z-index: 0;
-  padding: var(--file-margins);
+  padding-top: var(--file-margins);
   padding-bottom: 100px;
   width: 100%;
   overflow-x: hidden;
+}
+body.mk-readable-line {
+  --page-width: var(--file-line-width);
+}
+body:not(.mk-readable-line) {
+  --page-width: calc(100% - var(--file-margins) * 2);
 }
 .mk-context-selector {
   font-size: 13px;
@@ -3774,7 +3783,7 @@ body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
 .mk-context-header {
   display: flex;
   flex-direction: column;
-  max-width: var(--file-line-width);
+  max-width: var(--page-width);
   width: 100%;
 }
 .markdown-source-view.mod-cm6.is-readable-line-width .mk-space-body {
@@ -3792,7 +3801,7 @@ body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
   margin-right: auto;
   margin-bottom: 8px;
   width: 100%;
-  max-width: var(--file-line-width);
+  max-width: var(--page-width);
   z-index: 0;
   gap: 8px;
   display: flex;
@@ -3827,7 +3836,7 @@ body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .mk-sp
   padding-bottom: 100px;
 }
 .mk-space-body > .mk-f {
-  max-width: var(--file-line-width);
+  max-width: var(--page-width);
   margin: 0 auto;
 }
 .mk-frame-edit[data-path=main] {
@@ -3847,7 +3856,7 @@ body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .mk-sp
 .mk-frame-edit[data-path=main] > div,
 .mk-frame-edit[data-path=main] > input,
 .mk-frame-edit[data-path=main] + .mk-node-new {
-  --max-width: var(--file-line-width);
+  --max-width: var(--page-width);
   max-width: calc(min(100%, var(--max-width))) !important;
   margin-left: calc((max(100%, var(--max-width)) - var(--max-width)) /2) !important;
 }
@@ -3937,7 +3946,9 @@ body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .mk-sp
 .mk-frame-view .mk-flowspace-editor:not(.mk-flow-node, .mk-path-context-flow) .mk-floweditor {
   padding: 0;
 }
-.mk-flow-node .mk-floweditor .markdown-source-view.mod-cm6.is-readable-line-width .cm-sizer {
+.mk-flow-node .mk-floweditor .markdown-source-view.mod-cm6 .cm-sizer,
+.mk-flow-node .mk-floweditor .markdown-source-view.mod-cm6 .cm-content,
+.mk-flow-node .mk-floweditor .markdown-source-view.mod-cm6 .cm-line {
   max-width: 100%;
 }
 .mk-flow-node .cm-fold-indicator .collapse-indicator {
