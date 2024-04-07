@@ -29,6 +29,7 @@ body {
   --mk-ui-text-secondary: var(--text-muted);
   --mk-ui-text-tertiary: var(--text-faint);
   --mk-ui-text-accent: var(--text-on-accent);
+  --mk-shadow-card: 0px 1px 4px 0px rgba(0, 0, 0, 0.4);
   --mk-shadow-menu: 0px 0px 32px 0px rgba(0, 0, 0, 0.2);
   --mk-color-blue: #3867d6;
   --mk-color-green: #20bf6b;
