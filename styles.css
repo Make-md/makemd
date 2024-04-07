@@ -1716,8 +1716,12 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   animation: .15s ease-out 0s 1 slideInFromBottom;
   visibility: visible;
 }
+.mk-menu-mobile > .mk-menu-wrapper {
+  visibility: hidden;
+}
 .mk-menu-mobile > .mk-menu-wrapper.mk-ready {
-  animation: .15s ease-out 0s 1 slideInFromLeft;
+  visibility: visible;
+  animation: .15s ease-out 0s 1 slideInFromBottom;
 }
 .mk-menu-mobile > .mk-menu-wrapper {
   box-shadow: var(--mk-shadow-menu);
@@ -1729,6 +1733,7 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   z-index: var(--layer-menu);
   left: 0;
   bottom: 0;
+  padding-bottom: var(--safe-area-inset-bottom);
 }
 .mk-menu-mobile .mk-menu-container {
   width: 100%;
@@ -3740,16 +3745,16 @@ body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
   height: 100%;
   position: relative;
   z-index: 0;
-  padding-top: var(--file-margins);
   padding-bottom: 100px;
   width: 100%;
   overflow-x: hidden;
+  padding: var(--file-margins);
 }
 body.mk-readable-line {
   --page-width: var(--file-line-width);
 }
 body:not(.mk-readable-line) {
-  --page-width: calc(100% - var(--file-margins) * 2);
+  --page-width: calc(100%);
 }
 .mk-context-selector {
   font-size: 13px;
