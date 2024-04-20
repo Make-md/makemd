@@ -40,6 +40,9 @@ body {
   --mk-color-yellow: #f7b731;
   --mk-color-charcoal: #4b6584;
   --mk-color-teal: #2d98da;
+  --mk-color-pink: #FC489F;
+  --mk-color-brown: #68381E;
+  --mk-color-gray: #8392A4;
   --mk-color-base-0: var(--color-base-00);
   --mk-color-base-10: var(--color-base-10);
   --mk-color-base-20: var(--color-base-20);
@@ -270,12 +273,10 @@ body {
   overflow-x: auto;
   font-size: 15px;
 }
-body:not(.is-mobile) .mk-view-selector,
 body:not(.is-mobile) .mk-view-options {
   opacity: 0;
   transition: all 0.2s ease;
 }
-.mk-context-container:hover .mk-view-selector,
 .mk-context-container:hover .mk-view-options {
   opacity: 1;
 }
@@ -299,6 +300,7 @@ body:not(.is-mobile) .mk-view-options {
 }
 .mk-table-selector button,
 .mk-view-config button {
+  padding: 4px 8px;
   font-size: max(13px, 1em);
   gap: 8px;
   font-weight: var(--font-medium);
@@ -317,7 +319,6 @@ body:not(.is-mobile) .mk-view-config button:hover {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
   margin-bottom: 8px;
 }
 .mk-view-config input {
@@ -890,6 +891,11 @@ body:not(.is-mobile) .mk-frame-props-editor {
   overflow-y: scroll;
   animation: .15s ease-out 0s 1 fadeInFromNone;
   width: 100%;
+  height: 100%;
+}
+.mk-path-view iframe {
+  width: 100%;
+  height: 100%;
 }
 .mk-editor-frame-node-container {
   display: flex;
@@ -1644,7 +1650,7 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
   width: 16px;
   height: 16px;
 }
-.cm-active.mk-placeholder:before {
+.cm-focused .cm-active.mk-placeholder:before {
   content: attr(data-ph);
   color: var(--mk-ui-text-tertiary);
   position: absolute;
@@ -2902,7 +2908,8 @@ body.is-mobile .sidebar-toggle-button {
   width: 18px;
   height: 18px;
 }
-.workspace-tab-header-inner-icon svg {
+.workspace-tab-header-inner-icon svg,
+.workspace-tab-header-inner-icon img {
   width: var(--icon-size);
   height: var(--icon-size);
 }
@@ -3084,7 +3091,8 @@ body:not(.is-mobile) .mk-folder-buttons button:hover {
   font-family: emoji;
   align-items: center;
 }
-.mk-path-icon svg {
+.mk-path-icon svg,
+.mk-path-icon img {
   width: var(--icon-size);
   height: var(--icon-size);
   color: var(--icon-color) !important;
@@ -3638,7 +3646,11 @@ body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
   align-items: center;
   margin-bottom: 4px;
 }
+.mk-node-link:hover .mk-collapse {
+  opacity: 1;
+}
 .mk-node-link .mk-collapse {
+  opacity: 0;
   width: 24px !important;
   height: 24px !important;
 }
@@ -4352,13 +4364,6 @@ body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .mk-sp
 }
 .mk-cell-file-item .mk-cell-file-name:hover {
   background: var(var(--mk-ui-active-hover));
-}
-.mk-cell-file .mk-path-icon {
-  margin-right: 4px;
-  align-items: center;
-  display: flex;
-  width: 24px;
-  border-radius: 4px;
 }
 .mk-cell-file-new .mk-cell-file-name {
   padding: 4px !important;
