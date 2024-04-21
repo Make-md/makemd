@@ -2659,6 +2659,8 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   width: 100%;
   user-select: none;
   height: 200px;
+  background-size: cover;
+  background-position-y: center;
 }
 .mk-space-banner img {
   height: 200px;
@@ -3537,8 +3539,7 @@ body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
 }
 .mk-layout-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-gap: 1px;
+  grid-template-columns: repeat(var(--mk-grid-columns), minmax(var(--mk-grid-width), 1fr));
 }
 .mk-layout-masonry {
   column-count: 3;
