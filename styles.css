@@ -2471,6 +2471,7 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 }
 body .markdown-reading-view .mk-path-context-label .mk-inline-title.inline-title,
 body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-title.inline-title {
+  max-width: 100%;
   padding-bottom: 0;
   margin-left: 0 !important;
   margin-top: 8px;
@@ -2733,12 +2734,12 @@ body:not(.is-mobile) .mk-inline-button:hover {
   right: 0;
   width: 100%;
   user-select: none;
-  height: 200px;
+  height: var(--mk-banner-height);
   background-size: cover;
   background-position-y: center;
 }
 .mk-space-banner img {
-  height: 200px;
+  height: var(--mk-banner-height);
   width: 100%;
   object-fit: cover;
   opacity: 1 !important;
