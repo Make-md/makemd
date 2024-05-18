@@ -715,10 +715,6 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
 .mk-floweditor-container > .mk-floweditor {
   border: thin solid transparent;
 }
-.mk-floweditor-container > .mk-floweditor:hover {
-  background: rgba(0, 0, 0, 0.04) !important;
-  border-left: thin solid var(--mk-ui-divider);
-}
 .mk-flow-minimal .mk-floweditor-container > .mk-floweditor:hover {
   box-shadow:
     0px 1px 2px rgba(0, 0, 0, 0.06),
