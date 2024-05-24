@@ -2314,6 +2314,11 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 .mk-blink-modal .mk-options-menu__suggestions li {
   margin: 6px;
 }
+.mk-space-modal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 .mk-blink-modal .mk-options-menu__search input {
   padding: var(--size-4-6);
   background-color: var(--mk-ui-background);
