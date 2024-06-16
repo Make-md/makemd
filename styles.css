@@ -4432,8 +4432,8 @@ body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .mk-sp
   gap: 8px;
 }
 .mk-cell-image img {
-  width: 60px;
-  height: 60px;
+  min-width: 60px;
+  min-height: 60px;
 }
 .mk-path-context-value .mk-cell-image img {
   height: 60px;
