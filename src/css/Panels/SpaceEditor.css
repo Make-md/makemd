@@ -1,0 +1,127 @@
+.mk-space-editor-modal {
+  height: var(--dialog-max-height)
+}
+
+.mk-space-editor-container {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+}
+
+.mk-space-editor {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+    gap: 12px;
+    flex: 1;
+    overflow: hidden;
+  }
+  .mk-space-editor-appearance .mk-path-icon, .mk-space-editor-appearance .mk-path-icon button, .mk-space-editor-appearance .mk-path-icon svg {
+    width: 48px;
+    height: 48px;
+    font-size: 36px;
+  }
+  .mk-space-editor-appearance .mk-path-icon svg {
+padding: 6px;
+  }
+  .mk-space-query {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .mk-space-editor-context-list {
+    display: flex;
+    margin-bottom: 8px;
+  }
+  .mk-space-editor-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: thin solid var(--mk-ui-divider);
+  }
+  
+  .mk-space-editor-header .mk-button-new
+ {
+  --icon-size: 16px;
+  padding: 8px
+
+ }
+  
+  .mk-space-editor-header span{
+flex:1
+  }
+  .mk-space-editor-contents {
+    display: flex;
+    flex-direction:column;
+  gap: 4px;
+  overflow: scroll;
+  flex: 1;
+  }
+  .mk-space-editor-contents .mk-path {
+    overflow: visible;
+  }
+  .mk-space-editor-controls {
+    display: flex;
+justify-content: space-between
+  }
+  .mk-space-editor-link {
+    display: flex;
+    font-size: 13px;
+    color: var(--mk-ui-text-secondary);
+    gap: 6px;
+    align-items: center;
+    border-radius: 6px;
+  }
+  .mk-space-editor-link span {
+    flex: 1;
+  }
+  .mk-space-editor-smart {
+    padding: 8px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .mk-space-editor-smart > span {
+    font-size: 14px;
+    color: var(--mk-ui-text-tertiary);
+    font-weight: var(--font-semibold);
+  }
+
+  .mk-space-editor-smart .mk-query {
+    width: 100%;gap: 8px;
+  }
+
+  .mk-space-editor-smart .mk-query-filters {
+    background: var(--mk-ui-background-contrast);
+    padding: 4px 8px;
+  }
+  
+  .mk-space-editor-smart .mk-query-group-type {
+    width: 24px;
+    padding: 4px;
+  }
+  
+  .mk-space-editor-appearance {
+    display: flex;
+    width: 100%;
+gap: 16px;
+align-items: center;
+  }
+
+  .mk-space-editor-input input {
+    font-weight: var(--inline-title-weight);
+    font-size: var(--inline-title-size);
+    line-height: var(--inline-title-line-height);
+    font-style: var(--inline-title-style);
+    font-variant: var(--inline-title-variant);
+    font-family: var(--inline-title-font);
+    color: var(--inline-title-color);
+    background: none;
+    outline: none;
+    border: none;
+  }

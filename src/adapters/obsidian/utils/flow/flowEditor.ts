@@ -1,21 +1,13 @@
-import { EditorSelection } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { FlowEditor, FlowEditorParent } from "adapters/obsidian/ui/editors/FlowEditor";
-import { arrowKeyAnnotation } from "adapters/obsidian/ui/editors/markdownView/flowEditor/atomic";
+
 import {
   FlowEditorInfo,
   flowEditorInfo
 } from "adapters/obsidian/ui/editors/markdownView/flowEditor/flowEditor";
-import {
-  flowIDStateField
-} from "adapters/obsidian/ui/editors/markdownView/flowEditor/flowStateFields";
-import {
-  lineRangeToPosRange,
-  selectiveLinesFacet
-} from "adapters/obsidian/ui/editors/markdownView/flowEditor/selectiveEditor";
 import MakeMDPlugin from "main";
 import { i18n } from "makemd-core";
-import { MarkdownView, TFolder, WorkspaceLeaf } from "obsidian";
+import { MarkdownView, WorkspaceLeaf } from "obsidian";
 import {
   getAbstractFileAtPath
 } from "../file";
@@ -52,6 +44,7 @@ export const getLineRangeFromRef = (
     ];
   }
   const heading = headings?.find((f) => f.heading.replace("#", " ") == ref);
+
   if (heading) {
     const index = headings.findIndex((f) => f.heading == heading.heading);
     const level = headings[index]?.level;
@@ -162,12 +155,14 @@ const loadFlowEditor = async (
   const dom = cm.dom.querySelector(
     "#mk-flow-" + flowEditorInfo.id
   ) as HTMLElement;
+  
   const path = plugin.superstate.spaceManager.uriByString(flowEditorInfo.link, source);
   const basePath = plugin.superstate.spaceManager.resolvePath(path.basePath, source);
-  
+
   if (dom) {
-    const file = getAbstractFileAtPath(plugin.app, basePath);
-    if (file instanceof TFolder) {
+
+    const spaceCache = plugin.superstate.spacesIndex.get(path.basePath);
+    if (spaceCache) {
       
       if (!dom.hasAttribute("ready")) {
         // dom.empty();
@@ -180,7 +175,7 @@ const loadFlowEditor = async (
       
 
     
-
+      const file = getAbstractFileAtPath(plugin.app, path.basePath) ?? getAbstractFileAtPath(plugin.app, basePath);
     if (file) {
       const selectiveRange = getLineRangeFromRef(file.path, path.refStr, plugin);
       if (!dom.hasAttribute("ready")) {
@@ -191,90 +186,19 @@ const loadFlowEditor = async (
       }
     } else {
       
-      dom.empty();
+      dom.innerHTML = "";
       const createDiv = dom.createDiv("file-embed");
-      createDiv.toggleClass("mod-empty", true);
+      createDiv.classList.add("mod-empty");
       const createFile = async (e: MouseEvent) => {
         e.stopPropagation();
         e.stopImmediatePropagation();
         await plugin.files.newFile('/', basePath, 'md');
         loadFlowEditor(leaf, cm, flowEditorInfo, source, plugin);
       };
-      createDiv.setText(`"${basePath }" ` + i18n.labels.noFile);
+      createDiv.setText(`"${basePath}" ` + i18n.labels.noFile);
       createDiv.addEventListener("click", createFile);
     }
   }
-  }
-};
-
-export const focusFlowEditor = async (
-  plugin: MakeMDPlugin,
-  id: string, 
-  top: boolean,
-  parent: boolean
-) => {
-  if (parent) {
-    plugin.app.workspace.iterateLeaves((leaf) => {
-      const cm = leaf.view.editor?.cm as EditorView;
-      if (cm) {
-        const stateField = cm.state.field(flowEditorInfo, false);
-        if (stateField) {
-          const foundInfo = stateField.find((f) => f.id == id);
-          if (foundInfo) {
-            cm.focus();
-            if (top) {
-              cm.dispatch({
-                selection: EditorSelection.single(foundInfo.from - 4),
-                annotations: arrowKeyAnnotation.of(1),
-              });
-            } else {
-              if (foundInfo.to + 2 == cm.state.doc.length) {
-                cm.dispatch({
-                  changes: [
-                    {
-                      from: foundInfo.to + 2,
-                      to: foundInfo.to + 2,
-                      insert: cm.state.lineBreak,
-                    },
-                  ],
-                  selection: EditorSelection.single(foundInfo.to + 3),
-                  annotations: arrowKeyAnnotation.of(2),
-                });
-              } else {
-                cm.dispatch({
-                  selection: EditorSelection.single(foundInfo.to + 3),
-                  annotations: arrowKeyAnnotation.of(2),
-                });
-              }
-            }
-          }
-        }
-      }
-    }, plugin.app.workspace["rootSplit"]!);
-  } else {
-    plugin.app.workspace.iterateLeaves((leaf) => {
-      const cm = leaf.view.editor?.cm as EditorView;
-      if (cm) {
-        const stateField = cm.state.field(flowIDStateField, false);
-        if (stateField && stateField == id) {
-          cm.focus();
-          const lineRange = cm.state.field(selectiveLinesFacet, false);
-          const posRange =
-            lineRange && lineRange[0] != undefined
-              ? lineRangeToPosRange(cm.state, lineRange)
-              : { from: 0, to: cm.state.doc.length };
-          if (top) {
-            cm.dispatch({
-              selection: EditorSelection.single(posRange.from),
-            });
-          } else {
-            cm.dispatch({
-              selection: EditorSelection.single(posRange.to),
-            });
-          }
-        }
-      }
-    }, plugin.app.workspace["rootSplit"]!);
   }
 };
 

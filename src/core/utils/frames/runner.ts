@@ -1,139 +1,55 @@
 
-import * as acorn from 'acorn';
 import { API } from 'core/superstate/api';
-import { wrapQuotes } from 'core/utils/strings';
-import { FrameNode, FrameRunInstance, FrameState, FrameStateKeys, FrameTreeNode } from 'types/mframe';
-import { parseMultiString } from "../../../utils/parsers";
+import { ensureArray } from 'core/utils/strings';
+import { FrameContexts, FrameExecProp, FrameExecutable, FrameExecutableContext, FrameNode, FrameNodeState, FrameRunInstance, FrameState } from 'types/mframe';
+import { buildExecutable } from './executable';
 import { linkTreeNodes } from './linker';
 
-type ResultStore = { state: FrameState, newState: FrameState };
-
-function extractDependencies(code: string): string[][] {
-    
-
-    const dependencies: string[][] = [];
-
-    function visit(node: any, parts: string[] = []): string[] | null {
-        if (node.type === 'Identifier') {
-            parts.push(node.name);
-            return parts;
-        } else if (node.type === 'MemberExpression') {
-            const objectParts = visit(node.object, parts);
-            if (objectParts && node.computed) {
-                if (node.property.type === 'Literal') {
-                    objectParts.push(String(node.property.value));
-                    return objectParts;
-                } else {
-                    // For computed properties like obj[var], we ignore it.
-                    return null;
-                }
-            } else if (objectParts) {
-                return visit(node.property, objectParts);
-            }
-        } else if (node.type === 'Literal') {
-            parts.push(String(node.value));
-            return parts;
-        }
-        return null;
-    }
-
-    function explore(node: any) {
-        if (node.type === 'MemberExpression') {
-            const parts = visit(node);
-            if (parts) {
-                dependencies.push(parts);
-            }
-            return;
-        }
-        for (const key in node) {
-            
-            if (typeof node[key] === 'object' && node[key] !== null) {
-                explore(node[key]);
-            }
-        }
-    }
-try {
-    const ast = acorn.parse(code.replace("return ", ""), { ecmaVersion: 2020 }) as any;
-    explore(ast);
-} catch (e) {
-    return []
-}
-    
-
-    return dependencies;
-}
+export type ResultStore = { state: FrameState, newState: FrameState, slides: FrameState, prevState: FrameState };
 
 
-function sortKeysByDependencies(
-    codeBlockStore: Record<string, string>,
-    identifier: string
-): { sortedKeys: string[], dependencies: Map<string, string[][]> } {
-    const graph: Map<string, Set<string>> = new Map();
-    const dependencies: Map<string, string[][]> = new Map();
-    const allDependencies: Map<string, string[][]> = new Map();
+export const executeTreeNode = async (
+    _treeNode: FrameExecutable,  
+    store: ResultStore,
+    executionContext: FrameExecutableContext
+    ) : Promise<FrameRunInstance> => {
 
-    // Build the graph and the dependencies map
-    for (const key in codeBlockStore) {
-        const code = codeBlockStore[key];
-        const extractedDependencies = extractDependencies(code)
-        const localDependencies = extractedDependencies.filter(dep => {
-            return dep.slice(0, -1).join('.') === identifier
-        });
-
-        dependencies.set(key, localDependencies);
-        allDependencies.set(key, extractedDependencies);
-
-        if (!graph.has(key)) {
-            graph.set(key, new Set());
-        }
-        for (const dep of localDependencies) {
-            const depStr = dep[dep.length - 1]; // Using the last part as the key
-            if (depStr === key) continue; // Skip self dependencies
-
-            // Add an edge from key to the dependency
-            graph.get(key)!.add(depStr);
-        }
-    }
-
-    // Perform a topological sort
-    const visited: Set<string> = new Set();
-    const result: string[] = [];
-    const temp: Set<string> = new Set();
-
-    const visit = (key: string) => {
-        if (temp.has(key)) throw new Error('Circular dependency detected');
-        if (!visited.has(key)) {
-            temp.add(key);
-            const edges = graph.get(key) || new Set();
-            for (const dep of edges) {
-                visit(dep);
-            }
-            visited.add(key);
-            temp.delete(key);
-            result.push(key);
-        }
-    };
-
-    for (const key in codeBlockStore) {
-        if (!visited.has(key)) {
-            visit(key);
-        }
-    }
-    return { sortedKeys: result, dependencies: allDependencies };
-}
-
-
-export const executeTreeNode = async (_treeNode: FrameTreeNode,  state: FrameState, api: API, saveState: (state: FrameState, instance: FrameRunInstance) => void, root: FrameTreeNode, runID: string, newState?: FrameState) : Promise<FrameRunInstance> => {
     const treeNode = _treeNode;
-
-    let execState = await executeNode(treeNode.node, {state, newState}, api);
-    if (treeNode.node.type == 'list') {
-        let uid = 0;
+   
+    if ((store.prevState[treeNode.id]) && treeNode.node.type != 'content')
+    {
+        let skipped = false;
+        if (treeNode.node.type == 'slides' || treeNode.node.type == 'slide' || treeNode.node.type == 'delta') {
+            skipped = false;
+        } else {
+            const childDepCheck = (treeNode.execPropsOptions.children ?? []).some(f => Object.keys(store.newState).includes(f));
+            const sameProps = Object.keys(store.newState[treeNode.id]?.props ?? {}).every(f => store.newState[treeNode.id]?.props[f] == store.prevState[treeNode.id]?.props[f]);
+                const sameStyles = Object.keys(store.newState[treeNode.id]?.styles ?? {}).every(f => store.newState[treeNode.id]?.styles[f] == store.prevState[treeNode.id]?.styles[f])
+            const sameDepValues = treeNode.execPropsOptions.deps.every(f => {
+                if (f[0] == "$api") return true;
+                if (store.newState[f[0]]?.[f[1] as keyof FrameNodeState]?.[f[2]] === undefined) return true;
+                return store.newState[f[0]]?.[f[1] as keyof FrameNodeState]?.[f[2]] === store.prevState[f[0]]?.[f[1] as keyof FrameNodeState]?.[f[2]]
+            });
+            if (sameProps && sameStyles && sameDepValues && !childDepCheck)
+            {
+                skipped = true
+                
+            }    
+        }
         
-        treeNode.children = parseMultiString(execState.state[treeNode.id].props.value).flatMap((f, i) => treeNode.children.map(n => {
-            const [tree, m] = linkTreeNodes({ ...n, node: { ...n.node, props: {...n.node.props, value: wrapQuotes(f)}}}, uid)
+        if (skipped)
+        return {id: executionContext.runID, root: executionContext.root, exec: treeNode, state: store.state, slides: store.slides, newState: store.newState, prevState: store.prevState, contexts: executionContext.contexts}
+        
+    }
+    let execState = await executeNode(treeNode, store, executionContext.contexts, executionContext.api);
+    if (treeNode.node.type == 'list') {
+        
+        
+        let uid = 0;
+        treeNode.children = ensureArray(execState.state[treeNode.id].props.value).flatMap((f, i) => treeNode.execPropsOptions.template.map((n) => {
+            const [tree, m] = linkTreeNodes({ ...n, node: { ...n.node, props: {...n.node.props, _index: `${i}`, value: `${treeNode.id}.props.value[${i}]`}}}, uid)
             uid = m;
-            return tree}))
+            return buildExecutable(tree)}))
     }
     
     if (
@@ -141,120 +57,156 @@ export const executeTreeNode = async (_treeNode: FrameTreeNode,  state: FrameSta
       ) {
         
         execState.state[treeNode.id].actions?.onRun(
+            null,
+            null,
           execState,
           (s: FrameState) => {
-            saveState(s, { state: execState.state, root, id: runID})
+            executionContext.saveState(s, { state: execState.state, slides: execState.slides, root: executionContext.root, exec: executionContext.exec, id: executionContext.runID, contexts: executionContext.contexts})
         }
             ,
-          api
+          executionContext.api
         );
       }
+      treeNode.children = [
+        ...treeNode.children.filter((b) => b.node.type == 'slides'),
+        ...treeNode.children.filter((b) => b.node.type != 'slides')
+    ];
+      
     for (let i = 0; i < treeNode.children.length; i++) {
-        const [newState, newNode] : [ResultStore, FrameTreeNode] = await executeTreeNode(treeNode.children[i], execState.state, api, saveState, root, runID, execState.newState).then(f => [{state: f.state, newState: f.newState}, f.root])
+        const [newState, newNode] : [ResultStore, FrameExecutable] = await executeTreeNode(treeNode.children[i], execState, executionContext).then(f => [{state: f.state, newState: f.newState, slides: f.slides, prevState: f.prevState}, f.exec])
         execState = newState;
         treeNode.children[i] = newNode;
-    }
-    return {id: runID, root: treeNode, state: execState.state, newState: execState.newState}
-}
-
-
-
-export const executeNode = async (node: FrameNode, results: ResultStore, api: API) => {
-    const propResults = await executePropsCodeBlocks(node, results, api)
-
-    const stylesResults = executeCodeBlocks(node, 'styles', propResults)
-    const actions = executeCodeBlocks(node,'actions',  stylesResults)
-    return actions;
-}
-
-
-const executePropsCodeBlocks = async (node: FrameNode, results: ResultStore, api: API): Promise<ResultStore> => {
-    const {type, props, id} = node
-    const codeBlockStore = props ?? {}
-    // Sort keys based on dependencies.
-    const {sortedKeys, dependencies} = sortKeysByDependencies(codeBlockStore, `${node.id}.props`);
-    const runKeys = results.newState ? sortedKeys.filter(f => { 
-    const deps = dependencies.get(f);
-
-    if (f in (results.newState?.[node.id]?.['props'] ?? {})) {
-        return true;
-    }
-    for (const dep of deps) {
-        if (dep[0] == 'api')
-            return true;
-        if (results.newState?.[dep[0]]?.[dep[1] as FrameStateKeys]?.[dep[2]]) {
+        if (newNode.node.type == 'slides') {
             
-            return true;
+            const prop = newState.state[newNode.id].props.value;
+            const state = newState.state[newNode.node.parentId]?.props[prop];
+            
+            let currentSlide;
+            if (executionContext.selectedSlide) {
+                currentSlide = newNode.children.find(f => f.id == executionContext.selectedSlide)
+            }
+            if (state !== null && !currentSlide) {
+                currentSlide = newNode.children.find(f => newState.state[f.id].props.value == state)
+            }
+
+            if (currentSlide) {
+                currentSlide.children.forEach(f => {
+                    if (!execState.newState[f.node.ref]) {
+                        execState.newState[f.node.ref] = {props: {}, styles: {}, actions: {}}
+                    }
+                    if (f.node.ref == treeNode.id) {
+                        execState.state[f.node.ref].props = {...execState.state[f.node.ref].props, ...execState.state[f.node.id].props}
+                        execState.state[f.node.ref].styles = {...execState.state[f.node.ref].styles, ...execState.state[f.node.id].styles}
+                        execState.state[f.node.ref].actions = {...execState.state[f.node.ref].actions, ...execState.state[f.node.id].actions}    
+                    } else {
+                    execState.newState[f.node.ref].props = {...execState.newState[f.node.ref].props, ...execState.state[f.node.id].props}
+                    execState.newState[f.node.ref].styles = {...execState.newState[f.node.ref].styles, ...execState.state[f.node.id].styles}
+                    execState.newState[f.node.ref].actions = {...execState.newState[f.node.ref].actions, ...execState.state[f.node.id].actions}
+                }
+                });
+                
+            }
         }
     }
-    return false
-}) : sortedKeys.filter(f => codeBlockStore[f]?.length > 0)
+    
+    return {id: executionContext.runID, root: executionContext.root, exec: treeNode, state: execState.state, slides: execState.slides, newState: execState.newState, prevState: execState.prevState, contexts: executionContext.contexts}
+}
+
+
+
+export const executeNode = async (executable: FrameExecutable, results: ResultStore, contexts: FrameContexts, api: API) => {
+    const propResults = await executePropsCodeBlocks(executable, results, contexts, api)
+    const stylesResults = executeCodeBlocks(executable.node, 'styles', executable.execStyles, propResults)
+    const actions = executeCodeBlocks(executable.node,'actions', executable.execActions, stylesResults)
+    return actions;
+}
+export const executeCode =  (code: any, environment: {[key: string]: any}) => {
+    // let result;
+    const isMultiLine = (typeof code === 'string' || code instanceof String) ? code.includes('\n') : false;
+            // Execute the code block.
+            const func = isMultiLine
+                ? new Function(`with(this) { ${code} }`)
+                : new Function(`with(this) { return ${code}; }`);
+                return func.call(environment);
+            // if (result instanceof Promise) {
+            //     result = await result;
+            // }
+// return result;
+}
+
+const executePropsCodeBlocks = async (executable: FrameExecutable, results: ResultStore, contexts: FrameContexts, api: API): Promise<ResultStore> => {
+    const { id} = executable.node
+    const codeBlockStore = executable.execProps ?? {}
+    // Sort keys based on dependencies.
+
+    
     // Prepare an environment for executing code blocks.
     const environment = results.state;
     environment[id] = {
         props: results.state[id]?.props ?? {},
         actions: results.state[id]?.actions ?? {},
         styles: results.state[id]?.styles ?? {},
-        contexts: results.state[id]?.contexts ?? {},
     }
-    environment.api = api
-    for (const key of runKeys) {
+    environment.$contexts = contexts,
+    environment.$api = api
+    for (const {name: key, isConst} of executable.execPropsOptions.props) {
         // Execute the code block.
         try {
             let result;
-            if (key in (results.newState?.[node.id]?.['props'] || {})) {
-                result = results.newState[node.id]['props'][key]
+            if (key in (results.newState?.[id]?.['props'] || {}) && isConst) {
+                result = results.newState[id]['props'][key]
             } else {
-        const isMultiLine = codeBlockStore[key].includes('\n');
-        
-            // Execute the code block.
-            const func = isMultiLine
-                ? new Function(`with(this) { ${codeBlockStore[key]} }`)
-                : new Function(`with(this) { return ${codeBlockStore[key]}; }`);
-            result = func.call(environment);
-            if (result instanceof Promise) {
-                result = await result;
+                result = codeBlockStore[key]?.call(environment);
             }
-        // if (key == 'value' && type == 'text') {
-        //     result = await markdownToHtml(result)
-        // }
-    }
         // Store the result.
+        if (result !== null) {
             environment[id]['props'][key] = result;
             results.state[id]['props'][key] = result;
             if (results.newState) {
-                results.newState[id] = results.newState[id] ?? {props: {}, styles: {}, actions: {}, contexts: {}}
+                //update newstate so dependencies are updated
+                results.newState[id] = results.newState[id] ?? {props: {}, styles: {}, actions: {}}
                 results.newState[id]['props'][key] = result;
             }
+        } else {
+            delete environment[id]['props'][key]
+            delete results.state[id]['props'][key]
+            if (results.newState?.[id]) {
+                delete results.newState[id]['props'][key];
+            }
+        }
+            
         } catch (error) {
-            console.log(error)
+            console.log(key, error)
         }
     }
 
     return results;
 }
 
-function executeCodeBlocks(node: FrameNode, type: 'actions' | 'styles', results: ResultStore): ResultStore {
+function executeCodeBlocks(node: FrameNode, type: 'actions' | 'styles', codeBlockStore: FrameExecProp, results: ResultStore): ResultStore {
     // Sort keys based on dependencies.
-    const codeBlockStore = node[type] ?? {}
     // results.state[node.id][type] = codeBlockStore
     // Prepare an environment for executing code blocks.
-
+const { id } = node
     for (const key of Object.keys(codeBlockStore)) {
+        let result;
         // Execute the code block.
         try {
-            const isMultiLine = (typeof codeBlockStore[key] === 'string' || codeBlockStore[key] instanceof String) ? codeBlockStore[key].includes('\n') : false;
-            // Execute the code block.
-            
-            const func = isMultiLine && !(type == 'actions')
-                ? new Function(`with(this) { ${codeBlockStore[key]} }`)
-                : new Function(`with(this) { return ${codeBlockStore[key]}; }`);
-                const result = func.call(results.state);
+            if (key in (results.newState?.[id]?.[type] || {})) {
+                result = results.newState[id][type][key]
+            } else {
+                result = codeBlockStore[key]?.call(results.state);
+            }
         // Store the result.
 
-        results.state[node.id][type][key] = result;
+        if (result !== null) {
+            results.state[node.id][type][key] = result;
+        } else {
+            delete results.state[node.id][type][key]
+        }
+        
         } catch (error) {
-            console.log(error)
+            console.log(error, key)
         }
     }
 

@@ -1,10 +1,11 @@
 import { UniqueIdentifier } from "@dnd-kit/core";
 import classNames from "classnames";
-import { triggerSpaceMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { Superstate } from "core/superstate/superstate";
-import { PathState } from "core/types/superstate";
+import { Area } from "core/types/area";
 import React, { forwardRef, useContext, useRef } from "react";
+import { windowFromDocument } from "utils/dom";
+import { SelectOption, defaultMenu } from "../../UI/Menus/menu/SelectionMenu";
 import { eventToModifier } from "../SpaceTree/SpaceTreeItem";
 
 export interface SortablePinnedSpaceItemProps extends PinnedSpaceProps {
@@ -22,7 +23,7 @@ export const SortablePinnedSpaceItem = ({
 type PinnedSpaceProps = {
   superstate: Superstate;
   index: number;
-  pin: PathState;
+  pin: Area;
   clone?: boolean;
   ghost?: boolean;
   style?: React.CSSProperties;
@@ -53,16 +54,15 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
   ) => {
     const innerRef = useRef(null);
     const {
-      setDragPaths,
-      activeViewSpace,
       activePath: activePath,
-      saveActiveSpace,
+      waypoints,
+      setEditArea,
+      setWaypoints,
       setModifier,
     } = useContext(NavigatorContext);
     const onDragStarted = (e: React.DragEvent<HTMLDivElement>) => {
       if (dragStart && pin) {
-        dragStart(pin.path);
-        setDragPaths([pin.path]);
+        dragStart(index);
       }
     };
 
@@ -74,26 +74,42 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
     const innerProps = {
       draggable: true,
       onDragStart: onDragStarted,
-      onDragEnded: onDragEnded,
+      onDragEnd: onDragEnded,
       onDrop: onDragEnded,
     };
     return pin ? (
       <div
+        onContextMenu={(e) => {
+          const menuOptions: SelectOption[] = [
+            {
+              name: "Edit Area",
+              icon: "ui//edit",
+              onClick: (e) => {
+                setEditArea(true);
+              },
+            },
+            {
+              name: "Close",
+              icon: "ui//close",
+              value: "close",
+              onClick: () => {
+                setWaypoints(waypoints.filter((f, i) => i != index));
+                superstate.saveSettings();
+              },
+            },
+          ];
+          superstate.ui.openMenu(
+            (e.target as HTMLElement).getBoundingClientRect(),
+            defaultMenu(superstate.ui, menuOptions),
+            windowFromDocument(e.view.document)
+          );
+        }}
         ref={innerRef}
         className="mk-waypoint"
         onClick={(e) => {
-          if (e.metaKey) superstate.ui.openPath(pin.path, false);
-          saveActiveSpace(pin.path);
+          superstate.settings.currentWaypoint = index;
+          superstate.saveSettings();
         }}
-        onContextMenu={(e) =>
-          triggerSpaceMenu(
-            superstate,
-            pin,
-            e,
-            activePath,
-            "spaces://$waypoints"
-          )
-        }
         onDragOver={(e) => {
           e.preventDefault();
           setModifier(eventToModifier(e));
@@ -102,35 +118,28 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
 
           const x = e.clientX - rect.left; //x position within the element.
 
-          if (dragOver && pin) dragOver(pin.path, x);
+          if (dragOver && pin) dragOver(index, x);
         }}
         {...innerProps}
       >
         <div
           ref={ref}
+          aria-label={pin.name}
           className={classNames(
             "mk-waypoints-item",
             "clickable-icon",
             "nav-action-button",
-            (activeViewSpace?.path == pin?.path || highlighted) && "mk-active",
+            (superstate.settings.currentWaypoint == index || highlighted) &&
+              "mk-active",
             indicator && "mk-indicator",
             clone && "mk-clone",
             ghost && "mk-ghost"
           )}
-          dangerouslySetInnerHTML={{
-            __html: superstate.ui.getSticker(pin.label?.sticker),
-          }}
           style={{
             ...style,
-            ...(pin.label?.color?.length > 0
-              ? ({
-                  "--label-color": `${pin.label?.color}`,
-                  "--icon-color": `var(--text-normal)`,
-                } as React.CSSProperties)
-              : ({
-                  "--icon-color": `var(--text-muted)`,
-                } as React.CSSProperties)),
-            ...{ pointerEvents: "none" },
+          }}
+          dangerouslySetInnerHTML={{
+            __html: superstate.ui.getSticker(pin.sticker),
           }}
         ></div>
       </div>
@@ -138,6 +147,13 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
       <div ref={innerRef} className="mk-waypoint">
         <div
           ref={ref}
+          onClick={(e) => {
+            setWaypoints([
+              ...waypoints,
+              { sticker: "ui//spaces", name: "Waypoint", paths: [] },
+            ]);
+            superstate.saveSettings();
+          }}
           className={classNames(
             "mk-waypoints-item",
             "clickable-icon",
@@ -147,10 +163,6 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
             clone && "mk-clone",
             ghost && "mk-ghost"
           )}
-          style={{
-            ...style,
-            ...{ pointerEvents: "none" },
-          }}
         ></div>
       </div>
     );

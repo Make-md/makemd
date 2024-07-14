@@ -1,91 +1,192 @@
+import * as acorn from "acorn";
+import { simple } from "acorn-walk";
 import { Superstate } from "core/superstate/superstate";
-import { groupableTypes } from "schemas/frames";
-import { SpaceInfo, SpaceTable } from "types/mdb";
-import { FrameNode, MFrame } from "types/mframe";
-import { insert, uniqueNameFromString } from "utils/array";
-import { buildRoot, findParent } from "./ast";
-import { frameToNode, mdbSchemaToFrameSchema, nodeToFrame } from "./nodes";
-const addNodes = async (superstate: Superstate, tableData: SpaceTable, space: SpaceInfo, treeNode: FrameNode, target?: FrameNode) => {
+import _ from "lodash";
+import { defaultFrameSchema } from "schemas/frames";
+import { fieldSchema } from "schemas/mdb";
+import { DBTables, SpaceInfo, SpaceTable } from "types/mdb";
+import { FrameExecutable, FrameRoot, FrameTreeProp, LinkedContext, LinkedNode, MDBFrames, MFrame } from "types/mframe";
+import { deepOmit } from "../objects";
+import { flattenToFrameNodes } from "./ast";
+import { stringIsConst } from "./frames";
+import { relinkProps } from "./linker";
+import { nodeToFrame } from "./nodes";
+
+export const executableChanged = (a: FrameExecutable, b: FrameExecutable) => {
+  return !_.isEqual(
+    deepOmit(a, [
+      "execPropsOptions",
+      "execProps",
+      "execStyles",
+      "execActions",
+      "parent",
+    ]),
+    deepOmit(b, [
+      "execPropsOptions",
+      "execProps",
+      "execStyles",
+      "execActions",
+      "parent",
+    ])
+  )
+}
+
+export const stateChangedForProps = (
+  propSetters: string[],
+  props: FrameTreeProp,
+  newState: FrameTreeProp,
+  schemaID: string
+) => {
+  return propSetters.filter(
+    (f) => newState[schemaID]?.props[f] && newState[schemaID].props[f] != props?.[f]
+  );
+};
+
+export const parseLinkedPropertyToValue = (property: string) => {
+  if (!property) return null;
+  if (property.startsWith("$contexts")) {
+    const { context, prop } = parseContextNode(property);
+    return prop;
+  } else {
+    const linkedNode = parseLinkedNode(property);
+    return linkedNode?.prop;
+  }
+};
+
+export const parseContextNode = (pathString: string) : LinkedContext => {
+  if (!pathString || stringIsConst(pathString)) return null;
+  const path : string[] = [];
+  const isMultiLine = pathString.includes('\n');
+  if (isMultiLine) {
+      // If the code block is multi-line, prepend the last line with `return`.
+      const lines = pathString.split('\n').filter(line => line.trim() !== '');
+      lines[lines.length - 1] = `${lines[lines.length - 1].replace("return ", "")}`;
+      pathString = lines.join('\n');
+      
+  }
+  try {
+  const ast = acorn.parse(pathString, {ecmaVersion: 2020});
+  
+
+
+  simple(ast, {
+      MemberExpression(node) {
+        //@ts-ignore
+        if (node.object.type === 'Identifier' && !path.includes(node.object.name)) {
+          //@ts-ignore
+          path.push(node.object.name);
+      }
+        //@ts-ignore
+          if (node.computed) {
+              // Handle bracket notation
+              // This is simplistic and assumes a simple literal inside brackets
+              //@ts-ignore
+              path.push(node.property.value);
+          } else {
+              // Handle dot notation
+              //@ts-ignore
+              path.push(node.property.name);
+          }
+      }
+  });
+} catch  (e){
+  console.log(e)
+}
+  if (path.length < 3) return null;
+  return {
+    context: path[1],
+    prop: path[2],
+  }
+}
+
+export const parseLinkedNode = (pathString: string) : LinkedNode => {
+  if (!pathString || stringIsConst(pathString)) return null;
+  const path : string[] = [];
+  const isMultiLine = pathString.includes('\n');
+  if (isMultiLine) {
+      // If the code block is multi-line, prepend the last line with `return`.
+      const lines = pathString.split('\n').filter(line => line.trim() !== '');
+      lines[lines.length - 1] = `${lines[lines.length - 1].replace("return ", "")}`;
+      pathString = lines.join('\n');
+      
+  }
+  try {
+  const ast = acorn.parse(pathString, {ecmaVersion: 2020});
+  
+
+
+  simple(ast, {
+      MemberExpression(node) {
+        //@ts-ignore
+        if (node.object.type === 'Identifier' && !path.includes(node.object.name)) {
+          //@ts-ignore
+          path.push(node.object.name);
+      }
+        //@ts-ignore
+          if (node.computed) {
+              // Handle bracket notation
+              // This is simplistic and assumes a simple literal inside brackets
+              //@ts-ignore
+              path.push(node.property.value);
+          } else {
+              // Handle dot notation
+              //@ts-ignore
+              path.push(node.property.name);
+          }
+      }
+  });
+} catch  (e){
+  console.log(e)
+}
+  if (path.length < 3) return null;
+  return {
+    node: path[0],
+    prop: path[2],
+  }
+}
+
+const saveFrameRoot = async (superstate: Superstate, tableData: SpaceTable, space: SpaceInfo, frameRoot: FrameRoot) => {
 
   if (!tableData) return;
-  const frameSchema = mdbSchemaToFrameSchema(tableData.schema)
   
-  const nodes = tableData?.rows.map((f) =>
-  f.id == frameSchema.id
-    ? {
-        ...frameToNode(f as MFrame),
-        types: tableData.cols.reduce(
-          (p, c) => ({ ...p, [c.name]: c.type }),
-          {}
-        ),
-        propsValue: tableData.cols.reduce(
-          (p, c) => ({ ...p, [c.name]: c.value }),
-          {}
-        ),
-      }
-    : frameToNode(f as MFrame)
-) ?? [];
-const root = buildRoot(
-  frameSchema,
-  tableData?.cols ?? [],
-  nodes,
-  superstate
-);
-  const id = uniqueNameFromString(
-    treeNode.id,
-    nodes.map((f) => f.id)
-  );
+const treeNodes = flattenToFrameNodes(frameRoot, tableData.schema.id);
 
-  let parent: FrameNode = target
-    ? target : root.node;
-
-  let rank = target ? target.rank + 1 : parent.rank;
-  if (!groupableTypes.some((f) => parent.type == f)) {
-    parent = findParent(root, parent.id).node;
-  } else {
-    rank = nodes.filter((f) => f.parentId == parent.id).length;
-  }
-  const newTreeNode: FrameNode = {
-    ...treeNode,
-    id,
-    schemaId: frameSchema.id,
-    parentId: parent.id,
-  };
-  const newNodes = insert(
-    nodes
-      .filter((f) => f.parentId == parent.id)
-      .sort((a, b) => a.rank - b.rank),
-    rank,
-    newTreeNode
-  ).map((f, i) => ({ ...f, rank: i }));
-  const newRows = tableData?.rows?.some((f) => f.id == root.id)
-    ? tableData.rows
-    : [...(tableData?.rows ?? []), nodeToFrame(root.node)];
-  const insertRows = newNodes
-    .filter((f) => !newRows.some((g) => g.id == f.id))
-    .map((f) => nodeToFrame(f));
-  const modRows = newNodes
-    .filter((f) => newRows.some((g) => g.id == f.id))
-    .map((f) => nodeToFrame(f));
   const newTable = {
     ...tableData,
     cols: tableData.cols ?? [],
     rows: [
-      ...newRows.map((f) => modRows.find((g) => g.id == f.id) ?? f),
-      ...insertRows,
-    ] as MFrame[],
+      ...treeNodes,
+    ].map((f) => nodeToFrame(relinkProps('$root', tableData.schema.id, f, tableData.schema.id))) as MFrame[],
   };
 
   await superstate.spaceManager.saveFrame(space.path, newTable)
 };
 
-export const addNodeToMFrame = async (superstate: Superstate, space: SpaceInfo, schema: string, treeNode: FrameNode, target?: FrameNode) => {
+export const replaceFrameWithFrameRoot = async (superstate: Superstate, space: SpaceInfo, schema: string, root: FrameRoot) => {
   
   return superstate.spaceManager
   .readFrame(space.path, schema).then((tagDB) =>
-    addNodes(superstate, tagDB, space, treeNode, target)
+  saveFrameRoot(superstate, tagDB, space, root)
   );
 
-}
+};
+export const mdbFrameToDBTables = (tables: MDBFrames, uniques?: { [x: string]: string[]; }): DBTables => {
+  return Object.keys(tables).reduce((p, c) => {
+    return {
+      ...p,
+      [c]: {
+        uniques: defaultFrameSchema.uniques,
+        cols: defaultFrameSchema.cols,
+        rows: tables[c].rows
+      },
+    };
+  }, {
+    m_fields: {
+      uniques: fieldSchema.uniques,
+      cols: fieldSchema.cols,
+      rows: Object.values(tables).flatMap(f => f.cols),
+    }
+  }) as DBTables;
 
-  
+};
+

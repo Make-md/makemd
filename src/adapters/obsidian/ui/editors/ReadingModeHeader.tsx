@@ -1,3 +1,4 @@
+import { PathProvider } from "core/react/context/PathContext";
 import { MarkdownHeaderView, Superstate } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -27,14 +28,12 @@ export const ReadingModeHeader = (props: {
   }, []);
   return (
     <div ref={ref}>
-      <MarkdownHeaderView
-        superstate={props.superstate}
-        path={path}
-        showHeader={true}
-        showBanner={true}
-        showFolder={true}
-        editable={false}
-      ></MarkdownHeaderView>
+      <PathProvider superstate={props.superstate} path={path} readMode={true}>
+        <MarkdownHeaderView
+          superstate={props.superstate}
+          editable={false}
+        ></MarkdownHeaderView>
+      </PathProvider>
     </div>
   );
 };

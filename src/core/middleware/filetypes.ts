@@ -27,14 +27,14 @@ export abstract class FileTypeAdapter<T extends FileTypeCache, C extends FileTyp
     public cacheTypes: (file: AFile) => (keyof T)[];
     public contentTypes: (file: AFile) => (keyof C)[];
     
-    public newFile: (path: string, type: string, parent: string, content?: any) => Promise<AFile>;
+    public newFile: (parent: string, name: string, type: string, content?: any) => Promise<AFile>;
 
     public getCacheTypeByRefString: (file: AFile, refString: string) => any;
     public getCache: (file: AFile, cacheType: keyof T, query?: string) => T[typeof cacheType];
     
     public readContent: (file: AFile, contentType: keyof C, contentId: any) => Promise<C[typeof contentType]>;
     public newContent: (file: AFile, contentType: keyof C, name: string, content: C[typeof contentType], options: {[key: string]: any}) => Promise<any>;
-    public saveContent: (file: AFile, contentType: keyof C, contentId: any, content: (prev: C[typeof contentType]) => any) => void;
+    public saveContent: (file: AFile, contentType: keyof C, contentId: any, content: (prev: C[typeof contentType]) => any) => Promise<boolean>;
     public deleteContent: (file: AFile, contentType: keyof C, contentId: any) =>void;
     
 }

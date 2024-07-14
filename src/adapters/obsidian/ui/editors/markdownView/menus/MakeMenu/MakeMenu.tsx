@@ -1,5 +1,11 @@
 import { stickerFromString } from "adapters/obsidian/ui/sticker";
-import { contextEmbedStringFromContext } from "core/utils/contexts/embed";
+import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
+import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
+import ImageModal from "core/react/components/UI/Modals/ImageModal";
+import {
+  contextEmbedStringFromContext,
+  contextViewEmbedStringFromContext,
+} from "core/utils/contexts/embed";
 import { createInlineTable } from "core/utils/contexts/inlineTable";
 import MakeMDPlugin from "main";
 import { i18n } from "makemd-core";
@@ -12,7 +18,9 @@ import {
   EditorSuggestTriggerInfo,
   TFile,
 } from "obsidian";
-import { Command, resolveCommands } from "./commands";
+import React from "react";
+import { windowFromDocument } from "utils/dom";
+import { Command, CommandType, resolveCommands } from "./commands";
 
 export default class MakeMenu extends EditorSuggest<Command> {
   inCmd = false;
@@ -86,7 +94,14 @@ export default class MakeMenu extends EditorSuggest<Command> {
 
     return suggestions.length > 0
       ? suggestions
-      : [{ label: i18n.commandsSuggest.noResult, value: "", icon: "" }];
+      : [
+          {
+            label: i18n.commandsSuggest.noResult,
+            value: "",
+            icon: "",
+            type: CommandType.None,
+          },
+        ];
   }
 
   renderSuggestion(value: Command, el: HTMLElement): void {
@@ -103,27 +118,104 @@ export default class MakeMenu extends EditorSuggest<Command> {
   }
 
   selectSuggestion(cmd: Command, _evt: MouseEvent | KeyboardEvent): void {
+    const start = this.context.start;
+    const end = this.context.end;
+    const startCh = this.cmdStartCh;
+    const editor = this.context.editor;
     if (cmd.label === i18n.commandsSuggest.noResult) return;
-
-    if (cmd.value == "table") {
-      createInlineTable(this.plugin.superstate, this.file.parent.path).then(
-        (f) => {
-          this.context.editor.replaceRange(
-            contextEmbedStringFromContext(
-              this.plugin.superstate.spacesIndex.get(this.file.parent.path),
-              f
-            ),
-            { ...this.context.start, ch: this.cmdStartCh },
-            this.context.end
-          );
-          this.context.editor.setSelection({
-            line: this.context.start.line,
-            ch: 0,
-          });
+    if (cmd.value == "note") {
+      const offset = (_evt.target as HTMLButtonElement).getBoundingClientRect();
+      showLinkMenu(
+        offset,
+        windowFromDocument(_evt.view.document),
+        this.plugin.superstate,
+        (link) => {
+          editor.replaceRange(`![![${link}]]`, { ...start, ch: startCh }, end);
           this.resetInfos();
+
           this.close();
         }
       );
+    } else if (cmd.value == "context") {
+      const offset = (_evt.target as HTMLButtonElement).getBoundingClientRect();
+      showSpacesMenu(
+        offset,
+        windowFromDocument(_evt.view.document),
+        this.plugin.superstate,
+        (link) => {
+          editor.replaceRange(
+            contextEmbedStringFromContext(
+              this.plugin.superstate.spacesIndex.get(link),
+              "files"
+            ),
+            { ...start, ch: startCh },
+            end
+          );
+          editor.setSelection({
+            line: start.line,
+            ch: 0,
+          });
+          this.resetInfos();
+
+          this.close();
+        }
+      );
+    } else if (cmd.value == "link") {
+      const offset = (_evt.target as HTMLButtonElement).getBoundingClientRect();
+      showLinkMenu(
+        offset,
+        windowFromDocument(_evt.view.document),
+        this.plugin.superstate,
+        (link) => {
+          editor.replaceRange(`[[${link}]]`, { ...start, ch: startCh }, end);
+          this.resetInfos();
+
+          this.close();
+        }
+      );
+    } else if (cmd.value == "image") {
+      this.plugin.superstate.ui.openPalette(
+        (_props: { hide: () => void }) => (
+          <ImageModal
+            superstate={this.plugin.superstate}
+            hide={_props.hide}
+            selectedPath={(image) => {
+              editor.replaceRange(
+                `![[${image}]]`,
+                { ...start, ch: startCh },
+                end
+              );
+              this.resetInfos();
+
+              this.close();
+            }}
+          ></ImageModal>
+        ),
+        editor.cm.dom.win
+      );
+    } else if (
+      cmd.value == "table" ||
+      cmd.value == "board" ||
+      cmd.value == "calendar"
+    ) {
+      createInlineTable(
+        this.plugin.superstate,
+        this.file.parent.path,
+        cmd.value
+      ).then((f) => {
+        editor.replaceRange(
+          contextViewEmbedStringFromContext(
+            this.plugin.superstate.spacesIndex.get(this.file.parent.path),
+            f
+          ),
+          { ...start, ch: startCh },
+          end
+        );
+        editor.setSelection({
+          line: start.line,
+          ch: 0,
+        });
+      });
     } else {
       this.context.editor.replaceRange(
         cmd.value,

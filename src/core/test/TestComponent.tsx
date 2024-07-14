@@ -1,3 +1,4 @@
+import * as acorn from "acorn";
 import ImageModal from "core/react/components/UI/Modals/ImageModal";
 import StickerModal from "core/react/components/UI/Modals/StickerModal";
 import {
@@ -19,9 +20,11 @@ import { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useEffect, useState } from "react";
 
 export const openTestModal = (superstate: Superstate) => {
-  superstate.ui.openModal("Tests", (props) => (
-    <TestComponent superstate={superstate}></TestComponent>
-  ));
+  superstate.ui.openModal(
+    "Tests",
+    (props) => <TestComponent superstate={superstate}></TestComponent>,
+    window
+  );
 };
 export const TestInputComponent = (
   props: PropsWithChildren<{
@@ -180,6 +183,20 @@ export const TestComponent = (props: { superstate: Superstate }) => {
         <div>{output}</div>
       </div>
       <div>
+        <TestInputComponent
+          action={(value) => {
+            try {
+              acorn.parse(value, {
+                ecmaVersion: 2020,
+                locations: true,
+              });
+            } catch (e) {
+              setOutput(e);
+            }
+          }}
+        >
+          Acorn
+        </TestInputComponent>
         <TestToggleSection section={"Space"}>
           <TestInputComponent
             action={(value) =>
@@ -267,26 +284,32 @@ export const TestComponent = (props: { superstate: Superstate }) => {
         <TestToggleSection section={"Modals"}>
           <button
             onClick={() =>
-              superstate.ui.openPalette((props: { hide: () => void }) => (
-                <ImageModal
-                  hide={props.hide}
-                  superstate={superstate}
-                  selectedPath={(value) => setImage(value)}
-                />
-              ))
+              superstate.ui.openPalette(
+                (props: { hide: () => void }) => (
+                  <ImageModal
+                    hide={props.hide}
+                    superstate={superstate}
+                    selectedPath={(value) => setImage(value)}
+                  />
+                ),
+                window
+              )
             }
           >
             Set Image
           </button>
           <button
             onClick={() =>
-              superstate.ui.openPalette((props: { hide: () => void }) => (
-                <StickerModal
-                  hide={props.hide}
-                  ui={superstate.ui}
-                  selectedSticker={(value) => setSticker(value)}
-                />
-              ))
+              superstate.ui.openPalette(
+                (props: { hide: () => void }) => (
+                  <StickerModal
+                    hide={props.hide}
+                    ui={superstate.ui}
+                    selectedSticker={(value) => setSticker(value)}
+                  />
+                ),
+                window
+              )
             }
           >
             Set Sticker

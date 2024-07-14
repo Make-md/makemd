@@ -2,6 +2,9 @@ import { EditorView } from "@codemirror/view";
 import { FlowEditorParent } from "adapters/obsidian/ui/editors/FlowEditor";
 
 declare module "obsidian" {
+  interface Vault {
+    getConfig(config: string): any
+  }
   interface App {
     appId: string;
     dragManager: any;
@@ -120,6 +123,9 @@ declare module "obsidian" {
     containerEl: HTMLElement;
     tabHeaderInnerTitleEl: HTMLElement;
     tabHeaderInnerIconEl: HTMLElement;
+    history: {
+      backHistory: any[];
+    };
   }
   interface Editor {
     cm: EditorView;

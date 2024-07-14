@@ -48,7 +48,7 @@ export class FontsFileTypeAdapter implements FileTypeAdapter<FontTypeCache, Font
         }
     }
     public newContent: (file: AFile, fragmentType: keyof FontTypeContent, name: string, content: FontTypeContent[typeof fragmentType], options: {[key: string]: any}) => Promise<any>;
-    public saveContent: (file: AFile, fragmentType: keyof FontTypeContent, fragmentId: any, content: (prev: FontTypeContent[typeof fragmentType]) => any) => void;
+    public saveContent: (file: AFile, fragmentType: keyof FontTypeContent, fragmentId: any, content: (prev: FontTypeContent[typeof fragmentType]) => any) => Promise<boolean>;
     public deleteContent: (file: AFile, fragmentType: keyof FontTypeContent, fragmentId: any) => void
     
 }

@@ -24,8 +24,10 @@ export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<str
         const updatedCache = { 
             label: {
             name: file.name,
-            sticker: label?.sticker.length > 0 ? label.sticker : "ui//mk-ui-canvas",
+            sticker: label?.sticker?.length > 0 ? label.sticker : "ui//canvas",
             color: label?.color,
+            preview: '',
+            thumbnail: ''
         }}
         
 
@@ -47,7 +49,7 @@ export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<str
     public getCache: (file: AFile, fragmentType: string, query?: string) => never;
     public readContent: (file: AFile, fragmentType: string, fragmentId: any) => never;
     public newContent: (file: AFile, fragmentType: string, name: string, content: never, options: { [key: string]: any; }) => Promise<any>;
-    public saveContent: (file: AFile, fragmentType: string, fragmentId: any, content: (prev: never) => any) => void;
+    public saveContent: (file: AFile, fragmentType: string, fragmentId: any, content: (prev: never) => any) => Promise<boolean>;
     public deleteContent: (file: AFile, fragmentType: string, fragmentId: any) => void;
 
 }

@@ -1,8 +1,95 @@
 body {
-    --mk-sticker-size: 32px;
-    --mk-sticker-font-size: 28px;
-    --mk-ui-border-color: var(--divider-color);
-    --mk-ui-border-style: solid;
-    --mk-ui-border-width: 2px;
-    --mk-ui-background-base: var(--background-primary)
+    
+    --mk-ui-divider: var(--divider-color);
+
+    --mk-ui-border: var(--background-modifier-border);
+    --mk-ui-border-accent: var(--divider-color-hover);
+
+    --mk-ui-radius-small: var(--radius-s);
+    --mk-ui-radius-medium: var(--radius-m);
+    --mk-ui-radius-large: var(--radius-l);
+
+    --mk-ui-background-overlay: rgba(0, 0, 0, 0.5);
+    --mk-ui-border-overlay: rgba(15, 15, 15, 0.5);
+    --mk-ui-background-blur: var(--mk-ui-background);/* rgba(var(--mono-rgb-0), 0.6);*/
+    --mk-ui-border-hover: var(--background-modifier-border-hover);
+
+    --mk-ui-handle-color: rgba(70, 79, 200, 1);
+    --mk-ui-handle-color-hover: #eb3b5a22;
+    --mk-ui-handle-outline: rgba(255, 255, 255, 0.8); 
+    --mk-ui-handle-fill: #fff;
+    --mk-ui-active: var(--interactive-accent);
+    --mk-ui-active-hover: var(--interactive-hover);
+    --mk-ui-active-normal: var(--interactive-normal);
+    
+    --mk-ui-background: var(--background-primary);
+    --mk-ui-background-variant: var(--background-secondary);
+    --mk-ui-background-contrast: var(--background-primary-alt);
+    --mk-ui-background-active: var(--background-modifier-active);
+    --mk-ui-background-selected: var(--background-modifier-active-hover);
+    --mk-ui-background-reverse: var(--text-normal);
+    --mk-ui-background-hover: var(--background-modifier-hover);
+    --mk-ui-background-menu: var(--background-secondary);
+    --mk-ui-background-menu-input: var(--background-modifier-form-field);
+    --mk-ui-background-menu-hover: var(--background-modifier-hover);
+
+    --mk-ui-text-primary: var(--text-normal);
+    --mk-ui-text-secondary: var(--text-muted);
+    --mk-ui-text-tertiary: var(--text-faint);
+    --mk-ui-text-accent: var(--text-on-accent);
+    --mk-ui-text-reverse: var(--background-primary);
+    --mk-ui-text-error: var(--mk-color-red);
+
+    --mk-shadow-card: 0px 1px 4px 0px rgba(0, 0, 0, 0.4);
+    --mk-shadow-menu: 0px 0px 32px 0px rgba(0, 0, 0, 0.2);
+
+    --mk-color-none: rgba(var(--mono-rgb-100), 0.025);
+    --mk-color-blue: #3867d6;
+    --mk-color-green: #20bf6b;
+    --mk-color-orange: #fa8231;
+    --mk-color-purple: #8854d0;
+    --mk-color-red: #eb3b5a;
+    --mk-color-turquoise: #0fb9b1;
+    --mk-color-yellow: #E5A216;
+    --mk-color-charcoal: #4b6584;
+    --mk-color-teal: #2d98da;
+    --mk-color-pink: #E83289;
+    --mk-color-brown: #68381E;
+    --mk-color-gray: #8392A4;
+    --mk-color-black: #000000;
+    --mk-color-white: #ffffff;
+
+    --mk-color-base-0: var(--color-base-00);
+    --mk-color-base-10: var(--color-base-10);
+    --mk-color-base-20: var(--color-base-20);
+    --mk-color-base-30: var(--color-base-30);
+    --mk-color-base-40: var(--color-base-40);
+    --mk-color-base-50: var(--color-base-50);
+    --mk-color-base-60: var(--color-base-60);
+    --mk-color-base-70: var(--color-base-70);
+    --mk-color-base-100: var(--color-base-100);
+
+    --mk-color-selection: var(--mk-ui-background-selected);
+    --mk-color-ui-accent: var(--text-accent);
+    
+
+    --mk-layer-editor-popover: 100;
+    --mk-layer-editor-overlay: 100;
+
+}
+
+.mk-smooth-border {
+    --b: 5px;   /* thickness of the border */
+    --c: red;   /* color of the border */
+    --w: 20px;  /* width of border */
+    
+  
+    border: var(--b) solid #0000; /* space for the border */
+    --_g: #0000 90deg,var(--c) 0;
+    --_p: var(--w) var(--w) border-box no-repeat;
+    background:
+      conic-gradient(from 90deg  at top    var(--b) left  var(--b),var(--_g)) 0    0    / var(--_p),
+      conic-gradient(from 180deg at top    var(--b) right var(--b),var(--_g)) 100% 0    / var(--_p),
+      conic-gradient(from 0deg   at bottom var(--b) left  var(--b),var(--_g)) 0    100% / var(--_p),
+      conic-gradient(from -90deg at bottom var(--b) right var(--b),var(--_g)) 100% 100% / var(--_p);
 }

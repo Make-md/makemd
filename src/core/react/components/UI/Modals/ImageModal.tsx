@@ -1,5 +1,5 @@
 import { Superstate } from "core/superstate/superstate";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { urlRegex } from "utils/regex";
 
 interface ImageModalProps {
@@ -8,16 +8,23 @@ interface ImageModalProps {
   hide: () => void;
 }
 
+export type ImagePreview = {
+  path: string;
+  thumnail: string;
+};
+
 const ImageModal: React.FC<ImageModalProps> = (props) => {
   const [query, setQuery] = useState("");
-  const [allImages, setAllImages] = useState<string[]>([]);
-  const [images, setImages] = useState<string[]>([]);
+  const [allImages, setAllImages] = useState<ImagePreview[]>([]);
+  const [images, setImages] = useState<ImagePreview[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
-    const _allImages: string[] = [];
+    const _allImages: ImagePreview[] = [];
     _allImages.push(
-      ...props.superstate.spaceManager.allPaths(["png", "jpg", "jpeg", "webp"])
+      ...[...props.superstate.pathsIndex.values()]
+        .filter((f) => f.subtype == "image")
+        .map((f) => ({ path: f.path, thumnail: f.label.thumbnail }))
     );
     setAllImages(_allImages);
     setImages(_allImages);
@@ -25,42 +32,50 @@ const ImageModal: React.FC<ImageModalProps> = (props) => {
 
   useEffect(() => {
     query.match(urlRegex)
-      ? setImages([query])
-      : setImages(allImages.filter((f) => f.includes(query)).slice(0, 30));
+      ? setImages([{ path: query, thumnail: query }])
+      : setImages(allImages.filter((f) => f.path.includes(query)));
   }, [query, allImages]);
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    const currentIndex = images.indexOf(selectedImage);
+    const currentIndex = images.findIndex((f) => f.path == selectedImage);
 
     if (event.key === "ArrowUp" && currentIndex > 0) {
-      setSelectedImage(images[currentIndex - 1]);
+      setSelectedImage(images[currentIndex - 1].path);
     } else if (event.key === "ArrowDown" && currentIndex < images.length - 1) {
-      setSelectedImage(images[currentIndex + 1]);
+      setSelectedImage(images[currentIndex + 1].path);
     } else if (event.key === "Enter") {
       props.selectedPath(selectedImage);
       props.hide();
     }
   };
 
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.focus();
+    }
+  }, [ref.current]);
+
   return (
     <>
       <input
         onKeyDown={handleKeyDown}
         value={query}
+        ref={ref}
         onChange={handleInputChange}
         className="mk-input mk-input-large mk-border-bottom"
       />
       <div className="mk-layout-masonry mk-padding-12 mk-layout-scroll">
         {images.map((image) => (
           <img
-            key={image}
-            src={props.superstate.ui.getUIPath(image)}
-            className={selectedImage === image ? "mk-selected" : ""}
+            key={image.path}
+            src={props.superstate.ui.getUIPath(image.thumnail)}
+            className={selectedImage === image.path ? "mk-selected" : ""}
             onClick={() => {
-              props.selectedPath(image);
+              props.selectedPath(image.path);
               props.hide();
             }}
           />

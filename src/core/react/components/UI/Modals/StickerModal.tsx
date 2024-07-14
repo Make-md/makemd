@@ -98,6 +98,12 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
     }
   };
 
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.focus();
+    }
+  }, [ref.current]);
   return (
     <>
       <input
@@ -106,13 +112,14 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
         onKeyDown={handleKeyDown}
         placeholder={i18n.labels.findStickers}
         className="mk-input mk-input-large mk-border-bottom"
+        ref={ref}
       />
-      <div className="mk-options-menu-sections">
+      <div className="mk-menu-sections">
         <div
           onClick={() => setSelectedCategory(null)}
           className={`${
             selectedCategory == null ? "is-active" : ""
-          } mk-options-menu-section`}
+          } mk-menu-section`}
         >
           All
         </div>
@@ -123,7 +130,7 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
             onClick={() => setSelectedCategory(f)}
             className={`${
               selectedCategory == f ? "is-active" : ""
-            } mk-options-menu-section`}
+            } mk-menu-section`}
           >
             {f}
           </div>

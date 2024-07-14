@@ -1,24 +1,31 @@
 import { newPathInSpace } from "core/superstate/utils/spaces";
 import {
-  buttonNode,
-  cardNode,
-  dividerNode,
+  contextNode,
   flowNode,
+  groupNode,
   iconNode,
   imageNode,
-  linkNode,
-  progressNode,
-  spaceNode,
+  spacerNode,
   textNode,
-} from "schemas/frames";
+} from "schemas/kits/base";
+import {
+  buttonNode,
+  callout,
+  circularProgressNode,
+  dividerNode,
+  progressNode,
+  ratingNode,
+  tabsNode,
+  toggleNode,
+} from "schemas/kits/ui";
 import { FrameNode, FrameRoot } from "types/mframe";
 
 import i18n from "core/i18n";
 import { Superstate } from "core/superstate/superstate";
 import { createInlineTable } from "core/utils/contexts/inlineTable";
-import { schemaToFrame } from "core/utils/frames/ast";
 import { preprocessCode } from "core/utils/frames/linker";
-import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
+import { wrapQuotes } from "core/utils/strings";
+import { Rect } from "types/Pos";
 import { SpaceInfo } from "types/mdb";
 import { uniqueNameFromString } from "utils/array";
 
@@ -114,25 +121,13 @@ type NewItem = {
 };
 
 export const showNewFrameMenu = (
-  e: React.MouseEvent,
+  rect: Rect,
+  win: Window,
   superstate: Superstate,
   space: SpaceInfo,
-  addNode: (node: FrameNode) => void
+  addNode: (node: FrameNode) => void,
+  options: { searchable: boolean } = { searchable: true }
 ) => {
-  const offset = (e.target as HTMLElement).getBoundingClientRect();
-  const kits = superstate.settings.quickFrames.flatMap<FrameRoot>((s) => {
-    const frameSchemas = superstate.framesIndex.get(s)?.schemas ?? [];
-    return frameSchemas
-      .map((f) => mdbSchemaToFrameSchema(f))
-      .map((f) => ({
-        id: `${s}#*${f.id}`,
-        def: f.def,
-        node: {
-          ...schemaToFrame(f),
-          ref: `${s}#*${f.id}`,
-        },
-      }));
-  });
   const presets = [
     {
       name: i18n.commands.newNote,
@@ -149,20 +144,25 @@ export const showNewFrameMenu = (
   ];
   const defaultElements: FrameRoot[] = [
     flowNode,
-    spaceNode,
+    contextNode,
     textNode,
     imageNode,
     dividerNode,
     iconNode,
+    groupNode,
+    spacerNode,
     // contentNode,
   ];
   const defaultFrames: FrameRoot[] = [
     buttonNode,
-    linkNode,
-    cardNode,
+    ratingNode,
+    toggleNode,
+    callout,
     progressNode,
+    circularProgressNode,
+    tabsNode,
   ];
-  const options = [
+  const selectOptions = [
     ...presets,
     ...defaultElements.map((f) => ({
       name: f.node.name,
@@ -174,12 +174,6 @@ export const showNewFrameMenu = (
       name: f.node.name,
       value: { type: "default", value: f },
       section: "element",
-      icon: f.def?.icon,
-    })),
-    ...kits.map((f) => ({
-      name: f.node.name,
-      value: { type: "kit", value: f.node },
-      section: "kit",
       icon: f.def?.icon,
     })),
   ];
@@ -199,14 +193,14 @@ export const showNewFrameMenu = (
 
           addNode({
             ...flowNode.node,
-            props: { value: `'${newPath}'` },
+            props: { value: wrapQuotes(newPath) },
           });
         }
       } else if (item.value == "table") {
         const table = await createInlineTable(superstate, space.path);
         addNode({
-          ...spaceNode.node,
-          props: { value: `'${space.path}/#^${table}'` },
+          ...contextNode.node,
+          props: { value: wrapQuotes(`${space.path}/#*${table}`) },
         });
       } else if (item.value == "link") {
       }
@@ -214,7 +208,7 @@ export const showNewFrameMenu = (
       addNode({
         ...item.value.node,
         type: "frame",
-        ref: "spaces://$kit/#*" + item.value.node.id,
+        ref: "spaces://$kit/#*" + item.value.def.id,
       });
     } else if (item.type == "element") {
       addNode({
@@ -223,16 +217,17 @@ export const showNewFrameMenu = (
     }
   };
   superstate.ui.openMenu(
-    { x: offset.left, y: offset.top + 30 },
+    rect,
     {
       ui: superstate.ui,
       multi: false,
       editable: false,
       value: [],
-      options: options,
+      options: selectOptions,
       saveOptions: (_, value: any[]) => insertNode(value[0]),
-      searchable: true,
+      searchable: options.searchable,
       showAll: true,
-    }
+    },
+    win
   );
 };

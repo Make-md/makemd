@@ -1,16 +1,15 @@
-import { movePath, renamePathWithExtension } from "core/utils/uri";
+import { movePath, renamePathWithExtension, renamePathWithoutExtension } from "core/utils/uri";
 import { Superstate } from "makemd-core";
 import { uniq } from "utils/array";
 import { renameTag } from "utils/tags";
 
 export const renamePathByName = async (superstate: Superstate, oldPath: string, newName: string) => {
-    
     if (superstate.spacesIndex.has(oldPath)) {
         const spaceState = superstate.spacesIndex.get(oldPath);
         if (spaceState.type == 'tag') {
             return renameTag(superstate, spaceState.name, newName);
         }
-        return superstate.spaceManager.renameSpace(oldPath, renamePathWithExtension(oldPath, newName));
+        return superstate.spaceManager.renameSpace(oldPath, renamePathWithoutExtension(oldPath, newName));
     } else {
         return superstate.spaceManager.renamePath(oldPath, renamePathWithExtension(oldPath, newName));
     }
@@ -22,6 +21,7 @@ export const hidePath = async (superstate: Superstate, path: string) => {
       ...superstate.settings.hiddenFiles,
       path,
     ]);
+    superstate.ui.notify("Item is now hidden in the Navigator, you can manage hidden items in the Navigator menu.", );
     superstate.saveSettings();
     superstate.reloadPath(path, true).then(f => superstate.dispatchEvent("superstateUpdated", null));
 }
@@ -55,8 +55,8 @@ export const convertPathToSpace = async (
     return;
   }
   const newPath = pathState.parent+'/'+pathState.name
-  await superstate.spaceManager.createSpace(pathState.name, pathState.parent, null);
-    await superstate.spaceManager.renamePath(path, newPath+'/'+pathState.metadata?.file?.name);
+  await superstate.spaceManager.createSpace(pathState.name, pathState.parent, {});
+    await superstate.spaceManager.renamePath(path, newPath+'/'+pathState.metadata?.file?.name+'.md');
   if (open) {
     superstate.ui.openPath(newPath, false);
   }

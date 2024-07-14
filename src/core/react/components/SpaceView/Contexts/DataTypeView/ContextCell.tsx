@@ -1,132 +1,135 @@
 import i18n from "core/i18n";
+import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
+import { SpaceContext } from "core/react/context/SpaceContext";
+import { parseFieldValue } from "core/schemas/parseFieldValue";
 import {
   deletePropertyMultiValue,
-  insertContextItems,
+  
   updateContextValue,
 } from "core/utils/contexts/context";
-import { parseLinkDisplayString } from "core/utils/parser";
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { uniq } from "utils/array";
-import { parseLinkString, parseMultiString } from "utils/parsers";
-import { folderPathToString, pathNameToString } from "utils/path";
-import { serializeMultiString } from "utils/serializers";
+import { parseMultiString } from "utils/parsers";
+import {
+  serializeMultiDisplayString,
+  serializeMultiString,
+} from "utils/serializers";
 import { TableCellMultiProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
-
-type ContextObject = {
-  label: string;
-  path: string;
-  ref: boolean;
-};
+import { addPathToSpaceAtIndex, newPathInSpace } from "core/superstate/utils/spaces";
 
 export const ContextCell = (
   props: TableCellMultiProp & {
-    space: string;
-    spaceField: string;
-    path: string;
+    source: string;
   }
 ) => {
-  const stringValueToLink = (strings: string[]) =>
-    strings.map((f) => {
-      return {
-        label: parseLinkDisplayString(f),
-        path: parseLinkString(f),
-        ref: false,
-      };
-    });
-  const initialValue = stringValueToLink(
-    props.multi
-      ? parseMultiString(props.initialValue) ?? []
-      : [props.initialValue]
+  const { spaceState } = useContext(SpaceContext);
+  const fieldValue = useMemo(
+    () => parseFieldValue(props.propertyValue, "context", props.superstate),
+    [props.propertyValue]
   );
+  const spacePath = useMemo(
+    () =>
+      fieldValue
+        ? props.superstate.spaceManager.resolvePath(
+            fieldValue.space,
+            spaceState?.path
+          )
+        : null,
+    [fieldValue.space, spaceState]
+  );
+  const parseValue = (v: string, multi: boolean) =>
+    (multi ? parseMultiString(v) ?? [] : [v]).filter((f) => f);
+
   const [propValues, setPropValues] = useState(
-    props.superstate.contextsIndex.get(props.space)?.spaceMap[
-      props.spaceField
-    ]?.[props.path]
+    props.superstate.contextsIndex.get(spacePath)?.spaceMap[
+      fieldValue.spaceField
+    ]?.[props.path] ?? []
   );
   useEffect(() => {
     setPropValues(
-      props.superstate.contextsIndex.get(props.space)?.spaceMap[
-        props.spaceField
-      ]?.[props.path]
+      props.superstate.contextsIndex.get(spacePath)?.spaceMap[
+        fieldValue.spaceField
+      ]?.[props.path] ?? []
     );
-  }, [props.space, props.spaceField]);
+  }, [spacePath, fieldValue]);
 
-  const options = stringValueToLink([
-    ...props.superstate.spacesMap.getInverse(props.space),
-  ]).map((f) => ({
-    name: f.label,
-    value: f.path,
-  }));
-  const [value, setValue] = useState<ContextObject[]>(initialValue);
+  const options = [...props.superstate.spacesMap.getInverse(spacePath)]
+    .map((f) => props.superstate.pathsIndex.get(f))
+    .filter((f) => f)
+    .map((f) => ({
+      name: f.name,
+      icon: f.label.sticker,
+      description: f.path,
+      value: f.path,
+    }));
+  const [value, setValue] = useState<string[]>(
+    parseValue(props.initialValue, props.multi)
+  );
   const allValues = useMemo(
-    () => [
-      ...value,
-      ...(propValues ?? []).map((f) => ({
-        label: parseLinkDisplayString(f),
-        path: parseLinkString(f),
-        ref: true,
-      })),
-    ],
+    () => uniq([...value, ...propValues]),
     [value, propValues]
   );
-  const removeValue = (v: ContextObject) => {
-    if (v.ref) {
-      const newPropValues = propValues.filter((f) => f != v.path);
+  const saveValue = (_values: string[]) => {
+    if (props.multi) {
+      props.saveValue(serializeMultiString(_values));
+    } else {
+      props.saveValue(serializeMultiDisplayString(_values));
+    }
+  };
+  const removeValue = (v: string) => {
+    if (propValues.includes(v)) {
+      const newPropValues = propValues.filter((f) => f != v);
       setPropValues(newPropValues);
       updateContextValue(
         props.superstate.spaceManager,
-        props.superstate.spacesIndex.get(props.space).space,
-        v.path,
-        props.spaceField,
+        props.superstate.spacesIndex.get(spacePath).space,
+        v,
+        fieldValue.spaceField,
         props.path,
         deletePropertyMultiValue
       );
     } else {
-      const newValues = value.filter((f) => f.path != v.path);
+      const newValues = value.filter((f) => f != v);
       setValue(newValues);
-      props.saveValue(serializeMultiString(newValues.map((f) => f.path)));
+      saveValue(newValues.map((f) => f));
     }
   };
   useEffect(() => {
-    setValue(
-      stringValueToLink(
-        props.multi
-          ? parseMultiString(props.initialValue) ?? []
-          : [props.initialValue]
-      )
-    );
-  }, [props.initialValue]);
+    setValue(parseValue(props.initialValue, props.multi));
+  }, [props.initialValue, props.multi]);
 
   const saveOptions = (_options: string[], _value: string[]) => {
-    insertContextItems(props.superstate.spaceManager, _value, props.space);
+    const currentPaths = [...props.superstate.spacesMap.getInverse(spacePath)].filter(f => !_value.includes(f))
+    if (currentPaths.length > 0) {
+      currentPaths.forEach(f => {
+        const space = props.superstate.spacesIndex.get(spacePath);
+        if (props.superstate.pathsIndex.get(f)) {
+          addPathToSpaceAtIndex(props.superstate, space, f)
+        } else {
+          newPathInSpace(props.superstate, space, 'md', f, true)
+        }
+    })
+  }
     if (!props.multi) {
-      setValue(
-        _value.map((f) => ({
-          path: f,
-          label: pathNameToString(folderPathToString(f)),
-          ref: false,
-        }))
-      );
-      props.saveValue(serializeMultiString(_value));
+      setValue(_value);
+      saveValue(_value);
     } else {
       const newValue = _value[0];
       if (newValue) {
-        const newValues = uniq([...value.map((f) => f.path), newValue]);
-        setValue(
-          newValues.map((f) => ({
-            label: pathNameToString(folderPathToString(f)),
-            path: f,
-            ref: false,
-          }))
-        );
-        props.saveValue(serializeMultiString(newValues));
+        const newValues = [...value, newValue];
+        setValue(newValues);
+        saveValue(newValues);
       }
     }
   };
-  const openLink = async (o: ContextObject) => {
-    props.superstate.ui.openPath(o.path, false);
-  };
+
   const menuProps = () => {
     const _options = !props.multi
       ? [{ name: i18n.menu.none, value: "" }, ...options]
@@ -144,17 +147,26 @@ export const ContextCell = (
       onHide: () => props.setEditMode(null),
     };
   };
+
   return (
     <OptionCellBase
       baseClass="mk-cell-context"
       superstate={props.superstate}
       menuProps={menuProps}
-      openItem={openLink}
-      getLabelString={(o) => o.label}
+      removeValue={removeValue}
+      selectLabel={props.compactMode ? props.property.name : i18n.labels.select}
+      labelElement={(_props: PropsWithChildren<{ value: string }>) => (
+        <PathCrumb
+          superstate={props.superstate}
+          path={_props.value}
+          source={spaceState?.path}
+        >
+          {_props.children}
+        </PathCrumb>
+      )}
       value={allValues}
       multi={props.multi}
       editMode={props.editMode}
-      removeValue={removeValue}
     ></OptionCellBase>
   );
 };

@@ -1,243 +1,514 @@
 import i18n from "core/i18n";
+import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
+import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
 import { showPropertyMenu } from "core/react/components/UI/Menus/contexts/spacePropertyMenu";
 import {
   SelectOption,
+  SelectOptionType,
   defaultMenu,
   menuInput,
   menuSeparator,
-} from "core/react/components/UI/Menus/menu";
+} from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { showSpaceAddMenu } from "core/react/components/UI/Menus/navigator/showSpaceAddMenu";
-import { showDatePickerMenu } from "core/react/components/UI/Menus/properties/datePickerMenu";
-import { openContextEditorModal } from "core/react/components/UI/Modals/ContextEditor";
-import { InputModal } from "core/react/components/UI/Modals/InputModal";
+import {
+  DatePickerTimeMode,
+  showDatePickerMenu,
+} from "core/react/components/UI/Menus/properties/datePickerMenu";
+import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
+import { showSetValueMenu } from "core/react/components/UI/Menus/properties/propertyMenu";
+import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
+import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
+import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "core/superstate/superstate";
-import { PathPropertyName } from "core/types/context";
+import { saveSpaceCache } from "core/superstate/utils/spaces";
 import { Filter, Sort } from "core/types/predicate";
-import { contextViewEmbedStringFromContext } from "core/utils/contexts/embed";
-import { optionValuesForColumn } from "core/utils/contexts/optionValuesForColumn";
 import { filterFnLabels } from "core/utils/contexts/predicate/filterFns/filterFnLabels";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
 import {
   defaultPredicateFnForType,
+  defaultPredicateForSchema,
   predicateFnsForType,
 } from "core/utils/contexts/predicate/predicate";
 import { sortFnTypes } from "core/utils/contexts/predicate/sort";
+import { nameForField } from "core/utils/frames/frames";
+import { tagSpacePathFromTag } from "core/utils/strings";
 import { format } from "date-fns";
-import React, { useContext, useRef } from "react";
-import { defaultContextSchemaID } from "schemas/mdb";
-import { SpaceTableColumn, SpaceTableSchema } from "types/mdb";
-import { FrameSchema } from "types/mframe";
+import React, { useContext, useEffect, useState } from "react";
+import {
+  defaultContextSchemaID,
+  fieldTypeForField,
+  stickerForField,
+} from "schemas/mdb";
+import { Rect } from "types/Pos";
+import { SpaceProperty, SpaceTableColumn } from "types/mdb";
+import { windowFromDocument } from "utils/dom";
 import { parseMultiString } from "utils/parsers";
-import { pathToString } from "utils/path";
+import { parseMDBStringValue } from "utils/properties";
 import { serializeMultiString } from "utils/serializers";
-import { ContextMDBContext } from "../../../../context/ContextMDBContext";
+import { ensureTag } from "utils/tags";
+import { ContextTitle } from "./ContextTitle";
+import { ListSelector } from "./ListSelector";
 import { SearchBar } from "./SearchBar";
 
-export const FilterBar = (props: { superstate: Superstate }) => {
-  const ctxRef = useRef(null);
-  const { spaceInfo, spaceState: spaceCache } = useContext(SpaceContext);
+export const FilterBar = (props: {
+  superstate: Superstate;
+  showTitle?: boolean;
+  setView?: (view: string) => void;
+}) => {
+  const { spaceState: spaceCache } = useContext(SpaceContext);
+  const { readMode } = useContext(PathContext);
   const {
-    dbSchemas: schemas,
-    setDBSchema,
+    source,
     dbSchema,
-    contextTable,
-    tableData,
-  } = useContext(ContextMDBContext);
-  const {
-    data,
-    loadContextFields,
     cols,
-    schema,
-    setSchema,
     setSearchString,
     setEditMode,
     predicate,
     savePredicate,
     hideColumn,
-    saveColumn,
-    sortColumn,
     delColumn,
-    views,
+    saveColumn,
   } = useContext(ContextEditorContext);
-  const { saveSchema, frameSchemas, deleteSchema } =
+
+  const { frameSchema, saveSchema, setFrameSchema } =
     useContext(FramesMDBContext);
 
-  const filteredCols = cols.filter((f) => f.hidden != "true");
-
-  const saveViewType = (type: string) => {
-    savePredicate({
-      ...predicate,
-      view: type,
-    });
-  };
-
-  const selectView = (_dbschema: SpaceTableSchema, value?: string) => {
-    setDBSchema(_dbschema);
-    value && setSchema(views.find((f) => f.id == value));
-  };
-  const openView = (e: React.MouseEvent, view: FrameSchema) => {
-    const dbSchema = schemas.find((f) => f.type == "db" && f.id == view.def.db);
-    if (dbSchema) {
-      selectView(dbSchema, view.id);
-      return;
+  const properties = spaceCache?.propertyTypes ?? [];
+  const propertiesForFrame = async (path: string) => {
+    if (!path) return [];
+    const uri = props.superstate.spaceManager.uriByString(path);
+    if (uri.authority == "$kit") {
+      const node = props.superstate.kitFrames.get(uri.ref).node;
+      return Object.keys(node.types)
+        .map((f) => ({
+          type: node.types[f],
+          name: f,
+          attrs: JSON.stringify(node.propsAttrs?.[f]),
+          schemaId: node.schemaId,
+          value: JSON.stringify(node.propsValue?.[f]),
+        }))
+        .filter((f) => !f.name.startsWith("_"));
+    } else {
+      return props.superstate.spaceManager
+        .readFrame(uri.path, uri.ref)
+        .then((g) => g?.cols.filter((f) => !f.name.startsWith("_")) ?? []);
     }
-    return;
+  };
+
+  const filteredCols = cols.filter((f) => f.hidden != "true");
+  const [expanded, setExpanded] = useState(false);
+  const saveViewType = (type: string) => {
+    if (type == "table") {
+      savePredicate({
+        view: "table",
+        listView: "",
+        listGroup: "",
+        listItem: "",
+      });
+    }
+    if (type == "flow") {
+      savePredicate({
+        view: "list",
+        listView: "spaces://$kit/#*listView",
+        listGroup: "spaces://$kit/#*listGroup",
+        listItem: "spaces://$kit/#*flowListItem",
+      });
+    }
+    if (type == "list") {
+      savePredicate({
+        view: "list",
+        listView: "spaces://$kit/#*listView",
+        listGroup: "spaces://$kit/#*listGroup",
+        listItem: "spaces://$kit/#*rowItem",
+      });
+    }
+    if (type == "details") {
+      savePredicate({
+        view: "list",
+        listView: "spaces://$kit/#*listView",
+        listGroup: "spaces://$kit/#*listGroup",
+        listItem: "spaces://$kit/#*detailItem",
+      });
+    }
+    if (type == "board") {
+      savePredicate({
+        view: "list",
+        listView: "spaces://$kit/#*columnView",
+        listGroup: "spaces://$kit/#*columnGroup",
+        listItem: "spaces://$kit/#*cardListItem",
+      });
+    }
+    if (type == "cards") {
+      savePredicate({
+        view: "list",
+        listView: "spaces://$kit/#*listView",
+        listGroup: "spaces://$kit/#*gridGroup",
+        listItem: "spaces://$kit/#*cardsListItem",
+      });
+    }
+    if (type == "catalog") {
+      savePredicate({
+        view: "list",
+        listView: "spaces://$kit/#*listView",
+        listGroup: "spaces://$kit/#*rowGroup",
+        listItem: "spaces://$kit/#*coverListItem",
+      });
+    }
+    if (type == "gallery") {
+      savePredicate({
+        view: "list",
+        listView: "spaces://$kit/#*listView",
+        listGroup: "spaces://$kit/#*masonryGroup",
+        listItem: "spaces://$kit/#*imageListItem",
+      });
+    }
+    if (type == "calendar") {
+      savePredicate({
+        view: "list",
+        listView: "spaces://$kit/#*calendarView",
+        listGroup: "spaces://$kit/#*dateGroup",
+        listItem: "spaces://$kit/#*eventItem",
+      });
+    }
   };
 
   const clearFilters = () => {
     savePredicate({
-      ...predicate,
       filters: [],
       sort: [],
     });
   };
   const clearHiddenCols = () => {
     savePredicate({
-      ...predicate,
       colsHidden: [],
     });
   };
 
-  const removeFilter = (filter: Filter) => {
-    const newFilters = [
-      ...predicate.filters.filter((f) => f.field != filter.field),
-    ];
+  const removeFilter = (filter: Filter, index: number) => {
+    const pred = predicate ?? defaultPredicateForSchema(dbSchema);
+    const newFilters = [...pred.filters.filter((f, i) => i != index)];
     savePredicate({
-      ...predicate,
       filters: newFilters,
     });
   };
 
-  const viewContextMenu = (e: React.MouseEvent, _schema: FrameSchema) => {
+  type LayoutType = {
+    name: string;
+    icon: string;
+    view: string;
+    listView: string;
+    listGroup: string;
+    listItem: string;
+  };
+
+  const defaultViewTypes: Record<string, LayoutType> = {
+    table: {
+      name: i18n.menu.tableView,
+      icon: "ui//table",
+      view: "table",
+      listView: "",
+      listGroup: "",
+      listItem: "",
+    },
+    list: {
+      name: i18n.menu.listView,
+      icon: "ui//list",
+      view: "list",
+      listView: "spaces://$kit/#*listView",
+      listGroup: "spaces://$kit/#*listGroup",
+      listItem: "spaces://$kit/#*rowItem",
+    },
+    details: {
+      name: i18n.menu.detailsView,
+      icon: "ui//layout-grid",
+      view: "list",
+      listView: "spaces://$kit/#*listView",
+      listGroup: "spaces://$kit/#*listGroup",
+      listItem: "spaces://$kit/#*detailItem",
+    },
+    board: {
+      name: i18n.menu.boardView,
+      icon: "ui//square-kanban",
+      view: "list",
+      listView: "spaces://$kit/#*columnView",
+      listGroup: "spaces://$kit/#*columnGroup",
+      listItem: "spaces://$kit/#*cardListItem",
+    },
+    cards: {
+      name: i18n.menu.cardView,
+      icon: "ui//layout-dashboard",
+      view: "list",
+      listView: "spaces://$kit/#*listView",
+      listGroup: "spaces://$kit/#*gridGroup",
+      listItem: "spaces://$kit/#*cardsListItem",
+    },
+    catalog: {
+      name: i18n.menu.catalogView,
+      icon: "ui//gallery-horizontal-end",
+      view: "list",
+      listView: "spaces://$kit/#*listView",
+      listGroup: "spaces://$kit/#*rowGroup",
+      listItem: "spaces://$kit/#*coverListItem",
+    },
+    gallery: {
+      name: i18n.menu.galleryView,
+      icon: "ui//layout-dashboard",
+      view: "list",
+      listView: "spaces://$kit/#*listView",
+      listGroup: "spaces://$kit/#*masonryGroup",
+      listItem: "spaces://$kit/#*imageListItem",
+    },
+    flow: {
+      name: i18n.menu.flowView,
+      icon: "ui//edit",
+      view: "list",
+      listView: "spaces://$kit/#*listView",
+      listGroup: "spaces://$kit/#*listGroup",
+      listItem: "spaces://$kit/#*flowListItem",
+    },
+    // calendar: {
+    //   name: i18n.menu.calendarView,
+    //   icon: "ui//calendar",
+    //   view: "list",
+    //   listView: "spaces://$kit/#*calendarView",
+    //   listGroup: "spaces://$kit/#*dateGroup",
+    //   listItem: "spaces://$kit/#*eventItem",
+    // },
+  };
+  const showLayoutMenu = (e: React.MouseEvent) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
     const menuOptions: SelectOption[] = [];
-    menuOptions.push({
-      name: i18n.menu.copyEmbedLink,
-      icon: "lucide//link",
-      onClick: (e) => {
-        navigator.clipboard.writeText(
-          contextViewEmbedStringFromContext(spaceCache, _schema.id)
-        );
-      },
+
+    Object.keys(defaultViewTypes).forEach((c) => {
+      const layout = defaultViewTypes[c];
+      menuOptions.push({
+        name: layout.name,
+        icon: layout.icon,
+        onClick: (e) => {
+          savePredicate({
+            view: layout.view,
+            listView: layout.listView,
+            listGroup: layout.listGroup,
+            listItem: layout.listItem,
+          });
+        },
+      });
     });
 
-    menuOptions.push({
-      name: i18n.buttons.deleteView,
-      icon: "lucide//edit",
-      onClick: (e) => {
-        props.superstate.ui.openModal(
-          i18n.labels.renameView,
-          (props: { hide: () => void }) => (
-            <InputModal
-              value={_schema.name}
-              saveLabel={i18n.labels.renameView}
-              hide={props.hide}
-              saveValue={(value) =>
-                saveSchema({
-                  ..._schema,
-                  name: value,
-                })
-              }
-            ></InputModal>
-          )
-        );
-      },
-    });
-    menuOptions.push({
-      name: i18n.buttons.delete,
-      icon: "lucide//trash",
-      onClick: (e) => {
-        deleteSchema(_schema);
-      },
-    });
-    props.superstate.ui.openMenu(
-      { x: e.pageX, y: e.pageY },
-      defaultMenu(props.superstate.ui, menuOptions)
+    return props.superstate.ui.openMenu(
+      offset,
+      defaultMenu(props.superstate.ui, menuOptions),
+      windowFromDocument(e.view.document)
     );
   };
 
-  const showFilterMenu = (e: React.MouseEvent) => {
+  const selectSource = (e: React.MouseEvent) => {
+    const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+    showSpacesMenu(
+      offset,
+      windowFromDocument(e.view.document),
+      props.superstate,
+      (link: string) => {
+        const newSchema = {
+          ...frameSchema,
+          name: frameSchema.name,
+          def: {
+            db: dbSchema.id,
+            context: link,
+          },
+          type: "view",
+        };
+        saveSchema(newSchema).then((f) => setFrameSchema(newSchema));
+      }
+    );
+  };
+
+  const showViewOptionsMenu = async (e: React.MouseEvent) => {
     const menuOptions: SelectOption[] = [];
-    menuOptions.push({
-      name: i18n.menu.tableView,
-      icon: "lucide//table-2",
-      onClick: (e) => {
-        saveViewType("table");
-      },
-    });
-    menuOptions.push({
-      name: i18n.menu.cardView,
-      icon: "lucide//layout-grid",
-      onClick: (e) => {
-        saveViewType("card");
-      },
-    });
-    menuOptions.push({
-      name: i18n.menu.listView,
-      icon: "lucide//layout-list",
-      onClick: (e) => {
-        saveViewType("list");
-      },
-    });
-    if (dbSchema?.primary) {
+
+    if (!readMode) {
+      menuOptions.push(
+        menuInput(frameSchema.name ?? "", (value) =>
+          saveSchema({ ...frameSchema, name: value })
+        )
+      );
+      menuOptions.push(menuSeparator);
+
       menuOptions.push({
-        name: i18n.menu.flowView,
-        icon: "lucide//infinity",
-        onClick: (e) => {
-          saveViewType("flow");
+        name: i18n.menu.properties,
+        icon: "ui//list",
+        type: SelectOptionType.Submenu,
+
+        onSubmenu: (offset, onHide) => {
+          return showPropertyEditMenu(
+            offset,
+            windowFromDocument(e.view.document),
+            onHide
+          );
         },
       });
     }
-    menuOptions.push(menuSeparator);
     menuOptions.push({
       name: i18n.menu.groupBy,
-      icon: "lucide//columns",
-      onClick: (e) => {
-        showGroupByMenu(e);
+      icon: "ui//columns",
+      type: SelectOptionType.Submenu,
+      onSubmenu: (offset, onHide) => {
+        return showGroupByMenu(
+          offset,
+          windowFromDocument(e.view.document),
+          onHide
+        );
       },
     });
     menuOptions.push({
       name: i18n.menu.sortBy,
-      icon: "lucide//sort-desc",
-      onClick: (e) => {
-        showSortMenu(e);
+      icon: "ui//sort-desc",
+      type: SelectOptionType.Submenu,
+      onSubmenu: (offset, onHide) => {
+        return showSortMenu(
+          offset,
+          windowFromDocument(e.view.document),
+          onHide
+        );
       },
     });
+    menuOptions.push({
+      name: i18n.menu.filters,
+      icon: "ui//filter",
+      type: SelectOptionType.Submenu,
+      onSubmenu: (rect, onHide) => {
+        return showAddFilterMenu(
+          rect,
+          windowFromDocument(e.view.document),
+          onHide
+        );
+      },
+    });
+
     menuOptions.push(menuSeparator);
-    menuOptions.push({
-      name: i18n.menu.newFilter,
-      icon: "lucide//filter",
-      onClick: (e) => {
-        showAddFilterMenu(e);
-      },
+
+    if (dbSchema?.primary == "true") {
+      const sourceSpace = props.superstate.spacesIndex.get(source);
+      menuOptions.push({
+        name: "Source",
+        icon: "ui//table",
+        type: SelectOptionType.Disclosure,
+        value: sourceSpace.name,
+        onClick: (e) => {
+          selectSource(e);
+        },
+      });
+      menuOptions.push({
+        name: i18n.labels.contexts,
+        icon: "ui//tags",
+        type: SelectOptionType.Submenu,
+        onSubmenu: (offset, onHide) => {
+          return showContextEditMenu(
+            offset,
+            windowFromDocument(e.view.document),
+            onHide
+          );
+        },
+      });
+      menuOptions.push(menuSeparator);
+    }
+    const listViewOptions = await propertiesForFrame(predicate?.listView);
+    const listGroupOptions = await propertiesForFrame(predicate?.listGroup);
+    const listItemOptions = await propertiesForFrame(predicate?.listItem);
+    const savePropValue = (
+      type: "listGroupProps" | "listViewProps" | "listItemProps",
+      prop: string,
+      value: string
+    ) => {
+      savePredicate({
+        [type]: {
+          ...predicate[type],
+          [prop]: value,
+        },
+      });
+    };
+    listViewOptions.forEach((f) => {
+      menuOptions.push({
+        name: nameForField(f, props.superstate),
+        icon: stickerForField(f),
+        type: SelectOptionType.Disclosure,
+        onClick: (e) => {
+          showSetValueMenu(
+            (e.target as HTMLElement).getBoundingClientRect(),
+            windowFromDocument(e.view.document),
+            props.superstate,
+            f,
+            (value) =>
+              savePropValue(
+                "listViewProps",
+                f.name,
+                parseMDBStringValue(f.type, value, true)
+              ),
+            spaceCache.path
+          );
+        },
+      });
     });
-    menuOptions.push({
-      name: i18n.menu.clearFilters,
-      icon: "lucide//x-square",
-      onClick: (e) => {
-        clearFilters();
-      },
+    listGroupOptions.forEach((f) => {
+      menuOptions.push({
+        name: nameForField(f, props.superstate),
+        icon: stickerForField(f),
+        type: SelectOptionType.Disclosure,
+        onClick: (e) => {
+          showSetValueMenu(
+            (e.target as HTMLElement).getBoundingClientRect(),
+            windowFromDocument(e.view.document),
+            props.superstate,
+            f,
+            (value) =>
+              savePropValue(
+                "listGroupProps",
+                f.name,
+                parseMDBStringValue(f.type, value, true)
+              ),
+            spaceCache.path
+          );
+        },
+      });
     });
-    menuOptions.push(menuSeparator);
-    menuOptions.push({
-      name: i18n.menu.unhideFields,
-      icon: "lucide//eye",
-      onClick: (e) => {
-        clearHiddenCols();
-      },
+    listItemOptions.forEach((f) => {
+      menuOptions.push({
+        name: nameForField(f, props.superstate),
+        icon: stickerForField(f),
+        type: SelectOptionType.Disclosure,
+        onClick: (e) => {
+          showSetValueMenu(
+            (e.target as HTMLElement).getBoundingClientRect(),
+            windowFromDocument(e.view.document),
+            props.superstate,
+            f,
+            (value) =>
+              savePropValue(
+                "listItemProps",
+                f.name,
+                parseMDBStringValue(f.type, value, true)
+              ),
+            spaceCache.path
+          );
+        },
+      });
     });
+
     const offset = (e.target as HTMLElement).getBoundingClientRect();
     props.superstate.ui.openMenu(
-      { x: offset.left, y: offset.top + 30 },
-      defaultMenu(props.superstate.ui, menuOptions)
+      offset,
+      defaultMenu(props.superstate.ui, menuOptions),
+      windowFromDocument(e.view.document)
     );
   };
 
   const addSort = (_: string[], sort: string[]) => {
     const field = sort[0];
-    const fieldType = filteredCols.find((f) => f.name + f.table == field)?.type;
+    const fieldObject = filteredCols.find((f) => f.name + f.table == field);
+    const fieldType = fieldTypeForField(fieldObject);
     if (fieldType) {
       const type = defaultPredicateFnForType(fieldType, sortFnTypes);
       const newSort: Sort = {
@@ -245,9 +516,8 @@ export const FilterBar = (props: { superstate: Superstate }) => {
         fn: type,
       };
       savePredicate({
-        ...predicate,
         sort: [
-          ...predicate.sort.filter((s) => s.field != newSort.field),
+          ...(predicate?.sort.filter((s) => s.field != newSort.field) ?? []),
           newSort,
         ],
       });
@@ -256,41 +526,40 @@ export const FilterBar = (props: { superstate: Superstate }) => {
 
   const saveGroupBy = (_: string[], groupBy: string[]) => {
     savePredicate({
-      ...predicate,
       groupBy: groupBy,
     });
   };
 
   const removeSort = (sort: Sort) => {
-    const newSort = [...predicate.sort.filter((f) => f.field != sort.field)];
+    const newSort = [
+      ...(predicate?.sort ?? []).filter((f) => f.field != sort.field),
+    ];
     savePredicate({
-      ...predicate,
       sort: newSort,
     });
   };
-  const addFilter = (_: string[], filter: string[]) => {
-    const field = filter[0];
-    const fieldType = filteredCols.find((f) => f.name + f.table == field)?.type;
+  const addFilter = (field: string) => {
+    const fieldObject = filteredCols.find((f) => f.name + f.table == field);
+    const fieldType = fieldTypeForField(fieldObject);
     if (fieldType) {
       const type = defaultPredicateFnForType(fieldType, filterFnTypes);
+      if (!type) return;
       const newFilter: Filter =
         fieldType == "boolean"
           ? {
               field,
               fn: type,
+              fType: filterFnTypes[type].valueType,
               value: "true",
             }
           : {
               field,
               fn: type,
+              fType: filterFnTypes[type].valueType,
               value: "",
             };
       savePredicate({
-        ...predicate,
-        filters: [
-          ...predicate.filters.filter((s) => s.field != newFilter.field),
-          newFilter,
-        ],
+        filters: [...(predicate?.filters ?? []), newFilter],
       });
     }
   };
@@ -304,19 +573,19 @@ export const FilterBar = (props: { superstate: Superstate }) => {
         fn: type,
       };
       savePredicate({
-        ...predicate,
         sort: [
-          ...predicate.sort.filter((s) => s.field != newSort.field),
+          ...(predicate?.sort ?? []).filter((s) => s.field != newSort.field),
           newSort,
         ],
       });
     };
-    const fieldType = filteredCols.find(
+    const fieldObject = filteredCols.find(
       (f) => f.name + f.table == sort.field
-    )?.type;
+    );
+    const fieldType = fieldTypeForField(fieldObject);
     const sortsForType = predicateFnsForType(fieldType, sortFnTypes);
     props.superstate.ui.openMenu(
-      { x: offset.left, y: offset.top + 30 },
+      offset,
       {
         ui: props.superstate.ui,
         multi: false,
@@ -330,83 +599,35 @@ export const FilterBar = (props: { superstate: Superstate }) => {
         placeholder: i18n.labels.sortItemSelectPlaceholder,
         searchable: false,
         showAll: true,
-      }
+      },
+      windowFromDocument(e.view.document)
     );
-  };
-  const showViewsMenu = (e: React.MouseEvent) => {
-    openContextEditorModal(
-      props.superstate,
-      spaceInfo,
-      dbSchema?.id,
-      schema?.id,
-      1
-    );
-  };
-  const showColsMenu = (e: React.MouseEvent) => {
-    openContextEditorModal(
-      props.superstate,
-      spaceInfo,
-      dbSchema?.id,
-      schema?.id,
-      0
-    );
-  };
-  const saveField = (field: SpaceTableColumn, oldField: SpaceTableColumn) => {
-    if (field.name.length > 0) {
-      if (
-        field.name != oldField.name ||
-        field.type != oldField.type ||
-        field.value != oldField.value ||
-        field.attrs != oldField.attrs
-      ) {
-        const saveResult = saveColumn(field, oldField);
-      }
-    }
-  };
-  const showMenu = (e: React.MouseEvent, field: SpaceTableColumn) => {
-    const offset = (e.target as HTMLElement).getBoundingClientRect();
-    const options = optionValuesForColumn(
-      field.name,
-      field.table == "" ? tableData : contextTable[field.table]
-    );
-    showPropertyMenu({
-      superstate: props.superstate,
-      position: { x: offset.left, y: offset.top + 30 },
-      editable: true,
-      options,
-      field,
-      fields: cols,
-      contextPath: spaceInfo.path,
-      saveField: (newField) => saveField(newField, field),
-      hide: hideColumn,
-      deleteColumn: delColumn,
-      sortColumn,
-      hidden: predicate.colsHidden.includes(field.name + field.table),
-    });
   };
 
-  const changeFilterMenu = (e: React.MouseEvent, filter: Filter) => {
+  const changeFilterMenu = (
+    e: React.MouseEvent,
+    filter: Filter,
+    index: number
+  ) => {
     const offset = (e.target as HTMLElement).getBoundingClientRect();
     const saveFilter = (_: string[], newType: string[]) => {
       const type = newType[0];
       const newFilter: Filter = {
         ...filter,
         fn: type,
+        fType: filterFnTypes[type].valueType,
       };
       savePredicate({
-        ...predicate,
-        filters: [
-          ...predicate.filters.filter((s) => s.field != newFilter.field),
-          newFilter,
-        ],
+        filters: (predicate?.filters ?? []).map((s, i) =>
+          i == index ? newFilter : s
+        ),
       });
     };
-    const fieldType = filteredCols.find(
-      (f) => f.name + f.table == filter.field
-    )?.type;
+    const field = filteredCols.find((f) => f.name + f.table == filter.field);
+    const fieldType = fieldTypeForField(field);
     const filtersForType = predicateFnsForType(fieldType, filterFnTypes);
     props.superstate.ui.openMenu(
-      { x: offset.left, y: offset.top + 30 },
+      offset,
       {
         ui: props.superstate.ui,
         multi: false,
@@ -420,36 +641,56 @@ export const FilterBar = (props: { superstate: Superstate }) => {
         placeholder: i18n.labels.filterItemSelectPlaceholder,
         searchable: false,
         showAll: true,
-      }
+      },
+      windowFromDocument(e.view.document)
     );
   };
 
-  const showAddFilterMenu = (e: React.MouseEvent) => {
-    const offset = (e.target as HTMLElement).getBoundingClientRect();
-    props.superstate.ui.openMenu(
-      { x: offset.left, y: offset.top + 30 },
+  const showAddFilterMenu = (offset: Rect, win: Window, onHide: () => void) => {
+    const options: SelectOption[] = filteredCols
+      .filter(
+        (f) =>
+          f.type == "fileprop" ||
+          predicateFnsForType(f.type, filterFnTypes).length > 0
+      )
+      .map((f) => ({
+        name: f.name + f.table,
+        value: f.name + f.table,
+        icon: stickerForField(f),
+        onClick: (e) => {
+          addFilter(f.name + f.table);
+        },
+      }));
+    options.push(menuSeparator);
+
+    options.push({
+      name: i18n.menu.clearFilters,
+      icon: "ui//x-square",
+      onClick: (e) => {
+        clearFilters();
+      },
+    });
+
+    return props.superstate.ui.openMenu(
+      offset,
       {
         ui: props.superstate.ui,
         multi: false,
         editable: false,
         value: [],
-        options: filteredCols
-          .filter((f) => predicateFnsForType(f.type, filterFnTypes).length > 0)
-          .map((f) => ({
-            name: f.name + f.table,
-            value: f.name + f.table,
-          })),
-        saveOptions: addFilter,
+        options: options,
         placeholder: i18n.labels.propertyItemSelectPlaceholder,
-        searchable: false,
+        searchable: true,
         showAll: true,
-      }
+      },
+      win,
+      null,
+      onHide
     );
   };
-  const showSortMenu = (e: React.MouseEvent) => {
-    const offset = (e.target as HTMLElement).getBoundingClientRect();
-    props.superstate.ui.openMenu(
-      { x: offset.left, y: offset.top + 30 },
+  const showSortMenu = (offset: Rect, win: Window, onHide: () => void) => {
+    return props.superstate.ui.openMenu(
+      offset,
       {
         ui: props.superstate.ui,
         multi: false,
@@ -457,101 +698,297 @@ export const FilterBar = (props: { superstate: Superstate }) => {
         value: [],
         options: filteredCols.map((f) => ({
           name: f.name + f.table,
+          icon: stickerForField(f),
           value: f.name + f.table,
         })),
         saveOptions: addSort,
         placeholder: i18n.labels.sortItemSelectPlaceholder,
-        searchable: false,
+        searchable: true,
         showAll: true,
-      }
+      },
+      win,
+      "right",
+      onHide
     );
   };
 
-  const showGroupByMenu = (e: React.MouseEvent) => {
-    const offset = (e.target as HTMLElement).getBoundingClientRect();
-    props.superstate.ui.openMenu(
-      { x: offset.left, y: offset.top + 30 },
+  const saveField = (field: SpaceTableColumn, oldField: SpaceTableColumn) => {
+    if (field.name.length > 0) {
+      if (
+        field.name != oldField.name ||
+        field.type != oldField.type ||
+        field.value != oldField.value ||
+        field.attrs != oldField.attrs
+      ) {
+        const saveResult = saveColumn(field, oldField);
+      }
+    }
+  };
+
+  const saveNewField = (source: string, field: SpaceProperty) => {
+    saveColumn({ ...field, table: "" });
+  };
+
+  const saveContexts = (spacePath: string, contexts: string[]) => {
+    const space = props.superstate.spacesIndex.get(spacePath);
+    saveSpaceCache(props.superstate, space.space, {
+      ...space.metadata,
+      contexts,
+    });
+  };
+
+  const newContext = (offset: Rect, win: Window, onHide: () => void) => {
+    const space = props.superstate.spacesIndex.get(source);
+    const f = props.superstate.spaceManager.readTags();
+    const addTag = async (tag: string) => {
+      const newTag = ensureTag(tag);
+      saveContexts(space.path, [
+        ...space.metadata.contexts.filter((f) => f != newTag),
+        newTag,
+      ]);
+    };
+    return props.superstate.ui.openMenu(
+      offset,
+      {
+        ui: props.superstate.ui,
+        multi: false,
+        editable: true,
+        value: [],
+        options: f.map((m) => ({ name: m, value: m })),
+        saveOptions: (_, value) => addTag(value[0]),
+        placeholder: i18n.labels.contextItemSelectPlaceholder,
+        searchable: true,
+        showAll: true,
+      },
+      win,
+      null,
+      onHide
+    );
+  };
+
+  const showContextEditMenu = (
+    offset: Rect,
+    win: Window,
+    onHide: () => void
+  ) => {
+    const options: SelectOption[] = [];
+    options.push({
+      name: i18n.buttons.addContext,
+      icon: "ui//plus",
+      type: SelectOptionType.Submenu,
+      onSubmenu: (off, onHide) => {
+        return newContext(off, win, onHide);
+      },
+    });
+    options.push(menuSeparator);
+    const space = props.superstate.spacesIndex.get(source);
+    space.contexts.forEach((f) => {
+      options.push({
+        name: f,
+        icon: "ui//tags",
+        onClick: (e) => {
+          props.superstate.ui.openPath(tagSpacePathFromTag(f));
+        },
+        onMoreOptions: (e) => {
+          const offset = (e.target as HTMLElement).getBoundingClientRect();
+          const options: SelectOption[] = [];
+          options.push({
+            name: i18n.menu.deleteContext,
+            icon: "ui//trash",
+            onClick: (e) => {
+              saveContexts(
+                space.path,
+                space.contexts.filter((s) => s != f)
+              );
+            },
+          });
+          return props.superstate.ui.openMenu(
+            offset,
+            {
+              ui: props.superstate.ui,
+              multi: false,
+              editable: false,
+              value: [],
+              options: options,
+              placeholder: i18n.labels.contextItemSelectPlaceholder,
+              searchable: false,
+              showAll: true,
+            },
+            win
+          );
+        },
+      });
+    });
+    return props.superstate.ui.openMenu(
+      offset,
       {
         ui: props.superstate.ui,
         multi: false,
         editable: false,
         value: [],
-        options: filteredCols
-          .filter((f) => f.name != PathPropertyName)
-          .map((f) => ({
-            name: f.name + f.table,
-            value: f.name + f.table,
-          })),
+        options: options,
+        placeholder: i18n.labels.contextItemSelectPlaceholder,
+        searchable: false,
+        showAll: true,
+      },
+      win,
+      null,
+      onHide
+    );
+  };
+
+  const showPropertyEditMenu = (
+    offset: Rect,
+    win: Window,
+    onHide: () => void
+  ) => {
+    const showPropertyEditorMenu = (
+      f: SpaceTableColumn,
+      offset: Rect,
+      onHide: () => void
+    ) => {
+      return showPropertyMenu(
+        {
+          superstate: props.superstate,
+          rect: offset,
+          editable: true,
+          win,
+          options: [],
+          field: f,
+          fields: filteredCols,
+          contextPath: spaceCache.path,
+          saveField: (newField) => saveField(newField, f),
+          hide: hideColumn,
+          deleteColumn: delColumn,
+          hidden: predicate?.colsHidden.includes(f.name + f.table),
+        },
+        onHide
+      );
+    };
+    const options: SelectOption[] = [];
+    options.push({
+      name: i18n.labels.newProperty,
+      icon: "ui//plus",
+      type: SelectOptionType.Submenu,
+      onSubmenu: (offset: Rect, onHide: () => void) => {
+        return showNewPropertyMenu(
+          props.superstate,
+          offset,
+          win,
+          {
+            spaces: [],
+            fields: [],
+            saveField: saveNewField,
+            schemaId: dbSchema.id,
+            contextPath: spaceCache.path,
+          },
+          onHide
+        );
+      },
+    });
+    options.push(menuSeparator);
+    options.push(
+      ...filteredCols
+        .filter(
+          (f) =>
+            predicate.colsHidden.some((h) => h == f.name + f.table) == false
+        )
+        .map((f) => ({
+          name: f.name + f.table,
+          icon: stickerForField(f),
+          value: f.name + f.table,
+          type: SelectOptionType.Submenu,
+          onSubmenu: (rect: Rect, onHide: () => void) =>
+            showPropertyEditorMenu(f, rect, onHide),
+        }))
+    );
+    options.push(menuSeparator);
+    options.push(
+      ...filteredCols
+        .filter((f) => predicate.colsHidden.some((h) => h == f.name + f.table))
+        .map((f) => ({
+          name: f.name + f.table,
+          icon: stickerForField(f),
+          value: f.name + f.table,
+          type: SelectOptionType.Submenu,
+          onSubmenu: (rect: Rect, onHide: () => void) =>
+            showPropertyEditorMenu(f, rect, onHide),
+        }))
+    );
+    options.push(menuSeparator);
+    options.push({
+      name: i18n.menu.unhideFields,
+      icon: "ui//eye",
+      onClick: (e) => {
+        clearHiddenCols();
+      },
+    });
+    return props.superstate.ui.openMenu(
+      offset,
+      {
+        ui: props.superstate.ui,
+        multi: false,
+        editable: false,
+        value: [],
+        options: options,
+
+        placeholder: i18n.labels.propertyItemSelectPlaceholder,
+        searchable: false,
+        showAll: true,
+      },
+      win,
+      "right",
+      onHide
+    );
+  };
+
+  const showGroupByMenu = (offset: Rect, win: Window, onHide: () => void) => {
+    return props.superstate.ui.openMenu(
+      offset,
+      {
+        ui: props.superstate.ui,
+        multi: false,
+        editable: false,
+        value: [],
+        options: filteredCols.map((f) => ({
+          name: f.name + f.table,
+          icon: stickerForField(f),
+          value: f.name + f.table,
+        })),
         saveOptions: saveGroupBy,
         placeholder: i18n.labels.propertyItemSelectPlaceholder,
         searchable: false,
         showAll: true,
-      }
+      },
+      win,
+      "right",
+      onHide
     );
   };
 
-  const showSaveViewModal = () => {
-    props.superstate.ui.openModal(
-      i18n.labels.saveView,
-      (props: { hide: () => void }) => (
-        <InputModal
-          value=""
-          saveLabel={i18n.labels.saveView}
-          hide={props.hide}
-          saveValue={(value) =>
-            saveSchema({
-              ...schema,
-              id: value.replace(/ /g, "_"),
-              name: value,
-            })
-          }
-        ></InputModal>
-      )
-    );
-  };
-
-  const selectFilterValue = (e: React.MouseEvent, filter: Filter) => {
-    switch (filterFnTypes[filter.fn].valueType) {
+  const selectFilterValue = (
+    e: React.MouseEvent,
+    filter: Filter,
+    index: number
+  ) => {
+    switch (filter.fType ?? filterFnTypes[filter.fn].valueType) {
+      case "property":
+        {
+          savePredicate({
+            filters: (predicate?.filters ?? []).map((s, i) =>
+              i == index ? filter : s
+            ),
+          });
+        }
+        break;
       case "text":
       case "number":
         {
-          const saveFilterValue = (value: string) => {
-            const newFilter: Filter = {
-              ...filter,
-              value,
-            };
-            savePredicate({
-              ...predicate,
-              filters: [
-                ...predicate.filters.filter((s) => s.field != newFilter.field),
-                newFilter,
-              ],
-            });
-          };
-          const menuOptions: SelectOption[] = [];
-          menuOptions.push(
-            menuInput(filter.value, (value) => {
-              const newFilter: Filter = {
-                ...filter,
-                value,
-              };
-              savePredicate({
-                ...predicate,
-                filters: [
-                  ...predicate.filters.filter(
-                    (s) => s.field != newFilter.field
-                  ),
-                  newFilter,
-                ],
-              });
-            })
-          );
-
-          const offset = (e.target as HTMLElement).getBoundingClientRect();
-          props.superstate.ui.openMenu(
-            { x: offset.left, y: offset.top + 30 },
-            defaultMenu(props.superstate.ui, menuOptions)
-          );
+          savePredicate({
+            filters: (predicate?.filters ?? []).map((s, i) =>
+              i == index ? filter : s
+            ),
+          });
         }
         break;
       case "date": {
@@ -561,23 +998,90 @@ export const FilterBar = (props: { superstate: Superstate }) => {
             value: date ? format(date, "yyyy-MM-dd") : "",
           };
           savePredicate({
-            ...predicate,
-            filters: [
-              ...predicate.filters.filter((s) => s.field != newFilter.field),
-              newFilter,
-            ],
+            filters: (predicate?.filters ?? []).map((s, i) =>
+              i == index ? newFilter : s
+            ),
           });
         };
         const offset = (e.target as HTMLElement).getBoundingClientRect();
+
         const date = new Date(filter.value);
         showDatePickerMenu(
           props.superstate.ui,
-          { x: offset.left, y: offset.top + 30 },
+          offset,
+          windowFromDocument(e.view.document),
           date.getTime() ? date : null,
-          saveValue
+          saveValue,
+          DatePickerTimeMode.None
         );
         break;
       }
+      case "link":
+        {
+          const col = cols.find((f) => f.name + f.table == filter.field);
+          if (col?.type.startsWith("context")) {
+            const space = parseFieldValue(col.value, col.type)?.space;
+            if (!space) return;
+
+            const contextData = props.superstate.getSpaceItems(space) ?? [];
+            const offset = (e.target as HTMLElement).getBoundingClientRect();
+            props.superstate.ui.openMenu(
+              offset,
+              {
+                ui: props.superstate.ui,
+                multi: false,
+                editable: false,
+                value: parseMultiString(filter.value),
+                options:
+                  contextData.map((f) => ({
+                    name: f.name,
+                    value: f.path,
+                  })) ?? [],
+                saveOptions: (options: string[], values: string[]) => {
+                  const newFilter: Filter = {
+                    ...filter,
+                    value: values[0],
+                  };
+                  savePredicate({
+                    filters: (predicate?.filters ?? []).map((s, i) =>
+                      i == index ? newFilter : s
+                    ),
+                  });
+                },
+                placeholder: i18n.labels.optionItemSelectPlaceholder,
+                searchable: true,
+                showAll: true,
+              },
+              windowFromDocument(e.view.document)
+            );
+            return;
+          }
+          const saveValue = (link: string) => {
+            const newFilter: Filter = {
+              ...filter,
+              value: link,
+            };
+            savePredicate({
+              filters: (predicate?.filters ?? []).map((s, i) =>
+                i == index ? newFilter : s
+              ),
+            });
+          };
+          const offset = (
+            e.target as HTMLButtonElement
+          ).getBoundingClientRect();
+          showLinkMenu(
+            offset,
+            windowFromDocument(e.view.document),
+            props.superstate,
+            (link) => {
+              saveValue(link);
+            },
+            { multi: true }
+          );
+          e.stopPropagation();
+        }
+        break;
       case "list":
         {
           const col = cols.find((f) => f.name + f.table == filter.field);
@@ -587,37 +1091,37 @@ export const FilterBar = (props: { superstate: Superstate }) => {
               value: serializeMultiString(values),
             };
             savePredicate({
-              ...predicate,
-              filters: [
-                ...predicate.filters.filter((s) => s.field != newFilter.field),
-                newFilter,
-              ],
+              filters: (predicate?.filters ?? []).map((s, i) =>
+                i == index ? newFilter : s
+              ),
             });
           };
           if (col.type.startsWith("option")) {
             const offset = (e.target as HTMLElement).getBoundingClientRect();
+            const options = parseFieldValue(col.value, col.type).options;
+
             props.superstate.ui.openMenu(
-              { x: offset.left, y: offset.top + 30 },
+              offset,
               {
                 ui: props.superstate.ui,
                 multi: true,
                 editable: false,
                 value: parseMultiString(filter.value),
-                options: parseMultiString(col.value).map((f) => ({
-                  name: f,
-                  value: f,
-                })),
+                options: options ?? [],
                 saveOptions,
                 placeholder: i18n.labels.optionItemSelectPlaceholder,
                 searchable: true,
                 showAll: true,
-              }
+              },
+              windowFromDocument(e.view.document)
             );
           } else if (col.type.startsWith("context")) {
-            const contextData = contextTable[col.table]?.rows ?? [];
+            const space = parseFieldValue(col.value, col.type)?.space;
+            if (!space) return;
+            const contextData = props.superstate.getSpaceItems(space) ?? [];
             const offset = (e.target as HTMLElement).getBoundingClientRect();
             props.superstate.ui.openMenu(
-              { x: offset.left, y: offset.top + 30 },
+              offset,
               {
                 ui: props.superstate.ui,
                 multi: true,
@@ -625,14 +1129,49 @@ export const FilterBar = (props: { superstate: Superstate }) => {
                 value: parseMultiString(filter.value),
                 options:
                   contextData.map((f) => ({
-                    name: pathToString(f[PathPropertyName]),
-                    value: f[PathPropertyName],
+                    name: f.name,
+                    value: f.path,
                   })) ?? [],
                 saveOptions,
                 placeholder: i18n.labels.optionItemSelectPlaceholder,
                 searchable: true,
                 showAll: true,
-              }
+              },
+              windowFromDocument(e.view.document)
+            );
+          } else if (col.type.startsWith("link")) {
+            const offset = (e.target as HTMLElement).getBoundingClientRect();
+            showLinkMenu(
+              offset,
+              windowFromDocument(e.view.document),
+              props.superstate,
+              (link) => {
+                saveOptions([link], [link]);
+              },
+              { multi: true }
+            );
+            e.stopPropagation();
+          } else if (col.type.startsWith("tags")) {
+            const contextData = props.superstate.spaceManager.readTags();
+            const offset = (e.target as HTMLElement).getBoundingClientRect();
+            props.superstate.ui.openMenu(
+              offset,
+              {
+                ui: props.superstate.ui,
+                multi: true,
+                editable: false,
+                value: parseMultiString(filter.value),
+                options:
+                  contextData.map((f) => ({
+                    name: f,
+                    value: f,
+                  })) ?? [],
+                saveOptions,
+                placeholder: i18n.labels.tagItemSelectPlaceholder,
+                searchable: true,
+                showAll: true,
+              },
+              windowFromDocument(e.view.document)
             );
           }
         }
@@ -642,85 +1181,95 @@ export const FilterBar = (props: { superstate: Superstate }) => {
 
   return (
     <>
-      <div className="mk-view-config">
-        <div className="mk-view-selector">
-          {views.map((f, i) => (
-            <div
-              key={i}
-              className={`${schema?.id == f.id ? "mk-is-active" : ""}`}
-              onContextMenu={(e) => viewContextMenu(e, f)}
-            >
-              <button onClick={(e) => openView(e, f)}>{f.name}</button>
-            </div>
-          ))}
-          <button onClick={(e) => showSaveViewModal()}>+</button>
+      {props.showTitle && (
+        <div className="mk-context-config">
+          <ContextTitle superstate={props.superstate}></ContextTitle>
+
+          <span></span>
+
+          {dbSchema?.id == defaultContextSchemaID &&
+            !spaceCache.space.readOnly && (
+              <>
+                <button
+                  className="mk-button-new"
+                  onClick={(e) =>
+                    showSpaceAddMenu(
+                      props.superstate,
+                      (e.target as HTMLElement).getBoundingClientRect(),
+                      windowFromDocument(e.view.document),
+                      spaceCache,
+                      true
+                    )
+                  }
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker("ui//plus"),
+                  }}
+                ></button>
+              </>
+            )}
         </div>
-        <span></span>
+      )}
+      <div className="mk-view-config">
+        {!expanded && (
+          <ListSelector
+            superstate={props.superstate}
+            expanded={false}
+            setView={props.setView}
+          ></ListSelector>
+        )}
+
         {
           <div className="mk-view-options">
+            <span></span>
             <SearchBar
               superstate={props.superstate}
               setSearchString={setSearchString}
             ></SearchBar>
 
             <button
-              onClick={(e) => showFilterMenu(e)}
+              className="mk-toolbar-button"
+              onClick={(e) => showLayoutMenu(e)}
               dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker(
-                  "ui//mk-ui-view-options"
-                ),
+                __html: props.superstate.ui.getSticker("ui//layout"),
               }}
             ></button>
-
-            {/* {props.superstate.settings.experimental && (
-              <button
-                onClick={(e) => setEditMode((p) => (p == 0 ? 1 : 0))}
-                dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//mk-ui-build"),
-                }}
-              ></button>
-            )} */}
-            <div>
-              <button
-                onClick={(e) => showColsMenu(e)}
-                dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//mk-ui-list"),
-                }}
-              ></button>
-            </div>
-            {dbSchema?.id == defaultContextSchemaID && (
-              <button
-                className="mk-button-new"
-                onClick={(e) =>
-                  showSpaceAddMenu(props.superstate, e, spaceCache, true)
-                }
-                dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//mk-ui-plus"),
-                }}
-              ></button>
-            )}
+            <button
+              className="mk-toolbar-button"
+              onClick={(e) => showViewOptionsMenu(e)}
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker("ui//view-options"),
+              }}
+            ></button>
           </div>
         }
       </div>
-      {(predicate.filters.length > 0 ||
-        predicate.sort.length > 0 ||
-        predicate.groupBy.length > 0) && (
+      {(predicate?.filters.length > 0 ||
+        predicate?.sort.length > 0 ||
+        predicate?.groupBy.length > 0) && (
         <div className="mk-filter-bar">
           {predicate.groupBy.length > 0 && (
             <div className="mk-filter">
-              <span>Group By</span>
-              <span onClick={(e) => showGroupByMenu(e)}>
+              <span>{i18n.menu.groupBy}</span>
+              <span
+                onClick={(e) =>
+                  showGroupByMenu(
+                    (e.target as HTMLElement).getBoundingClientRect(),
+                    windowFromDocument(e.view.document),
+                    null
+                  )
+                }
+              >
                 {predicate.groupBy[0]}
               </span>
               <div
                 onClick={() => saveGroupBy(null, [])}
                 dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//mk-ui-close"),
+                  __html: props.superstate.ui.getSticker("ui//close"),
                 }}
               ></div>
             </div>
           )}
-          {predicate.sort.map((f, i) => (
+          {(predicate?.sort ?? []).map((f, i) => (
             <div key={i} className="mk-filter">
               <span>{f.field}</span>
               <span onClick={(e) => changeSortMenu(e, f)}>
@@ -729,30 +1278,100 @@ export const FilterBar = (props: { superstate: Superstate }) => {
               <div
                 onClick={() => removeSort(f)}
                 dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//mk-ui-close"),
+                  __html: props.superstate.ui.getSticker("ui//close"),
                 }}
               ></div>
             </div>
           ))}
-          {predicate.filters.map((f, i) => (
+          {(predicate?.filters ?? [] ?? []).map((f, i) => (
             <div key={i} className="mk-filter">
               <span>{f.field}</span>
-              <span onClick={(e) => changeFilterMenu(e, f)}>
+              <span onClick={(e) => changeFilterMenu(e, f, i)}>
                 {filterFnLabels[f.fn]}
               </span>
               <FilterValueSpan
+                superstate={props.superstate}
                 fieldType={cols.find((c) => c.name + c.table == f.field)?.type}
                 filter={f}
-                selectFilterValue={selectFilterValue}
+                selectFilterValue={(e, f) => selectFilterValue(e, f, i)}
               ></FilterValueSpan>
+              {properties.length > 0 && (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    props.superstate.ui.openMenu(
+                      e.currentTarget.getBoundingClientRect(),
+                      {
+                        ui: props.superstate.ui,
+                        multi: false,
+                        editable: false,
+                        value: [],
+                        options: properties.map((f) => ({
+                          name: f.name,
+                          value: f.name,
+                          section: f.type,
+                        })),
+                        saveOptions: (_, value) =>
+                          selectFilterValue(
+                            e,
+                            {
+                              ...f,
+                              fType: "property",
+                              value: value[0] as any,
+                            },
+                            i
+                          ),
+                        placeholder: i18n.labels.contextItemSelectPlaceholder,
+                        searchable: true,
+                        showAll: true,
+                        sections: [],
+                        showSections: false,
+                      },
+                      windowFromDocument(e.view.document)
+                    );
+                  }}
+                >
+                  <div
+                    className="mk-icon-xsmall"
+                    dangerouslySetInnerHTML={{
+                      __html: props.superstate.ui.getSticker("ui//plug"),
+                    }}
+                  ></div>
+                </span>
+              )}
               <div
-                onClick={() => removeFilter(f)}
+                onClick={() => removeFilter(f, i)}
                 dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//mk-ui-close"),
+                  __html: props.superstate.ui.getSticker("ui//close"),
                 }}
               ></div>
             </div>
           ))}
+          {(predicate?.filters ?? []).length > 0 && (
+            <div
+              className="mk-filter-add"
+              onClick={(e) => {
+                const offset = (
+                  e.target as HTMLElement
+                ).getBoundingClientRect();
+                showAddFilterMenu(
+                  offset,
+                  windowFromDocument(e.view.document),
+                  null
+                );
+              }}
+            >
+              <span>
+                <span
+                  className="mk-icon-xsmall"
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker("ui//plus"),
+                  }}
+                ></span>
+                {i18n.buttons.addFilter}
+              </span>
+            </div>
+          )}
           <span></span>
         </div>
       )}
@@ -761,27 +1380,69 @@ export const FilterBar = (props: { superstate: Superstate }) => {
 };
 
 export const FilterValueSpan = (props: {
+  superstate: Superstate;
   filter: Filter;
   selectFilterValue: (e: React.MouseEvent, f: Filter) => void;
   fieldType: string;
 }) => {
   const { filter, selectFilterValue, fieldType } = props;
   const fnType = filterFnTypes[filter.fn];
+  const [value, setValue] = useState(filter.value);
+
+  useEffect(() => setValue(filter.value), [filter.value]);
+  if (filter.fType == "property") {
+    return <span>{filter.value}</span>;
+  }
   if (!fieldType || !fnType || fnType.valueType == "none") {
     return <></>;
-  } else if (!filter.value || filter.value.length == 0) {
-    return <span onClick={(e) => selectFilterValue(e, filter)}>Select</span>;
+  } else if (fnType.valueType == "text" || fnType.valueType == "number") {
+    return (
+      <input
+        type="text"
+        onChange={(e) => setValue(e.currentTarget.value)}
+        onBlur={(e) => {
+          selectFilterValue(null, { ...filter, value });
+        }}
+        onKeyDown={(e) => {
+          if (e.key == "Escape") {
+            setValue(filter.value);
+            e.currentTarget.blur();
+          }
+          if (e.key == "Enter") {
+            e.currentTarget.blur();
+          }
+        }}
+        value={value}
+      ></input>
+    );
   } else if (
     fieldType.startsWith("option") ||
-    fieldType.startsWith("context")
+    fieldType.startsWith("context") ||
+    fieldType.startsWith("link") ||
+    fieldType.startsWith("tag")
   ) {
     const options = parseMultiString(filter.value);
     return (
       <span onClick={(e) => selectFilterValue(e, filter)}>
-        {" "}
-        {options.map((f, i) => (
-          <span key={i}>{f}</span>
-        ))}
+        {options.length == 0
+          ? i18n.labels.select
+          : options.map((f, i) =>
+              fieldType.startsWith("option") ? (
+                <span key={i}>{f}</span>
+              ) : (
+                <PathCrumb
+                  superstate={props.superstate}
+                  key={i}
+                  path={f}
+                ></PathCrumb>
+              )
+            )}
+      </span>
+    );
+  } else if (!filter.value || filter.value.length == 0) {
+    return (
+      <span onClick={(e) => selectFilterValue(e, filter)}>
+        {i18n.labels.select}
       </span>
     );
   }

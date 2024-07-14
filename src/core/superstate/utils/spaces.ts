@@ -1,27 +1,94 @@
 import { arrayMove } from "@dnd-kit/sortable";
 import i18n from "core/i18n";
-import { fileSystemSpaceInfoFromFolder } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { PathStateWithRank, Superstate } from "core/superstate/superstate";
 import { MakeMDSettings } from "core/types/settings";
-import { SpaceDefFilter, SpaceDefGroup, SpaceDefType, SpaceDefinition, SpaceSort } from "core/types/space";
+import { SpaceDefFilter, SpaceDefGroup, SpaceDefinition, SpaceSort } from "core/types/space";
 import { CacheState, PathState, SpaceState } from "core/types/superstate";
 import { reorderPathsInContext } from "core/utils/contexts/context";
-import { parseSortStrat } from "core/utils/parser";
+import { runFormulaWithContext } from "core/utils/formula/parser";
+import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
 import { ensureArray, ensureBoolean, ensureString, ensureStringValueFromSet } from "core/utils/strings";
-import { compareByField, compareByFieldCaseInsensitive } from "core/utils/tree";
+import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep, compareByFieldNumerical } from "core/utils/tree";
+import { isTouchScreen } from "core/utils/ui/screen";
 import { movePath } from "core/utils/uri";
-import { SpaceInfo } from "types/mdb";
+import { SpaceInfo, SpaceProperty } from "types/mdb";
+import { MDBFrame } from "types/mframe";
+import { TargetLocation } from "types/path";
 import { insert } from "utils/array";
+import { defaultValueForType } from "utils/properties";
+import { sanitizeColumnName } from "utils/sanitizers";
 import { deletePath } from "./path";
 import { addTagToPath, deleteTagFromPath } from "./tags";
 
-
+export type SpaceFragmentSchema = {
+  id: string;
+  name: string;
+  sticker?: string;
+  frameType?: string;
+  type: "context" | 'frame' | 'action';
+  path: string;
+};
 
 export const spaceContextsKey = (settings: MakeMDSettings) => settings.fmKeyContexts
+export const spaceTemplateKey = (settings: MakeMDSettings) => settings.fmKeyTemplate
+export const spaceTemplateNameKey = (settings: MakeMDSettings) => settings.fmKeyTemplateName
 export const spaceFilterKey = (settings: MakeMDSettings) => settings.fmKeyFilter
 export const spaceLinksKey = (settings: MakeMDSettings) => settings.fmKeyLinks
 export const spaceSortKey = (settings: MakeMDSettings) => settings.fmKeySort
-export const FMSpaceKeys = (settings: MakeMDSettings) => [spaceContextsKey(settings), spaceFilterKey(settings), spaceLinksKey(settings), spaceSortKey(settings)]
+export const FMSpaceKeys = (settings: MakeMDSettings) => [spaceContextsKey(settings), spaceFilterKey(settings), spaceLinksKey(settings), spaceSortKey(settings), spaceTemplateNameKey(settings), spaceTemplateKey(settings)]
+
+export const uriToSpaceFragmentSchema = async (
+  superstate: Superstate,
+  path: string
+): Promise<SpaceFragmentSchema> => {
+  const uri = superstate.spaceManager.uriByString(path);
+  if (uri.refType == "context") {
+    const schema = superstate.contextsIndex
+      .get(uri.basePath)
+      ?.schemas.find((s) => s.id == uri.ref);
+    if (schema) {
+      return {
+        id: schema.id,
+        name: schema.name,
+        type: "context",
+        path: uri.basePath,
+      };
+    }
+  }
+  if (uri.refType == "frame") {
+    return superstate.spaceManager.readFrame(uri.basePath, uri.ref).then((s) => {
+
+      const schema = s?.schema;
+      if (schema) {
+        const frameSchema = mdbSchemaToFrameSchema(schema);
+        return {
+          id: schema.id,
+          name: frameSchema.name,
+          sticker: frameSchema.def?.icon,
+          type: "frame",
+          frameType: frameSchema.type,
+          path: uri.basePath,
+        };
+      }
+      return null;
+    });
+  }
+  if (uri.refType == "action") {
+    const schema = superstate.actionsIndex
+      .get(uri.path)
+      ?.find((s) => s.schema.id == uri.ref)?.schema;
+    if (schema) {
+      return {
+        id: schema.id,
+        name: schema.name,
+        sticker: schema.def?.icon,
+        type: "action",
+        path: uri.basePath,
+      };
+    }
+  }
+  return null;
+};
 
 const parseSpaceSort = (value: any) : SpaceSort => {
   return {
@@ -31,9 +98,15 @@ const parseSpaceSort = (value: any) : SpaceSort => {
   }
 }
 
+const fixSpaceDefType = (type: string) : string => {
+  if (type == 'fileprop') return 'file';
+  if (type == 'filemeta') return 'path';
+  return ensureString(type)
+}
+
 const parseSpaceFilterGroupFilter = (value: any) : SpaceDefFilter => {
     return {
-        type: ensureStringValueFromSet(value['type'], ['frontmatter', 'fileprop', 'filemeta'], 'frontmatter') as SpaceDefType,
+        type: fixSpaceDefType(value['type']),
         fType: ensureString(value['fType']),
         field: ensureString(value['field']),
         fn: ensureString(value['fn']),
@@ -48,10 +121,17 @@ const parseSpaceFilterGroup = (value: any) : SpaceDefGroup => {
 }
 
 export const parseSpaceMetadata = (metadata: Record<string, any>, settings: MakeMDSettings) : SpaceDefinition => {
-    return {sort: parseSpaceSort(metadata[spaceSortKey(settings)]), contexts: ensureArray(metadata[spaceContextsKey(settings)]), links: ensureArray(metadata[spaceLinksKey(settings)]), filters: ensureArray(metadata[spaceFilterKey(settings)]).map(f => parseSpaceFilterGroup(f))}
+    return {
+      sort: parseSpaceSort(metadata[spaceSortKey(settings)]), 
+      contexts: ensureArray(metadata[spaceContextsKey(settings)]), 
+      links: ensureArray(metadata[spaceLinksKey(settings)]), 
+      filters: ensureArray(metadata[spaceFilterKey(settings)]).map(f => parseSpaceFilterGroup(f)),
+      template: ensureString(metadata[spaceTemplateKey(settings)]),
+      templateName: ensureString(metadata[spaceTemplateNameKey(settings)])
+    }
 }
 
-type TreeNodeType = 'space' | "file" | 'group'
+type TreeNodeType = 'space' | "file" | 'group' | 'new'
 export interface TreeNode {
   id: string;
   parentId: string;
@@ -118,8 +198,8 @@ export const pathStateToTreeNode = (
   type: 'file',
 });
 
-export const spaceRowHeight = (superstate: Superstate) => {
-  return superstate.ui.getScreenType() == 'mobile' ? 40 : superstate.settings.spaceRowHeight;
+export const spaceRowHeight = (superstate: Superstate, section: boolean) => {
+  return isTouchScreen(superstate.ui) ? 40 : section ?  superstate.settings.spaceRowHeight + 10 : superstate.settings.spaceRowHeight;
 }
 
 export const spaceSortFn =
@@ -132,74 +212,26 @@ export const spaceSortFn =
     if (sortStrategy.group) {
       sortFns.push(compareByField("type", false))
     }
+    if (sortStrategy.field == 'number') {
+      sortFns.push(compareByFieldNumerical('name', sortStrategy.asc));
+    } else 
     if (sortStrategy.field == 'name')
+    
     {
       sortFns.push(compareByFieldCaseInsensitive(sortStrategy.field, sortStrategy.asc));
-    } else {
-sortFns.push(compareByField(sortStrategy.field, sortStrategy.asc))
+    } else if (sortStrategy.field.startsWith('props')) {
+      const propName = sortStrategy.field.split('.')[1];
+      const fieldFunc = (obj: Record<string, any>) => obj?.metadata?.property?.[propName]
+      sortFns.push(compareByFieldDeep(fieldFunc, sortStrategy.asc));
+    }
+    else {
+      const fieldFunc = (obj: Record<string, any>) => obj?.metadata?.file?.[sortStrategy.field]
+sortFns.push(compareByFieldDeep(fieldFunc, sortStrategy.asc))
     }
     return sortFns.reduce((p, c) => {
       return p == 0 ? c(a, b) : p;
     }, 0);
   };
-export const flattenedTreeFromVaultItems = (
-  superstate: Superstate,
-  root: string,
-  openNodes: string[],
-  depth: number,
-  sortStrategy: SpaceSort,
-): TreeNode[] => {
-const _caches = superstate.getSpaceItems(root);
-  if (!_caches) {
-    return [];
-  }
-
-  const flattenNavigatorTree = (
-    path: string,
-    openNodes: string[],
-    depth: number,
-    index: number,
-    folderSort: string,
-    caches: (PathStateWithRank)[]
-  ) => {
-    const items: TreeNode[] = [];
-    let i = index;
-    
-    const sortStrat = folderSort.length > 0 ? parseSortStrat(folderSort) : sortStrategy;
-    caches
-      .sort(spaceSortFn(sortStrat))
-      .forEach((item) => {
-
-        if (item.type != 'space') {
-
-        const id = path + "/" + item.name;
-        const collapsed = !openNodes.includes(id);
-        i = i + 1;
-        const newItems : TreeNode[] = [];
-        const node = pathStateToTreeNode(
-          superstate,
-          item,
-          path,
-          item.path,
-          depth,
-          i,
-          collapsed,
-          sortStrategy.field == "rank",
-          newItems.length,
-          path,
-
-        );
-
-        items.push(node);
-      } else {
-        const collapsed = !openNodes.includes(item.path);
-        items.push(spaceToTreeNode(item, collapsed, sortStrategy.field == "rank", depth, path, item.path,0));
-      }}
-      );
-    return items;
-  };
-  return flattenNavigatorTree(root, openNodes, depth, 0, '', _caches);
-};
 
 
 
@@ -209,16 +241,13 @@ export const updatePathRankInSpace = async (
   rank: number,
   space: string
 ) => {
+
   const spaceState = superstate.spacesIndex.get(space);
 if (!spaceState) return;
 
-  if (spaceState.type == 'default') return;
     const fixedRank = rank;
     // if (parseInt(item.rank) > rank) fixedRank = rank + 1;
-
     superstate.addToContextStateQueue(() => reorderPathsInContext(superstate.spaceManager, [path], fixedRank, spaceState.space).then(f => {
-      return superstate.reloadContext(spaceState.space)
-    }).then(f => {
       const promises = [...superstate.spacesMap.getInverse(spaceState.path)].map(f => superstate.reloadPath(f));
     return Promise.all(promises)
     ;
@@ -259,6 +288,16 @@ export const movePathToNewSpaceAtIndex = async (
   
 };
 
+export const setTemplateInSpace = (superstate: Superstate, path: string, template: string) => {
+  saveSpaceMetadataValue(superstate, path, "template", template)
+
+}
+
+export const setTemplateNameInSpace = (superstate: Superstate, path: string, templateName: string) => {
+  saveSpaceMetadataValue(superstate, path, "templateName", templateName)
+
+}
+
 export const insertContextInSpace = (superstate: Superstate, path: string, newTag: string) => {
   const spaceCache = superstate.spacesIndex.get(path);
   const contexts = [...spaceCache.metadata.contexts.filter(f => f != newTag), newTag]
@@ -278,27 +317,34 @@ export const renameContextInSpace = (superstate: Superstate, path: string, oldTa
   saveSpaceMetadataValue(superstate, path,"contexts", contexts)
 }
 
-
-
 export const createSpace = async (
   superstate: Superstate,
   path: string,
   newSpace?: SpaceDefinition,
 ) => {
 
-  const spaces = superstate.allSpaces();
-  const spaceInfo = fileSystemSpaceInfoFromFolder(superstate.spaceManager, path);
+
+  const space = superstate.spacesIndex.get(path);
+
   let newSpaceCache;
-  if (spaces.find(f => f.path == spaceInfo.path)) {
+  if (space) {
+    if (!superstate.pathsIndex.has(path)) {
+      return await superstate.reloadSpace(space.space)
+      return;
+    }
     if (newSpace)
       {
-        newSpaceCache =  await saveSpaceCache(superstate, spaceInfo, newSpace)
+        newSpaceCache =  await saveSpaceCache(superstate, space.space, newSpace)
       } else {
         return;
       }
   } else {
-    await superstate.spaceManager.createSpace(null, spaceInfo.path, newSpace);
-    
+    const spaceInfo = superstate.spaceManager.spaceInfoForPath(path);
+
+    if (spaceInfo.readOnly) {
+      return await superstate.reloadSpace(spaceInfo)
+    }
+    await superstate.spaceManager.createSpace(spaceInfo.name, superstate.spaceManager.parentPathForPath(spaceInfo.path), newSpace);
     
     if (newSpace) {
 
@@ -308,15 +354,13 @@ export const createSpace = async (
     newSpaceCache = await superstate.reloadSpace(spaceInfo)
   }
   }
-  
-  superstate.initializePaths();
+  superstate.onSpaceDefinitionChanged(newSpaceCache, null);
   return newSpaceCache;
 };
 
 
 
 export const saveSpaceMetadataValue = async (superstate: Superstate, space: string, key: keyof SpaceDefinition, value: any) => {
-
   superstate.spaceManager.saveSpace(space, (metadata) => ({...metadata, [key]: value}))
   const spaceCache = superstate.spacesIndex.get(space)
   await superstate.updateSpaceMetadata(space, { ...spaceCache.metadata, [key]: value})
@@ -350,6 +394,23 @@ export const addPathToSpaceAtIndex = async (
         return pinPathToSpaceAtIndex(superstate, space, path, rank)
       }
     }
+
+    export const defaultSpace = async (superstate: Superstate, activeFile: PathState) : Promise<SpaceState> =>
+      {
+        let spaceState = null;
+        if (superstate.settings.newFileLocation == "folder") {
+          spaceState = superstate.spacesIndex.get(superstate.settings.newFileFolderPath)
+        } else if (superstate.settings.newFileLocation == "current" && activeFile && activeFile.type == 'space') {
+          spaceState = superstate.spacesIndex.get(activeFile.path)
+        } else if (activeFile) {
+          spaceState = superstate.spacesIndex.get(activeFile.parent)
+        }
+        if (!spaceState) {
+          spaceState = superstate.spacesIndex.get('/');
+        }
+        return spaceState;
+      }
+  
 export const pinPathToSpaceAtIndex = async (
   superstate: Superstate,
   space: SpaceState,
@@ -357,7 +418,7 @@ export const pinPathToSpaceAtIndex = async (
   rank?: number
 ) => {
   if (path == space.path) {
-    superstate.ui.notify('Pinning space to itself not currently allowed')
+    // superstate.ui.notify('Pinning space to itself not currently allowed')
     return;
   }
     const spaceExists = ensureArray(space.metadata.links) ?? []
@@ -419,7 +480,23 @@ const settings = superstate.settings;
   
 };
 
+export const metadataPathForSpace = (superstate: Superstate, space: SpaceInfo) => {
+  if (superstate.settings.enableFolderNote) {
+    return space.notePath;
+  }
+  return space.defPath 
+}
 
+export const saveSpaceTemplate = async (
+  superstate: Superstate,
+  path: string,
+  space: string
+) => {
+  const spaceCache = superstate.spacesIndex.get(space);
+  if (!spaceCache) return;
+  await superstate.spaceManager.saveTemplate(path, spaceCache.path)
+  superstate.ui.notify(i18n.notice.templateSaved + spaceCache.name)
+}
 
 export const removePathsFromSpace = async (
   superstate: Superstate,
@@ -439,10 +516,31 @@ if (!space) return;
   } else if (space.type == 'folder' || space.type == 'vault') {
 
   await saveSpaceMetadataValue(superstate, space.path, "links", space.metadata.links.filter(f => !paths.some(g => g == f)))
-  paths.map(f => {
-    superstate.reloadPath(f, true).then(g => superstate.dispatchEvent("pathStateUpdated", {path: f}))
-  })
+  
 }
+}
+
+export const newTemplateInSpace = async (
+  superstate: Superstate,
+  space: SpaceState,
+  name: string,
+  location?: TargetLocation
+) => {
+  let newName: string;
+  try {
+    if (space.metadata.templateName?.length > 0) {
+      const result = runFormulaWithContext(superstate.formulaContext,superstate.pathsIndex, space.metadata.templateName, {}, {}, superstate.pathsIndex.get(space.path))
+      if (result?.length> 0) newName = result
+    }
+  } catch (e) {
+  }
+  if (!(await superstate.spaceManager.pathExists(`${space.path}/.space/templates/${name}`))) {
+    newPathInSpace(superstate, space, "md", null, false, null, location);
+    return;
+  }
+const newPath = await superstate.spaceManager.copyPath(`${space.path}/.space/templates/${name}`, space.path, newName)
+if (newPath)
+superstate.ui.openPath(newPath, location)
 }
 
 
@@ -451,7 +549,9 @@ export const newPathInSpace = async (
   space: SpaceState,
   type: string,
   name: string,
-  dontOpen?: boolean
+  dontOpen?: boolean,
+  content?: string,
+  location?: TargetLocation
 ) => {
   let newPath;
 if (space.type == 'tag') {
@@ -460,6 +560,7 @@ if (space.type == 'tag') {
     '/',
     type,
     name,
+    content
   );
   await superstate.spaceManager.addTag(newPath, space.name);
 } else {
@@ -467,22 +568,91 @@ if (space.type == 'tag') {
       space.path,
       type,
       name,
+      content
     );
 }
     if (!dontOpen) {
-      superstate.ui.openPath(newPath, false);
+      superstate.ui.openPath(newPath, location);
     }
-
+return newPath
 };
 
 export const saveLabel = (superstate: Superstate, path: string, label: string, value: string) => {
   superstate.spaceManager.saveLabel(path, label, value);
 }
 
+export  const saveNewProperty = async (superstate: Superstate, path: string, property: SpaceProperty) => {
+  const saveProperty = (
+    tableData : MDBFrame,
+    newColumn: SpaceProperty,
+    oldColumn?: SpaceProperty
+  ): boolean => {
+    const column = {
+      ...newColumn,
+      name: sanitizeColumnName(newColumn.name),
+    };
+    const mdbtable = tableData;
+
+    if (column.name == "") {
+      superstate.ui.notify(i18n.notice.noPropertyName);
+      return false;
+    }
+    if (
+      (!oldColumn &&
+        mdbtable.cols.find(
+          (f) => f.name.toLowerCase() == column.name.toLowerCase()
+        )) ||
+      (oldColumn &&
+        oldColumn.name != column.name &&
+        mdbtable.cols.find(
+          (f) => f.name.toLowerCase() == column.name.toLowerCase()
+        ))
+    ) {
+      superstate.ui.notify(i18n.notice.duplicatePropertyName);
+      return false;
+    }
+    const oldFieldIndex = oldColumn
+      ? mdbtable.cols.findIndex((f) => f.name == oldColumn.name)
+      : -1;
+    const newFields: SpaceProperty[] =
+      oldFieldIndex == -1
+        ? [...mdbtable.cols, column]
+        : mdbtable.cols.map((f, i) => (i == oldFieldIndex ? column : f));
+    const newTable = {
+      ...mdbtable,
+      cols: newFields ?? [],
+    };
+    superstate.spaceManager.saveFrame(path, newTable as MDBFrame);
+    return true;
+  };
+  if (superstate.spacesIndex.has(path)) {
+    const tableData = await superstate.spaceManager.readFrame(path, 'main');
+    saveProperty(tableData, {...property, schemaId: "main"});
+} else {
+  superstate.spaceManager.saveProperties(path, { [property.name]: defaultValueForType(property.type) });
+}
+}
+
 export const saveProperties = (superstate: Superstate, path: string, properties: Record<string, any>) => {
     if (superstate.spacesIndex.has(path)) {
         saveSpaceProperties(superstate, path, properties)
+    } else {
+      superstate.spaceManager.saveProperties(path, properties);
     }
-    superstate.spaceManager.saveProperties(path, properties);
 };
 
+export const renameProperty = (superstate: Superstate, path: string, oldName: string, newName: string) => {
+    if (superstate.spacesIndex.has(path)) {
+        superstate.spaceManager.renameProperty(metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space), oldName, newName)
+        return;
+    }
+  superstate.spaceManager.renameProperty(path, oldName, newName);
+}
+
+export const deleteProperty = (superstate: Superstate, path: string, name: string) => {
+    if (superstate.spacesIndex.has(path)) {
+        superstate.spaceManager.deleteProperty(metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space), name)
+        return;
+    }
+  superstate.spaceManager.deleteProperty(path, name);
+}

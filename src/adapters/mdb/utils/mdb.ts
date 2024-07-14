@@ -13,7 +13,7 @@ import { vaultSchema } from "adapters/obsidian/filesystem/schemas/vaultSchema";
 import {
   defaultFieldsForContext
 } from "schemas/mdb";
-import { Database } from "sql.js";
+import { Database, QueryExecResult } from "sql.js";
 import { sanitizeSQLStatement } from "utils/sanitizers";
 import {
   dbResultsToDBTables,
@@ -21,6 +21,7 @@ import {
   dropTable, getDBFile, replaceDB, saveDBFile
 } from "../db/db";
 import { MDBFileTypeAdapter } from "../mdbAdapter";
+
 
 
 
@@ -96,14 +97,14 @@ export const getMDB = async (
 
 
 export const getMDBTable = async (
-  plugin: MDBFileTypeAdapter,
+  adapter: MDBFileTypeAdapter,
   dbPath: string,
   table: string,
 ): Promise<SpaceTable> => {
 
   
-  const sqlJS = await plugin.sqlJS();
-  const buf = await getDBFile(plugin, dbPath, false);
+  const sqlJS = await adapter.sqlJS();
+  const buf = await getDBFile(adapter, dbPath, false);
   
   if (!buf) {
     return null;
@@ -121,30 +122,31 @@ export const getMDBTable = async (
       db.exec(`SELECT * FROM m_schema WHERE id = '${table}'`)
     )[0]?.rows[0] as SpaceTableSchema;
   } catch (e) {
-    console.log(e)
+    adapter.plugin.superstate.ui.error(e);
     db.close();
     return null;
   }
-  
   if (!schema) return null;
-  if (fieldsTables.length == 0) {
-    db.close();
-    return {
-      schema: schema,
-      cols: [],
-      rows: [],
-    };
-  }
+  
 
-  const fields = (fieldsTables[0].rows as SpaceProperty[]).filter(
+  const fields = (fieldsTables[0]?.rows as SpaceProperty[] ?? []).filter(
     (f) => f.name.length > 0
   );
-
-  const dbTable = dbResultsToDBTables(
-    db.exec(
-      `SELECT * FROM "${table}"`
-    )
-  );
+  let dbTable;
+  try {
+      dbTable = dbResultsToDBTables(
+      db.exec(
+        `SELECT * FROM "${table}"`
+      )
+    );
+      } catch (e) {
+      db.close();
+      return {
+        schema: schema,
+        cols: fields,
+        rows: [],
+      };
+    }
 
   db.close();
   return dbTableToMDBTable(
@@ -163,10 +165,15 @@ export const getMDBTables = async (plugin: MDBFileTypeAdapter, dbPath: string) =
   
     const db = new sqlJS.Database(new Uint8Array(buf));
   
-    const schemas = dbResultsToDBTables(
+    let schemas = []
+    try {
+       schemas = (dbResultsToDBTables(
       db.exec(`SELECT * FROM m_schema`)
-    )[0].rows as SpaceTableSchema[];
-
+    )[0]?.rows ?? []) as SpaceTableSchema[];
+    } catch (e) {
+      db.close();
+      return null;
+    }
     const mdbTables = {} as SpaceTables;
     schemas.forEach(schema => {
       let fieldsTables;
@@ -236,20 +243,25 @@ export const getMDBTableSchemas = async (
     return null;
   }
   const db = new sqlJS.Database(new Uint8Array(buf));
-  const tables = db.exec(`SELECT * FROM m_schema`);
+  let schemas : QueryExecResult[] = [];
+  try {
+    schemas = db.exec(`SELECT * FROM m_schema`)
+  } catch (e) {
+    console.log(e, path)
+  }
   db.close();
-  return (tables[0]?.values ?? []).map((f) => {
+  return (schemas[0]?.values ?? []).map((f) => {
     const [id, name, type, def, predicate, primary] = f as string[];
     return { id, name, type, def, predicate, primary };
   });
 };
 
 export const getMDBTableProperties = async (
-  plugin: MDBFileTypeAdapter,
+  adapter: MDBFileTypeAdapter,
   path: string,
 ): Promise<SpaceProperty[]> => {
-  const sqlJS = await plugin.sqlJS();
-  const buf = await getDBFile(plugin, path, false);
+  const sqlJS = await adapter.sqlJS();
+  const buf = await getDBFile(adapter, path, false);
   if (!buf) {
     return null;
   }
@@ -259,14 +271,24 @@ export const getMDBTableProperties = async (
 
   try {
     fieldsTables = dbResultsToDBTables(db.exec(`SELECT * FROM m_fields`))[0].rows as SpaceProperty[];
+
   } catch (e) {
-    console.log(e)
+    adapter.plugin.superstate.ui.error(e);
     db.close();
-    return null;
+    return [];
   }
   
   if (fieldsTables.length == 0) {
+    try {
+      db.exec(
+        `CREATE TABLE m_fields (name TEXT, schemaId TEXT, type TEXT, value TEXT, hidden TEXT, attrs TEXT, unique TEXT, primary TEXT)`
+      );
+    } catch (e) {
+      console.log(e);
+    }
+    
     db.close();
+
     return [];
   }
   db.close();

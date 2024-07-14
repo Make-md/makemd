@@ -6,6 +6,7 @@ import { PathStateWithRank, Superstate } from "core/superstate/superstate";
 import {
   TreeNode,
   pathStateToTreeNode,
+  spaceRowHeight,
   spaceSortFn,
   spaceToTreeNode,
 } from "core/superstate/utils/spaces";
@@ -18,6 +19,7 @@ import {
 } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
 import { normalizedAltName } from "core/utils/keyboard";
+import { isTouchScreen } from "core/utils/ui/screen";
 import React, {
   useCallback,
   useContext,
@@ -27,6 +29,7 @@ import React, {
   useState,
 } from "react";
 import { Pos } from "types/Pos";
+import { SpaceAreaEditor } from "./SpaceTreeAreaEditor";
 import { eventToModifier } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
 
@@ -34,9 +37,234 @@ interface SpaceTreeComponentProps {
   superstate: Superstate;
 }
 
+const treeForSpace = (
+  superstate: Superstate,
+  space: SpaceState,
+  path: PathStateWithRank,
+  depth: number,
+  parentId: string,
+  activeId: string,
+  sortable: boolean,
+  root: boolean,
+  parentPath: string,
+  sort: {
+    field: string;
+    asc: boolean;
+    group: boolean;
+  },
+  expandedSpaces: string[]
+) => {
+  const tree: TreeNode[] = [];
+  const id = parentId ? parentId + "/" + space.path : space.path;
+  const spaceCollapsed = !expandedSpaces.includes(id) || activeId == id;
+  const spaceSort =
+    space.metadata?.sort?.field && space.metadata?.sort?.field != "rank"
+      ? space.metadata?.sort
+      : sort ?? {
+          field: "rank",
+          asc: true,
+          group: true,
+        };
+
+  const children = superstate.getSpaceItems(space.path) ?? [];
+  if (!spaceCollapsed || root) {
+    children.sort(spaceSortFn(spaceSort)).forEach((item) => {
+      const _parentId = parentId ? parentId + "/" + space.path : space.path;
+      if (item.type != "space") {
+        tree.push(
+          pathStateToTreeNode(
+            superstate,
+            item,
+            space.path,
+            item.path,
+            depth + 1,
+            0,
+            true,
+            space.sortable,
+            0,
+            _parentId
+          )
+        );
+      } else {
+        if (superstate.spacesIndex.has(item.path)) {
+          tree.push(
+            ...treeForSpace(
+              superstate,
+              superstate.spacesIndex.get(item.path),
+              item,
+              depth + 1,
+              _parentId,
+              activeId,
+              space.sortable,
+              false,
+              space.path,
+              sort,
+              expandedSpaces
+            )
+          );
+        }
+      }
+    });
+  }
+  if (!root)
+    tree.splice(
+      0,
+      0,
+      spaceToTreeNode(
+        path,
+        spaceCollapsed,
+        sortable,
+        depth,
+        parentId,
+        parentPath,
+        tree.length
+      )
+    );
+  return tree;
+};
+
+const treeForRoot = (
+  superstate: Superstate,
+  space: SpaceState,
+  active: TreeNode,
+  expandedSpaces: string[]
+) => {
+  const tree: TreeNode[] = [];
+
+  const pathIndex = superstate.pathsIndex.get(space.path);
+  if (pathIndex)
+    tree.push({
+      id: space.path,
+      parentId: null,
+      depth: 0,
+      index: 0,
+      space: space.path,
+      path: space.path,
+      item: pathIndex,
+      rank: null,
+      collapsed: expandedSpaces.includes(space.path) ? false : true,
+      sortable: space.sortable,
+      childrenCount: [...(superstate.spacesMap.getInverse(space.path) ?? [])]
+        .length,
+      type: "group",
+    });
+  const spaceSort = space.metadata?.sort ?? {
+    field: "rank",
+    asc: true,
+    group: true,
+  };
+
+  if (!expandedSpaces.includes(space.path) || (active && !active.parentId)) {
+    return tree;
+  }
+  const children = superstate.getSpaceItems(space.path) ?? [];
+
+  children.sort(spaceSortFn(spaceSort)).forEach((item) => {
+    const _parentId = space.path;
+    if (item.type != "space") {
+      const id = _parentId + "/" + item.path;
+      const itemCollapsed = !expandedSpaces.includes(id);
+      tree.push(
+        pathStateToTreeNode(
+          superstate,
+          item,
+          space.path,
+          item.path,
+          1,
+          0,
+          itemCollapsed,
+          space.sortable,
+          0,
+          _parentId
+        )
+      );
+    } else {
+      if (superstate.spacesIndex.has(item.path))
+        tree.push(
+          ...treeForSpace(
+            superstate,
+            superstate.spacesIndex.get(item.path),
+            item,
+            1,
+            _parentId,
+            active?.id,
+            space.sortable,
+            false,
+            space.path,
+            spaceSort,
+            expandedSpaces
+          )
+        );
+    }
+  });
+  return tree;
+};
+
+const retrieveData = (
+  superstate: Superstate,
+  activeViewSpaces: PathState[],
+  active: TreeNode,
+  expandedSpaces: string[]
+) => {
+  const tree: TreeNode[] = [];
+  activeViewSpaces
+    .filter((f) => f)
+    .forEach((item) => {
+      if (superstate.spacesIndex.has(item.path)) {
+        tree.push(
+          ...treeForRoot(
+            superstate,
+            superstate.spacesIndex.get(item.path),
+            active,
+            expandedSpaces
+          )
+        );
+      } else {
+        tree.push({
+          ...pathStateToTreeNode(
+            superstate,
+            item,
+            null,
+            item.path,
+            0,
+            0,
+            false,
+            false,
+            0,
+            null
+          ),
+          type: "group",
+        });
+      }
+    });
+
+  // if (nextTreeScrollPath.current) {
+  //   const index = tree.findIndex(
+  //     (f) => f.item?.path == nextTreeScrollPath.current
+  //   );
+  //   if (index != -1) {
+  //     listRef.current.scrollToIndex(index);
+  //     nextTreeScrollPath.current = null;
+  //   }
+  // }
+  tree.push({
+    id: "placeholder",
+    parentId: null,
+    depth: 0,
+    index: 0,
+    space: null,
+    type: "new",
+    path: null,
+    childrenCount: 0,
+    collapsed: false,
+    rank: 0,
+  });
+  return tree;
+};
+
 export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   const { superstate } = props;
-  const indentationWidth = 16;
+  const indentationWidth = isTouchScreen(props.superstate.ui) ? 20 : 16;
 
   const [expandedSpaces, setExpandedSpaces] = useState<string[]>(
     superstate.settings.expandedSpaces
@@ -44,21 +272,24 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
   const {
     activePath: activePath,
-    activeViewSpace,
+    activeViewSpaces,
     setActivePath: setActivePath,
     selectedPaths: selectedPaths,
     setSelectedPaths: setSelectedPaths,
+    activeArea,
+    waypoints,
+    setWaypoints,
     dragPaths,
     setDragPaths,
-    queryResults,
-
-    queryMode,
     modifier,
     setModifier,
+    editArea,
+    setEditArea,
   } = useContext(NavigatorContext);
 
-  const [activeId, setActiveId] = useState<string>(null);
+  const [active, setActive] = useState<TreeNode>(null);
   const [overId, setOverId] = useState<string>(null);
+  const [flattenedTree, setFlattenedTree] = useState<TreeNode[]>([]);
   const nextTreeScrollPath = useRef(null);
 
   // const [dropPlaceholderItem, setDropPlaceholderItem] = useState<[Record<string, string>, number] | null>(null);
@@ -68,202 +299,14 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   }>({ x: 0, y: 0 });
   const listRef = useRef<{ scrollToIndex: (index: number) => void }>(null);
 
-  const treeForPaths = (paths: string[]) => {
-    const tree: TreeNode[] = [];
-    paths
-      .map((f) => {
-        const pathState = props.superstate.pathsIndex.get(f);
-        return {
-          ...pathState,
-        } as PathState;
-      })
-      .filter((f) => f)
-      .forEach((item) => {
-        if (!superstate.spacesIndex.has(item.path)) {
-          item = item as PathState;
-
-          tree.push(
-            pathStateToTreeNode(
-              superstate,
-              item,
-              item.parent,
-              item.path,
-              0,
-              0,
-              false,
-              false,
-              0,
-              null
-            )
-          );
-        } else {
-          tree.push(
-            ...treeForSpace(
-              superstate.spacesIndex.get(item.path),
-              item,
-              0,
-              null,
-              activeId,
-              false,
-              false,
-              null
-            )
-          );
-        }
-      });
-    return tree;
-  };
-  const treeForRoot = (space: SpaceState, activeId: string) => {
-    const tree: TreeNode[] = [];
-
-    const spaceSort = space.metadata?.sort ?? {
-      field: "rank",
-      asc: true,
-      group: true,
-    };
-
-    const children = superstate.getSpaceItems(space.path) ?? [];
-    children.sort(spaceSortFn(spaceSort)).forEach((item) => {
-      const _parentId = space.path;
-      if (item.type != "space") {
-        const id = _parentId + "/" + item.path;
-        const itemCollapsed = !expandedSpaces.includes(id);
-        tree.push(
-          pathStateToTreeNode(
-            superstate,
-            item,
-            space.path,
-            item.path,
-            0,
-            0,
-            itemCollapsed,
-            space.sortable,
-            0,
-            _parentId
-          )
-        );
-      } else {
-        if (superstate.spacesIndex.has(item.path))
-          tree.push(
-            ...treeForSpace(
-              superstate.spacesIndex.get(item.path),
-              item,
-              0,
-              _parentId,
-              activeId,
-              space.sortable,
-              false,
-              space.path
-            )
-          );
-      }
-    });
-    return tree;
-  };
-
-  const treeForSpace = (
-    space: SpaceState,
-    path: PathStateWithRank,
-    depth: number,
-    parentId: string,
-    activeId: string,
-    sortable: boolean,
-    root: boolean,
-    parentPath: string
-  ) => {
-    const tree: TreeNode[] = [];
-    const id = parentId ? parentId + "/" + space.path : space.path;
-    const spaceCollapsed = !expandedSpaces.includes(id) || activeId == id;
-    const spaceSort = space.metadata?.sort ?? {
-      field: "rank",
-      asc: true,
-      group: true,
-    };
-
-    const children = superstate.getSpaceItems(space.path) ?? [];
-
-    if (!spaceCollapsed || root) {
-      children.sort(spaceSortFn(spaceSort)).forEach((item) => {
-        const _parentId = parentId ? parentId + "/" + space.path : space.path;
-        if (item.type != "space") {
-          tree.push(
-            pathStateToTreeNode(
-              superstate,
-              item,
-              space.path,
-              item.path,
-              depth + 1,
-              0,
-              true,
-              space.sortable,
-              0,
-              _parentId
-            )
-          );
-        } else {
-          if (superstate.spacesIndex.has(item.path)) {
-            tree.push(
-              ...treeForSpace(
-                superstate.spacesIndex.get(item.path),
-                item,
-                depth + 1,
-                _parentId,
-                activeId,
-                space.sortable,
-                false,
-                space.path
-              )
-            );
-          }
-        }
-      });
-    }
-    if (!root)
-      tree.splice(
-        0,
-        0,
-        spaceToTreeNode(
-          path,
-          spaceCollapsed,
-          sortable,
-          depth,
-          parentId,
-          parentPath,
-          tree.length
-        )
-      );
-    return tree;
-  };
-  const [flattenedTree, setFlattenedTree] = useState<TreeNode[]>([]);
   const refreshableSpaces = useMemo(
     () =>
       [
-        activeViewSpace?.path,
+        ...activeViewSpaces.filter((f) => f).map((f) => f.path),
         ...flattenedTree.filter((f) => f.type == "space").map((f) => f.path),
       ].filter((f) => f),
-    [activeViewSpace, flattenedTree]
+    [activeViewSpaces, flattenedTree]
   );
-  const retrieveData = () => {
-    if (queryMode) {
-      setFlattenedTree(treeForPaths(queryResults));
-      return;
-    }
-    if (!activeViewSpace) return setFlattenedTree([]);
-    const tree: TreeNode[] = [];
-
-    tree.push(...treeForRoot(activeViewSpace, activeId));
-
-    if (nextTreeScrollPath.current) {
-      const index = tree.findIndex(
-        (f) => f.item?.path == nextTreeScrollPath.current
-      );
-      if (index != -1) {
-        listRef.current.scrollToIndex(index);
-        nextTreeScrollPath.current = null;
-      }
-    }
-    setFlattenedTree(tree);
-  };
 
   useEffect(() => {
     if (selectedPaths.length <= 1) {
@@ -292,6 +335,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   // Persistant Settings
 
   useEffect(() => {
+    const settingsChanged = () => {
+      setExpandedSpaces(superstate.settings.expandedSpaces);
+    };
     superstate.eventsDispatcher.addListener("settingsChanged", settingsChanged);
 
     return () => {
@@ -300,57 +346,54 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         settingsChanged
       );
     };
-  }, [activeViewSpace]);
+  }, [activeViewSpaces, active, setExpandedSpaces, setFlattenedTree]);
+
+  const revealPath = useCallback(
+    (path: string) => {
+      if (!path || !activeViewSpaces?.some((f) => f.path == "/")) return;
+
+      const folders = path.split("/");
+      const openPaths = folders
+        .reduce(
+          (p, c, index) => [
+            ...p,
+            index == 0
+              ? "//" + c
+              : p[index] + "/" + folders.slice(0, index + 1).join("/"),
+          ],
+          ["/"]
+        )
+        .slice(0, -1);
+      const newOpenFolders = [
+        ...(expandedSpaces.filter((f) => !openPaths.find((g) => g == f)) ?? []),
+        ...openPaths,
+      ];
+      superstate.settings.expandedSpaces = newOpenFolders;
+      nextTreeScrollPath.current = "/" + path;
+      superstate.saveSettings();
+    },
+    [expandedSpaces, activeViewSpaces]
+  );
 
   useEffect(() => {
+    const handleRevealPathEvent = (evt: CustomVaultChangeEvent) => {
+      if (evt.detail) revealPath(evt.detail.path);
+    };
     window.addEventListener(eventTypes.revealPath, handleRevealPathEvent);
     return () => {
       window.removeEventListener(eventTypes.revealPath, handleRevealPathEvent);
     };
-  }, [activeViewSpace]);
-
-  const revealPath = (path: string) => {
-    if (!path || activeViewSpace.path != "/") return;
-
-    const folders = path.split("/");
-    const openPaths = folders
-      .reduce(
-        (p, c, index) => [...p, index == 0 ? c : `/${p[index]}/${c}`],
-        ["/"]
-      )
-      .slice(0, -1);
-    const newOpenFolders = [
-      ...(expandedSpaces.filter((f) => !openPaths.find((g) => g == f)) ?? []),
-      ...openPaths,
-    ];
-    superstate.settings.expandedSpaces = newOpenFolders;
-    nextTreeScrollPath.current = "/" + path;
-    superstate.saveSettings();
-  };
-  const handleRevealPathEvent = (evt: CustomVaultChangeEvent) => {
-    if (evt.detail) revealPath(evt.detail.path);
-  };
+  }, [revealPath]);
 
   useEffect(() => {
-    retrieveData();
-
-    props.superstate.eventsDispatcher.addListener(
-      "superstateUpdated",
-      retrieveData
-    );
-
-    return () => {
-      props.superstate.eventsDispatcher.addListener(
-        "superstateUpdated",
-        retrieveData
+    const reloadData = () => {
+      setFlattenedTree(
+        retrieveData(superstate, activeViewSpaces, active, expandedSpaces)
       );
     };
-  }, [expandedSpaces, activeViewSpace, activeId, queryResults, queryMode]);
-
-  useEffect(() => {
     const spaceUpdated = (payload: { path: string }) => {
       if (refreshableSpaces.some((f) => f == payload.path)) {
-        retrieveData();
+        reloadData();
       }
     };
 
@@ -365,14 +408,22 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         spaceUpdated
       );
     };
-  }, [refreshableSpaces]);
+  }, [
+    expandedSpaces,
+    activeViewSpaces,
+    active,
+    expandedSpaces,
+    refreshableSpaces,
+    setFlattenedTree,
+  ]);
 
+  useEffect(() => {
+    setFlattenedTree(
+      retrieveData(superstate, activeViewSpaces, active, expandedSpaces)
+    );
+  }, [expandedSpaces, activeViewSpaces, active]);
   const changeActivePath = (path: string) => {
     setActivePath(path);
-  };
-
-  const settingsChanged = () => {
-    setExpandedSpaces(superstate.settings.expandedSpaces);
   };
 
   const overIndex = useMemo(
@@ -380,8 +431,8 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     [overId, flattenedTree]
   );
   const activeIndex = useMemo(
-    () => flattenedTree.findIndex((f) => f.id == activeId),
-    [activeId, flattenedTree]
+    () => (active?.id ? flattenedTree.findIndex((f) => f.id == active.id) : -1),
+    [active, flattenedTree]
   );
 
   const sortedIds = useMemo(
@@ -419,22 +470,22 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   const [projected, setProjected] = useState<DragProjection>(null);
   useEffect(() => {
     const dragDepth = getDragDepth(offset.x, indentationWidth);
-    const activeItem = flattenedTree.find(({ id }) => id === activeId);
     const _projected = overId
       ? getProjection(
-          activeItem,
+          active,
           flattenedTree,
           dragPaths,
           overIndex,
           dragDepth,
           offset.y,
           activeIndex < overIndex,
-          modifier
+          modifier,
+          active?.space
         )
       : null;
     setProjected((p) => (!isEqual(p, _projected) ? _projected : p));
   }, [
-    activeId,
+    active,
     flattenedTree,
     overId,
     overIndex,
@@ -442,13 +493,14 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     offset,
     activeIndex,
     modifier,
-    activeViewSpace,
+    indentationWidth,
+    activeViewSpaces,
   ]);
 
   const dragStarted = (activeId: string) => {
     const activeItem = flattenedTree.find(({ id }) => id === activeId);
     //Dont drag vault
-    setActiveId(activeId);
+    setActive(activeItem);
     setOverId(activeId);
 
     if (activeItem) {
@@ -465,10 +517,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   const parentName = useMemo(
     () =>
       projected
-        ? flattenedTree.find((f) => f.id == projected.parentId)?.item?.name ??
-          activeViewSpace?.name
+        ? flattenedTree.find((f) => f.id == projected.parentId)?.item?.name
         : null,
-    [flattenedTree, projected, activeViewSpace]
+    [flattenedTree, projected]
   );
   const overName = useMemo(
     () =>
@@ -495,7 +546,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             : modifier == "link"
             ? i18n.labels.addTo
             : i18n.labels.copyTo
-        } ${projected.insert ? overName : parentName}`
+        } ${projected.insert ? overName : parentName ?? "Spaces"}`
       );
     }
     if (dragPaths.length > 1) {
@@ -518,7 +569,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   useEffect(() => {
     if (dragPaths.length == 0) {
       setOverId(null);
-      setActiveId(null);
+      setActive(null);
       setOffset({ x: 0, y: 0 });
       setModifier(null);
       setProjected(null);
@@ -530,14 +581,15 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
   const dragEnded = (e: React.DragEvent<HTMLDivElement>, overId: string) => {
     const modifiers = eventToModifier(e);
+
     dropPathsInTree(
       superstate,
       dragPaths,
-      activeId,
+      active?.id,
       overId,
       projected,
       flattenedTree,
-      activeViewSpace,
+      activeViewSpaces,
       modifiers
     );
     resetState();
@@ -561,7 +613,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   function resetState() {
     setDragPaths([]);
     setOverId(null);
-    setActiveId(null);
+    setActive(null);
     setOffset({ x: 0, y: 0 });
     setModifier(null);
     setProjected(null);
@@ -584,9 +636,15 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
       dragCounter.current = 0;
     }
   };
+  const rowHeights = useMemo(
+    () =>
+      flattenedTree.map((f) => spaceRowHeight(superstate, f.type == "group")),
+    [flattenedTree]
+  );
+
   return (
     <div
-      className="mk-path-tree"
+      className={`mk-path-tree`}
       onDragEnter={() => dragEnter()}
       onDragLeave={() => dragLeave()}
       onDragOver={(e) => e.preventDefault()}
@@ -598,36 +656,51 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         }
       }}
     >
-      <VirtualizedList
-        vRef={listRef}
-        flattenedTree={flattenedTree}
-        projected={projected}
-        handleCollapse={handleCollapse}
-        activePath={activePath}
-        superstate={superstate}
-        selectedPaths={selectedPaths}
-        selectRange={selectRange}
-        indentationWidth={indentationWidth}
-        dragStarted={dragStarted}
-        dragOver={dragOver}
-        dragEnded={dragEnded}
-        overIndex={overIndex}
-        activeIndex={activeIndex}
-      ></VirtualizedList>
-
-      {modifier && (
+      {flattenedTree.length == 1 || editArea ? (
+        <SpaceAreaEditor
+          superstate={superstate}
+          area={waypoints[activeArea]}
+          saveArea={(area) => {
+            setEditArea(false);
+            setWaypoints(
+              waypoints.map((f, i) => {
+                return i == activeArea ? area : f;
+              })
+            );
+          }}
+        ></SpaceAreaEditor>
+      ) : (
+        <VirtualizedList
+          vRef={listRef}
+          rowHeights={rowHeights}
+          flattenedTree={flattenedTree}
+          projected={projected}
+          handleCollapse={handleCollapse}
+          activePath={activePath}
+          superstate={superstate}
+          selectedPaths={selectedPaths}
+          selectRange={selectRange}
+          indentationWidth={indentationWidth}
+          dragStarted={dragStarted}
+          dragOver={dragOver}
+          dragEnded={dragEnded}
+          overIndex={overIndex}
+          activeIndex={activeIndex}
+        ></VirtualizedList>
+      )}
+      {modifier && !isTouchScreen(props.superstate.ui) && (
         <div
           className="mk-hint-dnd"
           style={{
             position: "absolute",
             bottom: "10px",
             left: "10px",
-            background: "var(--interactive-accent)",
+            background: "var(--mk-ui-active)",
             boxShadow: "var(--background-modifier-box-shadow)",
             padding: "4px 8px",
             borderRadius: "4px",
             color: "var(--text-on-accent)",
-            fontSize: "var(--font-ui-smaller)",
+            fontSize: "12px",
           }}
         >
           <div>

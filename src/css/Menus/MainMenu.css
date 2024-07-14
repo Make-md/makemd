@@ -1,0 +1,122 @@
+.mk-main-menu-container {
+  display: flex;
+  flex-direction: column;
+  margin: 12px 12px 0px 12px;
+  gap: 4px;
+  align-items: center;
+  margin-right: 10px;
+}
+
+
+.mk-main-menu-inner {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+}
+
+.mk-main-menu {
+  display: flex;
+  transition: all 0.2s ease;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.mk-main-menu.mk-hidden {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mk-main-menu-search {
+  transition: all 0.2s ease;
+  align-items: center;
+  gap: 8px;
+}
+
+.mk-main-menu-search.mk-hidden {
+
+  opacity: 0;
+  pointer-events: none;
+  
+}
+.mk-main-menu-button {
+  font-weight: var(--font-medium);
+    font-size: 16px;
+    padding: 8px 10px;
+  text-align: left;
+  border-radius: 4px;
+  align-items: center;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+.mk-main-menu-search {
+  position: absolute;
+  display: flex;
+  width: calc(100% - 60px)
+}
+.mk-main-menu-search input {
+  width: 100%;
+}
+.mk-main-menu-icon {
+  background: var(--nav-item-background-hover);
+  padding: 2px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  justify-content: center;
+  margin-right: 4px;
+}
+
+
+.is-mobile .mk-main-menu-button {
+  font-size: 16px;
+  font-weight: var(--font-medium);
+  gap: 4px;
+}
+
+.mk-main-menu-button > div {
+  display: flex;
+}
+
+.mk-main-menu-button.mk-main-menu-button-primary {
+  flex-grow: 1;
+  line-height: 1;
+  justify-content: flex-start;
+}
+
+.mk-main-menu .mk-main-menu-sticker {
+margin-right: 8px;
+}
+
+.mk-main-menu-button svg {
+  height: 16px;
+  width: 16px;
+}
+body:not(.is-mobile) .mk-main-menu-button:hover {
+  background: var(--nav-item-background-hover);
+}
+
+.mk-menu-button {
+  display: flex;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  align-items: center;
+  width: 100%;
+  border-radius: 0.375rem;
+}
+.mk-menu-button:hover {
+  background: var(--nav-item-background-hover);
+}
+
+.mk-main-menu-container .mk-query {
+  width: 100%;
+}

@@ -1,6 +1,11 @@
 
 export const sanitizeSQLStatement = (name: string) => {
-  return name?.replace(/'/g, `''`);
+  try {
+    return name?.replace(/'/g, `''`)
+  } catch(e) {
+    console.log(e, name);
+    return ''
+  }
 };export const sanitizeColumnName = (name: string): string => {
   if (name?.charAt(0) == "_") {
     return sanitizeColumnName(name.substring(1));

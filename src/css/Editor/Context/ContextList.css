@@ -1,0 +1,77 @@
+
+.mk-editor-context-selector {
+  font-size: 14px;
+display: flex;
+padding: 8px;
+gap: 8px;
+border-top: thin solid var(--mk-ui-divider);
+flex-direction: column;
+}
+.mk-editor-context {
+  overflow-x: scroll;
+}
+.mk-editor-context-groups {
+  display: flex;
+  --icon-size: 14px;
+    padding: 0;
+    z-index: var(--layer-popover);
+    background: var(--mk-ui-background);
+    max-height: unset;
+    -webkit-app-region: no-drag;
+    padding: 6px 10px;
+    border: 1px solid var(--mk-ui-border);
+    background-color: var(--mk-ui-background-menu);
+    user-select: none;
+    border-radius: 8px;
+    align-items: center;
+    height: 50px;
+    white-space: nowrap;
+    gap: 8px;
+}
+
+.mk-editor-context-group-select {
+    background: rgba(var(--mono-rgb-100), 0.025);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+}
+
+.mk-editor-context-group .mk-path-context-field { 
+  width: auto;
+  max-width: unset;
+  min-width: auto;
+  background: white;
+  padding: 2px 8px;
+  gap: 2px;
+}
+.mk-editor-context-groups span {
+  flex: 1;
+}
+
+.mk-editor-context-group {
+   display: flex;
+   gap: 8px;
+   align-items: center;
+   padding: 0 8px;
+   border: thin solid var(--mk-ui-divider);
+   border-radius: 4px;
+   height: 32px;
+    background: var(--mk-ui-background);
+   
+}
+.mk-editor-context-properties {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  background: var(--mk-ui-background-contrast);
+  border-radius: 4px;
+  
+}
+.mk-editor-context-properties > div {
+  gap: 4px;
+  display: flex;
+  flex-wrap: wrap;
+}

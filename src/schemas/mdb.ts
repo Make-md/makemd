@@ -1,6 +1,6 @@
 import i18n from "core/i18n";
+import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { PathPropertyName } from "core/types/context";
-import { frameSchemaToMDBSchema } from "core/utils/frames/nodes";
 import { DBTable, DBTables, SpaceInfo, SpaceProperty, SpaceTable, SpaceTableSchema } from "types/mdb";
 import { FrameSchema } from "types/mframe";
 import { parsePropString, safelyParseJSON } from "utils/parsers";
@@ -11,17 +11,32 @@ export type FieldType = {
   restricted?: boolean;
   icon?: string;
   multi?: boolean;
+  primative?: boolean;
   metadata?: boolean;
   multiType?: string;
   configKeys?: string[];
+  description?: string;
+};
+
+export const fieldTypeForField = (f: SpaceProperty) => {
+  if (!f) return null;
+  return f.type == 'fileprop' ? parseFieldValue(f.value, 'fileprop')?.type ?? 'text' : f.type
 };
 
 export const stickerForField = (f: SpaceProperty) => f.attrs?.length > 0
 ? safelyParseJSON(f.attrs)?.icon ?? fieldTypeForType(f.type, f.name)?.icon
 : fieldTypeForType(f.type, f.name)?.icon
 
+
+export const stickerForSchema = (f: FrameSchema) => f.def?.icon?.length > 0 ? (f.def)?.icon : "ui//layout-list";
+export const stickerForDBSchema = (f: SpaceTableSchema) => safelyParseJSON(f?.def)?.icon ?? "ui//layout-list"
+
 export const fieldTypeForType = (type: string, name?: string) =>
-    name == PathPropertyName ? fieldTypes.find((t) => t.type == 'file') : name == 'tags' ? fieldTypes.find((t) => t.type == 'tags') : name == 'aliases' ? fieldTypes.find((t) => t.type == 'option-multi') : name == 'sticker' ? fieldTypes.find((t) => type == 'icon') : fieldTypes.find((t) => type == t.type) ||
+    name == PathPropertyName ? 
+    fieldTypes.find((t) => t.type == 'file') : name == 'tags' ? 
+    fieldTypes.find((t) => t.type == 'tags-multi') : name == 'aliases' ? 
+    fieldTypes.find((t) => t.type == 'option-multi') : name == 'sticker' ? 
+    fieldTypes.find((t) => type == 'icon') : fieldTypes.find((t) => type == t.type) ||
     fieldTypes.find((t) => type == t.multiType);
 
 export const fieldTypes: FieldType[] = [
@@ -29,58 +44,77 @@ export const fieldTypes: FieldType[] = [
     type: "unknown",
     label: "",
     restricted: true,
-    icon: 'lucide//file-question'
+    icon: 'ui//file-question',
+  },
+  {
+    type: 'any',
+    label: '',
+    restricted: true,
+    icon: 'ui//wildcard',
+    multi: true,
+    multiType: 'any-multi',
   },
   {
     type: "text",
     label: i18n.properties.text.label,
     metadata: true,
-    icon: 'lucide//text'
+    icon: 'ui//text',
+    primative: true,
+    description: i18n.properties.text.description
   },
   {
     type: "number",
     label: i18n.properties.number.label,
     metadata: true,
-    icon: 'lucide//binary',
-    configKeys: ['unit']
+    icon: 'ui//binary',
+    configKeys: ['unit'],
+    primative: true,
+    description: i18n.properties.number.description
   },
   {
     type: "boolean",
     label: i18n.properties.boolean.label,
     metadata: true,
-    icon: 'lucide//check-square'
+    icon: 'ui//check-square',
+    primative: true,
+    description: i18n.properties.boolean.description
   },
   {
     type: "date",
     label: i18n.properties.date.label,
     metadata: true,
-    icon: 'lucide//calendar',
-    configKeys: ['format']
+    icon: 'ui//calendar',
+    configKeys: ['format'],
+    primative: true,
+    description: i18n.properties.date.description
   },
   {
     type: "option",
     label: i18n.properties.option.label,
     multi: true,
     multiType: "option-multi",
-    icon: 'lucide//list',
-    configKeys: ['options']
+    icon: 'ui//list',
+    configKeys: ['options', 'source'],
+    description: i18n.properties.option.description
   },
   {
-    type: "tags",
+    type: "tags-multi",
     label: i18n.properties.tags.label,
-    icon: 'lucide//tags',
+    icon: 'ui//tags',
+    description: i18n.properties.tags.description
   },
   {
     type: "file",
     label: i18n.properties.file.label,
     restricted: true,
-    icon: 'ui//mk-make-h3'
+    icon: 'ui//mk-make-h3',
   },
   {
     type: "fileprop",
     label: i18n.properties.fileProperty.label,
-    icon: 'lucide//list',
-    configKeys:['field', 'value']
+    icon: 'ui//formula',
+    configKeys:['field', 'value', 'type'],
+    description: i18n.properties.fileProperty.description
   },
   {
     type: "link",
@@ -88,7 +122,9 @@ export const fieldTypes: FieldType[] = [
     multi: true,
     multiType: "link-multi",
     metadata: true,
-    icon: 'lucide//file-text'
+    icon: 'ui//file-text',
+    primative: true,
+    description: i18n.properties.link.description
   },
   {
     type: "context",
@@ -96,7 +132,8 @@ export const fieldTypes: FieldType[] = [
     icon: 'ui//mk-make-note',
     multi: true,
     multiType: "context-multi",
-    configKeys: ['space']
+    configKeys: ['space'],
+    description: i18n.properties.context.description
   },
   {
     type: "object",
@@ -104,15 +141,19 @@ export const fieldTypes: FieldType[] = [
     multi: true,
     multiType: 'object-multi',
     metadata: true,
-    icon: 'lucide//list-tree'
+    icon: 'ui//list-tree',
+    configKeys: ['type', 'typeName'],
+    description: i18n.properties.object.description
   },
   {
     type: "icon",
     label: i18n.properties.icon.label,
     multi: true,
     multiType: "icon-multi",
-    icon: 'lucide//gem',
-    restricted: true
+    icon: 'ui//gem',
+    restricted: true,
+    primative: true,
+    description: i18n.properties.icon.description
   },
   {
     type: "image",
@@ -120,26 +161,43 @@ export const fieldTypes: FieldType[] = [
     multi: true,
     multiType: "image-multi",
     metadata: true,
-    icon: 'ui//mk-make-image'
+    icon: 'ui//mk-make-image',
+    primative: true,
+    description: i18n.properties.image.description
   },
   {
     type: "color",
     label: i18n.properties.color.label,
     icon: 'ui//mk-make-image',
-    restricted: true
+    restricted: true,
+    description: i18n.properties.color.description
   },
   {
     type: "space",
     label: i18n.properties.space.label,
-    icon: 'lucide//layout-grid',
-    restricted: true
+    icon: 'ui//layout-grid',
+    restricted: true,
+    description: i18n.properties.space.description
+  },
+  {
+    type: "table",
+    label: i18n.properties.space.label,
+    icon: 'ui//layout-grid',
+    restricted: true,
+    description: i18n.properties.space.description
   },
   {
     type: 'super',
     label: i18n.properties.super.label,
-    icon: 'lucide//zap',
+    icon: 'ui//zap',
     restricted: true,
-    configKeys: ['dynamic', 'field']
+    configKeys: ['dynamic', 'field'],
+  },
+  {
+    type: 'input',
+    label: i18n.properties.super.label,
+    icon: 'ui//input',
+    restricted: true,
   }
   
 ];
@@ -181,17 +239,17 @@ export const defaultValueForPropertyType = (name: string, value: string, type: s
 export const defaultContextSchemaID = "files";
 export const defaultContextDBSchema: SpaceTableSchema = {
   id: defaultContextSchemaID,
-  name: "Files",
+  name: "Items",
   type: "db",
   primary: "true",
 };
 
 export const defaultFrameListViewID = "filesView";
-export const defaultFrameListViewSchema: FrameSchema = {
+export const defaultFrameListViewSchema: SpaceTableSchema = {
   id: defaultFrameListViewID,
-  name: "Files",
+  name: "All",
   type: "view",
-  def: {db: defaultContextSchemaID},
+  def: JSON.stringify({db: defaultContextSchemaID, icon: 'ui//file-stack'}),
 };
 
 
@@ -202,7 +260,7 @@ export const defaultMainFrameSchema = (id: string) => ({id, name: id, type: 'fra
 export const defaultFramesTable: DBTable = {
   uniques: [],
   cols: ["id", "name", "type", "def", "predicate", "primary"],
-  rows: [defaultMainFrameSchema(mainFrameID), frameSchemaToMDBSchema(defaultFrameListViewSchema)] as SpaceTableSchema[],
+  rows: [defaultMainFrameSchema(mainFrameID), defaultFrameListViewSchema] as SpaceTableSchema[],
 };
 
 
@@ -262,6 +320,7 @@ export const defaultTableFields: SpaceProperty[] = [
     name: i18n.properties.defaultField,
     schemaId: "",
     type: "text",
+    primary: "true",
   },
 ];
 

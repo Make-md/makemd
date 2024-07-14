@@ -4,18 +4,23 @@ import { Superstate } from "core/superstate/superstate";
 import { saveProperties } from "core/superstate/utils/spaces";
 import { PathPropertyName } from "core/types/context";
 import { Predicate, Sort } from "core/types/predicate";
-import { linkContextRow } from "core/utils/contexts/linkContextRow";
 import { filterReturnForCol } from "core/utils/contexts/predicate/filter";
 import { sortReturnForCol } from "core/utils/contexts/predicate/sort";
-import _ from "lodash";
+import { tagSpacePathFromTag } from "core/utils/strings";
+import _, { isEqual } from "lodash";
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { defaultFrameListViewSchema } from "schemas/mdb";
+import {
+  defaultContextDBSchema,
+  defaultContextSchemaID,
+  defaultContextTable,
+} from "schemas/mdb";
 import {
   DBRow,
   DBRows,
@@ -29,23 +34,18 @@ import {
 import { FrameSchema } from "types/mframe";
 import { uniq, uniqueNameFromString } from "utils/array";
 import { parseProperty, safelyParseJSON } from "utils/parsers";
-import { parseMDBValue } from "utils/properties";
+import { parseMDBStringValue } from "utils/properties";
 import { sanitizeColumnName } from "utils/sanitizers";
 import {
-  defaultPredicate,
-  defaultTablePredicate,
+  defaultPredicateForSchema,
   validatePredicate,
 } from "../../utils/contexts/predicate/predicate";
-import { ContextMDBContext } from "./ContextMDBContext";
 import { FramesMDBContext } from "./FramesMDBContext";
 import { SpaceContext } from "./SpaceContext";
 type ContextEditorContextProps = {
+  dbSchema: SpaceTableSchema;
   sortedColumns: SpaceTableColumn[];
-  cols: SpaceTableColumn[];
-  data: DBRows;
-  schema: FrameSchema;
   views: FrameSchema[];
-  setSchema: React.Dispatch<React.SetStateAction<FrameSchema>>;
   filteredData: DBRows;
   contextTable: SpaceTables;
   setContextTable: React.Dispatch<React.SetStateAction<SpaceTables>>;
@@ -54,8 +54,8 @@ type ContextEditorContextProps = {
   selectedRows: string[];
   selectRows: (lastSelected: string, rows: string[]) => void;
   predicate: Predicate;
-  savePredicate: (predicate: Predicate) => void;
-
+  savePredicate: (predicate: Partial<Predicate>) => void;
+  source: string;
   hideColumn: (column: SpaceTableColumn, hidden: boolean) => void;
   sortColumn: (sort: Sort) => void;
   saveColumn: (
@@ -66,7 +66,9 @@ type ContextEditorContextProps = {
   delColumn: (column: SpaceTableColumn) => void;
   searchString: string;
   setSearchString: React.Dispatch<React.SetStateAction<string>>;
-  loadContextFields: (tag: string) => void;
+  tableData: SpaceTable;
+  cols: SpaceTableColumn[];
+  saveDB: (table: SpaceTable) => void;
   updateValue: (
     column: string,
     value: string,
@@ -85,11 +87,9 @@ type ContextEditorContextProps = {
 };
 
 export const ContextEditorContext = createContext<ContextEditorContextProps>({
-  cols: [],
-  data: [],
-  schema: null,
+  dbSchema: null,
   views: [],
-  setSchema: () => null,
+  source: "",
   sortedColumns: [],
   filteredData: [],
   contextTable: {},
@@ -98,9 +98,9 @@ export const ContextEditorContext = createContext<ContextEditorContextProps>({
   selectedRows: [],
   selectRows: () => null,
   setContextTable: () => null,
-  predicate: defaultPredicate,
+  predicate: null,
   savePredicate: () => null,
-
+  saveDB: () => null,
   hideColumn: () => null,
   saveColumn: () => false,
   newColumn: () => false,
@@ -108,74 +108,160 @@ export const ContextEditorContext = createContext<ContextEditorContextProps>({
   delColumn: () => null,
   searchString: "",
   setSearchString: () => null,
-  loadContextFields: () => null,
+
   updateValue: () => null,
   updateFieldValue: () => null,
+  tableData: null,
+  cols: [],
 });
 
 export const ContextEditorProvider: React.FC<
   React.PropsWithChildren<{
     superstate: Superstate;
-    schema?: string;
   }>
 > = (props) => {
-  const { spaceInfo, spaceState: spaceCache } = useContext(SpaceContext);
-  const contexts = spaceCache?.contexts ?? [];
-  const { dbSchema, saveDB, saveContextDB, tableData } =
-    useContext(ContextMDBContext);
-  const { frameSchemas, saveSchema } = useContext(FramesMDBContext);
-  const [schema, setSchema] = useState<FrameSchema>(defaultFrameListViewSchema);
-  const [searchString, setSearchString] = useState<string>(null);
+  const { frameSchemas, saveSchema, frameSchema } =
+    useContext(FramesMDBContext);
+
+  const {
+    spaceInfo,
+    readMode,
+    spaceState: spaceCache,
+  } = useContext(SpaceContext);
+
+  const [schemaTable, setSchemaTable] = useState<DBTable>(null);
   const [contextTable, setContextTable] = useState<SpaceTables>({});
-  const [predicate, setPredicate] = useState<Predicate>(defaultPredicate);
+  const [tableData, setTableData] = useState<SpaceTable>(null);
+
+  const [searchString, setSearchString] = useState<string>(null);
+  const [predicate, setPredicate] = useState<Predicate>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [editMode, setEditMode] = useState<number>(0);
+  const contextPath = frameSchema?.def?.context ?? spaceInfo?.path;
+  const dbSchema: SpaceTableSchema = useMemo(() => {
+    if (frameSchema && frameSchema.def?.db) {
+      if (schemaTable)
+        return schemaTable?.rows.find(
+          (f) => f.id == frameSchema.def.db
+        ) as SpaceTableSchema;
+      return {
+        id: frameSchema.def.db,
+        ...defaultContextDBSchema,
+      };
+    }
+    return null;
+  }, [frameSchema, schemaTable]);
   const views = useMemo(() => {
     const _views = frameSchemas.filter(
       (f) => f.type == "view" && f.def.db == dbSchema?.id
     );
-    return _views.length > 0 ? _views : schema ? [schema] : [];
-  }, [frameSchemas, schema]);
+    return _views.length > 0 ? _views : frameSchema ? [frameSchema] : [];
+  }, [frameSchemas, frameSchema, dbSchema]);
 
-  const getSchema = (
-    _schemaTable: FrameSchema[],
-    _dbSchema: SpaceTableSchema,
-    _currentSchema?: FrameSchema
-  ): FrameSchema => {
-    let _schema;
-    if (props.schema) {
-      _schema = _schemaTable.find((f) => f.id == props.schema);
+  const defaultSchema = defaultContextTable;
+
+  const contexts = spaceCache?.contexts ?? [];
+  const loadTables = async () => {
+    let schemas = props.superstate.contextsIndex.get(contextPath)?.schemas;
+    if (!schemas)
+      schemas = await props.superstate.spaceManager.tablesForSpace(contextPath);
+    if (schemas && !isEqual(schemaTable, schemas)) {
+      setSchemaTable(() => ({
+        ...defaultSchema,
+        rows: schemas,
+      }));
     } else {
-      _schema =
-        _currentSchema?.def?.db == _dbSchema.id
-          ? _schemaTable.find((f) => f.id == _currentSchema.id)
-          : _schemaTable.find((f) => f.def?.db == _dbSchema.id) ??
-            ({
-              ..._dbSchema,
-              id: uniqueNameFromString(
-                _dbSchema.id + "View",
-                _schemaTable.map((f) => f.id)
-              ),
-              type: "view",
-              def: { db: _dbSchema.id },
-              predicate: JSON.stringify(
-                _dbSchema.primary == "true"
-                  ? defaultPredicate
-                  : defaultTablePredicate
-              ),
-            } as FrameSchema);
+      if (dbSchema) retrieveCachedTable(dbSchema);
     }
-    return _schema;
   };
 
   useEffect(() => {
-    if (!dbSchema) return;
-    const _schema = getSchema(frameSchemas, dbSchema, schema);
+    if (dbSchema) retrieveCachedTable(dbSchema);
+  }, [dbSchema]);
 
-    if (_schema) {
-      setSchema(_schema);
-    }
-  }, [dbSchema, frameSchemas, props.schema]);
+  const loadContextFields = useCallback(async (tag: string) => {
+    props.superstate.spaceManager
+      .contextForSpace(tagSpacePathFromTag(tag))
+      .then((f) => {
+        setContextTable((t) => ({
+          ...t,
+          [tag]: f,
+        }));
+      });
+  }, []);
+  const retrieveCachedTable = (newSchema: SpaceTableSchema) => {
+    props.superstate.spaceManager
+      .readTable(contextPath, newSchema.id)
+      .then((f) => {
+        if (f) {
+          if (newSchema.primary) {
+            for (const c of contexts) {
+              loadContextFields(c);
+            }
+          }
+          updateTable(f);
+        }
+      });
+  };
+  const updateTable = (newTable: SpaceTable) => {
+    setTableData(newTable);
+    // calculateTableData(newTable);
+  };
+  useEffect(() => {
+    const refreshMDB = (payload: { path: string }) => {
+      if (payload.path == contextPath) {
+        loadTables();
+      } else {
+        const tag = Object.keys(contextTable).find(
+          (t) =>
+            props.superstate.spaceManager.spaceInfoForPath(t)?.path ==
+            payload.path
+        );
+        if (tag) loadContextFields(tag);
+      }
+    };
+    const refreshPath = (payload: { path: string }) => {
+      if (payload.path == contextPath) {
+        loadTables();
+      } else if (
+        dbSchema?.primary == "true" &&
+        tableData?.rows.some((f) => f[PathPropertyName] == payload.path)
+      ) {
+        retrieveCachedTable(dbSchema);
+      }
+    };
+    props.superstate.eventsDispatcher.addListener(
+      "contextStateUpdated",
+      refreshMDB
+    );
+
+    props.superstate.eventsDispatcher.addListener(
+      "pathStateUpdated",
+      refreshPath
+    );
+
+    return () => {
+      props.superstate.eventsDispatcher.removeListener(
+        "contextStateUpdated",
+        refreshMDB
+      );
+
+      props.superstate.eventsDispatcher.removeListener(
+        "pathStateUpdated",
+        refreshPath
+      );
+    };
+  }, [contextTable, dbSchema, retrieveCachedTable, spaceInfo, tableData]);
+
+  useEffect(() => {
+    loadTables();
+  }, [spaceInfo, frameSchema]);
+  const saveDB = async (newTable: SpaceTable) => {
+    if (spaceInfo.readOnly) return;
+    await props.superstate.spaceManager
+      .saveTable(contextPath, newTable, true)
+      .then((f) => props.superstate.reloadContext(spaceInfo));
+  };
 
   const cols: SpaceTableColumn[] = useMemo(
     () =>
@@ -187,10 +273,7 @@ export const ContextEditorProvider: React.FC<
                   (p, c) => [
                     ...p,
                     ...(contextTable[c]?.cols
-                      .filter(
-                        (f) =>
-                          f.name != PathPropertyName && f.type != "fileprop"
-                      )
+                      .filter((f) => f.primary != "true")
                       .map((f) => ({ ...f, table: c })) ?? []),
                   ],
                   []
@@ -198,62 +281,109 @@ export const ContextEditorProvider: React.FC<
               : []),
           ]
         : [],
-    [tableData, contextTable, contexts]
+    [tableData, contextTable, contexts, dbSchema]
   );
+
   const data: DBRows = useMemo(
     () =>
-      tableData?.rows.map((r, index) =>
-        linkContextRow(
-          props.superstate,
-          {
-            _index: index.toString(),
-            ...r,
-            ...contexts.reduce((p, c) => {
-              const contextRowIndexByPath: number =
-                contextTable[c]?.rows.findIndex(
-                  (f) => f[PathPropertyName] == r[PathPropertyName]
-                ) ?? -1;
-              const contextRowsByPath: DBRow =
-                contextTable[c]?.rows[contextRowIndexByPath] ?? {};
-              const contextRowsWithKeysAppended: DBRow = Object.keys(
-                contextRowsByPath
-              ).reduce(
-                (pa, ca) => ({ ...pa, [ca + c]: contextRowsByPath[ca] }),
-                {
-                  ["_index" + c]: contextRowIndexByPath.toString(),
-                }
-              );
-              return { ...p, ...contextRowsWithKeysAppended };
-            }, {}),
-          },
-          cols
-        )
-      ) ?? [],
-    [tableData, schema, contextTable]
+      tableData?.rows.map((r, index) => ({
+        _index: index.toString(),
+        ...r,
+        ...(r[PathPropertyName]
+          ? {
+              [PathPropertyName]: props.superstate.spaceManager.resolvePath(
+                r[PathPropertyName],
+                spaceCache?.path
+              ),
+            }
+          : {}),
+        ...contexts.reduce((p, c) => {
+          const contextRowIndexByPath: number =
+            contextTable[c]?.rows.findIndex(
+              (f) => f[PathPropertyName] == r[PathPropertyName]
+            ) ?? -1;
+          const contextRowsByPath: DBRow =
+            contextTable[c]?.rows[contextRowIndexByPath] ?? {};
+          const contextRowsWithKeysAppended: DBRow = Object.keys(
+            contextRowsByPath
+          ).reduce((pa, ca) => ({ ...pa, [ca + c]: contextRowsByPath[ca] }), {
+            ["_index" + c]: contextRowIndexByPath.toString(),
+          });
+          return { ...p, ...contextRowsWithKeysAppended };
+        }, {}),
+      })) ?? [],
+    [tableData, contextTable, cols, dbSchema, spaceCache]
   );
+
+  useEffect(() => {
+    if (tableData) {
+      for (const c of contexts) {
+        loadContextFields(c);
+      }
+    }
+  }, [tableData]);
+
+  const saveContextDB = async (newTable: SpaceTable, tag: string) => {
+    await props.superstate.spaceManager
+      .saveTable(tagSpacePathFromTag(tag), newTable, true)
+      .then((f) =>
+        props.superstate.reloadContextByPath(tagSpacePathFromTag(tag))
+      );
+  };
+  // const getSchema = (
+  //   _schemaTable: FrameSchema[],
+  //   _dbSchema: SpaceTableSchema,
+  //   _currentSchema?: FrameSchema
+  // ): FrameSchema => {
+  //   let _schema;
+  //   if (props.schema) {
+  //     _schema = _schemaTable.find((f) => f.id == props.schema);
+  //   } else {
+  //     _schema =
+  //       _currentSchema?.def?.db == _dbSchema.id
+  //         ? _schemaTable.find((f) => f.id == _currentSchema.id)
+  //         : _schemaTable.find((f) => f.def?.db == _dbSchema.id) ??
+  //           ({
+  //             ..._dbSchema,
+  //             id: uniqueNameFromString(
+  //               _dbSchema.id + "View",
+  //               _schemaTable.map((f) => f.id)
+  //             ),
+  //             type: "view",
+  //             def: { db: _dbSchema.id },
+  //             predicate: JSON.stringify(
+  //               _dbSchema.primary == "true"
+  //                 ? defaultPredicate
+  //                 : defaultTablePredicate
+  //             ),
+  //           } as FrameSchema);
+  //   }
+  //   return _schema;
+  // };
   const sortedColumns = useMemo(() => {
     return cols
       .filter(
         (f) =>
           f.hidden != "true" &&
-          !predicate.colsHidden.some((c) => c == f.name + f.table)
+          !(predicate?.colsHidden ?? []).some((c) => c == f.name + f.table)
       )
       .sort(
         (a, b) =>
-          predicate.colsOrder.findIndex((x) => x == a.name + a.table) -
-          predicate.colsOrder.findIndex((x) => x == b.name + b.table)
+          (predicate?.colsOrder ?? []).findIndex((x) => x == a.name + a.table) -
+          (predicate?.colsOrder ?? []).findIndex((x) => x == b.name + b.table)
       );
   }, [cols, predicate]);
   const filteredData = useMemo(
     () =>
       data
         .filter((f) => {
-          return predicate.filters.reduce((p, c) => {
+          return (predicate?.filters ?? []).reduce((p, c) => {
             return p
               ? filterReturnForCol(
                   cols.find((col) => col.name + col.table == c.field),
                   c,
-                  f
+                  f,
+                  spaceCache.properties
                 )
               : p;
           }, true);
@@ -269,7 +399,7 @@ export const ContextEditorProvider: React.FC<
             : true
         )
         .sort((a, b) => {
-          return predicate.sort.reduce((p, c) => {
+          return (predicate?.sort ?? []).reduce((p, c) => {
             return p == 0
               ? sortReturnForCol(
                   cols.find((col) => col.name + col.table == c.field),
@@ -293,12 +423,21 @@ export const ContextEditorProvider: React.FC<
     const col = (table == "" ? tableData : contextTable[table])?.cols.find(
       (f) => f.name == column
     );
-    if (col)
+    console.log(
+      "updateValue",
+      tableData.rows[index]?.[PathPropertyName],
+      col,
+      path,
+      value,
+      column
+    );
+    if (col) {
       saveProperties(
         props.superstate,
         path ?? tableData.rows[index]?.[PathPropertyName],
-        { [column]: parseMDBValue(col.type, value) }
+        { [column]: parseMDBStringValue(col.type, value, true) }
       );
+    }
 
     if (table == "") {
       saveDB({
@@ -313,11 +452,13 @@ export const ContextEditorProvider: React.FC<
         ),
       });
     } else if (contextTable[table]) {
+      const path = tableData.rows[index][PathPropertyName];
+
       saveContextDB(
         {
           ...contextTable[table],
           rows: contextTable[table].rows.map((r, i) =>
-            i == index
+            r[PathPropertyName] == path
               ? {
                   ...r,
                   [column]: value,
@@ -331,14 +472,12 @@ export const ContextEditorProvider: React.FC<
   };
   const sortColumn = (sort: Sort) => {
     savePredicate({
-      ...predicate,
       sort: [sort],
     });
   };
 
   const hideColumn = (col: SpaceTableColumn, hidden: true) => {
     savePredicate({
-      ...predicate,
       colsHidden: hidden
         ? [
             ...predicate.colsHidden.filter((s) => s != col.name + col.table),
@@ -359,7 +498,7 @@ export const ContextEditorProvider: React.FC<
     saveProperties(
       props.superstate,
       path ?? tableData.rows[index]?.[PathPropertyName],
-      { [column]: parseMDBValue(col.type, value) }
+      { [column]: parseMDBStringValue(col.type, value, true) }
     );
 
     if (table == "") {
@@ -384,6 +523,7 @@ export const ContextEditorProvider: React.FC<
       };
       saveDB(newTable);
     } else if (contextTable[table]) {
+      const path = tableData.rows[index][PathPropertyName];
       saveContextDB(
         {
           ...contextTable[table],
@@ -396,7 +536,7 @@ export const ContextEditorProvider: React.FC<
               : m
           ),
           rows: contextTable[table].rows.map((r, i) =>
-            i == index
+            path == r[PathPropertyName]
               ? {
                   ...r,
                   [column]: value,
@@ -416,11 +556,9 @@ export const ContextEditorProvider: React.FC<
       fmKeys: string[]
     ): Promise<DBTable> => {
       let rows: DBTable = { uniques: [], cols: fmKeys, rows: [] };
-
       for (const c of paths) {
-        const properties = await props.superstate.spaceManager.readProperties(
-          c
-        );
+        const properties =
+          props.superstate.pathsIndex.get(c)?.metadata.property;
         rows = {
           uniques: [],
           cols: fmKeys,
@@ -470,132 +608,76 @@ export const ContextEditorProvider: React.FC<
     }
   };
 
-  const refreshMDB = async (payload: { path: string }) => {
-    if (dbSchema?.primary != "true") {
-      return;
+  useEffect(() => {
+    if (frameSchema) {
+      parsePredicate(frameSchema.predicate);
     }
-
-    const tag = Object.keys(contextTable).find(
-      (t) =>
-        props.superstate.spaceManager.spaceInfoForPath(t).path == payload.path
-    );
-    if (tag) loadContextFields(tag);
-  };
-
-  useEffect(() => {
-    props.superstate.eventsDispatcher.addListener(
-      "contextStateUpdated",
-      refreshMDB
-    );
-    props.superstate.eventsDispatcher.addListener(
-      "spaceStateUpdated",
-      refreshMDB
-    );
-    return () => {
-      props.superstate.eventsDispatcher.removeListener(
-        "contextStateUpdated",
-        refreshMDB
-      );
-      props.superstate.eventsDispatcher.removeListener(
-        "spaceStateUpdated",
-        refreshMDB
-      );
-    };
-  }, []);
-
-  useEffect(() => {
-    if (schema) {
-      parsePredicate(schema.predicate);
-    }
-  }, [schema]);
-
-  useEffect(() => {
-    if (tableData) getContextTags(tableData);
-  }, [tableData]);
+  }, [frameSchema]);
 
   const selectRows = (lastSelected: string, rows: string[]) => {
     setSelectedRows(rows);
     if (!(dbSchema?.primary == "true")) return;
     if (lastSelected) {
-      const path = tableData.rows[parseInt(lastSelected)][PathPropertyName];
-      props.superstate.ui.setActivePath(path);
+      const path = tableData.rows[parseInt(lastSelected)]?.[PathPropertyName];
+      if (path) props.superstate.ui.setActivePath(path);
     } else {
-      props.superstate.ui.setActivePath(spaceInfo.path);
+      props.superstate.ui.setActivePath(contextPath);
     }
   };
 
-  const getContextTags = async (_tableData: SpaceTable) => {
-    //load contextfields
-    const contextFields = _tableData.cols
-      .filter((f) => f.type.contains("context"))
-      .map((f) => f.value)
-      .filter((f) => !contexts.some((g) => g == f));
-    for (const c of contextFields) {
-      loadContextFields(c);
-    }
-  };
+  const savePredicate = (newPredicate: Partial<Predicate>) => {
+    const defPredicate = defaultPredicateForSchema(dbSchema);
+    const pred = {
+      ...(predicate ?? defPredicate),
+      ...newPredicate,
+    };
+    const cleanedPredicate = validatePredicate(pred, defPredicate);
 
-  useEffect(() => {
-    if (tableData) {
-      for (const c of contexts) {
-        loadTagContext(c);
-      }
-    }
-  }, [tableData]);
-
-  const loadTagContext = async (tag: string) => {
-    props.superstate.spaceManager
-      .contextForSpace(props.superstate.spaceManager.spaceInfoForPath(tag).path)
-      .then((f: SpaceTable) => {
-        if (f) {
-          const contextFields = f.cols
-            .filter((g) => g.type.contains("context"))
-            .map((g) => g.value)
-            .filter((g) => !contexts.some((h) => h == g));
-          for (const c of contextFields) {
-            loadContextFields(c);
-          }
-          setContextTable((t) => ({
-            ...t,
-            [tag]: f,
-          }));
-        }
+    if (frameSchema) {
+      saveSchema({
+        ...frameSchema,
+        predicate: JSON.stringify(cleanedPredicate),
       });
-  };
-  const loadContextFields = async (tag: string) => {
-    props.superstate.spaceManager
-      .contextForSpace(props.superstate.spaceManager.spaceInfoForPath(tag).path)
-      .then((f) => {
-        setContextTable((t) => ({
-          ...t,
-          [tag]: f,
-        }));
+    } else {
+      saveSchema({
+        id: uniqueNameFromString(
+          dbSchema.id + "View",
+          frameSchemas.map((f) => f.id)
+        ),
+        name: dbSchema.name + " View",
+        type: "view",
+        def: { db: dbSchema.id },
+        predicate: JSON.stringify(cleanedPredicate),
       });
-  };
-
-  const savePredicate = (newPredicate: Predicate) => {
-    const cleanedPredicate = validatePredicate(newPredicate);
-
-    saveSchema({
-      ...schema,
-      predicate: JSON.stringify(cleanedPredicate),
-    });
+    }
     setPredicate(cleanedPredicate);
   };
   useEffect(() => {
-    setPredicate((p) => ({
-      ...p,
-      colsOrder: uniq([
-        ...p.colsOrder,
-        ...cols.filter((f) => f.hidden != "true").map((c) => c.name + c.table),
-      ]),
-    }));
+    if (predicate)
+      setPredicate((p) => ({
+        ...p,
+        colsOrder: uniq([
+          ...p.colsOrder,
+          ...cols
+            .filter((f) => f.hidden != "true")
+            .map((c) => c.name + c.table),
+        ]),
+      }));
   }, [cols]);
 
   const parsePredicate = (predicateStr: string) => {
-    const newPredicate = safelyParseJSON(predicateStr);
-
-    setPredicate(validatePredicate(newPredicate));
+    const defPredicate = defaultPredicateForSchema(dbSchema);
+    const newPredicate = validatePredicate(
+      safelyParseJSON(predicateStr),
+      defPredicate
+    );
+    setPredicate({
+      ...newPredicate,
+      colsOrder: uniq([
+        ...newPredicate.colsOrder,
+        ...cols.filter((f) => f.hidden != "true").map((c) => c.name + c.table),
+      ]),
+    });
   };
 
   const delColumn = (column: SpaceTableColumn) => {
@@ -636,7 +718,7 @@ export const ContextEditorProvider: React.FC<
       name: sanitizeColumnName(newColumn.name),
     };
     const table = column.table;
-    if (table == "") {
+    if (table == "" || table == contextPath) {
       mdbtable = tableData;
     } else if (contextTable[table]) {
       mdbtable = contextTable[table];
@@ -682,38 +764,44 @@ export const ContextEditorProvider: React.FC<
     };
     if (oldColumn)
       savePredicate({
-        view: predicate.view,
-        frame: predicate.frame,
-        frameProps: predicate.frameProps,
-        frameGroup: predicate.frameGroup,
-        filters: predicate.filters.map((f) =>
+        filters: (predicate?.filters ?? []).map((f) =>
           f.field == oldColumn.name + oldColumn.table
             ? { ...f, field: column.name + column.table }
             : f
         ),
-        sort: predicate.sort.map((f) =>
+        sort: (predicate?.sort ?? []).map((f) =>
           f.field == oldColumn.name + oldColumn.table
             ? { ...f, field: column.name + column.table }
             : f
         ),
-        groupBy: predicate.groupBy.map((f) =>
+        groupBy: (predicate?.groupBy ?? []).map((f) =>
           f == oldColumn.name + oldColumn.table ? column.name + column.table : f
         ),
-        colsHidden: predicate.colsHidden.map((f) =>
+        colsHidden: (predicate?.colsHidden ?? []).map((f) =>
           f == oldColumn.name + oldColumn.table ? column.name + column.table : f
         ),
-        colsOrder: predicate.colsOrder.map((f) =>
+        colsOrder: (predicate?.colsOrder ?? []).map((f) =>
           f == oldColumn.name + oldColumn.table ? column.name + column.table : f
         ),
         colsSize: {
-          ...predicate.colsSize,
+          ...(predicate?.colsSize ?? {}),
           [column.name + column.table]:
-            predicate.colsSize[oldColumn.name + oldColumn.table],
+            predicate?.colsSize?.[oldColumn.name + oldColumn.table],
+          [oldColumn.name + oldColumn.table]: undefined,
+        },
+        colsCalc: {
+          ...(predicate?.colsCalc ?? {}),
+          [column.name + column.table]:
+            predicate?.colsCalc?.[oldColumn.name + oldColumn.table],
           [oldColumn.name + oldColumn.table]: undefined,
         },
       });
     if (table == "") {
-      syncAllProperties(newTable);
+      if (dbSchema.id == defaultContextSchemaID) {
+        syncAllProperties(newTable);
+      } else {
+        saveDB(newTable);
+      }
     } else if (contextTable[table]) {
       saveContextDB(newTable, table);
     }
@@ -724,13 +812,13 @@ export const ContextEditorProvider: React.FC<
   return (
     <ContextEditorContext.Provider
       value={{
-        cols,
-        data,
+        source: contextPath,
         views,
-        schema,
-        setSchema,
+        cols,
+        saveDB,
         filteredData,
-        loadContextFields,
+        dbSchema,
+        tableData,
         selectedRows,
         selectRows,
         sortedColumns,

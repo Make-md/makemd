@@ -87,7 +87,7 @@ export class DataViewMarkdownFiletypeAdapter implements FileTypeAdapter<Dataview
         if (this.api().page(file.path)[fragmentId] ) {
             replaceValues(this.plugin, file.path, fragmentId, content(this.readContent(file, fragmentType, fragmentId)));
           }
-        return;
+        return true;
     }
     public async deleteContent (file: AFile, fragmentType: keyof DataviewContentTypes, fragmentId: any) {
         if (fragmentType == 'property')

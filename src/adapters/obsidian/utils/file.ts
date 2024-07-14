@@ -1,7 +1,7 @@
-import { EMBED_CONTEXT_VIEW_TYPE } from "adapters/obsidian/ui/editors/EmbedContextView";
-import { FILE_VIEW_TYPE } from "adapters/obsidian/ui/editors/markdownView/FileView";
+import { EMBED_SPACE_VIEW_TYPE } from "adapters/obsidian/ui/editors/EmbedSpaceView";
+import { LINK_VIEW_TYPE } from "adapters/obsidian/ui/editors/markdownView/FileView";
 import MakeMDPlugin from "main";
-import { AFile, Superstate } from "makemd-core";
+import { AFile } from "makemd-core";
 import {
   App,
   Platform,
@@ -13,14 +13,16 @@ import {
 } from "obsidian";
 
 import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
-import { newPathInSpace } from "core/superstate/utils/spaces";
-import { tagsSpace } from "core/types/space";
-import { PathState, SpaceState } from "core/types/superstate";
-import { spaceDefPathForSpacePath } from "core/utils/strings";
+import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
+import { tagsSpacePath } from "core/types/space";
+import { spaceNotePathForSpacePath } from "core/utils/strings";
+import { isTouchScreen } from "core/utils/ui/screen";
 import { TargetLocation } from "types/path";
 import { selectElementContents } from "utils/dom";
-import { folderPathToString, removeTrailingSlashFromFolder } from "utils/path";
+import { folderPathToString, getParentPathFromString, removeTrailingSlashFromFolder } from "utils/path";
 import { sanitizeFileName, sanitizeFolderName } from "utils/sanitizers";
+import { SPACE_FRAGMENT_VIEW_TYPE } from "../ui/editors/SpaceFragmentViewComponent";
+  
 
 export const tFileToAFile = (file: TAbstractFile | TFile) : AFile => {
   if (!file) return null;
@@ -31,8 +33,8 @@ export const tFileToAFile = (file: TAbstractFile | TFile) : AFile => {
           filename: file.name,
           path: file.path,
           parent: file.parent?.path,
-          stat: file.stat,
-          extension: file.extension
+          extension: file.extension,
+          ...file.stat
       }
   }
   return {
@@ -44,12 +46,7 @@ export const tFileToAFile = (file: TAbstractFile | TFile) : AFile => {
   }
 }
 
-export const defaultSpace = async (superstate: Superstate, activeFile: PathState) : Promise<SpaceState> =>
-  (superstate.settings.newFileLocation == "folder"
-    ? superstate.spacesIndex.get(superstate.settings.newFileFolderPath)
-    : superstate.settings.newFileLocation == "current" && activeFile && ((activeFile.type == 'space')
-    ? superstate.spacesIndex.get(activeFile.path)
-    : superstate.spacesIndex.get(activeFile.parent))) ?? superstate.spacesIndex.get('/');
+
 
 export const defaultConfigFile = async (plugin: MakeMDPlugin) => {
   return await plugin.app.vault.adapter.read(
@@ -57,7 +54,8 @@ export const defaultConfigFile = async (plugin: MakeMDPlugin) => {
   );
 };
 
-export const fileExtensionForFile = (path: string) => path?.split(".").pop();
+export const fileExtensionForFile = (path: string) => path?.indexOf(".") > 0 ? path.split(".").pop() : "md";
+export const fileNameForFile = (path: string) => path?.indexOf("/") > 0 ? path.split("/").pop().split('.').shift() : path.split('.').shift();
 
 export const uniqueFileName = (oldName: string, name: string, extension: string, folder: TFolder) => {
   let newName = sanitizeFileName(name);
@@ -112,8 +110,8 @@ const newName = folderPathToString(newPath);
     renameFile(plugin, spaceNote, newName)
   } else if (plugin.superstate.settings.enableFolderNote) {
     await plugin.files.renameFile(
-      spaceDefPathForSpacePath(oldPath),
-      spaceDefPathForSpacePath(newPath)
+      spaceNotePathForSpacePath(oldPath),
+      spaceNotePathForSpacePath(newPath)
     );
   }
 }
@@ -124,10 +122,10 @@ const newName = folderPathToString(newPath);
 
 
 export function getAllAbstractFilesInVault(
-  plugin: MakeMDPlugin,
+  app: App,
 ): TAbstractFile[] {
   const files: TAbstractFile[] = [];
-  const rootFolder = plugin.app.vault.getRoot();
+  const rootFolder = app.vault.getRoot();
   function recursiveFx(folder: TFolder) {
     for (const child of folder.children) {
       if (child instanceof TFolder) {
@@ -155,13 +153,6 @@ export const getFolderFromPath = (plugin: MakeMDPlugin, path: string): AFile => 
 export const getFolderPathFromString =  (plugin: MakeMDPlugin, file: string) =>
    getFolderFromPath(plugin, file)?.path;
 
-  export const getParentPathFromString = (file: string) => {
-    const indexOfLastSlash = file.lastIndexOf("/");
-    if (indexOfLastSlash == -1) {
-      return '/'
-    }
-    return file.substring(0,indexOfLastSlash+1);
-  }
 // Files out of Md should be listed with extension badge - Md without extension
 
 
@@ -181,8 +172,31 @@ export const openPath = async (
   leaf: WorkspaceLeaf,
   path: string,
   plugin: MakeMDPlugin,
+  flow?: boolean
 ) => {
   const uri = plugin.superstate.spaceManager.uriByString(path);
+  if (!uri) return;
+  if (uri.scheme == 'https' || uri.scheme == 'http') {
+    if (plugin.superstate.spacesIndex.has(path)) {
+      const viewType = SPACE_VIEW_TYPE;
+      plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+      await leaf.setViewState({
+        type: viewType,
+        state: { path: path, flow },
+      });
+      return;
+    } else if (plugin.superstate.pathsIndex.has(path)) {
+      const viewType = LINK_VIEW_TYPE;
+      plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+      await leaf.setViewState({
+        type: viewType,
+        state: { path: path, flow },
+      });
+      return;
+    }
+    window.open(uri.fullPath, '_blank');
+    return;
+  }
   if (uri.scheme == 'obsidian') {
       await leaf.setViewState({
         type: uri.authority,
@@ -193,11 +207,18 @@ export const openPath = async (
   if (uri.ref) {
     const cache = plugin.superstate.pathsIndex.get(uri.path);
 
-    if (cache && cache.type == "space") {
+    if (cache?.type == "space" || uri.scheme == 'spaces') {
+      if (flow && uri.ref == 'main') {
       await leaf.setViewState({
-        type: EMBED_CONTEXT_VIEW_TYPE,
+        type: EMBED_SPACE_VIEW_TYPE,
         state: { path: uri.fullPath },
       });
+    } else {
+      await leaf.setViewState({
+        type: SPACE_FRAGMENT_VIEW_TYPE,
+        state: { path: uri.fullPath, flow },
+      });
+    }
     return;
   }
   }
@@ -209,18 +230,36 @@ export const openPath = async (
   plugin.files.getFile(path).then(f => {
     if (f)
     {
-      openAFile(leaf, f, plugin.app)
+      if (f.isFolder) {
+        openTFolder(leaf, getAbstractFileAtPath(plugin.app, f.path) as TFolder, plugin, flow);
+      } else if (f) {
+        openTFile(leaf, getAbstractFileAtPath(plugin.app, f.path) as TFile, plugin.app);
+      } else {
+        return;
+      }
     } else {
-      defaultSpace(plugin.superstate, plugin.superstate.pathsIndex.get(plugin.superstate.ui.activePath)).then(f => {
-        if (f)
-      newPathInSpace(
-    plugin.superstate,
-        f,
-        fileExtensionForFile(path),
-        null,
-      )});
-    }
-  })
+      if (path.contains('/')) {
+        const folder = removeTrailingSlashFromFolder(getParentPathFromString(path));
+        const spaceFolder = plugin.superstate.spacesIndex.get(folder);
+        if (spaceFolder) {
+          newPathInSpace(
+            plugin.superstate,
+                spaceFolder,
+                fileExtensionForFile(path),
+                fileNameForFile(path),
+              );
+            }
+      } else {
+        defaultSpace(plugin.superstate, plugin.superstate.pathsIndex.get(plugin.superstate.ui.activePath)).then(f => {
+          if (f)
+        newPathInSpace(
+      plugin.superstate,
+          f,
+          fileExtensionForFile(path),
+          fileNameForFile(path),
+        )});
+      }
+  }})
   
 };
 
@@ -231,9 +270,12 @@ export const openSpace = async (
   plugin: MakeMDPlugin,
   newLeaf: TargetLocation
 ) => {
-if (spacePath == tagsSpace.path) return;
+if (spacePath == tagsSpacePath) return;
   if (!plugin.superstate.settings.spaceViewEnabled) {
-    const space = plugin.superstate.spacesIndex.get(spacePath)?.space.defPath;
+    if (!plugin.superstate.settings.enableFolderNote) {
+      return;
+    }
+    const space = plugin.superstate.spacesIndex.get(spacePath)?.space.notePath;
     plugin.superstate.ui.openPath(space, newLeaf);
     return;
   }
@@ -245,7 +287,7 @@ if (spacePath == tagsSpace.path) return;
     state: { path: spacePath },
   });
   await plugin.app.workspace.requestSaveLayout();
-  if (plugin.superstate.ui.getScreenType() == 'mobile') {
+  if (isTouchScreen(plugin.superstate.ui)) {
     plugin.app.workspace.leftSplit.collapse();
   }
   plugin.superstate.ui.setActivePath(spacePath);
@@ -272,7 +314,7 @@ export const openURL = async (url: string,app: App,  location?: TargetLocation) 
   }
   const leaf = getLeaf(app, location)
   if (url.endsWith(".md")) {
-    const viewType = FILE_VIEW_TYPE;
+    const viewType = LINK_VIEW_TYPE;
     app.workspace.setActiveLeaf(leaf, { focus: true });
     await leaf.setViewState({
       type: viewType,
@@ -290,7 +332,7 @@ export const openURL = async (url: string,app: App,  location?: TargetLocation) 
   } else {
     app.workspace.setActiveLeaf(leaf, { focus: true });
     await leaf.setViewState({
-      type: EMBED_CONTEXT_VIEW_TYPE,
+      type: EMBED_SPACE_VIEW_TYPE,
       state: { path: url },
     });
   }
@@ -318,21 +360,6 @@ export function getAllFoldersInVault(app: App): TFolder[] {
 }
 
 
-export const openAFile = async (
-  leaf: WorkspaceLeaf,
-  file: AFile,
-  app: App,
-) => {
-  if (file.isFolder) {
-    openTFolder(leaf, getAbstractFileAtPath(app, file.path) as TFolder, app);
-  } else if (file) {
-    openTFile(leaf, getAbstractFileAtPath(app, file.path) as TFile, app);
-  } else {
-    return;
-  }
-};
-
-
 export const openTFile = async (
   leaf: WorkspaceLeaf,
   file: TFile,
@@ -350,24 +377,47 @@ export const openTFile = async (
 const openTFolder = async (
   leaf: WorkspaceLeaf,
   file: TFolder,
-  app: App,
+  plugin: MakeMDPlugin,
+  flow: boolean
 ) => {
   // if (!plugin.superstate.settings.contextEnabled) return;
-  const viewType = SPACE_VIEW_TYPE;
-  app.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.setViewState({
-    type: viewType,
-    state: { path: file.path },
-  });
+  if (!plugin.superstate.settings.spaceViewEnabled) {
+    if (!plugin.superstate.settings.enableFolderNote) {
+      return;
+    }
+    const space = plugin.superstate.spacesIndex.get(file.path)?.space.notePath;
+    if (!space) return;
+    const spaceFile = getAbstractFileAtPath(plugin.app, space) as TFile;
+    if (!spaceFile) return;
+    plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+    leaf.openFile(spaceFile);
+    return;
+  }
+  
+  if (flow) {
+    await leaf.setViewState({
+      type: EMBED_SPACE_VIEW_TYPE,
+      state: { path: file.path },
+    });
+  } else {
+    plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
+    await leaf.setViewState({
+      type: SPACE_VIEW_TYPE,
+      state: { path: file.path },
+    });
+    await plugin.app.workspace.requestSaveLayout();
+    if (Platform.isMobile) {
+      plugin.app.workspace.leftSplit.collapse();
+    }
+  }
+
   // const fileCache = plugin.superstate.pathsIndex.get(file.path);
   // if (fileCache?.label.sticker && leaf.tabHeaderInnerIconEl) {
   //   const icon = stickerFromString(fileCache.label.sticker, plugin)
   //   leaf.tabHeaderInnerIconEl.innerHTML = icon
   // }
-  await app.workspace.requestSaveLayout();
-  if (Platform.isMobile) {
-    app.workspace.leftSplit.collapse();
-  }
+  
+  
 };
 
 export const openTagContext = async (

@@ -12,13 +12,17 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
     this.plugin = plugin;
   }
 
+  refreshObsidian() {
+    this.app.commands.executeCommandById("app:reload")
+  }
+
   refreshView() {
     this.display();
   }
 
   display(): void {
     const { containerEl } = this;
-    containerEl.empty();
+    containerEl.innerHTML = "";
 
     containerEl.createEl("h1", { text: t.settings.sectionSidebar });
     new Setting(containerEl)
@@ -26,22 +30,24 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       .setDesc(t.settings.spaces.desc)
       .addToggle((toggle) =>
         toggle
-          .setValue(this.plugin.superstate.settings.spacesEnabled)
+          .setValue(this.plugin.superstate.settings.navigatorEnabled)
           .onChange((value) => {
-            this.plugin.superstate.settings.spacesEnabled = value;
+            this.plugin.superstate.settings.navigatorEnabled = value;
             this.plugin.saveSettings();
+            
             if (value) {
               this.plugin.openFileTreeLeaf(true);
             } else {
               this.plugin.detachFileTreeLeafs();
+              this.refreshObsidian();
             }
             this.refreshView();
           })
       );
 
     new Setting(containerEl)
-    .setName(t.settings.defaultSpaces.name)
-    .setDesc(t.settings.defaultSpaces.desc)
+    .setName(t.settings.tagSpaces.name)
+    .setDesc(t.settings.tagSpaces.desc)
     .addToggle((toggle) =>
       toggle.setValue(this.plugin.superstate.settings.enableDefaultSpaces).onChange((value) => {
         this.plugin.superstate.settings.enableDefaultSpaces = value;
@@ -62,6 +68,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           this.refreshView();
         })
     );
+    
     new Setting(containerEl)
     .setName(t.settings.spaceView.name)
     .setDesc(t.settings.spaceView.desc)
@@ -71,31 +78,21 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         this.plugin.saveSettings();
       })
     );
+
+    new Setting(containerEl)
+    .setName(t.settings.folderNote.name)
+    .setDesc(t.settings.folderNote.desc)
+    .addToggle((toggle) =>
+      toggle.setValue(this.plugin.superstate.settings.enableFolderNote).onChange((value) => {
+        this.plugin.superstate.settings.enableFolderNote = value;
+        this.plugin.saveSettings();
+      })
+    );
     
 
-    if (this.plugin.superstate.settings.enableDefaultSpaces) {
-      containerEl.createEl("h3", { text: t.settings.sectionDefault });
-  const defaultSpaces = containerEl.createEl("div");
-  new Setting(defaultSpaces)
-    .setName(t.settings.homeSpace.name)
-    .setDesc(t.settings.homeSpace.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.enableHomeSpace).onChange((value) => {
-        this.plugin.superstate.settings.enableHomeSpace = value;
-        this.plugin.saveSettings();
-      })
-    );
 
-    new Setting(defaultSpaces)
-    .setName(t.settings.tagSpaces.name)
-    .setDesc(t.settings.tagSpaces.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.enableTagSpaces).onChange((value) => {
-        this.plugin.superstate.settings.enableTagSpaces = value;
-        this.plugin.saveSettings();
-      })
-    );
-    }
+
+    
     if (this.plugin.superstate.settings.spacesEnabled) {
   containerEl.createEl("h3", { text: t.settings.sectionNavigator });
   const spaceAppearances = containerEl.createEl("div");
@@ -240,6 +237,20 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         })
     );
 
+
+
+    new Setting(spaceAppearances)
+    .setName(t.settings.generateThumbnails.name)
+    .setDesc(t.settings.generateThumbnails.desc)
+    .addToggle((toggle) =>
+      toggle
+        .setValue(this.plugin.superstate.settings.imageThumbnails)
+        .onChange((value) => {
+          this.plugin.superstate.settings.imageThumbnails = value;
+          this.plugin.saveSettings();
+        })
+    );
+
     new Setting(spaceAppearances)
     .setName(t.settings.spacesDeleteOption.name)
     .setDesc(t.settings.spacesDeleteOption.desc)
@@ -275,7 +286,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
 
 if (this.plugin.superstate.settings.spacesStickers) {
   
-containerEl.createEl("h3", { text: "Stickers" });
+containerEl.createEl("h3", { text: t.settings.sectionStickers });
 
 
 
@@ -291,8 +302,33 @@ containerEl.createEl("h3", { text: "Stickers" });
         })
     );
       }
+
+      new Setting(containerEl)
+    .setName(t.settings.coverHeight.name)
+    .setDesc(t.settings.coverHeight.desc)
+    .addText((text) => {
+      text
+        .setValue(this.plugin.superstate.settings.bannerHeight.toString())
+        .onChange(async (value) => {
+          text.setValue(parseInt(value).toString());
+          this.plugin.superstate.settings.bannerHeight = parseInt(value);
+          await this.plugin.saveSettings();
+        });
+    });
       if (this.plugin.superstate.settings.spaceViewEnabled) {
-    containerEl.createEl("h3", { text: "Space View" });
+        
+    containerEl.createEl("h3", { text: t.settings.sectionSpaceView });
+    new Setting(containerEl)
+      .setName(t.settings.defaultSpaceTemplate.name)
+      .setDesc(t.settings.defaultSpaceTemplate.desc)
+      .addText((text) => {
+        text
+          .setValue(this.plugin.superstate.settings.defaultSpaceTemplate)
+          .onChange(async (value) => {
+            this.plugin.superstate.settings.defaultSpaceTemplate = value;
+            await this.plugin.saveSettings();
+          });
+      });
     new Setting(containerEl)
     .setName(t.settings.minimalThemeFix.name)
     .setDesc(t.settings.minimalThemeFix.description)
@@ -344,7 +380,7 @@ containerEl.createEl("h3", { text: "Stickers" });
           })
       );
       
-    new Setting(containerEl)
+      new Setting(containerEl)
       .setName(t.settings.syncContextToFrontmatter.name)
       .setDesc(t.settings.syncContextToFrontmatter.desc)
       .addToggle((toggle) =>
@@ -352,6 +388,17 @@ containerEl.createEl("h3", { text: "Stickers" });
           .setValue(this.plugin.superstate.settings.saveAllContextToFrontmatter)
           .onChange((value) => {
             this.plugin.superstate.settings.saveAllContextToFrontmatter = value;
+            this.plugin.saveSettings();
+          })
+      );
+      new Setting(containerEl)
+      .setName(t.settings.syncFormulaToFrontmatter.name)
+      .setDesc(t.settings.syncFormulaToFrontmatter.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.superstate.settings.syncFormulaToFrontmatter)
+          .onChange((value) => {
+            this.plugin.superstate.settings.syncFormulaToFrontmatter = value;
             this.plugin.saveSettings();
           })
       );
@@ -475,6 +522,19 @@ containerEl.createEl("h3", { text: "Stickers" });
           .setValue(this.plugin.superstate.settings.internalLinkClickFlow)
           .onChange(async (value) => {
             this.plugin.superstate.settings.internalLinkClickFlow = value;
+            await this.plugin.saveSettings();
+            this.plugin.reloadExtensions(false);
+          })
+      );
+   
+      new Setting(containerEl)
+      .setName(t.settings.internalLinkSticker.name)
+      .setDesc(t.settings.internalLinkSticker.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.superstate.settings.internalLinkSticker)
+          .onChange(async (value) => {
+            this.plugin.superstate.settings.internalLinkSticker = value;
             await this.plugin.saveSettings();
             this.plugin.reloadExtensions(false);
           })
@@ -611,8 +671,8 @@ containerEl.createEl("h3", { text: "Stickers" });
       );
     }
     new Setting(containerEl)
-    .setName("Experimental")
-    .setDesc("Experimental features that are subject to change and may not be optimized for performance")
+    .setName(t.settings.experimental.name)
+    .setDesc(t.settings.experimental.desc)
     .addToggle((toggle) =>
       toggle
         .setValue(this.plugin.superstate.settings.experimental)

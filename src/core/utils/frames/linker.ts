@@ -5,14 +5,16 @@ import { ensureString } from "core/utils/strings";
 import { FrameNode, FrameTreeNode, FrameTreeProp } from "types/mframe";
 
 
+
 export const preprocessCode = (code: unknown, oldName: string, newName: string): string => {
   let string;
   let codeBlock: string = ensureString(code);
   const isMultiLine = codeBlock.includes('\n');
-            
+  let hasReturn = false;
   if (isMultiLine) {
       // If the code block is multi-line, prepend the last line with `return`.
       const lines = codeBlock.split('\n').filter(line => line.trim() !== '');
+      if (lines[lines.length - 1].includes("return")) hasReturn = true;
       lines[lines.length - 1] = `${lines[lines.length - 1].replace("return ", "")}`;
       codeBlock = lines.join('\n');
       
@@ -32,16 +34,33 @@ export const preprocessCode = (code: unknown, oldName: string, newName: string):
                 node.name = newName;
             }
         }
+    }, 
+    Property(node) {
+      //@ts-ignore
+      if (node.key.type === 'Identifier' && node.key.name === oldName) {
+        //@ts-ignore
+        node.key.name = newName;
+      }
+    },
+    ObjectExpression(node) {
+      //@ts-ignore
+      node.properties.forEach(property => {
+        //@ts-ignore
+        if (property.key.type === 'Identifier' && property.key.name === oldName) {
+          //@ts-ignore
+          property.key.name = newName;
+        }
+      });
     }
     });
 
     string = generate(ast).trimEnd();
   } catch (e){
-    console.log(e)
+    console.log(e, code, name)
     string = `"error"`
   }
 
-  if (isMultiLine) {
+  if (isMultiLine && hasReturn) {
       // If the code block is multi-line, prepend the last line with `return`.
       const lines = string.split('\n').filter(line => line.trim() !== '');
       lines[lines.length - 1] = `return ${lines[lines.length - 1]}`;
@@ -49,6 +68,36 @@ export const preprocessCode = (code: unknown, oldName: string, newName: string):
   }
   return string;
 }
+export const relinkProps = (oldParent: string, newParent: string, node: FrameNode, rootId: string) => {
+
+  return {
+    ...node,
+    id: node.id == oldParent ? newParent : node.id,
+    parentId: node.id == rootId ? node.parentId : node.parentId == oldParent ? newParent : node.parentId,
+    ref: node.ref == oldParent ? newParent : node.ref,
+    props: Object.keys(node?.props ?? {}).reduce((p, c) => {
+      return {
+        ...p,
+        [c]: preprocessCode(node.props[c], oldParent, newParent),
+      };
+    },
+     node.props),
+     actions: Object.keys(node?.actions ?? {}).reduce((p, c) => {
+      return {
+        ...p,
+        [c]: preprocessCode(node.actions[c], oldParent, newParent),
+      };
+    },
+     node.actions),
+     styles: Object.keys(node?.styles ?? {}).reduce((p, c) => {
+      return {
+        ...p,
+        [c]: preprocessCode(node.styles[c], oldParent, newParent),
+      };
+    },
+     node.styles),
+  };
+};
 
 export const linkNodes = (
   parent: FrameNode,
@@ -58,34 +107,7 @@ export const linkNodes = (
   uniqueID: number
 ): [FrameNode[], number] => {
   //assign IDs and relink props
-  const relinkProps = (oldParent: string, newParent: string, node: FrameNode, rootId: string) => {
-
-    return {
-      ...node,
-      parentId: node.id == rootId ? node.parentId : node.parentId == oldParent ? newParent : node.parentId,
-      props: Object.keys(node?.props ?? {}).reduce((p, c) => {
-        return {
-          ...p,
-          [c]: preprocessCode(node.props[c], oldParent, newParent),
-        };
-      },
-       node.props),
-       actions: Object.keys(node?.actions ?? {}).reduce((p, c) => {
-        return {
-          ...p,
-          [c]: preprocessCode(node.actions[c], oldParent, newParent),
-        };
-      },
-       node.actions),
-       styles: Object.keys(node?.styles ?? {}).reduce((p, c) => {
-        return {
-          ...p,
-          [c]: preprocessCode(node.styles[c], oldParent, newParent),
-        };
-      },
-       node.styles),
-    };
-  };
+  
   const assignIDs = (parent: FrameNode, nodes: FrameNode[]) => {
     const [newNodes, newID] = nodes.reduce<[FrameNode[], number]>((p, c, i) => {
       const [oldNodes, id] = p;

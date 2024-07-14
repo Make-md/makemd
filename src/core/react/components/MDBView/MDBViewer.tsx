@@ -1,25 +1,32 @@
+import { PathProvider } from "core/react/context/PathContext";
 import { Superstate } from "makemd-core";
 import React from "react";
 import { SpaceInfo } from "types/mdb";
 import { ContextEditorProvider } from "../../context/ContextEditorContext";
-import { ContextMDBProvider } from "../../context/ContextMDBContext";
 import { FramesMDBProvider } from "../../context/FramesMDBContext";
-import { SpaceContextProvider } from "../../context/SpaceContext";
-import { ContextListView } from "../SpaceView/Contexts/ContextListView";
+import { SpaceProvider } from "../../context/SpaceContext";
+import { ContextListContainer } from "../SpaceView/Contexts/ContextListContainer";
 export const MDBViewer = (props: {
   superstate: Superstate;
   space: SpaceInfo;
   schema: string;
 }) => {
   return (
-    <SpaceContextProvider superstate={props.superstate} space={props.space}>
-      <ContextMDBProvider superstate={props.superstate} schema={props.schema}>
-        <FramesMDBProvider superstate={props.superstate}>
+    <PathProvider
+      superstate={props.superstate}
+      path={props.space.path}
+      readMode={false}
+    >
+      <SpaceProvider superstate={props.superstate}>
+        <FramesMDBProvider superstate={props.superstate} schema={props.schema}>
           <ContextEditorProvider superstate={props.superstate}>
-            <ContextListView superstate={props.superstate}></ContextListView>
+            <ContextListContainer
+              showTitle={false}
+              superstate={props.superstate}
+            ></ContextListContainer>
           </ContextEditorProvider>
         </FramesMDBProvider>
-      </ContextMDBProvider>
-    </SpaceContextProvider>
+      </SpaceProvider>
+    </PathProvider>
   );
 };

@@ -1,8 +1,11 @@
 import { frontMatterKeys } from "adapters/obsidian/filetypes/frontmatter/frontMatterKeys";
 import { BannerView } from "core/react/components/MarkdownEditor/BannerView";
-import { DataTypeView } from "core/react/components/SpaceView/Contexts/DataTypeView/DataTypeView";
+import { DataPropertyView } from "core/react/components/SpaceView/Contexts/DataTypeView/DataPropertyView";
+import { CellEditMode } from "core/react/components/SpaceView/Contexts/TableView/TableView";
+import { PathProvider } from "core/react/context/PathContext";
+import { PathState } from "core/types/superstate";
 import { Superstate } from "makemd-core";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { SpaceTableColumn } from "types/mdb";
 import { uniqCaseInsensitive } from "utils/array";
 import { parseProperty } from "utils/parsers";
@@ -40,54 +43,54 @@ export const RemoteMarkdownHeaderView = (props: {
     setColumns(newCols);
   }, []);
 
+  const pathState: PathState = useMemo(
+    () => ({
+      name: name,
+      path: name,
+      readOnly: true,
+      type: "note",
+      label: {
+        sticker: fm.sticker,
+        color: fm.color,
+        name: name,
+      },
+      metadata: {
+        property: {
+          banner: fm.banner,
+        },
+      },
+    }),
+    [fm, name]
+  );
+
   return (
-    <>
-      {fm && (
-        <BannerView
-          superstate={props.superstate}
-          bannerPath={fm[props.superstate.settings.fmKeyBanner]}
-        ></BannerView>
+    <PathProvider
+      superstate={props.superstate}
+      path={props.name}
+      pathState={pathState}
+      readMode={true}
+    >
+      {pathState.metadata.property.banner && (
+        <BannerView superstate={props.superstate}></BannerView>
       )}
       <div className="mk-path-context-component">
         <div
-          className={`mk-spacer`}
-          style={
-            {
-              "--mk-header-height":
-                fm && fm[props.superstate.settings.fmKeyBanner]
-                  ? (
-                      (props.superstate.ui.getScreenType() == "mobile"
-                        ? 1
-                        : 0) *
-                        26 +
-                      138 +
-                      (!fm.icon ||
-                      props.superstate.settings.inlineContextNameLayout ==
-                        "horizontal"
-                        ? 1
-                        : 0) *
-                        50
-                    ).toString() + "px"
-                  : 0,
-            } as React.CSSProperties
-          }
-          onContextMenu={(e) => e.preventDefault()}
-        ></div>
-        <div
-          className={`mk-path-context-file ${
+          className={`mk-path-context-label ${
             props.superstate.settings.inlineContextNameLayout == "horizontal"
               ? "mk-path-context-file-horizontal"
               : ""
           }`}
         >
           <>
-            {fm.icon ? (
-              <div className={`mk-path-icon`}>
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: props.superstate.ui.getSticker(fm.icon),
-                  }}
-                ></div>
+            {fm.sticker ? (
+              <div className="mk-header-icon">
+                <div className={`mk-path-icon`}>
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: props.superstate.ui.getSticker(fm.sticker),
+                    }}
+                  ></div>
+                </div>
               </div>
             ) : (
               <></>
@@ -101,36 +104,28 @@ export const RemoteMarkdownHeaderView = (props: {
       {!collapsed ? (
         <div className="mk-path-context-component">
           <>
-            <div className="mk-path-context-section">
-              <>
-                {columns.map((f, i) => (
-                  <div key={i} className="mk-path-context-row">
-                    <div className="mk-path-context-field">{f.name}</div>
-                    <div className="mk-path-context-value">
-                      <DataTypeView
-                        superstate={props.superstate}
-                        initialValue={values[f.name]}
-                        row={{}}
-                        column={{ ...f, table: "" }}
-                        editable={false}
-                        updateValue={() => {
-                          /*empty*/
-                        }}
-                        updateFieldValue={(fieldValue, value) => {
-                          /*empty*/
-                        }}
-                        contextTable={{}}
-                      ></DataTypeView>
-                    </div>
-                  </div>
-                ))}
-              </>
-            </div>
+            {columns.map((f, i) => (
+              <DataPropertyView
+                key={i}
+                superstate={props.superstate}
+                initialValue={values[f.name]}
+                row={{}}
+                column={{ ...f, table: "" }}
+                editMode={CellEditMode.EditModeView}
+                updateValue={() => {
+                  /*empty*/
+                }}
+                updateFieldValue={(fieldValue, value) => {
+                  /*empty*/
+                }}
+                contextTable={{}}
+              ></DataPropertyView>
+            ))}
           </>
         </div>
       ) : (
         <></>
       )}
-    </>
+    </PathProvider>
   );
 };

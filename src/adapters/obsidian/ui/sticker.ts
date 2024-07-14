@@ -1,19 +1,32 @@
+import { uiIconSet } from "core/assets/icons";
 import MakeMDPlugin from "main";
 import { emojiFromString, parseStickerString } from "utils/stickers";
-import { lucideIcon, uiIconSet } from "./icons";
+import { lucideIcon } from "./icons";
 
 export const stickerFromString = (sticker: string, plugin: MakeMDPlugin) => {
   if (!sticker || typeof sticker != 'string')
   return "";
   const [type, value] = parseStickerString(sticker);
   if (type == '' || type == 'emoji') {
-    return emojiFromString(value);
+    return `
+    <svg viewBox="0 0 18 18">
+      <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="114%">${emojiFromString(value)}</text>
+    </svg>
+    `;
   } else if (type == 'ui') {
     return uiIconSet[value];
   } else if (type == 'lucide') {
     return lucideIcon(value);
   } else {
-    return plugin.superstate.iconsCache.get(value);
+    let icon = plugin.superstate.iconsCache.get(value);
+      if (!icon) {
+        
+        const alias = plugin.superstate.imagesCache.get(value);
+        if (alias) {
+          icon = plugin.superstate.iconsCache.get(alias)
+        }
+      }
+    return icon
   }
 
 };

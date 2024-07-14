@@ -2,19 +2,16 @@
 
 import i18n from "core/i18n";
 import { UIManager } from "core/middleware/ui";
-import { SelectOption } from "core/react/components/UI/Menus/menu";
+import {
+  SelectOption,
+  SelectSection,
+} from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { PointerModifiers } from "core/types/ui";
+import { MenuObject } from "core/utils/ui/menu";
 import Fuse from "fuse.js";
-import { debounce } from "lodash";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { uniq } from "utils/array";
-import SelectMenuInput from "./SelectMenuInput";
+import SelectMenuSearch from "./SelectMenuInput";
 import SelectMenuPillComponent from "./SelectMenuPill";
 import SelectMenuSuggestions from "./SelectMenuSuggestions";
 import { focusNextElement } from "./concerns/focusNextElement";
@@ -27,27 +24,31 @@ const KEYS = {
   UP_ARROW_COMPAT: "Up",
   DOWN_ARROW: "ArrowDown",
   DOWN_ARROW_COMPAT: "Down",
+  LEFT_ARROW: "ArrowLeft",
+  RIGHT_ARROW: "ArrowRight",
 };
 
 const CLASS_NAMES = {
-  root: "mk-options-menu",
-  rootFocused: "is-focused",
-  selected: "mk-options-menu__selected",
-  selectedTag: "mk-options-menu__selected-tag",
-  selectedTagName: "mk-options-menu__selected-tag-name",
-  search: "mk-options-menu__search",
-  searchWrapper: "mk-options-menu__search-wrapper",
-  searchInput: "mk-options-menu__search-input",
-  suggestions: "mk-options-menu__suggestions",
-  suggestionActive: "is-active",
-  suggestionDisabled: "is-disabled",
+  root: "mk-menu-container",
+  rootFocused: "mk-focused",
+  selected: "mk-menu-input-wrapper",
+  selectedTagWrapper: "mk-menu-selected-tag-wrapper",
+  selectedTag: "mk-menu-selected-tag",
+  selectedTagName: "mk-menu-selected-tag-name",
+  search: "mk-menu-search",
+  searchWrapper: "mk-menu-search-container",
+  searchInput: "mk-menu-search-input",
+  suggestions: "mk-menu-suggestions",
+  suggestionActive: "mk-active",
+  suggestionDisabled: "mk-disabled",
 };
 
 const defaultProps: SelectMenuComponentProps = {
   ui: null,
   id: "SelectMenu",
   tags: [],
-  hide: () => {},
+  hide: () => null,
+  onHide: () => null,
   suggestionsOnly: false,
   placeholderText: i18n.labels.optionItemSelectPlaceholder,
   noSuggestionsText: null,
@@ -60,17 +61,17 @@ const defaultProps: SelectMenuComponentProps = {
   minQueryLength: 2,
   maxSuggestionsLength: 8,
   inputAttributes: {},
-  hoverSelect: false,
 };
 
 type SelectMenuComponentProps = {
   id?: string;
   tags?: SelectOption[];
   ui: UIManager;
+  onHide?: () => void;
   hide: () => void;
+  wrapperClass?: string;
   suggestionsOnly?: boolean;
   placeholderText?: string;
-  hoverSelect?: boolean;
   ariaLabelText?: string;
   noSuggestionsText?: string;
   newTagText?: string;
@@ -83,23 +84,26 @@ type SelectMenuComponentProps = {
   ) => SelectOption[];
   delimiters?: string[];
   previewComponent?: React.ReactNode;
+  onSelectSection?: (section: string) => void;
   onDelete?: (id: number) => void;
-  onMoreOption?: (e: React.MouseEvent, value: string) => void;
+  onMoreOption?: (e: React.MouseEvent, option: string) => void;
   onDeleteOption?: (value: string) => void;
   onAddition?: (tag: SelectOption, modifiers: PointerModifiers) => void;
-  onHover?: (value: string) => void;
+  onHover?: (value: any) => void;
   onToggle?: (value: string) => void;
   onInput?: (input: string) => void;
   onFocus?: () => void;
   onBlur?: () => void;
   onValidate?: (tag: SelectOption) => boolean;
   showSections?: boolean;
-  sections?: string[];
+  sections?: SelectSection[];
   minQueryLength?: number;
   maxSuggestionsLength?: number;
   classNames?: Record<string, string>;
   inputAttributes?: Record<string, any>;
+  addKeyword?: string;
   allowNew?: boolean;
+  isDisclosure?: boolean;
 };
 
 const findMatchIndex = (options: SelectOption[], query: string) => {
@@ -150,10 +154,10 @@ function getOptions(
     // findAllMatches: false,
     // minMatchCharLength: 1,
     // location: 0,
-    // threshold: 0.6,
+    threshold: 0,
     // distance: 100,
     // useExtendedSearch: false,
-    // ignoreLocation: false,
+    ignoreLocation: true,
     // ignoreFieldNorm: false,
     // fieldNormWeight: 1,
     keys: ["name", "value"],
@@ -191,10 +195,14 @@ const SelectMenuComponent = React.forwardRef(
   (_props: SelectMenuComponentProps, ref: any) => {
     const props = { ...defaultProps, ..._props };
     const [options, setOptions] = useState<SelectOption[]>([]);
-    const sections: string[] = useMemo(() => {
+    const refs = useRef<HTMLDivElement[]>([]);
+    const sections: SelectSection[] = useMemo(() => {
       if (!props.showSections) return [];
       return [
-        "",
+        {
+          name: "All",
+          value: "",
+        },
         ...(props.sections ??
           uniq(props.suggestions.map((f) => f.section)).filter((f) => f)),
       ];
@@ -217,21 +225,6 @@ const SelectMenuComponent = React.forwardRef(
         };
       }
     }, [focused]);
-    useEffect(() => {
-      if (index != -1 && props.onHover && props.hoverSelect) {
-        debounceFn(options[index]?.value);
-      }
-    }, [index, options]);
-
-    const debounceFn = useCallback(
-      debounce(handleDebounceFn, 300, {
-        leading: false,
-      }),
-      []
-    );
-    function handleDebounceFn(inputValue: string) {
-      props.onHover(inputValue);
-    }
 
     useEffect(() => {
       if (query.length == 0 && props.defaultSuggestions) {
@@ -239,7 +232,7 @@ const SelectMenuComponent = React.forwardRef(
         return;
       }
       setOptions(getOptions(props, query, section));
-    }, [query, props.suggestions, section, props]);
+    }, [query, props.defaultSuggestions, section, props.suggestions]);
 
     const container = useRef(null);
 
@@ -252,11 +245,9 @@ const SelectMenuComponent = React.forwardRef(
       // IME method end
       if (e.type === "compositionend") {
         onComposition.current = false;
-      }
-
-      if (onComposition.current) {
         return;
       }
+
       const _query = e.target.value;
       if (props.onInput) {
         props.onInput(_query);
@@ -276,6 +267,9 @@ const SelectMenuComponent = React.forwardRef(
     };
 
     const onKeyDown = (e: React.KeyboardEvent) => {
+      if (onComposition.current) {
+        return;
+      }
       // when one of the terminating keys is pressed, add current query to the tags
       if (props.delimiters.indexOf(e.key) > -1) {
         if (query || index > -1) {
@@ -290,6 +284,9 @@ const SelectMenuComponent = React.forwardRef(
         });
       }
 
+      if (e.key == "Escape") {
+        return;
+      }
       // when backspace key is pressed and query is blank, delete the last tag
       if (e.key === KEYS.TAB) {
         pressTabKey(e);
@@ -306,6 +303,7 @@ const SelectMenuComponent = React.forwardRef(
       if (e.key === KEYS.DOWN_ARROW || e.key === KEYS.DOWN_ARROW_COMPAT) {
         pressDownKey(e);
       }
+      e.stopPropagation();
     };
 
     const onBlur = () => {
@@ -365,14 +363,24 @@ const SelectMenuComponent = React.forwardRef(
 
       // if first item, cycle to the bottom
       const size = options.length - 1;
-      setIndex(index <= 0 ? size : index - 1);
+      const newIndex = index <= 0 ? size : index - 1;
+      if (options[newIndex].disabled) {
+        setIndex(newIndex <= 0 ? size : newIndex - 1);
+      } else {
+        setIndex(newIndex);
+      }
     };
     const pressDownKey = (e: React.KeyboardEvent) => {
       e.preventDefault();
 
       // if last item, cycle to top
       const size = options.length - 1;
-      setIndex((i) => (i >= size ? 0 : i + 1));
+      const newIndex = index >= size ? 0 : index + 1;
+      if (options[newIndex].disabled) {
+        setIndex(newIndex >= size ? 0 : newIndex + 1);
+      } else {
+        setIndex(newIndex);
+      }
     };
 
     function pressBackspaceKey() {
@@ -387,17 +395,23 @@ const SelectMenuComponent = React.forwardRef(
         e.preventDefault();
         e.stopPropagation();
         setSection((p) => {
-          const sectionIndex = sections.findIndex((g) => g == p);
+          const sectionIndex = sections.findIndex((g) => g.value == p);
           if (e.shiftKey) {
             if (sectionIndex == 0) {
               return p;
             }
-            return sections[sectionIndex - 1];
+            if (props.onSelectSection) {
+              props.onSelectSection(sections[sectionIndex - 1].value);
+            }
+            return sections[sectionIndex - 1].value;
           }
           if (sectionIndex == sections.length - 1) {
             return p;
           }
-          return sections[sectionIndex + 1];
+          if (props.onSelectSection) {
+            props.onSelectSection(sections[sectionIndex + 1].value);
+          }
+          return sections[sectionIndex + 1].value;
         });
       }
     }
@@ -405,35 +419,54 @@ const SelectMenuComponent = React.forwardRef(
     const focusInput = () => {
       inputRef.current.focus();
     };
+
     const inputEventHandlers = {
       // Provide a no-op function to the input component to avoid warnings
       // <https://github.com/i-like-robots/react-tags/issues/135>
       // <https://github.com/facebook/react/issues/13835>
       onChange: onInput,
-      onBlur: onBlur,
-      onFocus: onFocus,
-      onInput: () => {
-        //do nothing
-      },
-      onKeyDown: onKeyDown,
+      // onBlur: onBlur,
+      // onFocus: onFocus,
+      // onInput: () => {
+      //   //do nothing
+      // },
+      // onKeyDown: onKeyDown,
       onCompositionEnd: onInput,
       onCompositionStart: onInput,
     };
 
+    useEffect(() => {
+      props.ui.inputManager.on("keydown", onKeyDown);
+      return () => {
+        props.ui.inputManager.off("keydown", onKeyDown);
+      };
+    }, [options, index]);
+
     const expanded = focused && query.length >= props.minQueryLength;
     const classNames = Object.assign({}, CLASS_NAMES, props.classNames);
+    if (props.wrapperClass) {
+      classNames.root = `${classNames.root} ${props.wrapperClass}`;
+    }
     const rootClassNames = [classNames.root];
 
     focused && rootClassNames.push(classNames.rootFocused);
-
+    const submenuRef = useRef<MenuObject>(null);
+    const openSubmenu = (menu: MenuObject) => {
+      if (submenuRef.current) {
+        submenuRef.current.hide(true);
+      }
+      submenuRef.current = menu;
+    };
     return (
       <div
         ref={container}
         className={rootClassNames.join(" ")}
         style={
-          {
-            "--mk-menu-max-height": props.suggestionsOnly ? "none" : "200px",
-          } as React.CSSProperties
+          !props.suggestionsOnly
+            ? ({
+                "--mk-menu-max-height": "200px",
+              } as React.CSSProperties)
+            : {}
         }
       >
         {!props.suggestionsOnly ? (
@@ -442,18 +475,21 @@ const SelectMenuComponent = React.forwardRef(
             aria-relevant="additions removals"
             aria-live="polite"
           >
-            <>
-              {props.tags.map((tag, i) => (
-                <SelectMenuPillComponent
-                  key={i}
-                  tag={tag}
-                  classNames={classNames}
-                  onDelete={(e) => onDeleteTag(i, e)}
-                />
-              ))}
-            </>
+            {props.tags.length > 0 && (
+              <div className={classNames.selectedTagWrapper}>
+                {props.tags.map((tag, i) => (
+                  <SelectMenuPillComponent
+                    key={i}
+                    tag={tag}
+                    classNames={classNames}
+                    onDelete={(e) => onDeleteTag(i, e)}
+                  />
+                ))}
+              </div>
+            )}
             <div className={classNames.search}>
-              <SelectMenuInput
+              <SelectMenuSearch
+                ui={props.ui}
                 ref={inputRef}
                 query={query}
                 index={index}
@@ -468,16 +504,19 @@ const SelectMenuComponent = React.forwardRef(
           </div>
         ) : null}
         {props.showSections ? (
-          <div className="mk-options-menu-sections">
+          <div className="mk-menu-sections">
             {sections.map((f, i) => (
               <div
                 key={i}
-                onClick={() => setSection(f)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSection(f.value);
+                }}
                 className={`${
-                  section == f ? "is-active" : ""
-                } mk-options-menu-section`}
+                  section == f.value ? "is-active" : ""
+                } mk-menu-section`}
               >
-                {f == "" ? i18n.labels.all : f}
+                {f.name == "" ? i18n.labels.all : f.name}
               </div>
             ))}
           </div>
@@ -490,18 +529,22 @@ const SelectMenuComponent = React.forwardRef(
             hide={() => {
               props.hide();
             }}
+            addKeyword={props.addKeyword}
+            refs={refs}
             options={options}
-            hoverSelect={props.hoverSelect}
             query={query}
             setIndex={setIndex}
             index={index}
+            onHide={props.onHide}
             id={props.id}
             classNames={classNames}
             expanded={expanded}
-            addTag={addTag}
+            selectOption={addTag}
             allowNew={props.allowNew}
             moreOption={props.onMoreOption}
             deleteOption={props.onDeleteOption}
+            isDisclosureMenu={props.isDisclosure}
+            openSubmenu={openSubmenu}
           />
         ) : null}
 

@@ -8,7 +8,6 @@ import {
 } from "adapters/obsidian/ui/editors/markdownView/tooltip";
 import MakeMDPlugin from "main";
 import React from "react";
-import { createRoot } from "react-dom/client";
 import { expandRange, rangeIsMark } from "./marks";
 
 const cursorTooltipField = (plugin: MakeMDPlugin) =>
@@ -42,7 +41,7 @@ const getCursorTooltips =
           create: (view: EditorView) => {
             const dom = document.createElement("div");
             dom.className = "cm-tooltip-cursor";
-            const reactElement = createRoot(dom);
+            const reactElement = plugin.ui.createRoot(dom);
             reactElement.render(
               <>
                 <InlineMenuComponent

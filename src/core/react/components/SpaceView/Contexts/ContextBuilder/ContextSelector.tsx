@@ -1,9 +1,12 @@
 import i18n from "core/i18n";
-import { SelectOption, defaultMenu } from "core/react/components/UI/Menus/menu";
-import { isMouseEvent } from "core/react/hooks/useLongPress";
+import {
+  SelectOption,
+  defaultMenu,
+} from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { Superstate } from "core/superstate/superstate";
 import { tagSpacePathFromTag } from "core/utils/strings";
 import React from "react";
+import { windowFromDocument } from "utils/dom";
 import { ensureTag } from "utils/tags";
 export const ContextSelector = (props: {
   superstate: Superstate;
@@ -24,7 +27,7 @@ export const ContextSelector = (props: {
       ]);
     };
     props.superstate.ui.openMenu(
-      { x: offset.left, y: offset.top + 30 },
+      offset,
       {
         ui: props.superstate.ui,
         multi: false,
@@ -35,14 +38,15 @@ export const ContextSelector = (props: {
         placeholder: i18n.labels.contextItemSelectPlaceholder,
         searchable: true,
         showAll: true,
-      }
+      },
+      windowFromDocument(e.view.document)
     );
   };
   const viewContextMenu = (e: React.MouseEvent, space: string) => {
     const menuOptions: SelectOption[] = [];
     menuOptions.push({
-      name: "Delete Context",
-      icon: "lucide//trash",
+      name: i18n.menu.deleteContext,
+      icon: "ui//trash",
       onClick: (e) => {
         props.saveContexts(props.contexts.filter((f) => f != space));
       },
@@ -50,15 +54,9 @@ export const ContextSelector = (props: {
 
     // Trigger
     props.superstate.ui.openMenu(
-      isMouseEvent(e)
-        ? { x: e.pageX, y: e.pageY }
-        : {
-            // @ts-ignore
-            x: e.nativeEvent.locationX,
-            // @ts-ignore
-            y: e.nativeEvent.locationY,
-          },
-      defaultMenu(props.superstate.ui, menuOptions)
+      (e.target as HTMLElement).getBoundingClientRect(),
+      defaultMenu(props.superstate.ui, menuOptions),
+      windowFromDocument(e.view.document)
     );
   };
 
@@ -82,7 +80,7 @@ export const ContextSelector = (props: {
           <span
             className="mk-icon-xsmall"
             dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//mk-ui-plus"),
+              __html: props.superstate.ui.getSticker("ui//plus"),
             }}
           ></span>
         </span>

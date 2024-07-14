@@ -1,5 +1,11 @@
 import { Superstate } from "core/superstate/superstate";
+import { safelyParseJSON } from "utils/parsers";
 import { pathToString } from "utils/path";
+
+export const defaultString = (value: any, string: string) => {
+  if (!value || value.length == 0) return string;
+  return value;
+}
 
 export function ensureArray(value: unknown): any[] {
   if (Array.isArray(value)) {
@@ -42,10 +48,24 @@ export const encodeSpaceName = (spaceName: string) => spaceName?.replace(/\//g, 
 ;export const tagSpacePathFromTag = (tag: string) =>
 "spaces://"+tag
 
-export const wrapQuotes = (s: string) => `"${s}"`
+
+export const wrapObjectString = (s: string) => `{ ${Object.entries(safelyParseJSON(s)).map(([key, value]) => `${key}: ${value}`).join(', ')} }`
+export const wrapParanthesis = (s: string) => s ? `(${s})` : null;
+export const wrapQuotes = (s: string) => s ? `"${s.replace(/"/g, '\\"').replace(/\n/g, "\\n")}"` : null
+export const unwrapParanthesis = (s: string) => {
+  if (!s) return s;
+  if (s.startsWith("(")) {
+    if (s.endsWith(")")) {
+      return s.substring(1, s.length - 1);
+    } else if (s.endsWith(");")) {
+      return s.substring(1, s.length - 2);
+    }
+  }
+  return s;
+}
 export const removeQuotes = (s: string): string => {
   if (!s) return s;
-
+  if (typeof s === 'number') return (s as number).toString();
   const singleQuoteWithSemicolon = s.startsWith("'") && (s.endsWith("';") || s.endsWith("'"));
   const doubleQuoteWithSemicolon = s.startsWith('"') && (s.endsWith('";') || s.endsWith('"'));
 
@@ -56,11 +76,13 @@ export const removeQuotes = (s: string): string => {
       if (s.endsWith('"') || s.endsWith("'")) {
           s = s.substring(0, s.length - 1);
       }
-      return s;
+      return s.replace(/\\"/g, '"')
   } else {
-      return s;
+      return s.replace(/\\"/g, '"');
   }
 }
+
+export const initiateString = (s: string, defaultString: string) => !s || s.length == 0 ? defaultString : s
 
 export const removeLeadingSlash = (path: string) =>
   path.charAt(0) == "/" ? path.substring(1) : path;
@@ -68,8 +90,6 @@ export const pathToParentPath = (path: string) =>
   removeLeadingSlash(path.substring(0, path.lastIndexOf("/"))) ||
   path;
 
-  
-
-  export const spaceDefPathForSpacePath = (spacePath: string) => spacePath+"/"+pathToString(spacePath)+".md"
+export const spaceNotePathForSpacePath = (spacePath: string) => spacePath+"/"+pathToString(spacePath)+".md"
 
   

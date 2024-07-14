@@ -4,14 +4,71 @@ import { PathPropertyName } from "core/types/context";
 import { linkColumns, removeLinksInRow, renameLinksInRow } from "core/utils/contexts/links";
 import { removeRowForPath, removeRowsForPath, renameRowForPath, reorderRowsForPath } from "core/utils/contexts/pathUpdates";
 import _ from "lodash";
-import { DBRows, SpaceInfo, SpaceProperty, SpaceTable } from "types/mdb";
+import { DBRow, DBRows, SpaceInfo, SpaceProperty, SpaceTable } from "types/mdb";
 import { insertMulti } from "utils/array";
 
+import { arrayMove } from "@dnd-kit/sortable";
+import { DefaultSpaceCols } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { parseMDBValue } from "utils/properties";
+import { metadataPathForSpace } from "core/superstate/utils/spaces";
+import { Superstate } from "makemd-core";
+import { defaultContextFields } from "schemas/mdb";
 import { serializeMultiString } from "utils/serializers";
-import { parseMultiString } from "../../../utils/parsers";
+import { parseMultiString, safelyParseJSON } from "../../../utils/parsers";
 
+export type ContextPath = {
+  space: string;
+  spaceName: string;
+  schema?: string
+  schemaName?: string;
+  view?: string;
+  viewName?: string;
+}
+
+export const contextPathFromPath = async (superstate: Superstate, path: string): Promise<ContextPath> => {
+  const uri = superstate.spaceManager.uriByString(path);
+  if (!uri) return null;
+  const space = uri.basePath
+  const spaceState = superstate.spacesIndex.get(uri.basePath)
+  if (!spaceState) return null;
+  let schema : string;
+  let schemaName: string;
+  let view : string;
+  let viewName : string;
+  if (uri.refType == 'frame') {
+    view = uri.ref
+    const frameSchemas = await superstate.spaceManager.readAllFrames(space).then(f =>Object.values(f).map(f => f.schema));
+    if (view && frameSchemas) {
+      viewName = frameSchemas.find(f => f.id == view)?.name
+      schema = safelyParseJSON(frameSchemas.find(f => f.id == view)?.def)?.db
+      schemaName = superstate.contextsIndex.get(space)?.schemas.find(f => f.id == schema)?.name
+    }
+  } else if (uri.refType == 'context') {
+    schema = uri.ref
+    schemaName = superstate.contextsIndex.get(space)?.schemas.find(f => f.id == schema)?.name
+  }
+  return {
+    space,
+    spaceName: spaceState.name,
+    schema,
+    schemaName,
+    view,
+    viewName
+  }
+}
+
+const processTable = async (
+  manager: SpaceManager,
+  space: SpaceInfo,
+  table: string,
+  processor: (mdb: SpaceTable, space: SpaceInfo) => Promise<SpaceTable>,
+): Promise<void> => {
+    const contextDB = await manager
+    .readTable(space.path, table);
+    if (contextDB) {
+      await processor(contextDB, space);
+    }
+};
 
 
 const processContext = async (
@@ -29,11 +86,15 @@ const processContext = async (
 
 const saveContext = async (
   manager: SpaceManager,
-  context: SpaceInfo,
+  spaceInfo: SpaceInfo,
   newTable: SpaceTable,
   force?: boolean
 ): Promise<void> => {
-  return manager.saveTable(context.path, newTable, force)
+
+  await manager.saveTable(spaceInfo.path, newTable, force).then(f => {
+    if (f)
+    return manager.superstate.reloadContextByPath(spaceInfo.path)
+  return f});
 };
 
 
@@ -104,27 +165,54 @@ const insertRowsIfUnique = (folder: SpaceTable, rows: DBRows, index?: number): S
   return { ...folder, rows: index ? insertMulti(folder.rows, index, rows.filter(f => !folder.rows.some(g => g[PathPropertyName] == f[PathPropertyName]))) : [...rows.filter(f => !folder.rows.some(g => g[PathPropertyName] == f[PathPropertyName])), ...folder.rows] };
 };
 
-const saveContextToProperties = (
-  manager: SpaceManager,
-  path: string,
-  cols: SpaceProperty[],
-  context: Record<string, any>,
-) => {
-  
-  manager.saveProperties(path, Object.keys(context)
-  .filter(
-    (f) =>
-      cols.find((c) => c.name == f) &&
-      cols.find((c) => c.name == f).hidden != "true" &&
-      !cols.find((c) => c.name == f).type.includes("file") &&
-      context[f]
-  )
-  .reduce((f, g) => {
-    const col = cols.find((c) => c.name == g);
-    return {...f, [g]: parseMDBValue(col.type, context[g])};
-  }, {}));
+
+const insertRows = (folder: SpaceTable, rows: DBRows, index?: number): SpaceTable => {
+  //
+  return { ...folder, rows: index ? insertMulti(folder.rows, index, rows) : [...folder.rows, ...rows] };
+
+}
+
+const updateRowAtIndex = (folder: SpaceTable, row: DBRow, index: number): SpaceTable => {
+  //
+  return { ...folder, rows: folder.rows.map((f, i) => i == index ? row : f) };
 };
 
+
+export const updateTableValue = async (
+  manager: SpaceManager,
+  space: SpaceInfo,
+  schema: string,
+  index: number,
+  field: string,
+  value: string,
+    rank?: number) => {
+      processTable(manager, space, schema, (async f => 
+        {
+
+          let newMDB = {
+            ...f,
+            rows: f.rows.map((f, i) =>
+              i == index
+                ? {
+                    ...f,
+                    [field]: value,
+                  }
+                : f
+            ),
+          };
+          if (rank)
+          newMDB = {
+            ...newMDB,
+            rows: arrayMove(newMDB.rows, index, rank)
+            }
+    
+            if (!_.isEqual(f, newMDB))
+              {
+                await saveContext(manager, space, newMDB);}
+            return newMDB;
+        })
+        )
+    }
 
 export const updateContextValue = async (
   manager: SpaceManager,
@@ -136,12 +224,17 @@ export const updateContextValue = async (
     lookupField: string,
     lookupValue: string,
     field: string,
-    value: string) => SpaceTable
+    value: string) => SpaceTable, 
+    rank?: number
 ): Promise<void> => {
+
   manager.contextForSpace(space.path).then(f => 
     {
       const updateFunction = _updateFunction ?? updateValue
-      const newMDB = updateFunction(f, PathPropertyName, path, field, value);
+      let newMDB = updateFunction(f, PathPropertyName, path, field, value);
+      if (rank)
+      newMDB = reorderRowsForPath(newMDB, [path], rank);
+
       return saveContext(manager, space, newMDB).then(f => newMDB)
     }
     )
@@ -158,25 +251,14 @@ export const columnsForContext = async (
   );
 };
 
-export const insertContextItems = async (
-  manager: SpaceManager,
-  newPaths: string[],
-  t: string
-): Promise<void> => {
 
-  const saveNewContextRows = async (tag: SpaceTable, space: SpaceInfo) => {
-    const newRow: DBRows = newPaths.map((newPath) => ({ [PathPropertyName]: newPath }));
-    await saveContext(manager, space, insertRowsIfUnique(tag, newRow));
-  };
-  const spaceInfo = manager.spaceInfoForPath(t);
-  await manager
-  .contextForSpace(t).then((tagDB) =>
-    saveNewContextRows(tagDB, spaceInfo)
-  );
-};
 
-const getPathProperties = async (manager: SpaceManager, path: string, cols: string[]) => {
-  const properties = await manager.readProperties(path)
+const getPathProperties = async (superstate: Superstate, _path: string, cols: string[]) => {
+  let path = _path;
+  if (superstate.spacesIndex.has(path)) {
+    path = metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space);
+  }
+  const properties = await superstate.spaceManager.readProperties(path)
   if (!properties) return {}
   return Object.keys(properties).reduce((p, c) => {
   if (cols.includes(c)) {
@@ -186,20 +268,31 @@ const getPathProperties = async (manager: SpaceManager, path: string, cols: stri
     }, {});
 };
 
+export const getContextProperties = (superstate: Superstate, context: string) : SpaceProperty[] => {
+  if (context == "$space")  {
+    return DefaultSpaceCols;
+  }
+  if (context == "$context")  {
+    return defaultContextFields.rows as SpaceProperty[];
+  }
+  return (superstate.contextsIndex.get(context)?.contextTable?.cols ??[]);
+
+}
 
 
 export const updateContextWithProperties = async (
-  manager: SpaceManager,
+  superstate: Superstate,
   path: string,
   spaces: SpaceInfo[]
 ): Promise<void[]> => {
   const updatePath = async (mdb: SpaceTable) => {
     const objectExists = mdb.rows.some(item => item[PathPropertyName] === path)
     const properties = await getPathProperties(
-      manager,
+      superstate,
       path,
       mdb.cols.map((f) => f.name),
     );
+
     if (objectExists) {
       
       return mdb.rows.map((f) =>
@@ -219,7 +312,7 @@ export const updateContextWithProperties = async (
 }
   }
   const promises = spaces.map((space) => {
-    return processContext(manager, space, async (mdb, space) => {
+    return processContext(superstate.spaceManager, space, async (mdb, space) => {
       const newRows = await updatePath(mdb);
       const newDB = {
         ...mdb,
@@ -227,7 +320,7 @@ export const updateContextWithProperties = async (
       };
       if (!_.isEqual(mdb, newDB))
         {
-          await saveContext(manager, space, newDB);
+          await saveContext(superstate.spaceManager, space, newDB);
         }
       return newDB;
     })
@@ -236,6 +329,20 @@ export const updateContextWithProperties = async (
   return;
 };
 
+export const updateTableRow = async (manager: SpaceManager,
+  space: SpaceInfo,
+  table: string,
+  index: number,
+  row: DBRow): Promise<void> => {
+    return processTable(manager, space, table, async (mdb, space) => {
+      const newDB = updateRowAtIndex(mdb, row, index);
+      if (!_.isEqual(mdb, newDB))
+        {
+          await saveContext(manager, space, newDB);
+        }
+      return newDB;
+    })
+}
 
 export const updateValueInContext = async ( manager: SpaceManager,
   row: string,
@@ -248,6 +355,7 @@ export const updateValueInContext = async ( manager: SpaceManager,
     }
       return processContext(manager, space, async (mdb, space) => {
         const newDB = changeTagInContextMDB(mdb);
+
         if (!_.isEqual(mdb, newDB))
           {
             await saveContext(manager, space, newDB);
@@ -300,7 +408,29 @@ export const renameTagInContexts = async ( manager: SpaceManager,
       return Promise.all(promises);
     }
 
-
+    export const addRowInTable = async (manager: SpaceManager,
+      row: DBRow,
+      context: SpaceInfo, table: string, index?: number): Promise<void> => {
+          return processTable(manager, context, table, async (mdb, space) => {
+            const newDB = insertRows(mdb, [row], index);
+            if (!_.isEqual(mdb, newDB))
+              {
+                await saveContext(manager, space, newDB);}
+            return newDB;
+          })
+        
+    }
+    export const deleteRowInTable = async (manager: SpaceManager,
+      context: SpaceInfo, table: string, index: number): Promise<void> => {
+          return processTable(manager, context, table, async (mdb, space) => {
+            const newDB = {...mdb, rows: mdb.rows.filter((f, i) => i != index)};
+            if (!_.isEqual(mdb, newDB))
+              {
+                await saveContext(manager, space, newDB);}
+            return newDB;
+          })
+      }
+    
 
 export const addPathInContexts = async (manager: SpaceManager,
   path: string,
@@ -380,13 +510,12 @@ export const renamePathInContexts = async (manager: SpaceManager,
 export const removePathInContexts = async (manager: SpaceManager,
   path: string,
   spaces: SpaceInfo[]): Promise<void[]> => {
-
     const promises = spaces.map((space) => {
       return processContext(manager, space, async (mdb, space) => {
-        const removeRow = mdb.rows.find(f => f[PathPropertyName] == path);
-        if (removeRow) {
-          saveContextToProperties(manager, path, mdb.cols, removeRow)
-        }
+        // const removeRow = mdb.rows.find(f => f[PathPropertyName] == path);
+        // if (removeRow) {
+        //   saveContextToProperties(manager, path, mdb.cols, removeRow)
+        // }
         const newDB = removeRowForPath(mdb, path);
         if (!_.isEqual(mdb, newDB))
         {
@@ -404,8 +533,10 @@ export const reorderPathsInContext = async (manager: SpaceManager,
 
       return processContext(manager, space, async (mdb, context) => {
         const newDB = reorderRowsForPath(mdb, paths, index);
+
         if (!_.isEqual(mdb, newDB))
         {
+          
           await saveContext(manager, context, newDB, true);}
         return newDB;
       })
@@ -414,12 +545,11 @@ export const reorderPathsInContext = async (manager: SpaceManager,
 export const removePathsInContext = async (manager: SpaceManager,
   paths: string[],
   space: SpaceInfo): Promise<void> => {
-
       return processContext(manager, space, async (mdb, context) => {
-        mdb.rows.forEach(row => {
-          if (paths.includes(row[PathPropertyName]))
-            saveContextToProperties(manager, row[PathPropertyName], mdb.cols, row)
-        })
+        // mdb.rows.forEach(row => {
+        //   if (paths.includes(row[PathPropertyName]))
+        //     saveContextToProperties(manager, row[PathPropertyName], mdb.cols, row)
+        // })
         const newDB = removeRowsForPath(mdb, paths);
         if (!_.isEqual(mdb, newDB))
         {

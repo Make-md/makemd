@@ -15,12 +15,15 @@ export interface MakeMDSettings {
   inlineStylerColors: boolean;
   editorFlow: boolean;
   internalLinkClickFlow: boolean;
+  internalLinkSticker: boolean;
   editorFlowStyle: string;
   spacesEnabled: boolean;
+  navigatorEnabled: boolean;
   spacesDisablePatch: boolean;
   spacesPerformance: boolean;
   spaceRowHeight: number;
   spacesStickers: boolean;
+  bannerHeight: number;
   spaceViewEnabled: boolean;
   sidebarTabs: boolean;
   showRibbon: boolean;
@@ -31,6 +34,7 @@ export interface MakeMDSettings {
   contextEnabled: boolean;
   saveAllContextToFrontmatter: boolean;
   activeView: string;
+  currentWaypoint: number;
   activeSpace: string;
   hideFrontmatter: boolean;
   spacesFolder: string;
@@ -51,7 +55,7 @@ export interface MakeMDSettings {
   newFileLocation: string;
   newFileFolderPath: string;
   inlineContext: boolean;
-
+  imageThumbnails: boolean;
   inlineBacklinks: boolean;
   defaultDateFormat: string;
   inlineBacklinksExpanded: boolean;
@@ -62,10 +66,13 @@ export interface MakeMDSettings {
   spacesUseAlias: boolean,
   fmKeyAlias: string;
   fmKeyBanner: string;
+  fmKeyBannerOffset: string;
   fmKeyColor: string;
   fmKeySticker: string;
   fmKeyContexts: string;
   fmKeyLinks: string;
+  fmKeyTemplate: string;
+  fmKeyTemplateName: string;
   fmKeyFilter: string;
   fmKeySort: string;
   openSpacesOnLaunch: boolean;
@@ -73,14 +80,15 @@ export interface MakeMDSettings {
   quickFrames: string[];
   readableLineWidth: boolean;
   waypoints: string[];
-
+syncFormulaToFrontmatter: boolean;
   autoMigration08: boolean;
   releaseNotesPrompt: number;
   enableDefaultSpaces: boolean;
-  enableTagSpaces: boolean
-  enableHomeSpace: boolean;
   showSpacePinIcon: boolean;
   minimalFix: boolean;
   experimental: boolean;
   systemName: string;
+  defaultSpaceTemplate: string;
+  selectedKit: string;
+  actionMaxSteps: number;
 }

@@ -1,0 +1,67 @@
+body:not(.is-mobile) .mk-style-menu {
+  margin-left: -80px;
+}
+
+.mk-style-menu {
+  display: flex;
+  padding: 0;
+  margin-top: -50px;
+}
+
+.is-mobile .mk-style-menu svg {
+  width: 32px;
+  height: 32px;
+}
+
+.is-mobile .mk-style-menu {
+  --mobile-toolbar-height: 48px;
+  border-radius: 0;
+  width: 100%;
+  margin-top: 0;
+  overflow-x: auto;
+  justify-content: center;
+  height: 48px;
+  border-top: 1px solid var(--mk-ui-divider);
+}
+
+.mk-style-menu .mk-mark {
+  margin: 4px;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+}
+
+.mk-mark div {
+  display: flex;
+}
+
+.mk-style-menu .mk-mark:hover {
+  background: var(--mk-ui-background-hover);
+}
+
+.mk-style-menu .mk-mark-active {
+  background: var(--mk-ui-background-hover);
+}
+
+.mk-style-menu svg {
+  color: var(--mk-ui-text-secondary);
+}
+
+
+.mk-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  margin: 8px;
+  border: thin solid var(--mk-ui-border);
+}
+.mk-color:hover {
+  opacity: 0.8;
+}
+
+mark {
+  color: unset;
+  border-radius: 2px;
+  margin: 0px 2px;
+  padding: 0px 2px;
+}

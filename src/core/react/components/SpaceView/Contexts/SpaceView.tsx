@@ -1,44 +1,77 @@
-import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
-import { SpaceContextProvider } from "core/react/context/SpaceContext";
+import { FrameSelectionProvider } from "core/react/context/FrameSelectionContext";
+import {
+  FramesMDBContext,
+  FramesMDBProvider,
+} from "core/react/context/FramesMDBContext";
+import { PathContext, PathProvider } from "core/react/context/PathContext";
+import { SpaceContext, SpaceProvider } from "core/react/context/SpaceContext";
 import { Superstate } from "core/superstate/superstate";
-import React from "react";
-import { SpaceComponent } from "../SpaceComponent";
+import React, { PropsWithChildren, useContext } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { SpaceTableColumn } from "types/mdb";
+import { FrameEditorMode } from "types/mframe";
+import { ErrorFallback } from "../../Navigator/MainList";
+import { FrameContainerView } from "./ContextBuilder/FrameContainerView";
 
-export const SpaceView = (props: { superstate: Superstate; path: string }) => {
-  const [spaceState, setSpaceState] = React.useState(
-    props.superstate.spacesIndex.get(props.path)
-  );
-
-  React.useEffect(() => {
-    const update = (payload: { path: string }) => {
-      if (payload.path == props.path) {
-        setSpaceState(props.superstate.spacesIndex.get(props.path));
-      }
-    };
-    setSpaceState(props.superstate.spacesIndex.get(props.path));
-    props.superstate.eventsDispatcher.addListener("spaceStateUpdated", update);
-    return () => {
-      props.superstate.eventsDispatcher.removeListener(
-        "spaceStateUpdated",
-        update
-      );
-    };
-  }, [props.path]);
+export const SpaceView = (
+  props: PropsWithChildren<{
+    superstate: Superstate;
+    path: string;
+    readOnly: boolean;
+  }>
+) => {
   return (
-    <div className="mk-space-view">
-      {spaceState?.space && (
-        <SpaceContextProvider
-          superstate={props.superstate}
-          space={spaceState.space}
-        >
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <PathProvider
+        superstate={props.superstate}
+        path={props.path}
+        readMode={false}
+      >
+        <SpaceProvider superstate={props.superstate}>
           <FramesMDBProvider superstate={props.superstate} schema={"main"}>
-            <SpaceComponent
-              path={props.path}
+            <FrameSelectionProvider
+              id={"main"}
               superstate={props.superstate}
-            ></SpaceComponent>
+              editMode={
+                props.readOnly ? FrameEditorMode.Read : FrameEditorMode.Page
+              }
+            >
+              <SpaceRoot superstate={props.superstate}>
+                {props.children}
+              </SpaceRoot>
+            </FrameSelectionProvider>
           </FramesMDBProvider>
-        </SpaceContextProvider>
-      )}
-    </div>
+        </SpaceProvider>
+      </PathProvider>
+    </ErrorBoundary>
+  );
+};
+
+export const SpaceRoot = (
+  props: React.PropsWithChildren<{ superstate: Superstate }>
+) => {
+  const { pathState } = useContext(PathContext);
+  const { spaceInfo } = useContext(SpaceContext);
+  const { tableData } = useContext(FramesMDBContext);
+  const cols: SpaceTableColumn[] = [
+    ...[...(props.superstate.spacesMap.get(pathState.path) ?? [])].flatMap(
+      (f) =>
+        props.superstate.contextsIndex
+          .get(f)
+          ?.contextTable?.cols.map((g) => ({ ...g, table: f }))
+    ),
+    ...(tableData?.cols.map((f) => ({ ...f, table: "" })) ?? []),
+  ];
+  return (
+    <FrameContainerView
+      uri={props.superstate.spaceManager.uriByString(`${spaceInfo.path}#*main`)}
+      superstate={props.superstate}
+      editMode={
+        spaceInfo.readOnly ? FrameEditorMode.Read : FrameEditorMode.Page
+      }
+      cols={cols}
+    >
+      {props.children}
+    </FrameContainerView>
   );
 };

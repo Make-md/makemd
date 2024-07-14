@@ -1,18 +1,26 @@
 import { PathLabel } from "core/middleware/types/afile";
 import { Superstate } from "core/superstate/superstate";
-import { SpaceDefinition, SpaceType } from "core/types/space";
+import { ActionInstance } from "core/types/actions";
+import { Area } from "core/types/area";
+import { SpaceDefinition, SpaceType, tagsSpacePath } from "core/types/space";
+import { parseURI } from "core/utils/uri";
+import { Command, CommandResult, Library } from "types/commands";
+import { Kit } from "types/kits";
 import { SpaceInfo, SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from "types/mdb";
-import { MDBFrame } from "types/mframe";
+import { MDBFrame, MDBFrames } from "types/mframe";
 import { URI } from "types/path";
-import { removeTrailingSlashFromFolder } from "utils/path";
 
 export type PathCache = {
    [key: string]: any,
-   metadata: Record<string, any>
+   metadata: Record<string, any>,
+   ctime: number,
    label: PathLabel,
+   contentTypes: string[],
    tags: string[],
    type: string,
-   parent: string
+   subtype: string,
+   parent: string,
+   readOnly: boolean
 }
 
 //Space Manager creates an abstraction that manipulates Spaces and their Items
@@ -20,48 +28,63 @@ export type PathCache = {
 export abstract class SpaceAdapter {
     //authorities that this cosmoform supports
     
-    public authorities: string[];
+    public schemes: string[];
    public initiateAdapter:(manager: SpaceManager) => void;
     //basic space operations
     public spaceInfoForPath: (path: string) => SpaceInfo;
     public spaceDefForSpace: (path: string) => Promise<SpaceDefinition>;
-    public parentForPath: (path: string) => Promise<string>;
+    public parentPathForPath: (path: string) => string;
     public createSpace: (name: string, parentPath: string, definition: SpaceDefinition) => void
     public saveSpace: (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) => void
     public renameSpace: (path: string, newPath: string) => void
     public deleteSpace: (path: string) => void
     public childrenForSpace: (path: string) => string[]
     public allPaths: (type?: string[]) => string[]
-
+    public keysForCacheType: (type: string) => string[];
+    public spaceInitiated: (path: string) => Promise<boolean>
+    
     //Space Features
     public contextForSpace: (path: string) => Promise<SpaceTable>
 
+    //Context
+    public contextInitiated: (path: string) => Promise<boolean>
     public tablesForSpace: (path: string) => Promise<SpaceTableSchema[]>
     public readTable: (path: string, name: string) => Promise<SpaceTable>
     public readAllTables: (path: string) => Promise<SpaceTables>
     public createTable: (path: string, schema: SpaceTableSchema) => Promise<void>
-    public saveTableSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<void>
-    public saveTable: (path: string, table: SpaceTable, force?: boolean) => Promise<void>
+    public saveTableSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>
+    public saveTable: (path: string, table: SpaceTable, force?: boolean) => Promise<boolean>
     public deleteTable: (path: string, name: string) => Promise<void>
 
+    //Frames
     public framesForSpace: (path: string) => Promise<SpaceTableSchema[]>
     public readFrame: (path: string, name: string) => Promise<MDBFrame>
     public readAllFrames: (path: string) => Promise<SpaceTables>
     public createFrame: (path: string, schema: SpaceTableSchema) => Promise<void>
     public deleteFrame: (path: string, name: string) => Promise<void>
-    public saveFrameSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<void>
-    public saveFrame: (path: string, frame: MDBFrame) => Promise<void>;
+    public saveFrameSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>
+    public saveFrame: (path: string, frame: MDBFrame) => Promise<boolean>;
+
+    //Commands
+    public commandsForSpace: (path: string) => Promise<Command[]>
+    public runCommand: (path: string, name: string, instance: ActionInstance) => Promise<CommandResult>
+    public createCommand: (path: string, schema: SpaceTableSchema) => Promise<void>
+    public deleteCommand: (path: string, name: string) => Promise<void>
+    public saveCommand: (path: string, schemaId: string, saveCommand: (prev: Command) => Command) => Promise<boolean>
+    public readSystemCommands: () => Promise<Library[]>
+    public saveSystemCommand: (lib: string, action: Command) => Promise<void>;
 
     //basic item operations
     public resolvePath: (path: string, source: string) => string;
     public pathExists: (path: string) => Promise<boolean>;
     public createItemAtPath: (parent: string, type: string, name: string, content: any) => Promise<string>;
     public renamePath: (oldPath: string, newPath: string) => void;
-      public copyPath: (source: string, destination: string) => void;
-    public deletePath: (path: string) => void;
+      public copyPath: (source: string, destination: string, newName?: string) => Promise<string>;
+    public getPathInfo: (path: string) => Promise<Record<string, any>>;
+      public deletePath: (path: string) => void;
     public readPath: (path: string) => Promise<string>;
 
-    public readPathCache: (path: string) => PathCache;
+    public readPathCache: (path: string) => Promise<PathCache>;
 
     public writeToPath: (path: string, content: any, binary?: boolean) => void;
 
@@ -74,12 +97,12 @@ export abstract class SpaceAdapter {
     public renameProperty: (path: string, property: string, newProperty: string) => void;
     public deleteProperty: (path: string, property: string) => void;
 
-    public readLabel: (path: string) => void;
+    public readLabel: (path: string) => Promise<PathLabel>;
     public saveLabel: (path: string, key:string, value: any) => void;
 
-    public addSpaceProperty: (path: string, property: SpaceProperty) => void;
-    public deleteSpaceProperty: (path: string, property: SpaceProperty) => void;
-    public saveSpaceProperty: (path: string, property: SpaceProperty, oldProperty: SpaceProperty) => void;
+    public addSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
+    public deleteSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
+    public saveSpaceProperty: (path: string, property: SpaceProperty, oldProperty: SpaceProperty) => Promise<boolean>;
 
     //tag management
     public addTag: (path: string, tag: string) => void;
@@ -88,6 +111,17 @@ export abstract class SpaceAdapter {
       public readTags: () => string[];
 
       public pathsForTag: (tag: string) => string[];
+      public readAllKits: () => Promise<Kit[]>;
+      public readAllTemplates: () => Promise<{[key: string]: MDBFrames}>;
+      public saveFrameKit: (frames: MDBFrame, name: string) => Promise<void>;
+    public saveSpaceTemplate: (frames: MDBFrames, name: string) => Promise<void>;
+    public childrenForPath: (path: string, type?: string) => Promise<string[]>;
+
+    public readWaypoints: () => Promise<Area[]>;
+    public saveWaypoints: (waypoints: Area[]) => Promise<void>;
+    public readTemplates: (path: string) => Promise<string[]>;
+    public saveTemplate: (path: string, space: string) => Promise<string>;
+    public deleteTemplate: (path: string, space: string) => Promise<void>;
 }
 
 
@@ -99,9 +133,21 @@ export class SpaceManager {
     public spaceAdapters: SpaceAdapter[] = []
     public superstate: Superstate;
 
+ 
+    public readSystemCommands = () => {
+      return this.primarySpaceAdapter.readSystemCommands();
+    }
+    public saveSystemCommand = (lib: string, action: Command) => {
+      return this.primarySpaceAdapter.saveSystemCommand(lib, action).then(f => this.superstate.reloadSystemActions());
+    }
 
 
-
+    public saveFrameKit (frames: MDBFrame, name: string) {
+      return this.primarySpaceAdapter.saveFrameKit(frames, name);
+    }
+    public saveSpaceTemplate (frames: MDBFrames, name: string) {
+      return this.primarySpaceAdapter.saveSpaceTemplate(frames, name);
+    }
 
     public onPathCreated = async (path: string) => {
       this.superstate.onPathCreated(path);
@@ -116,11 +162,22 @@ export class SpaceManager {
     }
 
     public onSpaceCreated = async (path: string) => {
-      await this.superstate.reloadSpace(this.spaceInfoForPath(path), null, true)
-      this.superstate.onPathCreated(path)
+
+      if (path.startsWith(this.superstate.settings.spacesFolder)) {
+        await this.onSpaceCreated(path.replace(this.superstate.settings.spacesFolder, 'spaces:/'))
+        return;
+      }
+      
+      const space = await this.superstate.reloadSpace(this.spaceInfoForPath(path), null, true)
+      
+      await this.superstate.onSpaceDefinitionChanged(space)
+      
+      await this.superstate.onPathCreated(path)
+     
     }
     public onSpaceRenamed = async (path: string, oldPath: string) => {
-      this.superstate.onSpaceRenamed(oldPath, this.spaceInfoForPath(path))
+      await this.superstate.onSpaceRenamed(oldPath, this.spaceInfoForPath(path))
+      await this.superstate.onPathRename(oldPath, path)
     }
 
     public onSpaceDeleted = async (path: string) => {
@@ -128,124 +185,48 @@ export class SpaceManager {
       this.superstate.onPathDeleted(path)
     }
 
-    public onSpaceDefinitionChanged = async (path: string) => {
-      this.superstate.reloadSpace(this.spaceInfoForPath(path))
-    }
-
-    public onSpacePropertyChanged = async (path: string) => { 
-      this.superstate.reloadSpace(this.spaceInfoForPath(path))
-    }
+    
 
     public onPathPropertyChanged = async (path: string) => {
       this.superstate.onMetadataChange(path)
     }
 
     public resolvePath(path: string, source?: string) {
-      return this.primarySpaceAdapter.resolvePath(path, source);
+      if (!source || !path) return path;
+      if (path.indexOf('http') == 0) return path;
+      if (path.indexOf('|') != -1) {
+        path = path.split('|')[0];
+      }
+      if (path.indexOf('./') == 0 && source) {
+        if (this.superstate.spacesIndex.has(source))
+          return source + path.slice(1);
+        return source.slice(0, source.lastIndexOf('/')) + path.slice(1);
+      } else if (path.indexOf('../') == 0 && source) {
+        const sourceParts = source.split('/');
+    const pathParts = path.split('/');
+    while (pathParts[0] === '..') {
+      sourceParts.pop();
+      pathParts.shift();
+    }
+    return [...sourceParts, ...pathParts].join('/');
+      }
+      if (this.superstate.spacesIndex.has(path)) return path;
+      return this.primarySpaceAdapter.resolvePath(path, source) ?? path;
     }
     public uriByString(uri: string, source?: string): URI {
       if (!uri) return null;
-      if (uri.indexOf('/') == -1 && source) {
+      
+      if (source) {
         uri = this.resolvePath(uri, source);
         if (!uri) return null;
       }
-
-      const fullPath= uri;
-    //   const nt = uriByStr(uri, source);
-    //   return nt;
-    // }
-    // export const uriByStr = (uri: string, source?: string) => {
-      
-      let refTypeChar = '';
-      const parseQuery = (queryString: string) => {
-        const query: { [key: string]: string } = {};
-        queryString.split('&').forEach(param => {
-          const [key, value] = param.split('=');
-          query[decodeURIComponent(key)] = decodeURIComponent(value);
-        });
-        return query;
-      };
-    
-      const mapRefType = (refTypeChar: string) => {
-        if (refTypeChar === '^') return 'context';
-        if (refTypeChar === '*') return 'frame';
-        return null;
-      };
-    
-      let space: string | null = null;
-      let path: string | null = null;
-      let alias: string | null = null;
-      let reference: string | null = null;
-      let refType: "context" | "frame" = null;
-      let query: { [key: string]: string } | null = null;
-      let scheme: string | null = 'vault';
-    
-      if (fullPath.indexOf('://') != -1) {
-      scheme = uri.slice(0, uri.indexOf('://'))
-      const spaceStr = uri.slice(uri.indexOf('://')+3);
-        
-        if (spaceStr.charAt(0) == "#") {
-          const endIndex = spaceStr.lastIndexOf('/#');
-          if (endIndex != -1) {
-            space = spaceStr.slice(0, endIndex)
-            uri = spaceStr.slice(endIndex)
-          } else {
-            space = spaceStr;
-            uri = '/'
-          }
-        } else {
-          const spaceParts = spaceStr.split('/');  
-          space = spaceParts[0];
-          uri = '/' + (spaceParts.slice(1).join('/') || ''); // Convert the rest back to a relative URI
-        }
-        
-      }
-      const queryDelimiter = '?'
-      const aliasDelimiter = '|'
-      const fragmentDelimiter = '#'
-      const pathSeparator = '/'
-    
-      const lastSlashIndex = uri.lastIndexOf('/');
-      const lastHashIndex = uri.lastIndexOf('#');
-      const lastPipeIndex = uri.lastIndexOf('|');
-      const queryIndex = uri.lastIndexOf('?');
-    
-      if (queryIndex !== -1) {
-        query = parseQuery(uri.slice(queryIndex + 1));
-        uri = uri.slice(0, queryIndex);
-      }
-    
-      if (lastHashIndex !== -1 && lastHashIndex > lastSlashIndex) {
-        const refPart = uri.slice(lastHashIndex + 1);
-        refType = mapRefType(refPart[0]);
-        if (refType || lastHashIndex != lastSlashIndex+1) {
-        refTypeChar = refPart[0];
-        reference = refType ? refPart.slice(1) : refPart;
-        uri = uri.slice(0, lastHashIndex);
-        }
-      }
-    
-      if (lastPipeIndex !== -1 && lastPipeIndex > lastSlashIndex) {
-        alias = uri.slice(lastPipeIndex + 1);
-        uri = uri.slice(0, lastPipeIndex);
-      }
-    path = uri
-      return {
-    basePath:`${space ? `${scheme}://${space}${path != '/' ? path : ''}` : removeTrailingSlashFromFolder(path)}`,
-
-        authority: space,
-        fullPath,
-        scheme,
-        path: removeTrailingSlashFromFolder(uri),
-        alias: alias,
-        ref: reference,
-        refType: refType,
-        refStr: refTypeChar ? refTypeChar+reference : null,
-        query: query
-      };
+      return parseURI(uri); 
     }
 
     public spaceTypeByString = (uri: URI): SpaceType => {
+      if (uri.fullPath == tagsSpacePath) {
+        return 'default';
+      }
       if (uri.scheme == 'space') {
         return "folder";
       }
@@ -259,8 +240,17 @@ export class SpaceManager {
       return "folder";
     };
 
-    public allCaches () {
-      return this.primarySpaceAdapter.allCaches();
+    public async allCaches () {
+      const caches = new Map<string, PathCache>();
+      const keys = this.primarySpaceAdapter.allCaches().keys();
+      for (const key of keys) {
+        const cache = await this.readPathCache(key);
+        caches.set(key, cache);
+      }
+      return caches;
+    }
+    public keysForCacheType (type: string) {
+      return this.primarySpaceAdapter.keysForCacheType(type);
     }
     public pathExists (path: string)  {
          return this.primarySpaceAdapter.pathExists(path);
@@ -273,107 +263,163 @@ export class SpaceManager {
         this.spaceAdapters.push(spaceAdapter);
     }
 
+    public adapterForPath (path: string) {
+      const uri = this.uriByString(path);
+      if (!uri) return this.primarySpaceAdapter;
+      return this.spaceAdapters.find(f => f.schemes.includes(uri.scheme)) ?? this.primarySpaceAdapter;
+    }
      //basic space operations
      public createSpace (name: string, parentPath: string, definition: SpaceDefinition) {
-        return this.primarySpaceAdapter.createSpace(name, parentPath, definition);
+        return this.adapterForPath(parentPath).createSpace(name, parentPath, definition);
      }
      public saveSpace (path: string, definition: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) {
-        return this.primarySpaceAdapter.saveSpace(path, definition, properties);
+        return this.adapterForPath(path).saveSpace(path, definition, properties);
      }
      public renameSpace (path: string, newPath: string) {
-        return this.primarySpaceAdapter.renameSpace(path, newPath);
+        return this.adapterForPath(path).renameSpace(path, newPath);
      }
      public deleteSpace (path: string) {
-        return this.primarySpaceAdapter.deleteSpace(path);
+        return this.adapterForPath(path).deleteSpace(path);
      }
      public childrenForSpace (path: string) {
-        return this.primarySpaceAdapter.childrenForSpace(path);
+        return this.adapterForPath(path).childrenForSpace(path);
      }
      public contextForSpace (path: string) {
-         return this.primarySpaceAdapter.contextForSpace(path);
+         return this.adapterForPath(path).contextForSpace(path);
       }
       public async tablesForSpace (path: string) {
-         return this.primarySpaceAdapter.tablesForSpace(path);
+         return this.adapterForPath(path).tablesForSpace(path);
       }  
-      
+      public spaceInitiated (path: string) {
+        return this.adapterForPath(path).spaceInitiated(path);
+      }
+      public contextInitiated (path: string) {
+        return this.adapterForPath(path).contextInitiated(path);
+      }
       public readTable (path: string, schema: string) {
-         return this.primarySpaceAdapter.readTable(path, schema);
+         return this.adapterForPath(path).readTable(path, schema);
       }
 
       public createTable (path: string, schema: SpaceTableSchema) {
-         return this.primarySpaceAdapter.createTable(path, schema);
+        
+         return this.adapterForPath(path).createTable(path, schema).then(f => 
+          this.superstate.reloadContextByPath(path));
       }
     
     public saveTableSchema (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
-      return this.primarySpaceAdapter.saveTableSchema(path, schemaId, saveSchema);
+      
+      return this.adapterForPath(path).saveTableSchema(path, schemaId, saveSchema).then(f => {
+        if (f)
+        return this.superstate.reloadContextByPath(path)
+      return f});
     }
     public saveTable (path: string, table: SpaceTable, force?: boolean) {
-
-      return this.primarySpaceAdapter.saveTable(path, table, force);
+      
+      return this.adapterForPath(path).saveTable(path, table, force)
     }
     public deleteTable (path: string, name: string) {
-      return this.primarySpaceAdapter.deleteTable(path, name);
+      
+      return this.adapterForPath(path).deleteTable(path, name).then(f => {
+        return this.superstate.reloadContextByPath(path)});
     }
 
+    public readAllKits () {
+      return this.primarySpaceAdapter.readAllKits();
+    }
+
+    public readAllTemplates () {
+      return this.primarySpaceAdapter.readAllTemplates();
+    }
     public readAllTables (path: string) {
-      return this.primarySpaceAdapter.readAllTables(path);
+      return this.adapterForPath(path).readAllTables(path);
     }
       public framesForSpace (path: string) {
-         return this.primarySpaceAdapter.framesForSpace(path);
+         return this.adapterForPath(path).framesForSpace(path);
       }
       public readFrame (path: string, schema: string) {
-         return this.primarySpaceAdapter.readFrame(path, schema);
+         return this.adapterForPath(path).readFrame(path, schema);
       }
 
       public readAllFrames (path: string) {
-         return this.primarySpaceAdapter.readAllFrames(path);
+         return this.adapterForPath(path).readAllFrames(path);
       }
 
     public createFrame (path: string, schema: SpaceTableSchema) {
-      return this.primarySpaceAdapter.createFrame(path, schema);
+      return this.adapterForPath(path).createFrame(path, schema).then(f =>
+        this.superstate.dispatchEvent("frameStateUpdated", {path: this.spaceInfoForPath(path).path, schemaId: schema.id}))
     }
     
     public deleteFrame (path: string, name: string) {
-      return this.primarySpaceAdapter.deleteFrame(path, name);
+      return this.adapterForPath(path).deleteFrame(path, name);
     }
     public saveFrameSchema (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
-      return this.primarySpaceAdapter.saveFrameSchema(path, schemaId, saveSchema);
+      return this.adapterForPath(path).saveFrameSchema(path, schemaId, saveSchema).then(f =>
+        this.superstate.dispatchEvent("frameStateUpdated", {path: this.spaceInfoForPath(path).path, schemaId: schemaId}))
     }
 
     public saveFrame (path: string, frame: MDBFrame) {
-      return this.primarySpaceAdapter.saveFrame(path, frame);
-    }    
+      return this.adapterForPath(path).saveFrame(path, frame).then(f =>
+     this.superstate.dispatchEvent("frameStateUpdated", {path: this.spaceInfoForPath(path).path, schemaId: frame.schema.id}))
+    }
  
+    public commandsForSpace (path: string) {
+      return this.adapterForPath(path).commandsForSpace(path);
+    }
+    public runCommand (path: string, name: string, instance: ActionInstance) {
+      return this.adapterForPath(path).runCommand(path, name, instance);
+    }
+    public createCommand (path: string, schema: SpaceTableSchema) {
+      return this.adapterForPath(path).createCommand(path, schema).then(f => 
+        this.superstate.reloadActions(this.spaceInfoForPath(path)));
+    }
+    public deleteCommand (path: string, name: string) {
+      return this.adapterForPath(path).deleteCommand(path, name).then(f => 
+        this.superstate.reloadActions(this.spaceInfoForPath(path)));
+    }
+    public saveCommand (path: string, schemaId: string, saveCommand: (prev: Command) => Command) {
+      return this.adapterForPath(path).saveCommand(path, schemaId, saveCommand).then(f => 
+        this.superstate.reloadActions(this.spaceInfoForPath(path)));
+    }
      //basic item operations
      public allPaths (type?: string[]) {
          return this.primarySpaceAdapter.allPaths(type);
        }
      public createItemAtPath (parent: string, type: string, name: string, content?: any) :Promise<string> {
-        return this.primarySpaceAdapter.createItemAtPath(parent, type, name, content);
+        return this.adapterForPath(parent).createItemAtPath(parent, type, name, content);
      }
      public renamePath (oldPath: string, newPath: string) {
-        return this.primarySpaceAdapter.renamePath(oldPath, newPath);
+        return this.adapterForPath(oldPath).renamePath(oldPath, newPath);
      }
-     public copyPath(source: string, destination: string) {
-        return this.primarySpaceAdapter.copyPath(source, destination);
+     public copyPath(source: string, destination: string, newName?: string) {
+        return this.adapterForPath(source).copyPath(source, destination, newName);
+     }
+     public getPathInfo (path: string) {
+        return this.adapterForPath(path).getPathInfo(path);
      }
      public deletePath (path: string) {
-        return this.primarySpaceAdapter.deletePath(path);
+        return this.adapterForPath(path).deletePath(path);
      }
      public readPath (path: string) {
-        return this.primarySpaceAdapter.readPath(path);
+        return this.adapterForPath(path).readPath(path);
      }
      
      public writeToPath (path: string, content: any, binary?: boolean) {
 
-        return this.primarySpaceAdapter.writeToPath(path, content, binary);
+        return this.adapterForPath(path).writeToPath(path, content, binary);
      }
-     public parentForPath (path: string) {
-         return this.primarySpaceAdapter.parentForPath(path);
+     public parentPathForPath (path: string) {
+         return this.adapterForPath(path).parentPathForPath(path);
        }
 
-       public readPathCache (path: string) {
-         return this.primarySpaceAdapter.readPathCache(path);
+       public async readPathCache (path: string) {
+        const pathCache = await this.adapterForPath(path).readPathCache(path);
+        if (pathCache && pathCache.type == 'space' && !this.superstate.settings.enableFolderNote) {
+          const defPath = this.spaceInfoForPath(path).defPath
+          
+          pathCache.label = {...pathCache.label, ...(await this.readLabel(defPath))};
+          pathCache.property = await this.readProperties(defPath)
+        }
+         return pathCache;
        }
  
      
@@ -383,60 +429,93 @@ export class SpaceManager {
  
      //Local SpaceInfo for Path
      public spaceInfoForPath (path: string) {
-        return this.primarySpaceAdapter.spaceInfoForPath(path);
+        return this.adapterForPath(path).spaceInfoForPath(path);
      }
      public spaceDefForSpace (path: string) {
-        return this.primarySpaceAdapter.spaceDefForSpace(path);
+        return this.adapterForPath(path).spaceDefForSpace(path);
      }
      
      public readLabel (path: string) {
-        return this.primarySpaceAdapter.readLabel(path);
+        return this.adapterForPath(path).readLabel(path);
      }
       public saveLabel (path: string, key:string, value: any) {
-          return this.primarySpaceAdapter.saveLabel(path, key, value);
+          return this.adapterForPath(path).saveLabel(path, key, value);
       }
      public addProperty(path: string, property: SpaceProperty) {
-        return this.primarySpaceAdapter.addProperty(path, property);
+        return this.adapterForPath(path).addProperty(path, property);
      }
      public saveProperties (path: string, properties: {[key:string]: any}) {
-        return this.primarySpaceAdapter.saveProperties(path, properties);
+
+      if (!path) return;
+        return this.adapterForPath(path).saveProperties(path, properties);
      }
        public readProperties (path: string) {
-         return this.primarySpaceAdapter.readProperties(path);
+         return this.adapterForPath(path).readProperties(path);
        }
        public renameProperty (path: string, property: string, newProperty: string) {
-         return this.primarySpaceAdapter.renameProperty(path, property, newProperty);
+         return this.adapterForPath(path).renameProperty(path, property, newProperty);
        }
      public deleteProperty (path: string, property: string) {
-        return this.primarySpaceAdapter.deleteProperty(path, property);
+        return this.adapterForPath(path).deleteProperty(path, property);
      }
  
      public addSpaceProperty (path: string, property: SpaceProperty) {
-        return this.primarySpaceAdapter.addSpaceProperty(path, property);
+        return this.adapterForPath(path).addSpaceProperty(path, property).then(f => 
+          this.superstate.reloadContextByPath(path));
      
      }
      public deleteSpaceProperty (path: string, property: SpaceProperty) {
-        return this.primarySpaceAdapter.deleteSpaceProperty(path, property);
+        return this.adapterForPath(path).deleteSpaceProperty(path, property).then(f => 
+          this.superstate.reloadContextByPath(path));
      }
      public saveSpaceProperty (path: string, property: SpaceProperty, oldProperty: SpaceProperty) {
-        return this.primarySpaceAdapter.saveSpaceProperty(path, property, oldProperty);
+
+        return this.adapterForPath(path).saveSpaceProperty(path, property, oldProperty).then(f => 
+          {
+            if (oldProperty.name != property.name) {
+              this.superstate.getSpaceItems(path).forEach(f => {
+                this.renameProperty(f.path, oldProperty.name, property.name);
+              })
+            }
+            return this.superstate.reloadContextByPath(path)
+          });
      }
  
     public addTag (path: string, tag: string) {  
-        return this.primarySpaceAdapter.addTag(path, tag);
+        return this.adapterForPath(path).addTag(path, tag);
     }
 
     public deleteTag (path: string, tag: string) {
-        return this.primarySpaceAdapter.deleteTag(path, tag);
+        return this.adapterForPath(path).deleteTag(path, tag);
     }
 
     public renameTag (path: string, tag: string, newTag: string) {
-        return this.primarySpaceAdapter.renameTag(path, tag, newTag);
+        return this.adapterForPath(path).renameTag(path, tag, newTag);
     }
     public readTags () {
          return this.primarySpaceAdapter.readTags();
     }
     public pathsForTag (tag: string) {
         return this.primarySpaceAdapter.pathsForTag(tag);
+    }
+    public childrenForPath (path: string, type?: string) {
+        return this.adapterForPath(path).childrenForPath(path, type);
+    }
+    public readWaypoints () {
+        return this.primarySpaceAdapter.readWaypoints();
+    }
+    public saveWaypoints (waypoints: Area[]) {
+      this.superstate.waypoints = waypoints;
+      this.superstate.dispatchEvent("superstateUpdated", null)
+        return this.primarySpaceAdapter.saveWaypoints(waypoints);
+    }
+    public readTemplates (path:string) {
+        return this.adapterForPath(path).readTemplates(path);
+    }
+    public saveTemplate (path: string, space: string) {
+        return this.adapterForPath(path).saveTemplate(path, space).then(f => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true));
+    }
+    public deleteTemplate (template: string, space: string) {
+        return this.primarySpaceAdapter.deleteTemplate(template, space).then(f => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true));
     }
 }

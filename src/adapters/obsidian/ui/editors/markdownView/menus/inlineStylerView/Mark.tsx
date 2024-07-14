@@ -1,4 +1,4 @@
-import { uiIconSet } from "adapters/obsidian/ui/icons";
+import { isTouchScreen } from "core/utils/ui/screen";
 import MakeMDPlugin from "main";
 import { i18n } from "makemd-core";
 import React from "react";
@@ -16,12 +16,14 @@ export const Mark = (props: {
     <div
       key={i}
       aria-label={
-        props.plugin.superstate.ui.getScreenType() != "mobile"
+        !isTouchScreen(props.plugin.superstate.ui)
           ? (i18n.styles as Record<string, string>)[style.label]
           : undefined
       }
       className={`mk-mark ${style.mark && active ? "mk-mark-active" : ""}`}
-      dangerouslySetInnerHTML={{ __html: uiIconSet[style.icon] }}
+      dangerouslySetInnerHTML={{
+        __html: props.plugin.superstate.ui.getSticker(`ui//${style.icon}`),
+      }}
       onMouseDown={(e) => toggleMarkAction(e, style)}
     ></div>
   );

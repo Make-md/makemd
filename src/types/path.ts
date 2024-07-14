@@ -1,5 +1,5 @@
 
-export type PathRefTypes = "frame" | "context" | "unknown";
+export type PathRefTypes = "frame" | "context" | 'action' | "unknown";
 
 export type URI = {
   basePath: string;

@@ -1,52 +1,53 @@
 import React, { useEffect, useRef } from "react";
-import { TableCellProp } from "../TableView/TableView";
+import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
 export const TextCell = (props: TableCellProp) => {
   const { initialValue, saveValue } = props;
 
-  const [value, setValue] = React.useState(initialValue);
   const ref = useRef(null);
   // When the input is blurred, we'll call our table meta's updateData function
-  const onBlur = () => {
+  const onBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    const value = e.currentTarget.innerText;
     if (initialValue != value) saveValue(value);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     e.stopPropagation();
     if (e.key == "Enter") {
-      (e.target as HTMLInputElement).blur();
-      props.setEditMode(null);
+      if (!e.shiftKey) {
+        (e.target as HTMLInputElement).blur();
+        props.setEditMode(null);
+      }
     }
     if (e.key == "Escape") {
-      setValue(initialValue);
+      ref.current.innerText = initialValue;
       (e.target as HTMLInputElement).blur();
       props.setEditMode(null);
     }
   };
 
-  // If the initialValue is changed external, sync it up with our state
-  React.useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
-
   useEffect(() => {
-    if (props.editMode == 2) {
-      ref?.current?.focus();
+    if (props.editMode == CellEditMode.EditModeActive) {
+      if (ref?.current) {
+        const sel = window.getSelection();
+        sel.selectAllChildren(ref.current);
+        sel.collapseToEnd();
+      }
     }
   }, [props.editMode]);
 
-  return props.editMode > 1 ? (
-    <input
+  return props.editMode > CellEditMode.EditModeView ? (
+    <div
       onClick={(e) => e.stopPropagation()}
       className="mk-cell-text"
       ref={ref}
-      type="text"
-      value={value as string}
-      onChange={(e) => setValue(e.target.value)}
+      data-ph={props.compactMode ? props.property.name : "Empty"}
       onKeyDown={onKeyDown}
       onBlur={onBlur}
+      contentEditable={true}
+      dangerouslySetInnerHTML={{ __html: initialValue }}
     />
   ) : (
-    <div className="mk-cell-text">{value}</div>
+    <div className="mk-cell-text">{initialValue}</div>
   );
 };

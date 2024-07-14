@@ -5,19 +5,29 @@ import { removeQuotes, wrapQuotes } from "core/utils/strings";
 import React from "react";
 import { colors } from "schemas/color";
 import { fieldTypeForType } from "schemas/mdb";
-import { Pos } from "types/Pos";
+import { Rect } from "types/Pos";
 import { SpaceProperty } from "types/mdb";
 import { FrameNode, FrameTreeProp } from "types/mframe";
+import { windowFromDocument } from "utils/dom";
 import ImageModal from "../../Modals/ImageModal";
 import StickerModal from "../../Modals/StickerModal";
-import { SelectOption, defaultMenu, menuInput, menuSeparator } from "../menu";
-import { showDatePickerMenu } from "../properties/datePickerMenu";
+import {
+  SelectOption,
+  defaultMenu,
+  menuInput,
+  menuSeparator,
+} from "../menu/SelectionMenu";
+import {
+  DatePickerTimeMode,
+  showDatePickerMenu,
+} from "../properties/datePickerMenu";
 import { showLinkMenu } from "../properties/linkMenu";
 import { showSpacesMenu } from "../properties/selectSpaceMenu";
 
 type FramePropertyMenuProps = {
   superstate: Superstate;
-  position: Pos;
+  rect: Rect;
+  win: Window;
   node: FrameNode;
   fields: SpaceProperty[];
   frameProps: FrameTreeProp;
@@ -30,7 +40,8 @@ type FramePropertyMenuProps = {
 export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
   const {
     superstate,
-    position,
+    rect,
+    win,
     fields,
     deleteFrame,
     duplicateFrame,
@@ -49,11 +60,18 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
 
           menuOptions.push({
             name: i18n.labels.selectSpace,
-            icon: "lucide//type",
-            onClick: (e) =>
-              showSpacesMenu(e, props.superstate, (link: string) =>
-                savePropValue(field.name, wrapQuotes(link))
-              ),
+            icon: "ui//type",
+            onClick: (e) => {
+              const offset = (
+                e.target as HTMLButtonElement
+              ).getBoundingClientRect();
+              showSpacesMenu(
+                offset,
+                windowFromDocument(e.view.document),
+                props.superstate,
+                (link: string) => savePropValue(field.name, wrapQuotes(link))
+              );
+            },
           });
 
           menuOptions.push(menuSeparator);
@@ -63,7 +81,7 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             .forEach((f) => {
               menuOptions.push({
                 name: f.name,
-                icon: "lucide//type",
+                icon: "ui//type",
                 onClick: () => {
                   savePropValue(field.name, `${f.schemaId}.props.${f.name}`);
                 },
@@ -71,8 +89,9 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             });
           const offset = (e.target as HTMLElement).getBoundingClientRect();
           props.superstate.ui.openMenu(
-            { x: offset.left, y: offset.top + 30 },
-            defaultMenu(props.superstate.ui, menuOptions)
+            offset,
+            defaultMenu(props.superstate.ui, menuOptions),
+            windowFromDocument(e.view.document)
           );
         }
         break;
@@ -81,11 +100,19 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
           const menuOptions: SelectOption[] = [];
           menuOptions.push({
             name: i18n.labels.selectNote,
-            icon: "lucide//type",
-            onClick: (e) =>
-              showLinkMenu(e, props.superstate, (link: string) =>
-                savePropValue(field.name, wrapQuotes(link))
-              ),
+            icon: "ui//type",
+            onClick: (e) => {
+              const offset = (
+                e.target as HTMLButtonElement
+              ).getBoundingClientRect();
+              showLinkMenu(
+                offset,
+                windowFromDocument(e.view.document),
+                props.superstate,
+                (link: string) => savePropValue(field.name, wrapQuotes(link))
+              );
+              e.stopPropagation();
+            },
           });
           menuOptions.push(menuSeparator);
 
@@ -94,7 +121,7 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             .forEach((f) => {
               menuOptions.push({
                 name: f.name,
-                icon: "lucide//type",
+                icon: "ui//type",
                 onClick: () => {
                   savePropValue(field.name, `${f.schemaId}.props.${f.name}`);
                 },
@@ -102,35 +129,42 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             });
           const offset = (e.target as HTMLElement).getBoundingClientRect();
           props.superstate.ui.openMenu(
-            { x: offset.left, y: offset.top + 30 },
-            defaultMenu(props.superstate.ui, menuOptions)
+            offset,
+            defaultMenu(props.superstate.ui, menuOptions),
+            windowFromDocument(e.view.document)
           );
         }
         break;
       case "icon":
         {
-          props.superstate.ui.openPalette((_props: { hide: () => void }) => (
-            <StickerModal
-              ui={props.superstate.ui}
-              hide={_props.hide}
-              selectedSticker={(emoji) =>
-                savePropValue(field.name, wrapQuotes(emoji))
-              }
-            />
-          ));
+          props.superstate.ui.openPalette(
+            (_props: { hide: () => void }) => (
+              <StickerModal
+                ui={props.superstate.ui}
+                hide={_props.hide}
+                selectedSticker={(emoji) =>
+                  savePropValue(field.name, wrapQuotes(emoji))
+                }
+              />
+            ),
+            windowFromDocument(e.view.document)
+          );
         }
         break;
       case "image":
         {
-          props.superstate.ui.openPalette((_props: { hide: () => void }) => (
-            <ImageModal
-              superstate={props.superstate}
-              hide={_props.hide}
-              selectedPath={(image) =>
-                savePropValue(field.name, wrapQuotes(image))
-              }
-            ></ImageModal>
-          ));
+          props.superstate.ui.openPalette(
+            (_props: { hide: () => void }) => (
+              <ImageModal
+                superstate={props.superstate}
+                hide={_props.hide}
+                selectedPath={(image) =>
+                  savePropValue(field.name, wrapQuotes(image))
+                }
+              ></ImageModal>
+            ),
+            windowFromDocument(e.view.document)
+          );
         }
         break;
       case "text":
@@ -149,7 +183,7 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             .forEach((f) => {
               menuOptions.push({
                 name: f.name,
-                icon: "lucide//type",
+                icon: "ui//type",
                 onClick: () => {
                   savePropValue(field.name, `${f.schemaId}.props.${f.name}`);
                 },
@@ -157,20 +191,25 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             });
           const offset = (e.target as HTMLElement).getBoundingClientRect();
           props.superstate.ui.openMenu(
-            { x: offset.left, y: offset.top + 30 },
-            defaultMenu(props.superstate.ui, menuOptions)
+            offset,
+            defaultMenu(props.superstate.ui, menuOptions),
+            windowFromDocument(e.view.document)
           );
         }
         break;
       case "date":
         {
           const offset = (e.target as HTMLElement).getBoundingClientRect();
+
           const date = new Date(currentValue);
           showDatePickerMenu(
             props.superstate.ui,
-            { x: offset.left, y: offset.top + 30 },
+            offset,
+            windowFromDocument(e.view.document),
             date.getTime() ? date : null,
-            (date: Date) => savePropValue(field.name, date.valueOf().toString())
+            (date: Date) =>
+              savePropValue(field.name, date.valueOf().toString()),
+            DatePickerTimeMode.None
           );
           break;
         }
@@ -183,43 +222,44 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
     const menuOptions: SelectOption[] = [];
     menuOptions.push({
       name: i18n.commands.h1,
-      icon: "lucide//type",
+      icon: "ui//type",
       onClick: (e) => savePropValue("style", `'h1'`),
     });
     menuOptions.push({
       name: i18n.commands.h2,
-      icon: "lucide//type",
+      icon: "ui//type",
       onClick: (e) => savePropValue("style", `'h2'`),
     });
     menuOptions.push({
       name: i18n.commands.h3,
-      icon: "lucide//type",
+      icon: "ui//type",
       onClick: (e) => savePropValue("style", `'h3'`),
     });
     menuOptions.push({
       name: i18n.commands.h4,
-      icon: "lucide//type",
+      icon: "ui//type",
       onClick: (e) => savePropValue("style", `'h4'`),
     });
     menuOptions.push({
       name: i18n.commands.h5,
-      icon: "lucide//type",
+      icon: "ui//type",
       onClick: (e) => savePropValue("style", `'h5'`),
     });
     menuOptions.push({
       name: i18n.commands.h6,
-      icon: "lucide//type",
+      icon: "ui//type",
       onClick: (e) => savePropValue("style", `'h6'`),
     });
     menuOptions.push({
       name: i18n.commands.paragraph,
-      icon: "lucide//type",
+      icon: "ui//type",
       onClick: (e) => savePropValue("style", `'p'`),
     });
     const offset = (e.target as HTMLElement).getBoundingClientRect();
     props.superstate.ui.openMenu(
-      { x: offset.left, y: offset.top + 30 },
-      defaultMenu(props.superstate.ui, menuOptions)
+      offset,
+      defaultMenu(props.superstate.ui, menuOptions),
+      windowFromDocument(e.view.document)
     );
   };
 
@@ -228,16 +268,16 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
   if (props.node.type == "text") {
     menuOptions.push({
       name: i18n.labels.styles,
-      icon: "lucide//sort-asc",
+      icon: "ui//sort-asc",
       onClick: (e) => showTypographyMenu(e),
     });
     menuOptions.push({
       name: i18n.labels.color,
-      icon: "lucide//palette",
+      icon: "ui//palette",
       onClick: (e) => {
         const offset = (e.target as HTMLElement).getBoundingClientRect();
         props.superstate.ui.openMenu(
-          { x: offset.left, y: offset.top + 30 },
+          offset,
           {
             ui: props.superstate.ui,
             multi: false,
@@ -252,17 +292,18 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             },
             searchable: true,
             showAll: true,
-          }
+          },
+          windowFromDocument(e.view.document)
         );
       },
     });
     menuOptions.push({
       name: i18n.labels.backgroundColor,
-      icon: "lucide//palette",
+      icon: "ui//palette",
       onClick: (e) => {
         const offset = (e.target as HTMLElement).getBoundingClientRect();
         props.superstate.ui.openMenu(
-          { x: offset.left, y: offset.top + 30 },
+          offset,
           {
             ui: superstate.ui,
             multi: false,
@@ -277,7 +318,8 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             },
             searchable: true,
             showAll: true,
-          }
+          },
+          windowFromDocument(e.view.document)
         );
       },
     });
@@ -293,17 +335,18 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
   menuOptions.push(menuSeparator);
   menuOptions.push({
     name: i18n.menu.duplicate,
-    icon: "lucide//copy",
+    icon: "ui//copy",
     onClick: (e) => duplicateFrame(),
   });
   menuOptions.push({
     name: i18n.menu.delete,
-    icon: "lucide//trash",
+    icon: "ui//trash",
     onClick: (e) => deleteFrame(),
   });
 
   return props.superstate.ui.openMenu(
-    position,
-    defaultMenu(props.superstate.ui, menuOptions)
+    rect,
+    defaultMenu(props.superstate.ui, menuOptions),
+    win
   );
 };

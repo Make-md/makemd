@@ -1,77 +1,172 @@
 import { default as i18n } from "core/i18n";
-import SpaceEditor from "core/react/components/Navigator/SpaceEditor";
-import { isMouseEvent } from "core/react/hooks/useLongPress";
 import { Superstate } from "core/superstate/superstate";
 import {
+  createSpace,
+  defaultSpace,
   newPathInSpace,
-  pinPathToSpaceAtIndex,
+  newTemplateInSpace,
 } from "core/superstate/utils/spaces";
+import { addTag } from "core/superstate/utils/tags";
 import { SpaceState } from "core/types/superstate";
 import React from "react";
-import { SelectOption, defaultMenu, menuSeparator } from "../menu";
-import { showLinkMenu } from "../properties/linkMenu";
+import { Rect } from "types/Pos";
+import { TargetLocation } from "types/path";
+import { windowFromDocument } from "utils/dom";
+import { InputModal } from "../../Modals/InputModal";
+import {
+  SelectOption,
+  defaultMenu,
+  menuSeparator,
+} from "../menu/SelectionMenu";
+
+export const defaultAddAction = (
+  superstate: Superstate,
+  space: SpaceState,
+  win: Window,
+  location?: TargetLocation
+) => {
+  if (space?.path == "spaces://$tags") {
+    superstate.ui.openModal(
+      "New Tag",
+      (props: { hide: () => void }) => {
+        return (
+          <InputModal
+            value=""
+            saveLabel={i18n.labels.saveView}
+            hide={props.hide}
+            saveValue={(value) => addTag(superstate, value)}
+          ></InputModal>
+        );
+      },
+      win
+    );
+  } else if (space) {
+    if (space?.metadata.template?.length > 0) {
+      newTemplateInSpace(superstate, space, space.metadata.template, location);
+      return;
+    } else {
+      newPathInSpace(superstate, space, "md", null, false, null, location);
+    }
+  } else {
+    defaultSpace(
+      superstate,
+      superstate.pathsIndex.get(superstate.ui.activePath)
+    ).then((f) => {
+      if (f) newPathInSpace(superstate, f, "md", null, false, null, location);
+    });
+  }
+};
 
 export const showSpaceAddMenu = (
   superstate: Superstate,
-  e: React.MouseEvent | React.TouchEvent,
+  offset: Rect,
+  win: Window,
   space: SpaceState,
   dontOpen?: boolean
 ) => {
   const menuOptions: SelectOption[] = [];
-  menuOptions.push({
-    name: i18n.labels.createNote,
-    icon: "lucide//edit",
-    onClick: (e) => {
-      newPathInSpace(superstate, space, "md", null, dontOpen);
-    },
-  });
-  menuOptions.push({
-    name: i18n.buttons.createCanvas,
-    icon: "lucide//layout-dashboard",
-    onClick: (e) => {
-      newPathInSpace(superstate, space, "canvas", null, dontOpen);
-    },
-  });
-  menuOptions.push({
-    name: i18n.labels.createSection,
-    icon: "lucide//folder-plus",
-    onClick: (e) => {
-      superstate.ui.openModal(
-        i18n.labels.createSection,
-        (props: { hide: () => void }) => (
-          <SpaceEditor
-            superstate={superstate}
-            space={null}
-            parent={space}
-            metadata={null}
-            close={props.hide}
-            dontOpen={dontOpen}
-          ></SpaceEditor>
-        )
-      );
-    },
-  });
-  menuOptions.push(menuSeparator);
-  menuOptions.push({
-    name: i18n.buttons.addIntoSpace,
-    icon: "lucide//pin",
-    onClick: (e) => {
-      showLinkMenu(e, superstate, (link) => {
-        pinPathToSpaceAtIndex(superstate, space, link);
-      });
-    },
-  });
-  superstate.ui.openMenu(
-    isMouseEvent(e)
-      ? { x: e.pageX, y: e.pageY }
-      : {
-          // @ts-ignore
-          x: e.nativeEvent.locationX,
-          // @ts-ignore
-          y: e.nativeEvent.locationY,
-        },
-    defaultMenu(superstate.ui, menuOptions)
-  );
+  if (space.type == "default") {
+    menuOptions.push({
+      name: "New Tag",
+      icon: "ui//tags",
+      onClick: (e) => {
+        superstate.ui.openModal(
+          "New Tag",
+          (props: { hide: () => void }) => {
+            return (
+              <InputModal
+                value=""
+                saveLabel={i18n.labels.saveView}
+                hide={props.hide}
+                saveValue={(value) => addTag(superstate, value)}
+              ></InputModal>
+            );
+          },
+          windowFromDocument(e.view.document)
+        );
+      },
+    });
+  } else {
+    menuOptions.push({
+      name: i18n.labels.createNote,
+      icon: "ui//edit",
+      onClick: (e) => {
+        newPathInSpace(
+          superstate,
+          space,
+          "md",
+          superstate.settings.newNotePlaceholder,
+          dontOpen
+        );
+      },
+    });
+    menuOptions.push({
+      name: i18n.buttons.createCanvas,
+      icon: "ui//layout-dashboard",
+      onClick: (e) => {
+        newPathInSpace(superstate, space, "canvas", null, dontOpen);
+      },
+    });
+    menuOptions.push({
+      name: i18n.labels.createSection,
+      icon: "ui//folder-plus",
+      onClick: (e) => {
+        superstate.ui.openModal(
+          i18n.labels.createSection,
+          (props: { hide: () => void }) => (
+            <InputModal
+              saveLabel={i18n.buttons.createFolder}
+              value={""}
+              hide={props.hide}
+              saveValue={(v) => {
+                let pathState = superstate.pathsIndex.get(space?.path);
+                if (!pathState) {
+                  pathState = superstate.pathsIndex.get("/");
+                }
+                const newName = v.replace(/\//g, "");
+                const parentPath =
+                  pathState?.subtype == "folder"
+                    ? pathState.path
+                    : pathState.parent
+                    ? pathState.parent
+                    : "/";
 
-  return false;
+                const newPath =
+                  !parentPath || parentPath == "/"
+                    ? newName
+                    : parentPath + "/" + newName;
+                if (newName.length == 0) {
+                  superstate.ui.notify(i18n.notice.newSpaceName);
+                  return;
+                }
+                if (superstate.spacesIndex.has(newPath)) {
+                  superstate.ui.notify(i18n.notice.duplicateSpaceName);
+                  return;
+                }
+                createSpace(superstate, newPath, {});
+              }}
+            ></InputModal>
+          ),
+          windowFromDocument(e.view.document)
+        );
+      },
+    });
+    if (space.templates.length > 0) {
+      menuOptions.push(menuSeparator);
+      for (const template of space.templates) {
+        menuOptions.push({
+          name: template,
+          icon: "ui//clipboard-pen",
+          onClick: (e) => {
+            newTemplateInSpace(superstate, space, template);
+          },
+        });
+      }
+    }
+  }
+  return superstate.ui.openMenu(
+    offset,
+    defaultMenu(superstate.ui, menuOptions),
+    win
+  );
 };

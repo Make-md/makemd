@@ -1,17 +1,18 @@
 import i18n from "core/i18n";
-import { PathView } from "core/react/components/PathView/PathView";
 import { Superstate } from "core/superstate/superstate";
 import { eventTypes } from "core/types/types";
 import React, { useEffect, useState } from "react";
 import { uniq } from "utils/array";
-import { pathNameToString } from "utils/path";
+import { NoteView } from "../PathView/NoteView";
+import { PathCrumb } from "../UI/Crumbs/PathCrumb";
+import { CollapseToggle } from "../UI/Toggles/CollapseToggle";
 
 const BacklinkItem = (props: {
   path: string;
   superstate: Superstate;
   source: string;
 }) => {
-  const [block, setBlock] = useState([null, null]);
+  const [block, setBlock] = useState(null);
   const refreshBlock = (path: string) => {
     const fCache = props.superstate.pathsIndex.get(path);
     const link = [
@@ -42,38 +43,25 @@ const BacklinkItem = (props: {
 
   return (
     <>
-      <div className="mk-path-context-title">
-        <button
-          className={`mk-collapse mk-inline-button mk-icon-xsmall ${
-            collapsed ? "mk-collapsed" : ""
-          }`}
-          onClick={(e) => {
-            setCollapsed(!collapsed);
-            e.stopPropagation();
-          }}
-          dangerouslySetInnerHTML={{
-            __html: props.superstate.ui.getSticker("ui//mk-ui-collapse"),
-          }}
-        ></button>
-        <div
-          onClick={(e) => {
-            props.superstate.ui.openPath(props.path, false);
-            e.stopPropagation();
-          }}
-        >
-          {pathNameToString(props.path)}
-        </div>
+      <div className="mk-path-backlink-title">
+        <PathCrumb superstate={props.superstate} path={props.path}>
+          <CollapseToggle
+            superstate={props.superstate}
+            collapsed={collapsed}
+            onToggle={(c) => setCollapsed(c)}
+          ></CollapseToggle>
+        </PathCrumb>
       </div>
 
-      {!collapsed ? (
+      {!collapsed && block ? (
         <div className="mk-path-context-backlink">
-          <PathView
-            superstate={props.superstate}
+          <NoteView
             load={true}
+            superstate={props.superstate}
             path={props.path}
             properties={{ from: block[0], to: block[1] }}
             classname="mk-path-context-flow"
-          ></PathView>
+          ></NoteView>
         </div>
       ) : (
         <></>
@@ -89,11 +77,11 @@ export const Backlinks = (props: { superstate: Superstate; path: string }) => {
   const [backlinks, setBacklinks] = useState([]);
   useEffect(() => {
     if (!props.path) return;
-    Promise.all(
-      uniq([...props.superstate.linksMap.getInverse(props.path)]).map((f) =>
-        props.superstate.spaceManager.pathExists(f) ? f : null
+    setBacklinks(
+      uniq([...props.superstate.linksMap.getInverse(props.path)]).map(
+        (f) => props.superstate.pathsIndex.get(f).path
       )
-    ).then((bls) => setBacklinks(bls.filter((f) => f)));
+    );
   }, [props.path]);
   useEffect(() => {
     props.superstate.settings.inlineBacklinksExpanded = !collapsed;
@@ -110,41 +98,37 @@ export const Backlinks = (props: { superstate: Superstate; path: string }) => {
   }, [collapsed]);
   return backlinks.length > 0 && props.path ? (
     <div className="mk-path-context-component mk-note-footer">
-      <div className="mk-path-context-section">
+      <div
+        onClick={(e) => {
+          setCollapsed(!collapsed);
+          e.stopPropagation();
+        }}
+        className="mk-path-context-title"
+      >
         <div
-          onClick={(e) => {
-            setCollapsed(!collapsed);
-            e.stopPropagation();
+          dangerouslySetInnerHTML={{
+            __html: props.superstate.ui.getSticker("ui//backlink"),
           }}
-          className="mk-path-context-title"
-        >
-          <div
-            className={`mk-icon-xsmall`}
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//mk-ui-backlink"),
-            }}
-          ></div>
-          {i18n.labels.backlinks}
-          <button
-            className={`mk-collapse mk-inline-button mk-icon-xsmall ${
-              collapsed ? "mk-collapsed" : ""
-            }`}
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//mk-ui-collapse-sm"),
-            }}
-          ></button>
-        </div>
-        <div>
-          {!collapsed &&
-            backlinks.map((f, i) => (
-              <BacklinkItem
-                path={f}
-                key={i}
-                superstate={props.superstate}
-                source={props.path}
-              ></BacklinkItem>
-            ))}
-        </div>
+        ></div>
+        {i18n.labels.backlinks}
+      </div>
+      <div className="mk-fold">
+        <CollapseToggle
+          superstate={props.superstate}
+          collapsed={collapsed}
+          onToggle={(c) => toggleBacklinks()}
+        ></CollapseToggle>
+      </div>
+      <div className="mk-path-backlinks">
+        {!collapsed &&
+          backlinks.map((f, i) => (
+            <BacklinkItem
+              path={f}
+              key={i}
+              superstate={props.superstate}
+              source={props.path}
+            ></BacklinkItem>
+          ))}
       </div>
     </div>
   ) : (

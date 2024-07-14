@@ -1,0 +1,23 @@
+
+.mk-ui-color-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .mk-ui-color-picker-selector {
+border-bottom: thin solid var(--mk-ui-divider);
+  }
+
+  .mk-ui-color-picker-palette {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+.mk-ui-color-picker .mk-color {
+    margin: 4px;
+}
+  .mk-ui-color-picker-palette > div {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+  }

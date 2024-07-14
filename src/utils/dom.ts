@@ -7,3 +7,7 @@ export function selectElementContents(el: Element) {
   sel.removeAllRanges();
   sel.addRange(range);
 }
+
+export const windowFromDocument = (doc: Document): Window => {
+  return doc.defaultView || window;
+}

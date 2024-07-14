@@ -4,83 +4,122 @@ import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnT
 import { parseProperty } from "utils/parsers";
 import { serializeMultiString } from "utils/serializers";
 
-const filterPathsForAny = (paths: PathState[], filters: SpaceDefFilter[]) : PathState[] => {
+const filterPathsForAny = (paths: PathState[], filters: SpaceDefFilter[], props: Record<string, string>) : PathState[] => {
+  
   const newArray = filters.reduce((p, c) => {
     const [result, remaining] = p;
-    const filteredPaths = (c.type == 'fileprop') ? filterPathProperties(remaining, c) :
-    c.type == 'filemeta' ? filterPathCache(remaining, c) : c.type == 'frontmatter' ? filterFM(remaining, c) : [];
+    
+    const filteredPaths = c.type == 'context' ? filterContext(remaining, c, props) :  c.type == 'path' ? filterPathCache(remaining, c, props) : c.type == 'frontmatter' ? filterFM(remaining, c, props)  : filterPathProperties(remaining, c, props)
     const diffArray = remaining.filter(x => !filteredPaths.includes(x));
     return [[...result, ...filteredPaths], diffArray]
   }, [[], paths])
   return newArray[0];
 }
 
-const filterPathsForAll = ( paths: PathState[], filters: SpaceDefFilter[]) : PathState[] => {
+const filterPathsForAll = ( paths: PathState[], filters: SpaceDefFilter[], props: Record<string, string>) : PathState[] => {
   return filters.reduce((p, c) => {
-    return (c.type == 'fileprop') ? filterPathProperties(p, c) :
-    c.type == 'filemeta' ? filterPathCache(p, c) : c.type == 'frontmatter' ? filterFM(p, c) : [];
+    return  c.type == 'context' ? filterContext(p, c, props) :  c.type == 'path' ? filterPathCache(p, c, props) : c.type == 'frontmatter' ? filterFM(p, c, props) : filterPathProperties(p, c, props);
   }, paths)
 }
-
-const filterFM = ( paths: PathState[], def: SpaceDefFilter) => {
-
+const filterContext = ( paths: PathState[], def: SpaceDefFilter, props: Record<string, string>) => {
+  const filterFn = filterFnTypes[def.fn];
+  if (!filterFn || (filterFn.valueType != 'none' && def.value.length == 0)) {
+    return [];
+  }
   return paths.filter(f => {
+    const [contextPath, field] = def.field.split('.');
+    
     const fm = f.metadata?.property
-    if (!fm || !fm[def.field]) {
+    if (!f.spaces?.includes(contextPath))
+      return false;
+  
+    if (!fm || !fm[field]) {
       return false;
     } 
-    const filterFn = filterFnTypes[def.fn];
+
+    
     let result = true;
   
     if (filterFn) {
-      result = filterFn.fn(parseProperty(def.field, fm[def.field]), def.value);
+      const value =  (def.fType == 'property') ? props[def.value] : def.value;
+      
+      result = filterFn.fn(parseProperty(field, fm[field]), value);
     }
     return result;
   })
 }
-const filterPathCache = (paths: PathState[], def: SpaceDefFilter) => {
-  return paths.filter(f => {
-  let value = '';
-  if (def.field == 'outlinks') {
-    value = serializeMultiString(f.outlinks)
-  } else if (def.field == 'inlinks') {
-    value = serializeMultiString(f.inlinks)
-  } else if (def.field == 'tags') {
-    value = serializeMultiString(f.tags);
-  }
+
+const filterFM = ( paths: PathState[], def: SpaceDefFilter, props: Record<string, string>) => {
   const filterFn = filterFnTypes[def.fn];
+  if (!filterFn || (filterFn.valueType != 'none' && def.value.length == 0)) {
+    return [];
+  }
+  return paths.filter(f => {
+    const fm = f.metadata?.property
+    if (!fm || fm[def.field] === undefined) {
+      return false;
+    } 
+    
     let result = true;
   
     if (filterFn) {
-      result = filterFn.fn(value, def.value);
+      const value =  (def.fType == 'property') ? props[def.value] : def.value;
+      result = filterFn.fn(parseProperty(def.field, fm[def.field]), value);
+    }
+    return result;
+  })
+}
+const filterPathCache = (paths: PathState[], def: SpaceDefFilter, props: Record<string, string>) => {
+  const filterFn = filterFnTypes[def.fn];
+  if (!filterFn || (filterFn.valueType != 'none' && def.value.length == 0)) {
+    return [];
+  }
+  return paths.filter(f => {
+  let value = '';
+  if (def.field == 'outlinks') {
+    value = serializeMultiString(f.outlinks ?? [])
+  } else if (def.field == 'inlinks') {
+    value = serializeMultiString(f.inlinks ?? [])
+  } else if (def.field == 'tags') {
+    value = serializeMultiString(f.tags ?? []);
+  }
+  
+    let result = true;
+  
+    if (filterFn) {
+      const defValue =  (def.fType == 'property') ? props[def.value] : def.value;
+      result = filterFn.fn(value, defValue);
     }
     return result;
   });
 }
 
-const filterPathProperties = (paths: PathState[], def: SpaceDefFilter) => {
+const filterPathProperties = (paths: PathState[], def: SpaceDefFilter, props: Record<string, string>) => {
+  const filterFn = filterFnTypes[def.fn];
+  if (!filterFn || (filterFn.valueType != 'none' && def.value.length == 0)) {
+    return [];
+  }
   return paths.filter(f => {
-    const vaultItemFields = ['name', 'path', 'sticker', 'color', 'isFolder', 'extension', 'ctime', 'mtime', 'size', 'parent']
-    if (vaultItemFields.includes(def.field)) {
-      const filterFn = filterFnTypes[def.fn];
+    
+      
       
       let result = true;
       if (filterFn) {
-        result = filterFn.fn(f[def.field as keyof PathState], def.value);
+        const value =  (def.fType == 'property') ? props[def.value] : def.value;
+        result = filterFn.fn(f.metadata?.[def.type]?.[def.field], value);
       }
       return result;
-    }
-    return true;
+    
   })
 }
 
 
 
-export const pathByDef = ( filters: SpaceDefGroup[], path: PathState) => {
+export const pathByDef = ( filters: SpaceDefGroup[], path: PathState,  props: Record<string, string>) => {
 
   const pathInFilter = filters.reduce((p, c) => {
-    if (!p || c.filters.length == 0) return p;
-    const result = (c.type == 'any') ? filterPathsForAny([path], c.filters).length > 0 : filterPathsForAll([path], c.filters).length > 0
+    if (!p || c.filters.length == 0) return false;
+    const result = (c.type == 'any') ? filterPathsForAny([path], c.filters, props).length > 0 : filterPathsForAll([path], c.filters, props).length > 0
     return result
   }, true);
 return pathInFilter; 

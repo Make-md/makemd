@@ -1,3 +1,4 @@
+import { isTouchScreen } from "core/utils/ui/screen";
 import MakeMDPlugin from "main";
 import MakeMenu from "./MakeMenu/MakeMenu";
 import StickerMenu from "./StickerMenu";
@@ -10,6 +11,6 @@ export const registerEditorMenus = (plugin: MakeMDPlugin) => {
       }
       if (plugin.superstate.settings.inlineStickerMenu)
       {plugin.registerEditorSuggest(new StickerMenu(plugin.app, plugin));}
-      if (plugin.superstate.ui.getScreenType() == 'mobile' && plugin.superstate.settings.mobileMakeBar && plugin.superstate.settings.inlineStyler)
+      if (isTouchScreen(plugin.superstate.ui) && plugin.superstate.settings.mobileMakeBar && plugin.superstate.settings.inlineStyler)
         loadStylerIntoContainer(plugin.app.mobileToolbar.containerEl, plugin);
 }

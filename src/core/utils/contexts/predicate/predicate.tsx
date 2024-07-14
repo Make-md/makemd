@@ -1,4 +1,5 @@
 import { Filter, Predicate, Sort } from "core/types/predicate";
+import { SpaceTableSchema } from "types/mdb";
 import { FilterFunctionType } from "./filter";
 import { filterFnTypes } from "./filterFns/filterFnTypes";
 import { SortFunctionType, sortFnTypes } from "./sort";
@@ -11,6 +12,12 @@ export const defaultPredicateFnForType = (
     types[f].type.find((g) => g == type)
   );
   return fnType;
+};
+
+export const allPredicateFns = (
+  types: FilterFunctionType | SortFunctionType
+) => {
+  return Object.keys(types);
 };
 
 export const predicateFnsForType = (
@@ -30,16 +37,22 @@ export const cleanPredicateType = (
   return type.filter((f) => Object.keys(definedTypes).find((g) => g == f.fn));
 };
 
-export const validatePredicate = (prevPredicate: Predicate): Predicate => {
+export const validatePredicate = (
+  prevPredicate: Predicate,
+  defaultPredicate: Predicate
+): Predicate => {
   if (!prevPredicate) {
     return defaultPredicate;
   }
   return {
     ...defaultPredicate,
     view: prevPredicate.view,
-    frame: prevPredicate.frame,
-    frameProps: prevPredicate.frameProps,
-    frameGroup: prevPredicate.frameGroup,
+    listItem: prevPredicate.listItem,
+    listGroup: prevPredicate.listGroup,
+    listView: prevPredicate.listView,
+    listViewProps: prevPredicate.listViewProps,
+    listItemProps: prevPredicate.listItemProps,
+    listGroupProps: prevPredicate.listGroupProps,
     filters: Array.isArray(prevPredicate.filters)
       ? (cleanPredicateType(prevPredicate.filters, filterFnTypes) as Filter[])
       : [],
@@ -53,32 +66,50 @@ export const validatePredicate = (prevPredicate: Predicate): Predicate => {
     colsHidden: Array.isArray(prevPredicate.colsHidden)
       ? prevPredicate.colsHidden
       : [],
-    colsSize: prevPredicate.colsSize,
+    colsSize: prevPredicate.colsSize ?? {},
+    colsCalc: prevPredicate.colsCalc ?? {},
   };
+};
+
+export const defaultPredicateForSchema = (schema: SpaceTableSchema) => {
+  return schema?.primary == "true"
+    ? defaultPredicate
+    : {
+        ...defaultPredicate,
+        view: "table",
+      };
 };
 
 export const defaultPredicate: Predicate = {
   view: "list",
   filters: [],
-  frame: "",
-  frameProps: {},
-  frameGroup: "",
+  listView: "",
+  listItem: "",
+  listGroup: "",
+  listGroupProps: {},
+  listViewProps: {},
+  listItemProps: {},
   sort: [],
   groupBy: [],
   colsOrder: [],
   colsHidden: [],
   colsSize: {},
+  colsCalc: {},
 };
 
 export const defaultTablePredicate: Predicate = {
   view: "table",
   filters: [],
-  frame: "",
-  frameProps: {},
-  frameGroup: "",
+  listView: "",
+  listItem: "",
+  listGroup: "",
+  listGroupProps: {},
+  listViewProps: {},
+  listItemProps: {},
   sort: [],
   groupBy: [],
   colsOrder: [],
   colsHidden: [],
   colsSize: {},
+  colsCalc: {},
 };

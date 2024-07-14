@@ -1,0 +1,81 @@
+
+  
+
+
+
+
+
+.mk-f-edit {
+    z-index: 28;
+    /* transition: all 0.2s ease; */
+    outline: thin solid var(--mk-ui-border-accent);
+}
+
+.mk-f-editable:not(.mk-f-edit):hover {
+    z-index: 28;
+    outline: 2px solid var(--mk-ui-border-accent);
+    outline-offset: -2px;
+}
+
+
+
+.mk-f-disabled {
+    opacity: 0.5;
+
+}
+
+
+.mk-frame-edit[data-type="column"] {
+    align-items: flex-start;
+}
+.mk-frame-edit[data-type="new"] {
+    min-width: 50px;
+}
+
+.mk-frame-edit.mk-selected {
+    background: var(--mk-ui-background-active);
+    border-radius: 4px;
+}
+
+
+  
+.mk-frame-edit.mk-layout-row {
+    overflow: clip;
+    overflow-clip-margin: 28px;
+}
+
+.mk-frame,.mk-frame-edit {
+    --line-count: 1;
+    /* transition: all 0.2s ease; */
+}
+
+.mk-f-root-label  {
+    position: absolute;
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 13px;
+    z-index: 29;
+    top: -22px;
+    background: var(--mk-background-blur);
+    display: none;
+}
+.mk-f-root:hover > .mk-f-root-label {
+    display: flex;
+}
+
+.mk-frame[data-type="listItem"]:empty, .mk-frame[data-type="frame"]:empty, .mk-frame[data-type="icon"]:empty, .mk-frame[data-type="text"]:empty, .mk-frame[data-type="image"]:empty,
+.mk-frame-edit[data-type="icon"]:empty, .mk-frame-edit[data-type="text"]:empty, .mk-frame-edit[data-type="image"]:empty {
+    display: none;
+}  
+  
+  .mk-frame.mk-icon-size-s {
+    --icon-size: 18px
+}
+  .mk-frame.mk-icon-size-m {
+    --icon-size: 24px
+}
+  .mk-frame.mk-icon-size-l {
+    --icon-size: 48px
+}
+ 
+

@@ -1,8 +1,9 @@
+import { Superstate } from "makemd-core";
 import { App, ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
-import { Root, createRoot } from "react-dom/client";
+import { Root } from "react-dom/client";
 import { FileLinkViewComponent } from "./FileLinkViewComponent";
-export const FILE_VIEW_TYPE = "make-file-view";
+export const LINK_VIEW_TYPE = "mk-uri-view";
 export const ICON = "sheets-in-box";
 
 export class FileLinkView extends ItemView {
@@ -11,15 +12,20 @@ export class FileLinkView extends ItemView {
   navigation = true;
   root: Root;
   viewType: string;
-
-  constructor(leaf: WorkspaceLeaf, app: App, viewType: string) {
+  flow = false;
+  constructor(
+    leaf: WorkspaceLeaf,
+    app: App,
+    viewType: string,
+    private superstate: Superstate
+  ) {
     super(leaf);
     this.app = app;
     this.viewType = viewType;
   }
 
   getViewType(): string {
-    return FILE_VIEW_TYPE;
+    return LINK_VIEW_TYPE;
   }
 
   getDisplayText(): string {
@@ -40,7 +46,7 @@ export class FileLinkView extends ItemView {
 
   async setState(state: any, result: ViewStateResult): Promise<void> {
     this.path = state.path;
-
+    this.flow = state.flow;
     this.constructView(this.path);
     const displayName = this.path;
     await super.setState(state, result);
@@ -60,7 +66,7 @@ export class FileLinkView extends ItemView {
   getState(): any {
     const state = super.getState();
     state.path = this.path;
-
+    state.flow = this.flow;
     // Store information to the state, whenever the workspace changes (opening a new note,...), the view's `getState` will be called, and the resulting state will be saved in the 'workspace' file
 
     return state;
@@ -68,13 +74,15 @@ export class FileLinkView extends ItemView {
 
   constructView(path: string) {
     this.destroy();
-    this.root = createRoot(this.contentEl);
+    this.root = this.superstate.ui.createRoot(this.contentEl);
     this.root.render(
       <div className="markdown-reading-view">
         <FileLinkViewComponent
-          path={path}
           app={this.app}
           component={this}
+          superstate={this.superstate}
+          path={path}
+          flow={this.flow}
         ></FileLinkViewComponent>
       </div>
     );

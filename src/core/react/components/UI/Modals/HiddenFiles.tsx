@@ -1,6 +1,7 @@
 import i18n from "core/i18n";
 import { Superstate } from "core/superstate/superstate";
 import React, { useEffect, useRef, useState } from "react";
+import { windowFromDocument } from "utils/dom";
 import { pathNameToString } from "utils/path";
 
 export const HiddenPaths = (props: {
@@ -52,7 +53,7 @@ export const HiddenPaths = (props: {
   const addExtension = () => {
     if (ref?.current.value.length > 0) {
       saveExtension(ref.current.value);
-      ref.current.empty();
+      ref.current.innerHTML = "";
     }
   };
 
@@ -80,8 +81,9 @@ export const HiddenPaths = (props: {
       name: pathNameToString(f),
       value: f,
     }));
+    e.stopPropagation();
     props.superstate.ui.openMenu(
-      { x: offset.left, y: offset.top + 30 },
+      offset,
       {
         ui: props.superstate.ui,
         multi: false,
@@ -92,7 +94,8 @@ export const HiddenPaths = (props: {
         placeholder: i18n.labels.linkItemSelectPlaceholder,
         detail: true,
         searchable: true,
-      }
+      },
+      windowFromDocument(e.view.document)
     );
   };
   return (
@@ -111,7 +114,7 @@ export const HiddenPaths = (props: {
               className="clickable-icon mobile-option-setting-item-option-icon"
               aria-label={i18n.buttons.delete}
               dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//mk-ui-close"),
+                __html: props.superstate.ui.getSticker("ui//close"),
               }}
               onClick={() => removeExtension(index)}
             ></div>
@@ -124,10 +127,12 @@ export const HiddenPaths = (props: {
           type="text"
           ref={ref}
         ></input>
-        <button onClick={(e) => addExtension()}>+ Add</button>
+        <button onClick={(e) => addExtension()}>{i18n.buttons.add}</button>
       </div>
 
-      <div className="setting-item setting-item-heading">Files and Folders</div>
+      <div className="setting-item setting-item-heading">
+        {i18n.subViews.filesAndFolders}
+      </div>
       <div className="setting-item-description">
         {i18n.labels.hiddenFileSpecific}
       </div>
@@ -139,7 +144,7 @@ export const HiddenPaths = (props: {
               className="clickable-icon mobile-option-setting-item-option-icon"
               aria-label={i18n.buttons.delete}
               dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//mk-ui-close"),
+                __html: props.superstate.ui.getSticker("ui//close"),
               }}
               onClick={() => removeItem(index)}
             ></div>

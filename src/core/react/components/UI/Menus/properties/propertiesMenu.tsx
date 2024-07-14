@@ -1,18 +1,24 @@
 import i18n from "core/i18n";
 
 import { Superstate } from "core/superstate/superstate";
-import { Pos } from "types/Pos";
+import { Rect } from "types/Pos";
 import { SpaceProperty } from "types/mdb";
-import { SelectOption, defaultMenu, menuInput, menuSeparator } from "../menu";
+import {
+  SelectOption,
+  defaultMenu,
+  menuInput,
+  menuSeparator,
+} from "../menu/SelectionMenu";
 
 export const showPropertiesMenu = (
   superstate: Superstate,
-  position: Pos,
+  rect: Rect,
+  win: Window,
   property: SpaceProperty,
   deleteProperty: (property: SpaceProperty) => void,
   syncProperty: (property: SpaceProperty) => void,
   renameProperty: (key: string, name: string) => void,
-  changeType: (position: Pos, key: string) => void
+  changeType: (e: React.MouseEvent, key: string) => void
 ) => {
   const menuOptions: SelectOption[] = [];
   menuOptions.push(
@@ -23,25 +29,26 @@ export const showPropertiesMenu = (
   menuOptions.push(menuSeparator);
   menuOptions.push({
     name: i18n.menu.changePropertyType,
-    icon: "lucide//list",
+    icon: "ui//list",
     onClick: (e) => {
-      changeType(position, property.name);
+      changeType(e, property.name);
     },
   });
   if (property.type != "object")
     menuOptions.push({
       name: i18n.menu.syncToContext,
-      icon: "lucide//sync",
+      icon: "ui//sync",
       onClick: (e) => {
         syncProperty(property);
       },
     });
   menuOptions.push({
     name: i18n.menu.deleteProperty,
-    icon: "lucide//trash-2",
+    icon: "ui//trash",
     onClick: (e) => {
       deleteProperty(property);
     },
   });
-  superstate.ui.openMenu(position, defaultMenu(superstate.ui, menuOptions));
+
+  superstate.ui.openMenu(rect, defaultMenu(superstate.ui, menuOptions), win);
 };

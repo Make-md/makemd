@@ -1,12 +1,15 @@
+import { SystemSettings } from "core/react/components/System/SystemSettings";
 import { SpaceView, Superstate } from "makemd-core";
 import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
-import { Root, createRoot } from "react-dom/client";
+import { Root } from "react-dom/client";
 import {
   folderPathToString,
   getParentFolderPaths,
   pathDisplayName,
 } from "utils/path";
+import { SpaceInner } from "../../core/react/components/SpaceView/SpaceInner";
+import { ObsidianUI } from "./ui/ui";
 
 export const SPACE_VIEW_TYPE = "mk-space";
 export const ICON = "sheets-in-box";
@@ -17,23 +20,18 @@ export class SpaceViewContainer extends ItemView {
   navigation = true;
   root: Root;
   viewType: string;
+  ui: ObsidianUI;
 
-  constructor(leaf: WorkspaceLeaf, superstate: Superstate, viewType: string) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    superstate: Superstate,
+    ObsidianUI: ObsidianUI,
+    viewType: string
+  ) {
     super(leaf);
     this.superstate = superstate;
     this.viewType = viewType;
-    this.superstate.eventsDispatcher.addListener(
-      "spaceChanged",
-      this.changePath,
-      0,
-      this
-    );
-    this.superstate.eventsDispatcher.addListener(
-      "spaceDeleted",
-      this.closePath,
-      0,
-      this
-    );
+    this.ui = ObsidianUI;
   }
 
   getViewType(): string {
@@ -53,7 +51,11 @@ export class SpaceViewContainer extends ItemView {
       "spaceChanged",
       this.changePath
     );
-    if (this.root) this.root.unmount();
+    this.superstate.eventsDispatcher.removeListener(
+      "spaceDeleted",
+      this.closePath
+    );
+    this.root?.unmount();
   }
 
   async onOpen(): Promise<void> {
@@ -95,7 +97,7 @@ export class SpaceViewContainer extends ItemView {
       headerEl.querySelector(".view-header-title").innerText = displayName;
       if (spaceCache.type == "folder") {
         const titleParent = headerEl.querySelector(".view-header-title-parent");
-        titleParent.empty();
+        titleParent.innerHTML = "";
         const parentPaths: string[] = getParentFolderPaths(spaceCache.path);
         if (titleParent) {
           parentPaths.forEach((f) => {
@@ -126,9 +128,45 @@ export class SpaceViewContainer extends ItemView {
 
   constructNote(path: string) {
     this.destroy();
-    this.root = createRoot(this.contentEl);
-    this.root.render(
-      <SpaceView path={path} superstate={this.superstate}></SpaceView>
+    this.superstate.eventsDispatcher.addListener(
+      "spaceChanged",
+      this.changePath,
+      0,
+      this
     );
+    this.superstate.eventsDispatcher.addListener(
+      "spaceDeleted",
+      this.closePath,
+      0,
+      this
+    );
+    this.root = this.ui.createRoot(this.contentEl);
+    if (this.root) {
+      this.root.render(
+        <div className="mk-space-view">
+          {path == "spaces://$settings" ? (
+            <SystemSettings superstate={this.superstate}></SystemSettings>
+          ) : (
+            <SpaceView
+              path={path}
+              superstate={this.superstate}
+              key={path}
+              readOnly={false}
+            >
+              <div className="mk-space-scroller markdown-source-view mod-cm6 is-readable-line-width">
+                <SpaceInner
+                  superstate={this.superstate}
+                  header={true}
+                ></SpaceInner>
+              </div>
+            </SpaceView>
+          )}
+        </div>
+      );
+    } else {
+      this.ui.manager.eventsDispatch.addOnceListener("windowReady", () => {
+        this.constructNote(path);
+      });
+    }
   }
 }

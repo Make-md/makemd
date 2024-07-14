@@ -1,35 +1,34 @@
 import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React from "react";
-
-export const ColorPicker = (props: {
+import { windowFromDocument } from "utils/dom";
+export const ColorSetter = (props: {
   superstate: Superstate;
   value: string;
   setValue: (value: string) => void;
 }) => {
-  const showMenu = (e: React.MouseEvent) => {
+  const showColorMenu = (e: React.MouseEvent, prop: string) => {
     const handleChangeComplete = (color: string) => {
       props.setValue(color);
     };
     const offset = (e.target as HTMLElement).getBoundingClientRect();
     showColorPickerMenu(
       props.superstate,
-      { x: offset.left, y: offset.top + 30 },
+      offset,
+      windowFromDocument(e.view.document),
       props.value,
       handleChangeComplete
     );
   };
   return (
-    <div>
-      <div
-        className="mk-setter-color"
-        onClick={(e) => showMenu(e)}
-        style={{
-          backgroundColor: props.value,
-          width: 30,
-          height: 30,
-        }}
-      ></div>
-    </div>
+    <div
+      className="mk-color"
+      style={{
+        background: props.value,
+      }}
+      onClick={(e) => {
+        showColorMenu(e, "--text-normal");
+      }}
+    ></div>
   );
 };

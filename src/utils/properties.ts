@@ -1,10 +1,13 @@
 import { format } from "date-fns";
+import { SpaceProperty } from "types/mdb";
 import { parseMultiString } from "utils/parsers";
 import { uniq } from "./array";
 
 
 export const detectPropertyType = (value: any, key: string): string => {
-
+  if (value instanceof Date) {
+      return "date"
+  }
   if (typeof value === "string") {
     if (/\/\/(\S+?(?:jpe?g|png|gif|svg))/gi.test(value) ||
       value.includes("unsplash")) {
@@ -13,8 +16,9 @@ export const detectPropertyType = (value: any, key: string): string => {
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
       return "date";
     }
+    
     if (key == "tag" || key == "tags") {
-      return "tag";
+      return "tags-multi";
     }
     if (/\[\[.*?\]\]/.test(value)) {
       return "link";
@@ -32,7 +36,7 @@ export const detectPropertyType = (value: any, key: string): string => {
       arrayValue = parseMultiString(value);
     }
     if (key == "tag" || key == "tags") {
-      return "tag-multi";
+      return "tags-multi";
     }
     //yaml lol
     if (arrayValue.length == 1 &&
@@ -60,9 +64,13 @@ export const detectPropertyType = (value: any, key: string): string => {
     !Array.isArray(value) &&
     value !== null) {
     return "object";
+  } else {
+    return 'unknown'
   }
   return "text";
-};export const defaultValueForType = (type: string) => {
+};
+
+export const defaultValueForType = (type: string) => {
   if (type == "date") {
     return format(Date.now(), "yyyy-MM-dd");
   }
@@ -85,16 +93,43 @@ export const detectPropertyType = (value: any, key: string): string => {
     return "https://images.unsplash.com/photo-1675789652575-0a5d2425b6c2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80";
   }
 };
-export const parseMDBValue = (type: string, value: string): any => {
+
+export const parseParameters = (fieldValues: Record<string, string>, fields: SpaceProperty[]): Record<string, any> => {
+  return Object.keys(fieldValues)
+      .filter((f) => f != "$api")
+      .reduce((f, g) => {
+        const col = fields.find((c) => c.name == g);
+        return { ...f, [g]: parseMDBStringValue(col.type, fieldValues[g], false) };
+      }, {});
+};
+
+export const parsePropertyValue = (value: any, type: string): any => {
   if (type == "number") {
     return parseFloat(value);
   } else if (type == "boolean") {
     return value == "true";
-  } else if (type.includes("multi")) {
-    return parseMultiString(value).map((f) => parseMDBValue(type.replace("-multi", ""), f)
+  } else if (type.includes("-multi")) {
+    return parseMultiString(value).map((f) => parseMDBStringValue(type.replace("-multi", ""), f, false)
+    );
+  }
+  return value;
+}
+
+export const parseMDBStringValue = (type: string, value: string, frontmatter?: boolean): any => {
+  if (type == "object") {
+    return JSON.parse(value);
+  } else if (type == 'object-multi') {
+    return JSON.parse(value);
+  }
+  if (type == "number") {
+    return parseFloat(value);
+  } else if (type == "boolean") {
+    return value == "true";
+  } else if (type.includes("-multi")) {
+    return parseMultiString(value).map((f) => parseMDBStringValue(type.replace("-multi", ""), f, frontmatter)
     );
   } else if (type.includes("link") || type.includes("context")) {
-    return `[[${value}]]`;
+    return frontmatter ? `[[${value}]]` : value;
   }
   return value;
 };
@@ -108,5 +143,10 @@ export const yamlTypeToMDBType = (YAMLtype: string) => {
       break;
   }
   return YAMLtype;
+};
+export const propertyIsObjectType = (property: SpaceProperty) => {
+  if (property.type == "object" || property.type == "object-multi" || property.type == "super") return true;
+  return false
+  
 };
 

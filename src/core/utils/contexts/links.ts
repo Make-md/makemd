@@ -2,7 +2,7 @@ import { SpaceManager } from "core/spaceManager/spaceManager";
 import { PathPropertyName } from "core/types/context";
 import { DBRow, SpaceProperty } from "types/mdb";
 import { parseLinkString } from "utils/parsers";
-import { parseMDBValue } from "utils/properties";
+import { parseMDBStringValue } from "utils/properties";
 import { serializeMultiString } from "utils/serializers";
 import { parseMultiString } from "../../../utils/parsers";
 //helpers for link types (context and link)
@@ -30,7 +30,7 @@ export const valueContainsLink = (link: string, value: string) => {
     const deltaRow = cols.reduce((p, c) => {
       if (valueContainsLink(link, row[c.name])) {
         const newValue = removeLinkInValue(link, row[c.name]);
-        manager.saveProperties(row[PathPropertyName], {[c.name]: parseMDBValue(c.type, newValue)})
+        manager.saveProperties(row[PathPropertyName], {[c.name]: parseMDBStringValue(c.type, newValue, true)})
       
       return {...p, [c.name]: newValue}
      } 
@@ -46,7 +46,7 @@ export const valueContainsLink = (link: string, value: string) => {
     const deltaRow = cols.reduce((p, c) => {
       if (valueContainsLink(link, row[c.name])) {
         const newValue = replaceLinkInValue(link,newLink, row[c.name]);
-        manager.saveProperties(row[PathPropertyName], {[c.name]: parseMDBValue(c.type, newValue)})
+        manager.saveProperties(row[PathPropertyName], {[c.name]: parseMDBStringValue(c.type, newValue, true)})
       
       return {...p, [c.name]: newValue}
      } 

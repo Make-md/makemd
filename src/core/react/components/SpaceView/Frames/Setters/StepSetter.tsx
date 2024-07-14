@@ -1,6 +1,10 @@
+import {
+  SelectOption,
+  defaultMenu,
+} from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { Superstate } from "core/superstate/superstate";
 import { stringIsConst } from "core/utils/frames/frames";
-import { removeQuotes } from "core/utils/strings";
+import { removeQuotes, wrapQuotes } from "core/utils/strings";
 import { debounce } from "lodash";
 import type { CSSProperties } from "react";
 import React, {
@@ -10,6 +14,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { windowFromDocument } from "utils/dom";
 
 export function countDecimals(value: number) {
   if (Math.floor(value) === value) return 0;
@@ -22,7 +27,7 @@ export function countDecimals(value: number) {
   );
 }
 
-type InputModifier = "shiftKey" | "altKey" | "ctrlKey" | "metaKey";
+export type InputModifier = "shiftKey" | "altKey" | "ctrlKey" | "metaKey";
 
 export type InputDragModifiers = {
   [key in InputModifier]?: number;
@@ -127,8 +132,8 @@ export default function InputDrag({
 
         let newValue = startValue.current + delta;
 
-        if (props.min) newValue = Math.max(newValue, +props.min);
-        if (props.max) newValue = Math.min(newValue, +props.max);
+        if (props.min != null) newValue = Math.max(newValue, +props.min);
+        if (props.max != null) newValue = Math.min(newValue, +props.max);
 
         newValue = +newValue.toFixed(decimals);
 
@@ -217,25 +222,57 @@ export const StepSetter = (props: {
   name: string;
   value: string;
   units: string[];
+  min?: number;
+  max?: number;
   setValue: (value: string) => void;
 }) => {
   const match =
     props.value && stringIsConst(props.value)
       ? removeQuotes(props.value).match(/^(\d+(?:\.\d+)?)\s?([a-zA-Z%]+)$/)
       : null;
-  const numericValue = match ? parseInt(match[1]) : null;
+  const numericValue = match ? parseInt(match[1]) : 0;
   const unit = match && match[2] ? match[2] : props.units[0];
+  const showUnitMenu = (e: React.MouseEvent) => {
+    const menuOptions: SelectOption[] = [];
+    props.units.forEach((f) => {
+      menuOptions.push({
+        name: f,
+        onClick: () => {
+          if (f == "%") {
+            props.setValue(wrapQuotes(`${100}${f}`));
+            return;
+          }
+          props.setValue(wrapQuotes(`${numericValue}${f}`));
+        },
+      });
+    });
+
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    props.superstate.ui.openMenu(
+      offset,
+      defaultMenu(props.superstate.ui, menuOptions),
+      windowFromDocument(e.view.document)
+    );
+  };
 
   return (
     <div className="mk-setter-step">
       <span>{props.name}</span>
       <InputDrag
+        min={props.min}
+        max={props.max}
         value={numericValue}
-        onChange={(value) => props.setValue(`'${value.toString() + unit}'`)}
-      >
-        {props.name}
-      </InputDrag>
-      <span>{unit}</span>
+        onKeyDown={(e) => {
+          if (e.key == "Backspace") {
+            if (e.currentTarget.value.length == 1) props.setValue(null);
+            e.stopPropagation();
+          }
+        }}
+        onChange={(value) => {
+          props.setValue(wrapQuotes(`${value.toString() + unit}`));
+        }}
+      ></InputDrag>
+      <span onClick={(e) => showUnitMenu(e)}>{unit}</span>
     </div>
   );
 };

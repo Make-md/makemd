@@ -6,18 +6,18 @@ import {
   showPathContextMenu,
   triggerMultiPathMenu,
 } from "core/react/components/UI/Menus/navigator/pathContextMenu";
-import { triggerSpaceMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
+import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
 import { PathStickerView } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { Superstate } from "core/superstate/superstate";
 import {
   TreeNode,
-  newPathInSpace,
   pinPathToSpaceAtIndex,
   spaceRowHeight,
 } from "core/superstate/utils/spaces";
 import { PathState } from "core/types/superstate";
+import { isTouchScreen } from "core/utils/ui/screen";
 import React, {
   CSSProperties,
   useCallback,
@@ -27,6 +27,9 @@ import React, {
   useState,
 } from "react";
 import { useDropzone } from "react-dropzone";
+import { windowFromDocument } from "utils/dom";
+import { defaultAddAction } from "../../UI/Menus/navigator/showSpaceAddMenu";
+import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 export type DropModifiers = "copy" | "link" | "move";
 
 export const eventToModifier = (e: React.DragEvent, isDefaultSpace?: boolean) =>
@@ -89,6 +92,7 @@ export const TreeItem = (props: TreeItemProps) => {
     selectedPaths: selectedPaths,
     setSelectedPaths: setSelectedPaths,
     setDragPaths,
+    closeActiveSpace,
   } = useContext(NavigatorContext);
   const [hoverTarget, setHoverTarget] = useState<EventTarget>(null);
 
@@ -97,6 +101,7 @@ export const TreeItem = (props: TreeItemProps) => {
   const [pathState, setPathState] = useState<PathState>(
     superstate.pathsIndex.get(data.item.path)
   );
+
   useEffect(
     () => setPathState(superstate.pathsIndex.get(data.item.path)),
     [data.item.path]
@@ -111,7 +116,11 @@ export const TreeItem = (props: TreeItemProps) => {
     }
     if (isFolder) {
       if (superstate.settings.expandFolderOnClick) {
-        onCollapse(data, true);
+        if (collapsed) {
+          onCollapse(data, true);
+        } else if (active || selected) {
+          onCollapse(data, false);
+        }
       }
     }
     superstate.ui.openPath(
@@ -157,7 +166,7 @@ export const TreeItem = (props: TreeItemProps) => {
       if (el) superstate.ui.openPath(pathState.path, "hover", el);
     }
   };
-  const onDrop = useCallback((files: File[], g, h) => {
+  const onDrop = useCallback((files: File[]) => {
     if (isFolder) {
       // Do something with the files
       files.map(async (file) => {
@@ -192,18 +201,21 @@ export const TreeItem = (props: TreeItemProps) => {
   const newAction = (e: React.MouseEvent) => {
     const space = superstate.spacesIndex.get(pathState.path);
     if (e.shiftKey) {
+      const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
       showLinkMenu(
-        e as any,
+        offset,
+        windowFromDocument(e.view.document),
         superstate,
         (link) => {
           pinPathToSpaceAtIndex(superstate, space, link);
         },
-        i18n.labels.pinNotePlaceholder
+        { placeholder: i18n.labels.pinNotePlaceholder }
       );
+      e.stopPropagation();
       return;
     }
 
-    newPathInSpace(superstate, space, "md", null);
+    defaultAddAction(superstate, space, windowFromDocument(e.view.document));
   };
   const handleRightClick = (e: React.MouseEvent) => {
     selectedPaths.length > 1 &&
@@ -211,12 +223,28 @@ export const TreeItem = (props: TreeItemProps) => {
       ? triggerMultiPathMenu(superstate, selectedPaths, e)
       : contextMenu(e);
   };
+  const color = pathState?.label?.color;
   const contextMenu = (e: React.MouseEvent) => {
     if (superstate.spacesIndex.has(pathState.path)) {
-      triggerSpaceMenu(superstate, pathState, e, activePath, data.space);
+      showSpaceContextMenu(
+        superstate,
+        pathState,
+        e,
+        activePath,
+        data.space,
+        data.type == "group" ? () => closeActiveSpace(data.path) : null
+      );
+
       return;
     }
-    showPathContextMenu(superstate, data.path, data.space, e);
+    showPathContextMenu(
+      superstate,
+      data.path,
+      data.space,
+      (e.target as HTMLElement).getBoundingClientRect(),
+      windowFromDocument(e.view.document),
+      "right"
+    );
   };
   const pathStateUpdated = (payload: { path: string }) => {
     if (payload.path == pathState?.path) {
@@ -262,19 +290,39 @@ export const TreeItem = (props: TreeItemProps) => {
   };
   const isSpace = pathState?.type == "space";
   const isFolder = pathState?.metadata?.isFolder || isSpace;
-
   const extension = pathState?.metadata?.file?.extension;
   const isLink = pathState?.parent != data.space;
+  const spacing =
+    data.type == "group"
+      ? 0
+      : indentationWidth * (depth - 1) +
+        (data.type == "space"
+          ? 0
+          : isTouchScreen(props.superstate.ui)
+          ? 30
+          : 20);
   return (
     <>
       <div
         className={classNames(
           "mk-tree-wrapper",
+          data.type == "group" ? "mk-tree-section" : "",
           clone && "mk-clone",
           ghost && "mk-ghost",
           highlighted ? "is-highlighted" : ""
         )}
-        style={{ position: "relative" }}
+        style={
+          color?.length > 0
+            ? ({
+                "--label-color": `${color}`,
+                "--icon-color": `#ffffff`,
+                position: "relative",
+              } as React.CSSProperties)
+            : ({
+                "--icon-color": `var(--mk-ui-text-secondary)`,
+                position: "relative",
+              } as React.CSSProperties)
+        }
         ref={innerRef}
         onMouseLeave={mouseOut}
         onMouseEnter={hoverItem}
@@ -290,7 +338,7 @@ export const TreeItem = (props: TreeItemProps) => {
             ...style,
             ...(dragActive ? { pointerEvents: "none" } : {}),
           }}
-          {...(superstate.ui.getScreenType() != "mobile"
+          {...(!isTouchScreen(props.superstate.ui)
             ? getRootProps({ className: "dropzone" })
             : {})}
         >
@@ -307,61 +355,57 @@ export const TreeItem = (props: TreeItemProps) => {
             )}
             style={
               {
-                "--spacing": `${indentationWidth * depth}px`,
+                "--spacing": `${spacing}px`,
                 "--childrenCount": `${
-                  childCount * spaceRowHeight(superstate) - 13
+                  data.type == "space" && !collapsed
+                    ? childCount * spaceRowHeight(superstate, false) - 13
+                    : 0
                 }px`,
               } as React.CSSProperties
             }
             data-path={pathState?.path}
           >
-            {data.item?.type == "space" ? (
-              <button
-                aria-label={`${
-                  collapsed ? t.labels.expand : t.labels.collapse
-                }`}
-                className={`mk-collapse mk-icon-xsmall ${
-                  collapsed ? "mk-collapsed" : ""
-                }`}
-                onClick={(e) => {
+            {data.type == "space" && (
+              <CollapseToggle
+                superstate={props.superstate}
+                collapsed={collapsed}
+                onToggle={(c, e) => {
                   onCollapse(data, false);
                   e.stopPropagation();
                 }}
-                dangerouslySetInnerHTML={{
-                  __html: superstate.ui.getSticker("ui//mk-ui-collapse"),
-                }}
-              ></button>
-            ) : (
-              <div
-                className={`mk-collapse mk-icon-xsmall ${
-                  collapsed ? "mk-collapsed" : ""
-                }`}
-              ></div>
+              ></CollapseToggle>
             )}
 
             {superstate.settings.spacesStickers && pathState && (
-              <PathStickerView superstate={superstate} pathState={pathState} />
+              <PathStickerView
+                superstate={superstate}
+                pathState={pathState}
+                editable={true}
+              />
             )}
             <div
               className={`mk-tree-text ${
                 isFolder ? "nav-folder-title-content" : "nav-file-title-content"
               }`}
             >
-              {pathState?.displayName ?? pathState?.name ?? data.path}
-              {isLink && superstate.settings.showSpacePinIcon && (
-                <span
-                  className="mk-path-link"
-                  dangerouslySetInnerHTML={{
-                    __html: superstate.ui.getSticker("lucide//pin"),
-                  }}
-                ></span>
-              )}
+              {pathState?.label.name ?? pathState?.name ?? data.path}
             </div>
+            {data.type == "group" && data.childrenCount > 0 && (
+              <CollapseToggle
+                superstate={props.superstate}
+                collapsed={collapsed}
+                onToggle={(c, e) => {
+                  onCollapse(data, false);
+                  e.stopPropagation();
+                }}
+              ></CollapseToggle>
+            )}
+            <div className="mk-tree-span"></div>
             {!isSpace && extension != "md" && (
               <span className="nav-file-tag">{extension}</span>
             )}
 
-            {!clone ? (
+            {!clone && !pathState.readOnly ? (
               <div className="mk-folder-buttons">
                 <button
                   aria-label={t.buttons.moreOptions}
@@ -370,7 +414,7 @@ export const TreeItem = (props: TreeItemProps) => {
                     e.stopPropagation();
                   }}
                   dangerouslySetInnerHTML={{
-                    __html: superstate.ui.getSticker("ui//mk-ui-options"),
+                    __html: superstate.ui.getSticker("ui//options"),
                   }}
                 ></button>
                 {isSpace && (
@@ -381,7 +425,7 @@ export const TreeItem = (props: TreeItemProps) => {
                       e.stopPropagation();
                     }}
                     dangerouslySetInnerHTML={{
-                      __html: superstate.ui.getSticker("ui//mk-ui-plus"),
+                      __html: superstate.ui.getSticker("ui//plus"),
                     }}
                   ></button>
                 )}

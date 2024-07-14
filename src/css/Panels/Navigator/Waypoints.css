@@ -1,0 +1,101 @@
+
+
+
+.tag-container {
+  flex: 1;
+}
+
+.mk-button-blink {
+  padding: 8px 12px !important;
+}
+
+
+.mk-search {
+  display: flex;
+  padding: 8px 8px;
+  margin: 4px 12px;
+  margin-left: 0px;
+}
+
+.mk-search svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mk-waypoint {
+  display: flex;
+}
+.mk-waypoint-new {
+  display: flex;
+  align-items: center;
+  color: var(--mk-ui-text-secondary);
+  opacity: .5
+}
+.mk-waypoint-new:hover {
+  opacity: 1;
+}
+
+.mk-waypoint .mk-waypoints-item {
+  display: flex;
+  justify-content: center;
+}
+
+.is-mobile .mk-waypoints {
+    box-shadow: var(--input-shadow);
+}
+.is-mobile .mk-waypoints > div {
+  gap: 8px;
+}
+.mk-waypoints {
+  display: flex;
+  overflow: auto;
+  padding: 12px 12px 4px 12px;
+}
+
+.mk-waypoints-inner {
+  flex-wrap: wrap;
+  gap: 4px;
+  display: flex;
+    justify-content: center;
+}
+
+.mk-sidebar-expanded {
+  flex-grow: 1;
+}
+
+.mk-waypoint:hover .mk-waypoints-item:not(.mk-active) {
+  background: var(--nav-item-background-hover);
+}
+.mk-waypoints-item {
+  color: var(--mk-ui-text-secondary);
+  height: 30px;
+  min-width: 30px;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  color: var(--icon-color);
+  
+  transition: transform 250ms ease;
+}
+.mk-waypoints-item svg, .mk-waypoint-new svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.is-mobile .mk-waypoints-item {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+}
+
+
+.mk-waypoints-item.mk-active {
+  --label-color: var(--mk-ui-background-selected);
+  color: var(--text-n);
+    background-color: var(--label-color);
+  opacity: 1;
+}
+

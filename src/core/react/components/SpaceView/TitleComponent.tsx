@@ -1,70 +1,77 @@
 import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
+import { PathContext } from "core/react/context/PathContext";
+import { SpaceContext } from "core/react/context/SpaceContext";
 import { Superstate } from "core/superstate/superstate";
-import { updatePrimaryAlias } from "core/superstate/utils/label";
+import {
+  savePathBanner,
+  updatePrimaryAlias,
+} from "core/superstate/utils/label";
 import { renamePathByName } from "core/superstate/utils/path";
-import React, { useEffect, useMemo, useRef } from "react";
-import { pathToString } from "utils/path";
+import { savePathIcon } from "core/utils/emoji";
+import { i18n } from "makemd-core";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { windowFromDocument } from "utils/dom";
+import { stringFromTag } from "utils/tags";
+import ImageModal from "../UI/Modals/ImageModal";
+import StickerModal from "../UI/Modals/StickerModal";
 
 export const TitleComponent = (props: {
   superstate: Superstate;
-  path: string;
   readOnly: boolean;
 }) => {
-  const fileNameRef = useRef(null);
-  const [pathState, setPathState] = React.useState(
-    props.superstate.pathsIndex.get(props.path)
+  const { pathState } = useContext(PathContext);
+  const { spaceState } = useContext(SpaceContext);
+
+  const [aliasMode, setAliasMode] = useState(
+    pathState.metadata.property?.alias?.length > 0
   );
   const name = useMemo(
     () =>
       pathState
         ? props.superstate.settings.spacesUseAlias
-          ? pathState?.displayName
+          ? pathState?.label.name
+          : pathState.subtype == "tag"
+          ? stringFromTag(pathState?.name)
           : pathState?.name
-        : pathToString(props.path),
-    [pathState, props.path]
+        : null,
+    [pathState]
   );
-
-  const pathStateUpdated = (payload: { path: string }) => {
-    if (payload.path == props.path) {
-      const _pathState = props.superstate.pathsIndex.get(props.path);
-      if (_pathState) setPathState(_pathState);
-    }
-  };
-  useEffect(() => {
-    props.superstate.eventsDispatcher.addListener(
-      "pathStateUpdated",
-      pathStateUpdated
-    );
-    return () => {
-      props.superstate.eventsDispatcher.removeListener(
-        "pathStateUpdated",
-        pathStateUpdated
-      );
-    };
-  }, []);
-  const contentEditable = !props.readOnly;
+  const ref = useRef(null);
+  const contentEditable = !props.readOnly && spaceState?.type != "default";
 
   const onBlur = (e: React.ChangeEvent<HTMLDivElement>) => {
-    const newValue = e.target.innerHTML;
+    const newValue = e.target.innerText;
+
     if (newValue != name) {
-      if (props.path == "/") {
+      if (pathState.path == "/") {
         props.superstate.settings.systemName = newValue;
         props.superstate.saveSettings();
         props.superstate.reloadSpaceByPath("/");
         return;
       }
-      if (props.superstate.settings.spacesUseAlias) {
+      if (props.superstate.settings.spacesUseAlias || aliasMode) {
         updatePrimaryAlias(
           props.superstate,
-          props.path,
+          pathState.path,
           pathState.metadata.aliases,
           newValue
         );
       } else {
-        renamePathByName(props.superstate, props.path, newValue);
+        renamePathByName(props.superstate, pathState.path, newValue);
       }
     }
   };
+  useEffect(() => {
+    if (!ref?.current) return;
+    if (ref.current.innerText.startsWith("Untitled")) {
+      ref.current.focus();
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(ref.current as HTMLDivElement);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  }, []);
   const onKeyPress = (e: React.KeyboardEvent<HTMLDivElement>) => {
     e.stopPropagation();
   };
@@ -87,37 +94,113 @@ export const TitleComponent = (props: {
       e.preventDefault();
     }
     if (e.key == "Escape") {
-      // fileNameRef.current.innerHTML = fileNameToString(file.name);
       (e.target as HTMLDivElement).blur();
       e.preventDefault();
     }
   };
-
+  const hasSticker =
+    pathState?.metadata.property?.[props.superstate.settings.fmKeySticker]
+      ?.length > 0;
+  const hasBanner =
+    pathState?.metadata.property?.[props.superstate.settings.fmKeyBanner];
   return (
-    <>
-      {props.superstate.settings.spacesStickers && (
-        <PathStickerContainer superstate={props.superstate} path={props.path} />
-      )}
-      <div className="mk-title-container">
-        {pathState?.type == "tag" ? (
-          <div className="mk-title-prefix">#</div>
-        ) : (
-          ""
+    pathState && (
+      <>
+        <div className="mk-header-label-actions">
+          {props.superstate.settings.spacesStickers && !hasSticker && (
+            <button
+              className="mk-inline-button"
+              onClick={(e) =>
+                props.superstate.ui.openPalette(
+                  (_props: { hide: () => void }) => (
+                    <StickerModal
+                      ui={props.superstate.ui}
+                      hide={_props.hide}
+                      selectedSticker={(emoji) =>
+                        savePathIcon(props.superstate, pathState.path, emoji)
+                      }
+                    />
+                  ),
+                  windowFromDocument(e.view.document)
+                )
+              }
+            >
+              <div
+                className="mk-icon-xsmall"
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//smile"),
+                }}
+              ></div>
+              {i18n.buttons.addIcon}
+            </button>
+          )}
+          {!hasBanner && (
+            <button
+              className="mk-inline-button"
+              onClick={(e) =>
+                props.superstate.ui.openPalette(
+                  (_props: { hide: () => void }) => (
+                    <ImageModal
+                      superstate={props.superstate}
+                      hide={_props.hide}
+                      selectedPath={(image) =>
+                        savePathBanner(props.superstate, pathState.path, image)
+                      }
+                    ></ImageModal>
+                  ),
+                  windowFromDocument(e.view.document)
+                )
+              }
+            >
+              <div
+                className="mk-icon-xsmall"
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//mk-make-image"),
+                }}
+              ></div>
+              {i18n.buttons.addCover}
+            </button>
+          )}
+        </div>
+        {props.superstate.settings.spacesStickers && hasSticker && (
+          <div
+            className="mk-header-icon"
+            style={
+              hasBanner
+                ? ({
+                    "--label-color": "var(--mk-ui-background)",
+                  } as React.CSSProperties)
+                : {}
+            }
+          >
+            <PathStickerContainer
+              superstate={props.superstate}
+              path={pathState.path}
+            />
+          </div>
         )}
-        <div
-          className="mk-inline-title inline-title"
-          ref={fileNameRef}
-          contentEditable={contentEditable}
-          onBlur={onBlur}
-          onDrop={(e) => e.preventDefault()}
-          onKeyDown={onKeyDown}
-          onKeyPress={onKeyPress}
-          onKeyUp={onKeyUp}
-          dangerouslySetInnerHTML={{
-            __html: name,
-          }}
-        ></div>
-      </div>
-    </>
+
+        <div className="mk-title-container">
+          {pathState?.subtype == "tag" ? (
+            <div className="mk-title-prefix">#</div>
+          ) : (
+            ""
+          )}
+          <div
+            ref={ref}
+            className="mk-inline-title inline-title"
+            contentEditable={contentEditable}
+            onBlur={onBlur}
+            onDrop={(e) => e.preventDefault()}
+            onKeyDown={onKeyDown}
+            onKeyPress={onKeyPress}
+            onKeyUp={onKeyUp}
+            dangerouslySetInnerHTML={{
+              __html: name,
+            }}
+          ></div>
+        </div>
+      </>
+    )
   );
 };

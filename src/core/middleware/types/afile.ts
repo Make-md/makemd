@@ -6,11 +6,9 @@ export type AFile = {
   parent: string;
   isFolder: boolean;
   extension?: string;
-  stat?: {
-    ctime: number;
-    mtime: number;
-    size: number;
-  }
+    ctime?: number;
+    mtime?: number;
+    size?: number;
 }
 
 export type VaultItem = {
@@ -25,6 +23,8 @@ export type PathLabel = {
   name: string;
   sticker: string;
   color: string;
+  thumbnail?: string;
+  preview?: string;
 }
 
 

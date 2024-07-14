@@ -1,33 +1,50 @@
-import i18n from "core/i18n";
+import { CLIManager } from "core/middleware/commands";
 import { EventDispatcher } from "core/middleware/dispatchers/dispatcher";
+import { LocalCachePersister } from "core/middleware/types/persister";
 import { UIManager } from "core/middleware/ui";
-import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
+import { saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
+import { Area } from "core/types/area";
 import { PathPropertyName } from "core/types/context";
 import { IndexMap } from "core/types/indexMap";
 import { MakeMDSettings } from "core/types/settings";
-import { SpaceDefinition, SpaceType, tagsPath, tagsSpace } from "core/types/space";
-import { ContextState, FrameState, PathState, SpaceState } from "core/types/superstate";
+import { SpaceDefinition, SpaceType, tagsSpacePath } from "core/types/space";
+import { ContextState, PathState, SpaceState } from "core/types/superstate";
+import { buildRootFromMDBFrame } from "core/utils/frames/ast";
+import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
+import { pathByDef } from "core/utils/spaces/query";
 import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
 import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _ from "lodash";
-import { defaultContextSchemaID } from "schemas/mdb";
+import * as math from 'mathjs';
+import { rootToFrame } from "schemas/frames";
+import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
+import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemNode, rowGroup } from "schemas/kits/list";
+import { buttonNode, callout, circularProgressNode, dividerNode, fieldNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
+import { mainFrameID } from "schemas/mdb";
+import { Command } from "types/commands";
+import { Kit } from "types/kits";
 import { DBRows, SpaceInfo, SpaceProperty } from "types/mdb";
-
-import { CommandsManager } from "core/middleware/commands";
-import { buttonNode, cardNode, dividerNode, linkNode, progressNode, rootToFrame } from "schemas/frames";
-import { MDBFrame } from "types/mframe";
+import { FrameExecutable, FrameRoot, MDBFrames, defaultFrameEditorProps } from "types/mframe";
 import { orderArrayByArrayWithKey, uniq } from "utils/array";
-import { safelyParseJSON } from "utils/parsers";
+import { parseMultiString, safelyParseJSON } from "utils/parsers";
 import { ensureTag, getAllParentTags } from "utils/tags";
-import { insertContextItems, removeLinkInContexts, removePathInContexts, removePathsInContext, removeTagInContexts, renameLinkInContexts, renamePathInContexts, renameTagInContexts, updateContextWithProperties } from "../utils/contexts/context";
+import { removeLinkInContexts, removePathInContexts, removeTagInContexts, renameLinkInContexts, renamePathInContexts, renameTagInContexts, updateContextWithProperties } from "../utils/contexts/context";
 import { API } from "./api";
-import { LocalCachePersister } from "./localCache/localCache";
-import { Manager } from "./workers/manager";
+import { SpacesCommandsAdapter } from "./commands";
+
+import { Metadata } from "core/types/metadata";
+import { linkContextRow } from "core/utils/contexts/linkContextRow";
+import { formulas } from "core/utils/formula/formulas";
+import { allMetadata } from "core/utils/metadata";
+import { Indexer } from "./workers/indexer/indexer";
+
+import { Loadout } from "core/react/components/System/SystemSettings";
+import { getParentPathFromString } from "utils/path";
+import { Searcher } from "./workers/search/search";
 export type PathStateWithRank = PathState & {rank?: number}
 export type SuperstateEvent = {
     "pathCreated": { path: string},
@@ -38,17 +55,22 @@ export type SuperstateEvent = {
     "spaceDeleted": {path: string},
     "spaceStateUpdated": {path: string },
     "contextStateUpdated": {path: string},
-    "frameStateUpdated": {path: string},
+    "frameStateUpdated": {path: string, schemaId?: string},
+    "actionStateUpdated": {path: string},
     "settingsChanged": null,
     "superstateUpdated": null,
     "superstateReindex": null,
 }
 
+export type SuperProperty = {
+    id: string,
+    name: string,
+}
 export class Superstate {
-    public static create( indexVersion: string, onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CommandsManager, persister: LocalCachePersister): Superstate {
-        return new Superstate(indexVersion, onChange, spaceManager, uiManager, commandsManager, persister);
+    public static create( indexVersion: string, onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CLIManager): Superstate {
+        return new Superstate(indexVersion, onChange, spaceManager, uiManager, commandsManager);
     }
-    
+    public formulaContext: math.MathJsInstance;
     public initialized: boolean;
     public eventsDispatcher: EventDispatcher<SuperstateEvent>;
 public spaceManager: SpaceManager
@@ -57,18 +79,53 @@ public saveSettings: ()=>void;
 public api: API;
 
     public ui: UIManager
-    public commands: CommandsManager
+    public cli: CLIManager
     //Index
     public pathsIndex: Map<string, PathState>
     public spacesIndex: Map<string, SpaceState>
     public contextsIndex: Map<string, ContextState>
-    public framesIndex: Map<string, FrameState>
-    
-    public kit : MDBFrame[] = [rootToFrame(buttonNode), rootToFrame(dividerNode), rootToFrame(progressNode), rootToFrame(cardNode), rootToFrame(linkNode)]
+    public actionsIndex: Map<string, Command[]>
+    public kits: Map<string, Kit>
+    public actions: Map<string, Command[]>
+    public selectedKit: Kit;
+    public kitFrames : Map<string, FrameExecutable>
+    public templateCache: Map<string, MDBFrames>
+
+    public loadouts: Loadout[] = []
+
+    public kit : FrameRoot[] = [buttonNode, dividerNode, progressNode,
+        callout,
+        toggleNode,
+        eventItem,
+        circularProgressNode,
+        previewNode,
+         linkNode, 
+         imageListItem,
+        detailItem, 
+        flowListItem, 
+        cardListItem, 
+        cardsListItem,
+        listItem,
+        listGroup, 
+        columnGroup,
+        masonryGroup,
+        listView,
+        calendarView,
+        dateGroup,
+        tabsNode,
+        fieldNode,
+        gridGroup,
+        newItemNode,
+        ratingNode,
+        fieldsView,
+        rowGroup,
+        coverListItem,
+    columnView]
     
     //Persistant Cache
     public vaultDBCache: DBRows
     public iconsCache: Map<string, string>
+    public imagesCache: Map<string, string>
 
 
     public spacesDBLoaded: boolean;
@@ -77,60 +134,82 @@ public api: API;
     public spacesMap: IndexMap //file to space mapping
     public linksMap: IndexMap //link between paths
     public tagsMap: IndexMap //file to tag mapping
-    public superProperties: Map<string, SpaceProperty>
     //Workers
+    public allMetadata: Record<string, {
+        name: string,
+        properties: Metadata[]
+    }>
     private contextStateQueue: Promise<void>;
-    public indexer: Manager;
+    public indexer: Indexer;
 
-    private constructor(public indexVersion: string, public onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CommandsManager, private persister: LocalCachePersister) {
+    public searcher: Searcher;
+    public waypoints: Area[];
+    private constructor(public indexVersion: string, public onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CLIManager) {
         this.eventsDispatcher= new EventDispatcher<SuperstateEvent>();
 
+        const all = {
+            ...math.all,
+            createAdd: math.factory('add', [], () => function add (a: any, b: any) {
+                return a + b
+              }),
+            createEqual: math.factory('equal', [], () => function equal (a: any, b: any) {
+                return a == b
+              }),
+              createUnequal: math.factory('unequal', [], () => function unequal (a: any, b: any) {
+                return a != b
+              })
+            
+        }
+        const runContext = math.create(all)
+        runContext.import(formulas, { override: true })
+        this.formulaContext = runContext;
         //Initialize
         this.initialized = false;
         this.spaceManager = spaceManager;
         this.spaceManager.superstate = this;
         this.ui = uiManager;
-        this.commands = commandsManager;
-this.api = new API(this);
+        this.cli = commandsManager;
+        const spaceCommands = new SpacesCommandsAdapter(this.cli, this);
+        this.cli.superstate = this;
+        this.cli.terminals.splice(0, 0, spaceCommands);
+        this.cli.mainTerminal = spaceCommands;
+        
+        this.allMetadata = {};
+        this.api = new API(this);
         //Initiate Indexes
         this.pathsIndex = new Map();
         this.spacesIndex = new Map();
         this.contextsIndex = new Map();
-        this.framesIndex = new Map();
-
+        this.actionsIndex = new Map();
+        this.kitFrames = new Map();
+        this.kits = new Map();
+        this.actions = new Map();
+        this.templateCache = new Map();
+        this.waypoints = [];
         //Initiate Maps
         this.spacesMap = new IndexMap();
         this.linksMap = new IndexMap();
         this.tagsMap = new IndexMap();
-        this.superProperties = new Map();
+
         //Initiate Persistance
         this.iconsCache = new Map();
+        this.imagesCache = new Map();
         this.contextStateQueue = Promise.resolve();
 
         this.vaultDBCache = [];
 
         //Intiate Workers
-        this.indexer = new Manager(2, this)
+        this.indexer = new Indexer(2, this)
 
-        this.loadSuperProperties()
+        this.searcher = new Searcher(1, this);
         
         // window['make'] = this;
     }
 
-public loadSuperProperties () {
-    this.superProperties.set('$commands', {name: i18n.properties.super.obsidianCommands, schemaId: '$super', type: 'option'});
-    this.superProperties.set('$links', {name: i18n.properties.super.links, schemaId: '$super', type: 'option'});
-}
-public valueForSuperproperty (superProperty: string, property: SpaceProperty) {
-    if (superProperty == '$commands') {
-        return { options: this.commands.allCommands()}
-    } else if (superProperty == '$links') {
-        return { options: (this.spaceManager.allPaths()).map(f =>({name: f, value: f}))}
-    } else {
-        return parseFieldValue(property.value, property.type)
-    }
-}
 
+    public refreshMetadata() {
+        this.allMetadata = allMetadata(this)
+    }
     public async initializeIndex () {
         await this.loadFromCache()   
     }
@@ -141,66 +220,97 @@ public valueForSuperproperty (superProperty: string, property: SpaceProperty) {
             //do nuth'ing
         });
     }
-    
+    public persister: LocalCachePersister;
     public async initialize () {
-
+        if (!this.persister) {
+            console.log('Cache Persister Not Found');
+            return 
+        }
         const start = Date.now();
-    
+        
+        this.initializeActions();
+        this.initializeWaypoints();
+        this.initializeKits();
+        this.initializeTemplates();
         if (this.settings.spacesEnabled)
-            await this.initializeSpaces();
-
+                await this.initializeSpaces();
+            
         await this.initializeTags();
         await this.initializePaths();
         await this.initializeContexts();
         await this.initializeFrames();
-        await this.initializeDefaults();
-        this.cleanContexts();
+        
+        
+        this.refreshMetadata();
         this.dispatchEvent("superstateUpdated", null)
         this.ui.notify(`Make.md - Superstate Loaded in ${(Date.now()-start)/1000} seconds`, 'console');
+        this.persister.cleanType('space')
+        this.persister.cleanType('path')
+        this.persister.cleanType('context')
+        this.persister.cleanType('frame')
         
     }
-public initializeDefaults () {
-    if (this.settings.enableDefaultSpaces) {
-        if (this.settings.enableTagSpaces) {
-            this.spacesIndex.set(tagsSpace.path, tagsSpace)
-            this.pathsIndex.set(tagsPath.path, tagsPath)
-        }
-        // if (this.settings.enableHomeSpace) {
-        //     const homeSpace = createHomeSpace(this.spaceManager);
-        //     this.spacesIndex.set(homeSpace.path, homeSpace)
-        //     this.pathsIndex.set(homePath.path, homePath)
-        // }
+    
+    public async reloadSystemActions () {
+        const libraries = await this.spaceManager.readSystemCommands();
+        libraries.forEach(f => this.actions.set(f.name, f.commands));
+        this.dispatchEvent("actionStateUpdated", {path: "spaces://$actions"})
     }
-    // const vaultSpace = createVaultSpace(this.spaceManager)
-    // this.spacesIndex.set(vaultSpace.path, vaultSpace)
-    //         this.pathsIndex.set(vaultPath.path, vaultPath)
-    //   this.spacesIndex.set(waypointsSpace.path, waypointsSpace)
-    //   this.pathsIndex.set(waypointsPath.path, waypointsPath)
-}
+    public async initializeActions () {
+        await this.reloadSystemActions();
+        const promises = this.allSpaces().filter(f => f.type != 'default').map(f => f.space).map(l => 
+            this.reloadActions(l)
+            );
+            await Promise.all(promises);
+        
+    }
+    public async initializeKits () {
+        const kits = await this.spaceManager.readAllKits();
+        kits.forEach(f => this.kits.set(f.id, f));
+        if (kits.length == 0) {
+            this.kits.set('default', {
+                id: 'default',
+                name: 'Default',
+                colors: {
+                },
+                frames: []
+            })
+        }
+        this.selectedKit = this.kits.get(this.settings.selectedKit) ?? this.kits.get('default');
+        this.selectedKit.frames = [...this.selectedKit.frames, ...this.kit.map(f => (rootToFrame(f))).filter(f => !this.selectedKit.frames.some(g => g.schema.id == f.schema.id))]
+        for (const v of this.selectedKit.frames) {
+            const kitID = mdbSchemaToFrameSchema(v.schema).def.id;
+            const frame = await buildRootFromMDBFrame(this, v, {...defaultFrameEditorProps, screenType: this.ui.getScreenType()})
+            this.kitFrames.set(kitID, frame)
+            
+        }
+        this.dispatchEvent("frameStateUpdated", {path: `spaces://$kit`})
+    }
+
+    public async initializeTemplates () {
+        const allTemplates = await this.spaceManager.readAllTemplates()
+        Object.keys(allTemplates).forEach(f => {
+            this.templateCache.set(f, allTemplates[f])
+        });
+    }
+
     public async initializeSpaces() {
 
 
         const   allSpaces = [...this.spaceManager.allSpaces().values()]
         const promises = allSpaces.map(f => 
-
         this.reloadSpace(f, null, true));
         [...this.spacesIndex.keys()].filter(f => !allSpaces.some(g => g.path == f)).forEach(f =>
             this.onSpaceDeleted(f))
             ;
+            
         await Promise.all(promises);
-
     }
 
     public  getSpaceItems(spacePath: string, filesOnly?: boolean) : PathStateWithRank[] {
-        let items = [];
+        const items = [...this.spacesMap.getInverse(spacePath)]
         const ranks = this.contextsIndex.get(spacePath)?.paths ?? [];
-        if (spacePath == 'spaces://$tags')
-        {
-            items = this.allSpaces().filter(f => f.type == 'tag').filter(f => [...(this.tagsMap.getInverse(f.name) ?? [])].length > 0).map(f => f.path);
-        }
-        else {
-            items = [...this.spacesMap.getInverse(spacePath)]
-        }
+        
         
         return items.map<PathStateWithRank>((f, i) => {
 
@@ -211,39 +321,22 @@ public initializeDefaults () {
               rank: ranks.indexOf(f),
             } as PathStateWithRank;
           })
-          .filter((f) => f?.hidden != true)
+          .filter((f) => f?.hidden != true && f.path != spacePath)
     }
     private async initializeFrames() {
-
-        const promises = this.allSpaces().filter(f => f.type != 'default').map(f => f.space).map(l => 
-        this.reloadFrames(l)
-        );
-        await Promise.all(promises);
-
+        await this.initializeTemplates();
     }
 
     private async initializeContexts() {
         
-        const promises = this.allSpaces().filter(f => f.type != 'default').map(f => f.space).map(l => 
-            this.reloadContext(l)
-        );
+        await this.indexer.reload<Map<string, {cache: ContextState, changed: boolean}>>({ type: 'contexts', path: ''}).then(async r => {
+            const promises = [...r.entries()].map(([path, {cache, changed}]) => this.contextReloaded(path, cache, changed));
+            await Promise.all(promises);
+        });
 
-        await Promise.all(promises);
     }
 
-    private async cleanContexts() {
-        this.contextsIndex.forEach(context => {
-            const contextFiles = [...this.spacesMap.getInverse(context.path)];
-            const removeFiles = context.tables?.[defaultContextSchemaID]?.rows.filter(f => !contextFiles.includes(f[PathPropertyName])) ?? [];
-            if (removeFiles.length > 0)
-            {
-                this.addToContextStateQueue(() => removePathsInContext(this.spaceManager, removeFiles.map(f => f[PathPropertyName]), this.spacesIndex.get(context.path).space).then(f => this.reloadSpaceByPath(context.path)))
-            }
-        })
-        this.spacesIndex.forEach(space => {
-            const removeFiles = [...this.spacesMap.getInverse(space.path)]
-        })
-    }
+  
 
     public async loadFromCache() {
         this.dispatchEvent("superstateReindex", null)
@@ -258,7 +351,7 @@ public initializeDefaults () {
         const allPaths = await this.persister.loadAll('path')
         const allSpaces = await this.persister.loadAll('space');
         const allContexts = await this.persister.loadAll('context')
-        const allFrames = await this.persister.loadAll('frame')
+
 
         allSpaces.forEach(s => {
             const space = safelyParseJSON(s.cache);
@@ -276,14 +369,7 @@ public initializeDefaults () {
 
         }
         });
-        allFrames.forEach(s => {
-            const space = safelyParseJSON(s.cache);
-            if (space)
-            {
-                this.framesIndex.set(s.path, space);
-
-        }
-        });
+        
         allPaths.forEach(f => {
             const cache = parsePathState(f.cache)
             
@@ -300,26 +386,72 @@ public initializeDefaults () {
         this.eventsDispatcher.dispatchEvent(event, payload);
     }
     public async initializeTags() {
+
         const allTags = this.spaceManager.readTags().map(f => tagSpacePathFromTag(f));
-        const promises = allTags.map(l => this.reloadPath(l, true));
+        const promises = [tagsSpacePath, ...allTags].map(l => this.reloadPath(l, true));
         await Promise.all(promises);
     }
+
+    public async onSpaceDefinitionChanged (space: SpaceState, oldDef?: SpaceDefinition) {
+        if (space.space.readOnly) return;
+        const currentPaths = this.spacesMap.getInverse(space.path);
+        const newPaths : string[] = [];
+        if (space.metadata?.links && !_.isEqual(space.metadata.links, oldDef?.links)) {
+            newPaths.push(...(space.metadata.links))
+        }
+        if (space.metadata?.filters?.length > 0) {
+
+            const hasProps = space.metadata.filters.some(f => f.filters.some(g => g.fType == 'property'))
+            
+            if (!_.isEqual(space.metadata?.filters, oldDef?.filters) || hasProps)
+            {
+                for (const [k, f] of this.pathsIndex) {
+                if (!f.hidden && pathByDef(space.metadata?.filters, f, space.properties)) {
+                  newPaths.push(k);
+                }
+              }
+            }
+        }
+        const diff = [..._.difference(newPaths, [...currentPaths]), ..._.difference([...currentPaths], newPaths)];
+        const cachedPromises = diff.map(f => this.reloadPath(f, true).then(g => this.dispatchEvent("pathStateUpdated", {path: f})));
+        await Promise.all(cachedPromises)
+        
+    }
+
+    public async initializeWaypoints() {
+        const allWaypoints = await this.spaceManager.readWaypoints();
+        if (allWaypoints.length == 0 && this.settings.waypoints.length > 0) {
+            let newWaypoints : Area[] = this.settings.waypoints.map(f => {
+                return {name: this.pathsIndex.get(f)?.label.name, paths: [f], sticker: f == 'spaces://$tags' ? 'ui//tags' : this.pathsIndex.get(f)?.label?.sticker}
+            })
+            if (newWaypoints.length == 0) {
+                newWaypoints = [{name: "Home", sticker: "ui//home", paths: ['/']}]
+            }
+            this.spaceManager.saveWaypoints(newWaypoints);
+            return;
+        }
+        this.waypoints = allWaypoints;
+    }
+
     public async initializePaths() {
         this.dispatchEvent("superstateReindex", null)
         const allFiles = this.spaceManager.allPaths()
         
         const start = Date.now();
-        await this.indexer.reload<{[key: string]: {cache: PathState, changed: boolean}}>({ type: 'paths', path: ''}).then(r => {
-            for (const [path, {cache, changed}] of Object.entries(r)) {
-                this.pathReloaded(path, cache, changed, false);
+        await this.indexer.reload<{[key: string]: {cache: PathState, changed: boolean}}>({ type: 'paths', path: ''}).then(async r => {
+            for await (const [path, {cache, changed}] of Object.entries(r)) {
+                await this.pathReloaded(path, cache, changed, false);
+                
             }
         });
+        
         this.ui.notify(`Make.md - ${allFiles.length} Paths Cached in ${(Date.now()-start)/1000} seconds`, 'console')
         
         const allPaths = uniq([...this.spaceManager.allSpaces().map(f => f.path), ...allFiles]);
         [...this.pathsIndex.keys()].filter(f => !allPaths.some(g => g == f)).forEach(f =>
             this.onPathDeleted(f))
             ;
+
         this.dispatchEvent("superstateUpdated", null)
     }
 
@@ -329,6 +461,7 @@ public initializeDefaults () {
         const oldPath = spacePathFromName(tag);
         const newSpaceInfo = fileSystemSpaceInfoFromTag(this.spaceManager, newTag);
         await this.onSpaceRenamed(oldPath, newSpaceInfo)
+        await this.onPathRename(oldPath, newSpaceInfo.path)
         this.dispatchEvent("spaceChanged", { path: oldPath, newPath: newSpaceInfo.path });
 
         const allContextsWithTag : SpaceInfo[] = [];
@@ -337,10 +470,11 @@ public initializeDefaults () {
             if (contextCache?.contexts.includes(tag)) {
                 this.addToContextStateQueue(() => renameTagInContexts(this.spaceManager, tag, newTag, allContextsWithTag));
             } 
-            if (spaceCache.metadata.contexts.includes(tag)) {
+            if (spaceCache.metadata?.contexts.includes(tag)) {
                 saveSpaceCache(this, spaceCache.space, {...spaceCache.metadata, contexts: spaceCache.metadata.contexts.map(f => f == tag ? newTag : f)})
             }
         }
+        this.dispatchEvent("spaceStateUpdated", { path: "spaces://$tags"});
         
     }
 
@@ -355,7 +489,7 @@ public initializeDefaults () {
     await this.spaceManager.deletePath(spacePath);
         this.onSpaceDeleted(tagSpacePathFromTag(tag));
         for(const [contextPath, spaceCache] of this.spacesIndex) {
-            if (spaceCache.metadata.contexts.includes(tag)) {
+            if (spaceCache.metadata?.contexts.includes(tag)) {
                 saveSpaceCache(this, spaceCache.space, {...spaceCache.metadata, contexts: spaceCache.metadata.contexts.filter(f => f != tag)})
             }
         }
@@ -365,7 +499,9 @@ public initializeDefaults () {
                 allContextsWithTag.push(this.spaceManager.spaceInfoForPath(contextCache.path))
             }
         }
+
         this.addToContextStateQueue(() => removeTagInContexts(this.spaceManager, tag, allContextsWithTag));
+        this.dispatchEvent("spaceStateUpdated", { path: "spaces://$tags"});
     }
 
     public async deleteTagInPath(tag: string, path: string) {
@@ -387,18 +523,29 @@ public initializeDefaults () {
         }
         this.onPathReloaded(path);
         this.dispatchEvent("pathStateUpdated", { path});
+        
     }
 
     
     public onMetadataChange(path: string) {
         
-        const pathState = this.pathsIndex.get(path);
-        if (!pathState) return;
-        const allContextsWithFile = pathState.spaces.map(f => this.spacesIndex.get(f)?.space).filter(f => f);   
-        this.addToContextStateQueue(() => updateContextWithProperties(this.spaceManager, path, allContextsWithFile));
+        
+        if (!this.pathsIndex.has(path)) {return}
         this.reloadPath(path).then(f => 
             
             {
+                const pathState = this.pathsIndex.get(path);
+                const spaceState = this.spacesIndex.get(path);
+                if (spaceState) {
+                    this.reloadSpace(spaceState.space).then(f => this.onSpaceDefinitionChanged(f, spaceState.metadata))
+
+                }
+                const allContextsWithFile = pathState.spaces.map(f => this.spacesIndex.get(f)?.space).filter(f => f);   
+        this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile).then(() => {
+            allContextsWithFile.forEach(f => {
+                this.dispatchEvent("contextStateUpdated", {path: f.path})
+            })
+        }));
                 this.dispatchEvent("pathStateUpdated", {path: path})
             }
             );
@@ -410,11 +557,13 @@ public initializeDefaults () {
     }
 
     public async onPathRename(oldPath: string, newPath: string) {
+
         //assume that space indexer has updated all records properly
         const newFilePath = newPath;
         const oldFileCache = this.pathsIndex.get(oldPath);
-        const oldSpaces = oldFileCache.spaces ?? [];
+        const oldSpaces = oldFileCache?.spaces ?? [];
         if (oldFileCache) {
+
             this.spacesMap.delete(oldPath)
             this.spacesMap.deleteInverse(oldPath)
             this.linksMap.delete(oldPath)
@@ -445,22 +594,29 @@ public initializeDefaults () {
             this.dispatchEvent("settingsChanged", null);
         }
         
-        await this.reloadPath(newPath)
+        await this.reloadPath(newPath, true)
         
-        if (this.spacesIndex.has(oldPath)) {
-            await this.onSpaceRenamed(oldPath, this.spaceManager.spaceInfoForPath(newPath))
-        }
+        
         const changedSpaces = uniq([...(this.spacesMap.get(newPath) ?? []), ...oldSpaces]);
         //reload contexts to calculate proper paths
         const cachedPromises = changedSpaces.map(f => this.reloadContext(this.spacesIndex.get(f)?.space));
         await Promise.all(cachedPromises);
+
         changedSpaces.forEach(f => this.dispatchEvent("spaceStateUpdated", { path: f}))
         this.dispatchEvent("pathChanged", { path: oldPath, newPath: newPath});
+
+        this.ui.viewsByPath(oldPath).forEach(view => {
+            view.openPath(newPath);
+        });
     }
 
     public async onPathCreated(path: string) {
-        await this.reloadPath(path, true)
         
+        await this.reloadPath(path, true)
+        const parent = getParentPathFromString(path);
+        if (this.spacesIndex.has(parent) && this.spacesIndex.get(parent).space.notePath == path) {
+            await this.reloadSpace(this.spacesIndex.get(parent).space)
+        }
         this.dispatchEvent("pathCreated", { path});
     }
 
@@ -498,27 +654,32 @@ public initializeDefaults () {
     
 
     public async onSpaceRenamed(oldPath: string, newSpaceInfo: SpaceInfo) {
+        
         if (this.spacesIndex.has(oldPath)) {
+            const oldmetadata = this.spacesIndex.get(oldPath).metadata;
+            this.spacesIndex.set(newSpaceInfo.path, {
+                ...this.spacesIndex.get(oldPath),
+                path: newSpaceInfo.path,
+                name: newSpaceInfo.name,
+                space: newSpaceInfo
+            });
+            this.spacesMap.rename(oldPath, newSpaceInfo.path);
+            this.spacesMap.renameInverse(oldPath, newSpaceInfo.path);
             this.spacesIndex.delete(oldPath);
-            this.contextsIndex.delete(oldPath)
-            this.framesIndex.delete(oldPath)
-            await this.reloadSpace(newSpaceInfo);
-            await this.reloadContext(newSpaceInfo)
-            await this.reloadFrames(newSpaceInfo)
+            this.contextsIndex.delete(oldPath);
+            this.actionsIndex.delete(oldPath);
+            await this.reloadSpace(newSpaceInfo, oldmetadata).then(f => this.onSpaceDefinitionChanged(f, oldmetadata))
+            await this.reloadContext(newSpaceInfo);
+            await this.reloadActions(newSpaceInfo);
         }
         
-        this.spacesMap.rename(oldPath, newSpaceInfo.path)
-        this.spacesMap.renameInverse(oldPath, newSpaceInfo.path)
-        this.ui.viewsByPath(oldPath).forEach(view => {
-            view.openPath(newSpaceInfo.path);
-        });
+        
     }
     public onSpaceDeleted(space: string) {
 
         if (this.spacesIndex.has(space)) {
             this.spacesIndex.delete(space);
             this.contextsIndex.delete(space)
-            this.framesIndex.delete(space)
         }
         this.spacesMap.delete(space)
         this.spacesMap.deleteInverse(space)
@@ -528,52 +689,71 @@ public initializeDefaults () {
         
     }
 
-
-
-    public async reloadFrames (space: SpaceInfo) {
-
+    public async reloadActions (space: SpaceInfo) {
         if (!space) return false;
-        return this.indexer.reload<{cache: FrameState, changed: boolean}>({ type: 'frames', path: space.path}).then(r => {
-            const { changed, cache } = r;
-            if (!changed) { return false }
-            this.framesIndex.set(space.path, cache)
-            this.persister.store(space.path, JSON.stringify(cache), 'frame');
-            this.dispatchEvent("frameStateUpdated", {path: space.path});
-            return true;
-        });
+            this.spaceManager.commandsForSpace(space.path).then(r => {
+                this.actionsIndex.set(space.path, r);
+                this.dispatchEvent("actionStateUpdated", {path: space.path});
+            });
+    }
+
+    
+    public async reloadContextByPath (path: string) {
+        return this.reloadContext(this.spaceManager.spaceInfoForPath(path))
     }
     public async reloadContext (space: SpaceInfo) {
+        
         if (!space) return false;
+
         return this.indexer.reload<{cache: ContextState, changed: boolean}>({ type: 'context', path: space.path}).then(r => {
 
-            const { changed, cache } = r;
-            if (!changed) { return false }
-            
-            this.contextsIndex.set(space.path, cache)
-
-            const contextPaths = cache.tables?.[defaultContextSchemaID]?.rows.map(f => f[PathPropertyName]) ?? [];
-            const missingPaths = cache.paths.filter(f => !contextPaths.includes(f));
-            
-            const removedPaths = contextPaths.filter(f => !cache.paths.includes(f));
-
-            if (missingPaths.length > 0) {
-                this.addToContextStateQueue(() => insertContextItems(this.spaceManager, missingPaths, space.path))
-            } 
-             if (removedPaths.length > 0) {
-                this.addToContextStateQueue(() => removePathsInContext(this.spaceManager, removedPaths, space))
-            }
-       
-        
-            this.persister.store(space.path,  JSON.stringify(cache), 'context');
-            this.dispatchEvent("contextStateUpdated", {path: space.path});
-            
-            return true;
+            return this.contextReloaded(space.path, r.cache, r.changed);
         });
     }
 
     
 
-    
+    public async contextReloaded(path: string, cache: ContextState, changed: boolean) {
+            if (!changed) { return false }
+            this.contextsIndex.set(path, cache);
+            const pathState = this.pathsIndex.get(path);
+            if (cache.dbExists && !pathState.readOnly) {
+                if (this.settings.syncFormulaToFrontmatter) {
+                    const allRows = cache.contextTable?.rows ?? [];
+                    const allColumns = cache.contextTable?.cols ?? [];
+                    const updatedValues = allRows.filter(f => {
+                        const path = f[PathPropertyName];
+                        const pathCache = this.pathsIndex.get(path);
+                        
+                        if (!pathCache) {
+                            return false;
+                        }
+                        if (pathCache.type == 'file' && pathCache.subtype != 'md') return false
+                        return allColumns.reduce((acc, col, i) => {
+                                if (acc) return acc;
+                                if (col.type  != 'fileprop' || col.primary == 'true') return acc;
+                                if (f[col.name]?.length > 0 && pathCache.metadata?.property?.[col.name] != f[col.name]) return true;
+                                return acc;
+                            }, false)
+                        })
+                    if (updatedValues.length > 0) {
+
+                        updatedValues.forEach(f => saveProperties(this, f[PathPropertyName], allColumns.reduce((acc, col, i) => {
+                            if (col.type  == 'fileprop' && col.primary != 'true') {
+                                return {...acc, [col.name]: f[col.name]};
+                            }
+                            return acc;
+                        }, {})));
+                    }    
+                }
+
+            }
+            await this.spaceManager.saveTable(path, cache.contextTable);
+            this.persister.store(path,  JSON.stringify(cache), 'context');
+            this.dispatchEvent("contextStateUpdated", {path: path});
+            
+            return true;
+    }
 
     public allSpaces (ordered?: boolean) : SpaceState[] {
         if (ordered) {
@@ -585,26 +765,23 @@ public initializeDefaults () {
         return [...this.settings.waypoints]
     }
 
-    public allFrames () {
-        return [...this.framesIndex.values()].filter(f => f).flatMap(f => f.schemas.filter(f => f.type == 'frame').map(s => ({schema: s, path: f.path})))
-    }
+    
 
-    public allListItems () {
-        return [...this.framesIndex.values()].filter(f => f).flatMap(f => f.schemas.filter(f => f.type == 'listitem').map(s => ({schema: s, path: f.path})))
-    }
+    
 
 public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) {
 
     const space = this.spacesIndex.get(spacePath);
+    const oldDef = space?.metadata
     if (!space) {
         return this.reloadSpaceByPath(spacePath)
     }
-    let reinit = false;
+    let spaceDefChanged = false;
 
     const spaceSort = metadata?.sort ?? { field: 'rank', asc: true, group: true};
         const sortable = spaceSort.field == "rank";
         if (!_.isEqual(space.metadata.links, metadata.links) || !_.isEqual(space.metadata.filters, metadata.filters)) {
-            reinit = true
+            spaceDefChanged = true
             
         }
         const newSpaceCache : SpaceState = {
@@ -616,37 +793,101 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
     this.spacesIndex.set(spacePath,newSpaceCache);
     
     
-    if (reinit) {
-        await this.initializePaths()
+    if (spaceDefChanged) {
+        await this.onSpaceDefinitionChanged(newSpaceCache, oldDef)
     }
     this.dispatchEvent("spaceStateUpdated", {path: space.path});
     return newSpaceCache;
 }    
 
     public async reloadSpace (space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized=true) {
-
+        
         if (!space) return;
+        
         const metadata = spaceMetadata ?? await this.spaceManager.spaceDefForSpace(space.path);
 
+        let pathState = this.pathsIndex.get(space.path);
         const type : SpaceType = this.spaceManager.spaceTypeByString(this.spaceManager.uriByString(space.path))
+        if (type == 'default' || type == 'tag') {
+            metadata.filters = [];
+            metadata.links = [];
+        }
+        const propertyTypes : SpaceProperty[] = [];
+        let properties = {};
+        
+        const frameProps = await this.spaceManager.readFrame(space.path, mainFrameID).then(f => f?.cols ?? []);
+        propertyTypes.push(...frameProps)
+        
+        if(propertyTypes.length > 0)
+        {
+            if (!pathState) {
+                if (!this.settings.enableFolderNote) {
+                    const pathCache = await this.spaceManager.readPathCache(space.path);
+                pathState = {
+                    path: space.path,
+                    name: space.name,
+                    tags: [],
+                    spaces: [],
+                    outlinks: [],
+                    readOnly: space.readOnly,
+                    hidden: false,
+                    metadata: pathCache?.metadata,
+                    type: 'space',
+                    subtype: type,
+                    label: pathCache?.label,
+                }
+                } else {
+
+                const pathCache = await this.spaceManager.readPathCache(space.notePath);
+                pathState = {
+                    path: space.path,
+                    name: space.name,
+                    tags: [],
+                    spaces: [],
+                    outlinks: [],
+                    readOnly: space.readOnly,
+                    hidden: false,
+                    metadata: pathCache?.metadata,
+                    type: 'space',
+                    subtype: type,
+                    label: pathCache?.label,
+                }
+            }
+            }
+            properties = await this.spaceManager.readProperties(space.notePath).then(f => linkContextRow(this.formulaContext, this.pathsIndex, f, propertyTypes, pathState));
+        }
+   
+        [...this.spacesMap.get(space.path)].map(f => this.contextsIndex.get(f)).forEach((f) => {
+            if (f) {
+                const contextProps = f.contextTable?.cols ?? [];
+                propertyTypes.push(...contextProps)
+                properties = {...properties, ...f.contextTable?.rows.find(g => g[PathPropertyName] == space.path) ?? {}}
+            }
+        })
+
         const spaceSort = metadata?.sort ?? { field: "rank", asc: true, group: true};
         const sortable = (spaceSort.field == "rank" || !spaceSort);
-        const contexts = metadata?.contexts ?? []
+        const contexts : string[] = metadata?.contexts ?? []
 
+        const dependencies = uniq((metadata.filters ?? []).flatMap(f => f.filters).flatMap(f =>  f.type == 'context' ? [f.field.split('.')[0]] : f.type == 'path' && f.field == 'space' ? parseMultiString(f.value) : []));
         if (type == 'tag' && this.settings.autoAddContextsToSubtags) {
             const parentTags = getAllParentTags(space.name);
             contexts.push(...parentTags)
         }
 
+        const templates = await this.spaceManager.readTemplates(space.path)
         const cache : SpaceState = {
             name: space.name,
             space: space,
             path: space.path,
-            defPath: space.defPath,
             type,
+            templates,
             contexts: contexts.map(f => ensureTag(f)),
             metadata,
+            dependencies,
             sortable,
+            properties,
+            propertyTypes
         }
         this.spacesIndex.set(space.path, cache);
         this.persister.store(space.path, JSON.stringify(cache), 'space');
@@ -657,18 +898,23 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
         })
         if (initialized) {
             this.dispatchEvent("spaceStateUpdated", {path: space.path});
+
         return cache
         }
         
     }
-    private pathReloaded (path: string, cache: PathState, changed: boolean, force: boolean) {
-
-            if (!changed && !force) { return false }
+    private async pathReloaded (path: string, cache: PathState, changed: boolean, force: boolean) {
 
             this.pathsIndex.set(path, cache);
+            await this.onPathReloaded(path);
+            if (cache.subtype == 'image' || cache.metadata?.file?.extension == 'svg') {
+                this.imagesCache.set(cache.metadata.file.filename, path);
+            }
+            if (!changed && !force) { return false }
+            
             this.tagsMap.set(path, new Set(cache.tags))
             this.linksMap.set(path, new Set(cache.outlinks))
-
+            
             if (!_.isEqual(cache.spaces, Array.from(this.spacesMap.get(path)))) {
                 this.spacesMap.set(path, new Set(cache.spaces))
                 //initiate missing tags
@@ -687,9 +933,10 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
                 
             }
             if (force) {
+
                 const allContextsWithFile = cache.spaces.map(f => this.spacesIndex.get(f)?.space).filter(f => f);   
 
-                this.addToContextStateQueue(() => updateContextWithProperties(this.spaceManager, path, allContextsWithFile).then(g => {
+                this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile).then(g => {
 
                     allContextsWithFile.forEach(f => {
                         this.reloadContext(f);
@@ -699,21 +946,23 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
                 
             }
             
-            if (cache.type == 'svg' && this.settings.indexSVG) {
+            if (cache.metadata?.file?.extension == 'svg' && this.settings.indexSVG) {
                 this.spaceManager.readPath(path).then(f => {
                     this.iconsCache.set(path, f)
                     this.persister.store(path,  f, 'icon')
+
                 })
             }
-            this.onPathReloaded(path);
+            
             
 }
     public async reloadPath(path: string, force?: boolean) : Promise<boolean> {
 
         if (!path) return false;
         
-        return this.indexer.reload<{cache: PathState, changed: boolean}>({ type: 'path', path: path}).then(r => {
-            this.pathReloaded(path, r.cache, r.changed, force);
+        return this.indexer.reload<{cache: PathState, changed: boolean}>({ type: 'path', path: path}).then(async r => {
+
+            await this.pathReloaded(path, r.cache, r.changed, force);
 
             return true;
         });
@@ -721,6 +970,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
 
     public async onPathReloaded(path: string) {
         let pathState : PathState
+        
         if (this.pathsIndex.has(path)) {
             pathState = this.pathsIndex.get(path)
         }
@@ -728,26 +978,6 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
             return false;
         }
         
-        // const missingContexts : SpaceInfo[] = [];
-        // const removedContexts : SpaceInfo[] = [];
-        // this.contextsIndex.forEach(contextCache => {
-        //     if (pathState.spaces.includes(contextCache.path) && !contextCache.paths.includes(path)) {
-        //         console.log('missing', contextCache.path, contextCache.paths, path)
-        //         missingContexts.push(contextCache.space)
-        //     } else if (!pathState.spaces.includes(contextCache.path) && contextCache.paths.includes(path)) {
-        //         removedContexts.push(contextCache.space)
-        //     }
-        // })
-        // if (missingContexts.length > 0)
-        // {
-
-        //     this.addToContextStateQueue(() => addPathInContexts(this.spaceManager, path, missingContexts).then(f => missingContexts.forEach(c => this.reloadContext(c))))
-        // }
-        // if (removedContexts.length > 0)
-        // {
-        //     console.log('removed')
-        //     this.addToContextStateQueue(() => removePathInContexts(this.spaceManager, path, removedContexts).then(f => removedContexts.forEach(c => this.reloadContext(c))))
-        // }
-        this.persister.store(path,  serializePathState(pathState), 'path');
+        await this.persister.store(path,  serializePathState(pathState), 'path');
     }
 }

@@ -1,13 +1,21 @@
 import { ContextLookup, PathPropertyName } from "core/types/context";
-import { indexOfCharElseEOS } from "core/utils/strings";
+import { ensureArray, indexOfCharElseEOS } from "core/utils/strings";
+import { format } from "date-fns";
 import { detectPropertyType } from "./properties";
 import { serializeMultiDisplayString, serializeMultiString } from "./serializers";
 
-export const parseMultiString = (str: string): string[] =>
-  str?.match(/(\\.|[^,])+/g) ?? [];export const parseProperty = (field: string, value: any) => {
+export const parseMultiString = (str: string): string[] => str?.startsWith("[") ? ensureArray(safelyParseJSON(str)) : parseMultiDisplayString(str)
+  
+  export const parseMultiDisplayString = (str: string):string[] => (str?.replace('\\,', ',')?.match(/(\\.|[^,])+/g) ?? []).map(f => f.trim());
+  export const parseProperty = (field: string, value: any) : string => {
   const YAMLtype = detectPropertyType(value, field);
   switch (YAMLtype) {
+    case "tags-multi": {
+      return value;
+    }
+    break;
     case "object":
+      case "object-multi":
       return JSON.stringify(value);
       break;
     case "number":
@@ -17,7 +25,17 @@ export const parseMultiString = (str: string): string[] =>
       return value ? "true" : "false";
       break;
     case "date":
+      {
+      if (value instanceof Date) {
+        const dateString = format(value, "yyyy-MM-dd")
+        
+        if (typeof dateString === 'string') return dateString;
+        return ''
+      }
+      if (!(typeof value === 'string')) return '';
+
       return value;
+    }
       break;
     case "duration":
       return serializeMultiDisplayString(Object.keys(value.values)
@@ -78,8 +96,12 @@ export const parseMultiString = (str: string): string[] =>
   }
   return "";
 };
-//https://stackoverflow.com/questions/29085197/how-do-you-json-stringify-an-es6-map
 
+export const parseObject = (value: string, multi: boolean) => {
+  return multi
+    ? ensureArray(safelyParseJSON(value))
+    : safelyParseJSON(value) ?? {};
+};
 
 export const safelyParseJSON = (json: string) => {
   // This function cannot be optimised, it's best to

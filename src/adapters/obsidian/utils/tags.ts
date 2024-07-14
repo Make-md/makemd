@@ -28,7 +28,7 @@ export const loadTags = (app: App, settings: MakeMDSettings) : string[] => {
           settings.spacesFolder
         ) as TFolder);
   return uniq([
-    ...Object.keys(app.metadataCache.getTags()),
+    ...Object.keys(app.metadataCache.getTags()).map(f => f.toLowerCase()),
     ...(folder?.children
       .filter(
         (f) =>

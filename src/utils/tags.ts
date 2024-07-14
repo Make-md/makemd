@@ -11,16 +11,17 @@ export const renameTag = async (
 ) => {
 
   const tags = getAllSubtags(superstate, tag);
-  const newTag = validateName(toTag);
+  const newTag = ensureTag(validateName(toTag));
   const paths = superstate.spaceManager.pathsForTag(tag);
   for (const path of paths) {
-    superstate.spaceManager.renameTag(path, tag, toTag);
+    superstate.spaceManager.renameTag(path, tag, newTag);
   }
-  await renameTagSpacePath(superstate, tag, toTag);
+  await renameTagSpacePath(superstate, tag, newTag);
   for (const subtag of tags) {
     await renameTag(superstate, subtag, subtag.replace(tag, newTag));
   }
-};export const getAllParentTags = (str: string) => {
+};
+export const getAllParentTags = (str: string) => {
   if (str.startsWith('#')) {
     str = str.slice(1);
   }

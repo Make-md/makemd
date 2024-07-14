@@ -1,12 +1,10 @@
-import {
-  getAbstractFileAtPath,
-  getParentPathFromString,
-} from "adapters/obsidian/utils/file";
+import { getAbstractFileAtPath } from "adapters/obsidian/utils/file";
 import MakeMDPlugin from "main";
 import { MDBViewer } from "makemd-core";
 import { FileView, TFile, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
-import { Root, createRoot } from "react-dom/client";
+import { Root } from "react-dom/client";
+import { getParentPathFromString } from "utils/path";
 export const MDB_FILE_VIEWER_TYPE = "make-mdb-viewer";
 export const ICON = "sheets-in-box";
 
@@ -87,14 +85,25 @@ export class MDBFileViewer extends FileView {
     );
 
     this.destroy();
-    this.root = createRoot(this.contentEl);
-    if (space)
-      this.root.render(
-        <MDBViewer
-          superstate={this.plugin.superstate}
-          space={space}
-          schema={schema}
-        ></MDBViewer>
-      );
+
+    if (space) {
+      this.root = this.plugin.ui.createRoot(this.contentEl);
+      if (this.root) {
+        this.root.render(
+          <MDBViewer
+            superstate={this.plugin.superstate}
+            space={space}
+            schema={schema}
+          ></MDBViewer>
+        );
+      } else {
+        this.plugin.ui.manager.eventsDispatch.addOnceListener(
+          "windowReady",
+          () => {
+            this.constructInlineContext(path, schema);
+          }
+        );
+      }
+    }
   }
 }

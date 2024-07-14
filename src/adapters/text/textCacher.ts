@@ -1,10 +1,10 @@
 
-import { AFile, FileTypeAdapter, FilesystemMiddleware } from "makemd-core";
-
 import { getAbstractFileAtPath } from "adapters/obsidian/utils/file";
 import MakeMDPlugin from "main";
+import { AFile, FileTypeAdapter, FilesystemMiddleware } from "makemd-core";
 import { TFile } from "obsidian";
-
+import { removemd } from "./removemd";
+export const regexYaml = /^---\s*\n(.*?)\n?^---\s?/ms
 const textCacheExperimental : Record<string, any> = {
     wordCount: (str: string) => {
         const spaceDelimitedChars =
@@ -25,7 +25,10 @@ const textCacheExperimental : Record<string, any> = {
     ].join("|"),
     "g"
   );
-  return (str.match(pattern) || []).length;
+  return (str.replace(regexYaml, '').match(pattern) || []).length;
+    },
+    preview: (str: string) => {
+      return removemd(str.replace(regexYaml, ''))
     }
 }
 
@@ -68,7 +71,7 @@ export class TextCacher implements FileTypeAdapter<Record<string, any>, Record<s
     public getCache: (file: AFile, fragmentType: string, query?: string) => never;
     public readContent: (file: AFile, fragmentType: string, fragmentId: any) => never;
     public newContent: (file: AFile, fragmentType: string, name: string, content: never, options: { [key: string]: any; }) => Promise<void>;
-    public saveContent: (file: AFile, fragmentType: string, fragmentId: any, content: (prev: never) => any) => void;
+    public saveContent: (file: AFile, fragmentType: string, fragmentId: any, content: (prev: never) => any) => Promise<boolean>;
     public deleteContent: (file: AFile, fragmentType: string, fragmentId: any) => void;
 
 }

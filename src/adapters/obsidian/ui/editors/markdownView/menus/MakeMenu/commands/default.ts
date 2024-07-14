@@ -42,18 +42,7 @@ export default [
 ---
 `,
     icon: "ui//mk-make-hr",
-  },
-  {
-    label: "link",
-    value: "<Paste Link>",
-    offset: [-1, 1],
-    icon: "ui//mk-make-link",
-  },
-  {
-    label: "image",
-    value: "![](Paste Link)",
-    offset: [-1, 4],
-    icon: "ui//mk-make-image",
+    section: 'Basic',
   },
   {
     label: "codeblock",
@@ -72,10 +61,31 @@ Type/Paste Your Code
     icon: "ui//mk-make-callout",
   },
   {
-    label: "note",
-    value: "[[Note Name]]",
-    offset: [-2, 2],
+    label: "internal",
+    value: "link",
     icon: "ui//mk-make-note",
+  },
+  {
+    label: "link",
+    value: "<Paste Link>",
+    offset: [-1, 1],
+    icon: "ui//mk-make-link",
+  },
+  {
+    label: "image",
+    value: "image",
+    icon: "ui//mk-make-image",
+  },
+  {
+    label: "flow",
+    value: `note`,
+    offset: [-2, 4],
+    icon: "ui//mk-make-flow",
+  },
+  {
+    label: "context",
+    value: "context",
+    icon: "ui//layout-list",
   },
   {
     label: "table",
@@ -83,11 +93,11 @@ Type/Paste Your Code
     icon: "ui//mk-make-table",
   },
   {
-    label: "flow",
-    value: `!![[Note Name]]`,
-    offset: [-2, 4],
-    icon: "ui//mk-make-flow",
+    label: "board",
+    value: "board",
+    icon: "ui//square-kanban",
   },
+  
   {
     label: "tag",
     value: "#tag",

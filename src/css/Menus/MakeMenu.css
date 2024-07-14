@@ -1,0 +1,23 @@
+.mk-slash-item {
+  display: flex;
+  align-items: center;
+}
+.mk-slash-icon {
+  display: flex;
+  margin-right: 8px;
+}
+.mk-slash-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.cm-focused .cm-active.mk-placeholder:before {
+  content: attr(data-ph);
+  color: var(--mk-ui-text-tertiary);
+  position: absolute;
+}
+
+.mk-floweditor .cm-active.mk-placeholder:before {
+  content: attr(data-ph);
+  color: var(--mk-ui-text-tertiary);
+  position: absolute;
+}

@@ -1,0 +1,337 @@
+.mk-view-selector {
+  margin-right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  overflow-x: auto;
+  font-size: 15px
+}
+
+body:not(.is-mobile) .mk-view-options {
+
+  transition: all 0.2s ease;
+}
+.mk-context-container {
+  margin-bottom: 12px;
+}
+.mk-context-container:hover .mk-view-options {
+  opacity: 1;
+}
+
+.mk-view-selector-spacer {
+  min-width: 24px;
+  width: var(--file-margins)
+}
+
+
+
+.mk-view-selector > div > button:not(:last-child) {
+  padding-right: 0px;
+}
+
+.mk-context-config {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.mk-context-config span {
+  flex-grow: 1;
+}
+
+.mk-view-config .mk-active button {
+  color: var(--mk-ui-text-primary);
+}
+.mk-view-config .mk-active {
+
+  color: var(--mk-ui-text-primary);
+  
+}
+
+button.mk-toolbar-button {
+  padding: 4px 8px;
+  --icon-size: 14px;
+  font-size: max(13px,1em);
+  gap: 8px;
+  font-weight: var(--font-medium);
+  background: rgba(var(--nav-item-background-active), 0.3);
+  border: none;
+  box-shadow: none;
+  color: var(--mk-ui-text-tertiary);
+  height: 30px;
+}
+
+
+body:not(.is-mobile) button.mk-toolbar-button:hover {
+  color: var(--mk-ui-text-primary);
+  background: var(--mk-ui-background-hover);
+}
+
+.mk-view-config {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.mk-view-config input {
+  background: none;
+  border: none;
+  flex-grow: 1;
+}
+
+
+.mk-context-title-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mk-context-title .mk-toolbar-button  {
+  opacity: 0
+}
+.mk-context-title:hover .mk-toolbar-button {
+  opacity: 1;
+}
+.mk-context-title {
+  font-weight: var(--font-medium);
+  flex-grow: 10;
+  white-space:nowrap;
+  overflow:hidden;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.is-phone .mk-view-config {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0px;
+  margin-top: 8px;
+}
+.is-phone .mk-toolbar-button {
+  width: unset;
+}
+
+.mk-view-search {
+  background: var(--background-modifier-form-field);
+  border: var(--input-border-width) solid var(--background-modifier-border);
+  display: flex;
+  border-radius: 8px;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.mk-view-search button:hover {
+  background: unset !important;
+}
+.mk-view-search button {
+  margin: 0 !important;
+  padding: 4px 8px !important;
+}
+
+.is-phone .mk-view-options {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+.mk-view-options {
+  display: flex;
+  align-items: center;
+  color: var(--mk-ui-text-primary) !important;
+  gap: 4px;
+  flex: 1;
+
+}
+.mk-view-options span {
+  flex: 1;
+}
+.mk-view-config span {
+  flex-grow: 10;
+}
+
+.mk-toolbar-button svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.mk-filter-bar {
+  display: flex;
+  padding: 4px;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.mk-filter-bar span {
+  flex-grow: 1;
+}
+.mk-view-config .mk-active{
+  color: var(--mk-ui-text-primary) !important;
+}
+
+.mk-filter {
+  border-radius: 6px;
+    overflow: initial;
+  display: flex;
+  font-size: 13px;
+  white-space: nowrap;
+  padding: 0px;
+  background: var(--background-modifier-form-field);
+  border: var(--input-border-width) solid var(--background-modifier-border);
+  color: var(--mk-ui-text-primary);
+}
+.mk-query .mk-filter > span {
+  background: var(--mk-ui-background);
+}
+.mk-filter > span > span {
+  display: flex;
+  background: var(--mk-ui-background);
+    padding: 0px 4px;
+    border-radius: 4px;
+}
+.mk-filter > span,
+.mk-filter > div {
+  background: var(--mk-ui-background-variant)
+}
+.mk-filter > span:hover,
+.mk-filter > div:hover {
+  background: var(--mk-ui-active-hover);
+}
+.mk-filter > *:first-child {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  padding-left: 10px;
+}
+.mk-filter > *:last-child {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+  padding: 6px;
+  border-right: none;
+}
+.mk-filter > span {
+  border-right: thin solid var(--mk-ui-divider);
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mk-filter input {
+  height: 100%;
+  width: 100px !important;
+  border: none;
+}
+
+.mk-filter .mk-path {
+  padding: 0 4px;
+}
+
+.mk-filter div {
+  display: flex;
+  align-items: center;
+}
+.mk-filter div svg {
+  width: 14px;
+  height: 14px;
+}
+.mk-query {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.mk-query-filters {
+  flex-wrap: wrap;
+  padding: 0;
+  border-bottom: none;
+  display: flex;
+  background: var(--mk-ui-background);
+  padding: 8px;
+  border-radius: 8px;
+  
+}
+.mk-query-filter, .mk-query-group-type {
+  display: flex;
+}
+.mk-query-group {
+  display: flex;
+  gap: 8px;
+}
+.mk-query-group-type {
+  width: 32px;
+  padding-bottom: 4px;
+}
+
+.mk-query-group button {
+  background-color: unset;
+  box-shadow: none;
+width: unset;
+}
+.is-phone .mk-query-group button {
+  background-color: var(--mk-ui-active-normal);
+}
+.mk-query-group-type > span, 
+.mk-query-filter > span {
+  display: flex;
+  flex-grow: 1;
+}
+button.mk-filter-add {
+  background-color: transparent;
+}
+.mk-filter-add {
+  border-radius: 4px;
+  box-shadow: none !important;
+  background: none;
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 13px;
+  color: var(--mk-ui-text-tertiary);
+  gap: 4px;
+}
+.mk-filter-add:hover {
+  background: var(--mk-ui-background-hover);
+  color: var(--mk-ui-text-secondary);
+}
+.mk-filter-add span {
+  display: flex;
+}
+
+.mk-search-bar {
+}
+
+.mk-tag-selector {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.mk-tag-selector svg {
+  color: var(--tag-color) !important;
+}
+.mk-tag-selector div {
+  cursor: var(--cursor-link);
+  font-size: 12px;
+  display: flex;
+}
+.mk-tag-selector span {
+  display: flex;
+  align-items: center;
+}
+.mk-tag-selector button {
+  height: auto;
+  border-radius: var(--tag-radius);
+  color: var(--tag-color);
+  background-color: var(--tag-background);
+  border: var(--tag-border-width) solid var(--tag-border-color);
+  box-shadow: none !important;
+  font-size: var(--tag-size);
+  vertical-align: baseline;
+  border-left: none;
+  border-right: none;
+  padding-top: var(--tag-padding-y) !important;
+  padding-bottom: var(--tag-padding-y) !important;
+}

@@ -1,17 +1,18 @@
-import { FileContextView, Superstate } from "makemd-core";
+import { FileContextView, Superstate, i18n } from "makemd-core";
 import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
-import { Root, createRoot } from "react-dom/client";
+import { Root } from "react-dom/client";
+import { ObsidianUI } from "../ui";
 
 export class ContextExplorerLeafView extends ItemView {
   superstate: Superstate;
   navigation = false;
-
   root: Root;
-
-  constructor(leaf: WorkspaceLeaf, superstate: Superstate) {
+  ui: ObsidianUI;
+  constructor(leaf: WorkspaceLeaf, superstate: Superstate, ui: ObsidianUI) {
     super(leaf);
     this.superstate = superstate;
+    this.ui = ui;
   }
 
   getViewType(): string {
@@ -31,7 +32,7 @@ export class ContextExplorerLeafView extends ItemView {
   }
 
   destroy() {
-    if (this.root) this.root.unmount();
+    this.root?.unmount();
   }
 
   async onOpen(): Promise<void> {
@@ -54,12 +55,13 @@ export class ContextExplorerLeafView extends ItemView {
 
   constructFileContext() {
     this.destroy();
-    this.root = createRoot(this.contentEl);
-    this.root.render(
-      <FileContextView superstate={this.superstate}></FileContextView>
-    );
+    this.root = this.ui.createRoot(this.contentEl);
+    if (this.root)
+      this.root.render(
+        <FileContextView superstate={this.superstate}></FileContextView>
+      );
   }
 }
 export const FILE_CONTEXT_VIEW_TYPE = "make-context-view";
 export const ICON = "component";
-export const VIEW_DISPLAY_TEXT = "Explorer";
+export const VIEW_DISPLAY_TEXT = i18n.views.explorer;

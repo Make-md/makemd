@@ -2,15 +2,15 @@ import { UIManager } from "core/middleware/ui";
 import {
   SelectOption,
   SelectOptionType,
-} from "core/react/components/UI/Menus/menu";
+} from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { Sticker } from "core/react/components/UI/Stickers/Sticker";
 import { PointerModifiers } from "core/types/ui";
+import { MenuObject } from "core/utils/ui/menu";
 import React, { useEffect, useRef, useState } from "react";
 import { matchAny } from "./concerns/matchers";
-
 function markIt(name: string, query: string) {
   const regexp = matchAny(query);
-  return name.replace(regexp, "<mark>$&</mark>");
+  return name?.replace(regexp, "<mark>$&</mark>");
 }
 
 const SelectMenuSuggestionsComponent = (props: {
@@ -18,60 +18,80 @@ const SelectMenuSuggestionsComponent = (props: {
   item: SelectOption;
   query: string;
   active: boolean;
-  onMoreOption?: (e: React.MouseEvent, value: string) => void;
+  onMoreOption?: (e: React.MouseEvent, option: string) => void;
   onDeleteOption?: (value: string) => void;
 }) => {
   const ref = useRef(null);
+
   useEffect(() => {
     if (props.active) {
       ref?.current?.scrollIntoViewIfNeeded();
     }
   }, [props.active]);
+
   return (
     <>
       {props.item.icon && (
         <Sticker ui={props.ui} sticker={props.item.icon}></Sticker>
       )}
-      <div className="mk-options-menu-inner">
+      <div ref={ref} className="mk-menu-options-inner">
         {props.item.onToggle && <div>Toggle</div>}
         <span
-          ref={ref}
+          style={
+            props.item.color?.length > 0
+              ? {
+                  background: props.item.color,
+                  padding: "2px 4px",
+                  borderRadius: "4px",
+                  color:
+                    props.item.color == "var(--mk-color-none)"
+                      ? "inherit"
+                      : "var(--mk-color-white)",
+                }
+              : {}
+          }
           dangerouslySetInnerHTML={{
             __html: markIt(props.item.name, props.query),
           }}
         />
         {props.item.description && (
           <span
-            className="mk-description"
-            ref={ref}
+            aria-label={props.item.description}
+            className="mk-menu-options-description"
             dangerouslySetInnerHTML={{
               __html: markIt(props.item.description, props.query),
             }}
           />
         )}
       </div>
+      {props.item.type == SelectOptionType.Disclosure && (
+        <span>{props.item.value}</span>
+      )}
       {props.item.type == SelectOptionType.Radio && props.item.value && (
         <div
           className="mk-icon-small"
           dangerouslySetInnerHTML={{
-            __html: props.ui.getSticker("ui//mk-ui-check"),
+            __html: props.ui.getSticker("ui//check"),
           }}
         ></div>
       )}
-      {props.onMoreOption && props.item.removeable && (
+      {props.item.onMoreOptions ||
+      (props.onMoreOption && props.item.removeable) ? (
         <div
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            props.onMoreOption(e, props.item.value);
+            props.item.onMoreOptions
+              ? props.item.onMoreOptions(e)
+              : props.onMoreOption(e, props.item.value);
           }}
           className="mk-icon-small"
           dangerouslySetInnerHTML={{
-            __html: props.ui.getSticker("ui//mk-ui-options"),
+            __html: props.ui.getSticker("ui//options"),
           }}
         ></div>
-      )}
-      {props.item.removeable && (
+      ) : null}
+      {props.item.removeable && props.onDeleteOption && (
         <div
           onClick={(e) => {
             e.stopPropagation();
@@ -80,7 +100,15 @@ const SelectMenuSuggestionsComponent = (props: {
           }}
           className="mk-icon-small"
           dangerouslySetInnerHTML={{
-            __html: props.ui.getSticker("ui//mk-ui-close"),
+            __html: props.ui.getSticker("ui//close"),
+          }}
+        ></div>
+      )}
+      {props.item.type == SelectOptionType.Submenu && (
+        <div
+          className="mk-icon-small"
+          dangerouslySetInnerHTML={{
+            __html: props.ui.getSticker("ui//chevron-right"),
           }}
         ></div>
       )}
@@ -102,6 +130,11 @@ const SelectMenuInput = (props: {
           props.setValue(value);
         }
       }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+      onFocus={(e) => {
+        e.stopPropagation();
+      }}
       onChange={(e) => setValue(e.target.value)}
       onBlur={(e) => props.setValue(value)}
     ></input>
@@ -110,11 +143,14 @@ const SelectMenuInput = (props: {
 
 const SelectMenuSuggestions = (props: {
   expanded: boolean;
-  hoverSelect: boolean;
+
   options: SelectOption[];
   query: string;
+  addKeyword: string;
+  refs: React.MutableRefObject<HTMLDivElement[]>;
   hide: () => void;
-  addTag: (item: SelectOption, modifiers: PointerModifiers) => void;
+  onHide: () => void;
+  selectOption: (item: SelectOption, modifiers: PointerModifiers) => void;
   moreOption?: (e: React.MouseEvent, option: string) => void;
   deleteOption?: (option: string) => void;
   id: string;
@@ -123,100 +159,136 @@ const SelectMenuSuggestions = (props: {
   setIndex: (index: number) => void;
   allowNew: boolean;
   ui: UIManager;
+  isDisclosureMenu: boolean;
+  openSubmenu?: (menu: MenuObject) => void;
 }) => {
-  const timer = useRef(null);
-
-  const mouseOver = (e: React.MouseEvent, index: number) => {
-    if (!props.hoverSelect) {
-      return;
-    }
-    timer.current && clearTimeout(timer.current);
-    timer.current = setTimeout(() => props.setIndex(index), 300);
-  };
+  // const mouseOver = (e: React.MouseEvent, index: number) => {
+  //   props.setIndex(index);
+  // };
   const options = props.options.map((item, index) => {
     const key = `${props.id}-${index}`;
-    const classNames = [];
-
-    if (props.index === index) {
-      classNames.push(props.classNames.suggestionActive);
-    }
-
-    if (item.disabled) {
-      classNames.push(props.classNames.suggestionDisabled);
-    }
-
-    return item.type == SelectOptionType.Separator ? (
-      <div className="menu-separator"></div>
-    ) : item.type == SelectOptionType.Input ? (
-      <li className="mk-menu-input">
-        <SelectMenuInput
-          value={item.value}
-          setValue={item.onValueChange}
-        ></SelectMenuInput>
-      </li>
-    ) : item.type == SelectOptionType.Custom ? (
-      <div>
-        <item.fragment />
-      </div>
-    ) : (
-      <li
-        id={key}
-        key={key}
-        role="option"
-        className={classNames.join(" ")}
-        aria-disabled={Boolean(item.disabled)}
-        onMouseDown={(e) => e.preventDefault()}
+    const className =
+      item.type == SelectOptionType.Separator
+        ? "mk-menu-separator"
+        : item.type == SelectOptionType.Input
+        ? "mk-menu-input"
+        : item.type == SelectOptionType.Custom
+        ? "mk-menu-custom"
+        : `mk-menu-option ${
+            props.index === index && props.classNames.suggestionActive
+          } ${item.disabled && props.classNames.suggestionDisabled}`;
+    return (
+      <div
+        ref={(ref) => {
+          if (props.refs?.current) props.refs.current[index] = ref;
+        }}
+        onMouseDown={(e) => {
+          if (!props.isDisclosureMenu) e.stopPropagation();
+          e.preventDefault();
+        }}
         onClick={(e) => {
-          if (item.onClick) {
+          if (item.onSubmenu && props.openSubmenu) {
+            const el = props.refs?.current[index].getBoundingClientRect();
+            props.openSubmenu(
+              item.onSubmenu(el, () => {
+                if (props.onHide) {
+                  props.onHide();
+                }
+                props.hide();
+              })
+            );
+          } else if (item.onClick) {
             item.onClick(e);
-            props.hide();
+            if (
+              item.type != SelectOptionType.Submenu &&
+              item.type != SelectOptionType.Disclosure
+            ) {
+              props.hide();
+            }
           } else {
-            props.addTag(item, {
-              ctrlKey: e.ctrlKey,
-              metaKey: e.metaKey,
-              altKey: e.altKey,
-              shiftKey: e.shiftKey,
-            });
+            if (
+              item.type == null ||
+              item.type == SelectOptionType.Option ||
+              item.type == SelectOptionType.Disclosure
+            ) {
+              props.selectOption(item, {
+                ctrlKey: e.ctrlKey,
+                metaKey: e.metaKey,
+                altKey: e.altKey,
+                shiftKey: e.shiftKey,
+                doubleClick: e.detail == 2,
+              });
+              if (!props.isDisclosureMenu) e.stopPropagation();
+            }
           }
         }}
-        onMouseOver={(e) => mouseOver(e, index)}
-        onMouseOut={(e) => props.hoverSelect && clearTimeout(timer.current)}
+        // onMouseOver={(e) => {
+        //   if (props.openSubmenu && item.onSubmenu) {
+        //     props.setIndex(index);
+        //     const el = props.refs?.current[index].getBoundingClientRect();
+        //     props.openSubmenu(item.onSubmenu(el));
+        //   }
+        // }}
+        id={key}
+        key={key}
+        className={className}
       >
-        <SelectMenuSuggestionsComponent
-          ui={props.ui}
-          item={item}
-          query={props.query}
-          active={index == props.index}
-          onMoreOption={props.moreOption}
-          onDeleteOption={props.deleteOption}
-        />
-      </li>
+        {item.type == SelectOptionType.Separator ? (
+          <></>
+        ) : item.type == SelectOptionType.Section ? (
+          <div className="mk-menu-options-section">{item.name}</div>
+        ) : item.type == SelectOptionType.Input ? (
+          <SelectMenuInput
+            value={item.value}
+            setValue={item.onValueChange}
+          ></SelectMenuInput>
+        ) : item.type == SelectOptionType.Custom ? (
+          <item.fragment hide={props.hide} />
+        ) : (
+          <SelectMenuSuggestionsComponent
+            ui={props.ui}
+            item={item}
+            query={props.query}
+            active={index == props.index}
+            onMoreOption={props.moreOption}
+            onDeleteOption={props.deleteOption}
+          />
+        )}
+      </div>
     );
   });
 
   return (
-    <div className={props.classNames.suggestions}>
-      <ul role="listbox" id={props.id}>
-        {options}
-        {props.query && props.allowNew && (
-          <li
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={(e) =>
-              props.addTag(
-                { name: props.query, value: props.query },
-                {
-                  ctrlKey: e.ctrlKey,
-                  metaKey: e.metaKey,
-                  altKey: e.altKey,
-                  shiftKey: e.shiftKey,
-                }
-              )
-            }
-          >
-            Add {props.query}
-          </li>
-        )}
-      </ul>
+    <div className="mk-menu-suggestions">
+      {options}
+
+      {props.query && props.allowNew && (
+        <div
+          className="mk-menu-option"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={(e) =>
+            props.selectOption(
+              { name: props.query, value: props.query },
+              {
+                ctrlKey: e.ctrlKey,
+                metaKey: e.metaKey,
+                altKey: e.altKey,
+                shiftKey: e.shiftKey,
+              }
+            )
+          }
+        >
+          <div
+            className="mk-sticker"
+            dangerouslySetInnerHTML={{
+              __html: props.ui.getSticker("ui//plus"),
+            }}
+          ></div>
+          <div className="mk-menu-options-inner">
+            {props.addKeyword ?? "Add"} {props.query}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

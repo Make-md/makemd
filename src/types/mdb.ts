@@ -12,13 +12,14 @@ export enum ContextSchemaType {
   ContextType = 1,
   FrameType = 2,
   TableType = 3,
+  CommandType = 4,
 }
 
 export type FilesystemSpaceInfo = SpaceInfo & {
   folderPath: string;
-  defPath: string;
   dbPath: string;
   framePath: string;
+  commandsPath: string;
 }
 
 export type SpaceInfo = {
@@ -26,10 +27,11 @@ export type SpaceInfo = {
   path: string,
   isRemote: boolean;
   readOnly: boolean;
-  defPath: string
+  defPath: string;
+  notePath: string;
 }
 
-export type SpaceTableColumn = SpaceProperty & { table: string };
+export type SpaceTableColumn = SpaceProperty & { table?: string };
 
 export type DBTables = Record<string, DBTable>;
 
@@ -59,7 +61,7 @@ export type SpaceTableSchema = {
 export type SpaceProperty = {
   name: string;
   //schema that the fields in
-  schemaId: string;
+  schemaId?: string;
   type: string;
   //metadata for field
   value?: string;

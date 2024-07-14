@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { TableCellProp } from "../TableView/TableView";
+import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
 export const NumberCell = (props: TableCellProp) => {
   const { initialValue, saveValue } = props;
@@ -30,17 +30,17 @@ export const NumberCell = (props: TableCellProp) => {
   }, [initialValue]);
 
   useEffect(() => {
-    if (props.editMode == 2) {
+    if (props.editMode == CellEditMode.EditModeActive) {
       ref?.current?.focus();
     }
   }, [props.editMode]);
 
-  return props.editMode > 1 ? (
+  return props.editMode > CellEditMode.EditModeView ? (
     <input
       className="mk-cell-text"
       type="number"
       ref={ref}
-      value={value as string}
+      value={(value as string) ?? ""}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={onKeyDown}
       onBlur={onBlur}

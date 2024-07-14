@@ -146,7 +146,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
     //
     super();
     if (waitTime === undefined) {
-      waitTime = 300;
+      waitTime = 10;
     }
     this.onTarget = true;
     this.parent = parent;
@@ -263,12 +263,12 @@ export class FlowEditor extends nosuper(HoverPopover) {
     this.oldPopover?.hide();
     this.oldPopover = null;
 
-    this.hoverEl.toggleClass("is-new", true);
+    this.hoverEl.classList.add("is-new");
 
     this.document.body.addEventListener(
       "click",
       () => {
-        this.hoverEl.toggleClass("is-new", false);
+        this.hoverEl.classList.remove("is-new");
       },
       { once: true, capture: true }
     );

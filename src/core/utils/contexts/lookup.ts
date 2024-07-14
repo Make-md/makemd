@@ -20,15 +20,15 @@ export const appendPathMetaData = (propType: string, pathState: PathState) => {
     } else if (propType == "name") {
       value = pathState.name;
     } else if (propType == "ctime") {
-      value = pathState.metadata?.file?.stat?.ctime?.toString();
+      value = pathState.metadata?.file?.ctime?.toString();
     } else if (propType == "mtime") {
-      value = pathState.metadata?.file?.stat?.mtime?.toString();
+      value = pathState.metadata?.file?.mtime?.toString();
     } else if (propType == "extension") {
       value = pathState.metadata.extension;
     } else if (propType == "sticker") {
       value = pathState.label.sticker;
     } else if (propType == "size") {
-      value = pathState.metadata?.file?.stat?.size?.toString();
+      value = pathState.metadata?.file?.size?.toString();
     } else if (propType == "inlinks") {
       value = serializeMultiDisplayString(pathState.inlinks);
     } else if (propType == "outlinks") {

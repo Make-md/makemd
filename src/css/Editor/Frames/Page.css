@@ -1,0 +1,111 @@
+.mk-frame-column {
+    position: absolute !important;
+    width: 100%;
+    height: 100%;
+    z-index: var(--layer-popover);
+}
+.mk-frame-column-resize-handle:hover {
+    border-right: 1px solid var(--nav-indentation-guide-color)
+}
+.mk-frame-column-placeholder {
+    position: absolute;
+    right: -16px;
+    width: 16px;
+    bottom: 0;
+}
+
+.is-mobile .mk-editor-frame-hover-menu-container {
+    right: -14px;
+}
+
+.mk-editor-frame-hover-menu-container {
+    margin-left: -30px;
+    position: absolute;
+    padding: 4px;
+    z-index: var(--layer-popover);
+    pointer-events: auto;
+  }
+  .mk-editor-frame-hover-menu-container .mk-editor-frame-hover-button svg{
+    width: 20px;
+    height: 20px;
+  }
+
+  .mk-editor-frame-hover-menu-container .mk-editor-frame-hover-button:hover {
+    background: var(--nav-item-background-hover);
+    border-radius: 4px;
+  }
+
+  .mk-editor-frame-hover-menu, .mk-editor-frame-hover-horizontal {
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    display: flex;
+    font-size: 12px;
+    background: var(--mk-ui-background);
+    gap: 4px;
+    flex-direction:column
+  }
+  
+.mk-frame-drop-zone-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: var(--layer-popover);
+}
+.mk-frame-drop-zone {
+    position: absolute;
+}
+.mk-indicator-bottom::before {
+    position: absolute;
+    content: " ";
+    display: block;
+    width: 100%;
+    height: 2px;
+    bottom: 0;
+    border-radius: 1px;
+    background: var(--mk-ui-active);
+    
+}
+.mk-indicator-right::before {
+    position: absolute;
+    content: " ";
+    display: block;
+    width: 2px;
+    height: 100%;
+    left: 0;
+    border-radius: 1px;
+    background: var(--mk-ui-active);
+    
+}
+.mk-indicator-insert::before {
+    position: absolute;
+    content: " ";
+    display: block;
+    width: 100%;
+    height: 2px;
+    bottom: 0;
+    border-radius: 1px;
+    background: yellow;
+}
+.mk-indicator-top::before {
+    position: absolute;
+    content: " ";
+    display: block;
+    width: 100%;
+    height: 2px;
+    top: 0;
+    border-radius: 1px;
+    background: var(--mk-ui-active);
+    
+}
+.mk-indicator-left::before {
+    position: absolute;
+    content: " ";
+    display: block;
+    width: 2px;
+    height: 100%;
+    right: 0;
+    border-radius: 1px;
+    background: var(--mk-ui-active);
+    
+}
+

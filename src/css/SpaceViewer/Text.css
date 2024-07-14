@@ -1,0 +1,32 @@
+.mk-t-h1 {
+    --font-text-size: var(--h1-size);
+    --text-normal: var(--h1-color);
+    --font-weight: var(--h1-weight);
+  }
+
+  .mk-t-h2 {
+    --font-text-size: var(--h2-size);
+    --text-normal: var(--h2-color);
+    --font-weight: var(--h2-weight);
+  }
+
+  .mk-t-h3 {
+    --font-text-size: var(--h3-size);
+    --text-normal: var(--h3-color);
+    --font-weight: var(--h3-weight);
+  }
+
+  .mk-t-h4 {
+    --font-text-size: var(--h4-size);
+    --text-normal: var(--h4-color);
+    --font-weight: var(--h4-weight);
+  }
+
+  .mk-t-h5 {
+    --font-text-size: var(--h5-size);
+    --text-normal: var(--h5-color);
+    --font-weight: var(--h5-weight);
+  }
+
+  .mk-t-p {
+  }

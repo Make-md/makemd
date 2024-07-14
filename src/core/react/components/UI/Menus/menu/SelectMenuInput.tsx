@@ -1,3 +1,4 @@
+import { UIManager } from "makemd-core";
 import React, {
   CSSProperties,
   forwardRef,
@@ -24,9 +25,10 @@ const STYLE_PROPS = [
   "textTransform",
 ];
 
-const SelectMenuInput = forwardRef(
+const SelectMenuSearch = forwardRef(
   (
     props: {
+      ui: UIManager;
       expanded: boolean;
       id: string;
       query: string;
@@ -41,19 +43,18 @@ const SelectMenuInput = forwardRef(
     const { classNames, inputAttributes, inputEventHandlers, index } = props;
     const sizer = useRef<HTMLDivElement>(null);
     const [inputWidth, setInputWidth] = useState(null);
-    const [query, setQuery] = useState("");
+
     const [placeholderText, setPlaceholderText] = useState("");
     useEffect(() => {
       copyInputStyles();
       updateInputWidth();
       setTimeout(() => {
-        input.current.focus();
+        input.current?.focus();
       }, 50);
     }, []);
 
     useEffect(() => {
-      if (query !== props.query || placeholderText !== props.placeholderText) {
-        setQuery(props.query);
+      if (placeholderText !== props.placeholderText) {
         setPlaceholderText(props.placeholderText);
         updateInputWidth();
       }
@@ -68,11 +69,9 @@ const SelectMenuInput = forwardRef(
     };
 
     const updateInputWidth = () => {
-      let _inputWidth;
-
       // scrollWidth is designed to be fast not accurate.
       // +2 is completely arbitrary but does the job.
-      _inputWidth = Math.ceil(sizer.current.scrollWidth) + 2;
+      const _inputWidth = Math.ceil(sizer.current.scrollWidth) + 2;
 
       if (_inputWidth !== inputWidth) {
         setInputWidth(_inputWidth);
@@ -85,18 +84,21 @@ const SelectMenuInput = forwardRef(
           {...inputAttributes}
           {...inputEventHandlers}
           ref={input}
-          value={query}
+          value={props.query}
           placeholder={placeholderText}
           className={classNames.searchInput}
           role="combobox"
           style={{ width: "100%" }}
+          onClick={(e) => e.stopPropagation()}
         />
         <div ref={sizer} style={SIZER_STYLES}>
-          {query || placeholderText}
+          {props.query || placeholderText}
         </div>
       </div>
     );
   }
 );
 
-export default SelectMenuInput;
+export default SelectMenuSearch;
+
+SelectMenuSearch.displayName = "SelectMenuSearch";

@@ -1,71 +1,83 @@
-import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "core/superstate/superstate";
 import { PathPropertyName } from "core/types/context";
 import React from "react";
 import { fieldTypeForType } from "schemas/mdb";
 import { DBRow, SpaceTableColumn, SpaceTables } from "types/mdb";
+import { CellEditMode } from "../TableView/TableView";
 import { BooleanCell } from "./BooleanCell";
 import { ColorCell } from "./ColorCell";
 import { ContextCell } from "./ContextCell";
 import { DateCell } from "./DateCell";
+import { FormulaCell } from "./FormulaCell";
 import { IconCell } from "./IconCell";
 import { ImageCell } from "./ImageCell";
 import { LinkCell } from "./LinkCell";
-import { LookUpCell } from "./LookUpCell";
 import { NumberCell } from "./NumberCell";
 import { ObjectCell } from "./ObjectCell";
 import { OptionCell } from "./OptionCell";
-import { PathCell } from "./PathCell";
+
+import { PropertySelectCell } from "./PropertySelectCell";
 import { SpaceCell } from "./SpaceCell";
 import { SuperCell } from "./SuperCell";
 import { TagCell } from "./TagCell";
 import { TextCell } from "./TextCell";
 
-type DataTypeViewProps = {
+export type DataTypeViewProps = {
   initialValue: string;
   superstate: Superstate;
   column: SpaceTableColumn;
-  editable: boolean;
+  editMode: CellEditMode;
   row?: DBRow;
-  cols?: SpaceTableColumn[];
-  openFlow?: () => void;
+  columns?: SpaceTableColumn[];
   updateValue?: (value: string) => void;
   updateFieldValue?: (fieldValue: string, value: string) => void;
   contextTable?: SpaceTables;
+  compactMode?: boolean;
+  source?: string;
+  setEditMode?: (mode: [string, string]) => void;
 };
 
 export const DataTypeView: React.FC<DataTypeViewProps> = (
   props: DataTypeViewProps
 ) => {
   const { initialValue, column, row } = props;
-
   const saveValue = (value: string) => {
     props.updateValue(value);
   };
   const saveFieldValue = (fieldValue: string, value: string) => {
-    props.updateFieldValue(fieldValue, value);
+    if (
+      props.editMode > CellEditMode.EditModeReadOnly &&
+      props.updateFieldValue
+    ) {
+      props.updateFieldValue(fieldValue, value);
+    } else {
+      props.updateValue(value);
+    }
   };
   const viewProps = {
     initialValue: initialValue as string,
     saveValue: saveValue,
-    editMode: props.editable == true ? 3 : 0,
-    setEditMode: () => {},
+    editMode: props.editMode,
+    setEditMode: props.setEditMode ?? (() => {}),
     superstate: props.superstate,
     propertyValue: column.value,
+    path: props.source ?? row?.[PathPropertyName],
+    property: column,
+    compactMode: props.compactMode,
   };
 
   const fieldType = fieldTypeForType(column.type, column.name);
-  const value = parseFieldValue(column.value, column.type);
   if (!fieldType) {
     return <></>;
   }
   if (fieldType.type == "file") {
     return (
-      <PathCell
+      <LinkCell
         {...viewProps}
-        multi={fieldType.multiType == column.type}
-        openFlow={props.openFlow}
-      ></PathCell>
+        multi={false}
+        source={props.source}
+        editMode={CellEditMode.EditModeReadOnly}
+      ></LinkCell>
     );
   } else if (fieldType.type == "icon") {
     return (
@@ -75,14 +87,14 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
       ></IconCell>
     );
   } else if (fieldType.type == "boolean") {
-    return <BooleanCell {...viewProps} column={column}></BooleanCell>;
+    return <BooleanCell {...viewProps}></BooleanCell>;
   } else if (fieldType.type == "option") {
     return (
       <OptionCell
         {...viewProps}
-        options={column.value}
         multi={fieldType.multiType == column.type}
         saveOptions={saveFieldValue}
+        source={props.source}
       ></OptionCell>
     );
   } else if (fieldType.type == "date") {
@@ -92,14 +104,18 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
       <ContextCell
         {...viewProps}
         multi={fieldType.multiType == column.type}
-        space={value.space}
-        spaceField={value.field}
-        path={row?.[PathPropertyName]}
+        source={props.source}
       ></ContextCell>
     );
   } else if (fieldType.type == "fileprop") {
     return (
-      <LookUpCell {...viewProps} path={row?.[PathPropertyName]}></LookUpCell>
+      <FormulaCell
+        {...viewProps}
+        row={props.row}
+        columns={props.columns}
+        saveOptions={saveFieldValue}
+        source={props.source}
+      ></FormulaCell>
     );
   } else if (fieldType.type == "number") {
     return <NumberCell {...viewProps}></NumberCell>;
@@ -108,27 +124,52 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
       <LinkCell
         {...viewProps}
         multi={fieldType.multiType == column.type}
-        path={row?.[PathPropertyName]}
+        source={props.source}
       ></LinkCell>
     );
-  } else if (fieldType.type == "tags") {
-    return <TagCell {...viewProps} row={row}></TagCell>;
+  } else if (fieldType.type == "tags-multi") {
+    return <TagCell {...viewProps}></TagCell>;
   } else if (fieldType.type == "image") {
-    return <ImageCell {...viewProps}></ImageCell>;
+    return (
+      <ImageCell
+        {...viewProps}
+        multi={fieldType.multiType == column.type}
+      ></ImageCell>
+    );
   } else if (fieldType.type == "object") {
     return (
       <ObjectCell
         {...viewProps}
         multi={fieldType.multiType == column.type}
         savePropValue={saveFieldValue}
+        columns={props.columns}
+        row={props.row}
+        compactMode={props.compactMode}
       ></ObjectCell>
     );
   } else if (fieldType.type == "color") {
     return <ColorCell {...viewProps}></ColorCell>;
   } else if (fieldType.type == "space") {
-    return <SpaceCell {...viewProps}></SpaceCell>;
+    return <SpaceCell {...viewProps} isTable={false}></SpaceCell>;
+  } else if (fieldType.type == "table") {
+    return <SpaceCell {...viewProps} isTable={true}></SpaceCell>;
   } else if (fieldType.type == "super") {
-    return <SuperCell {...viewProps} row={row}></SuperCell>;
+    return (
+      <SuperCell
+        {...viewProps}
+        row={row}
+        columns={props.columns}
+        compactMode={props.compactMode}
+        source={props.source}
+      ></SuperCell>
+    );
+  } else if (fieldType.type == "input") {
+    return (
+      <PropertySelectCell
+        {...viewProps}
+        columns={props.columns}
+      ></PropertySelectCell>
+    );
   }
   return <TextCell {...viewProps}></TextCell>;
 };

@@ -1,8 +1,10 @@
-import { columnNode, columnsNode } from "schemas/frames";
-import { FrameNode, FrameTreeNode } from "types/mframe";
-import { insert } from "utils/array";
+import { columnNode, columnsNode } from "schemas/kits/base";
+import { Edges } from "types/Pos";
+import { FrameEditorMode, FrameNode, FrameTreeNode } from "types/mframe";
+import { insert, uniqueNameFromString } from "utils/array";
 import { findParent } from "../ast";
 import { newUniqueNode } from "../frames";
+import { relinkProps } from "../linker";
 
 const shouldDeleteColumn = (nodeParent: FrameTreeNode) => {
     if (nodeParent.node.type == 'column' && nodeParent.children.length == 1) {
@@ -27,16 +29,42 @@ const shouldCollapseColumnContainer = (nodeParent: FrameTreeNode) => {
 }
 
 
-export const dropFrame = (activeNode: FrameTreeNode, overNode: FrameTreeNode, root: FrameTreeNode, nodes: FrameNode[], newColumn: boolean) => {
+export const dropFrame = (_activeNode: FrameNode, overNode: FrameTreeNode, root: FrameTreeNode, nodes: FrameNode[], direction: Edges) => {
+  
+  let activeNode = _activeNode;
+  if (activeNode.schemaId != root.id) {
+    activeNode = relinkProps("$root", root.id, activeNode, root.id);
+    
+      const id = uniqueNameFromString(
+        activeNode.id,
+        nodes.map((f) => f.id)
+      );
+      activeNode = relinkProps(activeNode.id, id, activeNode, root.id);
+      activeNode.id = id;
+      activeNode.schemaId = root.id;
+  }
     let saveNodes:FrameNode[] = [];
     const deleteNodes:FrameNode[] = [];
+
+    if (activeNode.id == overNode.id) {
+      return [[], []];
+    }
+    
 const schemaId = root.node.schemaId;
 const overParentNode = findParent(root, overNode.id as string)
 const activeParentNode = findParent(root, activeNode.id as string)
-if (!overParentNode || !activeParentNode) { 
+if (!overParentNode) { 
     return [[], []]
 }
-if (newColumn) {
+
+
+const isDroppableColumn = overNode.node.type == 'column';
+
+if (direction == 'inside') {
+  const newItem = {...activeNode, parentId: overNode.node.id}
+      saveNodes.push(newItem);
+} else 
+if (isDroppableColumn ||(root.editorProps.editMode == FrameEditorMode.Page && overNode.node.parentId == root.id && (direction == 'left' || direction == 'right'))) {
     const baseLevelNode = overNode.node.parentId == root.id;
     const containerType = overNode.node.type == 'container';
     const columnType = overNode.node.type == 'column'
@@ -47,8 +75,7 @@ if (newColumn) {
             columnContainerIsBaseLevel = true;
     }
     const createColumnContainer = baseLevelNode && !containerType;
-    const insertColumn = baseLevelNode && containerType || columnType && columnContainerIsBaseLevel ;
-
+    const insertColumn = (baseLevelNode && containerType) || columnType && columnContainerIsBaseLevel ;
     if (createColumnContainer) {
         const newColumns = {...newUniqueNode(
             columnsNode,
@@ -57,19 +84,19 @@ if (newColumn) {
             schemaId,
             
           ), rank: overNode.node.rank};
-          const column1 = newUniqueNode(
+          const column1 = {...newUniqueNode(
             columnNode,
             newColumns.id,
             [...nodes, newColumns],
             schemaId
-          );
+          ), rank: direction == 'left' ? 1 : 0};
 
-          const column2 = newUniqueNode(
+          const column2 = {...newUniqueNode(
             columnNode,
             newColumns.id,
             [...nodes, newColumns, column1],
             schemaId
-          );
+          ), rank: direction == 'left' ? 0 : 1};
           const newNodes = [
             newColumns,
             column1,
@@ -78,30 +105,32 @@ if (newColumn) {
           ];
           saveNodes.push(
             ...newNodes,
-            { ...activeNode.node, rank: 0, parentId: column2.id },
+            { ...activeNode, rank: 0, parentId: column2.id },
           );
     } else if (insertColumn) {
+      const containerID = containerType ? overNode.id : overNode.node.parentId;
         const column = {
-            ...newUniqueNode(columnNode, overParentNode.id, nodes, schemaId),
+            ...newUniqueNode(columnNode, containerID, nodes, schemaId),
             rank:
-              overNode.node.rank > activeNode.node.rank
-                ? overNode.node.rank
-                : overNode.node.rank + 1,
+              direction == 'left'
+                ? containerType ? 0 : overNode.node.rank
+                : containerType ?  overNode.children.length : overNode.node.rank + 1,
           };
-          const newNodes = [column, { ...activeNode.node, parentId: column.id }];
+          const newNodes = [column, { ...activeNode, parentId: column.id }];
           
             saveNodes.push(...newNodes);
     }
 } else {
  
-        const newRank = overNode.node.rank+1;
+        
         const items = nodes
       .filter((f) => f.parentId == overParentNode.id && f.id != activeNode.id)
       .sort((a, b) => a.rank - b.rank)
       .map((f, i) => ({ ...f, rank: i }));
-
+    const overNodeRank = items.find(f => f.id == overNode.id)?.rank ?? 0;
+      const newRank = direction =="bottom" || direction == 'right' ? overNodeRank+1 : overNodeRank;
     // Update item's rank
-    const newItem = {...activeNode.node, parentId: overNode.node.parentId}
+    const newItem = {...activeNode, parentId: overNode.node.parentId}
     const newItems = insert(items, newRank, newItem).map((f, i) => ({
       ...f,
       rank: i,
@@ -109,7 +138,7 @@ if (newColumn) {
 
     saveNodes.push(...newItems)
 }
-if (shouldDeleteColumn(activeParentNode)) {
+if (activeParentNode && shouldDeleteColumn(activeParentNode)) {
     const columnParentNode = findParent(root, activeParentNode.id)
     deleteNodes.push(activeParentNode.node)
     if (shouldDeleteColumnContainer(columnParentNode)) {
@@ -117,7 +146,8 @@ if (shouldDeleteColumn(activeParentNode)) {
     } else if (shouldCollapseColumnContainer(columnParentNode)) {
         const removeColumn = columnParentNode.children.filter(f => f.id != activeParentNode.id);
         deleteNodes.push(...removeColumn.map(f => f.node), columnParentNode.node)
-        const moveToParentNodes = removeColumn.flatMap(f => f.children.map(f => ({...f.node, parentId: root.id})));
+        const moveToParentNodes : FrameNode[] = removeColumn.flatMap(f => f.children.map(f => ({...f.node, parentId: root.id, rank: columnParentNode.node.rank})));
+        moveToParentNodes.push(...saveNodes.filter(f => removeColumn.some(g => g.id == f.parentId)))
         saveNodes = [...saveNodes.map(f =>  moveToParentNodes.some(g => g.id == f.id) ? {...f, parentId: root.id} : f), ...moveToParentNodes.filter(g => !saveNodes.some(f=>g.id == f.id))]
     }
 }

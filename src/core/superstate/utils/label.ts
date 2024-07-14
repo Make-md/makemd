@@ -1,11 +1,16 @@
 import { Superstate } from "core/superstate/superstate";
 import { ensureArray } from "core/utils/strings";
-import { parseMDBValue } from "utils/properties";
-import { serializeMultiString } from "utils/serializers";
-import { saveLabel, saveProperties, saveSpaceProperties } from "./spaces";
-
+import { parseMDBStringValue } from "utils/properties";
+import { serializeMultiDisplayString } from "utils/serializers";
+import { metadataPathForSpace, saveLabel, saveProperties, saveSpaceProperties } from "./spaces";
 
 export const savePathBanner = (superstate: Superstate, path: string, banner: string) => {
+  if (superstate.spacesIndex.has(path)) {
+    saveProperties(superstate, metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space), {
+      [superstate.settings.fmKeyBanner]: banner,
+    });
+    return;
+  }
   saveProperties(superstate, path, {
     [superstate.settings.fmKeyBanner]: banner,
   });
@@ -36,8 +41,8 @@ export const savePathSticker = async (
 export const updatePrimaryAlias = (superstate: Superstate,
   path: string, aliases: string[],
   value: string) => {
-  const newValue = serializeMultiString([value, ...ensureArray(aliases).filter(f => f == value)]);
-  saveProperties(superstate, path, { [superstate.settings.fmKeyAlias]: parseMDBValue("option-multi", newValue) });
+  const newValue = serializeMultiDisplayString([value, ...ensureArray(aliases).filter(f => f == value)]);
+  saveProperties(superstate, path, { [superstate.settings.fmKeyAlias]: parseMDBStringValue("option-multi", newValue, true) });
 
 };
 

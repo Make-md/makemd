@@ -6,6 +6,7 @@ import watPlugin from 'esbuild-plugin-wat';
 import fs from 'fs';
 import path from 'path';
 import process from "process";
+
 dotenv.config()
 
 const banner =
@@ -34,12 +35,19 @@ function inlineWorkerPlugin(extraConfig) {
           // let workerCode = await fs.promises.readFile(workerPath, {
           //   encoding: 'utf-8',
           // });
+          const workerLookup = {
+            "indexer.worker.ts": "Superstate Indexer",
+            "runner.worker.ts": "Superstate Runner",
+            "search.worker.ts": "Superstate Search"
+          }
+          const workerName = workerPath.split('/').pop();
+          
 
           let workerCode = await buildWorker(workerPath, extraConfig);
           return {
             contents: `import inlineWorker from '__inline-worker'
 export default function Worker() {
-  return inlineWorker(${JSON.stringify(workerCode)});
+  return inlineWorker(${JSON.stringify(workerCode)}, ${ JSON.stringify({name: workerLookup[workerName]})});
 }
 `,
             loader: 'js',
@@ -47,13 +55,12 @@ export default function Worker() {
         }
       );
       
-      const name =  { name: 'Superstate Worker'}
 
       const inlineWorkerFunctionCode = `
-export default function inlineWorker(scriptText) {
+export default function inlineWorker(scriptText, name) {
   let blob = new Blob([scriptText], {type: 'text/javascript'});
   let url = URL.createObjectURL(blob);
-  let worker = new Worker(url, ${JSON.stringify(name)});
+  let worker = new Worker(url, name);
   URL.revokeObjectURL(url);
   return worker;
 }
@@ -90,29 +97,24 @@ async function buildWorker(workerPath, extraConfig) {
     delete extraConfig.workerName;
   }
 
+  
   await esbuild.build({
     entryPoints: [workerPath],
     bundle: true,
     minify: true,
     outfile: bundlePath,
-    target: 'es2017',
-    format: 'esm',
+		define: {
+			process: 'process',
+		},
+    target: 'es2020',
+    format: 'cjs',
     ...extraConfig,
   });
 
   return fs.promises.readFile(bundlePath, {encoding: 'utf-8'});
 }
 
-const preactCompatPlugin = {
-    name: "preact-compat",
-    setup(build) {
-        const preact = path.join(process.cwd(), "node_modules", "preact", "compat", "dist", "compat.module.js");
 
-        build.onResolve({filter: /^(react-dom|react)$/}, args => {
-            return {path: preact};
-        });
-    }
-}
 
 let renamePlugin = {
     name: 'rename-styles',
@@ -140,24 +142,28 @@ esbuild.build({
 	external: [
 		'obsidian',
 		'electron',
-		'@codemirror/autocomplete',
+    // '@codemirror/autocomplete',
 		'@codemirror/collab',
 		'@codemirror/commands',
-		'@codemirror/language',
+		// '@codemirror/language',
 		'@codemirror/lint',
 		'@codemirror/search',
 		'@codemirror/state',
 		'@codemirror/view',
 		...builtins],
 	format: 'cjs',
+  loader: {
+    '.ttf': 'base64', 
+  },
 	watch: !buildv,
-	target: 'es2018',
+	target: 'es2020',
 	logLevel: "info",
 	sourcemap: buildv ? false : 'inline',
 	treeShaking: true,
 	outfile: outputDir+'/main.js',
+  define: { 'process.env.NODE_ENV': prod ? '"production"' : '"development"' },
 	plugins: [renamePlugin, 
-		preactCompatPlugin,
+		// preactCompatPlugin,
 		inlineWorkerPlugin(),
 		watPlugin(),
 		...(buildv ? [copy({

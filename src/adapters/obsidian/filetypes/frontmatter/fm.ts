@@ -1,4 +1,5 @@
-import { saveProperties } from "core/superstate/utils/spaces";
+import { getAllAbstractFilesInVault } from "adapters/obsidian/utils/file";
+import { FMSpaceKeys, saveProperties } from "core/superstate/utils/spaces";
 import { PathPropertyName } from "core/types/context";
 import MakeMDPlugin from "main";
 import {
@@ -9,15 +10,17 @@ import {
   TFile
 } from "obsidian";
 import { DBTable, SpaceTable } from "types/mdb";
-import { onlyUniquePropCaseInsensitive } from "utils/array";
+import { onlyUniquePropCaseInsensitive, uniq } from "utils/array";
 
-import { defaultValueForType, parseMDBValue, yamlTypeToMDBType } from "utils/properties";
+import { defaultValueForType, parseMDBStringValue, yamlTypeToMDBType } from "utils/properties";
 
 export const stripFrontmatterFromString = (string: string) => {
   return string.replace(/---(.|\n)*---/, "");
 };
 
-
+export const getAllFrontmatterKeys = (plugin: MakeMDPlugin): string[] => {
+  return uniq(getAllAbstractFilesInVault(plugin.app).flatMap(f => Object.keys(frontMatterForFile(app, f) ?? {}) ?? []).filter(f => !FMSpaceKeys(plugin.superstate.settings).includes(f)));
+}
 
 export const frontMatterForFile = (app: App, file: TAbstractFile): FrontMatterCache => {
   let currentCache!: CachedMetadata;
@@ -103,7 +106,7 @@ export const saveFrontmatterValue = (
 ) => {
 
   saveProperties(plugin.superstate, path, {
-    [key]: parseMDBValue(type, value),
+    [key]: parseMDBStringValue(type, value, true),
   });
   
 };

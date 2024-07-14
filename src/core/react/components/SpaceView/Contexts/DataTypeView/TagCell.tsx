@@ -1,24 +1,37 @@
 import i18n from "core/i18n";
 import { addTagToPath, deleteTagFromPath } from "core/superstate/utils/tags";
-import { PathPropertyName } from "core/types/context";
-import React, { useMemo } from "react";
-import { DBRow } from "types/mdb";
-import { parseMultiString } from "utils/parsers";
+import React, { PropsWithChildren, useEffect, useState } from "react";
 import { TableCellProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
 
-export const TagCell = (props: TableCellProp & { row: DBRow }) => {
-  const value = useMemo(
-    () => parseMultiString(props.initialValue),
-    [props.initialValue]
-  );
+export const TagCell = (props: TableCellProp) => {
+  const [value, setValue] = useState([]);
+  useEffect(() => {
+    setValue([...(props.superstate.tagsMap.get(props.path) ?? [])]);
+  }, []);
+  useEffect(() => {
+    const updateValue = (payload: { path: string }) => {
+      if (payload.path == props.path)
+        setValue([...(props.superstate.tagsMap.get(props.path) ?? [])]);
+    };
+    props.superstate.eventsDispatcher.addListener(
+      "pathStateUpdated",
+      updateValue
+    );
+    return () => {
+      props.superstate.eventsDispatcher.removeListener(
+        "pathStateUpdated",
+        updateValue
+      );
+    };
+  }, [props.path]);
   const removeValue = (v: string) => {
-    deleteTagFromPath(props.superstate, props.row[PathPropertyName], v);
+    deleteTagFromPath(props.superstate, props.path, v);
   };
 
   const saveOptions = (_options: string[], _value: string[]) => {
     const newValue = _value[0];
-    addTagToPath(props.superstate, props.row[PathPropertyName], newValue);
+    addTagToPath(props.superstate, props.path, newValue);
   };
 
   const menuProps = () => {
@@ -44,11 +57,18 @@ export const TagCell = (props: TableCellProp & { row: DBRow }) => {
     <OptionCellBase
       superstate={props.superstate}
       baseClass="mk-cell-tags"
+      removeValue={removeValue}
       menuProps={menuProps}
+      selectLabel={props.compactMode ? props.property.name : i18n.labels.select}
       value={value}
       multi={true}
       editMode={props.editMode}
-      removeValue={removeValue}
+      labelElement={(_props: PropsWithChildren<{ value: string }>) => (
+        <div className="mk-cell-tags-label">
+          {_props.value}
+          {_props.children}
+        </div>
+      )}
     ></OptionCellBase>
   );
 };

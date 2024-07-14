@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 
 import i18n from "core/i18n";
 
-import { PathView } from "core/react/components/PathView/PathView";
+import { PathContext, PathProvider } from "core/react/context/PathContext";
+import { SpaceProvider } from "core/react/context/SpaceContext";
 import { Superstate } from "core/superstate/superstate";
-import { FMSpaceKeys } from "core/superstate/utils/spaces";
-import { FMMetadataKeys } from "core/types/space";
+import { Backlinks } from "makemd-core";
 import { defaultContextSchemaID } from "schemas/mdb";
-import { URI } from "../../../../types/path";
-import { ContextPropertiesView } from "./ContextPropertiesView";
+import { NoteView } from "../PathView/NoteView";
+import { HeaderPropertiesView } from "../SpaceView/Contexts/SpaceEditor/HeaderPropertiesView";
+
 export interface Loc {
   /**
    * @public
@@ -69,13 +70,13 @@ const isLeafNode = (node: ExplorerTreeNode) => {
   return false;
 };
 
-const childrenForNode = (
+const childrenForNode = async (
   superstate: Superstate,
   node: ExplorerTreeNode,
 
   index: number,
   depth: number
-): ExplorerTreeNode[] => {
+): Promise<ExplorerTreeNode[]> => {
   let i = index;
   const items: ExplorerTreeNode[] = [];
   if (node.type == "path") {
@@ -83,13 +84,13 @@ const childrenForNode = (
     metadataTypes.push({
       type: "properties",
       label: i18n.labels.properties,
-      sticker: "ui//mk-ui-note",
+      sticker: "ui//note",
     });
     if (depth != 0) {
       metadataTypes.push({
         type: "flow",
         label: i18n.labels.content,
-        sticker: "ui//mk-ui-note",
+        sticker: "ui//note",
       });
     }
     metadataTypes.push(
@@ -97,17 +98,17 @@ const childrenForNode = (
         {
           type: "spaces",
           label: i18n.labels.spaces,
-          sticker: "ui//mk-ui-note",
+          sticker: "ui//note",
         },
         {
           type: "inlinks",
           label: i18n.labels.backlinks,
-          sticker: "lucide//links-coming-in",
+          sticker: "ui//links-coming-in",
         },
         {
           type: "outlinks",
           label: i18n.labels.outgoingLinks,
-          sticker: "lucide//links-going-out",
+          sticker: "ui//links-going-out",
         },
       ] as ExplorerTreeNodeSubtypesMeta[])
     );
@@ -115,7 +116,7 @@ const childrenForNode = (
     //   metadataTypes.push({
     //     type: "tables",
     //     label: "Tables",
-    //     sticker: "lucide//table",
+    //     sticker: "ui//table",
     //   });
     // }
     items.push(
@@ -135,11 +136,12 @@ const childrenForNode = (
     );
   } else if (node.type == "metadata") {
     if (node.subType == "tables") {
+      const lists = await superstate.spaceManager
+        .readAllTables(node.path)
+        .then((f) => (f ? Object.values(f).map((g) => g.schema) : []));
       items.push(
         ...[
-          ...(superstate.contextsIndex.get(node.path)?.schemas ?? []).filter(
-            (f) => f.name != defaultContextSchemaID
-          ),
+          ...lists.filter((f) => f.name != defaultContextSchemaID),
         ].map<ExplorerTreeNode>((f, k) => ({
           id: node.id + "/" + f.id,
           parentId: node.id,
@@ -183,24 +185,31 @@ const childrenForNode = (
 
   return items;
 };
-const flattenTree = (
+const flattenTree = async (
   superstate: Superstate,
   node: ExplorerTreeNode,
   openNodes: string[],
   depth: number,
   index: number
-): ExplorerTreeNode[] => {
+): Promise<ExplorerTreeNode[]> => {
   const items: ExplorerTreeNode[] = [];
   let i = index;
   const leafNode = isLeafNode(node);
   if (!leafNode) {
-    const children = childrenForNode(superstate, node, i, depth);
+    const children = await childrenForNode(superstate, node, i, depth);
     const newItems: ExplorerTreeNode[] = [];
     if (openNodes.some((f) => f == node.id)) {
-      children.forEach((f) => {
+      for (const f of children) {
         i = i + 1;
-        newItems.push(...flattenTree(superstate, f, openNodes, depth + 1, i));
-      });
+        const children = await flattenTree(
+          superstate,
+          f,
+          openNodes,
+          depth + 1,
+          i
+        );
+        newItems.push(...children);
+      }
     }
     if (node.type != "metadata" || children.length != 0)
       items.push({ ...node, children: children.length, isLeafNode: leafNode });
@@ -212,50 +221,17 @@ const flattenTree = (
   return items;
 };
 
-export const PathContextView = (props: { superstate: Superstate }) => {
+export const Explorer = (props: { superstate: Superstate }) => {
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
-  const [selectedRoot, setSelectedRoot] = useState<URI | null>(null);
-  const [openNodes, setOpenNodes] = useState<string[]>([]);
-  const [filters, setFilters] = useState<string[]>([]);
-  const rootCache = useMemo(
-    () => props.superstate.pathsIndex.get(selectedPath),
-    [selectedRoot]
-  );
-  const flattenedTree = useMemo(
-    () =>
-      rootCache
-        ? flattenTree(
-            props.superstate,
-            {
-              id: rootCache.path,
-              parentId: null,
-              type: "path",
-              path: rootCache.path,
-              index: 0,
-              depth: 0,
-              sticker: rootCache.label.sticker,
-              label: rootCache.name,
-              value: rootCache.path,
-            },
-            openNodes,
-            0,
-            0
-          )
-        : [],
-    [rootCache, openNodes]
-  );
-  useEffect(() => {
-    rootCache && setOpenNodes([rootCache.path]);
-  }, [rootCache]);
   const changeSelectedPath = (path: string) => {
     setSelectedPath(path);
   };
-
   useEffect(() => {
     props.superstate.ui.eventsDispatch.addListener(
       "activePathChanged",
       changeSelectedPath
     );
+
     return () => {
       props.superstate.ui.eventsDispatch.removeListener(
         "activePathChanged",
@@ -263,83 +239,56 @@ export const PathContextView = (props: { superstate: Superstate }) => {
       );
     };
   }, []);
+  const isSpace = props.superstate.spacesIndex.has(selectedPath);
+  return (
+    <PathProvider
+      superstate={props.superstate}
+      path={selectedPath}
+      readMode={false}
+    >
+      {isSpace ? (
+        <SpaceProvider superstate={props.superstate}>
+          <PathContextView superstate={props.superstate}></PathContextView>
+        </SpaceProvider>
+      ) : (
+        <PathContextView superstate={props.superstate}></PathContextView>
+      )}
+    </PathProvider>
+  );
+};
+
+export const PathContextView = (props: { superstate: Superstate }) => {
+  const [openNodes, setOpenNodes] = useState<string[]>([]);
+  const { pathState } = useContext(PathContext);
+  useEffect(() => {
+    pathState && setOpenNodes([pathState.path]);
+  }, [pathState]);
 
   return (
     <div className="mk-path-context">
-      {rootCache ? (
-        <>
-          {flattenedTree.map((f, i) => (
-            <div
-              key={f.id}
-              className="mk-tree-wrapper"
-              style={{ marginLeft: f.depth * 8 }}
-            >
-              {!f.isLeafNode ? (
-                <button
-                  className={`mk-collapse mk-inline-button mk-icon-xsmall ${
-                    !openNodes.some((g) => g == f.id) ? "mk-collapsed" : ""
-                  }`}
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      props.superstate.ui.getSticker("ui//mk-ui-collapse"),
-                  }}
-                  onClick={() =>
-                    setOpenNodes((p) =>
-                      p.some((g) => g == f.id)
-                        ? p.filter((o) => o != f.id)
-                        : [...p, f.id]
-                    )
-                  }
-                ></button>
-              ) : (
-                <div
-                  className={`mk-collapse mk-inline-button mk-icon-xsmall`}
-                ></div>
-              )}
-              {f.type == "metadata" ? (
-                f.subType == "flow" ? (
-                  <ExplorerFlowRow
-                    path={f.path}
-                    source={f.parentPath}
-                    superstate={props.superstate}
-                  ></ExplorerFlowRow>
-                ) : f.subType == "properties" ? (
-                  <ExplorerContextRow
-                    superstate={props.superstate}
-                    node={f}
-                  ></ExplorerContextRow>
-                ) : (
-                  <div className="mk-path-context-row">
-                    <div className="mk-path-context-field">
-                      <div
-                        className="mk-path-context-field-icon"
-                        dangerouslySetInnerHTML={{
-                          __html: props.superstate.ui.getSticker(f.sticker),
-                        }}
-                      ></div>
-                      <div className="mk-path-context-field-key">{f.label}</div>
-                    </div>
-                  </div>
-                )
-              ) : (
-                <div className="mk-path-context-row">
-                  <div className="mk-path-context-field">
-                    <div
-                      className="mk-path-context-field-icon"
-                      dangerouslySetInnerHTML={{
-                        __html: props.superstate.ui.getSticker(f.sticker),
-                      }}
-                    ></div>
-                    <div className="mk-path-context-field-key">{f.label}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </>
-      ) : (
-        <></>
-      )}
+      <div className="mk-path-context-properties">
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          className="mk-path-context-title"
+        >
+          <div
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker("ui//list"),
+            }}
+          ></div>
+          {i18n.labels.properties}
+        </div>
+        <HeaderPropertiesView
+          superstate={props.superstate}
+          collapseSpaces={false}
+        ></HeaderPropertiesView>
+      </div>
+      <Backlinks
+        superstate={props.superstate}
+        path={pathState.path}
+      ></Backlinks>
     </div>
   );
 };
@@ -351,7 +300,7 @@ export const ExplorerFlowRow = (props: {
 }) => {
   const path = useMemo(() => {
     const spaceCache = props.superstate.spacesIndex.get(props.path);
-    if (spaceCache) return spaceCache.space.defPath;
+    if (spaceCache) return spaceCache.space.notePath;
     return props.path;
   }, [props.path]);
 
@@ -395,42 +344,17 @@ export const ExplorerFlowRow = (props: {
   return (
     <>
       <div className="mk-path-context-backlink">
-        <PathView
-          superstate={props.superstate}
+        <NoteView
           load={true}
+          superstate={props.superstate}
           path={path}
           properties={{
             from: block[0]?.line,
             to: block[1] ? block[1].line + 1 : null,
           }}
           classname="mk-path-context-flow"
-        ></PathView>
+        ></NoteView>
       </div>
     </>
-  );
-};
-
-export const ExplorerContextRow = (props: {
-  superstate: Superstate;
-  node: ExplorerTreeNode;
-}) => {
-  const { node, superstate } = props;
-  const [spaceCache, setSpaceCache] = useState(
-    superstate.spacesIndex.get(node.path)
-  );
-  const spaces = [...superstate.spacesMap.get(node.path)];
-
-  return (
-    <ContextPropertiesView
-      superstate={props.superstate}
-      spacePaths={spaces}
-      path={node.path}
-      showMetadata={true}
-      hiddenFields={[
-        ...FMMetadataKeys(superstate.settings),
-        ...FMSpaceKeys(superstate.settings),
-      ]}
-      editable={true}
-    />
   );
 };

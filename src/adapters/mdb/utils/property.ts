@@ -20,7 +20,7 @@ export const savePropertyToDBTables = (newColumn: SpaceProperty, fields: SpacePr
         m_fields: {
             uniques: fieldSchema.uniques,
             cols: fieldSchema.cols,
-            rows: [...(fields ?? []), ...newFields],
+            rows: newFields,
           },
     };
   };
@@ -31,7 +31,7 @@ export const savePropertyToDBTables = (newColumn: SpaceProperty, fields: SpacePr
         m_fields: {
             uniques: fieldSchema.uniques,
             cols: fieldSchema.cols,
-            rows: [...(fields ?? []), ...newFields],
+            rows: [...newFields],
           },
     };
   } 

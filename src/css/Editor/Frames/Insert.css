@@ -1,0 +1,22 @@
+
+.mk-frame-insert {
+    width: 100%;
+    bottom: 0px;
+    display: flex;
+    position: fixed;
+    height: 30px;
+    border-radius: 4px;
+    margin-top: 4px;
+    margin-left: 4px;
+    --max-width: var(--file-line-width);
+    max-width: calc(min(100%, var(--max-width))) !important;
+    margin-left: calc((max(100%, var(--max-width)) - var(--max-width)) /2) !important;
+    
+}
+
+.mk-frame-insert:hover {
+    background: var(--mk-ui-background-hover) !important;
+}
+
+
+  

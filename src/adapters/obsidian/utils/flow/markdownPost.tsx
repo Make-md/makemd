@@ -1,10 +1,10 @@
 import { EditorView } from "@codemirror/view";
 import { FlowEditorHover } from "adapters/obsidian/ui/editors/markdownView/FlowEditorHover";
+import { NoteView } from "core/react/components/PathView/NoteView";
 import MakeMDPlugin from "main";
-import { PathView, Superstate } from "makemd-core";
+import { Superstate } from "makemd-core";
 import { App, MarkdownPostProcessorContext } from "obsidian";
 import React from "react";
-import { createRoot } from "react-dom/client";
 
 const getCMFromElement = (
   el: HTMLElement,
@@ -40,20 +40,40 @@ export const replaceAllTables = (
       /(?:!\[!\[|!!\[\[)([^\]]+)\]\]/g
     )) {
       const link = match[1];
-      const reactEl = createRoot(element.parentElement);
+      const reactEl = plugin.ui.createRoot(element.parentElement);
       //   const flowType = cm.state.field(flowTypeStateField, false);
       reactEl.render(
-        <PathView
+        <NoteView
+          load={true}
           superstate={plugin.superstate}
           path={link}
-          load={true}
-        ></PathView>
+        ></NoteView>
       );
     }
   });
 };
 export const replaceMarkdownForEmbeds = (
   el: HTMLElement,
+  callback: (dom: HTMLElement) => void
+) => {
+  let dom: HTMLElement = el;
+  setTimeout(async () => {
+    //wait for el to be attached to the displayed document
+    let counter = 0;
+    while (!el.parentElement && counter++ <= 50) await sleep(50);
+    if (!el.parentElement) return;
+    while (!dom.hasClass("markdown-embed") && dom.parentElement) {
+      dom = dom.parentElement;
+    }
+    if (dom) {
+      callback(dom);
+    }
+  });
+};
+
+export const waitDOMInCM = (
+  el: HTMLElement,
+  cm: EditorView,
   callback: (dom: HTMLElement) => void
 ) => {
   let dom: HTMLElement = el;
@@ -101,21 +121,28 @@ export const replaceAllEmbed = (
   superstate: Superstate,
   app: App
 ) => {
-  replaceMarkdownForEmbeds(el, (dom) => {
+  replaceMarkdownForEmbeds(el, async (dom) => {
     const nodes = dom.querySelectorAll(".markdown-embed-link");
+
     for (let i = 0; i < nodes.length; i++) {
       if (nodes[i].parentNode === dom) {
         dom.removeChild(nodes[i]);
         const div = dom.createDiv("mk-floweditor-selector");
-        const reactEl = createRoot(div);
-        const cm: EditorView = getCMFromElement(dom, app);
+        const reactEl = superstate.ui.createRoot(div);
+        const cm: EditorView = getCMFromElement(el, app);
         const pos = cm?.posAtDOM(dom);
-        const endPos = cm?.posAtDOM(dom.nextSibling);
+        const index = [
+          ...Array.from(dom.parentElement?.childNodes ?? []),
+        ].indexOf(dom);
+        if (index == -1) return;
+        const nextDom = dom.parentElement.childNodes[index];
+        const endPos = cm?.posAtDOM(nextDom);
 
         //   const flowType = cm.state.field(flowTypeStateField, false);
         if (ctx.sourcePath)
           reactEl.render(
             <FlowEditorHover
+              app={app}
               toggle={true}
               path={ctx.sourcePath}
               toggleState={false}

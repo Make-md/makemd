@@ -10,9 +10,9 @@ import {
   TFile,
 } from "obsidian";
 import React from "react";
-import { createRoot } from "react-dom/client";
 import { emojis } from "schemas/emoji";
 import { Emoji, EmojiData } from "types/emojis";
+import { emojiFromString } from "utils/stickers";
 
 export default class StickerMenu extends EditorSuggest<Emoji> {
   inCmd = false;
@@ -94,11 +94,11 @@ export default class StickerMenu extends EditorSuggest<Emoji> {
   renderSuggestion(value: Emoji, el: HTMLElement): void {
     const div = document.createElement("div");
     div.setAttribute("aria-label", value.label);
-    const reactElement = createRoot(div);
+    const reactElement = this.plugin.ui.createRoot(div);
     reactElement.render(
       <>
         {value.unicode.length > 0
-          ? this.plugin.superstate.ui.getSticker(value.unicode)
+          ? emojiFromString(value.unicode)
           : i18n.commandsSuggest.noResult}
       </>
     );
@@ -109,7 +109,7 @@ export default class StickerMenu extends EditorSuggest<Emoji> {
     if (cmd.label === i18n.commandsSuggest.noResult) return;
 
     this.context.editor.replaceRange(
-      this.plugin.superstate.ui.getSticker(cmd.unicode),
+      emojiFromString(cmd.unicode),
       { ...this.context.start, ch: this.cmdStartCh },
       this.context.end
     );

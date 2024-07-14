@@ -1,12 +1,14 @@
+import MakeMDPlugin from "main";
 import { AFile, FileTypeAdapter, FilesystemMiddleware, PathLabel } from "makemd-core";
 import { App, CachedMetadata, TFile, TFolder } from "obsidian";
 import { uniq } from "utils/array";
-import { parseMultiString, parseProperty } from "utils/parsers";
+import { parseMultiDisplayString, parseProperty } from "utils/parsers";
 import { getAbstractFileAtPath, tFileToAFile } from "../utils/file";
 import { frontMatterForFile } from "./frontmatter/fm";
 import { frontMatterKeys } from "./frontmatter/frontMatterKeys";
 
 type CachedMetadataContentTypes = {
+    resolvedLinks: string;
     links: string;
     embeds: string;
     tags: string[];
@@ -20,7 +22,7 @@ type CachedMetadataContentTypes = {
     label: string;
 }
 
-type CleanCachedMetadata = Omit<CachedMetadata, 'tags'> & { tags: string[], label: PathLabel }
+type CleanCachedMetadata = Omit<CachedMetadata, 'tags'> & { tags: string[], resolvedLinks: string[], label: PathLabel }
 
 export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCachedMetadata, CachedMetadataContentTypes> {
     
@@ -28,9 +30,9 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
     public cache : Map<string, CleanCachedMetadata>;
     public supportedFileTypes = ['md'];
     public middleware: FilesystemMiddleware;
-
-    public constructor (public app: App) {
-        this.app = app;
+public app: App;
+    public constructor (public plugin: MakeMDPlugin) {
+        this.app = plugin.app;
     }
     
     public initiate (middleware: FilesystemMiddleware) {
@@ -52,7 +54,7 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
                 if (fCache && fCache.frontmatter?.tags)
                 rt.push(
                     ...(typeof fCache.frontmatter?.tags === "string"
-                    ? parseMultiString(fCache.frontmatter.tags.replace(/ /g, ""))
+                    ? parseMultiDisplayString(fCache.frontmatter.tags.replace(/ /g, ""))
                     : Array.isArray(fCache.frontmatter?.tags)
                     ? fCache.frontmatter?.tags ?? []
                     : []
@@ -63,7 +65,7 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
                 if (fCache && fCache.frontmatter?.tag)
                 rt.push(
                     ...(typeof fCache.frontmatter?.tag === "string"
-                    ? parseMultiString(fCache.frontmatter.tag.replace(/ /g, ""))
+                    ? parseMultiDisplayString(fCache.frontmatter.tag.replace(/ /g, ""))
                     : Array.isArray(fCache.frontmatter?.tag)
                     ? fCache.frontmatter?.tag ?? []
                     : []
@@ -71,16 +73,20 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
                     .filter((f) => typeof f === "string")
                     .map((f) => "#" + f)
                 );
+                const contents = await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile)
+                const links = fCache.links?.map(f => this.plugin.app.metadataCache.getFirstLinkpathDest(f.link, file.path)?.path).filter(f => f)
         const updatedCache = {...fCache, 
+            resolvedLinks: links ?? [],
             tags: rt,
             property: fCache.frontmatter,
+            tasks: fCache.listItems?.filter(f => f.task).map(f => contents.slice(f.position.start.offset, f.position.end.offset)) ?? [],
             label: {
             name: file.name,
-            
-            sticker: fCache.frontmatter?.[this.middleware.plugin.superstate.settings.fmKeySticker],
-            color: fCache.frontmatter?.[this.middleware.plugin.superstate.settings.fmKeyColor],
+            thumbnail: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyBanner],
+            sticker: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeySticker],
+            color: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyColor],
+            preview: contents.slice(fCache.frontmatterPosition?.end.offset ?? 0, 1000)
         }}
-
         this.cache.set(file.path, updatedCache);
         this.middleware.updateFileCache(file.path, updatedCache, refresh);
     }
@@ -112,7 +118,7 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
                 if (fCache && fCache.frontmatter?.tags)
                 rt.push(
                     ...(typeof fCache.frontmatter?.tags === "string"
-                    ? parseMultiString(fCache.frontmatter.tags.replace(/ /g, ""))
+                    ? parseMultiDisplayString(fCache.frontmatter.tags.replace(/ /g, ""))
                     : Array.isArray(fCache.frontmatter?.tags)
                     ? fCache.frontmatter?.tags ?? []
                     : []
@@ -123,7 +129,7 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
                 if (fCache && fCache.frontmatter?.tag)
                 rt.push(
                     ...(typeof fCache.frontmatter?.tag === "string"
-                    ? parseMultiString(fCache.frontmatter.tag.replace(/ /g, ""))
+                    ? parseMultiDisplayString(fCache.frontmatter.tag.replace(/ /g, ""))
                     : Array.isArray(fCache.frontmatter?.tag)
                     ? fCache.frontmatter?.tag ?? []
                     : []
@@ -133,7 +139,7 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
                 );
             return uniq(rt) ?? [];
         }
-        if (fragmentType == 'frontmatter' || fragmentType == 'property' || fragmentType == 'label') {
+        if (fragmentType == 'frontmatter' || fragmentType == 'property' ) {
             const tfile = getAbstractFileAtPath(this.app, file.path);
             const fm = frontMatterForFile(this.app, tfile);
             const fmKeys = frontMatterKeys(fm);
@@ -142,11 +148,20 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
                 {}
             );
             return rows;
-            
+        }
+        if (fragmentType == 'label') {
+            const tfile = getAbstractFileAtPath(this.app, file.path);
+            const fm = frontMatterForFile(this.app, tfile);
+            const rows = { 
+                sticker: parseProperty("sticker", fm[this.plugin.superstate.settings.fmKeySticker]),
+                color: parseProperty("color", fm[this.plugin.superstate.settings.fmKeyColor]),
+                name: parseProperty("color", fm[this.plugin.superstate.settings.fmKeyAlias])[0],
+            }
+            return rows;
         }
     }
 
-    public async newFile (parent: string, name: string, type: string)  {
+    public async newFile (parent: string, name: string, type: string, content?: string)  {
 
         let parentFolder = getAbstractFileAtPath(this.app, parent);
         if (!parentFolder) {
@@ -155,7 +170,12 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
         }
         return this.app.fileManager.createNewMarkdownFile(
         parentFolder ? (parentFolder instanceof TFolder) ? parentFolder : parentFolder.parent : this.app.vault.getRoot(),
-        name).then(f => tFileToAFile(f))
+        name).then(async f => {
+            if (content) {
+                await this.app.vault.modify(f, content);
+            }
+        return tFileToAFile(f)
+        })
     }
     public newContent: (file: AFile, fragmentType: keyof CachedMetadataContentTypes, fragmentId: string, content: CachedMetadataContentTypes[keyof CachedMetadataContentTypes], options: { [key: string]: any; }) => Promise<any>;
     
@@ -166,38 +186,42 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
                 if (this.app.fileManager.processFrontMatter) {
                 await this.app.fileManager.processFrontMatter(afile, (frontmatter: any) => {
                     if (fragmentId == 'sticker') {
-                        frontmatter[this.middleware.plugin.superstate.settings.fmKeySticker] = content(frontmatter);
+                        frontmatter[this.plugin.superstate.settings.fmKeySticker] = content(frontmatter);
                     } else if (fragmentId == 'color') {
-                        frontmatter[this.middleware.plugin.superstate.settings.fmKeyColor] = content(frontmatter);
+                        frontmatter[this.plugin.superstate.settings.fmKeyColor] = content(frontmatter);
+                    } else if (fragmentId == 'name') {
+                        frontmatter[this.plugin.superstate.settings.fmKeyAlias] = [content(frontmatter)];
                     }
                     
                     
                 });
-                await this.parseCache(file, true);
+                
                 }
             }
         }
         if (fragmentType == 'frontmatter' || fragmentType == 'property') {
-            
             const afile = this.app.vault.getAbstractFileByPath(file.path);
             if (afile && afile instanceof TFile) {
                 if (this.app.fileManager.processFrontMatter) {
                 await this.app.fileManager.processFrontMatter(afile, (frontmatter: any) => {
+
                     const newFrontmatter = content(frontmatter);
 
-                    Object.keys(newFrontmatter).forEach((f) => {
+                    const newKeys = Object.keys(newFrontmatter);
+                    newKeys.forEach((f) => {
                             frontmatter[f] = newFrontmatter?.[f];
                     })
+                    Object.keys(frontmatter).filter(f => !newKeys.includes(f)).forEach(f => delete frontmatter[f]);
 
                 });
-                await this.parseCache(file, true);
                 }
             }
         }
         
-        return;
+        return true;
     }
     public async deleteContent (file: AFile, fragmentType: keyof CachedMetadataContentTypes, fragmentId: any) {
+
         if (fragmentType == 'frontmatter' || fragmentType == 'property') {
             const afile = this.app.vault.getAbstractFileByPath(file.path);
             if (afile && afile instanceof TFile) {

@@ -1,4 +1,23 @@
+import _ from "lodash";
+
 type AutoObject = { [key: string]: any, isAutoObject?: boolean };
+
+export function deepOmit(obj: {[key: string]: any}, keysToOmit: string | string[]): {[key: string]: any} {
+    const keysToOmitIndex = _.keyBy(Array.isArray(keysToOmit) ? keysToOmit : [keysToOmit]);
+  
+    function omitFromObject(obj: {[key: string]: any}): {[key: string]: any} {
+      return _.transform(obj, function(result: {[key: string]: any}, value: any, key: string) {
+        if (key in keysToOmitIndex) {
+          return;
+        }
+  
+        result[key] = _.isObject(value) ? omitFromObject(value) : value;
+      });
+    }
+    
+    return omitFromObject(obj);
+  }
+
 export function createAutoObject(obj: object | null = null): AutoObject {
     const handler: ProxyHandler<AutoObject> = {
         get(target, prop: string | symbol) {
@@ -26,6 +45,15 @@ export function createAutoObject(obj: object | null = null): AutoObject {
 
 export const arrayToObject = (array: {[key: string]: any}[], key: string) => array.reduce((p,c) => ({...p, [c[key]]: c}) , {})
 
+export const renameKey = (object: {[key: string]: any}, oldKey: string, newKey: string) => {
+    if (!object) return;
+    if (oldKey !== newKey && Object.prototype.hasOwnProperty.call(object, oldKey)) {
+        Object.defineProperty(object, newKey,
+            Object.getOwnPropertyDescriptor(object, oldKey));
+        delete object[oldKey];
+    }
+}
+
 export const removeKey = (object: {[key: string]: any}, key: string) =>{
     delete object[key]
 return object;
@@ -48,12 +76,12 @@ export const replaceKeys = (object1: {[key: string]: any}, object2: {[key: strin
     return newObject;
 }
 
-export function applyFunctionToObject(object: {[key: string]: string}, func: (s: string) => string) {
-    const newObject: {[key: string]: string} = {};
+export function applyFunctionToObject(object: {[key: string]: any}, func: (s: any, key: string) => any) {
+    const newObject: {[key: string]: any} = {};
 
     for (const key in object) {
         if (Object.prototype.hasOwnProperty.call(object, key)) {
-            newObject[key] = func(object[key]);
+            newObject[key] = func(object[key], key);
         }
     }
 

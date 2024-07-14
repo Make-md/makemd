@@ -20,10 +20,18 @@ const simpleSort = (a: any, b: any) => {
   return 0;
 };
 
+const linkSort: SortFunction = (
+  value: string,
+  filterValue: string
+): SortResultType => {
+  const a = value.split("/").pop();
+  const b = filterValue.split("/").pop();
+  return simpleSort(a.toLowerCase(), b.toLowerCase());
+}
 const stringSort: SortFunction = (
   value: string,
   filterValue: string
-): SortResultType => simpleSort(value, filterValue);
+): SortResultType => simpleSort(value?.toLowerCase(), filterValue?.toLowerCase());
 const numSort: SortFunction = (
   value: string,
   filterValue: string
@@ -48,25 +56,37 @@ export const normalizedSortForType = (type: string, desc: boolean) => {
 
 export const sortFnTypes: SortFunctionType = {
   alphabetical: {
-    type: ["text", "file", "link", "context", 'fileprop'],
+    type: ["text", "option"],
     fn: stringSort,
     label: i18n.sortTypes.alphaAsc,
     desc: false,
   },
   reverseAlphabetical: {
-    type: ["text", "file", "link", "context", 'fileprop'],
+    type: ["text", "option"],
     fn: (v, f) => (stringSort(v, f) * -1) as SortResultType,
     label: i18n.sortTypes.alphaDesc,
     desc: true,
   },
+  linkAlphabetical: {
+    type: ["link", "context", "file", "image"],
+    fn: linkSort,
+    label: i18n.sortTypes.alphaAsc,
+    desc: false,
+  },
+  linkReverseAlphabetical: {
+    type: ["link", "context", "file", "image"],
+    fn: (v, f) => (linkSort(v, f) * -1) as SortResultType,
+    label: i18n.sortTypes.alphaDesc,
+    desc: true,
+  },
   earliest: {
-    type: ["date", 'fileprop'],
+    type: ["date"],
     fn: stringSort,
     label: i18n.sortTypes.earliest,
     desc: false,
   },
   latest: {
-    type: ["date", 'fileprop'],
+    type: ["date"],
     fn: (v, f) => (stringSort(v, f) * -1) as SortResultType,
     label: i18n.sortTypes.latest,
     desc: true,
@@ -84,25 +104,25 @@ export const sortFnTypes: SortFunctionType = {
     desc: true,
   },
   number: {
-    type: ["number", 'fileprop'],
+    type: ["number"],
     fn: numSort,
     label: "1 → 9",
     desc: false,
   },
   reverseNumber: {
-    type: ["number", 'fileprop'],
+    type: ["number"],
     fn: (v, f) => (numSort(v, f) * -1) as SortResultType,
     label: "9 → 1",
     desc: true,
   },
   count: {
-    type: ["option-multi", "context-multi", "link-multi"],
+    type: ["option-multi", "context-multi", "link-multi", "tags-multi"],
     fn: countSort,
     label: i18n.sortTypes.itemsDesc,
     desc: true,
   },
   reverseCount: {
-    type: ["option-multi", "context-multi", "link-multi"],
+    type: ["option-multi", "context-multi", "link-multi", "tags-multi"],
     fn: (v, f) => (countSort(v, f) * -1) as SortResultType,
     label: i18n.sortTypes.itemsAsc,
     desc: false,

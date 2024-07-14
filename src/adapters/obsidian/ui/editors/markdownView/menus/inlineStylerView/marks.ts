@@ -31,7 +31,7 @@ const newPosAfterFormatting = (
   iterateTreeInSelection({ from: start, to: end }, state, {
     enter: (node) => {
       if (exitFormatRange) return false;
-      if (node.name.contains("formatting")) {
+      if (node.name.includes("formatting")) {
         if (!moveDirLeft && node.from > start) {
           return false;
         }
@@ -92,7 +92,7 @@ const posIsMark = (
   return isMark;
 };
 const nodeNameContainsMark = (name: string, markString: string) => {
-  return name.contains(markString);
+  return name.includes(markString);
 };
 export const edgeIsMark = (pos: number, state: EditorState, mark: oMark) =>
   posIsMark(pos, state, mark.mark);

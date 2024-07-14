@@ -1,26 +1,62 @@
+import { DragOverlay, useDndMonitor } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import i18n from "core/i18n";
+import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
+import {
+  SelectOption,
+  defaultMenu,
+  menuSeparator,
+} from "core/react/components/UI/Menus/menu/SelectionMenu";
+import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "core/superstate/superstate";
-import { ensureArray } from "core/utils/strings";
-import React from "react";
-import { fieldTypeForType, fieldTypes } from "schemas/mdb";
-import { safelyParseJSON } from "utils/parsers";
+import { MenuObject } from "core/utils/ui/menu";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { DBRow, SpaceTableColumn } from "types/mdb";
+import { windowFromDocument } from "utils/dom";
+import { parseObject } from "utils/parsers";
+import { propertyIsObjectType } from "utils/properties";
 import { CellEditMode, TableCellMultiProp } from "../TableView/TableView";
-import { DataTypeView } from "./DataTypeView";
+import { DataPropertyView } from "./DataPropertyView";
 
-type ObjectType = {
-  [key: string]: { type: string; value?: string };
+export type ObjectType = {
+  [key: string]: { type: string; label: string; value?: Record<string, any> };
 };
 
 export const ObjectEditor = (props: {
   value: Record<string, any>;
   superstate: Superstate;
   type?: ObjectType;
+  typeName: string;
+  compactMode: boolean;
+  columns: SpaceTableColumn[];
   saveValue: (newValue: Record<string, any>) => void;
-  saveType: (newType: ObjectType) => void;
+  saveType: (newType: ObjectType, newValue: Record<string, any>) => void;
+  editMode: CellEditMode;
+  row: DBRow;
+  index?: number;
+  draggable: boolean;
+  showDragMenu?: (e: React.MouseEvent) => void;
 }) => {
-  const { value, type, saveValue, saveType } = props;
-
+  const { value, saveValue, saveType } = props;
+  const allProperties = [
+    ...Object.keys(props.type ?? {}).map((f) => {
+      return {
+        name: f,
+        type: props.type[f].type,
+        value: JSON.stringify(props.type[f].value),
+      };
+    }),
+    ...Object.keys(value)
+      .filter((f) => !Object.keys(props.type ?? {}).includes(f))
+      .map((f) => {
+        return {
+          name: f,
+          type: "text",
+        };
+      }),
+  ];
   const saveKey = (key: string, newKey: string) => {
     if (key != newKey)
       saveValue({
@@ -35,150 +71,179 @@ export const ObjectEditor = (props: {
       [key]: val,
     });
   };
-  const selectType = (e: React.MouseEvent, key: string) => {
+
+  const showPropertyMenu = (e: React.MouseEvent, field: string) => {
+    if (props.editMode <= CellEditMode.EditModeValueOnly) {
+      return;
+    }
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    const menuOptions: SelectOption[] = [];
+    menuOptions.push({
+      name: i18n.menu.rename,
+      icon: "ui//edit",
+      onClick: (e) => {
+        props.superstate.ui.openModal(
+          i18n.labels.rename,
+          (props: { hide: () => void }) => (
+            <InputModal
+              value={field}
+              saveLabel={i18n.labels.rename}
+              hide={props.hide}
+              saveValue={(value) => {
+                saveKey(field, value);
+                props.hide();
+              }}
+            ></InputModal>
+          ),
+          windowFromDocument(e.view.document)
+        );
+      },
+    });
+    menuOptions.push({
+      name: i18n.buttons.delete,
+      icon: "ui//trash",
+      onClick: (e) => {
+        props.saveType(
+          Object.keys(props.type ?? {}).reduce((p, c) => {
+            if (c != field) return { ...p, [c]: props.type[c] };
+            return p;
+          }, {}),
+          Object.keys(value).reduce((p, c) => {
+            if (c != field) return { ...p, [c]: value[c] };
+            return p;
+          }, {})
+        );
+      },
+    });
     props.superstate.ui.openMenu(
-      (e.target as HTMLElement).getBoundingClientRect(),
-      {
-        ui: props.superstate.ui,
-        multi: false,
-        editable: false,
-        searchable: false,
-        saveOptions: (_, values) =>
-          saveType({
-            ...(type ?? {}),
-            [key]: { ...(type?.[key] ?? {}), type: values[0] },
-          }),
-        value: [],
-        showAll: true,
-        options: fieldTypes.map((f, i) => ({
-          id: i + 1,
-          name: f.label,
-          value: f.type,
-          icon: "",
-        })),
-      }
+      offset,
+      defaultMenu(props.superstate.ui, menuOptions),
+      windowFromDocument(e.view.document)
     );
   };
-  return (
-    <>
-      {Object.keys(value).map((f, i) => (
-        <>
-          <div key={i} className="mk-cell-object-row">
-            <div className="mk-path-context-field">
-              <div
-                className="mk-path-context-field-icon"
-                onClick={(e) => selectType(e, f)}
-                dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker(
-                    fieldTypeForType(type?.[f]?.type)?.icon
-                  ),
-                }}
-              ></div>
-              <input
-                onClick={(e) => e.stopPropagation()}
-                className="mk-path-context-field-key"
-                type="text"
-                value={f as string}
-                onBlur={(e) => saveKey(f, e.target.value)}
-              />
-            </div>
-            {!type?.[f]?.type ||
-              (!type[f].type.startsWith("object") && (
-                <div className="mk-path-context-value">
-                  <DataTypeView
-                    initialValue={value[f]}
-                    superstate={props.superstate}
-                    row={value}
-                    column={{
-                      name: f,
-                      schemaId: "",
-                      table: "",
-                      type: type?.[f]?.type ?? "text",
-                      value: type?.[f]?.value,
-                    }}
-                    editable={true}
-                    updateValue={(value: string) => saveVal(f, value)}
-                    updateFieldValue={(fieldValue: string, value: string) =>
-                      saveType({
-                        ...(type ?? {}),
-                        [f]: {
-                          ...(type?.[f] ?? {}),
-                          type: type?.[f]?.type ?? "text",
-                          value: fieldValue,
-                        },
-                      })
-                    }
-                  ></DataTypeView>
-                </div>
-              ))}
-          </div>
 
-          {type?.[f]?.type && type[f].type.startsWith("object") && (
-            <div className="mk-path-context-value">
-              <DataTypeView
-                initialValue={value[f]}
-                superstate={props.superstate}
-                row={value}
-                column={{
-                  name: f,
-                  schemaId: "",
-                  table: "",
-                  type: type?.[f]?.type ?? "text",
-                  value: type?.[f]?.value,
-                }}
-                editable={true}
-                updateValue={(value: string) => saveVal(f, value)}
-                updateFieldValue={(fieldValue: string, value: string) =>
-                  saveType({
-                    ...(type ?? {}),
-                    [f]: {
-                      ...(type?.[f] ?? {}),
-                      type: type?.[f]?.type ?? "text",
-                      value: fieldValue,
-                    },
-                  })
-                }
-              ></DataTypeView>
-            </div>
-          )}
-        </>
-      ))}
-    </>
+  const saveFieldValue = (
+    field: SpaceTableColumn,
+    fieldValue: string,
+    value: string
+  ) => {
+    const val = parseObject(value, field.type == "object-multi");
+    if (propertyIsObjectType(field)) {
+      const parsedValue = parseFieldValue(fieldValue, field.type);
+
+      const newType = {
+        ...props.type,
+        [field.name]: {
+          type: field.type,
+          label: field.name,
+          value: parsedValue,
+        },
+      };
+
+      saveType(newType, val);
+    }
+  };
+  return (
+    <div className="mk-cell-object-group">
+      {props.draggable && (
+        <div
+          className="mk-cell-object-group-header"
+          onClick={(e) => {
+            props.showDragMenu(e);
+          }}
+        >
+          {props.typeName ?? "Object"}
+        </div>
+      )}
+      <div className="mk-cell-object">
+        {allProperties.map((f, i) => (
+          <DataPropertyView
+            key={i}
+            initialValue={value[f.name] ?? ""}
+            superstate={props.superstate}
+            updateValue={(v) => saveVal(f.name, v)}
+            updateFieldValue={(fv, v) => saveFieldValue(f, fv, v)}
+            propertyMenu={(e) => showPropertyMenu(e, f.name)}
+            row={value}
+            columns={allProperties}
+            source={null}
+            compactMode={props.compactMode}
+            column={f}
+            editMode={CellEditMode.EditModeAlways}
+          ></DataPropertyView>
+        ))}
+      </div>
+    </div>
   );
 };
 
 export const ObjectCell = (
   props: TableCellMultiProp & {
     savePropValue: (fieldValue: string, newValue: string) => void;
+    columns: SpaceTableColumn[];
+    compactMode: boolean;
+    row: DBRow;
   }
 ) => {
-  const parsedValue = parseFieldValue(props.propertyValue, "object");
-  const type = parsedValue.type;
-  const { initialValue, superstate } = props;
-
-  const [value, setValue] = React.useState(
-    props.multi
-      ? ensureArray(safelyParseJSON(initialValue))
-      : safelyParseJSON(initialValue) ?? {}
+  const parsedValue = parseFieldValue(
+    props.propertyValue,
+    "object",
+    props.superstate
   );
-  const saveType = (newType: ObjectType) => {
-    props.savePropValue(
-      JSON.stringify({ ...parsedValue, type: newType }),
-      JSON.stringify(value)
-    );
+  const type = parsedValue.type as ObjectType;
+  const { initialValue, superstate } = props;
+  const value = useMemo(
+    () => parseObject(initialValue, props.multi),
+    [initialValue, props.multi]
+  );
+  const saveType = (newType: ObjectType, _value: Record<string, string>) => {
+    if (props.multi) {
+      const newValues = (value as Record<string, any>[]).map((f) => ({
+        ...Object.keys(newType).reduce((p, c) => {
+          if (f[c]) return { ...p, [c]: f[c] };
+          return p;
+        }, {}),
+      }));
+      props.savePropValue(
+        JSON.stringify({ ...parsedValue, type: newType }),
+        JSON.stringify(newValues)
+      );
+    } else {
+      props.savePropValue(
+        JSON.stringify({ ...parsedValue, type: newType }),
+        JSON.stringify(_value)
+      );
+    }
   };
   const saveValue = (newValue: { [key: string]: string }) => {
     props.saveValue(JSON.stringify(newValue));
+  };
+  const insertMultiValue = (index: number) => {
+    const item = Object.keys(type).reduce((p, c) => ({ ...p, [c]: "" }), {});
+    props.saveValue(
+      JSON.stringify([...value.slice(0, index), item, ...value.slice(index)])
+    );
   };
   const saveMultiValue = (
     newValue: { [key: string]: string },
     index: number
   ) => {
+    if (index >= value.length) {
+      props.saveValue(JSON.stringify([...value, newValue]));
+      return;
+    }
     props.saveValue(
       JSON.stringify(
         (value as Record<string, any>[]).map((f, i) =>
           i == index ? newValue : f
         )
+      )
+    );
+  };
+  const deleteMultiValue = (index: number) => {
+    props.saveValue(
+      JSON.stringify(
+        (value as Record<string, any>[]).filter((f, i) => i != index)
       )
     );
   };
@@ -191,45 +256,316 @@ export const ObjectCell = (
   };
 
   // If the initialValue is changed external, sync it up with our state
-  React.useEffect(() => {
-    props.multi
-      ? ensureArray(safelyParseJSON(initialValue))
-      : safelyParseJSON(initialValue) ?? {};
-  }, [initialValue, props.multi]);
+  const showPropertyMultiMenu = (e: React.MouseEvent, index: number) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    const menuOptions: SelectOption[] = [];
+    menuOptions.push({
+      name: i18n.menu.insertAbove,
+      onClick: (e) => {
+        insertMultiValue(index);
+      },
+    });
+    menuOptions.push({
+      name: i18n.menu.insertBelow,
+      onClick: (e) => {
+        insertMultiValue(index + 1);
+      },
+    });
+    menuOptions.push(menuSeparator);
+    if (index > 0)
+      menuOptions.push({
+        name: i18n.menu.moveUp,
+        onClick: (e) => {
+          props.saveValue(
+            JSON.stringify(
+              arrayMove(value as Record<string, any>[], index, index - 1)
+            )
+          );
+        },
+      });
+    if (index < value.length - 1)
+      menuOptions.push({
+        name: i18n.menu.moveDown,
+        onClick: (e) => {
+          props.saveValue(
+            JSON.stringify(
+              arrayMove(value as Record<string, any>[], index, index + 1)
+            )
+          );
+        },
+      });
 
-  return props.editMode <= CellEditMode.EditModeView ? (
-    <></>
+    menuOptions.push(menuSeparator);
+    menuOptions.push({
+      name: i18n.buttons.delete,
+      icon: "ui//trash",
+      onClick: (e) => {
+        deleteMultiValue(index);
+      },
+    });
+
+    props.superstate.ui.openMenu(
+      offset,
+      defaultMenu(props.superstate.ui, menuOptions),
+      windowFromDocument(e.view.document)
+    );
+  };
+
+  const [dragProperty, setDragProperty] = useState<number>(-1);
+  const [hoverNode, setHoverNode] = useState<number>(-1);
+  const resetState = () => {
+    setHoverNode(-1);
+    setDragProperty(-1);
+  };
+  useDndMonitor({
+    onDragStart({ active }) {
+      if (active.data.current.type == "object")
+        setDragProperty(active.data.current.id);
+    },
+    onDragOver({ active, over }) {
+      const overId = over?.data.current.id;
+      if (active.data.current.type == "object")
+        if (overId) setHoverNode(overId as number);
+    },
+    onDragCancel() {
+      resetState();
+    },
+    onDragEnd({ active, over }) {
+      if (!active || hoverNode != -1) {
+        resetState();
+        return;
+      }
+      props.saveValue(
+        JSON.stringify(
+          arrayMove(value as Record<string, any>[], dragProperty, hoverNode)
+        )
+      );
+      resetState();
+    },
+  });
+
+  const menuRef = useRef<MenuObject>();
+  useEffect(() => {
+    if (menuRef.current) {
+      menuRef.current.update(props);
+    }
+  }, [props]);
+  return !props.compactMode ? (
+    props.multi ? (
+      <div className="mk-cell-object-multi">
+        {(value as Record<string, any>[]).map((f, i) => (
+          <ObjectEditor
+            key={i}
+            superstate={superstate}
+            value={f}
+            compactMode={props.compactMode}
+            row={props.row}
+            typeName={parsedValue.typeName}
+            columns={props.columns}
+            type={type}
+            saveValue={(newValue) => saveMultiValue(newValue, i)}
+            saveType={saveType}
+            editMode={props.editMode}
+            draggable={true}
+            index={i}
+            showDragMenu={(e) => showPropertyMultiMenu(e, i)}
+          ></ObjectEditor>
+        ))}
+        {dragProperty != -1 &&
+          createPortal(
+            <DragOverlay dropAnimation={null} zIndex={1600}>
+              <ObjectEditor
+                superstate={superstate}
+                value={value[dragProperty]}
+                typeName={parsedValue.typeName}
+                compactMode={props.compactMode}
+                row={props.row}
+                columns={props.columns}
+                type={type}
+                saveValue={null}
+                saveType={null}
+                editMode={props.editMode}
+                draggable={false}
+              ></ObjectEditor>
+            </DragOverlay>,
+            document.body
+          )}
+      </div>
+    ) : (
+      <ObjectEditor
+        superstate={superstate}
+        value={value}
+        typeName={parsedValue.typeName}
+        compactMode={props.compactMode}
+        row={props.row}
+        columns={props.columns}
+        type={type}
+        saveValue={saveValue}
+        saveType={saveType}
+        editMode={props.editMode}
+        draggable={false}
+      ></ObjectEditor>
+    )
   ) : (
     <div className="mk-cell-object">
-      {props.multi ? (
-        (value as Record<string, any>[]).map((f, i) => (
-          <ObjectEditor
-            saveType={saveType}
-            value={f}
-            type={type}
-            superstate={superstate}
-            key={i}
-            saveValue={(val) => saveMultiValue(val, i)}
-          ></ObjectEditor>
-        ))
-      ) : (
-        <ObjectEditor
-          superstate={superstate}
-          value={value}
-          type={type}
-          saveValue={saveValue}
-          saveType={saveType}
-        ></ObjectEditor>
-      )}
-      <div className="mk-path-context-field">
-        <input
-          onClick={(e) => e.stopPropagation()}
-          className="mk-cell-text"
-          type="text"
-          placeholder={i18n.labels.newProperty}
-          value={""}
-          onBlur={(e) => newKey(e.target.value)}
-        />
+      <div
+        className="mk-cell-clickable"
+        onClick={(e) => {
+          menuRef.current = superstate.ui.openCustomMenu(
+            e.currentTarget.getBoundingClientRect(),
+            <ObjectEditorModal {...props}></ObjectEditorModal>,
+            props,
+            windowFromDocument(e.view.document)
+          );
+        }}
+      >
+        <div
+          className="mk-icon-xsmall"
+          dangerouslySetInnerHTML={{
+            __html: props.superstate.ui.getSticker("ui//edit"),
+          }}
+        ></div>
+        {`${i18n.menu.edit} ${props.property.name}`}
+      </div>
+    </div>
+  );
+};
+
+export const ObjectEditorModal = (
+  props: TableCellMultiProp & {
+    savePropValue: (fieldValue: string, newValue: string) => void;
+    columns: SpaceTableColumn[];
+    compactMode: boolean;
+    row: DBRow;
+    hide?: () => void;
+  }
+) => {
+  const [value, setValue] = useState(props.initialValue);
+  const [fieldValue, setFieldValue] = useState(props.property.value);
+  const saveValue = (value: string) => {
+    setValue(value);
+    props.saveValue(value);
+  };
+  const savePropValue = (propValue: string, value: string) => {
+    setValue(value);
+    setFieldValue(propValue);
+    props.savePropValue(propValue, value);
+  };
+
+  const saveType = (newType: ObjectType, _value: Record<string, string>) => {
+    const parsedValue = parseFieldValue(fieldValue, props.property.type);
+    const newValue = parseObject(value, props.property.type == "object-multi");
+
+    if (props.property.type == "object-multi") {
+      savePropValue(
+        JSON.stringify({ ...parsedValue, type: newType }),
+        JSON.stringify(newValue)
+      );
+    } else {
+      savePropValue(
+        JSON.stringify({ ...parsedValue, type: newType }),
+        JSON.stringify(_value)
+      );
+    }
+  };
+
+  const newProperty = (e: React.MouseEvent) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    const type = parseFieldValue(fieldValue, props.property.type)?.type;
+    const _value = parseObject(value, props.property.type == "object-multi");
+    showNewPropertyMenu(
+      props.superstate,
+      offset,
+      windowFromDocument(e.view.document),
+      {
+        spaces: [],
+        fields: [],
+        saveField: (source, field) => {
+          saveType(
+            {
+              ...(type ?? {}),
+              [field.name]: { type: field.type, label: field.name },
+            },
+            {
+              ..._value,
+              [field.name]: "",
+            }
+          );
+        },
+        fileMetadata: true,
+      }
+    );
+  };
+  const insertMultiValue = (index: number) => {
+    const val = parseObject(value, props.property.type == "object-multi");
+    const type = parseFieldValue(fieldValue, props.property.type)?.type;
+
+    const item = Object.keys(type).reduce((p, c) => ({ ...p, [c]: "" }), {});
+    saveValue(
+      JSON.stringify([...val.slice(0, index), item, ...val.slice(index)])
+    );
+  };
+  return (
+    <div className="mk-editor-frame-properties">
+      <div className="mk-editor-actions-name">
+        <div className="mk-editor-actions-name-icon">
+          <div
+            className="mk-icon-small"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker("ui//list"),
+            }}
+          ></div>
+        </div>
+        <div className="mk-editor-actions-name-text">
+          {i18n.labels.editObject}
+        </div>
+        <span></span>
+        <div
+          className="mk-icon-small mk-inline-button"
+          dangerouslySetInnerHTML={{
+            __html: props.superstate.ui.getSticker("ui//close"),
+          }}
+          onClick={() => props.hide()}
+        ></div>
+      </div>
+
+      <ObjectCell
+        {...props}
+        initialValue={value}
+        compactMode={false}
+        propertyValue={fieldValue}
+        saveValue={(v) => {
+          saveValue(v);
+        }}
+        savePropValue={(v, p) => {
+          savePropValue(v, p);
+        }}
+        editMode={CellEditMode.EditModeAlways}
+      ></ObjectCell>
+      <div className="mk-cell-object-options">
+        <button onClick={(e) => newProperty(e)} className="mk-toolbar-button">
+          <div
+            className="mk-icon-xsmall"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker("ui//plus"),
+            }}
+          ></div>
+          {i18n.labels.propertyFileProp}
+        </button>
+        {props.property.type == "object-multi" && (
+          <button
+            onClick={(e) => insertMultiValue(0)}
+            className="mk-inline-button"
+          >
+            <div
+              className="mk-icon-xsmall"
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker("ui//insert"),
+              }}
+            ></div>
+            Object
+          </button>
+        )}
       </div>
     </div>
   );

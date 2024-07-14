@@ -1,0 +1,242 @@
+.mk-actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.mk-action {
+    --icon-size: 14px;
+    display: flex;
+    gap: 8px;font-size: 14px;
+    color: var(--mk-ui-text-tertiary);
+}
+.mk-editor-space-fragment {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: var(--file-margins);
+}
+
+.mk-editor-actions-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.mk-editor-actions-fields .mk-path-context-value {
+    flex-wrap: nowrap;
+}
+
+.mk-header-space {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    align-items: flex-start;
+}
+.mk-editor-header {
+    margin-bottom: 12px;
+}
+
+.mk-action {
+    display: flex;
+}
+
+.mk-action span {
+    flex: 1;
+}
+
+.mk-tabs-space {
+    display: flex;
+    gap: 8px;
+    color: var(--mk-ui-text-tertiary);
+    font-size: 14px;
+}
+
+.mk-tab-space {
+    display: flex;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 8px
+}
+.mk-tab-space-active
+{
+    color: var(--mk-ui-text-primary);
+    border: thin solid var(--mk-ui-border);
+    background: var(--mk-ui-background-contrast);
+}
+
+
+.mk-editor-description {
+
+}
+.mk-editor-code {
+    border-radius: 8px;
+    border: thin solid var(--mk-ui-border);
+    overflow: hidden;
+}
+.mk-editor-tester {
+    display: flex;
+    padding: 8px;
+    min-height: 24px;
+    border-top: thin solid var(--mk-ui-border);
+    align-items: center;
+    width: 100%;
+    color: var(--mk-ui-text-tertiary);
+    overflow: hidden;
+    gap: 4px;
+}
+.mk-editor-tester span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mk-editor-actions-name {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    align-items: center;
+font-size: 14px;
+}
+.mk-editor-actions-name span {
+    flex: 1;
+}
+.mk-editor-actions-nodes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+.mk-editor-actions-body {
+    display: flex;
+    min-width: 200px;
+    flex-direction: column;
+    border: thin solid var(--mk-ui-border);
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: var(--shadow-s);
+    background: var(--mk-ui-background-variant);
+    gap: 8px;
+}
+.mk-formula {
+    display: flex;
+    flex-direction: column;
+    width: 500px;
+    
+}
+.mk-formula-header {
+    padding: 12px;
+    background: var(--mk-ui-background);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  
+  .mk-formula-header .cm-theme {
+    flex: 1;
+  }
+.mk-formula-list-section {
+    font-size: 14px;
+    color: var(--mk-ui-text-tertiary);
+    font-weight: var(--bold-weight);
+}
+.mk-formula-list-item {
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+.mk-formula-list-item:hover {
+    background: var(--mk-ui-background-hover);
+}
+.mk-formula-helper {
+    display: flex;
+    height: 280px;
+}
+.mk-formula-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 8px;
+    max-height: 100%;
+    overflow-y: auto;
+    width: 140px;
+    border-right: thin solid var(--mk-ui-divider);
+}
+.mk-formula-suggester {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    overflow-y: auto;
+    max-height: 100%;
+}
+.mk-formula-suggester-args {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.mk-formula-suggester-arg {
+    font-weight: normal;
+    color: var(--mk-ui-text-secondary);
+}
+.mk-formula-suggester-title {
+    font-size: 14px;
+    color: var(--mk-ui-text-tertiary);
+    font-weight: var(--bold-weight);
+    margin-top: 6px;
+    border-top: thin solid var(--mk-ui-border);
+    padding-top: 8px;
+
+}
+.mk-formula-suggestion {
+    display: flex;
+    gap: 4px;
+    border-radius: 8px;
+}
+
+.mk-formula-suggestion pre {
+    padding: 4px 12px;
+    border-radius: 8px;;
+    margin: 0;
+    background-color: var(--mk-ui-background);
+    display: flex;;
+    flex: 1;
+}
+.mk-formula-suggestion-title span {
+    flex: 1;
+}
+.mk-formula-suggester-name {
+    --icon-size: 14px;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    font-weight: var(--bold-weight);
+}
+.mk-formula-suggester-name div {
+    display: flex;
+}
+.mk-formula-suggester-name svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+.mk-editor-actions-node {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mk-editor-actions-children {
+    display: flex;
+    flex-direction: column;
+    padding-left: 6px;
+    border-left: thin solid var(--mk-ui-divider);
+    margin-left: 6px;
+    gap: 8px;
+    align-items: flex-start;
+}
+.mk-editor-actions {
+    display: flex;
+    margin-top: 8px;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 100px;
+}

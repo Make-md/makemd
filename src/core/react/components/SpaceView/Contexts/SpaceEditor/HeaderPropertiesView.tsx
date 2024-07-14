@@ -1,0 +1,566 @@
+import { PropertiesView } from "core/react/components/Explorer/PropertiesView";
+import { LiveFilters } from "core/react/components/SpaceEditor/LiveFilters";
+import { SpaceActionProperty } from "core/react/components/SpaceEditor/SpaceActionProperty";
+import { SpaceItemProperty } from "core/react/components/SpaceEditor/SpaceItemProperty";
+import { SpaceListProperty } from "core/react/components/SpaceEditor/SpaceListProperty";
+import { SpaceTemplateProperty } from "core/react/components/SpaceEditor/SpaceTemplateProperty";
+import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
+import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
+import { showPropertyMenu } from "core/react/components/UI/Menus/contexts/spacePropertyMenu";
+import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
+import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
+import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
+import { InputModal } from "core/react/components/UI/Modals/InputModal";
+import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
+import { PathContext } from "core/react/context/PathContext";
+import { SpaceContext } from "core/react/context/SpaceContext";
+import {
+  FMSpaceKeys,
+  createSpace,
+  saveNewProperty,
+  saveProperties,
+  saveSpaceTemplate,
+} from "core/superstate/utils/spaces";
+import { addTagToPath } from "core/superstate/utils/tags";
+import { PathPropertyName } from "core/types/context";
+import { FMMetadataKeys } from "core/types/space";
+import { SelectOption, Superstate, i18n } from "makemd-core";
+import React, {
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
+import { defaultContextSchemaID, defaultTableFields } from "schemas/mdb";
+import { Rect } from "types/Pos";
+import { SpaceProperty, SpaceTableSchema } from "types/mdb";
+import { uniqueNameFromString } from "utils/array";
+import { windowFromDocument } from "utils/dom";
+import { parseMDBStringValue } from "utils/properties";
+import { sanitizeTableName } from "utils/sanitizers";
+import { DataPropertyView } from "../DataTypeView/DataPropertyView";
+import { CellEditMode } from "../TableView/TableView";
+
+type PathContextProperty = {
+  property: SpaceProperty;
+  contexts: string[];
+  value: string;
+};
+export const HeaderPropertiesView = (props: {
+  superstate: Superstate;
+  collapseSpaces: boolean;
+}) => {
+  const [collapsed, setCollapsed] = useState(
+    !props.superstate.settings.inlineContextExpanded || !props.collapseSpaces
+  );
+  useEffect(() => {
+    props.superstate.settings.inlineContextExpanded = !collapsed;
+    props.superstate.saveSettings();
+  }, [collapsed]);
+
+  const { spaceState } = useContext(SpaceContext);
+  const { addToSpace, readMode, removeFromSpace, pathState } =
+    useContext(PathContext);
+
+  const isSpace = pathState.type == "space";
+  const showContextMenu = (e: React.MouseEvent, path: string) => {
+    const space = props.superstate.spacesIndex.get(path);
+    if (!space) return;
+
+    e.preventDefault();
+    const menuOptions: SelectOption[] = [];
+    menuOptions.push({
+      name: i18n.menu.openSpace,
+      icon: "ui//layout-grid",
+      onClick: (e) => {
+        props.superstate.ui.openPath(space.path, e.metaKey);
+      },
+    });
+    menuOptions.push({
+      name: i18n.labels.newProperty,
+      icon: "ui//plus",
+      onClick: (e) => {
+        newProperty(e, space.path);
+      },
+    });
+
+    if (removeFromSpace)
+      menuOptions.push({
+        name: i18n.menu.removeFromSpace,
+        icon: "ui//trash",
+        onClick: (e) => {
+          removeFromSpace(space.path);
+        },
+      });
+
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    props.superstate.ui.openMenu(
+      offset,
+      defaultMenu(props.superstate.ui, menuOptions),
+      windowFromDocument(e.view.document)
+    );
+  };
+
+  const spacesFromPath = (path: string) => {
+    return [...props.superstate.spacesMap.get(path)]
+      .map((f) => props.superstate.spacesIndex.get(f))
+      .filter((f) => f && f.type != "default" && f.path != "/")
+      .map((f) => props.superstate.pathsIndex.get(f.path))
+      .sort((f, k) =>
+        path.startsWith(f.path) ? -1 : path.startsWith(k.path) ? 1 : 0
+      )
+      .filter((f) => f);
+  };
+
+  const spacePathStates = useMemo(
+    () => spacesFromPath(pathState.path),
+    [pathState]
+  );
+  const spaces = useMemo(
+    () =>
+      [...(props.superstate.spacesMap.get(pathState?.path) ?? [])]
+        .map((f) => props.superstate.spacesIndex.get(f)?.space)
+        .filter((f) => f),
+    [pathState]
+  );
+
+  const saveField = (source: string, field: SpaceProperty) => {
+    if (source == "$fm") {
+      saveNewProperty(props.superstate, pathState.path, field);
+      return;
+    }
+    props.superstate.spaceManager.addSpaceProperty(source, field);
+  };
+
+  const newProperty = (e: React.MouseEvent, space: string) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+
+    showNewPropertyMenu(
+      props.superstate,
+      offset,
+      windowFromDocument(e.view.document),
+      {
+        spaces: [],
+        fields: [],
+        saveField: (source: string, field: SpaceProperty) =>
+          saveField(space, field),
+        schemaId: defaultContextSchemaID,
+        contextPath: space,
+      }
+    );
+  };
+
+  const showAddMenu = (e: React.MouseEvent) => {
+    const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+    showSpacesMenu(
+      offset,
+      windowFromDocument(e.view.document),
+      props.superstate,
+      (link: string, isNew: boolean) => {
+        if (isNew) {
+          if (link.charAt(0) == "#") {
+            addTagToPath(props.superstate, pathState.path, link);
+          } else {
+            createSpace(props.superstate, link, { links: [pathState.path] });
+          }
+        } else {
+          addToSpace(link);
+        }
+      },
+      false,
+      true
+    );
+  };
+
+  const newAction = (e: React.MouseEvent) => {
+    props.superstate.ui.openModal(
+      i18n.labels.newAction,
+      (_props: { hide: () => void }) => (
+        <InputModal
+          value=""
+          saveLabel={i18n.buttons.save}
+          hide={_props.hide}
+          saveValue={(value) => {
+            props.superstate.spaceManager.createCommand(spaceState.path, {
+              id: value,
+              name: value,
+              type: "actions",
+            });
+          }}
+        ></InputModal>
+      ),
+      windowFromDocument(e.view.document)
+    );
+  };
+  const newTable = (e: React.MouseEvent) => {
+    props.superstate.ui.openModal(
+      i18n.labels.newTable,
+      (_props: { hide: () => void }) => (
+        <InputModal
+          value=""
+          saveLabel={i18n.buttons.save}
+          hide={_props.hide}
+          saveValue={(value) => {
+            props.superstate.spaceManager
+              .tablesForSpace(spaceState.path)
+              .then((schemas) => {
+                if (schemas) {
+                  const newSchema: SpaceTableSchema = {
+                    id: uniqueNameFromString(
+                      sanitizeTableName(value),
+                      schemas.map((g) => g.id)
+                    ),
+                    name: value,
+                    type: "db",
+                  };
+                  return props.superstate.spaceManager
+                    .createTable(spaceState.path, newSchema)
+                    .then((f) => {
+                      return props.superstate.spaceManager.addSpaceProperty(
+                        spaceState.path,
+                        { ...defaultTableFields[0], schemaId: newSchema.id }
+                      );
+                    });
+                }
+              });
+          }}
+        ></InputModal>
+      ),
+      windowFromDocument(e.view.document)
+    );
+  };
+  const newTemplate = (offset: Rect, win: Window) => {
+    return showLinkMenu(offset, win, props.superstate, (space) => {
+      saveSpaceTemplate(props.superstate, pathState.path, space);
+    });
+  };
+
+  const addNew = (e: React.MouseEvent) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    const win = windowFromDocument(e.view.document);
+    props.superstate.ui.openMenu(
+      offset,
+      defaultMenu(props.superstate.ui, [
+        {
+          name: i18n.labels.newTable,
+          description: i18n.descriptions.spaceLists,
+          icon: "ui//table",
+          onClick: (e) => newTable(e),
+        },
+        {
+          name: i18n.labels.template,
+          description: i18n.descriptions.spaceTemplates,
+          icon: "ui//clipboard-pen",
+          onClick: (e) => newTemplate(offset, win),
+        },
+        {
+          name: i18n.labels.newAction,
+          description: i18n.descriptions.spaceActions,
+          icon: "ui//mouse-pointer-click",
+          onClick: (e) => newAction(e),
+        },
+      ]),
+      win
+    );
+  };
+
+  const [cols, setCols] = useState<PathContextProperty[]>([]);
+  useEffect(() => {
+    reloadProperties();
+  }, [pathState]);
+  useEffect(() => {
+    const contextUpdated = (payload: { path: string }) => {
+      const spaces = [
+        ...(props.superstate.spacesMap.get(pathState?.path) ?? []),
+      ];
+      if (!spaces.includes(payload.path)) return;
+      reloadProperties();
+    };
+    props.superstate.eventsDispatcher.addListener(
+      "contextStateUpdated",
+      contextUpdated
+    );
+    return () => {
+      props.superstate.eventsDispatcher.removeListener(
+        "contextStateUpdated",
+        contextUpdated
+      );
+    };
+  }, [pathState]);
+  const reloadProperties = async () => {
+    const spaces = [...(props.superstate.spacesMap.get(pathState?.path) ?? [])];
+    const contexts = await Promise.all(
+      spaces.map(async (f) =>
+        props.superstate.spaceManager
+          .readTable(f, defaultContextSchemaID)
+          .then((g) => ({ path: f, cols: g.cols, rows: g.rows }))
+      )
+    );
+    const properties: PathContextProperty[] = [];
+    contexts.forEach((f) => {
+      const row = f.rows.find((f) => f[PathPropertyName] == pathState.path);
+      f.cols
+        .filter((f) => f.primary != "true")
+        .forEach((g) => {
+          const index = properties.findIndex((h) => h.property.name == g.name);
+          if (index == -1) {
+            properties.push({
+              property: g,
+              contexts: [f.path],
+              value: row?.[g.name] ?? "",
+            });
+          } else {
+            properties[index].contexts.push(f.path);
+          }
+        });
+    }, []);
+    setCols(properties);
+  };
+  const updateValue = (value: string, field: PathContextProperty) => {
+    saveProperties(props.superstate, pathState.path, {
+      [field.property.name]: parseMDBStringValue(
+        field.property.type,
+        value,
+        true
+      ),
+    });
+  };
+  const updateFieldValue = (
+    fv: string,
+    value: string,
+    field: PathContextProperty
+  ) => {
+    saveProperties(props.superstate, pathState.path, {
+      [field.property.name]: parseMDBStringValue(
+        field.property.type,
+        value,
+        true
+      ),
+    });
+
+    props.superstate.spaceManager.saveSpaceProperty(
+      field.contexts[0],
+      {
+        ...field.property,
+        value: fv,
+      },
+      field.property
+    );
+  };
+  const showMenu = (e: React.MouseEvent, field: PathContextProperty) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    showPropertyMenu({
+      superstate: props.superstate,
+      field: field.property,
+      rect: offset,
+      win: windowFromDocument(e.view.document),
+      options: [],
+      fields: cols.map((f) => f.property),
+      contextPath: pathState.path,
+      saveField: (newField) => {
+        props.superstate.spaceManager.saveSpaceProperty(
+          field.contexts[0],
+          newField,
+          field.property
+        );
+      },
+      anchor: "bottom",
+      deleteColumn: (column) => {
+        props.superstate.spaceManager.deleteSpaceProperty(
+          field.contexts[0],
+          field.property
+        );
+      },
+      editable: true,
+    });
+  };
+  const [isPending, startTransition] = useTransition();
+  useEffect(() => {
+    startTransition(() => null);
+  }, []);
+  const toggleCollapsed = () => {
+    startTransition(() => setCollapsed((f) => !f));
+  };
+  return (
+    <div className="mk-props-contexts">
+      {!readMode && props.collapseSpaces && (
+        <div style={{ position: "relative" }}>
+          <div className="mk-fold">
+            <CollapseToggle
+              superstate={props.superstate}
+              collapsed={collapsed}
+              onToggle={(c) => toggleCollapsed()}
+            ></CollapseToggle>
+          </div>
+        </div>
+      )}
+      {props.collapseSpaces && (
+        <div className="mk-path-context-row">
+          <div className="mk-props-contexts-space-list">
+            {spacePathStates.map((f, i) => (
+              <div
+                key={i}
+                className="mk-props-contexts-space-name"
+                onContextMenu={(e) => showContextMenu(e, f.path)}
+                onClick={(e) => props.superstate.ui.openPath(f.path, e.metaKey)}
+                style={
+                  f.label?.color?.length > 0
+                    ? ({
+                        "--tag-background": f.label?.color,
+                        "--tag-color": "var(--color-white)",
+                      } as React.CSSProperties)
+                    : {}
+                }
+              >
+                <div
+                  className={`mk-icon-xsmall`}
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker(f.label?.sticker),
+                  }}
+                ></div>
+                {f.name}
+              </div>
+            ))}
+            <div
+              className="mk-props-contexts-space-name"
+              onClick={(e) => showAddMenu(e)}
+              style={
+                {
+                  opacity: 0.5,
+                } as React.CSSProperties
+              }
+            >
+              <span
+                className="mk-icon-xsmall"
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//plus"),
+                }}
+              ></span>
+              {i18n.buttons.addToSpace}
+            </div>
+          </div>
+        </div>
+      )}
+      {(!collapsed || !props.collapseSpaces || isPending) && (
+        <div
+          className="mk-header-space"
+          style={{
+            transition: "all 0.3s ease-in-out",
+            maxHeight: isPending ? "0px" : "unset",
+          }}
+        >
+          {!props.collapseSpaces && (
+            <div className="mk-path-context-row">
+              <div className="mk-path-context-field">
+                <div
+                  className="mk-path-context-field-icon"
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker("ui//file-stack"),
+                  }}
+                ></div>
+                <div className="mk-path-context-field-key">Spaces</div>
+              </div>
+              <div className="mk-path-context-value">
+                <div className="mk-props-value">
+                  <div className="mk-props-list">
+                    {spacePathStates.map((f, i) => (
+                      <PathCrumb
+                        key={i}
+                        superstate={props.superstate}
+                        path={f.path}
+                      ></PathCrumb>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {isSpace && spaceState && (
+            <>
+              <SpaceItemProperty
+                superstate={props.superstate}
+                space={spaceState}
+                compactMode={false}
+              />
+              <LiveFilters
+                superstate={props.superstate}
+                space={spaceState}
+              ></LiveFilters>
+              <SpaceListProperty
+                superstate={props.superstate}
+                compactMode={false}
+              ></SpaceListProperty>
+              <SpaceTemplateProperty
+                superstate={props.superstate}
+                compactMode={false}
+              ></SpaceTemplateProperty>
+              <SpaceActionProperty
+                superstate={props.superstate}
+                compactMode={false}
+              ></SpaceActionProperty>
+            </>
+          )}
+
+          {cols.map((f, i) => (
+            <DataPropertyView
+              key={i}
+              superstate={props.superstate}
+              initialValue={f.value}
+              row={pathState.metadata.property}
+              compactMode={false}
+              column={{ ...f.property, table: "" }}
+              editMode={CellEditMode.EditModeAlways}
+              updateValue={(v) => updateValue(v, f)}
+              updateFieldValue={(fv, v) => updateFieldValue(fv, v, f)}
+              contextTable={{}}
+              source={pathState.path}
+              path={pathState.path}
+              contexts={f.contexts}
+              propertyMenu={(e) => showMenu(e, f)}
+            ></DataPropertyView>
+          ))}
+
+          <PropertiesView
+            superstate={props.superstate}
+            spaces={spaces.map((f) => f.path)}
+            force={true}
+            compactMode={false}
+            excludeKeys={[
+              ...FMMetadataKeys(props.superstate.settings),
+              "tags",
+              ...FMSpaceKeys(props.superstate.settings),
+            ]}
+            editable={true}
+          ></PropertiesView>
+          <div className="mk-path-context-row-new">
+            <div
+              className="mk-path-context-new"
+              onClick={(e) => newProperty(e, "$fm")}
+            >
+              <div
+                className="mk-path-context-field-icon"
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//plus"),
+                }}
+              ></div>
+              <div className="mk-path-context-field-key">
+                {i18n.labels.newProperty}
+              </div>
+            </div>
+            {isSpace && (
+              <div className="mk-path-context-new" onClick={(e) => addNew(e)}>
+                <div
+                  className="mk-path-context-field-icon"
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker("ui//options"),
+                  }}
+                ></div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

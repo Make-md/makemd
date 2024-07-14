@@ -5,30 +5,25 @@ import {
   DragOverlay,
   DragStartEvent,
   Modifier,
-  UniqueIdentifier,
-  useDndMonitor,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { Superstate } from "core/superstate/superstate";
-import { toggleWaypoint } from "core/superstate/utils/spaces";
 import { DragProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
-import { pathIsSpace } from "core/utils/spaces/space";
+import { isTouchScreen } from "core/utils/ui/screen";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { insert } from "utils/array";
 import { SortablePinnedSpaceItem } from "./Waypoint";
 export const SpaceSwitcher = (props: { superstate: Superstate }) => {
   const {
     waypoints: waypoints,
     modifier,
     setModifier,
+    setWaypoints,
   } = useContext(NavigatorContext);
-
   const { superstate } = props;
 
   const { dragPaths, setDragPaths } = useContext(NavigatorContext);
@@ -43,43 +38,20 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
       setProjected(null);
       return;
     }
-    const waypoint = waypoints.find((f) => f.path == overId);
+    const waypoint = waypoints.find((f, i) => i == overId);
     if (!waypoint) return;
-    if (dragPaths.length > 1) {
-      if (waypoint.type == "space") {
-        const _projected: DragProjection = {
-          depth: 0,
-          overId: overId,
-          parentId: null,
-          sortable: false,
-          insert: true,
-          droppable: true,
-          copy: false,
-          reorder: false,
-        };
-        setProjected(_projected);
-        return;
-      } else {
-        return null;
-      }
-    } else {
-      const insert =
-        !activeId &&
-        (!pathIsSpace(props.superstate, dragPaths[0]) ||
-          modifier == "copy" ||
-          modifier == "link");
-      const _projected: DragProjection = {
-        depth: 0,
-        overId: overId,
-        parentId: null,
-        sortable: false,
-        insert: insert,
-        droppable: waypoint.type != "space",
-        copy: modifier == "copy" || modifier == "link",
-        reorder: false,
-      };
-      setProjected(_projected);
-    }
+    const _projected: DragProjection = {
+      depth: 0,
+      overId: overId,
+      parentId: null,
+      sortable: false,
+      insert: true,
+      droppable: true,
+      copy: false,
+      reorder: false,
+    };
+    setProjected(_projected);
+    return;
   }, [overId, dragPaths, offset, modifier, waypoints, activeId]);
   const resetState = () => {
     setModifier(null);
@@ -113,12 +85,18 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
     };
   };
 
-  const dragStarted = (id: UniqueIdentifier) => {
+  const dragStarted = (id: number) => {
     setActiveId(id);
   };
-  const dragOver = (id: UniqueIdentifier, x: number) => {
+  const dragOver = (id: number, x: number) => {
     setOffset(x);
-    setOverId(id);
+    if (activeId == null) {
+      setOverId(id);
+    } else {
+      if (id == activeId) return;
+      setWaypoints(arrayMove(waypoints, activeId, id));
+      setActiveId(id);
+    }
   };
   const dragEnded = () => {
     if (projected && projected.insert) {
@@ -133,45 +111,36 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
           "link"
         );
     } else if (dragPaths.length == 1) {
-      const toIndex = waypoints.findIndex((f) => f.path == overId);
+      const toIndex = overId;
 
       if (activeId !== null) {
-        const fromIndex = waypoints.findIndex((f) => f.path == activeId);
-        superstate.settings.waypoints = arrayMove(
-          waypoints.map((f) => f.path),
-          fromIndex,
-          toIndex
-        );
-        superstate.saveSettings();
+        const fromIndex = activeId;
+        setWaypoints(arrayMove(waypoints, fromIndex, toIndex));
       } else {
-        superstate.settings.waypoints = insert(
-          waypoints.map((f) => f.path).filter((f) => f != dragPaths[0]),
-          toIndex,
-          dragPaths[0]
+        setWaypoints(
+          waypoints.map((f, i) =>
+            i == toIndex ? { ...f, paths: [...f.paths, dragPaths[0]] } : f
+          )
         );
-        superstate.saveSettings();
       }
     }
     resetState();
   };
 
-  useDndMonitor({
-    onDragStart: handleDragStart,
-    onDragMove: handleDragMove,
-    onDragOver: handleDragOver,
-    onDragEnd: handleDragEnd,
-    onDragCancel: handleDragCancel,
-  });
+  // useDndMonitor({
+  //   onDragStart: handleDragStart,
+  //   onDragMove: handleDragMove,
+  //   onDragOver: handleDragOver,
+  //   onDragEnd: handleDragEnd,
+  //   onDragCancel: handleDragCancel,
+  // });
 
   function handleDragStart(event: DragStartEvent) {
     const {
       active: { id: activeId },
     } = event;
-    const waypoint = waypoints.find((f) => f.path == activeId);
-    if (waypoint) {
-      setDragPaths([waypoint.path]);
-    }
-    dragStarted(activeId);
+    if (event.active.data.current.type != "path") return;
+    dragStarted(activeId as number);
   }
 
   function handleDragMove({ delta }: DragMoveEvent) {
@@ -181,7 +150,13 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
   function handleDragOver({ over }: DragOverEvent) {
     const overId = over?.id;
     if (overId !== null) {
-      setOverId(overId);
+      if (activeId == null) {
+        setOverId(overId);
+      } else {
+        setWaypoints(
+          arrayMove(waypoints, overId as number, parseInt(activeId))
+        );
+      }
 
       // }
     }
@@ -195,11 +170,11 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
       window.removeEventListener("dragend", resetState);
     };
   });
-  const width = props.superstate.ui.getScreenType() == "mobile" ? 48 : 32;
+  const width = isTouchScreen(props.superstate.ui) ? 48 : 32;
   const calcXOffset = (index: number) => {
     if (!projected || projected.insert) return 0;
-    const fromIndex = waypoints.findIndex((f) => f.path == activeId);
-    const targetIndex = waypoints.findIndex((f) => f.path == overId);
+    const fromIndex = activeId;
+    const targetIndex = overId;
     if (activeId === null) {
       if (index >= targetIndex) return width;
       return 0;
@@ -223,13 +198,13 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
         onDragLeave={() => dragLeave()}
         onDragOver={(e) => e.preventDefault()}
       >
-        <div className="nav-buttons-container">
+        <div className="mk-waypoints-inner nav-buttons-container">
           {waypoints.map((pin, i) => (
             <SortablePinnedSpaceItem
-              id={pin.path}
+              id={i}
               superstate={props.superstate}
               highlighted={
-                overId == pin.path &&
+                overId == i &&
                 projected &&
                 projected.insert &&
                 projected.droppable
@@ -244,34 +219,27 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
               }}
               index={i}
               pin={pin}
-              key={pin.path}
+              key={i}
               dragStart={dragStarted}
               dragOver={dragOver}
               dragEnded={dragEnded}
               dragActive={activeId !== null}
-              ghost={activeId === pin.path}
+              ghost={activeId === i}
             ></SortablePinnedSpaceItem>
           ))}
           <div
             className="mk-waypoint-new"
-            onClick={(e) =>
-              showSpacesMenu(
-                e,
-                props.superstate,
-                (link) => {
-                  toggleWaypoint(
-                    props.superstate,
-                    link,
-                    false,
-                    waypoints.length
-                  );
-                },
-                true,
-                true
-              )
-            }
+            onClick={(e) => {
+              const newWaypoints = [
+                ...waypoints,
+                { sticker: "ui//spaces", name: "", paths: [] },
+              ];
+              props.superstate.settings.currentWaypoint =
+                newWaypoints.length - 1;
+              setWaypoints(newWaypoints);
+            }}
             dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("lucide//plus"),
+              __html: props.superstate.ui.getSticker("ui//plus"),
             }}
           ></div>
           {overId != null && activeId === null && (
@@ -296,9 +264,9 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
                 superstate={props.superstate}
                 highlighted={false}
                 clone
-                index={waypoints.findIndex((f) => f.path == activeId)}
+                index={activeId}
                 indicator={false}
-                pin={waypoints.find((f) => f.path == activeId)}
+                pin={waypoints[activeId]}
               ></SortablePinnedSpaceItem>
             ) : null}
           </DragOverlay>,

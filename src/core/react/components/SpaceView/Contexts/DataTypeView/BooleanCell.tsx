@@ -1,10 +1,7 @@
 import React, { useEffect } from "react";
-import { SpaceTableColumn } from "types/mdb";
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
-export const BooleanCell = (
-  props: TableCellProp & { column: SpaceTableColumn }
-) => {
+export const BooleanCell = (props: TableCellProp) => {
   const { initialValue, saveValue } = props;
   const [value, setValue] = React.useState(initialValue == "true");
 

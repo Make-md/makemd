@@ -16,30 +16,39 @@ import {
 import { hoverTooltip } from "adapters/obsidian/ui/editors/markdownView/tooltip";
 import { iterateTreeInSelection } from "adapters/obsidian/utils/codemirror";
 import React from "react";
-import { createRoot } from "react-dom/client";
 import { flowTypeStateField } from "./flowStateFields";
 
-import { uiIconSet } from "adapters/obsidian/ui/icons";
 import MakeMDPlugin from "main";
 import { i18n } from "makemd-core";
 
 import { FlowEditorHover } from "adapters/obsidian/ui/editors/markdownView/FlowEditorHover";
 import { loadFlowEditorByDOM } from "adapters/obsidian/utils/flow/flowEditor";
+import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
+import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
 import { compareByField } from "core/utils/tree";
 import { genId } from "core/utils/uuid";
 import { editorInfoField } from "obsidian";
 
 //flow editor
+export enum FlowEditorState {
+  Closed = 0,
+  AutoOpen = 1,
+  Open = 2,
+}
+export enum FlowEditorLinkType {
+  Link = 0,
+  Embed = 1,
+  EmbedClosed = 2,
+}
 
 export interface FlowEditorInfo {
   id: string;
   link: string;
   from: number;
+  type: FlowEditorLinkType;
   to: number;
   height: number;
-  embed: number;
-  startOfLineFix: boolean;
-  expandedState: number; //0 is closed, 1 is autoopen (prevent infinite nesting), 2 is open, move to enum
+  expandedState: FlowEditorState; //0 is closed, 1 is autoopen (prevent infinite nesting), 2 is open, move to enum
 }
 
 export const toggleFlowEditor =
@@ -107,54 +116,57 @@ export const internalLinkToggle = ViewPlugin.fromClass(
   }
 );
 
-export const internalLinkHover = hoverTooltip((view, pos, side) => {
-  const { from: lineFrom, to: lineTo } = view.state.doc.lineAt(pos);
-  let hovObject = null;
-  iterateTreeInSelection({ from: lineFrom, to: lineTo }, view.state, {
-    enter: ({ name, from, to }) => {
-      if (name.contains("hmd-internal-link") && pos <= to && pos >= from) {
-        const stateField = view.state.field(flowEditorInfo, false);
-        const info = stateField.find((f) => f.to == to);
-        if (info) {
-          hovObject = {
-            pos: pos,
-            end: to,
-            above: true,
-            create(view: EditorView) {
-              const dom = document.createElement("div");
-              dom.toggleClass("mk-flow-hover", true);
-              dom.toggleClass("menu", true);
-              const openHoverDiv = dom.createDiv();
-              openHoverDiv.setAttribute(
-                "aria-label",
-                info.expandedState == 0
-                  ? i18n.buttons.openFlow
-                  : i18n.buttons.hideFlow
-              );
-              openHoverDiv.addEventListener("click", () => {
-                view.dispatch({
-                  annotations: toggleFlowEditor.of([info.id, 2]),
+export const internalLinkHover = (plugin: MakeMDPlugin) =>
+  hoverTooltip((view, pos, side) => {
+    const { from: lineFrom, to: lineTo } = view.state.doc.lineAt(pos);
+    let hovObject = null;
+    iterateTreeInSelection({ from: lineFrom, to: lineTo }, view.state, {
+      enter: ({ name, from, to }) => {
+        if (name.includes("hmd-internal-link") && pos <= to && pos >= from) {
+          const stateField = view.state.field(flowEditorInfo, false);
+          const info = stateField.find((f) => f.to == to);
+          if (info) {
+            hovObject = {
+              pos: pos,
+              end: to,
+              above: true,
+              create(view: EditorView) {
+                const dom = document.createElement("div");
+                dom.classList.add("mk-flow-hover");
+                dom.classList.add("menu");
+                const openHoverDiv = dom.createDiv();
+                openHoverDiv.setAttribute(
+                  "aria-label",
+                  info.expandedState == 0
+                    ? i18n.buttons.openFlow
+                    : i18n.buttons.hideFlow
+                );
+                openHoverDiv.addEventListener("click", () => {
+                  view.dispatch({
+                    annotations: toggleFlowEditor.of([info.id, 2]),
+                  });
                 });
-              });
-              const icon = openHoverDiv.createDiv();
-              icon.innerHTML = uiIconSet["mk-ui-flow-hover"];
-              openHoverDiv.insertAdjacentText(
-                "beforeend",
-                info.expandedState == 0
-                  ? i18n.buttons.openFlow
-                  : i18n.buttons.hideFlow
-              );
-              return { dom };
-            },
-          };
-          return false;
+                const icon = openHoverDiv.createDiv();
+                icon.innerHTML = plugin.superstate.ui.getSticker(
+                  "ui//mk-ui-flow-hover"
+                );
+                openHoverDiv.insertAdjacentText(
+                  "beforeend",
+                  info.expandedState == 0
+                    ? i18n.buttons.openFlow
+                    : i18n.buttons.hideFlow
+                );
+                return { dom };
+              },
+            };
+            return false;
+          }
         }
-      }
-    },
-  });
+      },
+    });
 
-  return hovObject;
-});
+    return hovObject;
+  });
 
 export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
   create() {
@@ -167,8 +179,11 @@ export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
 
     const str = tr.newDoc.sliceString(0);
 
-    const reverseExpandedState = (state: number) => {
-      const news = state != 2 ? 2 : 0;
+    const reverseExpandedState = (state: FlowEditorState) => {
+      const news =
+        state != FlowEditorState.Open
+          ? FlowEditorState.Open
+          : FlowEditorState.Closed;
       return news;
     };
 
@@ -182,10 +197,9 @@ export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
       const info = {
         id: id,
         link: match[1],
-        startOfLineFix: false,
         from: match.index + 4,
         to: match.index + 4 + match[1].length,
-        embed: 1,
+        type: FlowEditorLinkType.Embed,
         height: existingInfo
           ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
             tr.annotation(cacheFlowEditorHeight)?.[1] != 0
@@ -212,10 +226,9 @@ export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
         const info = {
           id: id,
           link: match[1],
-          startOfLineFix: false,
           from: match.index + 2,
           to: match.index + 2 + match[1].length,
-          embed: 0,
+          type: FlowEditorLinkType.Link,
           height: existingInfo
             ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
               tr.annotation(cacheFlowEditorHeight)?.[1] != 0
@@ -239,10 +252,9 @@ export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
         const info = {
           id: id,
           link: match[1],
-          startOfLineFix: false,
           from: match.index + 3,
           to: match.index + 3 + match[1].length,
-          embed: 2,
+          type: FlowEditorLinkType.EmbedClosed,
           height: existingInfo
             ? tr.annotation(cacheFlowEditorHeight)?.[0] == id &&
               tr.annotation(cacheFlowEditorHeight)?.[1] != 0
@@ -268,35 +280,52 @@ const flowEditorRangeset = (state: EditorState, plugin: MakeMDPlugin) => {
   const builder = new RangeSetBuilder<Decoration>();
   const infoFields = state.field(flowEditorInfo, false);
   for (const info of infoFields) {
-    const { from, to, embed: embedType, expandedState } = info;
+    const { from, to, type, expandedState } = info;
     const lineFix =
       from - 3 == state.doc.lineAt(from).from &&
       to + 2 == state.doc.lineAt(from).to;
-    if (expandedState == 2) {
-      if (embedType == 1) {
-        if (
-          !(
-            (state.selection.main.from == from - 4 &&
-              state.selection.main.to == to + 2) ||
-            (state.selection.main.from >= from - 3 &&
-              state.selection.main.to <= to + 1)
-          )
-        ) {
-          builder.add(from - 4, from - 3, flowEditorSelector(info, plugin));
-          if (lineFix) {
-            builder.add(
-              from - 3,
-              to + 2,
-              flowEditorWidgetDecoration(info, plugin)
-            );
-          } else {
-            builder.add(from - 3, to + 2, flowEditorDecoration(info, plugin));
-          }
-        }
-      } else if (embedType == 0) {
-        //if (!(tr.newSelection.main.from >= from+2 && tr.newSelection.main.to <= to-2)) {
+    if (type == FlowEditorLinkType.Link) {
+      builder.add(
+        from - 2,
+        from - 2,
+        Decoration.widget({
+          widget: new LinkSticker(info, plugin),
+          side: -1,
+        })
+      );
+      builder.add(
+        to + 2,
+        to + 2,
+        Decoration.widget({
+          widget: new LinkExpand(info, plugin),
+          side: 0,
+        })
+      );
+      if (expandedState == FlowEditorState.Open) {
         builder.add(to + 2, to + 2, flowEditorDecoration(info, plugin));
-        //}
+      }
+    } else if (
+      expandedState == FlowEditorState.Open &&
+      type == FlowEditorLinkType.Embed
+    ) {
+      if (
+        !(
+          (state.selection.main.from == from - 4 &&
+            state.selection.main.to == to + 2) ||
+          (state.selection.main.from >= from - 3 &&
+            state.selection.main.to <= to + 1)
+        )
+      ) {
+        builder.add(from - 4, from - 3, flowEditorSelector(info, plugin));
+        if (lineFix) {
+          builder.add(
+            from - 3,
+            to + 2,
+            flowEditorWidgetDecoration(info, plugin)
+          );
+        } else {
+          builder.add(from - 3, to + 2, flowEditorDecoration(info, plugin));
+        }
       }
     }
   }
@@ -326,8 +355,8 @@ class FlowEditorWidget extends WidgetType {
 
   toDOM(view: EditorView) {
     const div = document.createElement("div");
-    div.toggleClass("mk-floweditor-container", true);
-    div.toggleClass("mk-floweditor-fix", this.info.startOfLineFix);
+    div.classList.add("mk-floweditor-container");
+
     div.setAttribute("id", "mk-flow-" + this.info.id);
     const placeholder = div.createDiv("mk-floweditor-placeholder");
     placeholder.style.setProperty("height", this.info.height + "px");
@@ -336,6 +365,82 @@ class FlowEditorWidget extends WidgetType {
   }
   get estimatedHeight(): number {
     return this.info.height;
+  }
+}
+
+class LinkSticker extends WidgetType {
+  flowInfo: FlowEditorInfo;
+  plugin: MakeMDPlugin;
+  constructor(readonly info: FlowEditorInfo, plugin: MakeMDPlugin) {
+    super();
+    this.flowInfo = info;
+    this.plugin = plugin;
+  }
+
+  eq(other: WidgetType) {
+    return (other as unknown as FlowEditorSelector).info.id === this.info.id;
+  }
+
+  toDOM(view: EditorView) {
+    const div = document.createElement("div");
+    div.classList.add("mk-floweditor-sticker");
+    const reactEl = this.plugin.ui.createRoot(div);
+    if (this.info.link && view.state.field(editorInfoField, false)) {
+      const infoField = view.state.field(editorInfoField, false);
+      const file = infoField.file;
+      const uri = this.plugin.superstate.spaceManager.uriByString(
+        this.info.link,
+        file.path
+      );
+      reactEl.render(
+        <PathStickerContainer
+          superstate={this.plugin.superstate}
+          path={uri.basePath}
+        />
+      );
+    }
+    return div;
+  }
+}
+
+class LinkExpand extends WidgetType {
+  flowInfo: FlowEditorInfo;
+  plugin: MakeMDPlugin;
+  constructor(readonly info: FlowEditorInfo, plugin: MakeMDPlugin) {
+    super();
+    this.flowInfo = info;
+    this.plugin = plugin;
+  }
+
+  eq(other: WidgetType) {
+    return (
+      (other as unknown as FlowEditorSelector).info.id === this.info.id &&
+      (other as unknown as FlowEditorSelector).info.expandedState ==
+        this.info.expandedState
+    );
+  }
+
+  toDOM(view: EditorView) {
+    const div = document.createElement("div");
+    div.classList.add("mk-floweditor-toggle");
+    const reactEl = this.plugin.ui.createRoot(div);
+    if (this.info.link && view.state.field(editorInfoField, false)) {
+      reactEl.render(
+        <CollapseToggle
+          superstate={this.plugin.superstate}
+          collapsed={this.info.expandedState == 0}
+          onToggle={(collapsed: boolean) => {
+            view.dispatch({
+              annotations: toggleFlowEditor.of([
+                this.info.id,
+                collapsed ? 2 : 0,
+              ]),
+            });
+          }}
+        />
+      );
+    }
+    return div;
   }
 }
 
@@ -354,27 +459,25 @@ class FlowEditorSelector extends WidgetType {
 
   toDOM(view: EditorView) {
     const div = document.createElement("div");
-    div.toggleClass("mk-floweditor-selector", true);
-    const reactEl = createRoot(div);
+    div.classList.add("mk-floweditor-selector");
+    const reactEl = this.plugin.ui.createRoot(div);
     if (this.info.link && view.state.field(editorInfoField, false)) {
       const infoField = view.state.field(editorInfoField, false);
       const file = infoField.file;
-      const path = this.plugin.superstate.spaceManager.resolvePath(
-        this.info.link,
-        file?.path
+
+      reactEl.render(
+        <FlowEditorHover
+          app={this.plugin.app}
+          superstate={this.plugin.superstate}
+          toggle={true}
+          path={this.info.link}
+          source={file?.path}
+          toggleState={true}
+          view={view}
+          pos={{ from: this.info.from, to: this.info.to }}
+          dom={div}
+        ></FlowEditorHover>
       );
-      if (path)
-        reactEl.render(
-          <FlowEditorHover
-            superstate={this.plugin.superstate}
-            toggle={true}
-            path={path}
-            toggleState={true}
-            view={view}
-            pos={{ from: this.info.from, to: this.info.to }}
-            dom={div}
-          ></FlowEditorHover>
-        );
     }
     return div;
   }
@@ -406,5 +509,6 @@ export const flowEditorWidgetDecoration = (
 ) =>
   Decoration.widget({
     widget: new FlowEditorWidget(info, plugin),
+    inclusiveStart: true,
     block: true,
   });

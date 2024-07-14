@@ -6,8 +6,9 @@ import { Sort } from "core/types/predicate";
 import { normalizedSortForType } from "core/utils/contexts/predicate/sort";
 import React, { useState } from "react";
 import { fieldTypeForType, fieldTypes } from "schemas/mdb";
-import { Pos } from "types/Pos";
+import { Anchors, Rect } from "types/Pos";
 import { SpaceTableColumn } from "types/mdb";
+import { windowFromDocument } from "utils/dom";
 import StickerModal from "../../Modals/StickerModal";
 import {
   SelectOption,
@@ -15,7 +16,7 @@ import {
   defaultMenu,
   menuInput,
   menuSeparator,
-} from "../menu";
+} from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
 
 export const selectPropertyTypeMenu = (
@@ -23,23 +24,27 @@ export const selectPropertyTypeMenu = (
   ui: UIManager,
   selectedType: (_: string[], value: string[]) => void
 ) => {
-  ui.openMenu((e.target as HTMLElement).getBoundingClientRect(), {
-    ui: ui,
-    multi: false,
-    editable: false,
-    searchable: false,
-    saveOptions: selectedType,
-    value: [],
-    showAll: true,
-    options: fieldTypes
-      .filter((f) => !f.restricted)
-      .map((f, i) => ({
-        id: i + 1,
-        name: f.label,
-        value: f.type,
-        icon: f.icon,
-      })),
-  });
+  ui.openMenu(
+    (e.target as HTMLElement).getBoundingClientRect(),
+    {
+      ui: ui,
+      multi: false,
+      editable: false,
+      searchable: false,
+      saveOptions: selectedType,
+      value: [],
+      showAll: true,
+      options: fieldTypes
+        .filter((f) => !f.restricted)
+        .map((f, i) => ({
+          id: i + 1,
+          name: f.label,
+          value: f.type,
+          icon: f.icon,
+        })),
+    },
+    windowFromDocument(e.view.document)
+  );
 };
 
 export const PropertyMenuComponent = (props: {
@@ -96,7 +101,7 @@ export const PropertyMenuComponent = (props: {
     <>
       <li>
         <div
-          className="menu-item"
+          className="mk-menu-option"
           onClick={(e) =>
             selectPropertyTypeMenu(e, props.superstate.ui, selectedType)
           }
@@ -107,21 +112,19 @@ export const PropertyMenuComponent = (props: {
       </li>
 
       {fieldType.multi ? (
-        <li>
-          <div className="menu-item">
-            <span>{i18n.labels.multiple}</span>
-            <input
-              type="checkbox"
-              checked={field.type == fieldType.multiType}
-              onChange={() => toggleMulti()}
-            ></input>
-          </div>
-        </li>
+        <div className="mk-menu-option">
+          <span>{i18n.labels.multiple}</span>
+          <input
+            type="checkbox"
+            checked={field.type == fieldType.multiType}
+            onChange={() => toggleMulti()}
+          ></input>
+        </div>
       ) : (
         <></>
       )}
 
-      <div className="menu-separator"></div>
+      <div className="mk-menu-separator"></div>
       <PropertyValueComponent
         superstate={props.superstate}
         name={field.name}
@@ -137,7 +140,8 @@ export const PropertyMenuComponent = (props: {
 };
 type PropertyMenuProps = {
   superstate: Superstate;
-  position: Pos;
+  rect: Rect;
+  win: Window;
   editable: boolean;
   options: string[];
   field: SpaceTableColumn;
@@ -149,11 +153,15 @@ type PropertyMenuProps = {
   sortColumn?: (sort: Sort) => void;
   hidden?: boolean;
   editCode?: () => void;
+  anchor?: Anchors;
 };
-export const showPropertyMenu = (props: PropertyMenuProps) => {
+export const showPropertyMenu = (
+  props: PropertyMenuProps,
+  onHide?: () => void
+) => {
   const {
     superstate,
-    position,
+    rect,
     editable,
     options,
     field,
@@ -197,64 +205,30 @@ export const showPropertyMenu = (props: PropertyMenuProps) => {
 
     menuOptions.push({
       name: i18n.menu.setIcon,
-      icon: "lucide//gem",
-      onClick: () => {
-        superstate.ui.openPalette((_props: { hide: () => void }) => (
-          <StickerModal
-            ui={superstate.ui}
-            hide={_props.hide}
-            selectedSticker={(emoji) =>
-              saveField({ ...field, attrs: JSON.stringify({ icon: emoji }) })
-            }
-          />
-        ));
+      icon: "ui//gem",
+      onClick: (e: React.MouseEvent) => {
+        superstate.ui.openPalette(
+          (_props: { hide: () => void }) => (
+            <StickerModal
+              ui={superstate.ui}
+              hide={_props.hide}
+              selectedSticker={(emoji) =>
+                saveField({ ...field, attrs: JSON.stringify({ icon: emoji }) })
+              }
+            />
+          ),
+          windowFromDocument(e.view.document)
+        );
       },
     });
-
-    if (hide) {
-      if (!hidden) {
-        menuOptions.push({
-          name: i18n.menu.hideProperty,
-          icon: "lucide//eye-off",
-          onClick: () => {
-            hide(field, true);
-          },
-        });
-      } else {
-        menuOptions.push({
-          name: i18n.menu.unhideProperty,
-          icon: "lucide//eye",
-          onClick: () => {
-            hide(field, false);
-          },
-        });
-      }
-    }
-    if (editCode) {
-      menuOptions.push({
-        name: i18n.menu.editCode,
-        icon: "lucide//code",
-        onClick: () => {
-          editCode();
-        },
-      });
-    }
-    if (deleteColumn) {
-      menuOptions.push({
-        name: i18n.menu.deleteProperty,
-        icon: "lucide//trash-2",
-        onClick: () => {
-          deleteColumn(field);
-        },
-      });
-    }
     menuOptions.push(menuSeparator);
   }
   const sortableString = normalizedSortForType(field.type, false);
+
   if (sortableString && sortColumn) {
     menuOptions.push({
       name: i18n.menu.sortAscending,
-      icon: "lucide//sort-asc",
+      icon: "ui//sort-asc",
       onClick: () => {
         sortColumn({
           field: field.name + field.table,
@@ -264,7 +238,7 @@ export const showPropertyMenu = (props: PropertyMenuProps) => {
     });
     menuOptions.push({
       name: i18n.menu.sortDescending,
-      icon: "lucide//sort-desc",
+      icon: "ui//sort-desc",
       onClick: () => {
         sortColumn({
           field: field.name + field.table,
@@ -273,9 +247,53 @@ export const showPropertyMenu = (props: PropertyMenuProps) => {
       },
     });
   }
+  if (editable) {
+    menuOptions.push(menuSeparator);
+    if (hide) {
+      if (!hidden) {
+        menuOptions.push({
+          name: i18n.menu.hideProperty,
+          icon: "ui//eye-off",
+          onClick: () => {
+            hide(field, true);
+          },
+        });
+      } else {
+        menuOptions.push({
+          name: i18n.menu.unhideProperty,
+          icon: "ui//eye",
+          onClick: () => {
+            hide(field, false);
+          },
+        });
+      }
+    }
+    if (editCode) {
+      menuOptions.push({
+        name: i18n.menu.editCode,
+        icon: "ui//code",
+        onClick: () => {
+          editCode();
+        },
+      });
+    }
+    if (deleteColumn) {
+      menuOptions.push({
+        name: i18n.menu.deleteProperty,
+        icon: "ui//trash",
+        onClick: () => {
+          deleteColumn(field);
+        },
+      });
+    }
+  }
+
   const menu = superstate.ui.openMenu(
-    position,
-    defaultMenu(superstate.ui, menuOptions)
+    rect,
+    defaultMenu(superstate.ui, menuOptions),
+    props.win,
+    props.anchor,
+    onHide
   );
   return menu;
 };

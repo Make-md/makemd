@@ -6,7 +6,7 @@ import { getAllAbstractFilesInVault } from "../utils/file";
 
 
 export const indexCurrentFileTree = (plugin: MakeMDPlugin, vaultDB: DBRows): DBTables => {
-  const treeItems: DBRows = getAllAbstractFilesInVault(plugin).map(file => ({
+  const treeItems: DBRows = getAllAbstractFilesInVault(plugin.app).map(file => ({
     ...(vaultDB.find(f => f.path == file.path) ?? {}),
     path: file.path,
     parent: file.parent?.path,

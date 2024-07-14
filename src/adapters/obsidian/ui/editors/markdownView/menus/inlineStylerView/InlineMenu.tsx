@@ -9,9 +9,8 @@ import {
 import MakeMDPlugin from "main";
 import { i18n } from "makemd-core";
 
-import { uiIconSet } from "adapters/obsidian/ui/icons";
+import { isTouchScreen } from "core/utils/ui/screen";
 import React, { useState } from "react";
-import { createRoot } from "react-dom/client";
 import { colors } from "schemas/color";
 import { Mark } from "./Mark";
 import { InlineStyle, resolveStyles } from "./styles";
@@ -21,7 +20,7 @@ export const loadStylerIntoContainer = (
   plugin: MakeMDPlugin
 ) => {
   // el.removeChild(el.querySelector('.mobile-toolbar-options-container'))
-  const root = createRoot(el);
+  const root = plugin.ui.createRoot(el);
   root.render(
     <InlineMenuComponent
       mobile={true}
@@ -115,7 +114,7 @@ export const InlineMenuComponent: React.FC<{
     <>
       <div
         aria-label={
-          props.plugin.superstate.ui.getScreenType() != "mobile"
+          !isTouchScreen(props.plugin.superstate.ui)
             ? i18n.commands.makeMenu
             : undefined
         }
@@ -123,11 +122,13 @@ export const InlineMenuComponent: React.FC<{
           makeMenu(e);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-slash"] }}
+        dangerouslySetInnerHTML={{
+          __html: props.plugin.superstate.ui.getSticker("ui//mk-make-slash"),
+        }}
       ></div>
       <div
         aria-label={
-          props.plugin.superstate.ui.getScreenType() != "mobile"
+          !isTouchScreen(props.plugin.superstate.ui)
             ? i18n.commands.selectStyle
             : undefined
         }
@@ -135,11 +136,13 @@ export const InlineMenuComponent: React.FC<{
           setMode(1);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-style"] }}
+        dangerouslySetInnerHTML={{
+          __html: props.plugin.superstate.ui.getSticker("ui//mk-make-style"),
+        }}
       ></div>
       <div
         aria-label={
-          props.plugin.superstate.ui.getScreenType() != "mobile"
+          !isTouchScreen(props.plugin.superstate.ui)
             ? i18n.commands.image
             : undefined
         }
@@ -150,11 +153,13 @@ export const InlineMenuComponent: React.FC<{
           ].editorCallback(view.editor, view);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-attach"] }}
+        dangerouslySetInnerHTML={{
+          __html: props.plugin.superstate.ui.getSticker("ui//mk-make-attach"),
+        }}
       ></div>
       <div
         aria-label={
-          props.plugin.superstate.ui.getScreenType() != "mobile"
+          !isTouchScreen(props.plugin.superstate.ui)
             ? i18n.commands.toggleKeyboard
             : undefined
         }
@@ -165,11 +170,13 @@ export const InlineMenuComponent: React.FC<{
           ].editorCallback(view.editor, view);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-indent"] }}
+        dangerouslySetInnerHTML={{
+          __html: props.plugin.superstate.ui.getSticker("ui//mk-make-indent"),
+        }}
       ></div>
       <div
         aria-label={
-          props.plugin.superstate.ui.getScreenType() != "mobile"
+          !isTouchScreen(props.plugin.superstate.ui)
             ? i18n.commands.toggleKeyboard
             : undefined
         }
@@ -180,11 +187,13 @@ export const InlineMenuComponent: React.FC<{
           ].editorCallback(view.editor, view);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-unindent"] }}
+        dangerouslySetInnerHTML={{
+          __html: props.plugin.superstate.ui.getSticker("ui//mk-make-unindent"),
+        }}
       ></div>
       <div
         aria-label={
-          props.plugin.superstate.ui.getScreenType() != "mobile"
+          !isTouchScreen(props.plugin.superstate.ui)
             ? i18n.commands.toggleKeyboard
             : undefined
         }
@@ -195,7 +204,9 @@ export const InlineMenuComponent: React.FC<{
           ].editorCallback(view.editor, view);
         }}
         className="mk-mark"
-        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-make-keyboard"] }}
+        dangerouslySetInnerHTML={{
+          __html: props.plugin.superstate.ui.getSticker("ui//mk-make-keyboard"),
+        }}
       ></div>
     </>
   );
@@ -208,7 +219,9 @@ export const InlineMenuComponent: React.FC<{
           setColorMode(null);
           setMode(1);
         }}
-        dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
+        dangerouslySetInnerHTML={{
+          __html: props.plugin.superstate.ui.getSticker("ui//mk-ui-close"),
+        }}
       ></div>
       {colors.map((c, i) => (
         <div
@@ -251,7 +264,9 @@ export const InlineMenuComponent: React.FC<{
           onMouseDown={() => {
             setMode(0);
           }}
-          dangerouslySetInnerHTML={{ __html: uiIconSet["mk-ui-close"] }}
+          dangerouslySetInnerHTML={{
+            __html: props.plugin.superstate.ui.getSticker("ui//mk-ui-close"),
+          }}
         ></div>
       ) : (
         <></>
@@ -273,7 +288,7 @@ export const InlineMenuComponent: React.FC<{
           <div className="mk-divider"></div>
           <div
             aria-label={
-              props.plugin.superstate.ui.getScreenType() != "mobile"
+              !isTouchScreen(props.plugin.superstate.ui)
                 ? i18n.styles.textColor
                 : undefined
             }
@@ -286,11 +301,14 @@ export const InlineMenuComponent: React.FC<{
               });
             }}
             className="mk-mark"
-            dangerouslySetInnerHTML={{ __html: uiIconSet["mk-mark-color"] }}
+            dangerouslySetInnerHTML={{
+              __html:
+                props.plugin.superstate.ui.getSticker("ui//mk-mark-color"),
+            }}
           ></div>
           <div
             aria-label={
-              props.plugin.superstate.ui.getScreenType() != "mobile"
+              !isTouchScreen(props.plugin.superstate.ui)
                 ? i18n.styles.highlight
                 : undefined
             }
@@ -304,7 +322,9 @@ export const InlineMenuComponent: React.FC<{
             }}
             className="mk-mark"
             dangerouslySetInnerHTML={{
-              __html: uiIconSet["mk-mark-highlight"],
+              __html: props.plugin.superstate.ui.getSticker(
+                "ui//mk-mark-highlight"
+              ),
             }}
           ></div>
         </>

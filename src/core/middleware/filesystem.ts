@@ -1,8 +1,6 @@
 
 import { AFile } from "core/middleware/types/afile";
 import { PathCache } from "core/spaceManager/spaceManager";
-import { MakeMDSettings } from "core/types/settings";
-import MakeMDPlugin from "main";
 import { EventDispatcher, EventTypeToPayload } from "./dispatchers/dispatcher";
 import { FileTypeAdapter, FileTypeCache, FileTypeContent } from "./filetypes";
 
@@ -21,17 +19,17 @@ export interface FileSystemEventTypes extends EventTypeToPayload {
 }
 
 export abstract class FileSystemAdapter {
-    private constructor (public plugin: MakeMDPlugin) {
-        this.plugin = plugin;
-    }
+    
     public cache: Map<string, FileCache>;
     public initiate: (middleware: FilesystemMiddleware) => void;
     public middleware: FilesystemMiddleware;
     public getRoot: () => Promise<AFile>;
+    public keysForCacheType: (cacheType: string) => string[];
     public allFiles: () => AFile[];
+    public allContent: () => any[];
     public resourcePathForPath: (path: string) => string;
-    public copyFile: (folder: string, path: string) => Promise<void>;
-    public parentForPath: (path: string) => Promise<AFile>;
+    public copyFile: (folder: string, path: string, newName?: string) => Promise<string>;
+    public parentPathForPath: (path: string) => string;
     public updateFileCache: (path: string, cache: FileTypeCache, refresh: boolean) => void;
     public writeTextToFile: (path: string, content: string) => Promise<void>
     public readTextFromFile:  (path: string) => Promise<string>;
@@ -41,6 +39,7 @@ export abstract class FileSystemAdapter {
     public renameFile: (path: string, newPath: string) => Promise<void>;
     public createFolder: (path: string) => Promise<AFile>
     public fileExists: (path: string) => Promise<boolean>
+    public childrenForFolder: (path: string, type?: string) => Promise<string[]>
     public getFile: (path: string, source?: string) => Promise<AFile>
     public getFileCache: (path: string, source?: string) => FileCache
     public deleteFile:(path: string) => Promise<void>
@@ -50,21 +49,19 @@ export abstract class FileSystemAdapter {
     public removeTagFromFile: (path: string, tag: string) => Promise<void>
     public filesForTag: (tag: string) => string[]
     public resolvePath: (path: string, source: string) => string;
+    
 }
 
 export class FilesystemMiddleware {
-    public plugin: MakeMDPlugin;
-    public settings: MakeMDSettings;
     public eventDispatch: EventDispatcher<FileSystemEventTypes>;
     public primary: FileSystemAdapter;
     public filesystems: FileSystemAdapter[] = []
     public filetypes: FileTypeAdapter<FileTypeCache, FileTypeContent>[] = []
-    public static create(plugin: MakeMDPlugin): FilesystemMiddleware {
-        return new FilesystemMiddleware(plugin);
+    public static create(): FilesystemMiddleware {
+        return new FilesystemMiddleware();
     }
-    private constructor(plugin: MakeMDPlugin) {
+    private constructor() {
         //Initialize
-        this.plugin = plugin;
         this.eventDispatch = new EventDispatcher();
         
     }
@@ -72,6 +69,11 @@ export class FilesystemMiddleware {
     public resolvePath (path: string, source: string) {
         return this.primary.resolvePath(path, source);
     }
+
+    public keysForCacheType (cacheType: string) {
+        return this.primary.keysForCacheType(cacheType);
+    }
+
     
     public allTags () {
         return this.primary.readAllTags();
@@ -122,9 +124,9 @@ export class FilesystemMiddleware {
     public resourcePathForPath (path: string) {
         return this.adapterForPath(path).resourcePathForPath(path);
     }
-    public parentForPath (path: string) {
+    public parentPathForPath (path: string) {
 
-        return this.adapterForPath(path).parentForPath(path);
+        return this.adapterForPath(path).parentPathForPath(path);
     }
     
     public async createFileCache (path: string) {
@@ -133,12 +135,14 @@ export class FilesystemMiddleware {
             if (adapter.parseCache)
             await adapter.parseCache(file, false);
         }
+
         
     }
     
     public getFileCache (path: string) {
         return this.adapterForPath(path).getFileCache(path);
     }
+    
 
     public getFileContent (file: AFile, contentType: string, contentId: any) {
         const adapters = this.filetypeAdaptersForFile(file).filter(f => f.contentTypes(file).includes(contentType))
@@ -171,6 +175,7 @@ export class FilesystemMiddleware {
         if (adapters.length >= 1) {
             return adapters[0].newContent(file, fragmentType, name, content, options);
         }
+        
     }
 
     public saveFileLabel (file: AFile, key: string, value: any) {
@@ -189,6 +194,7 @@ export class FilesystemMiddleware {
         if (adapters.length >= 1) {
             return adapters[0].saveContent(file, fragmentType, fragmentId, saveContent)
         }
+        return false;
     }
 
     public deleteFileFragment (file: AFile, fragmentType: string, fragmentId: any) {
@@ -222,8 +228,8 @@ export class FilesystemMiddleware {
         return this.adapterForPath().getRoot();
     }
 
-    public async copyFile(folder: string, path: string) {
-        return this.adapterForPath(path).copyFile(folder, path);
+    public async copyFile(path: string, folder: string, newName?: string) {
+        return this.adapterForPath(path).copyFile(path, folder, newName);
     }
     public async writeTextToFile (path: string, content: string) {
         return this.adapterForPath(path).writeTextToFile(path, content);
@@ -248,6 +254,9 @@ export class FilesystemMiddleware {
 
     public async createFolder (path: string) {
         return this.adapterForPath(path).createFolder(path)
+    }
+    public async childrenForFolder (path: string, type?: string) {
+        return this.adapterForPath(path).childrenForFolder(path, type);
     }
     public async fileExists (path: string) {
         return this.adapterForPath(path).fileExists(path)

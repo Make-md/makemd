@@ -1,42 +1,16 @@
-import {
-  closestCenter,
-  DndContext,
-  MeasuringStrategy,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
 import { SpaceTreeComponent } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 import { Superstate } from "core/superstate/superstate";
-import { useErrorBoundary } from "preact/hooks";
+import { isTouchScreen } from "core/utils/ui/screen";
 import React, { useEffect } from "react";
+import { ErrorBoundary, useErrorBoundary } from "react-error-boundary";
 import { MainMenu } from "./MainMenu";
 import { SpaceSwitcher } from "./Waypoints/Waypoints";
 
 export const MainList = (props: { superstate: Superstate }) => {
   const [indexing, setIndexing] = React.useState(false);
-  const [error, resetError] = useErrorBoundary();
-  if (error) console.log(error);
+  // const [error, resetError] = useErrorBoundary();
+  // if (error) props.superstate.ui.error(error);
 
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    })
-  );
-  const measuring = {
-    droppable: {
-      strategy: MeasuringStrategy.Always,
-    },
-  };
   useEffect(() => {
     const reindex = async () => {
       setIndexing(true);
@@ -61,19 +35,34 @@ export const MainList = (props: { superstate: Superstate }) => {
     };
   }, []);
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      measuring={measuring}
-    >
-      <div className="mk-progress-bar">
-        {indexing && <div className="mk-progress-bar-value"></div>}
-      </div>
-      <SpaceSwitcher superstate={props.superstate}></SpaceSwitcher>
-      {props.superstate.ui.getScreenType() != "mobile" && (
-        <MainMenu superstate={props.superstate}></MainMenu>
-      )}
-      <SpaceTreeComponent superstate={props.superstate} />
-    </DndContext>
+    <>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <div className="mk-progress-bar">
+          {indexing && <div className="mk-progress-bar-value"></div>}
+        </div>
+        {!isTouchScreen(props.superstate.ui) && (
+          <MainMenu superstate={props.superstate}></MainMenu>
+        )}
+        <SpaceSwitcher superstate={props.superstate}></SpaceSwitcher>
+
+        <SpaceTreeComponent superstate={props.superstate} />
+      </ErrorBoundary>
+    </>
   );
 };
+
+export function ErrorFallback({ error }: { error: Error }) {
+  const { resetBoundary } = useErrorBoundary();
+
+  const copyError = () => {
+    navigator.clipboard.writeText(error.message);
+  };
+  return (
+    <div role="alert">
+      <p>Something went wrong:</p>
+      <p style={{ color: "red" }}>{error.message}</p>
+      <button onClick={copyError}>Copy Error</button>
+      <button onClick={resetBoundary}>Reload</button>
+    </div>
+  );
+}

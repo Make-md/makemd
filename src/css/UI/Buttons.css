@@ -1,0 +1,60 @@
+.is-phone .mk-inline-button {
+    width: unset !important;
+  }
+  
+  .is-tablet .mk-inline-button {
+    padding: unset !important;
+  }
+  
+  .mk-inline-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: var(--clickable-icon-radius);
+    box-shadow: unset !important;
+  }
+  
+  .mk-inline-button:not(:hover) {
+    background: unset !important;
+  }
+  
+.mk-inline-button {
+    font-size: 13px;
+  
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: auto !important;
+  }
+  .mk-inline-button {
+    background: none !important;
+    box-shadow: none !important;
+    color: var(--mk-ui-text-tertiary) !important;
+    padding: 0 4px !important;
+    display: flex;
+    gap: 4px;
+    height: 20px;
+    border: none !important;
+  }
+  
+  .mk-inline-button svg {
+    color: var(--mk-ui-text-tertiary) !important;
+  }
+  body:not(.is-mobile) .mk-inline-button:hover svg,
+  body:not(.is-mobile) .mk-inline-button:hover {
+    color: var(--mk-ui-text-primary) !important;
+  }
+
+
+
+.mk-inline-button {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  margin: 0;
+  height: 24px;
+  width: 24px;
+  padding: 0 !important;
+  
+}

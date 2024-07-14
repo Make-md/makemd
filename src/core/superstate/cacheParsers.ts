@@ -1,13 +1,13 @@
 import { PathCache } from "core/spaceManager/spaceManager";
-import { ContextState, FrameState, PathState, SpaceState } from "core/types/superstate";
-import _ from "lodash";
-
 import { MakeMDSettings } from "core/types/settings";
+import { ContextState, PathState, SpaceState } from "core/types/superstate";
+import _ from "lodash";
 import { SpaceInfo, SpaceTable, SpaceTables } from "types/mdb";
-import { MDBFrame } from "types/mframe";
 import { orderStringArrayByArray, uniq } from "utils/array";
 
 import { PathPropertyName } from "core/types/context";
+import { tagsSpacePath } from "core/types/space";
+import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { pathByDef } from "core/utils/spaces/query";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { PathLabel } from "makemd-core";
@@ -18,108 +18,88 @@ import { pathToString } from "utils/path";
 
 
 
-export const parseFramesTableToCache = (space: SpaceInfo, mdb: SpaceTables, oldCache: FrameState) : { changed: boolean, cache: FrameState } => {
-    if (!space) return {changed: false, cache: null}
-    if (!mdb) {
-        return {changed: false, cache: {
-            path: space.path,
-            frames: {},
-            schemas: [],
-            listitems: {}
-        }}
-    }
-    const schemas = Object.values(mdb).map(f => f.schema);
-    const frames = schemas.filter(f => f.type == 'frame').reduce((p,c) => ({...p, [c.id]: mdb[c.id] as MDBFrame}), {})
-
-    const listitems = schemas.filter(f => f.type == 'listitem').reduce((p,c) => ({...p, [c.id]: mdb[c.id] as MDBFrame}), {})
-    const cache : FrameState = {
-        path: space.path,
-        frames,
-        schemas,
-        listitems
-    }
-    let changed = true;
-    if (oldCache && _.isEqual(cache, oldCache)) {
-        changed = false;
-    }
-    return {changed, cache}
-}
-
-export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, paths: string[], oldCache: ContextState) : { changed: boolean, cache: ContextState } => {
+export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, paths: string[], dbExists: boolean, pathsIndex: Map<string, PathState>, runContext: math.MathJsInstance) : { changed: boolean, cache: ContextState } => {
 
     const spaceMap : { [key: string] : { [key: string] : string[] } } = {};
     if (!space) return {changed: false, cache: null}
     if (!mdb) {
         return {changed: false, cache: {
-            cols: [],
+
             path: space.path,
             schemas: [],
             outlinks: [],
             contexts: [],
             paths: [],
-            tables: {},
-            space,
-            spaceMap
+            contextTable: null,
+            spaceMap,
+            dbExists: false
         }}
     }
     const schemas = Object.values(mdb).map(f => f.schema);
-    const dbSchema = schemas.find(f => f.primary == 'true');
-    const mdbTable : SpaceTable = mdb[dbSchema.id] as SpaceTable;
     
-    const tables : SpaceTables = mdb;
-    const contextCols = mdbTable.cols?.filter(f => f.type.startsWith('context')) ?? [];
-    const linkCols = mdbTable.cols?.filter(f => f.type.startsWith('link')) ?? [];
+    const contextPaths = mdb[defaultContextSchemaID]?.rows?.map(f => f[PathPropertyName]) ?? [];
+    const missingPaths = paths.filter(f => !contextPaths.includes(f));
+    const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
+    const dependencies = propertyDependencies(mdb[defaultContextSchemaID].cols);
+    const rows = [...mdb[defaultContextSchemaID].rows.filter(f => paths.includes(f[PathPropertyName])), ...missingPaths.map(f => ({[PathPropertyName]: f}))].map(f => linkContextRow(runContext, pathsIndex, f, mdb[defaultContextSchemaID].cols, pathsIndex.get(space.path), dependencies))
+    const contextTable : SpaceTable =  {...mdb[defaultContextSchemaID], 
+        rows: rows
+    } as SpaceTable;
+
+    const contextCols = contextTable.cols?.filter(f => f.type.startsWith('context')) ?? [];
+    const linkCols = contextTable.cols?.filter(f => f.type.startsWith('link')) ?? [];
     const contexts = uniq(contextCols.map(f => f.value))
     contextCols.forEach(f => {
         spaceMap[f.name] = {};
-        mdbTable.rows.forEach(g => {
+        contextTable.rows.forEach(g => {
             parseMultiString(g[f.name]).forEach(h =>
                 spaceMap[f.name][h] = [...(spaceMap[f.name][h] ?? []), g[PathPropertyName]]
                 )
         });
 
     })
-    const contextPaths = tables[defaultContextSchemaID]?.rows?.map(f => f[PathPropertyName]) ?? [];
-    const newPaths = orderStringArrayByArray(paths ?? [], contextPaths)
-    const outlinks = uniq(mdbTable.rows.reduce((p, c) => uniq([...p, ...[...contextCols, ...linkCols].flatMap(f => parseMultiString(c[f.name]).map(f => parseLinkString(f)))]), []))
+    
+    const outlinks = uniq(contextTable.rows.reduce((p, c) => uniq([...p, ...[...contextCols, ...linkCols].flatMap(f => parseMultiString(c[f.name]).map(f => parseLinkString(f)))]), []))
     const cache : ContextState = {
-        cols: mdbTable.cols,
+        contextTable,
         path: space.path,
         contexts: contexts,
         outlinks: outlinks,
         paths: newPaths,
-        tables, schemas,
-        space,
-        spaceMap
+        schemas,
+        spaceMap,
+        dbExists
     }
-    let changed = true;
-    if (oldCache && _.isEqual(cache, oldCache)) {
+    let changed = false;
+    if (!_.isEqual(contextTable, mdb)) {
         changed = true;
     }
     return {changed, cache}
 }
 
 
-export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, oldCache: Map<string, PathState>) : {[key: string]: { changed: boolean, cache: PathState }} => {
+export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>,  oldCache: Map<string, PathState>) : {[key: string]: { changed: boolean, cache: PathState }} => {
     const cache : {[key: string]: { changed: boolean, cache: PathState }} = {};
     for (const [path, _pathCache] of fileCache) {
-        const cachePath = spacesCache.get(path)?.defPath ?? path;
+        const cachePath = settings.enableFolderNote ? spacesCache.get(path)?.space.notePath ?? path : path;
         
         const pathCache = fileCache.get(cachePath) ?? _pathCache;
+        if (!_pathCache)
+            continue;
 
         const parent = _pathCache?.parent ?? '';
         const type = _pathCache?.type ?? '';
+        const subtype = _pathCache?.subtype ?? '';
         const label = pathCache?.label;
         const oldMetadata = oldCache?.get(path);
-        const {changed, cache: metadata} = parseMetadata(path, settings, spacesCache, pathCache, label, type, parent, oldMetadata);
+        const {changed, cache: metadata} = parseMetadata(path, settings, spacesCache, pathCache, label, type, subtype, parent, oldMetadata);
         cache[path] = { changed, cache: metadata };
     }
     return cache;
 
 }
 
-export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, pathCache: PathCache, label: PathLabel, type: string, parent: string, oldMetadata: PathState) : { changed: boolean, cache: PathState }  => {
-
+export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>,  pathCache: PathCache, label: PathLabel, type: string, subtype: string, parent: string, oldMetadata: PathState) : { changed: boolean, cache: PathState }  => {
     const defaultSticker = (
         sticker: string,
         type: string,
@@ -129,16 +109,16 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         if (sticker?.length > 0) return sticker;
         if (type == 'space')
         {
-            if (path == 'Spaces/Home') return 'ui//mk-ui-home';
-            if (path == "/") return 'lucide//vault';
-            if (path.startsWith('spaces://#')) return "lucide//tags";
-            return "ui//mk-ui-folder";
+            if (path == 'Spaces/Home') return 'ui//home';
+            if (path == "/") return 'ui//vault';
+            if (path.startsWith('spaces://')) return "ui//tags";
+            return "ui//folder";
         }
-      return "ui//mk-ui-file";
+      return "ui//file";
       
       };
 
-    const cache : PathState = {  label: pathCache?.label, path: path, name: pathToString(path), displayName: pathToString(path) };
+    const cache : PathState = {  label: pathCache?.label, path: path, name: pathToString(path), readOnly: pathCache?.readOnly };
 
     const tags : string[] = [];
     const fileTags : string[] = pathCache?.tags?.map(f => f) ?? [];
@@ -171,72 +151,96 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         }
     }
 
+    
+
     tags.push(...fileTags)
-    const name = label.name;
+    const name = label?.name;
     const aliases = pathCache?.properties ? ensureArray(pathCache.properties[settings.fmKeyAlias]) : [];
-    const sticker = defaultSticker(label.sticker, type, path);
-    const color = label.color ?? '';
+    const sticker = defaultSticker(label?.sticker, type, path);
+    const color = label?.color ?? '';
     
-    const inlinks = pathCache?.inlinks ?? [];
-    const outlinks = pathCache?.links ?? []
+    const outlinks = pathCache?.resolvedLinks ?? []
     
     
-
-    const displayName = settings.spacesUseAlias ? aliases[0] ?? name : name;
-
+    let isSpaceNote = false;
+    let spacePath;
     const pathState : PathState = {
         ...cache,
         name,
         tags: uniq(tags),
         type: type,
-        displayName,
+        subtype,
         parent,
         label: {
             name,
             sticker,
-            color
+            color,
+            thumbnail: label?.thumbnail ?? '',
+            preview: label?.preview ?? '',
         },
         metadata: {
             ...pathCache,
         },
-        inlinks,
         outlinks
     }
 
     const spaces : string[] = [];
-    
+    if (subtype == 'tag') {
+        spaces.push(tagsSpacePath)
+    }
     for (const s of tags) {
         spaces.push(tagSpacePathFromTag(s))
     }
-    for (const [s, space] of spacesCache) {
-        if (space.defPath == path) {
+    const evaledSpaces = new Set<string>();
+    const evalSpace = (s: string, space: SpaceState) => {
+        if (evaledSpaces.has(s)) return;
+        evaledSpaces.add(s);
+        if (space.dependencies?.length > 0) {
+            for (const dep of space.dependencies) {
+                if (spacesCache.has(dep)) {
+                    evalSpace(dep, spacesCache.get(dep))
+                }
+            }
+        }
+        if (space.space.notePath == path && space.path != space.space.notePath) {
+            isSpaceNote = true;
+            spacePath = space.path;
             hidden = true;
         }
-        if (space.space && space.space.path == parent) {
-            spaces.push(s)
-            continue;
+        if (subtype != 'tag' && subtype != 'default') {
+            if (space.space && space.space.path == parent) {
+                spaces.push(s)
+                return;
+            }
         }
         if (space.metadata?.filters?.length > 0) {
-            if (pathByDef(space.metadata.filters, pathState)) {
+            if (pathByDef(space.metadata.filters, {...pathState, spaces}, space.properties)) {
                 spaces.push(s);
-                continue;
+                return;
             }
         }
          if (space.metadata?.links?.length  > 0) {
             const spaceItem = (space.metadata?.links ?? []).find(f => f == pathState.path);
             if (spaceItem) {
                 spaces.push(s);
-                
-                continue;
+                return;
             }
         }
+    }
+    for (const [s, space] of spacesCache) {
+        
+        evalSpace(s, space);
     }
 
         const newTags = getTagsFromCache(spacesCache, spaces)
         spaces.push(...newTags.map(f => tagSpacePathFromTag(f)));
         
-        pathState.tags.push(...newTags)
         
+        pathState.tags.push(...newTags)
+        if (isSpaceNote)
+            {
+                pathState.metadata.spacePath = spacePath;
+            }
     const metadata : PathState = hidden ? {...pathState, spaces: [], hidden: hidden} : {...pathState, spaces: uniq(spaces), hidden };
     let changed = true;
 

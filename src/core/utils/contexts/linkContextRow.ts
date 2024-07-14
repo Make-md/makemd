@@ -1,14 +1,12 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { Superstate } from "core/superstate/superstate";
 import { PathPropertyName } from "core/types/context";
-import { appendPathsMetaData } from "core/utils/contexts/lookup";
-import { defaultContextSchemaID } from "schemas/mdb";
+import { PathState } from "core/types/superstate";
+import { ConstantNode, FunctionNode, parse } from "mathjs";
 import { DBRow, DBRows, SpaceProperty } from "types/mdb";
 import { uniq } from "utils/array";
 import { serializeMultiString } from "utils/serializers";
-import { parseMultiString } from "../../../utils/parsers";
-
-
+import { parseMultiString, parseProperty } from "../../../utils/parsers";
+import { runFormulaWithContext } from "../formula/parser";
 
 
 
@@ -18,51 +16,90 @@ export const linkContextProp = (
   contextTableRows: DBRows
 ) => {
   const contextRows = contextTableRows.filter((f) =>
-    parseMultiString(rows).contains(f[PathPropertyName])
+    parseMultiString(rows).includes(f[PathPropertyName])
   );
   return serializeMultiString(uniq(contextRows.map((f) => f[propType]).filter((f) => f)));
 };
 
+
+export const propertyDependencies = (fields: SpaceProperty[]) => {
+  const graph = new Map<string, Set<string>>();
+  fields.filter((f) => f.type == "fileprop" || f.name.startsWith('tags')).forEach((f) => {
+    const { value } = parseFieldValue(f.value, f.type);
+    const localDependencies = []
+  try {
+    const deps = parse(value).filter((f) => f.type == 'FunctionNode').filter(f => (f as FunctionNode).fn.name == 'prop' && (f as FunctionNode).args[0].type == 'ConstantNode').map(f => ((f as FunctionNode).args[0] as ConstantNode)?.value as unknown as string)
+    localDependencies.push(...deps)
+  }
+  catch (e) {
+    // console.log(e)
+  }
+    
+
+    const key = f.name
+    if (!graph.has(key)) {
+      graph.set(key, new Set());
+  }
+  for (const dep of localDependencies) {
+      const depStr = dep; // Using the last part as the key
+      if (depStr === key) continue; // Skip self dependencies
+  
+      // Add an edge from key to the dependency
+      graph.get(key)!.add(depStr);
+  }
+})
+const visited: Set<string> = new Set();
+    const result: string[] = [];
+    const temp: Set<string> = new Set();
+  const visit = (key: string) => {
+    if (temp.has(key)) throw new Error('Circular dependency detected');
+    if (!visited.has(key)) {
+        temp.add(key);
+        const edges = graph.get(key) || new Set();
+        
+        for (const dep of edges) {
+            visit(dep);
+        }
+        visited.add(key);
+        temp.delete(key);
+        result.push(key);
+    }
+  };
+
+  for (const key of fields) {
+      if (!visited.has(key.name)) {
+          visit(key.name);
+      }
+  }
+  return result;
+}
 export const linkContextRow = (
-  superstate: Superstate,
+  runContext: math.MathJsInstance,
+  paths: Map<string, PathState>,
   row: DBRow,
-  fields: SpaceProperty[]
+  fields: SpaceProperty[],
+  path: PathState,
+  dependencies?: string[]
 ) => {
+  if (!row) return {}
+  
+  const result = dependencies ?? propertyDependencies(fields)
+  const frontmatter = (paths.get(row[PathPropertyName])?.metadata?.property ?? {});
+  const filteredFrontmatter = Object.keys(frontmatter).filter(f => fields.some(g => g.name == f)).reduce((p, c) => ({ ...p, [c]: parseProperty(c, frontmatter[c]) }), {})
+  const fieldsSorted = result.map(f => fields.find(g => g.name == f) as SpaceProperty).filter((f) => f && (f.type == "fileprop" || f.name == 'tags'))
+const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {})
   return {
     ...row,
-    ...fields
-      .filter((f) => f.type == "fileprop" || f.name == 'tags')
+    ...filteredFrontmatter,
+    ...fieldsSorted
       .reduce((p, c) => {
-        if (c.name == 'tags') {
-          return { ...p, 'tags': serializeMultiString([...(superstate.tagsMap.get(row[PathPropertyName]) ?? [])]) };
-        }
-        const { field, value } = parseFieldValue(c.value, c.type);
-        const col = fields.find((f) => f.name == field);
-        if (!col || !value) {
-          return p;
-        }
-        if (col.type == "file" || col.type == "link") {
-          return {
-            ...p,
-            [c.name]: appendPathsMetaData(superstate, value, row[col.name]),
-          };
-        }
-
-        if (col.type.includes("context")) {
-          const context = col.value;
-          const contextCache = superstate.contextsIndex.get(context);
-          if (contextCache.tables[defaultContextSchemaID]) {
-            return {
-              ...p,
-              [c.name]: linkContextProp(
-                value,
-                row[col.name],
-                contextCache.tables[defaultContextSchemaID].rows
-              ),
-            };
-          }
-        }
-        return p;
+        // if (c.name == 'tags') {
+        //   return { ...p, 'tags': serializeMultiString([...(superstate.tagsMap.get(row[PathPropertyName]) ?? [])]) };
+        // }
+        
+        const { value } = parseFieldValue(c.value, c.type);
+        return {...p, [c.name]: runFormulaWithContext(runContext, paths, value, properties, {...row, ...p}, path)};
+        
       }, {}),
   };
 };

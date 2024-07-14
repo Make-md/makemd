@@ -1,7 +1,9 @@
 import { Superstate } from "core/superstate/superstate";
+import { deletePath } from "core/superstate/utils/path";
 import { PathPropertyName } from "core/types/context";
 import { folderForTagSpace } from "core/utils/spaces/space";
 import { pathToParentPath } from "core/utils/strings";
+import { isString } from "lodash";
 import { DBRow, SpaceInfo, SpaceTable } from "types/mdb";
 import { insert } from "utils/array";
 import { defaultMDBTableForContext } from "../../../schemas/mdb";
@@ -12,6 +14,7 @@ import { parseMultiString } from "../../../utils/parsers";
 export const optionValuesForColumn = (column: string, table: SpaceTable) => {
   return uniq(
     table?.rows.reduce((p, c) => {
+      if (!isString(c[column])) return [...p]
       return [...p, ...parseMultiString(c[column])];
     }, []) ?? []
   );
@@ -45,15 +48,19 @@ export const createNewRow = (mdb: SpaceTable, row: DBRow, index?: number) => {
 
 export const renameTagSpacePath = async (
   superstate: Superstate,
-  space: string,
-  newSpace: string
+  tag: string,
+  newTag: string
 ) => {
-  const spacePath = folderForTagSpace(space, superstate.settings);
-  if (await superstate.spaceManager.pathExists(spacePath)) {
-    superstate.onPathDeleted(spacePath);
-  } else {
-    superstate.onPathRename(spacePath, pathToParentPath(spacePath) + '/' + newSpace);
-  }
 
+  const spacePath = folderForTagSpace(tag, superstate.settings);
+
+    if (await superstate.spaceManager.pathExists(spacePath)) {
+      superstate.spaceManager.renamePath(spacePath, pathToParentPath(spacePath) + '/' + newTag)
+
+    } else {
+      deletePath(superstate, spacePath)
+      
+    }
+  superstate.onTagRenamed(tag, newTag)
 
 };

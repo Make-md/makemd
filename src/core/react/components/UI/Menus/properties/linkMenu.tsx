@@ -1,36 +1,51 @@
 import i18n from "core/i18n";
 import { Superstate } from "core/superstate/superstate";
+import { Rect } from "types/Pos";
+import { SelectMenuProps, SelectSection } from "../menu/SelectionMenu";
 
 export const showLinkMenu = (
-  e: React.MouseEvent,
+  offset: Rect,
+  win: Window,
   superstate: Superstate,
   saveLink: (link: string) => void,
-  placeholder?: string
+  options?: Partial<SelectMenuProps>
 ) => {
-  const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-  const options = [...superstate.pathsIndex.values()]
+  const suggestions = [...superstate.pathsIndex.values()]
     .filter((f) => !f.hidden)
     .map((f) => ({
-      name: f.displayName,
+      name: f.label.name,
       value: f.path,
       description: f.path,
       icon: f.label?.sticker,
+      section: f.type,
     }));
-  superstate.ui.openMenu(
-    { x: offset.left, y: offset.top + 30 },
+  const sections: SelectSection[] = Array.from(
+    new Set(suggestions.map((f) => f.section))
+  ).map((f) => {
+    return {
+      name: f,
+      value: f,
+    };
+  });
+  return superstate.ui.openMenu(
+    offset,
     {
       ui: superstate.ui,
       multi: false,
       editable: true,
       value: [],
-      options,
+      options: suggestions,
       saveOptions: (_: string[], value: string[]) => {
         saveLink(value[0]);
       },
-      placeholder: placeholder ?? i18n.labels.linkItemSelectPlaceholder,
+      placeholder: i18n.labels.linkItemSelectPlaceholder,
       detail: true,
       searchable: true,
       showAll: true,
-    }
+      sections: sections,
+      showSections: true,
+      ...(options ?? {}),
+    },
+    win
   );
 };

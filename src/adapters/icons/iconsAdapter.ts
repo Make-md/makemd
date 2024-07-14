@@ -45,7 +45,7 @@ export class IconFileTypeAdapter implements FileTypeAdapter<IconTypeCache, IconT
         
     }
     public newContent:  (file: AFile, fragmentType: keyof IconTypeContent, name: string, content: IconTypeContent[typeof fragmentType], options: {[key: string]: any}) => Promise<any>;
-    public saveContent: (file: AFile, fragmentType: keyof IconTypeContent, fragmentId: any, content: (prev: IconTypeContent[typeof fragmentType]) => any) => void;
+    public saveContent: (file: AFile, fragmentType: keyof IconTypeContent, fragmentId: any, content: (prev: IconTypeContent[typeof fragmentType]) => any) => Promise<boolean>;
     public deleteContent: (file: AFile, fragmentType: keyof IconTypeContent, fragmentId: any) => void
     
 }

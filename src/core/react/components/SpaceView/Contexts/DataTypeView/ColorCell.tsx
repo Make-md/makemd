@@ -1,5 +1,6 @@
 import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
 import React from "react";
+import { windowFromDocument } from "utils/dom";
 import { TableCellProp } from "../TableView/TableView";
 
 export const ColorCell = (props: TableCellProp) => {
@@ -10,7 +11,8 @@ export const ColorCell = (props: TableCellProp) => {
     const offset = (e.target as HTMLElement).getBoundingClientRect();
     showColorPickerMenu(
       props.superstate,
-      { x: offset.left, y: offset.top + 30 },
+      offset,
+      windowFromDocument(e.view.document),
       props.initialValue,
       handleChangeComplete
     );

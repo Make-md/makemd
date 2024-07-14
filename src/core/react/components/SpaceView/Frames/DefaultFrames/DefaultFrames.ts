@@ -1,11 +1,54 @@
 import i18n from "core/i18n";
-import { frameSchemaToMDBSchema, nodeToFrame } from "core/utils/frames/nodes";
-import { flowNode, groupNode, spaceNode } from "schemas/frames";
+
+import { nodeToFrame } from "core/utils/frames/nodes";
+import { contextNode, flowNode, groupNode } from "schemas/kits/base";
 import { defaultContextFields, defaultFrameListViewID, defaultFrameListViewSchema, defaultMainFrameSchema, mainFrameID } from "schemas/mdb";
 import { SpaceProperty } from "types/mdb";
 import { FrameNode, MDBFrames } from "types/mframe";
 
-const defaultMainFrame : FrameNode[] = [
+ const defaultMainFrame : FrameNode[] = [
+  {
+    ...groupNode.node,
+    id: "main",
+    type: "group",
+    rank: 0,
+    schemaId: "main",
+    props: {
+      note: '',
+      space: ''
+    },
+    types: {
+      note: 'link',
+      space: 'space'
+    },
+    propsValue: {
+      note: JSON.stringify({
+        alias: i18n.defaults.spaceNote
+      }),
+      space: JSON.stringify({
+        alias: i18n.defaults.spaceContext
+      })
+    },
+    styles: {
+      layout: `"column"`,
+    },
+  },
+  
+  {
+    ...contextNode.node,
+    id: "context",
+    rank: 1,
+    props: {
+      value: `$contexts.$space.space`,
+    },
+    styles: { width: `"100%"` },
+    parentId: "main",
+    schemaId: "main",
+  },
+];
+
+
+const folderNoteMainFrame : FrameNode[] = [
     {
       ...groupNode.node,
       id: "main",
@@ -30,48 +73,59 @@ const defaultMainFrame : FrameNode[] = [
       },
       styles: {
         layout: `"column"`,
-        class: `'mk-f-main'`
       },
     },
     {
       ...flowNode.node,
       rank: 0,
       props: {
-        value: `main.props.note`,
+        value: `$contexts.$space.note`,
+        
       },
-      styles: { width: `'100%'` },
+      styles: { width: `"100%"`, "--mk-min-mode": `true`, "--mk-expanded": `true`, padding: `"0px"` },
       parentId: "main",
       schemaId: "main",
     },
     {
-      ...spaceNode.node,
+      ...contextNode.node,
       id: "context",
       rank: 1,
       props: {
-        value: `main.props.space`,
+        value: `$contexts.$space.space`,
       },
-      styles: { width: `'100%'` },
+      styles: { width: `"100%"` },
       parentId: "main",
       schemaId: "main",
     },
   ];
 
   
-
-export const DefaultMDBTables : MDBFrames = {
+  export const DefaultFolderNoteMDBTables : MDBFrames = {
     main: { schema: defaultMainFrameSchema(mainFrameID),
-    cols: [{name: 'space', type: 'space', schemaId: 'main', value: JSON.stringify({
-      alias: i18n.defaults.spaceContext
-    })}, {name: 'note', type: 'link', schemaId: 'main', value: JSON.stringify({
-      alias: i18n.defaults.spaceNote
-    })}],
-    rows: defaultMainFrame.map((f) => nodeToFrame(f))
-},
-[defaultFrameListViewID]: {
-  schema: frameSchemaToMDBSchema(defaultFrameListViewSchema),
-  cols: defaultContextFields.rows as SpaceProperty[],
-rows: []
-
-
-}
+    cols: [],
+    rows: folderNoteMainFrame.map((f) => nodeToFrame(f))
+  },
+  [defaultFrameListViewID]: {
+    schema: defaultFrameListViewSchema,
+    cols: defaultContextFields.rows as SpaceProperty[],
+  rows: []
+  }
   };
+
+  export const DefaultMDBTables : MDBFrames = {
+    main: { schema: defaultMainFrameSchema(mainFrameID),
+    cols: [],
+    rows: defaultMainFrame.map((f) => nodeToFrame(f))
+  },
+  [defaultFrameListViewID]: {
+    schema: defaultFrameListViewSchema,
+    cols: defaultContextFields.rows as SpaceProperty[],
+  rows: []
+  }
+  };
+
+  export const DefaultSpaceCols : SpaceProperty[] = [{name: 'space', type: 'space', schemaId: 'main', value: JSON.stringify({
+    alias: i18n.defaults.spaceContext
+  })}, {name: 'note', type: 'link', schemaId: 'main', value: JSON.stringify({
+    alias: i18n.defaults.spaceNote
+  })}]

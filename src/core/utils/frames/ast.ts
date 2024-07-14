@@ -1,42 +1,56 @@
+import { ScreenType } from "core/middleware/ui";
 import { Superstate } from "core/superstate/superstate";
-import { applyFunctionToObject } from "core/utils/objects";
-import { wrapQuotes } from "core/utils/strings";
+import _ from "lodash";
+import { rootToFrame } from "schemas/frames";
 import { SpaceProperty } from "types/mdb";
-import { FrameDragMode, FrameDropMode, FrameEditorProps, FrameNode, FrameResizeMode, FrameRoot, FrameSchema, FrameTreeNode, FrameTreeProp, MDBFrame, defaultFrameEditorProps } from "types/mframe";
+import { FrameDragMode, FrameDropMode, FrameEditorMode, FrameEditorProps, FrameExecutable, FrameNode, FrameResizeMode, FrameRoot, FrameSchema, FrameState, FrameTreeNode, FrameTreeProp, MDBFrame, defaultFrameEditorProps } from "types/mframe";
+import { uniqueNameFromString } from "utils/array";
+import { removeQuotes } from "../strings";
+import { buildExecutable } from "./executable";
+import { parseLinkedNode } from "./frame";
 import { linkNodes } from "./linker";
 import { frameToNode, mdbSchemaToFrameSchema } from "./nodes";
 
 const calculateEditorProps = (props: FrameEditorProps, treeNode: FrameTreeNode) : FrameEditorProps => {
+
   if (props.editMode == 0 || !props.rootId) return props;
   if (treeNode.node.id == props.rootId) return props;
-  if (treeNode.isRef) return {...props, dropMode: 0, dragMode: 0, resizeMode: 0, selectMode: 0};
+  if (treeNode.isRef) return {...props, dropMode: 0, dragMode: 0, resizeMode: 0, selectMode: 0, linkedNode: parseLinkedNode(treeNode.node.props?.value)};
 
-  if (props.editMode == 3) {
+  if (props.editMode == FrameEditorMode.Group) {
     return {
     ...props,
     resizeMode: FrameResizeMode.ResizeSelected,
-    dragMode: FrameDragMode.DragSelected
+    dragMode: FrameDragMode.DragSelected,
+    dropMode: treeNode.editorProps.parentType == 'group' ? removeQuotes(treeNode.parent.node.styles?.layout) == ('row') ? 
+    FrameDropMode.DropModeColumnOnly : FrameDropMode.DropModeRowOnly : FrameDropMode.DropModeRowColumn
     }
   }
+
   const firstLevelNode = treeNode.node.parentId == props.rootId;
   const columnChild = treeNode.editorProps.parentType == "column"
   const isColumn = treeNode.node.type == "column"
-  const resizeMode =
-    treeNode.node.type == "image" ||
-    isColumn ? FrameResizeMode.ResizeAlways : FrameResizeMode.ResizeNever;
+  const resizeMode = isColumn && treeNode.editorProps.parentLastChildID != treeNode.id ? FrameResizeMode.ResizeColumn : FrameResizeMode.ResizeSelected;
     
   const dragMode =
     ((firstLevelNode &&
       treeNode.node.type != "container") ||
-      columnChild && !isColumn) || isColumn && treeNode.children.length == 0 ? FrameDragMode.DragHandle : FrameDragMode.DragNever;
+      columnChild && !isColumn) || isColumn && treeNode.children.length == 0 ? FrameDragMode.DragHandle : FrameDragMode.DragSelected;
     
-  const dropMode = isColumn
-        ? FrameDropMode.DropModeColumnOnly : columnChild ? FrameDropMode.DropModeRowOnly : firstLevelNode ? FrameDropMode.DropModeRowColumn : 0
+  const dropMode = props.screenType == ScreenType.Phone ? FrameDropMode.DropModeRowOnly : isColumn
+        ? FrameDropMode.DropModeColumnOnly : 
+        columnChild ? FrameDropMode.DropModeRowOnly : 
+        firstLevelNode ? FrameDropMode.DropModeRowColumn : 
+        treeNode.editorProps.parentType == 'group' ? removeQuotes(treeNode.parent.node.styles?.layout) == ('column') ? 
+        FrameDropMode.DropModeColumnOnly : FrameDropMode.DropModeRowOnly : 0
+
+    
     return {
       ...props,
       dragMode,
       resizeMode,
-      dropMode
+      dropMode,
+      linkedNode: parseLinkedNode(treeNode.node.props?.value)
     }
 }
 
@@ -57,27 +71,31 @@ export function replaceSubtree(tree: FrameTreeNode, subtree: FrameTreeNode): Fra
 
   return tree;
 }
-export const getFrameNodesByPath = (
+const getFrameNodesByPath = async (
     superstate: Superstate,
     ref: string
-  ): MDBFrame => {
+  ): Promise<MDBFrame> => {
     const path = superstate.spaceManager.uriByString(ref)
     if (!path) return;
     if (path.authority == '$kit') {
-
-      return superstate.kit.find(f => f.schema.id == path.ref)
+      const kit = superstate.kit.find(f => f.def.id == path.ref)
+      if (!kit) return;
+      return rootToFrame(kit)
     }
-    const context = superstate.framesIndex.get(path.basePath);
-    return context?.frames[path.ref];
+    const context = await superstate.spaceManager.readFrame(path.basePath, path.ref);
+    return context as MDBFrame;
   };
 
-  export function flattenToFrameNodes(root: FrameTreeNode | FrameRoot): FrameNode[] {
+  export function flattenToFrameNodes(root: FrameTreeNode | FrameRoot, schemaId: string): FrameNode[] {
+    //This function is an example of how javascript makes bad (non pure functions) patterns easy and more efficient :(:(:(
     const flattenedTree: FrameNode[] = [];
-
+    const ids: string[] = [];
     function traverseAndFlatten(node: FrameTreeNode | FrameRoot, parent: string): void {
-      flattenedTree.push({...node.node, parentId: parent, schemaId: root.node.schemaId});
+      const id = uniqueNameFromString(node.node.id, ids);
+      ids.push(id);
+      flattenedTree.push({...node.node, id: id, parentId: parent, schemaId: schemaId});
       (node.children ?? []).forEach((child) => {
-        traverseAndFlatten(child, node.node.id);
+        traverseAndFlatten(child, id);
       });
     }
     traverseAndFlatten(root, "");
@@ -103,11 +121,11 @@ export const getFrameNodesByPath = (
     return newRoot;
   }
 
-  const expandNode = (treeNode: FrameTreeNode,id: number, superstate: Superstate) : [FrameTreeNode, number] => {
+  const expandNode = async (treeNode: FrameTreeNode,id: number, superstate: Superstate) : Promise<[FrameTreeNode, number]> => {
 
     if (treeNode.node.type == "frame") {
       
-      const mdbFrame = getFrameNodesByPath(superstate, treeNode.node.ref);
+      const mdbFrame = await getFrameNodesByPath(superstate, treeNode.node.ref);
       if (treeNode.node.schemaId == mdbFrame?.schema.id)
       return [treeNode, id];
       if (!mdbFrame || mdbFrame.rows.length == 0) {
@@ -115,7 +133,6 @@ export const getFrameNodesByPath = (
       }
 
       const linkedNode = linkProps(mdbFrame.cols, treeNode);
-      
       const [linkedNodes, newUniqueID] = linkNodes(
         linkedNode.node,
         mdbFrame.schema.id,
@@ -123,7 +140,7 @@ export const getFrameNodesByPath = (
         mdbFrame.rows.map(f => frameToNode(f)),
         id
       );
-      const [newTreeNode, newID] =  buildFrameTree(linkedNode.node,
+      const [newTreeNode, newID] = await buildFrameTree(linkedNode.node,
         linkedNodes
       , superstate, newUniqueID, true, treeNode.editorProps);
 
@@ -131,26 +148,26 @@ export const getFrameNodesByPath = (
       if (!newTreeNode) {
         return [linkedNode, newID];
       }
-      return [insertFrameChildren({...newTreeNode, isRef: false, node: {...newTreeNode.node, schemaId: linkedNode.node.schemaId, ref: linkedNode.node.ref, types: linkedNode.node.types, propsAttrs: linkedNode.node.propsAttrs, propsValue: linkedNode.node.propsValue, parentId:linkedNode.node.parentId, type: 'frame', id: newTreeNode.id}}, treeNode.children), newID];
+      return [insertFrameChildren({...newTreeNode, parent: linkedNode.parent, isRef: false, node: {...newTreeNode.node, schemaId: linkedNode.node.schemaId, ref: linkedNode.node.ref, types: linkedNode.node.types, propsAttrs: linkedNode.node.propsAttrs, propsValue: linkedNode.node.propsValue, parentId:linkedNode.node.parentId, type: linkedNode.node.type, id: newTreeNode.id}}, treeNode.children), newID];
     }
     
     return [treeNode, id];
   }
-  const expandFrame = (
+  const expandFrame = async (
     node: FrameTreeNode,
     superstate: Superstate, uniqueID = 0, editorProps: FrameEditorProps
-  ): [FrameTreeNode, number] => {
+  ): Promise<[FrameTreeNode, number]> => {
 
-  const [children, lastID] = node.children.reduce<[FrameTreeNode[], number]>((f, c) => {
+  const [children, lastID] = await node.children.reduce<Promise<[FrameTreeNode[], number]>>(async (f, c) => {
 
-    const [nodes, id] = f;
+    const [nodes, id] = await f;
 
-    const _editorProps = calculateEditorProps({...editorProps, parentType: node.node.type}, c)
+    const _editorProps = calculateEditorProps({...editorProps, parentType: node.node.type, parentLastChildID: node.children[node.children.length-1]?.id}, c)
 
-    const [newNode, fid]= expandFrame(c, superstate, id+1, _editorProps)
+    const [newNode, fid]= await expandFrame(c, superstate, id+1, _editorProps)
     return [[...nodes, newNode], fid+1]
-  }, [[], uniqueID])
-  const [newNode, newID] = expandNode({...node, children, editorProps}, lastID, superstate);
+  }, Promise.resolve([[], uniqueID]))
+  const [newNode, newID] = await expandNode({...node, children, editorProps}, lastID, superstate);
 
   return [{
     ...newNode,
@@ -172,16 +189,16 @@ const linkProps = (fields: SpaceProperty[], root: FrameTreeNode) : FrameTreeNode
   }}
 }
 
-export const applyPropsToRoot = (root: FrameTreeNode, props: FrameTreeProp) => ({
-  ...root,
-  node: {
-    ...root.node,
+export const applyPropsToState = (state: FrameState, props: FrameTreeProp, rootID: string) => (_.cloneDeep({
+  ...state,
+  [rootID]: {
+...(state[rootID] ?? {}),
     props: {
-      ...root.node.props,
-      ...applyFunctionToObject(props, (e) => wrapQuotes(e)),
+      ...props ?? {},
+      ...state[rootID]?.props ?? {}
     },
   },
-})
+}))
  
   export const schemaToRoot = (schema: FrameSchema): FrameNode => {
     return {
@@ -203,22 +220,26 @@ export const applyPropsToRoot = (root: FrameTreeNode, props: FrameTreeProp) => (
     };
   };
   
-  export const buildRootFromMDBFrame = (superstate: Superstate, frame: MDBFrame, editorProps=defaultFrameEditorProps) => {
+  
+
+  export const buildRootFromMDBFrame = async (superstate: Superstate, frame: MDBFrame, editorProps=defaultFrameEditorProps) => {
+    if (!frame)return null;
     return buildRoot(mdbSchemaToFrameSchema(frame.schema), frame.cols, frame.rows.map(f => frameToNode(f)), superstate, editorProps)
   }
 
-  export const buildRoot = (
+  export const buildRoot = async (
     schema: FrameSchema,
     fields: SpaceProperty[],
     nodes: FrameNode[],
     superstate: Superstate,
     editorProps=defaultFrameEditorProps
-  ): FrameTreeNode => {
+  ): Promise<FrameExecutable> => {
     const rootNode = nodes.find(f => f.id == schema.id) ?? schemaToRoot(schema);
-    const root = buildFrameTree(rootNode, nodes, superstate, nodes.length, false, {...editorProps, rootId: schema.id})[0];
-
-     return root && linkProps(fields, root);
+    const root = await buildFrameTree(rootNode, nodes, superstate, nodes.length, false, {...editorProps, rootId: schema.id}).then(f => f[0]);
+     return root && buildExecutable(linkProps(fields, root));
   }
+
+  
 
   export const propertiesForNode = (node: FrameNode) => 
     Object.keys(node.types).map((f) => ({
@@ -230,23 +251,24 @@ export const applyPropsToRoot = (root: FrameTreeNode, props: FrameTreeProp) => (
     }))
   
   
-  export const buildFrameTree = (root: FrameNode, nodes: FrameNode[], superstate: Superstate, uniqueID = 0, isRef: boolean, editorProps=defaultFrameEditorProps): [FrameTreeNode, number] => {
-    const rootNode: FrameTreeNode = {node: root, id: root.id, children: [], isRef, editorProps};
+  export const buildFrameTree = async (root: FrameNode, nodes: FrameNode[], superstate: Superstate, uniqueID = 0, isRef: boolean, editorProps=defaultFrameEditorProps, dontExpand?: boolean): Promise<[FrameTreeNode, number]> => {
+    const rootNode: FrameTreeNode = {node: root, id: root.id, children: [], isRef, editorProps, parent: null};
 
     const idToNodeMap: { [key: string]: FrameTreeNode } = {[root.id]: rootNode};
     
 
     // Create TreeNode objects for each FlattenedTreeNode and build an id-to-node map
     nodes.forEach((node) => {
-      idToNodeMap[node.id] = { id: node.id,  node, children: [], isRef, editorProps};
+      idToNodeMap[node.id] = { id: node.id,  node, children: [], isRef, editorProps, parent: null};
     });
     // Assign children to their respective parent TreeNode
     nodes.forEach((node) => {
 
       if (node.parentId) {
+        idToNodeMap[node.id].parent = idToNodeMap[node.parentId];
         const parentNode = idToNodeMap[node.parentId];
         if (parentNode) {
-          parentNode.children.push({...idToNodeMap[node.id], editorProps: {...editorProps, parentType: parentNode.node.type}});
+          parentNode.children.push({...idToNodeMap[node.id], editorProps: {...editorProps, parentType: parentNode.node.type, parentLastChildID: parentNode.children[parentNode.children.length-1]?.id}});
           parentNode.children.sort((a, b) => a.node.rank - b.node.rank);
         }
       } else {
@@ -255,10 +277,25 @@ export const applyPropsToRoot = (root: FrameTreeNode, props: FrameTreeProp) => (
       }
 
     })
-
-    const [treeNode, newID] = expandFrame(idToNodeMap[root.id], superstate, uniqueID, editorProps);
+if (dontExpand) {
+  return [idToNodeMap[root.id], uniqueID];
+}
+    const [treeNode, newID] = await expandFrame(idToNodeMap[root.id], superstate, uniqueID, editorProps);
     return [treeNode, newID];
   };
+
+  export const isAncestor = (tree: FrameTreeNode, targetId: string): boolean => {
+    // Check if the current node has the target id among its children
+    if (tree.parent) {
+      if (tree.parent.id === targetId) {
+        return true;
+      } else {
+        return isAncestor(tree.parent, targetId);
+      }
+    }
+    return false;
+
+  }
 
   export const findParent = (tree: FrameTreeNode, targetId: string, parentId: string = null): FrameTreeNode | null => {
     // Check if the current node has the target id among its children

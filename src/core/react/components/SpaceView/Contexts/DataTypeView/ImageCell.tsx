@@ -1,59 +1,117 @@
 import ImageModal from "core/react/components/UI/Modals/ImageModal";
-import React, { useEffect, useMemo, useRef } from "react";
-import { CellEditMode, TableCellProp } from "../TableView/TableView";
+import React, { useMemo, useRef } from "react";
+import { windowFromDocument } from "utils/dom";
+import { parseMultiString } from "utils/parsers";
+import { serializeMultiString } from "utils/serializers";
+import { CellEditMode, TableCellMultiProp } from "../TableView/TableView";
 
-export const ImageCell = (props: TableCellProp) => {
-  const { initialValue, saveValue } = props;
-  const [value, setValue] = React.useState(initialValue);
+export const ImageCell = (props: TableCellMultiProp) => {
+  const { initialValue, multi } = props;
+  const [value, setValue] = React.useState<string[]>(
+    parseMultiString(initialValue)
+  );
   const menuRef = useRef(null);
-  useEffect(() => {
-    if (props.editMode == CellEditMode.EditModeActive) {
-      if (!menuRef.current) showModal();
+
+  const sourcePaths = useMemo(() => {
+    if (value?.length > 0) {
+      return value.map((f) => props.superstate.ui.getUIPath(f));
     }
-  }, []);
-  const sourcePath = useMemo(() => {
-    return props.superstate.ui.getUIPath(value);
+    return [];
   }, [value]);
   // When the input is blurred, we'll call our table meta's updateData function
 
   // If the initialValue is changed external, sync it up with our state
   React.useEffect(() => {
-    setValue(initialValue);
+    setValue(parseMultiString(initialValue));
   }, [initialValue]);
 
-  const showModal = () => {
-    props.superstate.ui.openPalette((_props: { hide: () => void }) => (
-      <ImageModal
-        superstate={props.superstate}
-        hide={_props.hide}
-        selectedPath={(image) => saveValue(image)}
-      ></ImageModal>
-    ));
+  const deleteValue = (index: number) => {
+    if (multi) {
+      const newValue = [...value];
+      newValue.splice(index, 1);
+      setValue(newValue);
+      props.saveValue(serializeMultiString(newValue));
+    } else {
+      props.saveValue("");
+    }
+  };
+
+  const saveValue = (index: number, image: string) => {
+    if (props.multi) {
+      if (index == -1) {
+        props.saveValue(serializeMultiString([...value, image]));
+      } else {
+        props.saveValue(
+          serializeMultiString(value.map((f, i) => (i == index ? image : f)))
+        );
+      }
+    } else {
+      props.saveValue(image);
+    }
+  };
+  const showModal = (index: number, e: React.MouseEvent) => {
+    props.superstate.ui.openPalette(
+      (_props: { hide: () => void }) => (
+        <ImageModal
+          superstate={props.superstate}
+          hide={_props.hide}
+          selectedPath={(image) => saveValue(index, image)}
+        ></ImageModal>
+      ),
+      windowFromDocument(e.view.document)
+    );
 
     props.setEditMode(null);
   };
   return (
     <div className="mk-cell-image">
-      <img src={sourcePath} />
-      {props.editMode > 0 ? (
-        <div className="mk-image-selector">
-          <div
-            onClick={showModal}
-            className="mk-hover-button mk-icon-xsmall"
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//mk-ui-edit"),
-            }}
-          ></div>
-          {value?.length > 0 && (
-            <div
-              onClick={() => saveValue("")}
-              className={"mk-hover-button mk-icon-xsmall"}
-              dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//mk-ui-close"),
-              }}
-            ></div>
+      {sourcePaths.map((f, i) => (
+        <div key={i} className="mk-cell-image-item">
+          <img
+            onClick={(e) =>
+              props.superstate.ui.openPath(
+                initialValue,
+                e.metaKey ? "tab" : false
+              )
+            }
+            src={f}
+          />
+          {props.editMode > CellEditMode.EditModeNone ? (
+            <div className="mk-image-selector">
+              <div
+                onClick={(e) => showModal(i, e)}
+                className="mk-hover-button mk-icon-xsmall"
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//edit"),
+                }}
+              ></div>
+              <div
+                onClick={() => deleteValue(i)}
+                className={"mk-hover-button mk-icon-xsmall"}
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//close"),
+                }}
+              ></div>
+            </div>
+          ) : (
+            <></>
           )}
         </div>
+      ))}
+      {props.editMode > CellEditMode.EditModeNone ? (
+        props.multi ? (
+          <div
+            onClick={(e) => showModal(-1, e)}
+            className="mk-cell-option-new mk-icon-small"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker("ui//plus"),
+            }}
+          />
+        ) : value.length == 0 ? (
+          <div onClick={(e) => showModal(-1, e)} className="mk-cell-clickable">
+            Select
+          </div>
+        ) : null
       ) : (
         <></>
       )}

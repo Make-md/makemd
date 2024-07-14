@@ -10,7 +10,7 @@ import { optionValuesForColumn } from "core/utils/contexts/optionValuesForColumn
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { stickerForField } from "schemas/mdb";
 import { SpaceTableColumn } from "types/mdb";
-import { ContextMDBContext } from "../../../../context/ContextMDBContext";
+import { windowFromDocument } from "utils/dom";
 
 export const filePropTypes = [
   {
@@ -42,15 +42,15 @@ export const filePropTypes = [
     value: "folder",
   },
   {
-    name: "Links",
+    name: i18n.properties.fileProperty.links,
     value: "inlinks",
   },
   {
-    name: "Tags",
+    name: i18n.properties.fileProperty.tags,
     value: "tags",
   },
   {
-    name: "Spaces",
+    name: i18n.properties.fileProperty.spaces,
     value: "spaces",
   },
 ];
@@ -63,11 +63,11 @@ export const ColumnHeader = (props: {
   const [field, setField] = useState(props.column);
   const menuRef = useRef(null);
   const { spaceInfo, spaceState: spaceCache } = useContext(SpaceContext);
-  const { tableData, contextTable } = useContext(ContextMDBContext);
 
   const {
     predicate,
-    loadContextFields,
+    tableData,
+    contextTable,
     cols,
     newColumn,
     saveColumn,
@@ -113,15 +113,18 @@ export const ColumnHeader = (props: {
 
   const showNewMenu = (e: React.MouseEvent) => {
     const offset = ref.current.getBoundingClientRect();
+
     showNewPropertyMenu(
       props.superstate,
-      { x: offset.left, y: offset.top + 30 },
-      spaceCache?.contexts ?? [],
-      cols,
-      (source, field) => newColumn({ ...field, table: source }),
-      tableData.schema.id,
-      spaceInfo.path,
-      false
+      offset,
+      windowFromDocument(e.view.document),
+      {
+        spaces: spaceCache?.contexts ?? [],
+        fields: cols,
+        saveField: (source, field) => newColumn({ ...field, table: source }),
+        schemaId: tableData.schema.id,
+        contextPath: spaceInfo.path,
+      }
     );
   };
 
@@ -134,9 +137,11 @@ export const ColumnHeader = (props: {
         field.name,
         field.table == "" ? tableData : contextTable[field.table]
       );
+
       showPropertyMenu({
         superstate: props.superstate,
-        position: { x: offset.left, y: offset.top + 30 },
+        rect: offset,
+        win: windowFromDocument(e.view.document),
         editable: props.editable,
         options,
         field,
@@ -146,7 +151,7 @@ export const ColumnHeader = (props: {
         hide: hideColumn,
         deleteColumn: delColumn,
         sortColumn,
-        hidden: predicate.colsHidden.includes(field.name + field.table),
+        hidden: predicate?.colsHidden.includes(field.name + field.table),
       });
     }
   };

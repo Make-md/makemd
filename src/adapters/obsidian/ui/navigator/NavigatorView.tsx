@@ -1,6 +1,5 @@
 import { ItemView, TAbstractFile, TFolder, WorkspaceLeaf } from "obsidian";
 import React from "react";
-import { Root, createRoot } from "react-dom/client";
 export const FILE_TREE_VIEW_TYPE = "mk-path-view";
 export const VIEW_DISPLAY_TEXT = "Spaces";
 export const ICON = "layout-grid";
@@ -9,16 +8,20 @@ import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
 
 import { eventTypes } from "core/types/types";
 import { Navigator, Superstate } from "makemd-core";
+import { Root } from "react-dom/client";
+import { ObsidianUI } from "../ui";
 
 export class FileTreeView extends ItemView {
+  ui: ObsidianUI;
+  root: Root;
   superstate: Superstate;
   currentFolderPath: string;
   navigation = false;
-  root: Root;
 
-  constructor(leaf: WorkspaceLeaf, superstate: Superstate) {
+  constructor(leaf: WorkspaceLeaf, superstate: Superstate, ui: ObsidianUI) {
     super(leaf);
     this.superstate = superstate;
+    this.ui = ui;
   }
 
   revealInFolder(file: TAbstractFile) {
@@ -57,7 +60,7 @@ export class FileTreeView extends ItemView {
   }
 
   destroy() {
-    if (this.root) this.root.unmount();
+    this.root?.unmount();
   }
 
   async onOpen(): Promise<void> {
@@ -67,7 +70,13 @@ export class FileTreeView extends ItemView {
 
   constructFileTree() {
     this.destroy();
-    this.root = createRoot(this.contentEl);
-    this.root.render(<Navigator superstate={this.superstate} />);
+    this.root = this.ui.createRoot(this.contentEl);
+    if (this.root) {
+      this.root.render(<Navigator superstate={this.superstate} />);
+    } else {
+      this.ui.manager.eventsDispatch.addOnceListener("windowReady", () => {
+        this.constructFileTree();
+      });
+    }
   }
 }

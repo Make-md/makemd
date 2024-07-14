@@ -1,34 +1,34 @@
-import { dateAfter, dateBefore, empty, FilterFunctionType, greaterThan, isSameDayAsToday, lessThan, listIncludes, stringCompare, stringEqual } from "../filter";
+import { dateAfter, dateBefore, empty, FilterFunctionType, greaterThan, isSameDay, isSameDayAsToday, lessThan, listEquals, listIncludes, stringCompare, stringEqual } from "../filter";
 
 
 export const filterFnTypes: FilterFunctionType = {
   isNotEmpty: {
-    type: ["text", "file", "link", "link-multi", "fileprop", 'image'],
+    type: ["text", "file", "number", "option", "option-multi", "link", "link-multi", 'image'],
     fn: (v, f) => !empty(v, ''),
     valueType: "none",
   },
   isEmpty: {
-    type: ["text", "file", "link", "link-multi", "fileprop", 'image'],
+    type: ["text", "file", "number", "option", "option-multi", "link", "link-multi", 'image'],
     fn: (v, f) => empty(v, ''),
     valueType: "none",
   },
   include: {
     fn: (v, f) => stringCompare(v, f),
-    type: ["text", "file", "link", "link-multi", "fileprop", 'image'],
+    type: ["text", "file", "link", 'image'],
     valueType: "text",
   },
   notInclude: {
-    type: ["text", "file", "link", "link-multi", "fileprop", 'image'],
+    type: ["text", "file", "link", 'image'],
     fn: (v, f) => !stringCompare(v, f),
     valueType: "text",
   },
   is: {
-    type: ["text", "file", "link", "context", "fileprop"],
+    type: ["text"],
     fn: (v, f) => stringEqual(v, f),
     valueType: "text",
   },
   isNot: {
-    type: ["text", "file", "link", "context", "fileprop"],
+    type: ["text"],
     fn: (v, f) => !stringEqual(v, f),
     valueType: "text",
   },
@@ -36,6 +36,16 @@ export const filterFnTypes: FilterFunctionType = {
     type: ["number"],
     fn: (v, f) => stringEqual(v, f),
     valueType: "number",
+  },
+  isLink: {
+    type: ["link", "context"],
+    fn: (v, f) => stringEqual(v, f),
+    valueType: "link",
+  },
+  isNotLink: {
+    type: ["link", "context"],
+    fn: (v, f) => !stringEqual(v, f),
+    valueType: "link",
   },
   isGreatThan: {
     type: ["number"],
@@ -58,13 +68,18 @@ export const filterFnTypes: FilterFunctionType = {
     valueType: "number",
   },
   dateBefore: {
-    type: ["date", 'fileprop'],
+    type: ["date"],
     fn: (v, f) =>  dateBefore(v, f),
     valueType: "date",
   },
   dateAfter: {
-    type: ["date", 'fileprop'],
+    type: ["date"],
     fn: (v, f) =>  dateAfter(v, f),
+    valueType: "date",
+  },
+  isSameDate: {
+    type: ["date"],
+    fn: (v, f) => isSameDay(v, f),
     valueType: "date",
   },
   isSameDateAsToday: {
@@ -72,13 +87,18 @@ export const filterFnTypes: FilterFunctionType = {
     fn: (v, f) => isSameDayAsToday(v, f),
     valueType: "none",
   },
+  isExactList: {
+    type: ["option", "option-multi","link-multi", "context-multi", 'tags-multi'],
+    fn: (v, f) => listEquals(v, f),
+    valueType: "list",
+  },
   isAnyInList: {
-    type: ["option", "context", "option-multi", "context-multi", 'tags-multi', 'tags'],
+    type: ["option", "context", 'link', "option-multi", 'link-multi', "context-multi", 'tags-multi'],
     fn: (v, f) => listIncludes(v, f),
     valueType: "list",
   },
   isNoneInList: {
-    type: ["option", "context", "option-multi", "context-multi", 'tags-multi', 'tags'],
+    type: ["option", "context", 'link', "option-multi", 'link-multi', "context-multi", 'tags-multi'],
     fn: (v, f) => !listIncludes(v, f),
     valueType: "list",
   },

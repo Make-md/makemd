@@ -1,104 +1,76 @@
-import { getParentPathFromString } from "adapters/obsidian/utils/file";
 import { Superstate } from "core/superstate/superstate";
-import React, { forwardRef, useEffect, useRef, useState } from "react";
-import { pathToString, removeTrailingSlashFromFolder } from "utils/path";
+import { PathState } from "core/types/superstate";
+import React, { useEffect, useRef, useState } from "react";
+import { SpaceFragmentViewComponent } from "../SpaceView/Editor/EmbedView/SpaceFragmentView";
+import { NoteView } from "./NoteView";
 
-interface PathViewProps {
+export const PathView = (props: {
+  id: string;
   superstate: Superstate;
-  source?: string;
   path: string;
-  load: boolean;
-  properties?: Record<string, any>;
-  classname?: string;
-}
-
-export const PathView = forwardRef((props: PathViewProps, ref) => {
-  const flowRef = useRef<HTMLDivElement>(null);
-  const [existsPas, setExistsPas] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  const loadPath = async (force?: boolean) => {
-    const div = flowRef.current;
-
-    const path = props.superstate.spaceManager.uriByString(
-      props.path,
-      props.source
-    );
-    const properties: Record<string, any> = props.properties;
-
-    const pathExists = await props.superstate.spaceManager.pathExists(
-      path.path
-    );
-    if (!pathExists) {
-      if (!force) {
-        setExistsPas(true);
-        setLoaded(false);
-        return;
-      } else {
-        const parent = removeTrailingSlashFromFolder(
-          getParentPathFromString(path.path)
-        );
-        if (!parent) return;
-        const newPath = await props.superstate.spaceManager.createItemAtPath(
-          parent,
-          "md",
-          pathToString(props.path)
-        );
-        setExistsPas(false);
-        await props.superstate.ui.openPath(newPath, false, div, properties);
-      }
-    } else {
-      setExistsPas(false);
-      props.superstate.ui.openPath(props.path, false, div, properties);
-    }
-    // if (path.refStr?.length > 0) {
-    //   const pathPropertiesFromRef ;
-    //   const [from, to] = getLineRangeFromRef(
-    //     path.path,
-    //     path.refStr,
-    //     props.superstate.spaceManager
-    //   );
-    //   properties.from = from;
-    //   properties.to = to;
-    // }
-
-    setLoaded(true);
-  };
-
-  const toggleFlow = () => {
-    if (props.load) {
-      loadPath();
-    } else {
-      if (flowRef?.current) flowRef.current.empty();
-    }
-  };
-
+  styles: React.CSSProperties;
+  containerRef: React.RefObject<HTMLDivElement>;
+  readOnly: boolean;
+}) => {
+  const [pathState, setPathState] = useState<PathState>(
+    props.superstate.pathsIndex.get(props.path)
+  );
+  const ref = useRef(null);
   useEffect(() => {
-    toggleFlow();
-  }, [props.load, props.path]);
-  // useEffect(() => {
-  //   toggleFlow();
-  // }, []);
-  return (
-    <>
-      <div
-        className={`${props.classname ?? ""} mk-flowspace-editor`}
-        ref={flowRef}
-      ></div>
+    const uri = props.superstate.spaceManager.uriByString(props.path);
+    const pathState = props.superstate.pathsIndex.get(props.path);
+    if (!pathState && (uri?.scheme == "https" || uri?.scheme == "http")) {
+      setPathState({
+        path: props.path,
+        label: {
+          sticker: uri.scheme,
+          name: uri.path,
+          color: "",
+        },
+        hidden: false,
+        readOnly: true,
+        subtype: "md",
+        type: "remote",
+      });
+      return;
+    }
 
-      {existsPas ? (
-        <div
-          onClick={() => loadPath(true)}
-          className="mk-placeholder"
-          style={{ color: "var(--text-faint)" }}
-        >
-          Create a Note
-        </div>
+    setPathState(pathState);
+  }, [props.path]);
+
+  return (
+    <div className="mk-path-view" style={{ ...(props.styles ?? {}) }}>
+      {pathState?.type == "remote" ? (
+        pathState.subtype == "note" ? (
+          <NoteView
+            superstate={props.superstate}
+            path={props.path}
+            load={true}
+            classname="mk-flow-node"
+          ></NoteView>
+        ) : (
+          <iframe src={props.path}></iframe>
+        )
+      ) : pathState?.type == "space" ? (
+        <SpaceFragmentViewComponent
+          id={props.id}
+          showTitle={true}
+          containerRef={ref}
+          superstate={props.superstate}
+          path={props.path}
+        ></SpaceFragmentViewComponent>
+      ) : props.superstate.ui
+          .availableViews()
+          .some((f) => f == props.path?.split(".").pop()) ? (
+        <NoteView
+          superstate={props.superstate}
+          path={props.path}
+          load={true}
+          classname="mk-flow-node"
+        ></NoteView>
       ) : (
         <></>
       )}
-    </>
+    </div>
   );
-});
-
-PathView.displayName = "FlowView";
+};

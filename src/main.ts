@@ -28,14 +28,14 @@ import {
 import { Extension } from "@codemirror/state";
 import { replaceMobileMainMenu } from "adapters/obsidian/replaceMobileMainMenu";
 import {
-  EMBED_CONTEXT_VIEW_TYPE,
-  EmbedContextView
-} from "adapters/obsidian/ui/editors/EmbedContextView";
+  EMBED_SPACE_VIEW_TYPE,
+  EmbedSpaceView
+} from "adapters/obsidian/ui/editors/EmbedSpaceView";
 import {
   MDBFileViewer,
   MDB_FILE_VIEWER_TYPE
 } from "adapters/obsidian/ui/editors/MDBFileViewer";
-import { FILE_VIEW_TYPE, FileLinkView } from "adapters/obsidian/ui/editors/markdownView/FileView";
+import { FileLinkView, LINK_VIEW_TYPE } from "adapters/obsidian/ui/editors/markdownView/FileView";
 import {
   flowEditorInfo,
   toggleFlowEditor
@@ -66,42 +66,67 @@ import { ObsidianCanvasFiletypeAdapter } from "adapters/obsidian/filetypes/canva
 import { ObsidianMarkdownFiletypeAdapter } from "adapters/obsidian/filetypes/markdownAdapter";
 import { registerEditorMenus } from "adapters/obsidian/ui/editors/markdownView/menus/registerMenus";
 import { ObsidianUI } from "adapters/obsidian/ui/ui";
-import { migrate08 } from "adapters/obsidian/utils/migration";
+
 import { modifyTabSticker } from "adapters/obsidian/utils/modifyTabSticker";
 
 
 import { IconFileTypeAdapter } from "adapters/icons/iconsAdapter";
-import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
+import { MobileCachePersister } from "adapters/mdb/localCache/localCacheMobile";
 import { ObsidianCommands } from "adapters/obsidian/commands/obsidianCommands";
 import { TextCacher } from "adapters/text/textCacher";
-import { CommandsManager } from "core/middleware/commands";
-import { openBlinkModal } from "core/react/components/Blink/Blink";
-import { LocalCachePersister, LocalStorageCache } from "core/superstate/localCache/localCache";
-import { MobileCachePersister } from "core/superstate/localCache/localCacheMobile";
+import { CLIManager } from "core/middleware/commands";
+import { LocalCachePersister } from "core/middleware/types/persister";
+import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
 import { openTestModal } from "core/test/TestComponent";
-import "css/Blink.css";
-import "css/CardsView.css";
-import "css/ContextBuilder.css";
-import "css/FileContext.css";
-import "css/FileTree.css";
-import "css/FilterBar.css";
-import "css/FlowEditor.css";
-import "css/Frame.css";
-import "css/FrameProps.css";
-import "css/InlineMenu.css";
-import "css/MainMenu.css";
-import "css/MakeMenu.css";
-import "css/Menu.css";
-import "css/NewNote.css";
-import "css/Sidebar.css";
-import "css/SpaceEditor.css";
-import "css/SpaceView.css";
-import "css/StickerMenu.css";
-import "css/TableView.css";
-import "css/makerMode.css";
 
+import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
+import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
-const makeMDVersion = 0.815;
+import { loadFlowCommands } from "adapters/obsidian/commands/flowCommands";
+import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
+import { SPACE_FRAGMENT_VIEW_TYPE, SpaceFragmentView } from "adapters/obsidian/ui/editors/SpaceFragmentViewComponent";
+import { installKitModal } from "adapters/obsidian/ui/kit/InstallKitModal";
+import { exportSpaceKit } from "adapters/obsidian/ui/kit/kits";
+import { InteractionType } from "core/middleware/ui";
+import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
+import { isTouchScreen } from "core/utils/ui/screen";
+import "css/DefaultVibe.css";
+import "css/Editor/Actions/Actions.css";
+import "css/Editor/Context/ContextList.css";
+import "css/Editor/Context/FilterBar.css";
+import "css/Editor/Flow/FlowEditor.css";
+import "css/Editor/Flow/Properties.css";
+import "css/Editor/Frames/Insert.css";
+import "css/Editor/Frames/Node.css";
+import "css/Editor/Frames/Overlay.css";
+import "css/Editor/Frames/Page.css";
+import "css/Editor/Frames/Slides.css";
+import "css/Editor/Properties/DatePicker.css";
+import "css/Menus/ColorPicker.css";
+import "css/Menus/InlineMenu.css";
+import "css/Menus/MainMenu.css";
+import "css/Menus/MakeMenu.css";
+import "css/Menus/Menu.css";
+import "css/Menus/StickerMenu.css";
+import "css/Modal/Modal.css";
+import "css/Obsidian/Mods.css";
+import "css/Panels/Blink.css";
+import "css/Panels/ContextBuilder.css";
+import "css/Panels/FileContext.css";
+import "css/Panels/Navigator/FileTree.css";
+import "css/Panels/Navigator/Navigator.css";
+import "css/Panels/Navigator/Waypoints.css";
+import "css/Panels/SpaceEditor.css";
+import "css/SpaceViewer/Frame.css";
+import "css/SpaceViewer/Layout.css";
+import "css/SpaceViewer/Nodes.css";
+import "css/SpaceViewer/SpaceView.css";
+import "css/SpaceViewer/TableView.css";
+import "css/SpaceViewer/Text.css";
+import "css/UI/Buttons.css";
+import { windowFromDocument } from "utils/dom";
+
+const makeMDVersion = 0.999;
 
 export default class MakeMDPlugin extends Plugin {
   app: App;
@@ -113,7 +138,7 @@ export default class MakeMDPlugin extends Plugin {
   activeEditorView?: MarkdownView;
   extensions: Extension[];
   superstate: Superstate;
-
+  ui: ObsidianUI;
 
   
   openFlow() {
@@ -154,15 +179,16 @@ export default class MakeMDPlugin extends Plugin {
     return this.app.vault.getName();
   }
   reloadExtensions(firstLoad: boolean) {
-    this.extensions = cmExtensions(this, this.superstate.ui.getScreenType() == 'mobile');
+    this.extensions = cmExtensions(this, this.superstate.ui.primaryInteractionType() == InteractionType.Touch);
     if (firstLoad) {
       this.registerEditorExtension(this.extensions);
     } else {
       this.app.workspace.updateOptions();
     }
   }
-  quickOpen() {
-    openBlinkModal(this.superstate);
+  quickOpen(superstate: Superstate) {
+    const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument)
+    openBlinkModal(superstate, BlinkMode.Blink, win);
   }
 
   testPage() {
@@ -193,7 +219,9 @@ loadSuperState() {
 
     await this.superstate.initializeIndex()
     this.obsidianAdapter.loadCacheFromObsidianCache();
-    this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
+    if (this.superstate.settings.navigatorEnabled) {
+      this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
+    }
     }
     else {
       await this.superstate.loadFromCache();
@@ -216,11 +244,42 @@ loadSuperState() {
   });
 }
   
+loadViews () {
+  this.registerView(FILE_TREE_VIEW_TYPE, (leaf) => {
+    return new FileTreeView(leaf, this.superstate, this.ui);
+  });
+  this.registerView(SPACE_VIEW_TYPE, (leaf) => {
+    return new SpaceViewContainer(leaf, this.superstate, this.ui, SPACE_VIEW_TYPE);
+  });
+  
+  this.registerView(SPACE_FRAGMENT_VIEW_TYPE, (leaf) => {
+    return new SpaceFragmentView(leaf, this);
+  });
+  this.registerView(EMBED_SPACE_VIEW_TYPE, (leaf) => {
+    return new EmbedSpaceView(leaf, this);
+  });
+  if (this.superstate.settings.contextEnabled) {
+      
+    this.registerView(LINK_VIEW_TYPE, (leaf) => {
+      return new FileLinkView(leaf, this.app, LINK_VIEW_TYPE, this.superstate);
+    });
+    
+    
+    this.registerView(FILE_CONTEXT_VIEW_TYPE, (leaf) => {
+      return new ContextExplorerLeafView(leaf, this.superstate, this.ui);
+    });
+    
+    this.registerView(MDB_FILE_VIEWER_TYPE, (leaf) => {
+      return new MDBFileViewer(leaf, this);
+    });
+  }
+}
 
   async loadSpaces() {
     
     
-    
+    document.body.classList.toggle("mk-readable-line", this.app.vault.getConfig("readableLineLength"));
+    this.superstate.settings.readableLineWidth = this.app.vault.getConfig("readableLineLength");
     if (this.superstate.settings.spacesEnabled) {
       document.body.classList.toggle("mk-hide-tabs", !this.superstate.settings.sidebarTabs);
     document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
@@ -239,18 +298,20 @@ loadSuperState() {
         this.superstate.settings.spacesEnabled
       );
 
-      if (!this.superstate.settings.spacesDisablePatch) patchFilesPlugin(this);
-      this.registerView(FILE_TREE_VIEW_TYPE, (leaf) => {
-        return new FileTreeView(leaf, this.superstate);
-      });
+      if (!this.superstate.settings.spacesDisablePatch && this.superstate.settings.navigatorEnabled) patchFilesPlugin(this);
+      
       
     }
+
+    
 
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", () => this.activeFileChange())
       
     );
-    this.registerEvent(app.workspace.on('layout-change', () => this.activeFileChange()));
+    this.registerEvent(this.app.workspace.on('layout-change', () => {
+      this.activeFileChange()
+    }));
   }
 
   
@@ -291,8 +352,31 @@ loadSuperState() {
   }
   activeFileChange() {
 
+    
     const path = this.getActiveFile();
     
+    if (this.superstate.settings.enableFolderNote) {
+      if (this.superstate.spacesIndex.has(path)) {
+        const space = this.superstate.spacesIndex.get(path)
+        const leaf = this.app.workspace.getLeaf();
+        const history = leaf.history.backHistory;
+        if (history[history.length - 1]?.state?.state?.file == space.space.notePath) {
+          leaf.history.backHistory.pop();
+        }
+      }
+      const pathState = this.superstate.pathsIndex.get(path);
+      if (pathState?.metadata.spacePath?.length > 0) {
+        
+        const leaf = this.app.workspace.getLeaf();
+        this.app.workspace.setActiveLeaf(leaf, { focus: true });
+        leaf.setViewState({
+          type: SPACE_VIEW_TYPE,
+          state: { path: pathState.metadata.spacePath },
+        });
+        
+      }
+    }
+
     if (path) {
       this.superstate.ui.setActivePath(path)
     }
@@ -302,6 +386,16 @@ loadSuperState() {
     openURL('https://www.make.md/static/latest.md', this.app, true)
   }
   loadCommands() {
+    this.registerObsidianProtocolHandler("make", async (e) => {
+      const parameters = e as unknown as { [key: string]: string };
+      if (parameters.kit) {
+        installKitModal(this, this.superstate, parameters.kit, window);
+      }
+      if (parameters.open) {
+        this.superstate.ui.openPath(parameters.open);
+      }
+
+  });
     if (this.superstate.settings.spacesEnabled) {
       
       this.addCommand({
@@ -324,6 +418,29 @@ loadSuperState() {
       })
 
       this.addCommand({
+        id: "mk-open-kit",
+        name: "Open Kit",
+        callback: () => {
+            installKitModal(this, this.superstate, '', window);
+        },
+      });
+
+      this.addCommand({
+        id: "mk-kit",
+        name: "Save Space as Kit",
+        callback: () => {
+          const path = this.getActiveFile();
+          if (this.superstate.spacesIndex.has(path)) {
+            exportSpaceKit(this, this.superstate, path, path).then((kit) => {
+              this.superstate.spaceManager.createItemAtPath('/', 'mkit', 'kit', JSON.stringify(kit))
+            })
+          }
+        },
+      })
+
+      
+
+      this.addCommand({
         id: "mk-collapse-folders",
         name: i18n.commandPalette.collapseAllFolders,
         callback: () => {
@@ -338,24 +455,22 @@ loadSuperState() {
           this.releaseTheNotes();
         },
       });
-      // this.addCommand({
-      //   id: "mk-reveal-file",
-      //   name: t.commandPalette.revealFile,
-      //   callback: () => {
-      //     const file = getAbstractFileAtPath(this, this.getActiveFile());
-      //     const evt = new CustomEvent(eventTypes.revealFile, {
-      //       detail: { file: file },
-      //     });
-      //     window.dispatchEvent(evt);
-      //   },
-      // });
-      
-      
       this.addCommand({
-        id: "mk-spaces-migrate",
-        name: i18n.commandPalette.migrateData,
-        callback: () => migrate08(this),
+        id: "mk-reveal-file",
+        name: i18n.commandPalette.revealFile,
+        callback: () => {
+          const file = this.superstate.ui.activePath;
+          if (!file) return;
+          const evt = new CustomEvent(eventTypes.revealPath, {
+            detail: { path: file },
+          });
+          window.dispatchEvent(evt);
+        },
       });
+      
+      
+      
+      
       
       this.addCommand({
         id: "mk-spaces",
@@ -391,7 +506,9 @@ loadSuperState() {
     this.addCommand({
       id: "mk-test",
       name: "Open Test Page",
-      callback: () => this.testPage(),
+      callback: () => {
+        this.testPage()
+      },
       hotkeys: [
         
       ],
@@ -400,7 +517,7 @@ loadSuperState() {
       this.addCommand({
         id: "mk-blink",
         name: i18n.commandPalette.blink,
-        callback: () => this.quickOpen(),
+        callback: () => this.quickOpen(this.superstate),
         hotkeys: [
           {
             modifiers: ["Mod"],
@@ -410,51 +527,25 @@ loadSuperState() {
       });
     }
     if (this.superstate.settings.editorFlow) {
-      this.addCommand({
-        id: "mk-open-flow",
-        name: i18n.commandPalette.openFlow,
-        callback: () => this.openFlow(),
-      });
-
-      this.addCommand({
-        id: "mk-close-flow",
-        name: i18n.commandPalette.closeFlow,
-        callback: () => this.closeFlow(),
-      });
+      loadFlowCommands(this);
     }
     
     
   }
   loadContext() {
-    this.registerView(SPACE_VIEW_TYPE, (leaf) => {
-      return new SpaceViewContainer(leaf, this.superstate, SPACE_VIEW_TYPE);
-    });
-    this.registerView(EMBED_CONTEXT_VIEW_TYPE, (leaf) => {
-      return new EmbedContextView(leaf, this.superstate);
-    });
+    
     if (this.superstate.settings.contextEnabled) {
       
-      this.registerView(FILE_VIEW_TYPE, (leaf) => {
-        return new FileLinkView(leaf, this.app, FILE_VIEW_TYPE);
-      });
       
       
       this.app.workspace.onLayoutReady(async () => {
         if (this.superstate.settings.enableDefaultSpaces
         ) {
           await this.files.createFolder(this.superstate.settings.spacesFolder);
-          if (this.superstate.settings.enableHomeSpace) {
-            await this.files.createFolder(this.superstate.settings.spacesFolder+'/'+'Home')
-          }
+          
         }
       });
-      this.registerView(FILE_CONTEXT_VIEW_TYPE, (leaf) => {
-        return new ContextExplorerLeafView(leaf, this.superstate);
-      });
       
-      this.registerView(MDB_FILE_VIEWER_TYPE, (leaf) => {
-        return new MDBFileViewer(leaf, this);
-      });
       this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
       this.app.workspace.onLayoutReady(async () => {
 
@@ -467,6 +558,7 @@ loadSuperState() {
   }
 
   loadFlowEditor() {
+
     patchWorkspace(this);
     document.body.classList.toggle("mk-flow-replace", this.superstate.settings.editorFlow);
     document.body.classList.toggle(
@@ -475,8 +567,9 @@ loadSuperState() {
     );
 
       this.registerMarkdownPostProcessor((element, context) => {
+
         const removeAllFlowMarks = (el: HTMLElement) => {
-          const embeds = el.querySelectorAll(".internal-embed");
+          const embeds = el.querySelectorAll(".internal-embed.markdown-embed");
 
           for (let index = 0; index < embeds.length; index++) {
             const embed = embeds.item(index);
@@ -517,53 +610,63 @@ loadSuperState() {
   }
   
   private debouncedRefresh: () => void = () => null;
+
+  
   async onload() {
 const start = Date.now();
     this.mdbFileAdapter = new MDBFileTypeAdapter(this);   
 
-    this.files = FilesystemMiddleware.create(this);
+    this.files = FilesystemMiddleware.create();
     this.obsidianAdapter = new ObsidianFileSystem(this, this.files, normalizePath(
       this.app.vault.configDir + "/plugins/make-md/Spaces.mdb"
     ))
     this.files.initiateFileSystemAdapter(this.obsidianAdapter, true);
-this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this.app);
+this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     this.files.initiateFiletypeAdapter(this.mdbFileAdapter);
     this.files.initiateFiletypeAdapter(this.markdownAdapter);
     
     this.files.initiateFiletypeAdapter(new ObsidianCanvasFiletypeAdapter(this));
+    this.files.initiateFiletypeAdapter(new JSONFiletypeAdapter(this));
     this.files.initiateFiletypeAdapter(new ImageFileTypeAdapter(this));
     this.files.initiateFiletypeAdapter(new IconFileTypeAdapter(this));
     
     const filesystemCosmoform = new FilesystemSpaceAdapter(this.files)
-    let cachePersister : LocalCachePersister;
-    if (Platform.isMobile) {
-      cachePersister = new MobileCachePersister('.makemd/superstate.mdb', this.mdbFileAdapter, ['path', 'space', 'frame', 'context', 'icon'])
-    } else {
-      cachePersister = new LocalStorageCache('.makemd/superstate.mdb', this.mdbFileAdapter, ['path', 'space', 'frame', 'context', 'icon'])
-    }
-await cachePersister.initialize()
+    const webSpaceAdapter = new WebSpaceAdapter();
+    this.ui = new ObsidianUI(this);
+    const uiManager = UIManager.create(this.ui);
+    const commandsManager = CLIManager.create(new ObsidianCommands(this));
     this.superstate = 
       Superstate.create('0.9', 
       () => {
           this.debouncedRefresh();
       }, 
       new SpaceManager(), 
-      UIManager.create(new ObsidianUI(this)), 
-      CommandsManager.create(new ObsidianCommands(this)),
-      cachePersister)
+      uiManager,
+      commandsManager
+      )
     await this.loadSettings();
     
     if (this.superstate.settings.experimental)
       this.files.initiateFiletypeAdapter(new TextCacher(this));
 
     this.superstate.spaceManager.addSpaceAdapter(filesystemCosmoform, true);
+    this.superstate.spaceManager.addSpaceAdapter(webSpaceAdapter);
 
     addIcon("mk-logo", mkLogo);
     
     
   this.superstate.saveSettings = () => this.saveSettings();
-  
+  this.loadViews();
     
+  let cachePersister : LocalCachePersister;
+    if (Platform.isMobile) {
+      cachePersister = new MobileCachePersister('.makemd/superstate.mdc', this.mdbFileAdapter, ['path', 'space', 'frame', 'context', 'icon'])
+    } else {
+      // cachePersister = new MobileCachePersister('.makemd/superstate.mdc', this.mdbFileAdapter, ['path', 'space', 'frame', 'context', 'icon'])
+      cachePersister = new LocalStorageCache('.makemd/superstate.mdc', this.mdbFileAdapter, ['path', 'space', 'frame', 'context', 'icon'])
+    }
+    await cachePersister.initialize()
+    this.superstate.persister = cachePersister;
     this.loadSuperState();
     this.addSettingTab(new MakeMDPluginSettingsTab(this.app, this));
     await this.loadSpaces();
@@ -576,6 +679,10 @@ await cachePersister.initialize()
     
     this.superstate.ui.notify(`Make.md - Plugin loaded in ${(Date.now()-start)/1000} seconds`, 'console');
 
+    if (this.superstate.settings.systemName == 'Vault') {
+    this.superstate.settings.systemName = this.app.vault.getName();
+    this.saveSettings();
+    } 
     
   }
 
@@ -611,12 +718,22 @@ await cachePersister.initialize()
       if (!app.workspace.leftSplit.collapsed && showAfterAttach)
       leafs.forEach((leaf) => this.app.workspace.revealLeaf(leaf));
     }
-    if (this.superstate.ui.getScreenType() == 'mobile') {
+    if (isTouchScreen(this.superstate.ui)) {
       this.app.workspace.leftSplit.collapse();
     }
     replaceMobileMainMenu(this.superstate);
+    this.closeDuplicateTabs();
   };
 
+  closeDuplicateTabs = () => {
+    try {
+      //@ts-ignore
+    this.app.workspace.leftSplit.children[0].children.filter((f, i, a) => i != a.findIndex(g => g.view.getViewType() == f.view.getViewType())).forEach(g => this.app.workspace.leftSplit.children[0].removeChild(g))
+    }
+    catch {
+      
+    }
+  }
   detachFileTreeLeafs = () => {
     const leafs = this.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
     for (const leaf of leafs) {
@@ -643,7 +760,7 @@ await cachePersister.initialize()
     } else {
       leafs.forEach((leaf) => this.app.workspace.revealLeaf(leaf));
     }
-    if (this.superstate.ui.getScreenType() == 'mobile' && !reveal) {
+    if (isTouchScreen(this.superstate.ui) && !reveal) {
       this.app.workspace.rightSplit.collapse();
     }
   };
@@ -657,6 +774,9 @@ await cachePersister.initialize()
 
   async loadSettings() {
     this.superstate.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    if (this.superstate.settings.hiddenExtensions.length == 1 && this.superstate.settings.hiddenExtensions[0] == ".mdb") {
+      this.superstate.settings.hiddenExtensions = DEFAULT_SETTINGS.hiddenExtensions;
+    }
     const userConfig = safelyParseJSON(await defaultConfigFile(this));
     this.superstate.settings.newFileFolderPath = userConfig.newFileFolderPath;
     this.superstate.settings.newFileLocation = userConfig.newFileLocation;

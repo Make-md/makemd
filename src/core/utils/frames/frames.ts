@@ -1,7 +1,8 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { SpaceInfo, SpaceProperty } from "types/mdb";
-import { FrameNode, FrameRoot, MFrame } from "types/mframe";
+import { Superstate } from "makemd-core";
+import { DBRow, SpaceInfo, SpaceProperty } from "types/mdb";
+import { FrameNode, FrameRoot, FrameTreeProp, MFrame } from "types/mframe";
 import { uniqueNameFromString } from "utils/array";
 
 
@@ -13,22 +14,70 @@ export const propFieldFromString = (str: string, schemaProps: SpaceProperty[]) =
   return schemaProps.find((f) => str == `${f.schemaId}.props.${f.name}`);
 }
 
-export const nameForField = (field: SpaceProperty) => {
+export const nameForField = (field: SpaceProperty, superstate: Superstate) => {
   if (!field) return null;
-  const parsedValue = parseFieldValue(field.value, field.type);
+  const parsedValue = parseFieldValue(field.value, field.type, superstate);
   
   return parsedValue.alias ?? field.name
 }
 
-export const stringIsConst = (str: string): boolean => {
-  // Check for quotes at the start and end without any quotes inside
-  const hasQuotesAtStartEndOnly =  /^["'][^"']*["'](?:;)?$/.test(str);
-  // Check for number by trying to parse string into a number and checking if it's NaN
-  const isNumber = !isNaN(parseFloat(str)) && isFinite(str as any);
-
-  return hasQuotesAtStartEndOnly || isNumber || str == null || str == "";
+export const removeTrailingSemicolon = (str: string) => {
+  return str.replace(/;+$/, "");
 }
 
+export const objectIsConst = (objString: string, type: string): boolean => {
+  const trimmed = removeTrailingSemicolon(objString.trim())
+  if (type == 'object' && trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    return true
+  }
+  if (type == 'object-multi' && trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    return true
+  }
+  if (objString == null || objString == "") return true;
+  return false;
+}
+
+export const stringIsConst = (str: string): boolean => {
+  // Check for quotes at the start and end without any quotes inside
+  const hasQuotesAtStartEndOnly = /^["'](?:[^"\\]|\\.)*["'](?:;)?$/.test(str);
+  const fixedStr = str?.replace(/;+$/, "");
+  // Check for number by trying to parse string into a number and checking if it's NaN
+  const isNumber = !isNaN(parseFloat(fixedStr)) && !isNaN(fixedStr as any);
+  return hasQuotesAtStartEndOnly || isNumber || fixedStr == 'false' || fixedStr == 'true' || str == null || str == "";
+}
+
+export const kitWithProps = (root: FrameRoot,
+  props: DBRow,
+  styles?: FrameTreeProp,
+  actions?: FrameTreeProp) => {
+    return frameRootWithProps({...root, node: {...root.node, type:"frame", ref: "spaces://$kit/#*"+root.id}, children: []}, props, styles, actions);
+  }
+
+export const frameRootWithProps = (
+  root: FrameRoot,
+  props: DBRow,
+  styles?: FrameTreeProp,
+  actions?: FrameTreeProp
+) => {
+  return {
+    ...root,
+    node: {
+      ...root.node,
+      props: {
+        ...root.node.props,
+        ...props,
+      },
+      styles: {
+        ...root.node.styles,
+        ...styles,
+      },
+      actions: {
+        ...root.node.actions,
+        ...actions,
+      },
+    },
+  };
+};
 
 
 export const moveFrameToNewSpace = async (

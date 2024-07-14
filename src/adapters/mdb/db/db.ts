@@ -1,15 +1,15 @@
-import { getParentPathFromString } from "adapters/obsidian/utils/file";
+import { getParentPathFromString } from "utils/path";
 
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
-import { defaultFrameSchema } from "schemas/frames";
-import { defaultFramesTable, fieldSchema } from "schemas/mdb";
+import JSZip from "jszip";
 import { Database, QueryExecResult, SqlJsStatic } from "sql.js";
-import { DBTable, DBTables, SpaceTables } from "types/mdb";
-import { MDBFrames } from "types/mframe";
+import { DBRows, DBTable, DBTables, SpaceTables } from "types/mdb";
 import { uniq } from "utils/array";
 import { removeTrailingSlashFromFolder } from "utils/path";
 import { sanitizeSQLStatement } from "utils/sanitizers";
 import { serializeSQLFieldNames, serializeSQLStatements, serializeSQLValues } from "utils/serializers";
+
+JSZip.support.nodebuffer = false;
 
 export const getDBFile = async (plugin: MDBFileTypeAdapter,
   path: string, isRemote: boolean) => {
@@ -46,7 +46,71 @@ export const getDB = async (
   return new sqlJS.Database();
 };
 
+export const getZippedDB =  async (
+  plugin: MDBFileTypeAdapter,
+  sqlJS: SqlJsStatic,
+  path: string,
+  isRemote?: boolean,
+) => {
+  const buf = await getZippedDBFile(plugin, path, isRemote);
+  if (buf) {
+    const db = await new sqlJS.Database(new Uint8Array(buf));
+    try {
+      db.exec(
+        "SELECT name FROM sqlite_schema"
+      );
+    } catch {
+      return new sqlJS.Database();
+    }
+    return db
+  }
+  return new sqlJS.Database();
+};
 
+export const getZippedDBFile = async (plugin: MDBFileTypeAdapter,
+  path: string, isRemote: boolean) => {
+  if (isRemote) {
+    return fetch(path).then((res) => res.arrayBuffer());
+  }
+  if (!(await plugin.middleware.fileExists(path))) {
+    return null;
+  }
+  const zip = new JSZip();
+
+  const file = await plugin.middleware.readBinaryToFile(
+    path
+  );
+  let buffer;
+  try {
+    buffer = await zip.loadAsync(file).then(f => zip.file("data.mdb").async("arraybuffer"))
+  } catch (e) {
+    console.log(e)
+  }
+  return buffer;
+};
+
+export const saveZippedDBFile = async (plugin: MDBFileTypeAdapter, path: string, binary: ArrayBuffer) => {
+  if (
+    !(await plugin.middleware.fileExists(
+      removeTrailingSlashFromFolder(getParentPathFromString(path)))
+    )
+    
+  ) {
+    
+    await plugin.middleware.createFolder(getParentPathFromString(path));
+  }
+  const zip = new JSZip();
+  zip.file("data.mdb", binary)
+  const zipFile = await zip.generateAsync({type : "arraybuffer", compression: "DEFLATE",
+  compressionOptions: {
+      level: 5
+  }});
+  const file = plugin.middleware.writeBinaryToFile(
+    path,
+    zipFile
+  );
+  return file;
+}
 
 export const saveDBFile = async (plugin: MDBFileTypeAdapter, path: string, binary: ArrayBuffer) => {
   
@@ -78,41 +142,10 @@ export const mdbTablesToDBTables = (tables: SpaceTables, uniques?: { [x: string]
         rows: tables[c].rows
       },
     };
-  }, {m_fields: {
-    uniques: fieldSchema.uniques,
-    cols: fieldSchema.cols,
-    rows: Object.values(tables).flatMap(f => f.cols),
-  }}) as DBTables;
+  }, {}) as DBTables;
   
 }
 
-export const mdbFrameToDBTables = (tables: MDBFrames, uniques?: { [x: string] : string[] }) : DBTables => {
-  return Object.keys(tables).reduce((p, c) => {
-    return {
-      ...p,
-      [c]: {
-        uniques: defaultFrameSchema.uniques,
-        cols: defaultFrameSchema.cols,
-        rows: tables[c].rows
-      },
-    };
-  }, {m_fields: {
-    uniques: fieldSchema.uniques,
-    cols: fieldSchema.cols,
-    rows: Object.values(tables).flatMap(f => f.cols),
-  }}) as DBTables;
-  
-}
-
-export const schemasAndFields = (tables: SpaceTables) : DBTables => {
-  return {m_fields: {
-    uniques: fieldSchema.uniques,
-    cols: fieldSchema.cols,
-    rows: Object.values(tables).flatMap(f => f.cols),
-  },
-  m_schema: defaultFramesTable
-  }
-}
 export const dbResultsToDBTables = (res: QueryExecResult[]): DBTable[] => {
   return res.reduce(
     (p, c, i) => [
@@ -284,15 +317,41 @@ export const replaceDB = (db: Database, tables: DBTables) => {
       db.exec(s)
     }
   } catch (e) {
-
+    
     console.log(e);
+    return false
   }
+  return true;
 };
+
+export const saveZippedDBToPath = async (
+  plugin: MDBFileTypeAdapter,
+  path: string,
+  tables: DBTables
+): Promise<boolean> => {
+
+  const sqlJS = await plugin.sqlJS();
+  //rewrite the entire table, useful for storing ranks and col order, not good for performance
+  const db = await getZippedDB(plugin, sqlJS, path);
+  if (!db) {
+    db.close()
+    return false;
+  }
+  replaceDB(db, tables);
+
+  await saveZippedDBFile(plugin, path, db.export().buffer);
+  db.close();
+
+    
+  return true;
+};
+
 
 export const saveDBToPath = async (
   plugin: MDBFileTypeAdapter,
   path: string,
-  tables: DBTables
+  tables: DBTables,
+  mdb = true
 ): Promise<boolean> => {
 
   const sqlJS = await plugin.sqlJS();
@@ -302,11 +361,38 @@ export const saveDBToPath = async (
     db.close()
     return false;
   }
-  replaceDB(db, tables);
+  if (mdb) {
+    let mdbStruct : DBRows = []
+    try {
+      mdbStruct = dbResultsToDBTables(db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='m_schema' OR name='m_fields';`))[0].rows
+    } catch (e) {
+      console.log(e);
+    }
+    if (!mdbStruct.some(f => f.name == "m_schema")) {
+      const createSchemaTable = `CREATE TABLE m_schema ("id" char, "name" char, "type" char, "def" char, "predicate" char, "primary" char)`
+      try {
+      db.exec(createSchemaTable);
+      } catch(e) {
+        console.log(e);
+      
+      }
+    }
+    if (!mdbStruct.some(f => f.name == "m_fields")) {
+      const createFieldsTable = `CREATE TABLE m_fields ("name" char, "schemaId" char, "type" char, "value" char, "hidden" char, "attrs" char, "unique" char, "primary" char)`
+      try {db.exec(createFieldsTable);
+      } catch(e) { 
+        console.log(e);
+      }
+    }
 
+  }
+  const result = replaceDB(db, tables);
+if (result) {
   await saveDBFile(plugin, path, db.export().buffer);
-  db.close();
+}
   
+  db.close();
+
     
-  return true;
+  return result;
 };

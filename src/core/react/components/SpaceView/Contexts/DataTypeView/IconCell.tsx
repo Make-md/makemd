@@ -1,8 +1,9 @@
 import i18n from "core/i18n";
 import StickerModal from "core/react/components/UI/Modals/StickerModal";
 import React, { useEffect, useMemo, useRef } from "react";
+import { windowFromDocument } from "utils/dom";
 import { parseMultiString } from "utils/parsers";
-import { TableCellMultiProp } from "../TableView/TableView";
+import { CellEditMode, TableCellMultiProp } from "../TableView/TableView";
 
 export const IconCell = (props: TableCellMultiProp) => {
   const value = useMemo(
@@ -16,34 +17,47 @@ export const IconCell = (props: TableCellMultiProp) => {
   const ref = useRef(null);
 
   useEffect(() => {
-    if (props.editMode == 2) {
+    if (props.editMode == CellEditMode.EditModeActive) {
       ref?.current?.focus();
     }
   }, [props.editMode]);
 
   const triggerStickerMenu = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    props.superstate.ui.openPalette((_props: { hide: () => void }) => (
-      <StickerModal
-        ui={props.superstate.ui}
-        hide={_props.hide}
-        selectedSticker={(emoji) => props.saveValue(emoji)}
-      />
-    ));
+    props.superstate.ui.openPalette(
+      (_props: { hide: () => void }) => (
+        <StickerModal
+          ui={props.superstate.ui}
+          hide={_props.hide}
+          selectedSticker={(emoji) => props.saveValue(emoji)}
+        />
+      ),
+      windowFromDocument(e.view.document)
+    );
   };
 
   return (
     <div className="mk-cell-icon">
-      {value.map((v, i) => (
-        <button
-          key={i}
-          aria-label={i18n.buttons.changeIcon}
-          dangerouslySetInnerHTML={{
-            __html: props.superstate.ui.getSticker(v),
-          }}
-          onClick={(e) => triggerStickerMenu(e)}
-        ></button>
-      ))}
+      {value.map((v, i) =>
+        v?.length > 0 ? (
+          <div
+            className="mk-cell-clickable"
+            key={i}
+            aria-label={i18n.buttons.changeIcon}
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker(v),
+            }}
+            onClick={(e) => triggerStickerMenu(e)}
+          ></div>
+        ) : (
+          <div
+            key={i}
+            className="mk-cell-placeholder"
+            onClick={(e) => triggerStickerMenu(e)}
+          >
+            {i18n.labels.selectIcon}
+          </div>
+        )
+      )}
     </div>
   );
 };

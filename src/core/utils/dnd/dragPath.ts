@@ -46,7 +46,7 @@ export const getMultiProjection = (flattenedTree: TreeNode[], paths: string[], o
           ? flattenedTree.find((f) => f.id == overItem.parentId)
           : overItem;
       
-      if (dropTarget?.type != 'file') {
+      if (dropTarget && dropTarget.type != 'file') {
         const _projected: DragProjection = {
           depth: overItem.depth,
           overId: overItem.id,
@@ -70,7 +70,8 @@ export function getProjection(
   dragDepth: number,
   yOffset: number,
   dirDown: boolean,
-modifier: DropModifiers
+modifier: DropModifiers,
+activeSpaceID: string,
 ) : DragProjection {
   if (paths.length == 0) return null;
   if(paths.length > 1) return getMultiProjection(items, paths, overItemIndex, modifier)
@@ -84,10 +85,10 @@ if (!previousItem) return;
   // }
   
 const previousItemDroppable = previousItem.type != 'file'
-const insert = overItem.collapsed && previousItemDroppable && (!overItem.sortable || dirDown && yOffset <= 13 || !dirDown && yOffset >= 13)
+const insert = activeItem.depth > 0 &&  overItem.collapsed && previousItemDroppable && (!overItem.sortable || dirDown && yOffset <= 13 || !dirDown && yOffset >= 13)
   const sortable = overItem.sortable || previousItemDroppable && !insert && nextItem.sortable
   const projectedDepth = dragDepth;
-  const maxDepth = getMaxDepth(
+  const maxDepth = activeItem.depth == 0 ? 0 : getMaxDepth(
     previousItem, dirDown
   );
   const minDepth = getMinDepth(previousItem);
@@ -101,6 +102,7 @@ const insert = overItem.collapsed && previousItemDroppable && (!overItem.sortabl
   const parentId = getParentId();
   
 const parent = items.find(f => f.id == parentId)
+
   return {
     depth,
     overId: previousItem.id,
@@ -109,7 +111,7 @@ const parent = items.find(f => f.id == parentId)
     insert,
     droppable: parent?.type != 'file',
     copy: (modifier == 'link' || modifier == 'copy'),
-    reorder: insert ? activeItem?.parentId == overItem?.id : activeItem?.parentId == parent?.id
+    reorder: insert ? activeItem?.parentId == overItem?.id : activeItem?.parentId == parent?.id || activeItem?.parentId == activeSpaceID
   };
 
   function getParentId() {

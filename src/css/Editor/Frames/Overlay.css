@@ -1,0 +1,176 @@
+.mk-frame-corner {
+    width: 8px;
+    height: 8px;
+    margin-left: -4px;
+    margin-top: -4px;
+    border: 1px solid var(--mk-ui-border-accent);
+    border-radius: 4px;
+    background: var(--mk-ui-handle-fill);
+    z-index: 200;
+    visibility: visible;
+}
+.mk-f-edit:hover .mk-frame-padding,
+.mk-f-edit:hover .mk-frame-gap,
+.mk-f-edit:hover .mk-frame-corner,
+.mk-f-edit-hover .mk-frame-padding,
+.mk-f-edit-hover .mk-frame-gap,
+.mk-f-edit-hover .mk-frame-corner
+ {
+    visibility: visible;
+}
+.mk-frame-padding-handle-h:hover,
+.mk-frame-padding-handle-v:hover,
+.mk-frame-paddings.mk-modifier-shift:has(.mk-frame-padding-handle-v:hover) .mk-frame-padding-handle-v, 
+.mk-frame-paddings.mk-modifier-shift:has(.mk-frame-padding-handle-v:hover) .mk-frame-padding-handle-h, 
+.mk-frame-paddings.mk-modifier-shift:has(.mk-frame-padding-handle-h:hover) .mk-frame-padding-handle-h, 
+.mk-frame-paddings.mk-modifier-shift:has(.mk-frame-padding-handle-h:hover) .mk-frame-padding-handle-v {
+    background: repeating-linear-gradient(-45deg, transparent, transparent 4px, var(--mk-ui-handle-color-hover) 4px, var(--mk-ui-handle-color-hover) 5px)
+}
+.mk-frame-resize-handle::before {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--mk-ui-border-accent);
+    background: var(--mk-ui-handle-fill);
+    margin: 6px;
+}
+.mk-frame-padding-handle-v, .mk-frame-padding-handle-h {
+    width: 100%;
+    height: 100%;
+    visibility: visible;
+    display: flex;
+}
+.mk-frame-padding-handle-v > .mk-frame-draggable-handle {
+    height: 20px  !important;
+    width: 8px !important;
+    margin: auto;
+    display: flex;
+}
+.mk-frame-padding-handle-v > .mk-frame-draggable-handle > span {
+    background: var(--mk-ui-handle-color);
+    height: 10px  !important;
+    width: 2px !important;
+    margin: auto;
+}
+.mk-frame-padding-handle-h > .mk-frame-draggable-handle {
+    width: 20px !important;
+    height: 8px !important;
+    margin: auto;
+    display: flex;
+}
+
+.mk-frame-padding-handle-h > .mk-frame-draggable-handle > span {
+    background: var(--mk-ui-handle-color);
+    height: 2px;
+    width: 10px;
+    margin: auto;
+}
+
+.mk-frame-gap-handle-h {
+    height: 10px;
+    visibility: visible;
+    display: flex;
+}
+.mk-frame-gap-handle-v {
+    width: 10px;
+    visibility: visible;
+    display: flex;
+}
+.mk-frame-gap-handle-h > div {
+    width: 10px !important;
+    height: 2px !important;
+    background: var(--mk-ui-handle-color);
+    outline: 1px solid var(--mk-ui-handle-outline);
+    margin: auto;
+
+}
+.mk-frame-padding-handle-h:hover .mk-frame-draggable-handle::before,
+.mk-frame-padding-handle-v:hover .mk-frame-draggable-handle::before,
+.mk-frame-gap-handle-h:hover .mk-frame-draggable-handle::before,
+.mk-frame-gap-handle-v:hover .mk-frame-draggable-handle::before {
+    content: attr(data-placeholder);
+    position: absolute;
+    background: var(--mk-ui-border-accent);
+    font-size: 12px;
+    border-radius: 2px;
+    transform: translate(10px, 10px);
+    padding: 2px;
+    --icon-size: 11px;
+
+}
+.mk-frame-gap-handle-v > div {
+    height: 10px !important;
+    width: 2px !important;
+    background: var(--mk-ui-handle-color);
+    outline: 1px solid var(--mk-ui-handle-outline);
+    margin: auto;
+}
+.mk-frame-gaps:has(.mk-frame-gap-handle-v:hover) .mk-frame-gap-handle-v, 
+.mk-frame-gaps:has(.mk-frame-gap-handle-v:hover) .mk-frame-gap-handle-h, 
+.mk-frame-gaps:has(.mk-frame-gap-handle-h:hover) .mk-frame-gap-handle-v,  
+.mk-frame-gaps:has(.mk-frame-gap-handle-h:hover) .mk-frame-gap-handle-h  {
+    background: repeating-linear-gradient(-45deg, transparent, transparent 3px, var(--mk-ui-handle-color-hover) 3px, var(--mk-ui-handle-color-hover) 5px)
+}
+.mk-frame-bounds {
+    position: absolute !important;
+    width: 100%;
+    height: 100%;
+    z-index: var(--mk-layer-editor-overlay);
+    outline: thin solid var(--mk-ui-border-accent);
+}
+.mk-frame-bounds.mk-selected {
+    border: 2px solid var(--color-accent);
+}
+.mk-frame-resize-label-width svg, .mk-frame-resize-label-height svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+.mk-frame-resize-label-width {
+    --icon-size: 14px;
+    color: var(--mk-ui-text-accent);
+    position: absolute;
+    bottom: -26px;
+    left: 50%;
+    z-index: var(--mk-layer-editor-overlay);
+    pointer-events: auto;
+}
+.mk-frame-resize-label-width > div {
+    background: var(--mk-ui-border-accent);
+    font-size: 12px;
+    border-radius: 2px;
+    margin-left: -50%;
+    display: flex;
+    width: 100%;
+    padding: 2px;
+    gap: 2px;
+    --icon-size: 14px;
+    align-items: center;
+}
+
+.mk-frame-resize-label-height {
+    --icon-size: 14px;
+    color: var(--mk-ui-text-accent);
+    position: absolute;
+    right: -42px;
+    z-index: var(--mk-layer-editor-overlay);
+    top: 50%;
+    pointer-events: auto;
+}
+
+.mk-frame-resize-label-height > div {
+    background: var(--mk-ui-border-accent);
+    font-size: 12px;
+    border-radius: 2px;
+    margin-top: -50%;
+    display: flex;
+    width: 100%;
+    padding: 2px;
+    gap: 2px;
+    --icon-size: 14px;
+    align-items: center;
+}
+.mk-frame-fill {
+    background: repeating-linear-gradient(-36deg, transparent, transparent 9px, var(--mk-ui-border-accent) 9px, var(--mk-ui-border-accent) 10px)
+}

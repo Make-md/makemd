@@ -1,0 +1,26 @@
+.mk-frame-slides {
+    display: flex
+}
+  .mk-frame-slide, .mk-frame-slide-active {
+    display: flex;
+    flex-direction: column
+  }
+  .mk-frame-slide span:first-child {
+    border-left: thin solid var(--mk-ui-divider);
+    font-size: 8px;
+  }
+  .mk-frame-slide-active span:first-child {
+    border-left: thin solid var(--mk-ui-divider);
+    font-size: 8px;
+  }
+  .mk-frame-slide span:last-child {
+    width: 20px;
+    height: 20px;
+    background: var(--background-primary-alt)
+  }
+
+  .mk-frame-slide-active span:last-child {
+    width: 20px;
+    height: 20px;
+    background: var(--background-secondary)
+  }

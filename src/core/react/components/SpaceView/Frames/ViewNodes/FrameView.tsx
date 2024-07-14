@@ -1,113 +1,158 @@
 import { Superstate } from "core/superstate/superstate";
 import { parseStylesToClass } from "core/utils/frames/renderer";
-import React, { FunctionComponent } from "react";
-import { FrameRunInstance, FrameState, FrameTreeNode } from "types/mframe";
+import React from "react";
+import {
+  FrameExecutable,
+  FrameNodeState,
+  FrameRunInstance,
+  FrameState,
+} from "types/mframe";
+import { AudioNodeView } from "../EditorNodes/AudioNodeView";
 import { ContentNodeView } from "../EditorNodes/ContentNodeView";
+import { ContextNodeView } from "../EditorNodes/ContextNodeView";
 import { FlowNodeView } from "../EditorNodes/FlowNodeView";
-import { defaultFrameStyles } from "../EditorNodes/FrameNodeView";
+import { defaultFrameStyles } from "../EditorNodes/FrameEditorNodeView";
 import { IconNodeView } from "../EditorNodes/IconNodeView";
 import { ImageNodeView } from "../EditorNodes/ImageNodeView";
-import { SpaceNodeView } from "../EditorNodes/SpaceNodeView";
+import { InputNodeView } from "../EditorNodes/InputNodeView";
 import { TextNodeView } from "../EditorNodes/TextNodeView";
-
+export type FrameNodeViewProps = {
+  superstate: Superstate;
+  treeNode: FrameExecutable;
+  state: FrameNodeState;
+};
 export const FrameView = (props: {
   superstate: Superstate;
-  treeNode: FrameTreeNode;
+  treeNode: FrameExecutable;
   instance: FrameRunInstance;
   saveState: (state: FrameState, instance: FrameRunInstance) => void;
   source?: string;
   children?: React.ReactNode;
 }) => {
+  const nodeProps: FrameNodeViewProps = {
+    superstate: props.superstate,
+    treeNode: props.treeNode,
+    state: props.instance.state[props.treeNode.id],
+  };
   const innerComponents =
-    props.treeNode.node.type == "text" ? (
-      <TextNodeView
-        treeNode={props.treeNode}
-        instance={props.instance}
-        editable={false}
-      ></TextNodeView>
+    props.treeNode.node.type == "input" ? (
+      <InputNodeView {...nodeProps}></InputNodeView>
+    ) : props.treeNode.node.type == "text" ? (
+      <TextNodeView {...nodeProps}></TextNodeView>
     ) : props.treeNode.node.type == "icon" ? (
-      <IconNodeView
-        superstate={props.superstate}
-        treeNode={props.treeNode}
-        instance={props.instance}
-        editable={false}
-      ></IconNodeView>
+      <IconNodeView {...nodeProps}></IconNodeView>
+    ) : props.treeNode.node.type == "audio" ? (
+      <AudioNodeView {...nodeProps}></AudioNodeView>
     ) : props.treeNode.node.type == "image" ? (
-      <ImageNodeView
-        superstate={props.superstate}
-        treeNode={props.treeNode}
-        instance={props.instance}
-        editable={false}
-      ></ImageNodeView>
+      <ImageNodeView {...nodeProps}></ImageNodeView>
     ) : props.treeNode.node.type == "space" ? (
-      <SpaceNodeView
-        treeNode={props.treeNode}
-        instance={props.instance}
-        superstate={props.superstate}
-        editable={false}
-      ></SpaceNodeView>
+      <ContextNodeView {...nodeProps} source={props.source}></ContextNodeView>
     ) : props.treeNode.node.type == "content" ? (
-      <ContentNodeView>{props.children}</ContentNodeView>
+      <ContentNodeView>
+        {props.treeNode.children
+          .filter((f) => f.node.type != "slides")
+          .map((c, i) => (
+            <FrameView
+              superstate={props.superstate}
+              key={i}
+              treeNode={c}
+              instance={props.instance}
+              saveState={props.saveState}
+              source={props.source}
+            >
+              {props.children}
+            </FrameView>
+          ))}
+        {props.children}
+      </ContentNodeView>
     ) : props.treeNode.node.type == "flow" ? (
-      <FlowNodeView
-        treeNode={props.treeNode}
-        instance={props.instance}
-        superstate={props.superstate}
-        source={props.source}
-        editable={false}
-      ></FlowNodeView>
+      <FlowNodeView {...nodeProps} source={props.source}></FlowNodeView>
     ) : (
-      props.treeNode.children.map((c, i) => (
-        <FrameView
-          superstate={props.superstate}
-          key={i}
-          treeNode={c}
-          instance={props.instance}
-          saveState={props.saveState}
-          source={props.source}
-        >
-          {props.children}
-        </FrameView>
-      ))
+      props.treeNode.children
+        .filter((f) => f.node.type != "slides")
+        .map((c, i) => (
+          <FrameView
+            superstate={props.superstate}
+            key={i}
+            treeNode={c}
+            instance={props.instance}
+            saveState={props.saveState}
+            source={props.source}
+          >
+            {props.children}
+          </FrameView>
+        ))
     );
-  const parseAs = (role: string) =>
-    role == "checkbox" || role == "text" || role == "range" || role == "number"
-      ? "input"
-      : role;
-  const tag: string | FunctionComponent =
-    parseAs(props.instance.state[props.treeNode.id]?.styles?.as) ?? "div";
-  const type =
-    tag == "input" ? props.instance.state[props.treeNode.id]?.styles?.as : null;
 
+  const hidden = props.instance.state[props.treeNode.id]?.styles
+    ? props.instance.state[props.treeNode.id]?.styles?.hidden
+      ? true
+      : false
+    : false;
   return (
     props.instance.state[props.treeNode.id] &&
-    React.createElement(
-      tag,
-      {
-        className: `mk-frame ${parseStylesToClass(
+    !hidden && (
+      <div
+        className={`mk-frame ${parseStylesToClass(
           props.instance.state[props.treeNode.id]?.styles
-        )}`,
-        type: type,
-        onClick: (e) => {
+        )}`}
+        data-path={props.treeNode.id}
+        data-type={props.treeNode.node.type}
+        onContextMenu={(e) => {
           if (
-            typeof props.instance.state[props.treeNode.id].actions?.onClick ==
-            "function"
+            typeof props.instance.state[props.treeNode.id].actions
+              ?.onContextMenu == "function"
           ) {
-            props.instance.state[props.treeNode.id].actions?.onClick(
+            props.instance.state[props.treeNode.id].actions?.onContextMenu(
               e,
+              null,
               props.instance.state,
               (s: FrameState) => props.saveState(s, props.instance),
               props.superstate.api
             );
             e.stopPropagation();
           }
-        },
-        style: {
-          ...defaultFrameStyles,
-          ...props.instance.state[props.treeNode.id]?.styles,
-        },
-      },
-      [innerComponents]
+        }}
+        onClick={(e) => {
+          if (e.detail === 1) {
+            if (
+              typeof props.instance.state[props.treeNode.id].actions?.onClick ==
+              "function"
+            ) {
+              props.instance.state[props.treeNode.id].actions?.onClick(
+                e,
+                null,
+                props.instance.state,
+                (s: FrameState) => props.saveState(s, props.instance),
+                props.superstate.api
+              );
+              e.stopPropagation();
+            }
+          } else if (e.detail === 2) {
+            if (
+              typeof props.instance.state[props.treeNode.id].actions
+                ?.onDoubleClick == "function"
+            ) {
+              props.instance.state[props.treeNode.id].actions?.onDoubleClick(
+                e,
+                null,
+                props.instance.state,
+                (s: FrameState) => props.saveState(s, props.instance),
+                props.superstate.api
+              );
+              e.stopPropagation();
+            }
+          }
+        }}
+        style={
+          {
+            ...defaultFrameStyles,
+            ...props.instance.state[props.treeNode.id]?.styles,
+          } as React.CSSProperties
+        }
+      >
+        {innerComponents}
+      </div>
     )
   );
 };

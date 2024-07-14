@@ -1,36 +1,68 @@
-import { App, Modal } from "obsidian";
+import { ModalWrapper } from "core/react/components/UI/Modals/modalWrapper";
+import { isTouchScreen } from "core/utils/ui/screen";
 import React from "react";
-import { createRoot } from "react-dom/client";
+import { Root } from "react-dom/client";
+import { ObsidianUI } from "./ui";
 
-export class ObsidianModal extends Modal {
-  constructor(
-    app: App,
-    public title: string,
-    public fc: React.FC<{ hide: () => void }>
-  ) {
-    super(app);
+export const showModal = (props: {
+  ui: ObsidianUI;
+  fc: React.FC<{ hide: () => void }>;
+  title?: string;
+  isPalette?: boolean;
+  className?: string;
+  props?: any;
+  win?: Window;
+}) => {
+  const portalElement = props.win.document.createElement("div");
+
+  if (isTouchScreen(props.ui.manager)) {
+    portalElement.classList.add("mk-modal-wrapper-mobile");
+  } else {
+    portalElement.classList.add("mk-modal-wrapper");
   }
 
-  onOpen() {
-    const { contentEl } = this;
+  props.win.document.body.appendChild(portalElement);
+  const hideFunction = (root: Root) => {
+    let hasBeenCalled = false;
+    return () => {
+      if (hasBeenCalled) return;
+      root.unmount();
+      props.win.document.body.removeChild(portalElement);
+      hasBeenCalled = true;
+    };
+  };
 
-    this.modalEl.toggleClass("mod-lg", true);
+  const root = props.ui.createRoot(portalElement);
+  const hide = hideFunction(root);
+  const updateRoot = (newProps: any) => {
+    root.render(
+      <ModalWrapper
+        ui={props.ui.manager}
+        hide={() => hide()}
+        className={`${props.isPalette ? "mk-palette" : "mk-modal"} ${
+          props.className ? props.className : ""
+        }`}
+      >
+        {!props.isPalette && (
+          <div className="mk-modal-header">
+            {props.title && <div className="mk-modal-title">{props.title}</div>}
+            <div
+              className="mk-x-small"
+              dangerouslySetInnerHTML={{
+                __html: props.ui.getSticker("ui//close"),
+              }}
+              onClick={() => hide()}
+            ></div>
+          </div>
+        )}
 
-    this.titleEl.innerText = this.title;
-    if (!this.title) {
-      this.titleEl.setCssStyles({ display: "none" });
-      (
-        this.modalEl.querySelector(".modal-close-button") as HTMLElement
-      ).setCssStyles({ display: "none" });
-    }
-
-    const queryEl = contentEl.createDiv("mk-modal");
-    const root = createRoot(queryEl);
-    root.render(<this.fc hide={() => this.close()}></this.fc>);
-  }
-
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-}
+        <props.fc hide={() => hide()} {...newProps} />
+      </ModalWrapper>
+    );
+  };
+  updateRoot(props.props);
+  return {
+    hide: hide,
+    update: updateRoot,
+  };
+};
