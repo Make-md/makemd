@@ -55,6 +55,7 @@ export interface MakeMDSettings {
   newFileLocation: string;
   newFileFolderPath: string;
   inlineContext: boolean;
+  inlineContextProperties: boolean;
   imageThumbnails: boolean;
   inlineBacklinks: boolean;
   defaultDateFormat: string;

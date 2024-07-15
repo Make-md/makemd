@@ -445,6 +445,18 @@ containerEl.createEl("h3", { text: t.settings.sectionStickers });
       );
       
       new Setting(containerEl)
+      .setName(t.settings.inlineContextProperties.name)
+      .setDesc(t.settings.inlineContextProperties.desc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.superstate.settings.inlineContextProperties)
+          .onChange((value) => {
+            this.plugin.superstate.settings.inlineContextProperties = value;
+            this.plugin.saveSettings();
+            this.plugin.reloadExtensions(false);
+          })
+      );
+      new Setting(containerEl)
       .setName(t.settings.inlineContextExpanded.name)
       .setDesc(t.settings.inlineContextExpanded.desc)
       .addToggle((toggle) =>

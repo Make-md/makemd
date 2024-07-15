@@ -423,14 +423,7 @@ export const ContextEditorProvider: React.FC<
     const col = (table == "" ? tableData : contextTable[table])?.cols.find(
       (f) => f.name == column
     );
-    console.log(
-      "updateValue",
-      tableData.rows[index]?.[PathPropertyName],
-      col,
-      path,
-      value,
-      column
-    );
+
     if (col) {
       saveProperties(
         props.superstate,

@@ -49,12 +49,13 @@ export const MarkdownHeaderView = (props: {
               readOnly={!props.editable}
             ></TitleComponent>
           </div>
-          {props.editable && (
-            <HeaderPropertiesView
-              superstate={props.superstate}
-              collapseSpaces={true}
-            ></HeaderPropertiesView>
-          )}
+          {props.editable &&
+            props.superstate.settings.inlineContextProperties && (
+              <HeaderPropertiesView
+                superstate={props.superstate}
+                collapseSpaces={true}
+              ></HeaderPropertiesView>
+            )}
         </div>
       </>
     )

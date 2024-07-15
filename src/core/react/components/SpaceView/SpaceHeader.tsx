@@ -26,12 +26,14 @@ export const SpaceHeader = (props: { superstate: Superstate }) => {
             readOnly={readMode}
           ></TitleComponent>
         </div>
-        {spaceState?.type == "folder" && !readMode && (
-          <HeaderPropertiesView
-            superstate={props.superstate}
-            collapseSpaces={true}
-          ></HeaderPropertiesView>
-        )}
+        {spaceState?.type == "folder" &&
+          !readMode &&
+          props.superstate.settings.inlineContextProperties && (
+            <HeaderPropertiesView
+              superstate={props.superstate}
+              collapseSpaces={true}
+            ></HeaderPropertiesView>
+          )}
       </div>
     </>
   );

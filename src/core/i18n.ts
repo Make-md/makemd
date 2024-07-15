@@ -752,6 +752,10 @@ class T {
           name: "Inline Context",
           desc: "Display the context and a banner at the top of your notes",
         },
+        inlineContextProperties: {
+          name: "Inline Context Properties",
+          desc: "Show the properties in the inline context",
+        },
         inlineContextExpanded: {
           name: "Auto Expand Inline Context",
           desc: "Expand the inline context sections when opening a note",

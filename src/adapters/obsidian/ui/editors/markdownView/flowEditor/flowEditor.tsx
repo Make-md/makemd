@@ -279,30 +279,35 @@ export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
 const flowEditorRangeset = (state: EditorState, plugin: MakeMDPlugin) => {
   const builder = new RangeSetBuilder<Decoration>();
   const infoFields = state.field(flowEditorInfo, false);
+  const values = [] as { start: number; end: number; decoration: Decoration }[];
   for (const info of infoFields) {
     const { from, to, type, expandedState } = info;
     const lineFix =
       from - 3 == state.doc.lineAt(from).from &&
       to + 2 == state.doc.lineAt(from).to;
     if (type == FlowEditorLinkType.Link) {
-      builder.add(
-        from - 2,
-        from - 2,
-        Decoration.widget({
+      values.push({
+        start: from - 2,
+        end: from - 2,
+        decoration: Decoration.widget({
           widget: new LinkSticker(info, plugin),
           side: -1,
-        })
-      );
-      builder.add(
-        to + 2,
-        to + 2,
-        Decoration.widget({
+        }),
+      });
+      values.push({
+        start: to + 2,
+        end: to + 2,
+        decoration: Decoration.widget({
           widget: new LinkExpand(info, plugin),
           side: 0,
-        })
-      );
+        }),
+      });
       if (expandedState == FlowEditorState.Open) {
-        builder.add(to + 2, to + 2, flowEditorDecoration(info, plugin));
+        values.push({
+          start: to + 2,
+          end: to + 2,
+          decoration: flowEditorDecoration(info, plugin),
+        });
       }
     } else if (
       expandedState == FlowEditorState.Open &&
@@ -316,18 +321,30 @@ const flowEditorRangeset = (state: EditorState, plugin: MakeMDPlugin) => {
             state.selection.main.to <= to + 1)
         )
       ) {
-        builder.add(from - 4, from - 3, flowEditorSelector(info, plugin));
+        values.push({
+          start: from - 4,
+          end: from - 3,
+          decoration: flowEditorSelector(info, plugin),
+        });
         if (lineFix) {
-          builder.add(
-            from - 3,
-            to + 2,
-            flowEditorWidgetDecoration(info, plugin)
-          );
+          values.push({
+            start: from - 3,
+            end: to + 2,
+            decoration: flowEditorWidgetDecoration(info, plugin),
+          });
         } else {
-          builder.add(from - 3, to + 2, flowEditorDecoration(info, plugin));
+          values.push({
+            start: from - 3,
+            end: to + 2,
+            decoration: flowEditorDecoration(info, plugin),
+          });
         }
       }
     }
+  }
+  values.sort(compareByField("start", true));
+  for (const value of values) {
+    builder.add(value.start, value.end, value.decoration);
   }
   const dec = builder.finish();
   return dec;

@@ -53,21 +53,23 @@ export const PathCrumb = (
       onClick={() => {
         props.superstate.ui.openPath(cache?.path ?? path, false);
       }}
-      onContextMenu={(e) =>
-        cache &&
-        showPathContextMenu(
-          props.superstate,
-          cache.path,
-          props.source,
-          {
-            x: e.clientX,
-            y: e.clientY,
-            width: 0,
-            height: 0,
-          },
-          windowFromDocument(e.view.document)
-        )
-      }
+      onContextMenu={(e) => {
+        if (cache) {
+          e.stopPropagation();
+          showPathContextMenu(
+            props.superstate,
+            cache.path,
+            props.source,
+            {
+              x: e.clientX,
+              y: e.clientY,
+              width: 0,
+              height: 0,
+            },
+            windowFromDocument(e.view.document)
+          );
+        }
+      }}
     >
       {cache && (
         <PathStickerView superstate={props.superstate} pathState={cache} />

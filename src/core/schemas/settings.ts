@@ -60,6 +60,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   inlineContext: true,
   inlineBacklinksExpanded: false,
   inlineContextExpanded: true,
+  inlineContextProperties: true,
   inlineContextSectionsExpanded: true,
   dataviewInlineContext: false,
   inlineContextNameLayout: "vertical",
