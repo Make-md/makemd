@@ -725,11 +725,11 @@ class T {
           desc: "Show the folder note by default when opening a folder",
         },
         internalLinkFlowEditor: {
-          name: "Link Toggles to Open Flow Editor",
+          name: "Show Toggles to Open Flow Editor on Links",
           desc: "Turn on to toggle Flow Blocks directly in inline links",
         },
         internalLinkSticker: {
-          name: "Link Stickers",
+          name: "Show Stickers on Links",
           desc: "Turn on to toggle stickers shown directly by beside internal links",
         },
         syncContextToFrontmatter: {

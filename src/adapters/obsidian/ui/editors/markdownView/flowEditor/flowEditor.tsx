@@ -286,22 +286,24 @@ const flowEditorRangeset = (state: EditorState, plugin: MakeMDPlugin) => {
       from - 3 == state.doc.lineAt(from).from &&
       to + 2 == state.doc.lineAt(from).to;
     if (type == FlowEditorLinkType.Link) {
-      values.push({
-        start: from - 2,
-        end: from - 2,
-        decoration: Decoration.widget({
-          widget: new LinkSticker(info, plugin),
-          side: -1,
-        }),
-      });
-      values.push({
-        start: to + 2,
-        end: to + 2,
-        decoration: Decoration.widget({
-          widget: new LinkExpand(info, plugin),
-          side: 0,
-        }),
-      });
+      if (plugin.superstate.settings.internalLinkSticker)
+        values.push({
+          start: from - 2,
+          end: from - 2,
+          decoration: Decoration.widget({
+            widget: new LinkSticker(info, plugin),
+            side: -1,
+          }),
+        });
+      if (plugin.superstate.settings.internalLinkClickFlow)
+        values.push({
+          start: to + 2,
+          end: to + 2,
+          decoration: Decoration.widget({
+            widget: new LinkExpand(info, plugin),
+            side: -1,
+          }),
+        });
       if (expandedState == FlowEditorState.Open) {
         values.push({
           start: to + 2,

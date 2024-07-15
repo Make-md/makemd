@@ -198,7 +198,7 @@ export const showPathContextMenu = (
   rect: Rect,
   win: Window,
   anchor?: Anchors,
-  triggerRename?: () => void
+  onClose?: () => void
 ) => {
   const cache = superstate.pathsIndex.get(path);
   if (!cache) return;
@@ -212,6 +212,17 @@ export const showPathContextMenu = (
     },
   });
   menuOptions.push(menuSeparator);
+
+  if (onClose) {
+    menuOptions.push({
+      name: i18n.menu.closeSpace,
+      icon: "ui//close",
+      onClick: (e) => {
+        onClose();
+      },
+    });
+    menuOptions.push(menuSeparator);
+  }
 
   menuOptions.push({
     name: i18n.buttons.addToSpace,

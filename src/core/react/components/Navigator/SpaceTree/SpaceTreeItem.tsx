@@ -243,7 +243,8 @@ export const TreeItem = (props: TreeItemProps) => {
       data.space,
       (e.target as HTMLElement).getBoundingClientRect(),
       windowFromDocument(e.view.document),
-      "right"
+      "right",
+      data.type == "group" ? () => closeActiveSpace(data.path) : null
     );
   };
   const pathStateUpdated = (payload: { path: string }) => {
@@ -405,7 +406,7 @@ export const TreeItem = (props: TreeItemProps) => {
               <span className="nav-file-tag">{extension}</span>
             )}
 
-            {!clone && !pathState.readOnly ? (
+            {!clone && !pathState?.readOnly ? (
               <div className="mk-folder-buttons">
                 <button
                   aria-label={t.buttons.moreOptions}
