@@ -120,6 +120,7 @@ export const SpaceQuery = (props: {
       }
       case "list":
         {
+          
           const fieldType = filter.fType;
           const saveOptions = (options: string[], values: string[]) => {
             saveFilterValue(serializeMultiString(values));
@@ -138,7 +139,7 @@ export const SpaceQuery = (props: {
               value: f,
               name: f,
             }));
-          } else if (fieldType.startsWith("links")) {
+          } else if (fieldType.startsWith("link")) {
             options = props.superstate.spaceManager.allPaths().map((f) => ({
               name: pathNameToString(f),
               value: f,

@@ -6,9 +6,12 @@ import { parseMultiDisplayString, parseProperty } from "utils/parsers";
 import { getAbstractFileAtPath, tFileToAFile } from "../utils/file";
 import { frontMatterForFile } from "./frontmatter/fm";
 import { frontMatterKeys } from "./frontmatter/frontMatterKeys";
+import _ from "lodash";
+import { IndexMap } from "core/types/indexMap";
 
 type CachedMetadataContentTypes = {
     resolvedLinks: string;
+    inlinks: string;
     links: string;
     embeds: string;
     tags: string[];
@@ -22,13 +25,14 @@ type CachedMetadataContentTypes = {
     label: string;
 }
 
-type CleanCachedMetadata = Omit<CachedMetadata, 'tags'> & { tags: string[], resolvedLinks: string[], label: PathLabel }
+type CleanCachedMetadata = Omit<CachedMetadata, 'tags'> & { tags: string[], resolvedLinks: string[], label: PathLabel, inlinks: string[] }
 
 export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCachedMetadata, CachedMetadataContentTypes> {
     
     public id = "metadata.obsidian.md"
     public cache : Map<string, CleanCachedMetadata>;
     public supportedFileTypes = ['md'];
+    private linksMap: IndexMap;
     public middleware: FilesystemMiddleware;
 public app: App;
     public constructor (public plugin: MakeMDPlugin) {
@@ -38,9 +42,11 @@ public app: App;
     public initiate (middleware: FilesystemMiddleware) {
         this.middleware = middleware;
         this.cache = new Map();
+        this.linksMap = new IndexMap();
         
     }
     public metadataChange (file: TFile) {
+        
         this.parseCache(tFileToAFile(file), true);
         
     }
@@ -49,6 +55,14 @@ public app: App;
         const fCache = this.app.metadataCache.getCache(file.path);
         if (!fCache) return;
             const rt = [];
+            
+            let resolved = this.app.metadataCache.resolvedLinks;
+                let incoming = new Set<string>(this.linksMap.getInverse(file.path));
+                const currentCache = this.cache.get(file.path);
+                if (!currentCache)
+                {for (let [key, value] of Object.entries(resolved)) {
+                    if (file.path in value) incoming.add(key);
+                }}
                 if (fCache && fCache.tags)
                 rt.push(...(fCache.tags?.map((f) => f.tag) ?? []));
                 if (fCache && fCache.frontmatter?.tags)
@@ -75,8 +89,10 @@ public app: App;
                 );
                 const contents = await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile)
                 const links = fCache.links?.map(f => this.plugin.app.metadataCache.getFirstLinkpathDest(f.link, file.path)?.path).filter(f => f)
+                this.linksMap.set(file.path, new Set(links));
         const updatedCache = {...fCache, 
             resolvedLinks: links ?? [],
+            inlinks: Array.from(incoming),
             tags: rt,
             property: fCache.frontmatter,
             tasks: fCache.listItems?.filter(f => f.task).map(f => contents.slice(f.position.start.offset, f.position.end.offset)) ?? [],
@@ -87,6 +103,20 @@ public app: App;
             color: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyColor],
             preview: contents.slice(fCache.frontmatterPosition?.end.offset ?? 0, 1000)
         }}
+        
+        if (currentCache) {
+            
+            if (!_.isEqual(currentCache.resolvedLinks, updatedCache.resolvedLinks)) {
+                const newLinks = updatedCache.resolvedLinks.filter(f => !currentCache.resolvedLinks.includes(f));
+                const removedLinks = currentCache.resolvedLinks.filter(f => !updatedCache.resolvedLinks.includes(f));
+                for (const link of [...newLinks, ...removedLinks]) {
+                    const file = this.plugin.app.vault.getAbstractFileByPath(link);
+                    if (file && file instanceof TFile) 
+                        this.metadataChange(file)
+                }
+                
+            }
+        }
         this.cache.set(file.path, updatedCache);
         this.middleware.updateFileCache(file.path, updatedCache, refresh);
     }

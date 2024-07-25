@@ -364,7 +364,7 @@ export const saveDBToPath = async (
   if (mdb) {
     let mdbStruct : DBRows = []
     try {
-      mdbStruct = dbResultsToDBTables(db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='m_schema' OR name='m_fields';`))[0].rows
+      mdbStruct = dbResultsToDBTables(db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='m_schema' OR name='m_fields';`))[0]?.rows ?? []
     } catch (e) {
       console.log(e);
     }

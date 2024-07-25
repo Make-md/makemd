@@ -15,7 +15,6 @@ import {
 import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
 import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
 import { tagsSpacePath } from "core/types/space";
-import { spaceNotePathForSpacePath } from "core/utils/strings";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { TargetLocation } from "types/path";
 import { selectElementContents } from "utils/dom";
@@ -109,9 +108,11 @@ const newName = folderPathToString(newPath);
     if (spaceNote)
     renameFile(plugin, spaceNote, newName)
   } else if (plugin.superstate.settings.enableFolderNote) {
+    const oldSpaceInfo = plugin.superstate.spaceManager.spaceInfoForPath(oldPath);
+    const newSpaceInfo = plugin.superstate.spaceManager.spaceInfoForPath(newPath);
     await plugin.files.renameFile(
-      spaceNotePathForSpacePath(oldPath),
-      spaceNotePathForSpacePath(newPath)
+      oldSpaceInfo.notePath,
+      newSpaceInfo.notePath
     );
   }
 }

@@ -70,6 +70,7 @@ export const DataPropertyView = (props: DataPropertyViewProps) => {
               [field.name]: "",
             }
           );
+          return true;
         },
         fileMetadata: true,
       }

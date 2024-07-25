@@ -10,6 +10,7 @@ export interface MakeMDSettings {
   markSans: boolean;
   flowMenuEnabled: boolean;
   makeMenuPlaceholder: boolean;
+  flowState: boolean;
   inlineStyler: boolean;
   mobileMakeBar: boolean;
   inlineStylerColors: boolean;
@@ -43,6 +44,7 @@ export interface MakeMDSettings {
   folderContextFile: string;
   folderFrameFile: string;
   folderNoteInsideFolder: boolean;
+  folderNoteName: string;
   enableFolderNote: boolean;
   folderIndentationLines: boolean;
   revealActiveFile: boolean;
@@ -92,4 +94,6 @@ syncFormulaToFrontmatter: boolean;
   defaultSpaceTemplate: string;
   selectedKit: string;
   actionMaxSteps: number;
+  contextPagination: number;
+  searchWorker: boolean;
 }

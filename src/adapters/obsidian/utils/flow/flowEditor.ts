@@ -211,7 +211,7 @@ export const openPathInElement = (
   fileName?: string,
   onShowCallback?: (leaf: FlowEditor) => Promise<unknown>
 ) => {
-  const parent = (parentLeaf ?? plugin.app.workspace.activeLeaf) as unknown as FlowEditorParent;
+  const parent = (parentLeaf ?? plugin.app.workspace.getLeaf()) as unknown as FlowEditorParent;
   if (!initiatingEl) initiatingEl = parent.containerEl;
   const hoverPopover = new FlowEditor(
     parent,

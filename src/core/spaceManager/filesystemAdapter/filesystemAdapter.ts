@@ -7,7 +7,7 @@ import { AFile, PathLabel } from "core/middleware/types/afile";
 import { DefaultFolderNoteMDBTables, DefaultMDBTables } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { parseSpaceMetadata, spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/superstate/utils/spaces";
-import { Area } from "core/types/area";
+import { Focus } from "core/types/focus";
 import { SpaceDefinition, tagsSpacePath } from "core/types/space";
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { runFormulaWithContext } from "core/utils/formula/parser";
@@ -59,7 +59,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     public deleteTemplate (path: string, space: string) {
       return this.deletePath(`${space}/.space/templates/${path}`)
     }
-    public async readWaypoints () : Promise<Area[]> {
+    public async readWaypoints () : Promise<Focus[]> {
       if (!await this.fileSystem.fileExists(defaultSpaceFolder)) {
         await this.fileSystem.createFolder(defaultSpaceFolder)
       }
@@ -68,7 +68,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
       }
       return  this.fileSystem.readTextFromFile(defaultWaypointsFile).then(f => ensureArray(safelyParseJSON(f)))
     }
-    public async saveWaypoints (waypoints: Area[]) {
+    public async saveWaypoints (waypoints: Focus[]) {
       if (!await this.fileSystem.fileExists(defaultSpaceFolder)) {
         await this.fileSystem.createFolder(defaultSpaceFolder)
       }

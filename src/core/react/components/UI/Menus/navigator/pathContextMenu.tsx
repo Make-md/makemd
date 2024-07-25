@@ -229,6 +229,8 @@ export const showPathContextMenu = (
     icon: "ui//pin",
     onClick: (e) => {
       const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+      const menuOptions = [];
+      const paths = [...superstate.spacesMap.get(path)];
       showSpacesMenu(
         offset,
         windowFromDocument(e.view.document),
@@ -336,7 +338,8 @@ export const showPathContextMenu = (
     onClick: (e) => {
       superstate.spaceManager.copyPath(
         path,
-        `${cache.parent}/${cache.name} 1.${cache.type}`
+        `${cache.parent}`,
+        `${cache.name}`
       );
     },
   });

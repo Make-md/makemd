@@ -218,6 +218,7 @@ div:not(.mk-flowspace-editor) >
 }
 .mk-floweditor > .workspace-leaf > .workspace-leaf-content, .mk-floweditor > .workspace-leaf > .workspace-leaf-content > .view-content, .mk-floweditor > .workspace-leaf > .workspace-leaf-content > .view-content > .mod-cm6 > .cm-editor > .cm-scroller {
   overflow: visible !important;
+  height: auto;
 }
 
 .mk-floweditor-container > .mk-floweditor {

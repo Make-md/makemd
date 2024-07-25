@@ -5,6 +5,7 @@ import { debounce } from "lodash";
 import { CacheDBSchema } from "schemas/cache";
 import { Database } from "sql.js";
 import { DBRow, DBTables } from "types/mdb";
+import { sanitizeSQLStatement } from "utils/sanitizers";
 import { LocalCachePersister } from "../../../core/middleware/types/persister";
 
 /** Simpler wrapper for a file-backed cache for arbitrary metadata. */
@@ -50,7 +51,7 @@ public reset() {
     }
     public async remove(path: string, type: string): Promise<void> {
         if (!this.db) return;
-        await deleteFromDB(this.db, type, `path='${path}'`)
+        await deleteFromDB(this.db, type, `path='${sanitizeSQLStatement(path)}'`)
         this.debounceSaveSpaceDatabase();
         return;
     }

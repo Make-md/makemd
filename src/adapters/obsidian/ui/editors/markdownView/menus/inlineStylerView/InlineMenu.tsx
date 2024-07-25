@@ -9,9 +9,14 @@ import {
 import MakeMDPlugin from "main";
 import { i18n } from "makemd-core";
 
+import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
+import { newPathInSpace } from "core/superstate/utils/spaces";
 import { isTouchScreen } from "core/utils/ui/screen";
+import { editorInfoField } from "obsidian";
 import React, { useState } from "react";
 import { colors } from "schemas/color";
+import { windowFromDocument } from "utils/dom";
+import { sanitizeFileName } from "utils/sanitizers";
 import { Mark } from "./Mark";
 import { InlineStyle, resolveStyles } from "./styles";
 
@@ -256,6 +261,176 @@ export const InlineMenuComponent: React.FC<{
     </>
   );
 
+  function getMarkdownListIndentLevel(line: string): number {
+    const regex = /^(\s*)(-|\d+\.)\s+(\[[ x]\]\s+)?/;
+    const match = line.match(regex);
+
+    if (match) {
+      return match[1].length;
+    }
+
+    return -1; // Return -1 if it's not a list item
+  }
+  function unindentText(text: string, levels: number) {
+    // Function to create a regex that matches spaces or tabs
+    const createIndentRegex = (count: number) => {
+      return new RegExp(`^([\\t]|[ ]{2,4}){0,${count}}`, "gm");
+    };
+
+    const regex = createIndentRegex(levels);
+
+    return text.replace(regex, "");
+  }
+  function removeListFormatting(text: string) {
+    const regex = /^(\s*)([-*+]|\d+\.)\s+(\[[ x]\]\s+)?/gm;
+    return text.replace(regex, "");
+  }
+  const transformMultiline = async () => {
+    const firstLine = props.cm.state.doc.lineAt(
+      props.cm.state.selection.main.from
+    );
+    const startIndent = getMarkdownListIndentLevel(
+      props.cm.state.sliceDoc(firstLine.from, firstLine.to)
+    );
+    const lineStart = props.cm.state.doc.lineAt(
+      props.cm.state.selection.main.from
+    ).number;
+    const lineEnd = props.cm.state.doc.lineAt(
+      props.cm.state.selection.main.to
+    ).number;
+    const changes = [];
+    const infoField = props.cm.state.field(editorInfoField, false);
+    const file = infoField.file;
+    if (file) {
+      const space = props.plugin.superstate.spacesIndex.get(file.parent.path);
+      if (space) {
+        for (let i = lineStart; i <= lineEnd; i++) {
+          const line = props.cm.state.doc.line(i);
+          const indentLevel = getMarkdownListIndentLevel(line.text);
+          const newText = removeListFormatting(line.text);
+          const space = props.plugin.superstate.spacesIndex.get(
+            file.parent.path
+          );
+          const newFile = await newPathInSpace(
+            props.plugin.superstate,
+            space,
+            "md",
+            newText,
+            true
+          );
+          changes.push({
+            from: line.to - newText.length,
+            to: line.to,
+            insert: `[[${newFile}|${newText}]]`,
+          });
+        }
+        props.cm.dispatch({
+          changes: changes,
+        });
+      }
+    }
+  };
+
+  const linkText = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    showLinkMenu(
+      rect,
+      windowFromDocument(e.view.document),
+      props.plugin.superstate,
+      (link) => {
+        const currentSelection = props.cm.state.selection.main;
+        const selectedText = props.cm.state.sliceDoc(
+          currentSelection.from,
+          currentSelection.to
+        );
+        const changes = [
+          {
+            from: currentSelection.from,
+            to: currentSelection.to,
+            insert: `[[${link}|${selectedText}]]`,
+          },
+        ];
+        props.cm.dispatch({
+          changes: changes,
+        });
+      }
+    );
+  };
+
+  const transformText = (collapseMode: number) => {
+    const currentLine = props.cm.state.doc.lineAt(
+      props.cm.state.selection.main.from
+    );
+    const higherIndentLines = [];
+    let content = null;
+    if (collapseMode > 0) {
+      const currentLineIndex = props.cm.state.doc.lineAt(
+        props.cm.state.selection.main.from
+      ).number;
+      const indentLevel = getMarkdownListIndentLevel(currentLine.text);
+
+      let i = currentLineIndex + 1;
+      while (i <= props.cm.state.doc.lines) {
+        const currentLine = props.cm.state.doc.line(i);
+        if (getMarkdownListIndentLevel(currentLine.text) > indentLevel) {
+          higherIndentLines.push(currentLine);
+        }
+        if (getMarkdownListIndentLevel(currentLine.text) <= indentLevel) break;
+        i++;
+      }
+      if (collapseMode == 1) {
+        content = higherIndentLines
+          .map((f) => unindentText(f.text, indentLevel + 1))
+          .join("\n");
+      }
+    }
+
+    const currentLineEnd = props.cm.state.selection.main.to;
+    const currentSelection = props.cm.state.selection.main;
+    const infoField = props.cm.state.field(editorInfoField, false);
+    const file = infoField.file;
+    const selectedText = props.cm.state.sliceDoc(
+      currentSelection.from,
+      currentSelection.to
+    );
+    if (file) {
+      const space = props.plugin.superstate.spacesIndex.get(file.parent.path);
+      if (space) {
+        const newPath = sanitizeFileName(selectedText).trim();
+        newPathInSpace(
+          props.plugin.superstate,
+          space,
+          "md",
+          newPath,
+          true,
+          content
+        ).then((f) => {
+          if (f) {
+            const changes = [
+              {
+                from: currentSelection.from,
+                to: currentSelection.to,
+                insert: `[[${f}|${selectedText}]]`,
+              },
+            ];
+            if (collapseMode == 1) {
+              changes.push({
+                from: props.cm.state.doc.lineAt(currentSelection.from + 1).to,
+                to: props.cm.state.doc.line(
+                  currentLine.number + higherIndentLines.length
+                ).to,
+                insert: "",
+              });
+            }
+            props.cm.dispatch({
+              changes: changes,
+            });
+          }
+        });
+      }
+    }
+  };
+
   const marksMode = () => (
     <>
       {props.mobile ? (
@@ -283,6 +458,67 @@ export const InlineMenuComponent: React.FC<{
           ></Mark>
         );
       })}
+      <div className="mk-divider"></div>
+      <div
+        aria-label={i18n.styles.blocklink}
+        onClick={(e) => {
+          linkText(e);
+        }}
+        className="mk-mark"
+        dangerouslySetInnerHTML={{
+          __html: props.plugin.superstate.ui.getSticker(
+            "ui//mk-mark-blocklink"
+          ),
+        }}
+      ></div>
+      <div className="mk-mark-group">
+        <div
+          aria-label={"New Note"}
+          onMouseDown={() => {
+            transformText(0);
+          }}
+          className="mk-mark"
+          dangerouslySetInnerHTML={{
+            __html: props.plugin.superstate.ui.getSticker("ui//new-note"),
+          }}
+        ></div>
+
+        {/* <div
+          aria-label={
+            !isTouchScreen(props.plugin.superstate.ui)
+              ? i18n.styles.textColor
+              : undefined
+          }
+          onClick={(e) => {
+            const menuOptions = [
+              {
+                name: "Collapse List into Note",
+                icon: "ui//plus",
+                onClick: () => {
+                  transformText(1);
+                },
+              },
+              {
+                name: "Collapse List into Notes",
+                icon: "ui//plus",
+                onClick: () => {
+                  transformMultiline();
+                },
+              },
+            ];
+            const rect = e.currentTarget.getBoundingClientRect();
+            props.plugin.superstate.ui.openMenu(
+              rect,
+              defaultMenu(props.plugin.superstate.ui, menuOptions),
+              windowFromDocument(e.view.document)
+            );
+          }}
+          className="mk-mark-dropdown"
+          dangerouslySetInnerHTML={{
+            __html: props.plugin.superstate.ui.getSticker("ui//collapse"),
+          }}
+        ></div> */}
+      </div>
       {props.plugin.superstate.settings.inlineStylerColors ? (
         <>
           <div className="mk-divider"></div>

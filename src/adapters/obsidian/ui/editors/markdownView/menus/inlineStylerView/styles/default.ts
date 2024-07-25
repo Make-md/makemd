@@ -34,10 +34,5 @@ export default [
     cursorOffset: 2,
     icon: "mk-mark-link",
   },
-  {
-    label: "blocklink",
-    value: "[[]]",
-    insertOffset: 2,
-    icon: "mk-mark-blocklink",
-  },
+  
 ];

@@ -1,3 +1,4 @@
+import classNames from "classnames";
 import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
@@ -22,20 +23,30 @@ export const TitleComponent = (props: {
   const { pathState } = useContext(PathContext);
   const { spaceState } = useContext(SpaceContext);
 
+  const aliases: string[] = pathState?.metadata.property?.aliases ?? [];
   const [aliasMode, setAliasMode] = useState(
-    pathState.metadata.property?.alias?.length > 0
+    props.superstate.settings.spacesUseAlias && aliases?.[0]?.length > 0
   );
   const name = useMemo(
     () =>
       pathState
-        ? props.superstate.settings.spacesUseAlias
-          ? pathState?.label.name
+        ? aliasMode
+          ? aliases?.[0]
           : pathState.subtype == "tag"
           ? stringFromTag(pathState?.name)
           : pathState?.name
         : null,
-    [pathState]
+    [pathState, aliasMode]
   );
+
+  useEffect(() => {
+    if (props.superstate.settings.spacesUseAlias && aliases?.[0]?.length > 0) {
+      setAliasMode(true);
+    } else {
+      setAliasMode(false);
+    }
+  }, [pathState]);
+
   const ref = useRef(null);
   const contentEditable = !props.readOnly && spaceState?.type != "default";
 
@@ -49,11 +60,11 @@ export const TitleComponent = (props: {
         props.superstate.reloadSpaceByPath("/");
         return;
       }
-      if (props.superstate.settings.spacesUseAlias || aliasMode) {
+      if (aliasMode) {
         updatePrimaryAlias(
           props.superstate,
           pathState.path,
-          pathState.metadata.aliases,
+          pathState.metadata?.property?.aliases,
           newValue
         );
       } else {
@@ -199,6 +210,14 @@ export const TitleComponent = (props: {
               __html: name,
             }}
           ></div>
+          <button
+            className={classNames("mk-title-alias", aliasMode && "mk-active")}
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker("ui//alias"),
+            }}
+            aria-label={i18n.buttons.alias}
+            onClick={() => setAliasMode(!aliasMode)}
+          ></button>
         </div>
       </>
     )

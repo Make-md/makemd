@@ -179,7 +179,8 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
                 {
                     if (row)
                     saveProperties(this.superstate, f, {
-                        ...row
+                        ...row,
+                        [PathPropertyName]: f
                     })
                 })
         } else {

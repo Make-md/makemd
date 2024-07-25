@@ -870,6 +870,7 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
 .mk-floweditor > .workspace-leaf > .workspace-leaf-content > .view-content,
 .mk-floweditor > .workspace-leaf > .workspace-leaf-content > .view-content > .mod-cm6 > .cm-editor > .cm-scroller {
   overflow: visible !important;
+  height: auto;
 }
 .mk-floweditor-container > .mk-floweditor {
   border: thin solid transparent;
@@ -959,6 +960,36 @@ button.mk-hover-button {
 }
 .mk-floweditor > .workspace-leaf > .workspace-leaf-content > .view-content > div > .mk-table {
   padding-bottom: 10px !important;
+}
+
+/* src/css/Editor/Flow/FlowState.css */
+.mk-flow-state .workspace-tab-header-container-inner {
+  display: none;
+}
+.mk-flow-state .workspace-ribbon {
+  display: none;
+}
+body:not(.is-mobile).mk-flow-state .workspace-split.mod-left-split .workspace-sidedock-vault-profile {
+  transform: translateY(-100%);
+  transition: transform 1000ms linear;
+}
+body.mk-flow-state {
+  --tab-container-background: var(--background-primary) !important;
+  --titlebar-background-focused: var(--background-primary) !important;
+  --divider-color: transparent !important;
+  --tab-outline-color: transparent !important;
+}
+.mk-flow-state .workspace-tabs .workspace-leaf {
+  background: var(--background-primary) !important;
+}
+.mk-flow-state .view-header {
+  transform: translateY(-100%);
+  max-height: 0;
+  transition: transform 1000ms linear;
+  transition:;
+}
+body.mk-flow-state div {
+  transition: background-color 1000ms linear;
 }
 
 /* src/css/Editor/Flow/Properties.css */
@@ -1745,10 +1776,16 @@ button.mk-date-picker-day:not(.mk-date-picker-selected):hover {
 body:not(.is-mobile) .mk-style-menu {
   margin-left: -80px;
 }
+.mk-style-menu .mk-divider {
+  border-left: thin solid var(--mk-ui-divider);
+  width: 1px;
+  height: 24px;
+}
 .mk-style-menu {
   display: flex;
-  padding: 0;
+  padding: 4px;
   margin-top: -50px;
+  align-items: center;
 }
 .is-mobile .mk-style-menu svg {
   width: 32px;
@@ -1770,10 +1807,34 @@ body:not(.is-mobile) .mk-style-menu {
   border-radius: 4px;
   display: flex;
 }
+.mk-style-menu .mk-mark {
+  width: 24px;
+  height: 24px;
+  padding: 6px;
+}
+.mk-style-menu .mk-mark svg {
+  width: 12px;
+  height: 12px;
+}
 .mk-mark div {
   display: flex;
 }
-.mk-style-menu .mk-mark:hover {
+.mk-mark-group {
+  display: flex;
+}
+.mk-mark-dropdown {
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+.mk-mark-dropdown svg {
+  width: 12px;
+  height: 12px;
+  transform: rotate(90deg);
+}
+.mk-style-menu .mk-mark:hover,
+.mk-style-menu .mk-mark-dropdown:hover {
   background: var(--mk-ui-background-hover);
 }
 .mk-style-menu .mk-mark-active {
@@ -2714,7 +2775,7 @@ body:not(.is-mobile) .mk-main-menu-button:hover {
 }
 
 /* src/css/Panels/FileContext.css */
-.mk-path-context {
+.mk-path-explorer {
   display: flex;
   flex-direction: column;
   --file-context-spacing: 4px;
@@ -2773,7 +2834,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   margin-top: 8px;
   padding-top: 0 !important;
   margin-bottom: 0;
-  width: auto;
+  width: 100%;
 }
 .mk-inline-title {
   margin-top: 8px;
@@ -2875,7 +2936,13 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   text-align: center;
   justify-content: center;
 }
-.mk-path-context .mk-path-context-field {
+.mk-path-explorer .mk-path-context-row {
+  flex-direction: column;
+}
+.mk-path-explorer .mk-path-context-value {
+  margin-left: 24px;
+}
+.mk-path-explorer .mk-path-context-field {
   max-width: 120px;
   min-width: 120px;
 }
@@ -2907,7 +2974,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   background-color: var(--bullet-color);
   transition: transform 75ms ease-out;
 }
-.mk-path-context .mk-cell-text {
+.mk-path-explorer .mk-cell-text {
   background: var(var(--mk-ui-active-hover)) !important;
 }
 .mk-path-preview {
@@ -2967,7 +3034,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
 .mk-path-context-value input[type=number]:focus {
   box-shadow: none !important;
 }
-.mk-path-context .mk-path-context-title {
+.mk-path-explorer .mk-path-context-title {
   --icon-size: 14px;
   font-size: 14px;
 }
@@ -3005,7 +3072,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   box-shadow: none !important;
   height: unset !important;
 }
-.mk-path-context .mk-tag-selector {
+.mk-path-explorer .mk-tag-selector {
   padding: 0 !important;
 }
 .mk-space-icon {
@@ -3016,7 +3083,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   background: var(--mk-ui-background);
   padding: 8px;
 }
-.mk-path-context .mk-path-context-backlink {
+.mk-path-explorer .mk-path-context-backlink {
   border: thin solid var(--mk-ui-border);
   border-radius: 8px;
   box-shadow: var(--mk-shadow-card);
@@ -3140,7 +3207,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   min-height: var(--mk-header-height) !important;
   pointer-events: none;
 }
-.mk-path-context .inline-title {
+.mk-path-explorer .inline-title {
   font-size: 18px;
   margin-bottom: 0;
 }
@@ -3299,7 +3366,7 @@ body.is-mobile .sidebar-toggle-button {
 }
 .is-mobile .mk-sidebar {
 }
-.mk-path-tree-area {
+.mk-path-tree-focus {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3307,7 +3374,7 @@ body.is-mobile .sidebar-toggle-button {
   justify-content: center;
   height: 100%;
 }
-.mk-path-tree-area input {
+.mk-path-tree-focus input {
   width: 60%;
   padding: 8px;
   border: none;
@@ -3443,11 +3510,11 @@ body.is-mobile .sidebar-toggle-button {
 .mk-nav-button {
 }
 .mk-tree-section {
-  margin-top: 6px;
-  height: 32px;
+  margin-top: 4px;
+  height: var(--spaceSectionHeight);
 }
 .mk-tree-section .mk-tree-item {
-  height: 32px;
+  height: var(--spaceRowHeight);
   padding-left: 4px;
 }
 .mk-tree-section .is-active.mk-tree-item,
@@ -3489,6 +3556,7 @@ body.is-mobile .sidebar-toggle-button {
   font-size: 13px;
   line-height: 1.3;
   gap: 2px;
+  height: var(--spaceRowHeight);
 }
 .is-mobile .mk-tree-item {
   height: 38px;
@@ -3504,7 +3572,8 @@ body.is-mobile .sidebar-toggle-button {
   background: var(--nav-item-background-active) !important;
 }
 .mk-inline-button,
-.mk-folder-buttons button {
+.mk-folder-buttons button,
+.mk-folder-buttons div {
   background: none;
   border: 0;
   box-shadow: none;
@@ -3553,16 +3622,22 @@ body:not(.is-mobile) .mk-tree-wrapper:hover .mk-drag-handle {
 .is-mobile .mk-folder-buttons {
   display: flex;
 }
+.mk-folder-buttons div {
+  align-items: center;
+  justify-content: center;
+}
 body:not(.is-mobile) .mk-tree-wrapper .mk-path-link {
   opacity: 0;
 }
 body:not(.is-mobile) .mk-tree-wrapper:hover .mk-path-link {
   opacity: 1;
 }
-body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons button {
+body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons button,
+body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons div {
   display: none;
 }
-body:not(.is-mobile) .mk-tree-wrapper:hover .mk-folder-buttons button {
+body:not(.is-mobile) .mk-tree-wrapper:hover .mk-folder-buttons button,
+body:not(.is-mobile) .mk-tree-wrapper:hover .mk-folder-buttons div {
   display: flex;
 }
 body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
@@ -4248,6 +4323,7 @@ body:not(.mk-readable-line) {
   display: flex;
   align-items: center;
   gap: 4px;
+  position: relative;
 }
 .mk-title-container .mk-title-prefix {
   display: flex;
@@ -4258,6 +4334,31 @@ body:not(.mk-readable-line) {
 }
 .mk-title-container span {
   flex: 1;
+}
+.mk-title-container:hover .mk-title-alias,
+.mk-title-alias:hover {
+  opacity: 1;
+}
+button.mk-title-alias {
+  opacity: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  margin: 0;
+  height: 100%;
+  width: 30px;
+  padding: 0 !important;
+  position: absolute;
+  left: -30px;
+  color: var(--mk-ui-text-tertiary);
+}
+.mk-title-alias svg {
+  width: 12px;
+  height: 12px;
+  margin-top: 8px;
+}
+.mk-title-alias.mk-active {
+  color: var(--mk-ui-active);
 }
 .mk-context-header {
   display: flex;

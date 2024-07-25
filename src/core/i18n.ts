@@ -144,8 +144,11 @@ class T {
       },
       menu: {
         layout: "Layout",
+        enterFlowState: "Enter Flow State",
+        exitFlowState: "Exit Flow State",
         newView: "New View",
         calendarView: "Calendar View",
+        dayView: "Day View",
         closeSpace: "Close Space",
         customView: "Custom View",
         detailsView: "Details View",
@@ -298,7 +301,9 @@ class T {
       },
       buttons: {
         add: "Add",
+        alias: "Alias",
         addFilter: "Add Filter",
+        loadMore: "Load More",
         addCondition: "Add Condition",
         customize: "Customize",
         moreOptions: "More Options",
@@ -504,6 +509,8 @@ class T {
       },
       labels: {
         duplicateTable: "Duplicate Table",
+        pinned: "Pinned",
+        live: "Pinned by Live Search",
         moveTable: "Move Table",
         editFormula: "Edit Formula",
         editObject: "Edit Object",
@@ -776,6 +783,10 @@ class T {
           name: "Enable Folder Note",
           desc: "Access the folder note in the folder page and hide the folder note from spaces",
         },
+        folderNoteName: {
+          name: "Folder Note Name",
+          desc: "Name of the folder note, keep blank to use the same name as the folder",
+        },
         expandFolder: {
           name: "Auto Expand Folder",
           desc: "Auto expand folders on click",
@@ -818,6 +829,10 @@ class T {
           permanant: "Delete Permanently",
           trash: "Move to Obsidian Trash",
           "system-trash": "Move to System Trash",
+        },
+        flowState: {
+          name: "Flow State",
+          desc: "Toggle the flow state",
         },
         hideRibbon: {
           name: "App Ribbon",
@@ -866,9 +881,13 @@ class T {
         
         spaceRowHeight: {
           name: "Row Height",
-          desc: "The height for each row in spaces (in pixels), default is 28",
+          desc: "The height for each row in spaces (in pixels), default is 29",
         },
 
+        contextPagination: {
+          name: "Table View Pagination",
+          desc: "Number of items per page in table view",
+        },
         coverHeight: {
           name: "Cover Height",
           desc: "The height for the cover of the note or space, default is 200",

@@ -29,7 +29,7 @@ import React, {
   useState,
 } from "react";
 import { Pos } from "types/Pos";
-import { SpaceAreaEditor } from "./SpaceTreeAreaEditor";
+import { FocusEditor } from "./NavigatorFocusEditor";
 import { eventToModifier } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
 
@@ -276,22 +276,24 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     setActivePath: setActivePath,
     selectedPaths: selectedPaths,
     setSelectedPaths: setSelectedPaths,
-    activeArea,
+    activeFocus: activeFocus,
     waypoints,
     setWaypoints,
     dragPaths,
     setDragPaths,
     modifier,
     setModifier,
-    editArea,
-    setEditArea,
+    editFocus: editFocus,
+    setEditFocus: setEditFocus,
   } = useContext(NavigatorContext);
 
   const [active, setActive] = useState<TreeNode>(null);
   const [overId, setOverId] = useState<string>(null);
   const [flattenedTree, setFlattenedTree] = useState<TreeNode[]>([]);
   const nextTreeScrollPath = useRef(null);
-
+  const [presetRowHeight, setPresetRowHeight] = useState<number>(
+    props.superstate.settings.spaceRowHeight
+  );
   // const [dropPlaceholderItem, setDropPlaceholderItem] = useState<[Record<string, string>, number] | null>(null);
   const [offset, setOffset] = useState<{
     x: number;
@@ -337,6 +339,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   useEffect(() => {
     const settingsChanged = () => {
       setExpandedSpaces(superstate.settings.expandedSpaces);
+      setPresetRowHeight(superstate.settings.spaceRowHeight);
     };
     superstate.eventsDispatcher.addListener("settingsChanged", settingsChanged);
 
@@ -346,28 +349,44 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         settingsChanged
       );
     };
-  }, [activeViewSpaces, active, setExpandedSpaces, setFlattenedTree]);
+  }, []);
 
   const revealPath = useCallback(
     (path: string) => {
-      if (!path || !activeViewSpaces?.some((f) => f.path == "/")) return;
+      const parentSpaces =
+        activeViewSpaces?.filter(
+          (f) => path.startsWith(f?.path) || f?.path == "/"
+        ) ?? [];
+      if (!path || parentSpaces.length == 0) return;
 
-      const folders = path.split("/");
-      const openPaths = folders
-        .reduce(
-          (p, c, index) => [
-            ...p,
-            index == 0
-              ? "//" + c
-              : p[index] + "/" + folders.slice(0, index + 1).join("/"),
-          ],
-          ["/"]
-        )
-        .slice(0, -1);
-      const newOpenFolders = [
-        ...(expandedSpaces.filter((f) => !openPaths.find((g) => g == f)) ?? []),
-        ...openPaths,
-      ];
+      let newOpenFolders = expandedSpaces;
+      parentSpaces.forEach((space) => {
+        const folders = path.split("/");
+        const pathLevel = space.path
+          .split("/")
+          .filter((f) => f.length > 0).length;
+        const openPaths = folders
+          .reduce(
+            (p, c, index) => [
+              ...p,
+              ...(index < pathLevel
+                ? []
+                : [
+                    index == 0
+                      ? "//" + c
+                      : p[index] + "/" + folders.slice(0, index + 1).join("/"),
+                  ]),
+            ],
+            [space.path]
+          )
+          .slice(0, -1);
+        newOpenFolders = [
+          ...(newOpenFolders.filter((f) => !openPaths.find((g) => g == f)) ??
+            []),
+          ...openPaths,
+        ];
+      });
+
       superstate.settings.expandedSpaces = newOpenFolders;
       nextTreeScrollPath.current = "/" + path;
       superstate.saveSettings();
@@ -638,7 +657,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   };
   const rowHeights = useMemo(
     () =>
-      flattenedTree.map((f) => spaceRowHeight(superstate, f.type == "group")),
+      flattenedTree.map((f) =>
+        spaceRowHeight(superstate, presetRowHeight, f.type == "group")
+      ),
     [flattenedTree]
   );
 
@@ -648,6 +669,14 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
       onDragEnter={() => dragEnter()}
       onDragLeave={() => dragLeave()}
       onDragOver={(e) => e.preventDefault()}
+      style={
+        {
+          "--spaceRowHeight":
+            spaceRowHeight(superstate, presetRowHeight, false) + "px",
+          "--spaceSectionHeight":
+            spaceRowHeight(superstate, presetRowHeight, true) + "px",
+        } as React.CSSProperties
+      }
       onDrop={(e) => {
         if (overId) {
           dragEnded(e, overId);
@@ -656,19 +685,19 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         }
       }}
     >
-      {flattenedTree.length == 1 || editArea ? (
-        <SpaceAreaEditor
+      {flattenedTree.length == 1 || editFocus ? (
+        <FocusEditor
           superstate={superstate}
-          area={waypoints[activeArea]}
-          saveArea={(area) => {
-            setEditArea(false);
+          focus={waypoints[activeFocus]}
+          saveFocus={(focus) => {
+            setEditFocus(false);
             setWaypoints(
               waypoints.map((f, i) => {
-                return i == activeArea ? area : f;
+                return i == activeFocus ? focus : f;
               })
             );
           }}
-        ></SpaceAreaEditor>
+        ></FocusEditor>
       ) : (
         <VirtualizedList
           vRef={listRef}

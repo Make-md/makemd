@@ -62,6 +62,12 @@ export interface TreeItemProps {
   dragActive: boolean;
 }
 
+enum PinType {
+  Default,
+  Linked,
+  Live,
+}
+
 export const TreeItem = (props: TreeItemProps) => {
   const {
     id,
@@ -101,6 +107,11 @@ export const TreeItem = (props: TreeItemProps) => {
   const [pathState, setPathState] = useState<PathState>(
     superstate.pathsIndex.get(data.item.path)
   );
+  const pinType = pathState.linkedSpaces?.some((f) => f == data.space)
+    ? PinType.Linked
+    : pathState.liveSpaces?.some((f) => f == data.space)
+    ? PinType.Live
+    : PinType.Default;
 
   useEffect(
     () => setPathState(superstate.pathsIndex.get(data.item.path)),
@@ -292,7 +303,6 @@ export const TreeItem = (props: TreeItemProps) => {
   const isSpace = pathState?.type == "space";
   const isFolder = pathState?.metadata?.isFolder || isSpace;
   const extension = pathState?.metadata?.file?.extension;
-  const isLink = pathState?.parent != data.space;
   const spacing =
     data.type == "group"
       ? 0
@@ -359,7 +369,13 @@ export const TreeItem = (props: TreeItemProps) => {
                 "--spacing": `${spacing}px`,
                 "--childrenCount": `${
                   data.type == "space" && !collapsed
-                    ? childCount * spaceRowHeight(superstate, false) - 13
+                    ? childCount *
+                        spaceRowHeight(
+                          superstate,
+                          superstate.settings.spaceRowHeight,
+                          false
+                        ) -
+                      13
                     : 0
                 }px`,
               } as React.CSSProperties
@@ -408,6 +424,20 @@ export const TreeItem = (props: TreeItemProps) => {
 
             {!clone && !pathState?.readOnly ? (
               <div className="mk-folder-buttons">
+                {pinType != PinType.Default && (
+                  <div
+                    aria-label={
+                      pinType == PinType.Linked
+                        ? t.labels.pinned
+                        : t.labels.live
+                    }
+                    dangerouslySetInnerHTML={{
+                      __html: superstate.ui.getSticker(
+                        pinType == PinType.Linked ? "ui//pin" : "ui//live"
+                      ),
+                    }}
+                  ></div>
+                )}
                 <button
                   aria-label={t.buttons.moreOptions}
                   onClick={(e) => {

@@ -2,6 +2,12 @@ import { EditorView } from "@codemirror/view";
 import { FlowEditorParent } from "adapters/obsidian/ui/editors/FlowEditor";
 
 declare module "obsidian" {
+  export enum PopoverState {
+ Shown,
+ Hiding,
+ Hidden,
+ Showing
+  }
   interface Vault {
     getConfig(config: string): any
   }

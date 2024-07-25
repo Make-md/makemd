@@ -1,7 +1,7 @@
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { Superstate } from "core/superstate/superstate";
 import { TreeNode } from "core/superstate/utils/spaces";
-import { Area } from "core/types/area";
+import { Focus } from "core/types/focus";
 import { PathState } from "core/types/superstate";
 import _ from "lodash";
 import React, { createContext, useEffect, useState } from "react";
@@ -14,16 +14,16 @@ type NavigatorContextProps = {
   activePath: string;
   setActivePath: React.Dispatch<React.SetStateAction<string>>;
   activeViewSpaces: PathState[];
-  activeArea: number;
-  setActiveArea: React.Dispatch<React.SetStateAction<number>>;
-  waypoints: Area[];
-  setWaypoints: (paths: Area[]) => void;
+  activeFocus: number;
+  setActiveFocus: React.Dispatch<React.SetStateAction<number>>;
+  waypoints: Focus[];
+  setWaypoints: (paths: Focus[]) => void;
   saveActiveSpace: (path: string) => void;
   closeActiveSpace: (path: string) => void;
   modifier: DropModifiers;
   setModifier: React.Dispatch<React.SetStateAction<DropModifiers>>;
-  editArea: boolean;
-  setEditArea: React.Dispatch<React.SetStateAction<boolean>>;
+  editFocus: boolean;
+  setEditFocus: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export const NavigatorContext = createContext<NavigatorContextProps>({
@@ -33,8 +33,8 @@ export const NavigatorContext = createContext<NavigatorContextProps>({
   setSelectedPaths: _.noop,
   activePath: null,
   setActivePath: _.noop,
-  activeArea: 0,
-  setActiveArea: _.noop,
+  activeFocus: 0,
+  setActiveFocus: _.noop,
   activeViewSpaces: [],
   waypoints: [],
   setWaypoints: _.noop,
@@ -42,8 +42,8 @@ export const NavigatorContext = createContext<NavigatorContextProps>({
   closeActiveSpace: _.noop,
   modifier: null,
   setModifier: _.noop,
-  editArea: false,
-  setEditArea: _.noop,
+  editFocus: false,
+  setEditFocus: _.noop,
 });
 
 export const SidebarProvider: React.FC<
@@ -53,60 +53,60 @@ export const SidebarProvider: React.FC<
   const [dragPaths, setDragPaths] = useState<string[]>([]);
   const [selectedPaths, setSelectedPaths] = useState<TreeNode[]>([]);
   const [activePath, setActivePath] = useState<string>(null);
-  const [editArea, setEditArea] = useState(false);
-  const [waypoints, setWaypoints] = useState<Area[]>(
+  const [editFocus, setEditFocus] = useState(false);
+  const [waypoints, setWaypoints] = useState<Focus[]>(
     props.superstate.waypoints
   );
 
-  const [activeArea, setActiveArea] = useState<number>(
+  const [activeFocus, setActiveFocus] = useState<number>(
     props.superstate.settings.currentWaypoint
   );
 
   const [activeViewSpaces, setActiveViewSpaces] = useState<PathState[]>(
-    (props.superstate.waypoints[activeArea]?.paths ?? [])
+    (props.superstate.waypoints[activeFocus]?.paths ?? [])
       .map((f) => props.superstate.pathsIndex.get(f))
       .filter((f) => f)
   );
 
   const setActiveViewSpaceByPath = (path: string) => {
-    const newWaypoint = props.superstate.waypoints[activeArea] ?? {
+    const newWaypoint = props.superstate.waypoints[activeFocus] ?? {
       sticker: "",
       name: "Waypoint",
       paths: [],
     };
     newWaypoint.paths = [...newWaypoint.paths.filter((f) => f != path), path];
-    if (activeArea > props.superstate.waypoints.length) {
+    if (activeFocus > props.superstate.waypoints.length) {
       props.superstate.spaceManager.saveWaypoints([
         ...props.superstate.waypoints,
         newWaypoint,
       ]);
     }
     const newWaypoints = props.superstate.waypoints.map((f, i) =>
-      i == activeArea ? newWaypoint : f
+      i == activeFocus ? newWaypoint : f
     );
     props.superstate.spaceManager.saveWaypoints(newWaypoints.filter((f) => f));
   };
 
   const closeActiveViewSpace = (path: string) => {
-    const newWaypoint = props.superstate.waypoints[activeArea] ?? {
+    const newWaypoint = props.superstate.waypoints[activeFocus] ?? {
       sticker: "",
       name: "Waypoint",
       paths: [],
     };
     newWaypoint.paths = [...newWaypoint.paths.filter((f) => f != path)];
-    if (activeArea > props.superstate.waypoints.length) {
+    if (activeFocus > props.superstate.waypoints.length) {
       props.superstate.spaceManager.saveWaypoints([
         ...props.superstate.waypoints,
         newWaypoint,
       ]);
     }
     const newWaypoints = props.superstate.waypoints.map((f, i) =>
-      i == activeArea ? newWaypoint : f
+      i == activeFocus ? newWaypoint : f
     );
     props.superstate.spaceManager.saveWaypoints(newWaypoints.filter((f) => f));
   };
 
-  const saveWaypoints = (paths: Area[]) => {
+  const saveWaypoints = (paths: Focus[]) => {
     props.superstate.spaceManager.saveWaypoints(paths.filter((f) => f));
   };
 
@@ -120,16 +120,18 @@ export const SidebarProvider: React.FC<
         (
           props.superstate.waypoints[props.superstate.settings.currentWaypoint]
             ?.paths ?? []
-        ).map((f) => props.superstate.pathsIndex.get(f))
+        )
+          .map((f) => props.superstate.pathsIndex.get(f))
+          .filter((f) => f)
       );
     }
   };
   const reloadPaths = () => {
     setWaypoints(props.superstate.waypoints);
-    const _activeArea = props.superstate.settings.currentWaypoint;
-    setActiveArea(_activeArea);
+    const _activeFocus = props.superstate.settings.currentWaypoint;
+    setActiveFocus(_activeFocus);
     setActiveViewSpaces(
-      (props.superstate.waypoints[_activeArea]?.paths ?? [])
+      (props.superstate.waypoints[_activeFocus]?.paths ?? [])
         .map((f) => props.superstate.pathsIndex.get(f))
         .filter((f) => f)
     );
@@ -168,11 +170,11 @@ export const SidebarProvider: React.FC<
       value={{
         dragPaths,
         setDragPaths,
-        activeArea,
+        activeFocus: activeFocus,
         selectedPaths: selectedPaths,
         setSelectedPaths: setSelectedPaths,
         activePath: activePath,
-        setActiveArea: setActiveArea,
+        setActiveFocus: setActiveFocus,
         setActivePath: setActivePath,
         activeViewSpaces,
         waypoints,
@@ -181,8 +183,8 @@ export const SidebarProvider: React.FC<
         closeActiveSpace: closeActiveViewSpace,
         modifier,
         setModifier,
-        editArea,
-        setEditArea,
+        editFocus: editFocus,
+        setEditFocus: setEditFocus,
       }}
     >
       {props.children}

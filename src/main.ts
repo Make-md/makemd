@@ -95,6 +95,7 @@ import "css/Editor/Actions/Actions.css";
 import "css/Editor/Context/ContextList.css";
 import "css/Editor/Context/FilterBar.css";
 import "css/Editor/Flow/FlowEditor.css";
+import "css/Editor/Flow/FlowState.css";
 import "css/Editor/Flow/Properties.css";
 import "css/Editor/Frames/Insert.css";
 import "css/Editor/Frames/Node.css";
@@ -192,7 +193,7 @@ export default class MakeMDPlugin extends Plugin {
   }
 
   testPage() {
-    openTestModal(this.superstate);
+    openTestModal(this);
   }
 
   toggleBold() {
@@ -283,6 +284,7 @@ loadViews () {
     if (this.superstate.settings.spacesEnabled) {
       document.body.classList.toggle("mk-hide-tabs", !this.superstate.settings.sidebarTabs);
     document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
+    // document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
     document.body.classList.toggle(
       "mk-folder-lines",
       this.superstate.settings.folderIndentationLines
@@ -355,7 +357,7 @@ loadViews () {
     
     const path = this.getActiveFile();
     
-    if (this.superstate.settings.enableFolderNote) {
+    if (this.superstate.settings.enableFolderNote && this.superstate.settings.spaceViewEnabled) {
       if (this.superstate.spacesIndex.has(path)) {
         const space = this.superstate.spacesIndex.get(path)
         const leaf = this.app.workspace.getLeaf();

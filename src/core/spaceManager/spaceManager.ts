@@ -1,7 +1,7 @@
 import { PathLabel } from "core/middleware/types/afile";
 import { Superstate } from "core/superstate/superstate";
 import { ActionInstance } from "core/types/actions";
-import { Area } from "core/types/area";
+import { Focus } from "core/types/focus";
 import { SpaceDefinition, SpaceType, tagsSpacePath } from "core/types/space";
 import { parseURI } from "core/utils/uri";
 import { Command, CommandResult, Library } from "types/commands";
@@ -117,8 +117,8 @@ export abstract class SpaceAdapter {
     public saveSpaceTemplate: (frames: MDBFrames, name: string) => Promise<void>;
     public childrenForPath: (path: string, type?: string) => Promise<string[]>;
 
-    public readWaypoints: () => Promise<Area[]>;
-    public saveWaypoints: (waypoints: Area[]) => Promise<void>;
+    public readWaypoints: () => Promise<Focus[]>;
+    public saveWaypoints: (waypoints: Focus[]) => Promise<void>;
     public readTemplates: (path: string) => Promise<string[]>;
     public saveTemplate: (path: string, space: string) => Promise<string>;
     public deleteTemplate: (path: string, space: string) => Promise<void>;
@@ -504,7 +504,7 @@ export class SpaceManager {
     public readWaypoints () {
         return this.primarySpaceAdapter.readWaypoints();
     }
-    public saveWaypoints (waypoints: Area[]) {
+    public saveWaypoints (waypoints: Focus[]) {
       this.superstate.waypoints = waypoints;
       this.superstate.dispatchEvent("superstateUpdated", null)
         return this.primarySpaceAdapter.saveWaypoints(waypoints);

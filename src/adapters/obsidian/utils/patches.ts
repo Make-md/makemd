@@ -3,7 +3,7 @@ import { FILE_TREE_VIEW_TYPE } from "adapters/obsidian/ui/navigator/NavigatorVie
 import MakeMDPlugin from "main";
 import { around } from "monkey-around";
 import {
-  EphemeralState, ViewState,
+  EphemeralState, OpenViewState, PaneType, SplitDirection, ViewState,
   Workspace,
   WorkspaceContainer,
   WorkspaceItem,
@@ -40,6 +40,35 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
       };
     },
 
+    getLeaf(old) {
+      return function (newLeaf?: "split", direction?: SplitDirection) {
+        let leaf = old.call(this, newLeaf, direction);
+
+        if (leaf.isFlowBlock) {
+          let foundLeaf = false;
+        plugin.app.workspace.iterateLeaves((_leaf) => {
+          //@ts-ignore
+          if (_leaf.flowEditor) {
+            //@ts-ignore
+            _leaf.flowEditor.leaves().forEach((l) => {
+              if (l.id == leaf.id) {
+                foundLeaf = true;
+                leaf = _leaf;
+                return;
+              }
+            })
+            if (foundLeaf) return true;
+          }
+          leaf = _leaf
+          return;
+
+  }, plugin.app.workspace["rootSplit"]!);
+          
+        }
+        
+        return leaf;
+      };
+    },
     iterateLeaves(old) {
       type leafIterator = (item: WorkspaceLeaf) => boolean | void;
       return function (arg1, arg2) {
@@ -72,6 +101,15 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
         return false;
       };
     },
+    openLinkText(old) {
+      return function openLinkText(linkText: string, sourcePath: string, newLeaf?: PaneType | boolean, openViewState?: OpenViewState) {
+        if (linkText.startsWith('spaces://')) {
+          plugin.ui.openPath(linkText, newLeaf);
+          return;
+        }
+        return old.call(this, linkText, sourcePath, newLeaf, openViewState);
+      };
+    },
     setActiveLeaf(old) {
     return function setActiveLeaf(leaf, params) {
       if (leaf.view.getViewType() == 'markdown') {
@@ -93,6 +131,7 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
     }
     },
     getActiveViewOfType(old) {
+
       return function getActiveViewOfType(type) {
 if (type.prototype?.getViewType && type.prototype.getViewType() == 'markdown')
 {

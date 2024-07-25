@@ -2,7 +2,7 @@ import { UniqueIdentifier } from "@dnd-kit/core";
 import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { Superstate } from "core/superstate/superstate";
-import { Area } from "core/types/area";
+import { Focus } from "core/types/focus";
 import React, { forwardRef, useContext, useRef } from "react";
 import { windowFromDocument } from "utils/dom";
 import { SelectOption, defaultMenu } from "../../UI/Menus/menu/SelectionMenu";
@@ -23,7 +23,7 @@ export const SortablePinnedSpaceItem = ({
 type PinnedSpaceProps = {
   superstate: Superstate;
   index: number;
-  pin: Area;
+  pin: Focus;
   clone?: boolean;
   ghost?: boolean;
   style?: React.CSSProperties;
@@ -56,7 +56,7 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
     const {
       activePath: activePath,
       waypoints,
-      setEditArea,
+      setEditFocus: setEditFocus,
       setWaypoints,
       setModifier,
     } = useContext(NavigatorContext);
@@ -82,10 +82,10 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
         onContextMenu={(e) => {
           const menuOptions: SelectOption[] = [
             {
-              name: "Edit Area",
+              name: "Edit Focus",
               icon: "ui//edit",
               onClick: (e) => {
-                setEditArea(true);
+                setEditFocus(true);
               },
             },
             {

@@ -22,7 +22,6 @@ import MakeMDPlugin from "main";
 import { i18n } from "makemd-core";
 
 import { FlowEditorHover } from "adapters/obsidian/ui/editors/markdownView/FlowEditorHover";
-import { loadFlowEditorByDOM } from "adapters/obsidian/utils/flow/flowEditor";
 import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
 import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
 import { compareByField } from "core/utils/tree";
@@ -364,7 +363,10 @@ export const flowEditorField = (plugin: MakeMDPlugin) =>
   });
 
 class FlowEditorWidget extends WidgetType {
-  constructor(readonly info: FlowEditorInfo, public plugin: MakeMDPlugin) {
+  constructor(
+    private readonly info: FlowEditorInfo,
+    public plugin: MakeMDPlugin
+  ) {
     super();
   }
 
@@ -379,7 +381,16 @@ class FlowEditorWidget extends WidgetType {
     div.setAttribute("id", "mk-flow-" + this.info.id);
     const placeholder = div.createDiv("mk-floweditor-placeholder");
     placeholder.style.setProperty("height", this.info.height + "px");
-    loadFlowEditorByDOM(this.plugin, div, view, this.info.id);
+    if (this.info.link && view.state.field(editorInfoField, false)) {
+      const infoField = view.state.field(editorInfoField, false);
+      const file = infoField.file;
+      const uri = this.plugin.superstate.spaceManager.uriByString(
+        this.info.link,
+        file?.path
+      );
+      this.plugin.superstate.ui.openPath(uri.fullPath, false, div);
+    }
+    // loadFlowEditorByDOM(this.plugin, div, view, this.info.id);
     return div;
   }
   get estimatedHeight(): number {
@@ -409,7 +420,7 @@ class LinkSticker extends WidgetType {
       const file = infoField.file;
       const uri = this.plugin.superstate.spaceManager.uriByString(
         this.info.link,
-        file.path
+        file?.path
       );
       reactEl.render(
         <PathStickerContainer

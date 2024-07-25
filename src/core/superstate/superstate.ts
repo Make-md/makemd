@@ -5,8 +5,8 @@ import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
-import { Area } from "core/types/area";
 import { PathPropertyName } from "core/types/context";
+import { Focus } from "core/types/focus";
 import { IndexMap } from "core/types/indexMap";
 import { MakeMDSettings } from "core/types/settings";
 import { SpaceDefinition, SpaceType, tagsSpacePath } from "core/types/space";
@@ -134,6 +134,7 @@ public api: API;
     public spacesMap: IndexMap //file to space mapping
     public linksMap: IndexMap //link between paths
     public tagsMap: IndexMap //file to tag mapping
+    public liveSpaceLinkMap: IndexMap
     //Workers
     public allMetadata: Record<string, {
         name: string,
@@ -143,7 +144,7 @@ public api: API;
     public indexer: Indexer;
 
     public searcher: Searcher;
-    public waypoints: Area[];
+    public waypoints: Focus[];
     private constructor(public indexVersion: string, public onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CLIManager) {
         this.eventsDispatcher= new EventDispatcher<SuperstateEvent>();
 
@@ -190,6 +191,7 @@ public api: API;
         this.spacesMap = new IndexMap();
         this.linksMap = new IndexMap();
         this.tagsMap = new IndexMap();
+        this.liveSpaceLinkMap = new IndexMap();
 
         //Initiate Persistance
         this.iconsCache = new Map();
@@ -421,7 +423,7 @@ public api: API;
     public async initializeWaypoints() {
         const allWaypoints = await this.spaceManager.readWaypoints();
         if (allWaypoints.length == 0 && this.settings.waypoints.length > 0) {
-            let newWaypoints : Area[] = this.settings.waypoints.map(f => {
+            let newWaypoints : Focus[] = this.settings.waypoints.map(f => {
                 return {name: this.pathsIndex.get(f)?.label.name, paths: [f], sticker: f == 'spaces://$tags' ? 'ui//tags' : this.pathsIndex.get(f)?.label?.sticker}
             })
             if (newWaypoints.length == 0) {
@@ -530,6 +532,7 @@ public api: API;
     public onMetadataChange(path: string) {
         
         
+        
         if (!this.pathsIndex.has(path)) {return}
         this.reloadPath(path).then(f => 
             
@@ -543,7 +546,7 @@ public api: API;
                 const allContextsWithFile = pathState.spaces.map(f => this.spacesIndex.get(f)?.space).filter(f => f);   
         this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile).then(() => {
             allContextsWithFile.forEach(f => {
-                this.dispatchEvent("contextStateUpdated", {path: f.path})
+                this.dispatchEvent("spaceStateUpdated", {path: f.path})
             })
         }));
                 this.dispatchEvent("pathStateUpdated", {path: path})
@@ -717,7 +720,7 @@ public api: API;
             if (!changed) { return false }
             this.contextsIndex.set(path, cache);
             const pathState = this.pathsIndex.get(path);
-            if (cache.dbExists && !pathState.readOnly) {
+            if (pathState && cache.dbExists && !pathState.readOnly) {
                 if (this.settings.syncFormulaToFrontmatter) {
                     const allRows = cache.contextTable?.rows ?? [];
                     const allColumns = cache.contextTable?.cols ?? [];
@@ -870,6 +873,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
         const contexts : string[] = metadata?.contexts ?? []
 
         const dependencies = uniq((metadata.filters ?? []).flatMap(f => f.filters).flatMap(f =>  f.type == 'context' ? [f.field.split('.')[0]] : f.type == 'path' && f.field == 'space' ? parseMultiString(f.value) : []));
+        const linkDependencies = uniq((metadata.filters ?? []).flatMap(f => f.filters).flatMap(f =>  f.type.startsWith('link') ? parseMultiString(f.value) : []));
         if (type == 'tag' && this.settings.autoAddContextsToSubtags) {
             const parentTags = getAllParentTags(space.name);
             contexts.push(...parentTags)

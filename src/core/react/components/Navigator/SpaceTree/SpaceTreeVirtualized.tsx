@@ -128,7 +128,6 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
           width: `100%`,
           height: `100%`,
           overflow: "auto",
-          "--spaceRowHeight": spaceRowHeight(superstate, false) + "px",
         } as React.CSSProperties
       }
     >

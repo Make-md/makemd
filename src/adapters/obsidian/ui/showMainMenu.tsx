@@ -24,6 +24,15 @@ export const showMainMenu = (
     superstate.saveSettings();
   };
 
+  const toggleFlowState = () => {
+    superstate.settings.flowState = !superstate.settings.flowState;
+    superstate.saveSettings();
+    document.body.classList.toggle(
+      "mk-flow-state",
+      superstate.settings.flowState
+    );
+  };
+
   const isMobile = app.workspace.leftSplit && isTouchScreen(superstate.ui);
 
   const refreshLeafs = () => {
@@ -45,6 +54,16 @@ export const showMainMenu = (
   const { spaceActive, leafs } = refreshLeafs();
   const menuOptions: SelectOption[] = [];
 
+  // menuOptions.push({
+  //   name: superstate.settings.flowState
+  //     ? i18n.menu.exitFlowState
+  //     : i18n.menu.enterFlowState,
+  //   icon: "ui//flow",
+  //   onClick: () => {
+  //     toggleFlowState();
+  //   },
+  // });
+  menuOptions.push(menuSeparator);
   menuOptions.push({
     name: i18n.menu.collapseAllSections,
     icon: "ui//chevrons-down-up",

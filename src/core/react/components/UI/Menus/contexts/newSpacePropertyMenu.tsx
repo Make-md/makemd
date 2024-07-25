@@ -13,7 +13,7 @@ export type NewPropertyMenuProps = {
   type?: string;
   spaces: string[];
   fields: SpaceTableColumn[];
-  saveField: (source: string, field: SpaceProperty) => void;
+  saveField: (source: string, field: SpaceProperty) => boolean;
   schemaId?: string;
   contextPath?: string;
   fileMetadata?: boolean;
@@ -47,7 +47,10 @@ const NewPropertyMenuComponent = (
         value: "$fm",
       });
     }
-    if (props.contextPath) {
+    if (
+      props.contextPath &&
+      (!props.fileMetadata || props.contextPath != "$fm")
+    ) {
       options.push({
         name: folderPathToString(props.contextPath),
         value: "",
@@ -133,13 +136,13 @@ const NewPropertyMenuComponent = (
       props.superstate.ui.notify(i18n.notice.noPropertyName);
       return;
     }
-    props.saveField(fieldSource, {
+    const result = props.saveField(fieldSource, {
       name: fieldName,
       type: fieldType,
       value: fieldValue,
       schemaId: props.schemaId,
     });
-    props.hide();
+    if (result) props.hide();
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key == "Enter") {

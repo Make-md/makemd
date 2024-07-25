@@ -98,7 +98,7 @@ export const SpaceTemplateProperty = (props: {
       "bottom"
     );
   };
-  return templates.length > 0 ? (
+  return templates?.length > 0 ? (
     props.compactMode ? (
       <div className="mk-props-pill" onClick={() => setCollapsed((f) => !f)}>
         {templates.length} Templates

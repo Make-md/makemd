@@ -128,9 +128,10 @@ export const HeaderPropertiesView = (props: {
   const saveField = (source: string, field: SpaceProperty) => {
     if (source == "$fm") {
       saveNewProperty(props.superstate, pathState.path, field);
-      return;
+      return true;
     }
     props.superstate.spaceManager.addSpaceProperty(source, field);
+    return true;
   };
 
   const newProperty = (e: React.MouseEvent, space: string) => {
@@ -141,12 +142,13 @@ export const HeaderPropertiesView = (props: {
       offset,
       windowFromDocument(e.view.document),
       {
-        spaces: [],
+        spaces: spacePathStates.map((f) => f.path),
         fields: [],
         saveField: (source: string, field: SpaceProperty) =>
           saveField(space, field),
         schemaId: defaultContextSchemaID,
         contextPath: space,
+        fileMetadata: !isSpace,
       }
     );
   };

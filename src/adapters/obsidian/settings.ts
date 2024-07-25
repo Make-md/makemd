@@ -88,6 +88,19 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         this.plugin.saveSettings();
       })
     );
+
+    new Setting(containerEl)
+      .setName(t.settings.folderNoteName.name)
+      .setDesc(t.settings.folderNoteName.desc)
+      .addText((text) => {
+        text
+          .setValue(this.plugin.superstate.settings.folderNoteName)
+          .setPlaceholder("Folder Name")
+          .onChange(async (value) => {
+            this.plugin.superstate.settings.folderNoteName = value;
+            await this.plugin.saveSettings();
+          });
+      });  
     
 
 
@@ -116,6 +129,17 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         document.body.classList.toggle("mk-hide-ribbon", !value);
       })
     );
+
+    // new Setting(spaceAppearances)
+    // .setName(t.settings.flowState.name)
+    // .setDesc(t.settings.flowState.desc)
+    // .addToggle((toggle) =>
+    //   toggle.setValue(this.plugin.superstate.settings.flowState).onChange((value) => {
+    //     this.plugin.superstate.settings.flowState = value;
+    //     this.plugin.saveSettings();
+    //     document.body.classList.toggle("mk-flow-state", !value);
+    //   })
+    // );
 
 
   
@@ -167,13 +191,15 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
     new Setting(spaceAppearances)
     .setName(t.settings.spaceRowHeight.name)
     .setDesc(t.settings.spaceRowHeight.desc)
-    .addText((text) => {
+    .addSlider((text) => {
       text
-        .setValue(this.plugin.superstate.settings.spaceRowHeight.toString())
+        .setValue(this.plugin.superstate.settings.spaceRowHeight)
+        .setDynamicTooltip()
+        .setLimits(20, 40, 1)
         .onChange(async (value) => {
-          text.setValue(parseInt(value).toString());
-          this.plugin.superstate.settings.spaceRowHeight = parseInt(value);
-          await this.plugin.saveSettings();
+          
+          this.plugin.superstate.settings.spaceRowHeight = value;
+          this.plugin.saveSettings();
         });
     });
 
@@ -353,6 +379,17 @@ containerEl.createEl("h3", { text: t.settings.sectionStickers });
             this.plugin.reloadExtensions(false);
           })
       );
+      new Setting(containerEl)
+    .setName(t.settings.contextPagination.name)
+    .setDesc(t.settings.contextPagination.desc)
+    .addText((text) => {
+      text
+        .setValue(this.plugin.superstate.settings.contextPagination.toString())
+        .onChange(async (value) => {
+          this.plugin.superstate.settings.contextPagination = parseInt(value);
+          await this.plugin.saveSettings();
+        });
+    });
       new Setting(containerEl)
       .setName(t.settings.defaultDateFormat.name)
       .setDesc(t.settings.defaultDateFormat.desc)
@@ -682,6 +719,17 @@ containerEl.createEl("h3", { text: t.settings.sectionStickers });
           })
       );
     }
+    new Setting(containerEl)
+    .setName("Perform Search in Background")
+    .setDesc("Perform search in background to prevent lag")
+    .addToggle((toggle) =>
+      toggle
+        .setValue(this.plugin.superstate.settings.searchWorker)
+        .onChange((value) => {
+          this.plugin.superstate.settings.searchWorker = value;
+          this.plugin.saveSettings();
+        })
+    );
     new Setting(containerEl)
     .setName(t.settings.experimental.name)
     .setDesc(t.settings.experimental.desc)

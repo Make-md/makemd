@@ -86,9 +86,10 @@ export const NoteActionBar = (props: { superstate: Superstate }) => {
         newPropertyInFrame({ ...field, schemaId: mainFrameID });
       }
 
-      return;
+      return true;
     }
     props.superstate.spaceManager.addSpaceProperty(source, field);
+    return true;
   };
   const showContextMenu = (e: React.MouseEvent) => {
     showSpaceContextMenu(props.superstate, pathState, e, null, null);

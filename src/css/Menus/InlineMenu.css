@@ -2,10 +2,17 @@ body:not(.is-mobile) .mk-style-menu {
   margin-left: -80px;
 }
 
+.mk-style-menu .mk-divider {
+  border-left: thin solid var(--mk-ui-divider);
+  width: 1px;
+  height: 24px;
+}
+
 .mk-style-menu {
   display: flex;
-  padding: 0;
+  padding: 4px;
   margin-top: -50px;
+  align-items: center;
 }
 
 .is-mobile .mk-style-menu svg {
@@ -30,12 +37,36 @@ body:not(.is-mobile) .mk-style-menu {
   border-radius: 4px;
   display: flex;
 }
+.mk-style-menu .mk-mark {
+  width: 24px;
+  height: 24px;
+  padding: 6px;
+}
+.mk-style-menu .mk-mark svg {
+  width: 12px;
+  height: 12px;
+}
 
 .mk-mark div {
   display: flex;
 }
+.mk-mark-group {
+  display: flex;
+}
+.mk-mark-dropdown {
+  padding: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
 
-.mk-style-menu .mk-mark:hover {
+.mk-mark-dropdown svg {
+  width: 12px;
+  height: 12px;
+  transform: rotate(90deg)
+}
+
+.mk-style-menu .mk-mark:hover, .mk-style-menu .mk-mark-dropdown:hover {
   background: var(--mk-ui-background-hover);
 }
 

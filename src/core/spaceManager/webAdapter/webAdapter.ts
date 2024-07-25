@@ -1,7 +1,7 @@
 
 import { PathLabel } from "core/middleware/types/afile";
 
-import { Area } from "core/types/area";
+import { Focus } from "core/types/focus";
 import { SpaceDefinition } from "core/types/space";
 import { defaultContextSchemaID } from "schemas/mdb";
 import { Command, CommandResult, Library } from "types/commands";
@@ -49,10 +49,10 @@ export class WebSpaceAdapter implements SpaceAdapter {
     public deleteTemplate (path: string, space: string) : Promise<void> {
       return
     }
-    public async readWaypoints () : Promise<Area[]> {
+    public async readWaypoints () : Promise<Focus[]> {
       return []
     }
-    public async saveWaypoints (waypoints: Area[]) {
+    public async saveWaypoints (waypoints: Focus[]) {
       return
     }
 

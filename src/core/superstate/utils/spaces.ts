@@ -198,8 +198,9 @@ export const pathStateToTreeNode = (
   type: 'file',
 });
 
-export const spaceRowHeight = (superstate: Superstate, section: boolean) => {
-  return isTouchScreen(superstate.ui) ? 40 : section ?  superstate.settings.spaceRowHeight + 10 : superstate.settings.spaceRowHeight;
+export const spaceRowHeight = (superstate: Superstate, preset: number, section: boolean) => {
+  const spaceHeight = preset ?? 29;
+  return isTouchScreen(superstate.ui) ? 40 : section ?  spaceHeight + 10 : spaceHeight;
 }
 
 export const spaceSortFn =

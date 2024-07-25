@@ -1,6 +1,5 @@
 import { Superstate } from "core/superstate/superstate";
 import { safelyParseJSON } from "utils/parsers";
-import { pathToString } from "utils/path";
 
 export const defaultString = (value: any, string: string) => {
   if (!value || value.length == 0) return string;
@@ -90,6 +89,6 @@ export const pathToParentPath = (path: string) =>
   removeLeadingSlash(path.substring(0, path.lastIndexOf("/"))) ||
   path;
 
-export const spaceNotePathForSpacePath = (spacePath: string) => spacePath+"/"+pathToString(spacePath)+".md"
+
 
   

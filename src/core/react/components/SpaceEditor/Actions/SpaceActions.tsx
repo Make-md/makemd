@@ -63,7 +63,7 @@ export const SpaceCommand = (props: {
     saveCommand({
       ...command,
       fields: [...command.fields, field],
-    });
+    });return true;
   };
 
   const deleteProperty = (field: SpaceProperty) => {

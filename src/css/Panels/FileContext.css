@@ -1,4 +1,4 @@
-.mk-path-context {
+.mk-path-explorer {
   display: flex;
   flex-direction: column;
   --file-context-spacing: 4px;
@@ -61,7 +61,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   margin-top: 8px;
   padding-top: 0 !important;
   margin-bottom: 0;
-  width: auto;
+  width: 100%;
 }
 
 .mk-inline-title {
@@ -183,9 +183,14 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
     justify-content: center;
 }
 
+.mk-path-explorer .mk-path-context-row {
+  flex-direction: column;
+}
+.mk-path-explorer .mk-path-context-value {
+  margin-left: 24px;
+}
 
-
-.mk-path-context .mk-path-context-field {
+.mk-path-explorer .mk-path-context-field {
   max-width: 120px;
   min-width: 120px;
 }
@@ -218,7 +223,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   background-color: var(--bullet-color);
   transition: transform 75ms ease-out;
 }
-.mk-path-context .mk-cell-text {
+.mk-path-explorer .mk-cell-text {
   background: var(var(--mk-ui-active-hover)) !important;
 }
 
@@ -285,7 +290,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   box-shadow: none !important;
 }
 
-.mk-path-context .mk-path-context-title {
+.mk-path-explorer .mk-path-context-title {
   --icon-size: 14px;
   font-size: 14px;
 }
@@ -328,7 +333,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   height: unset !important;
 }
 
-.mk-path-context .mk-tag-selector {
+.mk-path-explorer .mk-tag-selector {
   padding: 0 !important;
 }
 .mk-space-icon {
@@ -341,7 +346,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   padding: 8px;
 }
 
-.mk-path-context .mk-path-context-backlink {
+.mk-path-explorer .mk-path-context-backlink {
   border: thin solid var(--mk-ui-border);
   border-radius: 8px;
   box-shadow: var(--mk-shadow-card)
@@ -494,7 +499,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   pointer-events: none;
 }
 
-.mk-path-context .inline-title {
+.mk-path-explorer .inline-title {
   font-size: 18px;
   margin-bottom: 0;
 }

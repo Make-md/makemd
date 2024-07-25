@@ -248,16 +248,16 @@ export const Explorer = (props: { superstate: Superstate }) => {
     >
       {isSpace ? (
         <SpaceProvider superstate={props.superstate}>
-          <PathContextView superstate={props.superstate}></PathContextView>
+          <ExplorerPathView superstate={props.superstate}></ExplorerPathView>
         </SpaceProvider>
       ) : (
-        <PathContextView superstate={props.superstate}></PathContextView>
+        <ExplorerPathView superstate={props.superstate}></ExplorerPathView>
       )}
     </PathProvider>
   );
 };
 
-export const PathContextView = (props: { superstate: Superstate }) => {
+export const ExplorerPathView = (props: { superstate: Superstate }) => {
   const [openNodes, setOpenNodes] = useState<string[]>([]);
   const { pathState } = useContext(PathContext);
   useEffect(() => {
@@ -265,7 +265,7 @@ export const PathContextView = (props: { superstate: Superstate }) => {
   }, [pathState]);
 
   return (
-    <div className="mk-path-context">
+    <div className="mk-path-explorer">
       <div className="mk-path-context-properties">
         <div
           onClick={(e) => {

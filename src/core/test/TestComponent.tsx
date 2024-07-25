@@ -1,4 +1,5 @@
 import * as acorn from "acorn";
+import { InlineMenuComponent } from "adapters/obsidian/ui/editors/markdownView/menus/inlineStylerView/InlineMenu";
 import ImageModal from "core/react/components/UI/Modals/ImageModal";
 import StickerModal from "core/react/components/UI/Modals/StickerModal";
 import {
@@ -16,13 +17,14 @@ import {
 import { PathState, SpaceState } from "core/types/superstate";
 
 import { movePath } from "core/utils/uri";
-import { Superstate } from "makemd-core";
+import MakeMDPlugin from "main";
 import React, { PropsWithChildren, useEffect, useState } from "react";
 
-export const openTestModal = (superstate: Superstate) => {
+export const openTestModal = (plugin: MakeMDPlugin) => {
+  const superstate = plugin.superstate;
   superstate.ui.openModal(
     "Tests",
-    (props) => <TestComponent superstate={superstate}></TestComponent>,
+    (props) => <TestComponent plugin={plugin}></TestComponent>,
     window
   );
 };
@@ -63,8 +65,8 @@ export const TestToggleSection = (
     </div>
   );
 };
-export const TestComponent = (props: { superstate: Superstate }) => {
-  const { superstate } = props;
+export const TestComponent = (props: { plugin: MakeMDPlugin }) => {
+  const superstate = props.plugin.superstate;
   const [space, setSpace] = useState<SpaceState>(null);
   const [path, setPath] = useState<PathState>(null);
   const [sticker, setSticker] = useState<string>(null);
@@ -91,6 +93,12 @@ export const TestComponent = (props: { superstate: Superstate }) => {
   return (
     <div className="mk-layout-row" style={{ fontSize: "10px" }}>
       <div>
+        <InlineMenuComponent
+          plugin={props.plugin}
+          cm={null}
+          activeMarks={[]}
+          mobile={false}
+        />
         <TestInputComponent
           action={(value) =>
             setOutput(
@@ -219,7 +227,7 @@ export const TestComponent = (props: { superstate: Superstate }) => {
           </TestInputComponent>
           <TestInputComponent
             action={(value) =>
-              saveSpaceMetadataValue(props.superstate, space.path, "contexts", [
+              saveSpaceMetadataValue(superstate, space.path, "contexts", [
                 value,
               ])
             }

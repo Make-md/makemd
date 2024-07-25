@@ -41,6 +41,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   bannerHeight: 200,
   spacesDisablePatch: false,
   folderNoteInsideFolder: true,
+  folderNoteName: "",
   sidebarTabs: true,
   showRibbon: true,
   deleteFileOption: "trash",
@@ -66,6 +67,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   inlineContextNameLayout: "vertical",
   waypoints: ['/'],
   spacesUseAlias: false,
+  flowState: false,
   fmKeyAlias: 'aliases',
   fmKeyBanner: 'banner',
   fmKeyColor: 'color',
@@ -92,4 +94,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   defaultSpaceTemplate: "",
   selectedKit: "default",
   actionMaxSteps: 100,
+  contextPagination: 25,
+  searchWorker: true,
 };

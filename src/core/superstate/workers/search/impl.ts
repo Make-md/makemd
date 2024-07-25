@@ -1,9 +1,10 @@
 
 
+import { SpaceDefGroup } from "core/types/space";
 import { PathState } from "core/types/superstate";
 import { pathByDef } from "core/utils/spaces/query";
 
-export function searchPath (payload: { queries: [], pathsIndex: Map<string, PathState>, count: number}) {
+export function searchPath (payload: { queries: SpaceDefGroup[], pathsIndex: Map<string, PathState>, count: number}) {
     const { queries, pathsIndex, count } = payload;
 
     const paths = [];

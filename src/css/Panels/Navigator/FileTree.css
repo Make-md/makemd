@@ -104,7 +104,7 @@ body.is-mobile .sidebar-toggle-button {
   /* flex-direction: column-reverse; */
 }
 
-.mk-path-tree-area {
+.mk-path-tree-focus {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -113,7 +113,7 @@ body.is-mobile .sidebar-toggle-button {
   height: 100%;
 }
 
-.mk-path-tree-area input {
+.mk-path-tree-focus input {
   width: 60%;
   padding: 8px;
   border: none;

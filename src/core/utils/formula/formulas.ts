@@ -604,6 +604,11 @@ const current = (args: MathNode[], math: any, scope: Map<string, any>) => {
 }
 current.rawArgs = true;
 
+const index = (args: MathNode[], math: any, scope: Map<string, any>) => {
+	return scope?.get("$index");
+}
+index.rawArgs = true;
+
 const find = (args: MathNode[], math: any, scope: Map<string, any>) => {
 	if (args.length !== 2) {
 		return "";
@@ -613,9 +618,10 @@ const find = (args: MathNode[], math: any, scope: Map<string, any>) => {
 		: args[0];
 	if (Array.isArray(arr)) 
 	{
-		return arr.find((f) => {
+		return arr.find((f, i) => {
 			scope.set("$current", f);
-			math.evaluate("current = _current()", scope)
+			scope.set("$index", i);
+			math.evaluate("current = _current(); index = _index()", scope)
 			const value = args[1].compile().evaluate
 			? args[1].compile().evaluate(scope)
 			: args[1];
@@ -635,9 +641,10 @@ const findIndex = (args: MathNode[], math: any, scope: Map<string, any>) => {
 		: args[0];
 	if (Array.isArray(arr)) 
 	{
-		return arr.findIndex((f) => {
+		return arr.findIndex((f, i) => {
 			scope.set("$current", f);
-			math.evaluate("current = _current()", scope)
+			scope.set("$index", i);
+			math.evaluate("current = _current(); index = _index()", scope)
 			const value = args[1].compile().evaluate
 			? args[1].compile().evaluate(scope)
 			: args[1];
@@ -656,9 +663,10 @@ const filter = (args: MathNode[], math: any, scope: Map<string, any>) => {
 		? args[0].compile().evaluate(scope)
 		: args[0];
 	if (Array.isArray(arr)) {
-		return arr.filter((f) => {
+		return arr.filter((f, i) => {
 			scope.set("$current", f);
-			math.evaluate("current = _current()", scope)
+			scope.set("$index", i);
+			math.evaluate("current = _current(); index = _index()", scope)
 			return args[1].compile().evaluate(scope);
 		});
 	}
@@ -676,9 +684,10 @@ const map = (args: MathNode[], math: any, scope: Map<string, any>) => {
 		: args[0];
 
 	if (Array.isArray(arr)) {
-		return arr.map((f) => {
+		return arr.map((f, i) => {
 			scope.set("$current", f);
-			math.evaluate("current = _current()", scope);
+			scope.set("$index", i);
+			math.evaluate("current = _current(); index = _index()", scope)
 			const result = args[1].compile().evaluate(scope);
 
 			return result;
@@ -696,9 +705,10 @@ const some = (args: MathNode[], math: any, scope: Map<string, any>) => {
 		? args[0].compile().evaluate(scope)
 		: args[0];
 	if (Array.isArray(arr)) {
-		return arr.some((f) => {
+		return arr.some((f, i) => {
 			scope.set("$current", f);
-			math.evaluate("current = _current()", scope)
+			scope.set("$index", i);
+			math.evaluate("current = _current(); index = _index()", scope)
 			return args[1].compile().evaluate(scope);
 		});
 	}
@@ -714,9 +724,10 @@ const every = (args: MathNode[], math: any, scope: Map<string, any>) => {
 		? args[0].compile().evaluate(scope)
 		: args[0];
 	if (Array.isArray(arr)) {
-		return arr.every((f) => {
+		return arr.every((f, i) => {
 			scope.set("$current", f);
-			math.evaluate("current = _current()", scope)
+			scope.set("$index", i);
+			math.evaluate("current = _current(); index = _index()", scope)
 			return args[1].compile().evaluate(scope);
 		});
 	}
@@ -812,6 +823,7 @@ const format = (arg: any) =>{
 export const formulas = {
 	"prop": prop,
 	"_current": current,
+	"_index": index,
 	"slice": (str: string, start: number, end: number) => {
 		str = format(str);
 		return str.slice(start, end);
@@ -925,38 +937,38 @@ export const formulas = {
 	},
 	"dateRange": (arr: Date[], type: string) => {
 		const diff = Math.abs(Math.max(...arr.map(f => f.getTime())) - Math.min(...arr.map(f => f.getTime())));
-		if (type === "days") return diff / (1000 * 60 * 60 * 24);
-		if (type === "months") return diff / (1000 * 60 * 60 * 24 * 30);
-		if (type === "years") return diff / (1000 * 60 * 60 * 24 * 365);
-		if (type === "hours") return diff / (1000 * 60 * 60);
-		if (type === "minutes") return diff / (1000 * 60);
-		if (type === "seconds") return diff / 1000;
-		if (type === "weeks") return diff / (1000 * 60 * 60 * 24 * 7);
-		if (type === "quarters") return diff / (1000 * 60 * 60 * 24 * 30 * 3);
+		if (type.startsWith("day")) return diff / (1000 * 60 * 60 * 24);
+		if (type.startsWith("month")) return diff / (1000 * 60 * 60 * 24 * 30);
+		if (type.startsWith("year")) return diff / (1000 * 60 * 60 * 24 * 365);
+		if (type.startsWith("hour")) return diff / (1000 * 60 * 60);
+		if (type.startsWith("minute")) return diff / (1000 * 60);
+		if (type.startsWith("second")) return diff / 1000;
+		if (type.startsWith("week")) return diff / (1000 * 60 * 60 * 24 * 7);
+		if (type.startsWith("quarter")) return diff / (1000 * 60 * 60 * 24 * 30 * 3);
 		return diff / (1000 * 60 * 60 * 24);
 	},
 	"dateAdd": (newDate: Date, amount: number, type: string) => {
 		
-		if (type === "days") newDate.setDate(newDate.getDate() + amount);
-		if (type === "months") newDate.setMonth(newDate.getMonth() + amount);
-		if (type === "years") newDate.setFullYear(newDate.getFullYear() + amount);
-		if (type === 'quarters') newDate.setMonth(newDate.getMonth() + amount * 3);
-		if (type === 'weeks') newDate.setDate(newDate.getDate() + amount * 7);
-		if (type === "hours") newDate.setHours(newDate.getHours() + amount);
-		if (type === "minutes") newDate.setMinutes(newDate.getMinutes() + amount);
-		if (type === "seconds") newDate.setSeconds(newDate.getSeconds() + amount);
+		if (type.startsWith("day")) newDate.setDate(newDate.getDate() + amount);
+		if (type.startsWith("month")) newDate.setMonth(newDate.getMonth() + amount);
+		if (type.startsWith("year")) newDate.setFullYear(newDate.getFullYear() + amount);
+		if (type.startsWith('quarter')) newDate.setMonth(newDate.getMonth() + amount * 3);
+		if (type.startsWith('week')) newDate.setDate(newDate.getDate() + amount * 7);
+		if (type.startsWith("hour")) newDate.setHours(newDate.getHours() + amount);
+		if (type.startsWith("minute")) newDate.setMinutes(newDate.getMinutes() + amount);
+		if (type.startsWith("second")) newDate.setSeconds(newDate.getSeconds() + amount);
 		return newDate;
 	},
 	"dateSubtract": (newDate: Date, amount: number, type: string) => {
 		
-		if (type === "days") newDate.setDate(newDate.getDate() - amount);
-		if (type === "months") newDate.setMonth(newDate.getMonth() - amount);
-		if (type === "years") newDate.setFullYear(newDate.getFullYear() - amount);
-		if (type === 'quarters') newDate.setMonth(newDate.getMonth() - amount * 3);
-		if (type === 'weeks') newDate.setDate(newDate.getDate() - amount * 7);
-		if (type === "hours") newDate.setHours(newDate.getHours() - amount);
-		if (type === "minutes") newDate.setMinutes(newDate.getMinutes() - amount);
-		if (type === "seconds") newDate.setSeconds(newDate.getSeconds() - amount);
+		if (type.startsWith("day")) newDate.setDate(newDate.getDate() - amount);
+		if (type.startsWith("month")) newDate.setMonth(newDate.getMonth() - amount);
+		if (type.startsWith("year")) newDate.setFullYear(newDate.getFullYear() - amount);
+		if (type.startsWith('quarter')) newDate.setMonth(newDate.getMonth() - amount * 3);
+		if (type.startsWith('week')) newDate.setDate(newDate.getDate() - amount * 7);
+		if (type.startsWith("hour")) newDate.setHours(newDate.getHours() - amount);
+		if (type.startsWith("minute")) newDate.setMinutes(newDate.getMinutes() - amount);
+		if (type.startsWith("second")) newDate.setSeconds(newDate.getSeconds() - amount);
 		return newDate;
 	},
 	"dateBetween": (current: Date, end: Date, format: string) => {

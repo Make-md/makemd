@@ -155,7 +155,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
 
     tags.push(...fileTags)
     const name = label?.name;
-    const aliases = pathCache?.properties ? ensureArray(pathCache.properties[settings.fmKeyAlias]) : [];
+    const aliases = pathCache?.property ? ensureArray(pathCache.property[settings.fmKeyAlias]) : [];
     const sticker = defaultSticker(label?.sticker, type, path);
     const color = label?.color ?? '';
     
@@ -168,11 +168,11 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         ...cache,
         name,
         tags: uniq(tags),
-        type: type,
+        type: type, 
         subtype,
         parent,
         label: {
-            name,
+            name: settings.spacesUseAlias && aliases?.length > 0 ? aliases[0] : name,
             sticker,
             color,
             thumbnail: label?.thumbnail ?? '',
@@ -185,6 +185,8 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     }
 
     const spaces : string[] = [];
+    const linkedSpaces : string[] = [];
+    const liveSpaces : string[] = [];
     if (subtype == 'tag') {
         spaces.push(tagsSpacePath)
     }
@@ -216,6 +218,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         if (space.metadata?.filters?.length > 0) {
             if (pathByDef(space.metadata.filters, {...pathState, spaces}, space.properties)) {
                 spaces.push(s);
+                liveSpaces.push(s);
                 return;
             }
         }
@@ -223,6 +226,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
             const spaceItem = (space.metadata?.links ?? []).find(f => f == pathState.path);
             if (spaceItem) {
                 spaces.push(s);
+                linkedSpaces.push(s);
                 return;
             }
         }
@@ -241,7 +245,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
             {
                 pathState.metadata.spacePath = spacePath;
             }
-    const metadata : PathState = hidden ? {...pathState, spaces: [], hidden: hidden} : {...pathState, spaces: uniq(spaces), hidden };
+    const metadata : PathState = hidden ? {...pathState, spaces: [], hidden: hidden} : {...pathState, spaces: uniq(spaces), linkedSpaces, liveSpaces, hidden };
     let changed = true;
 
     if (oldMetadata && _.isEqual(metadata, oldMetadata)) {

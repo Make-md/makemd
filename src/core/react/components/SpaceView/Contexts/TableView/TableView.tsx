@@ -128,9 +128,10 @@ export const TableView = (props: { superstate: Superstate }) => {
     updateValue,
   } = useContext(ContextEditorContext);
 
+  const pageSize = props.superstate.settings.contextPagination ?? 25;
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: pageSize,
   });
   const [activeId, setActiveId] = useState(null);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<string>(null);
@@ -761,9 +762,11 @@ export const TableView = (props: { superstate: Superstate }) => {
                 <th
                   className="mk-row-new"
                   colSpan={cols.length + (readMode ? 1 : 2)}
-                  onClick={() => table.setPageSize(pagination.pageSize + 25)}
+                  onClick={() =>
+                    table.setPageSize(pagination.pageSize + pageSize)
+                  }
                 >
-                  Load More
+                  {i18n.buttons.loadMore}
                 </th>
               </tr>
             )}

@@ -375,7 +375,10 @@ export const PropertiesView = (props: {
             ></DataPropertyView>
           ))}
         </>
-      ) : excludeKeys.length > 0 ? (
+      ) : (
+        <></>
+      )}
+      {excludeKeys.length > 0 && (
         <style>
           {`${excludeKeys
             .map((f) => `.metadata-property[data-property-key="${f}"]`)
@@ -384,8 +387,6 @@ export const PropertiesView = (props: {
          display: none;
       }`}
         </style>
-      ) : (
-        <></>
       )}
     </>
   );

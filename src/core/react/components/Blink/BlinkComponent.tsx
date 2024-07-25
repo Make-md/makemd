@@ -11,6 +11,7 @@ import { i18n } from "makemd-core";
 import React, { useEffect, useMemo, useState } from "react";
 
 import classNames from "classnames";
+import { searchPath } from "core/superstate/workers/search/impl";
 import { PathView } from "../PathView/PathView";
 import { SpaceQuery } from "../SpaceEditor/SpaceQuery";
 import { PathCrumb } from "../UI/Crumbs/PathCrumb";
@@ -69,6 +70,24 @@ export const BlinkComponent = (props: {
         setFilteredPaths(recentPaths);
         return;
       }
+
+      if (!props.superstate.settings.searchWorker) {
+        const results = searchPath({
+          queries: _queries,
+          count: 10,
+          pathsIndex: props.superstate.pathsIndex,
+        });
+        setFilteredPaths([
+          ...results.map((f) => ({
+            name: f.name,
+            icon: f.label.sticker,
+            description:
+              f.subtype == "tag" || f.subtype == "default" ? null : f.path,
+            value: f.path,
+          })),
+        ]);
+        return;
+      }
       props.superstate.searcher
         .run<PathState[]>({
           type: "search",
@@ -104,7 +123,7 @@ export const BlinkComponent = (props: {
       props.hide();
       return;
     }
-    if (props.mode == BlinkMode.Search && !showBlink) {
+    if (!showBlink) {
       props.superstate.ui.openPath(item.value);
       props.hide();
       return;

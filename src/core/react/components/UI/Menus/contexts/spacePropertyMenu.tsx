@@ -18,6 +18,8 @@ import {
   menuSeparator,
 } from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
+import { safelyParseJSON } from "utils/parsers";
+import { nameForField } from "core/utils/frames/frames";
 
 export const selectPropertyTypeMenu = (
   e: React.MouseEvent,
@@ -176,16 +178,27 @@ export const showPropertyMenu = (
     hidden,
   } = props;
 
+  const saveName = (value: string) => {
+    if (!editable) {
+      const fieldValue = safelyParseJSON(field.value);
+      saveField({ ...field, value: JSON.stringify({
+        ...fieldValue,
+        alias: value,
+      }) });
+      return;
+    } 
+    saveField({ ...field, name: value });
+  }
   const menuOptions: SelectOption[] = [];
 
-  if (editable) {
+  
     menuOptions.push(
-      menuInput(field?.name ?? "", (value) =>
-        saveField({ ...field, name: value })
+      menuInput(nameForField(field, props.superstate) ?? "", (value) =>
+        saveName(value)
       )
     );
     menuOptions.push(menuSeparator);
-
+    if (editable) {
     menuOptions.push({
       name: "",
       type: SelectOptionType.Custom,
@@ -200,7 +213,7 @@ export const showPropertyMenu = (
         ></PropertyMenuComponent>
       ),
     });
-
+  }
     menuOptions.push(menuSeparator);
 
     menuOptions.push({
@@ -222,7 +235,7 @@ export const showPropertyMenu = (
       },
     });
     menuOptions.push(menuSeparator);
-  }
+  
   const sortableString = normalizedSortForType(field.type, false);
 
   if (sortableString && sortColumn) {
@@ -247,7 +260,7 @@ export const showPropertyMenu = (
       },
     });
   }
-  if (editable) {
+ 
     menuOptions.push(menuSeparator);
     if (hide) {
       if (!hidden) {
@@ -268,6 +281,7 @@ export const showPropertyMenu = (
         });
       }
     }
+    if (editable) {
     if (editCode) {
       menuOptions.push({
         name: i18n.menu.editCode,

@@ -8,6 +8,7 @@
 
 import MakeMDPlugin from "main";
 import {
+  App,
   Component,
   EphemeralState,
   HoverPopover,
@@ -100,7 +101,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
     return windows;
   }
 
-  static containerForDocument(doc: Document) {
+  static containerForDocument(app: App, doc: Document) {
     if (doc !== document && app.workspace.floatingSplit)
       for (const container of app.workspace.floatingSplit.children) {
         if (container.doc === doc) return container;
@@ -216,7 +217,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
         this.document === document ? "rootSplit" : "floatingSplit"
       ]!;
     this.rootSplit.getContainer = () =>
-      FlowEditor.containerForDocument(this.document);
+      FlowEditor.containerForDocument(this.plugin.app, this.document);
 
     this.titleEl.insertAdjacentElement("afterend", this.rootSplit.containerEl);
     const leaf = this.plugin.app.workspace.createLeafInParent(
@@ -277,7 +278,6 @@ export class FlowEditor extends nosuper(HoverPopover) {
       this.parent.flowEditor = this;
       this.parent.view.addChild(this);
     }
-
     await this.onShowCallback?.(this);
     this.onShowCallback = undefined; // only call it once
     const viewHeaderEl = this.hoverEl.querySelector(".view-header");
@@ -290,20 +290,15 @@ export class FlowEditor extends nosuper(HoverPopover) {
 
   transition() {
     if (this.shouldShow()) {
-      //@ts-ignore
       if (this.state === PopoverState.Hiding) {
-        //@ts-ignore
         this.state = PopoverState.Shown;
         clearTimeout(this.timer);
       }
     } else {
-      //@ts-ignore
       if (this.state === PopoverState.Showing) {
         this.hide();
       } else {
-        //@ts-ignore
         if (this.state === PopoverState.Shown) {
-          //@ts-ignore
           this.state = PopoverState.Hiding;
           this.timer = window.setTimeout(() => {
             if (this.shouldShow()) {
@@ -340,7 +335,6 @@ export class FlowEditor extends nosuper(HoverPopover) {
       !this.detaching &&
       !!(
         this.onTarget ||
-        //@ts-ignore
         this.state == PopoverState.Shown ||
         this.document.querySelector(
           `body>.modal-container, body > #he${this.id} ~ .menu, body > #he${this.id} ~ .suggestion-container`
@@ -350,18 +344,13 @@ export class FlowEditor extends nosuper(HoverPopover) {
   }
 
   show() {
-    if (!this.targetEl || this.document.body.contains(this.targetEl)) {
-      //@ts-ignore
-      this.state = PopoverState.Shown;
-      this.timer = 0;
-      this.shownPos = mouseCoords;
-      this.targetEl.replaceChildren(this.hoverEl);
-      this.onShow();
-      app.workspace.onLayoutChange();
-      this.load();
-    } else {
-      this.hide();
-    }
+    this.state = PopoverState.Shown;
+    this.timer = 0;
+    this.shownPos = mouseCoords;
+    this.targetEl.replaceChildren(this.hoverEl);
+    this.onShow();
+    app.workspace.onLayoutChange();
+    this.load();
   }
 
   onHide() {
@@ -414,7 +403,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
 
   nativeHide() {
     const { hoverEl, targetEl } = this;
-    //@ts-ignore
+
     this.state = PopoverState.Hidden;
 
     hoverEl.detach();

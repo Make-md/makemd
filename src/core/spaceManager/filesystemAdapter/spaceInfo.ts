@@ -98,6 +98,7 @@ export const fileSystemSpaceInfoFromFolder = (
     };
   }
   const folderName = folderPathToString(folder);
+  const folderNoteName = manager.superstate.settings.folderNoteName;
   return {
     name: folderName,
 
@@ -106,7 +107,7 @@ export const fileSystemSpaceInfoFromFolder = (
     readOnly: readOnly,
     folderPath: folder,
     defPath: folder + "/.space/def.json",
-    notePath: folder + "/" + folderName + ".md",
+    notePath: folder + "/" + (folderNoteName.length > 0 ? folderNoteName : folderName) + ".md",
     dbPath: spaceFolderPathFromSpace(folder +
       "/", manager) + manager.superstate.settings.folderContextFile + ".mdb",
     framePath: spaceFolderPathFromSpace(folder +

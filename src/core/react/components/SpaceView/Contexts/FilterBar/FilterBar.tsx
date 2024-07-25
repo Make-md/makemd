@@ -277,6 +277,14 @@ export const FilterBar = (props: {
     //   listGroup: "spaces://$kit/#*dateGroup",
     //   listItem: "spaces://$kit/#*eventItem",
     // },
+    // calendarDay: {
+    //   name: i18n.menu.dayView,
+    //   icon: "ui//calendar",
+    //   view: "list",
+    //   listView: "spaces://$kit/#*calendarView",
+    //   listGroup: "spaces://$kit/#*dateGroup",
+    //   listItem: "spaces://$kit/#*eventItem",
+    // },
   };
   const showLayoutMenu = (e: React.MouseEvent) => {
     const offset = (e.target as HTMLElement).getBoundingClientRect();
@@ -726,7 +734,7 @@ export const FilterBar = (props: {
   };
 
   const saveNewField = (source: string, field: SpaceProperty) => {
-    saveColumn({ ...field, table: "" });
+    return saveColumn({ ...field, table: "" });
   };
 
   const saveContexts = (spacePath: string, contexts: string[]) => {
@@ -851,7 +859,7 @@ export const FilterBar = (props: {
         {
           superstate: props.superstate,
           rect: offset,
-          editable: true,
+          editable: f.primary != "true",
           win,
           options: [],
           field: f,

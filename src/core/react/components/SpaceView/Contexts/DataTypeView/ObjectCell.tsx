@@ -491,6 +491,7 @@ export const ObjectEditorModal = (
               [field.name]: "",
             }
           );
+          return true
         },
         fileMetadata: true,
       }

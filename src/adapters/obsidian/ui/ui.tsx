@@ -17,7 +17,6 @@ import { urlRegex } from "utils/regex";
 import { SPACE_VIEW_TYPE } from "../SpaceViewContainer";
 import { getAbstractFileAtPath, getLeaf, openPath } from "../utils/file";
 import { openPathInElement } from "../utils/flow/flowEditor";
-import { workspaceLeafForDom } from "../utils/leaf";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
 import { WindowManager } from "./WindowManager";
 import { flowIDAnnotation } from "./editors/markdownView/flowEditor/flowStateFields";
@@ -280,7 +279,7 @@ export class ObsidianUI implements UIAdapter {
     } else if (source) {
       openPathInElement(
         this.plugin,
-        workspaceLeafForDom(this.plugin.app, source),
+        this.plugin.app.workspace.getLeaf(), // workspaceLeafForDom(this.plugin.app, source),
         source,
         null,
         async (editor) => {

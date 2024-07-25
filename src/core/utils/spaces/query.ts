@@ -74,12 +74,13 @@ const filterPathCache = (paths: PathState[], def: SpaceDefFilter, props: Record<
   if (!filterFn || (filterFn.valueType != 'none' && def.value.length == 0)) {
     return [];
   }
+  
   return paths.filter(f => {
   let value = '';
   if (def.field == 'outlinks') {
     value = serializeMultiString(f.outlinks ?? [])
   } else if (def.field == 'inlinks') {
-    value = serializeMultiString(f.inlinks ?? [])
+    value = serializeMultiString(f.metadata?.inlinks ?? [])
   } else if (def.field == 'tags') {
     value = serializeMultiString(f.tags ?? []);
   }
@@ -88,7 +89,9 @@ const filterPathCache = (paths: PathState[], def: SpaceDefFilter, props: Record<
   
     if (filterFn) {
       const defValue =  (def.fType == 'property') ? props[def.value] : def.value;
+      
       result = filterFn.fn(value, defValue);
+     
     }
     return result;
   });

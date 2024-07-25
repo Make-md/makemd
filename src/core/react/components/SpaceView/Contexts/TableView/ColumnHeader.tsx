@@ -6,7 +6,9 @@ import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import { useCombinedRefs } from "core/react/hooks/useCombinedRef";
 import { Superstate } from "core/superstate/superstate";
+import { PathPropertyName } from "core/types/context";
 import { optionValuesForColumn } from "core/utils/contexts/optionValuesForColumn";
+import { nameForField } from "core/utils/frames/frames";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { stickerForField } from "schemas/mdb";
 import { SpaceTableColumn } from "types/mdb";
@@ -121,7 +123,9 @@ export const ColumnHeader = (props: {
       {
         spaces: spaceCache?.contexts ?? [],
         fields: cols,
-        saveField: (source, field) => newColumn({ ...field, table: source }),
+        saveField: (source, field) => {
+          return newColumn({ ...field, table: source })
+        },
         schemaId: tableData.schema.id,
         contextPath: spaceInfo.path,
       }
@@ -142,7 +146,7 @@ export const ColumnHeader = (props: {
         superstate: props.superstate,
         rect: offset,
         win: windowFromDocument(e.view.document),
-        editable: props.editable,
+        editable: field.name != PathPropertyName,
         options,
         field,
         fields: cols,
@@ -178,7 +182,7 @@ export const ColumnHeader = (props: {
                 ),
               }}
             ></div>
-            <div className="mk-path-context-field-key">{field.name}</div>
+            <div className="mk-path-context-field-key">{nameForField(field, props.superstate)}</div>
           </>
         ) : (
           "+"

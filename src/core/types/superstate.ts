@@ -69,6 +69,8 @@ export type PathState = {
     properties?: Record<string, any>
     hidden?: boolean
     spaces?: string[]
+    linkedSpaces?: string[]
+    liveSpaces?: string[]
     tags?: string[]
     inlinks?: string[]
     outlinks?: string[]
