@@ -249,7 +249,10 @@ export const runFormulaNode = (node: FormulaNode, propMap: DBRow): string => {
 		  
 		
 	}
-	const runContext = math.create(all)
+	const config :math.ConfigOptions = {
+		matrix: "Array"
+	}
+	const runContext = math.create(all, config)
 	runContext.import(formulas, { override: true })
 	if (node.type === "literal") {
 		return node.value
@@ -345,7 +348,10 @@ export const runFormula = (paths: Map<string, PathState>, formula: string, prope
 		  })
 		
 	}
-	const runContext = math.create(all)
+	const config :math.ConfigOptions = {
+		matrix: "Array"
+	}
+	const runContext = math.create(all, config)
 	runContext.import(formulas, { override: true })
 	let value;
 	try {

@@ -161,7 +161,10 @@ public api: API;
               })
             
         }
-        const runContext = math.create(all)
+        const config :math.ConfigOptions = {
+            matrix: "Array"
+        }
+        const runContext = math.create(all, config)
         runContext.import(formulas, { override: true })
         this.formulaContext = runContext;
         //Initialize

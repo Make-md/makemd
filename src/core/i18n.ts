@@ -578,7 +578,7 @@ class T {
         propertyValueSpace: "Space",
         propertyValueProperty: "Property",
         propertyLookup: "Edit Formula",
-
+        existingFrontmatter: "Existing Property",
         dateFormat: "Date Format",
         propertyFileProp: "Property",
         multiple: "Multiple",
@@ -662,6 +662,7 @@ class T {
         fileExists: "File Already Exists",
         folderExists: "Folder Already Exists",
         noPropertyName: "Property Name is Required",
+        noPropertiesFound: "No Properties Found",
         duplicatePropertyName: "Duplicate Property Name",
         newSpaceName: "Enter a name for your space",
         duplicateSpaceName: "Space name already exists",
@@ -772,8 +773,8 @@ class T {
           desc: "Layout for inline title and sticker in Inline Context",
         },
         hideFrontmatter: {
-          name: "Hide Frontmatter Properties",
-          desc: "Hide the frontmatter properties in inline context",
+          name: "Hide Context Properties",
+          desc: "Hide properties you have addeed in context from the Obsidian properties panel",
         },
         openFileContext: {
           name: "Auto Open Explorer",

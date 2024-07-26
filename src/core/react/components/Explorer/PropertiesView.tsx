@@ -103,7 +103,9 @@ export const PropertiesView = (props: {
       newCols.filter((f) => !props.excludeKeys?.some((g) => g == f.name))
     );
     setExcludeKeys([
-      ...columns.map((f) => f.name),
+      ...(props.superstate.settings.hideFrontmatter
+        ? columns.map((f) => f.name)
+        : []),
       ...(props.excludeKeys ?? []),
     ]);
     setValues(
@@ -314,7 +316,7 @@ export const PropertiesView = (props: {
       selectType
     );
   };
-  const propertiessuperstate = props.superstate.settings.hideFrontmatter;
+
   return (
     <>
       {props.compactMode ? (
@@ -345,36 +347,34 @@ export const PropertiesView = (props: {
             source={pathState.path}
           ></DataPropertyView>
         ))
-      ) : !propertiessuperstate || props.force ? (
-        <>
-          {cols.map((f, i) => (
-            <DataPropertyView
-              key={i}
-              path={pathState.path}
-              propertyMenu={(e) => showMenu(e, f)}
-              superstate={props.superstate}
-              initialValue={values[f.name]}
-              row={values}
-              compactMode={props.compactMode}
-              column={{ ...f, table: "" }}
-              columns={[]}
-              editMode={
-                !props.editable
-                  ? CellEditMode.EditModeView
-                  : CellEditMode.EditModeAlways
-              }
-              updateValue={(value) => savePropertyValue(value, f)}
-              updateFieldValue={(fieldValue, value) =>
-                savePropertyValue(value, {
-                  ...f,
-                  value: fieldValue,
-                })
-              }
-              contextTable={{}}
-              source={pathState.path}
-            ></DataPropertyView>
-          ))}
-        </>
+      ) : props.force ? (
+        cols.map((f, i) => (
+          <DataPropertyView
+            key={i}
+            path={pathState.path}
+            propertyMenu={(e) => showMenu(e, f)}
+            superstate={props.superstate}
+            initialValue={values[f.name]}
+            row={values}
+            compactMode={props.compactMode}
+            column={{ ...f, table: "" }}
+            columns={[]}
+            editMode={
+              !props.editable
+                ? CellEditMode.EditModeView
+                : CellEditMode.EditModeAlways
+            }
+            updateValue={(value) => savePropertyValue(value, f)}
+            updateFieldValue={(fieldValue, value) =>
+              savePropertyValue(value, {
+                ...f,
+                value: fieldValue,
+              })
+            }
+            contextTable={{}}
+            source={pathState.path}
+          ></DataPropertyView>
+        ))
       ) : (
         <></>
       )}

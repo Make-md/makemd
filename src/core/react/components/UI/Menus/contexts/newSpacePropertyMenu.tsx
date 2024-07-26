@@ -1,12 +1,21 @@
 import i18n from "core/i18n";
 
 import { Superstate } from "core/superstate/superstate";
+import { FMSpaceKeys } from "core/superstate/utils/spaces";
+import { FMMetadataKeys } from "core/types/space";
+import { allPropertiesForPaths } from "core/utils/properties/allProperties";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { fieldTypeForType, fieldTypes } from "schemas/mdb";
-import { Rect } from "types/Pos";
+import {
+  defaultContextSchemaID,
+  fieldTypeForType,
+  fieldTypes,
+  stickerForField,
+} from "schemas/mdb";
 import { SpaceProperty, SpaceTableColumn } from "types/mdb";
+import { Rect } from "types/Pos";
 import { windowFromDocument } from "utils/dom";
 import { folderPathToString } from "utils/path";
+import { menuSeparator } from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
 
 export type NewPropertyMenuProps = {
@@ -155,6 +164,76 @@ const NewPropertyMenuComponent = (
     }, 50);
   }, []);
   const input = useRef(null);
+  const addExistingProperty = (e: React.MouseEvent) => {
+    const source = fieldSource == "" ? props.contextPath : fieldSource;
+    e.stopPropagation();
+    const existingCols =
+      props.superstate.contextsIndex.get(source)?.contextTable?.cols ?? [];
+    const existingProps: SpaceProperty[] = allPropertiesForPaths(
+      props.superstate,
+      [...(props.superstate.spacesMap.getInverse(source) ?? [])]
+    )
+      .filter(
+        (f) =>
+          !existingCols.some((g) => g.name == f.name) &&
+          ![
+            ...FMMetadataKeys(props.superstate.settings),
+            "tags",
+            ...FMSpaceKeys(props.superstate.settings),
+          ].some((g) => g == f.name)
+      )
+      .map((f) => ({
+        name: f.name,
+        type: f.type,
+        value: "",
+        schemaId: props.schemaId,
+      }));
+    if (existingProps.length == 0) {
+      props.superstate.ui.notify(i18n.notice.noPropertiesFound);
+      return;
+    }
+    props.superstate.ui.openMenu(
+      (e.target as HTMLElement).getBoundingClientRect(),
+      {
+        ui: props.superstate.ui,
+        multi: false,
+        editable: false,
+        searchable: true,
+        saveOptions: (_: string[], value: any[]) => {
+          if (value[0] == "all") {
+            props.superstate.spaceManager
+              .readTable(source, defaultContextSchemaID)
+              .then((f) =>
+                props.superstate.spaceManager.saveTable(source, {
+                  ...f,
+                  cols: [...f.cols, ...existingProps],
+                })
+              )
+              .then((f) => props.superstate.reloadContextByPath(source));
+            props.hide();
+            return;
+          }
+          const result = props.saveField(fieldSource, value[0]);
+          if (result) props.hide();
+        },
+        value: [],
+        showAll: true,
+        options: [
+          { name: i18n.labels.all, value: "all", icon: "ui//plus" },
+          menuSeparator,
+          ...existingProps.map((f, i) => ({
+            id: i + 1,
+            name: f.name,
+            value: f,
+            icon: stickerForField(f),
+          })),
+        ],
+        placeholder: i18n.labels.existingFrontmatter,
+      },
+      windowFromDocument(e.view.document)
+    );
+  };
+
   return (
     <div className="mk-menu-container">
       <div className="mk-menu-suggestions">
@@ -168,7 +247,18 @@ const NewPropertyMenuComponent = (
             onMouseDown={(e) => e.stopPropagation()}
             value={fieldName}
           />
+          {fieldSource != "$fm" && (
+            <button
+              aria-label={i18n.labels.existingFrontmatter}
+              className="mk-toolbar-button"
+              onClick={(e) => addExistingProperty(e)}
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker("ui//import"),
+              }}
+            ></button>
+          )}
         </div>
+
         <div className="mk-menu-separator"></div>
         {options.length > 1 && (
           <div className="mk-menu-option" onClick={(e) => selectSource(e)}>
@@ -179,14 +269,15 @@ const NewPropertyMenuComponent = (
               {fieldSource == "$fm"
                 ? "None"
                 : fieldSource == ""
-                ? props.contextPath
-                : fieldSource}
+                ? props.superstate.spacesIndex.get(props.contextPath)?.name
+                : props.superstate.spacesIndex.get(fieldSource)?.name}
             </span>
           </div>
         )}
+
         <div className="mk-menu-option" onClick={(e) => selectType(e)}>
           <div className="mk-menu-options-inner">
-            {i18n.labels.propertyValueProperty}
+            {i18n.labels.propertyType}
           </div>
           <span>{type.label}</span>
         </div>

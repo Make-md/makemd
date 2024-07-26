@@ -1,9 +1,7 @@
 import i18n from "core/i18n";
 import { FormulaEditor } from "core/react/components/SpaceEditor/Actions/FormulaEditor";
-import { filePropTypes } from "core/react/components/SpaceView/Contexts/TableView/ColumnHeader";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "core/superstate/superstate";
-import { allCacheTypesForPaths } from "core/utils/properties/allProperties";
 import { spaceNameFromSpacePath } from "core/utils/strings";
 import React, { useMemo } from "react";
 import {
@@ -139,31 +137,7 @@ export const PropertyValueComponent = (props: {
         })) ?? [];
     showOptions(e, null, properties, "field");
   };
-  const selectPathProp = (e: React.MouseEvent) => {
-    const property = props.fields.find((f) => f.name == parsedValue.field);
-    const allPaths = props.superstate.spaceManager.allPaths();
 
-    const fileProps = property
-      ? property.type == "file" || property.type == "link"
-        ? filePropTypes.map((f) => ({
-            name: f.name,
-            value: f.value,
-          }))
-        : props.superstate.contextsIndex
-            .get(
-              parseFieldValue(property.value, "context", props.superstate).space
-            )
-            ?.contextTable?.cols.filter((f) => f.hidden != "true")
-            .map((f) => ({
-              name: f.name,
-              value: f.name,
-            })) ?? []
-      : [];
-    const cacheTypes = allCacheTypesForPaths(props.superstate, allPaths).map(
-      (f) => ({ name: f.name, value: f.name })
-    );
-    showOptions(e, null, [...fileProps, ...cacheTypes], "value");
-  };
   const editFormula = (e: React.MouseEvent) => {
     const _props = {
       superstate: props.superstate,

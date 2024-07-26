@@ -684,16 +684,16 @@ const map = (args: MathNode[], math: any, scope: Map<string, any>) => {
 		: args[0];
 
 	if (Array.isArray(arr)) {
+		
 		return arr.map((f, i) => {
 			scope.set("$current", f);
 			scope.set("$index", i);
 			math.evaluate("current = _current(); index = _index()", scope)
 			const result = args[1].compile().evaluate(scope);
-
 			return result;
 		});
 	}
-	return "";
+	return [];
 }
 map.rawArgs = true;
 

@@ -107,7 +107,7 @@ export const TreeItem = (props: TreeItemProps) => {
   const [pathState, setPathState] = useState<PathState>(
     superstate.pathsIndex.get(data.item.path)
   );
-  const pinType = pathState.linkedSpaces?.some((f) => f == data.space)
+  const pinType = pathState?.linkedSpaces?.some((f) => f == data.space)
     ? PinType.Linked
     : pathState.liveSpaces?.some((f) => f == data.space)
     ? PinType.Live

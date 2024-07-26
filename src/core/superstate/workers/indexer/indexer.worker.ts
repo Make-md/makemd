@@ -16,7 +16,10 @@ const all = {
       })
     
 }
-const runContext = math.create(all)
+const config :math.ConfigOptions = {
+    matrix: "Array"
+}
+const runContext = math.create(all, config)
 runContext.import(formulas, { override: true })
 
 ctx.onmessage = async evt => {
