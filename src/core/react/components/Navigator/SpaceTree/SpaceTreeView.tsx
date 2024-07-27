@@ -314,7 +314,8 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     if (selectedPaths.length <= 1) {
       if (!selectedPaths[0] || selectedPaths[0].item.path != activePath)
         setSelectedPaths([]);
-      if (superstate.settings.revealActiveFile) revealPath(activePath);
+      if (superstate.settings.revealActiveFile && activePath)
+        revealPath(activePath);
     }
     props.superstate.ui.eventsDispatch.addListener(
       "activePathChanged",
@@ -355,7 +356,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     (path: string) => {
       const parentSpaces =
         activeViewSpaces?.filter(
-          (f) => path.startsWith(f?.path) || f?.path == "/"
+          (f) => path?.startsWith(f?.path) || f?.path == "/"
         ) ?? [];
       if (!path || parentSpaces.length == 0) return;
 
@@ -396,7 +397,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
   useEffect(() => {
     const handleRevealPathEvent = (evt: CustomVaultChangeEvent) => {
-      if (evt.detail) revealPath(evt.detail.path);
+      if (evt.detail.path) revealPath(evt.detail.path);
     };
     window.addEventListener(eventTypes.revealPath, handleRevealPathEvent);
     return () => {
