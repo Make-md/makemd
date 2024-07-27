@@ -165,7 +165,8 @@ export const ContextEditorProvider: React.FC<
     let schemas = props.superstate.contextsIndex.get(contextPath)?.schemas;
     if (!schemas)
       schemas = await props.superstate.spaceManager.tablesForSpace(contextPath);
-    if (schemas && !isEqual(schemaTable, schemas)) {
+
+    if (schemas && !isEqual(schemaTable?.rows, schemas)) {
       setSchemaTable(() => ({
         ...defaultSchema,
         rows: schemas,
@@ -234,6 +235,10 @@ export const ContextEditorProvider: React.FC<
       "contextStateUpdated",
       refreshMDB
     );
+    props.superstate.eventsDispatcher.addListener(
+      "spaceStateUpdated",
+      refreshMDB
+    );
 
     props.superstate.eventsDispatcher.addListener(
       "pathStateUpdated",
@@ -243,6 +248,10 @@ export const ContextEditorProvider: React.FC<
     return () => {
       props.superstate.eventsDispatcher.removeListener(
         "contextStateUpdated",
+        refreshMDB
+      );
+      props.superstate.eventsDispatcher.removeListener(
+        "spaceStateUpdated",
         refreshMDB
       );
 

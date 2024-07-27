@@ -39,7 +39,7 @@ const BacklinkItem = (props: {
   useEffect(() => {
     refreshBlock(props.path);
   }, [props.path]);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <>

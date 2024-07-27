@@ -44,6 +44,15 @@ export const showSpaceContextMenu = (
   if (!space) return;
   const menuOptions: SelectOption[] = [];
   menuOptions.push({
+    name: i18n.menu.openFilePane,
+    icon: "ui//go-to-file",
+    onClick: (e) => {
+      superstate.ui.openPath(path.path, true);
+    },
+  });
+  menuOptions.push(menuSeparator);
+
+  menuOptions.push({
     name: "New",
     type: SelectOptionType.Submenu,
     onSubmenu: (offset) => {

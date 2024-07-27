@@ -41,66 +41,64 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
     },
 
     getLeaf(old) {
+      //Patch get leaf to always return root leaf if leaf is a flow block
       return function (newLeaf?: "split", direction?: SplitDirection) {
-        let leaf = old.call(this, newLeaf, direction);
-
+        let leaf : WorkspaceLeaf = old.call(this, newLeaf, direction);
         if (leaf.isFlowBlock) {
+          const currentLeafId = leaf.id
           let foundLeaf = false;
         plugin.app.workspace.iterateLeaves((_leaf) => {
-          //@ts-ignore
-          if (_leaf.flowEditor) {
-            //@ts-ignore
-            _leaf.flowEditor.leaves().forEach((l) => {
-              if (l.id == leaf.id) {
-                foundLeaf = true;
-                leaf = _leaf;
-                return;
-              }
+          if (_leaf.flowEditors && !foundLeaf) {
+            _leaf.flowEditors.forEach((f) => {
+              f.leaves().forEach((l) => {
+                if (l.id == currentLeafId) {
+                  foundLeaf = true;
+                  leaf = _leaf;
+                  return;
+                }
+              })
+              
             })
-            if (foundLeaf) return true;
           }
-          leaf = _leaf
           return;
-
   }, plugin.app.workspace["rootSplit"]!);
-          
         }
         
         return leaf;
       };
     },
-    iterateLeaves(old) {
-      type leafIterator = (item: WorkspaceLeaf) => boolean | void;
-      return function (arg1, arg2) {
-        // Fast exit if desired leaf found
-        if (old.call(this, arg1, arg2)) return true;
+    // iterateLeaves(old) {
+    //   type leafIterator = (item: WorkspaceLeaf) => boolean | void;
+    //   return function (arg1, arg2) {
+    //     // Fast exit if desired leaf found
+    //     if (old.call(this, arg1, arg2)) return true;
 
-        // Handle old/new API parameter swap
-        const cb: leafIterator = (
-          typeof arg1 === "function" ? arg1 : arg2
-        ) as leafIterator;
-        const parent: WorkspaceItem = (
-          typeof arg1 === "function" ? arg2 : arg1
-        ) as WorkspaceItem;
+    //     // Handle old/new API parameter swap
+    //     const cb: leafIterator = (
+    //       typeof arg1 === "function" ? arg1 : arg2
+    //     ) as leafIterator;
+    //     const parent: WorkspaceItem = (
+    //       typeof arg1 === "function" ? arg2 : arg1
+    //     ) as WorkspaceItem;
 
-        if (!parent) return false; // <- during app startup, rootSplit can be null
-        if (layoutChanging) return false; // Don't let HEs close during workspace change
+    //     if (!parent) return false; // <- during app startup, rootSplit can be null
+    //     if (layoutChanging) return false; // Don't let HEs close during workspace change
 
-        // 0.14.x doesn't have WorkspaceContainer; this can just be an instanceof check once 15.x is mandatory:
-        if (
-          parent === plugin.app.workspace.rootSplit ||
-          (WorkspaceContainer && parent instanceof WorkspaceContainer)
-        ) {
-          for (const popover of FlowEditor.popoversForWindow(
-            (parent as WorkspaceContainer).win
-          )) {
-            // Use old API here for compat w/0.14.x
-            if (old.call(this, cb, popover.rootSplit)) return true;
-          }
-        }
-        return false;
-      };
-    },
+    //     // 0.14.x doesn't have WorkspaceContainer; this can just be an instanceof check once 15.x is mandatory:
+    //     if (
+    //       parent === plugin.app.workspace.rootSplit ||
+    //       (WorkspaceContainer && parent instanceof WorkspaceContainer)
+    //     ) {
+    //       for (const popover of FlowEditor.popoversForWindow(
+    //         (parent as WorkspaceContainer).win
+    //       )) {
+    //         // Use old API here for compat w/0.14.x
+    //         if (old.call(this, cb, popover.rootSplit)) return true;
+    //       }
+    //     }
+    //     return false;
+    //   };
+    // },
     openLinkText(old) {
       return function openLinkText(linkText: string, sourcePath: string, newLeaf?: PaneType | boolean, openViewState?: OpenViewState) {
         if (linkText.startsWith('spaces://')) {
@@ -170,32 +168,16 @@ export const patchWorkspaceLeaf = (plugin: MakeMDPlugin) => {
           return top.getRoot === this.getRoot ? top : top.getRoot();
         };
       },
-      onResize(old) {
-        return function () {
-          this.view?.onResize();
-        };
-      },
       setViewState(old) {
         return async function (viewState: ViewState, eState?: unknown) {
           const result = await old.call(this, viewState, eState);
           try {
-            const he = FlowEditor.forLeaf(this);
-            if (he) {
-              if (viewState.type)
-                he.hoverEl.setAttribute(
-                  "data-active-view-type",
-                  viewState.type
-                );
-              const titleEl = he.hoverEl.querySelector(".popover-title");
-              if (titleEl) {
-                titleEl.textContent = this.view?.getDisplayText();
-                if (this.view?.file?.path) {
-                  titleEl.setAttribute("data-path", this.view.file.path);
-                } else {
-                  titleEl.removeAttribute("data-path");
-                }
+            if (this.flowEditors) {
+              for (const he of this.flowEditors) {
+                he.hide();
               }
             }
+            this.flowEditors = [];
           } catch {}
           return result;
         };

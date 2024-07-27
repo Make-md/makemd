@@ -55,7 +55,7 @@ import { convertPathToSpace } from "core/superstate/utils/path";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, Superstate, UIManager } from "makemd-core";
 
 import { mkLogo } from "adapters/obsidian/ui/icons";
-import { patchFilesPlugin, patchWorkspace } from "adapters/obsidian/utils/patches";
+import { patchFilesPlugin, patchWorkspace, patchWorkspaceLeaf } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "utils/parsers";
 import { modifyFlowDom } from "./adapters/obsidian/utils/flow/flow";
 
@@ -505,16 +505,16 @@ loadViews () {
         },
       });
     }
-    this.addCommand({
-      id: "mk-test",
-      name: "Open Test Page",
-      callback: () => {
-        this.testPage()
-      },
-      hotkeys: [
+    // this.addCommand({
+    //   id: "mk-test",
+    //   name: "Open Test Page",
+    //   callback: () => {
+    //     this.testPage()
+    //   },
+    //   hotkeys: [
         
-      ],
-    });
+    //   ],
+    // });
     if (this.superstate.settings.blinkEnabled) {
       this.addCommand({
         id: "mk-blink",
@@ -562,6 +562,7 @@ loadViews () {
   loadFlowEditor() {
 
     patchWorkspace(this);
+    patchWorkspaceLeaf(this);
     document.body.classList.toggle("mk-flow-replace", this.superstate.settings.editorFlow);
     document.body.classList.toggle(
       "mk-flow-" + this.superstate.settings.editorFlowStyle,

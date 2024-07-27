@@ -8,7 +8,7 @@ import { PathState, SpaceState } from "./superstate"
 
 
 
-export const FMMetadataKeys = (settings: MakeMDSettings) => [ settings.fmKeyAlias, settings.fmKeyBanner, settings.fmKeySticker, settings.fmKeyColor, settings.fmKeyBanner, settings.fmKeyBannerOffset]
+export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanner, settings.fmKeySticker, settings.fmKeyColor, settings.fmKeyBanner, settings.fmKeyBannerOffset]
 export type SpaceSort = {
   field: string,
   asc: boolean,

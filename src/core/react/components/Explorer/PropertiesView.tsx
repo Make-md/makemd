@@ -106,7 +106,6 @@ export const PropertiesView = (props: {
       ...(props.superstate.settings.hideFrontmatter
         ? columns.map((f) => f.name)
         : []),
-      ...(props.excludeKeys ?? []),
     ]);
     setValues(
       linkContextRow(

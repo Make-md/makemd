@@ -27,7 +27,7 @@ import {
 import { genId } from "core/utils/uuid";
 
 export interface FlowEditorParent {
-  flowEditor: FlowEditor | null;
+  flowEditors: FlowEditor[] | null;
   containerEl?: HTMLElement;
   view?: View;
   dom?: HTMLElement;
@@ -77,7 +77,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
 
   hideNavBarEl: HTMLElement;
 
-  oldPopover = this.parent?.flowEditor;
+  oldPopover = this.parent?.flowEditors.find((he) => he.id !== this.id);
   document: Document =
     this.targetEl?.ownerDocument ?? window.activeDocument ?? window.document;
 
@@ -275,7 +275,8 @@ export class FlowEditor extends nosuper(HoverPopover) {
     );
 
     if (this.parent) {
-      this.parent.flowEditor = this;
+      if (!this.parent.flowEditors) this.parent.flowEditors = [];
+      this.parent.flowEditors.push(this);
       this.parent.view.addChild(this);
     }
     await this.onShowCallback?.(this);
@@ -349,14 +350,16 @@ export class FlowEditor extends nosuper(HoverPopover) {
     this.shownPos = mouseCoords;
     this.targetEl.replaceChildren(this.hoverEl);
     this.onShow();
-    app.workspace.onLayoutChange();
+    this.plugin.app.workspace.onLayoutChange();
     this.load();
   }
 
   onHide() {
     this.oldPopover = null;
-    if (this.parent?.flowEditor === this) {
-      this.parent.flowEditor = null;
+    if (this.parent?.flowEditors.find((he) => he == this)) {
+      this.parent.flowEditors = this.parent.flowEditors.filter(
+        (he) => he.id !== this.id
+      );
     }
   }
 

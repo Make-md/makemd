@@ -67,6 +67,10 @@ div:not(.mk-flowspace-editor) >
   background: none !important;
 }
 
+.mk-floweditor .view-content .pdf-container {
+  min-height: 600px;
+}
+
 .mk-floweditor-sticker {
   display: inline-block;
   --icon-container-size: 20px;

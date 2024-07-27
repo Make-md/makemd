@@ -26,14 +26,8 @@ export const ContextListContainer = (props: {
   setView?: (view: string) => void;
 }) => {
   const { pathState } = useContext(PathContext);
-  const {
-    predicate,
-    editMode,
-    setEditMode,
-    dbSchema,
-    filteredData,
-    tableData,
-  } = useContext(ContextEditorContext);
+  const { predicate, editMode, setEditMode, dbSchema, tableData } =
+    useContext(ContextEditorContext);
   const { frameSchema } = useContext(FramesMDBContext);
   const [editSection, setEditSection] = useState<ContextListSections>(null);
   const [selectedIndex, setSelectedIndex] = useState<string>(null);

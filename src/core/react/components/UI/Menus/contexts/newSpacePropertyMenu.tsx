@@ -178,6 +178,7 @@ const NewPropertyMenuComponent = (
           !existingCols.some((g) => g.name == f.name) &&
           ![
             ...FMMetadataKeys(props.superstate.settings),
+            props.superstate.settings.fmKeyAlias,
             "tags",
             ...FMSpaceKeys(props.superstate.settings),
           ].some((g) => g == f.name)

@@ -742,6 +742,9 @@ div:not(.mk-flowspace-editor) > .mk-floweditor .cm-content {
 .mk-floweditor .view-content {
   background: none !important;
 }
+.mk-floweditor .view-content .pdf-container {
+  min-height: 600px;
+}
 .mk-floweditor-sticker {
   display: inline-block;
   --icon-container-size: 20px;
@@ -2859,11 +2862,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
 .mk-backlinks {
   padding-top: 8px;
 }
-.mk-path-backlink-title:hover .mk-collapse {
-  opacity: 1;
-}
 .mk-path-backlink-title .mk-collapse {
-  opacity: 0;
   width: 24px !important;
   height: 24px !important;
 }
@@ -2871,7 +2870,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   transform: rotate(90deg);
 }
 .mk-path-backlink-title .mk-collapse.mk-collapsed svg {
-  transform: rotate(-90deg);
+  transform: rotate(0deg);
 }
 .mk-path-backlink-title .mk-collapse:hover {
   background: var(--mk-ui-background-hover) !important;

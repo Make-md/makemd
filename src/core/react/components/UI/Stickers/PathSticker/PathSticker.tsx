@@ -22,6 +22,7 @@ export const PathStickerView = (props: {
     if (!pathState) return;
 
     e.preventDefault();
+    e.stopPropagation();
     const menuOptions: SelectOption[] = [];
     menuOptions.push({
       name: t.buttons.changeIcon,
@@ -59,6 +60,7 @@ export const PathStickerView = (props: {
     return false;
   };
   const triggerStickerMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (pathState?.type == "space") {
       props.superstate.ui.openPalette(
         (_props: { hide: () => void }) => (

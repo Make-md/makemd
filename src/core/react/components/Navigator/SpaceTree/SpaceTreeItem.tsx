@@ -117,6 +117,13 @@ export const TreeItem = (props: TreeItemProps) => {
     () => setPathState(superstate.pathsIndex.get(data.item.path)),
     [data.item.path]
   );
+  const openAuxClick = (e: React.MouseEvent) => {
+    if (e.button == 1) {
+      superstate.ui.openPath(pathState.path, "tab");
+      setActivePath(pathState.path);
+      setSelectedPaths([data]);
+    }
+  };
   const openPathAtTarget = (path: TreeNode, e: React.MouseEvent) => {
     if (e.shiftKey) {
       onSelectRange(path.id as string);
@@ -338,6 +345,7 @@ export const TreeItem = (props: TreeItemProps) => {
         onMouseLeave={mouseOut}
         onMouseEnter={hoverItem}
         onKeyDown={onKeyDown}
+        onAuxClick={openAuxClick}
         onClick={(e) => openPathAtTarget(data, e)}
         onContextMenu={(e) => handleRightClick(e)}
         {...dropProps}

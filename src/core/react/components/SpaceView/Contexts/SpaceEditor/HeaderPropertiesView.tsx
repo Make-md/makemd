@@ -384,6 +384,10 @@ export const HeaderPropertiesView = (props: {
   const toggleCollapsed = () => {
     startTransition(() => setCollapsed((f) => !f));
   };
+  const excludedKeys = [
+    ...FMMetadataKeys(props.superstate.settings),
+    ...FMSpaceKeys(props.superstate.settings),
+  ];
   return (
     <div className="mk-props-contexts">
       {!readMode && props.collapseSpaces && (
@@ -529,9 +533,8 @@ export const HeaderPropertiesView = (props: {
             force={true}
             compactMode={false}
             excludeKeys={[
-              ...FMMetadataKeys(props.superstate.settings),
-              "tags",
-              ...FMSpaceKeys(props.superstate.settings),
+              ...excludedKeys,
+              props.superstate.settings.fmKeyAlias,
             ]}
             editable={true}
           ></PropertiesView>
@@ -562,6 +565,16 @@ export const HeaderPropertiesView = (props: {
             )}
           </div>
         </div>
+      )}
+      {excludedKeys.length > 0 && (
+        <style>
+          {`${excludedKeys
+            .map((f) => `.metadata-property[data-property-key="${f}"]`)
+            .join(", ")}
+      {
+         display: none;
+      }`}
+        </style>
       )}
     </div>
   );

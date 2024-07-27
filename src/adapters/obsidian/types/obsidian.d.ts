@@ -1,5 +1,5 @@
 import { EditorView } from "@codemirror/view";
-import { FlowEditorParent } from "adapters/obsidian/ui/editors/FlowEditor";
+import { FlowEditor, FlowEditorParent } from "adapters/obsidian/ui/editors/FlowEditor";
 
 declare module "obsidian" {
   export enum PopoverState {
@@ -126,12 +126,15 @@ declare module "obsidian" {
     children: any[];
   }
   interface WorkspaceLeaf {
+    id: string;
     containerEl: HTMLElement;
     tabHeaderInnerTitleEl: HTMLElement;
     tabHeaderInnerIconEl: HTMLElement;
     history: {
       backHistory: any[];
     };
+    isFlowBlock?: boolean;
+    flowEditors?: FlowEditor[];
   }
   interface Editor {
     cm: EditorView;

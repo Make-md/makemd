@@ -190,12 +190,6 @@ export const TableView = (props: { superstate: Superstate }) => {
     }
   };
 
-  const toggleFlow = (path: string) => {
-    setOpenFlows((f) =>
-      f.find((p) => p == path) ? f.filter((p) => p != path) : uniq([...f, path])
-    );
-  };
-
   const selectItem = (modifier: PointerModifiers, index: string) => {
     if (modifier.metaKey) {
       props.superstate.ui.openPath(

@@ -149,7 +149,7 @@ class T {
         newView: "New View",
         calendarView: "Calendar View",
         dayView: "Day View",
-        closeSpace: "Close Space",
+        closeSpace: "Close Space in Focus",
         customView: "Custom View",
         detailsView: "Details View",
         catalogView: "Catalog View",
@@ -774,7 +774,7 @@ class T {
         },
         hideFrontmatter: {
           name: "Hide Context Properties",
-          desc: "Hide properties you have addeed in context from the Obsidian properties panel",
+          desc: "Hide properties you have added in context from the Obsidian properties panel",
         },
         openFileContext: {
           name: "Auto Open Explorer",
