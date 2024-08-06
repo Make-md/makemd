@@ -9,11 +9,13 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import classNames from "classnames";
 import { MenuObject, calculateBoundsBasedOnPosition } from "core/utils/ui/menu";
 import { isPhone } from "core/utils/ui/screen";
 import { UIManager } from "makemd-core";
 import React, { cloneElement, useEffect } from "react";
 import { Anchors, Rect } from "types/Pos";
+import { MobileDrawer } from "../Drawer";
 
 export const MenuWrapper = (props: {
   rect: Rect;
@@ -145,10 +147,15 @@ export const showMenu = (props: {
   fc: JSX.Element;
   props?: any;
   onHide?: () => void;
+  onSubmenu?: (
+    openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
+  ) => MenuObject;
+  className?: string;
+  force?: boolean;
 }): MenuObject => {
   const portalElement = props.win.document.createElement("div");
-
-  if (isPhone(props.ui)) {
+  const isDrawer = isPhone(props.ui) && !props.force;
+  if (isDrawer) {
     portalElement.classList.add("mk-menu-mobile");
   } else {
     portalElement.classList.add("mk-menu");
@@ -156,10 +163,13 @@ export const showMenu = (props: {
 
   props.win.document.body.appendChild(portalElement);
 
+  let submenu: MenuObject = null;
+
   const hideFunction = () => {
     let hasBeenCalled = false;
     return (supress: boolean) => {
       if (props.onHide && !supress) props.onHide();
+      if (submenu) submenu.hide(true);
       if (hasBeenCalled) return;
       hasBeenCalled = true;
       setTimeout(() => {
@@ -172,6 +182,17 @@ export const showMenu = (props: {
 
   const root = props.ui.createRoot(portalElement);
   const updateRoot = (newProps: any) => {
+    if (isDrawer) {
+      root.render(
+        <MobileDrawer
+          fc={props.fc}
+          hide={(supress?: boolean) => hide(supress)}
+          newProps={newProps}
+          className={classNames("mk-drawer-menu", props.className)}
+        ></MobileDrawer>
+      );
+      return;
+    }
     root.render(
       <MenuWrapper
         rect={props.rect}
@@ -181,22 +202,32 @@ export const showMenu = (props: {
       >
         {cloneElement(props.fc, {
           hide: (supress?: boolean) => hide(supress),
+          onSubmenu: (
+            openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
+          ) => {
+            const menu = openSubmenu(props.rect, () => {
+              if (props.onHide) {
+                props.onHide();
+              }
+              hide(true);
+            });
+            if (submenu) {
+              submenu.hide(true);
+            }
+            submenu = menu;
+          },
           ...newProps,
         })}
       </MenuWrapper>
     );
   };
+
   updateRoot(props.props);
-  if (isPhone(props.ui)) {
-    portalElement.style.position = "absolute";
-    portalElement.style.top = `0px`;
-    portalElement.style.left = `0px`;
-    portalElement.style.width = `100%`;
-    portalElement.style.height = `100%`;
-  } else {
+  if (!isDrawer) {
     portalElement.style.position = "absolute";
     portalElement.style.left = `${props.rect.x}px`;
     portalElement.style.top = `${props.rect.y}px`;
+
     const resizeObserver = new ResizeObserver((entries) => {
       const newPos = calculateBoundsBasedOnPosition(
         props.rect,
@@ -209,6 +240,7 @@ export const showMenu = (props: {
       );
       portalElement.style.left = `${newPos.x}px`;
       portalElement.style.top = `${newPos.y}px`;
+
       // portalElement.style.height = `${newPos.height}px`;
       // portalElement.style.height = `${newPos.height}px`;
       // portalElement.style.width = `${newPos.width}px`;
@@ -217,6 +249,9 @@ export const showMenu = (props: {
     // start observing a DOM node
     resizeObserver.observe(portalElement);
     // Ensure the portalElement stays within the window
-    return { update: updateRoot, hide: hide } as MenuObject;
+    return {
+      update: updateRoot,
+      hide: hide,
+    } as MenuObject;
   }
 };

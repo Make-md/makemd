@@ -194,7 +194,6 @@ export class SpacesCommandsAdapter implements CLIAdapter {
     public commandForAction (action: string) {
         if (!action) return null;
         const uri = parseURI(action);
-
         if (uri.authority == '$api') {
             return this.apiCommands[uri.path]?.[uri.ref]
         } else if (uri.authority == '$actions') {
@@ -207,6 +206,7 @@ export class SpacesCommandsAdapter implements CLIAdapter {
     public runCommand (action: string, instance: ActionInstance) {
         
         const command = this.commandForAction(action);
+        console.log(command)
         let result;
         let error
         try {

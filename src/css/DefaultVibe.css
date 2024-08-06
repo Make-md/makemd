@@ -32,7 +32,7 @@ body {
     --mk-ui-background-menu: var(--background-secondary);
     --mk-ui-background-menu-input: var(--background-modifier-form-field);
     --mk-ui-background-menu-hover: var(--background-modifier-hover);
-
+--mk-ui-background-input: var(--background-modifier-form-field);
     --mk-ui-text-primary: var(--text-normal);
     --mk-ui-text-secondary: var(--text-muted);
     --mk-ui-text-tertiary: var(--text-faint);

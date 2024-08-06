@@ -48,19 +48,16 @@ export const ListSelector = (props: {
       onClick: (e) => {
         props.superstate.ui.openModal(
           i18n.labels.renameView,
-          (props: { hide: () => void }) => (
-            <InputModal
-              value={_schema.name}
-              saveLabel={i18n.labels.renameView}
-              hide={props.hide}
-              saveValue={(value) =>
-                saveSchema({
-                  ..._schema,
-                  name: value,
-                })
-              }
-            ></InputModal>
-          ),
+          <InputModal
+            value={_schema.name}
+            saveLabel={i18n.labels.renameView}
+            saveValue={(value) =>
+              saveSchema({
+                ..._schema,
+                name: value,
+              })
+            }
+          ></InputModal>,
           windowFromDocument(e.view.document)
         );
       },
@@ -100,27 +97,24 @@ export const ListSelector = (props: {
   const showSaveViewModal = (e: React.MouseEvent) => {
     props.superstate.ui.openModal(
       i18n.labels.saveView,
-      (props: { hide: () => void }) => (
-        <InputModal
-          value=""
-          saveLabel={i18n.labels.saveView}
-          hide={props.hide}
-          saveValue={(value) => {
-            const newSchema = {
-              ...(schema ?? {
-                name: dbSchema.name,
-                def: {
-                  db: dbSchema.id,
-                },
-                type: "view",
-              }),
-              id: value.replace(/ /g, "_"),
-              name: value,
-            };
-            saveSchema(newSchema).then((f) => selectView(newSchema.id));
-          }}
-        ></InputModal>
-      ),
+      <InputModal
+        value=""
+        saveLabel={i18n.labels.saveView}
+        saveValue={(value) => {
+          const newSchema = {
+            ...(schema ?? {
+              name: dbSchema.name,
+              def: {
+                db: dbSchema.id,
+              },
+              type: "view",
+            }),
+            id: value.replace(/ /g, "_"),
+            name: value,
+          };
+          saveSchema(newSchema).then((f) => selectView(newSchema.id));
+        }}
+      ></InputModal>,
       windowFromDocument(e.view.document)
     );
   };

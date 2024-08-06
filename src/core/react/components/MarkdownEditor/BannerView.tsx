@@ -20,10 +20,14 @@ import { windowFromDocument } from "utils/dom";
 import { InputModifier } from "../SpaceView/Frames/Setters/StepSetter";
 import { SelectOption, defaultMenu } from "../UI/Menus/menu/SelectionMenu";
 
-export const BannerView = (props: { superstate: Superstate }) => {
+export const BannerView = (props: {
+  superstate: Superstate;
+  reposition?: boolean;
+  setReposition?: React.Dispatch<React.SetStateAction<boolean>>;
+}) => {
   const [hasSticker, setHasSticker] = useState(false);
   const { pathState } = useContext(PathContext);
-  const [repositionMode, setRepositionMode] = useState(false);
+
   const [banner, setBanner] = useState<URI>(
     props.superstate.spaceManager.uriByString(
       pathState?.metadata.property?.[props.superstate.settings.fmKeyBanner]
@@ -58,15 +62,12 @@ export const BannerView = (props: { superstate: Superstate }) => {
   );
   const changeCover = (ev: React.MouseEvent) => {
     props.superstate.ui.openPalette(
-      (_props: { hide: () => void }) => (
-        <ImageModal
-          superstate={props.superstate}
-          hide={_props.hide}
-          selectedPath={(image) =>
-            savePathBanner(props.superstate, pathState.path, image)
-          }
-        ></ImageModal>
-      ),
+      <ImageModal
+        superstate={props.superstate}
+        selectedPath={(image) =>
+          savePathBanner(props.superstate, pathState.path, image)
+        }
+      ></ImageModal>,
       windowFromDocument(ev.view.document)
     );
   };
@@ -182,7 +183,7 @@ export const BannerView = (props: { superstate: Superstate }) => {
 
   const handleDown = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
-      if (!repositionMode) return;
+      if (!props.reposition) return;
       startValue.current = offset == "center" ? 50 : parseFloat(offset);
 
       setStartPos([e.clientX, e.clientY]);
@@ -191,7 +192,7 @@ export const BannerView = (props: { superstate: Superstate }) => {
       document.addEventListener("mouseup", handleMoveEnd);
       e.stopPropagation();
     },
-    [handleMove, handleMoveEnd, offset, repositionMode]
+    [handleMove, handleMoveEnd, offset, props.reposition]
   );
 
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -235,53 +236,55 @@ export const BannerView = (props: { superstate: Superstate }) => {
                 : banner.fullPath
             }")`,
             backgroundPositionY: offset,
-            cursor: repositionMode ? "grab" : "inherit",
+            cursor: props.reposition ? "grab" : "inherit",
           } as React.CSSProperties
         }
         onMouseDown={handleDown}
       ></div>
-      <div className="mk-space-banner-buttons">
-        {repositionMode ? (
-          <button
-            className="mk-hover-button"
-            onClick={() => setRepositionMode(false)}
-          >
+      {props.setReposition && (
+        <div className="mk-space-banner-buttons">
+          {props.reposition ? (
+            <button
+              className="mk-hover-button"
+              onClick={() => props.setReposition(false)}
+            >
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//check"),
+                }}
+              ></div>
+              {i18n.labels.done}
+            </button>
+          ) : (
+            <button
+              className="mk-hover-button"
+              onClick={() => props.setReposition(true)}
+            >
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//move"),
+                }}
+              ></div>
+              {i18n.labels.reposition}
+            </button>
+          )}
+          <button className="mk-hover-button" onClick={(e) => changeCover(e)}>
             <div
               dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//check"),
+                __html: props.superstate.ui.getSticker("ui//edit"),
               }}
             ></div>
-            {i18n.labels.done}
+            {i18n.labels.changeCoverShort}
           </button>
-        ) : (
           <button
             className="mk-hover-button"
-            onClick={() => setRepositionMode(true)}
-          >
-            <div
-              dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//move"),
-              }}
-            ></div>
-            {i18n.labels.reposition}
-          </button>
-        )}
-        <button className="mk-hover-button" onClick={(e) => changeCover(e)}>
-          <div
             dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//edit"),
+              __html: props.superstate.ui.getSticker("ui//options"),
             }}
-          ></div>
-          {i18n.labels.changeCoverShort}
-        </button>
-        <button
-          className="mk-hover-button"
-          dangerouslySetInnerHTML={{
-            __html: props.superstate.ui.getSticker("ui//options"),
-          }}
-          onClick={(e) => triggerBannerContextMenu(e)}
-        ></button>
-      </div>
+            onClick={(e) => triggerBannerContextMenu(e)}
+          ></button>
+        </div>
+      )}
       <div
         className={`mk-spacer`}
         style={

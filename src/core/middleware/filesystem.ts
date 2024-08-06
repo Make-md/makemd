@@ -14,7 +14,9 @@ export interface FileSystemEventTypes extends EventTypeToPayload {
     "onRename": { file: AFile, oldPath: string},
     "onModified": { file: AFile },
     "onDelete": { file: AFile },
+    "onSpaceUpdated": { path: string, type: string },
     "onCacheUpdated": { path: string },
+    "onFocusesUpdated": null,
     "onFilesystemIndexed": null,
 }
 
@@ -36,7 +38,7 @@ export abstract class FileSystemAdapter {
     public writeBinaryToFile: (path: string, buffer: ArrayBuffer) => Promise<void>;
     public readBinaryToFile: (path: string) => Promise<ArrayBuffer>;
     public updateFileLabel: (path: string, key: string, value: any) => void;
-    public renameFile: (path: string, newPath: string) => Promise<void>;
+    public renameFile: (path: string, newPath: string) => Promise<string>;
     public createFolder: (path: string) => Promise<AFile>
     public fileExists: (path: string) => Promise<boolean>
     public childrenForFolder: (path: string, type?: string) => Promise<string[]>
@@ -218,6 +220,14 @@ export class FilesystemMiddleware {
 
     public onDelete (file: AFile) {
         this.eventDispatch.dispatchEvent("onDelete", { file })
+    }
+
+    public onSpaceUpdated (path: string, type: string) {
+        this.eventDispatch.dispatchEvent("onSpaceUpdated", { path, type })
+    }
+
+    public onFocusesUpdated () {
+        this.eventDispatch.dispatchEvent("onFocusesUpdated", null)
     }
 
     public adapterForPath (path?: string) {

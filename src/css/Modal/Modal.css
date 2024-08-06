@@ -90,7 +90,7 @@
     top: 80px;
     width: 700px;
     max-width: 80vw;
-    max-height: 70vh;
+    height: 70vh;
     overflow: hidden;
     position: absolute;
 }
@@ -121,15 +121,19 @@
     top: 0;
     height: calc(var(--mobile-height) - var(--prompt-top) - var(--prompt-bottom));
 }
-.mk-modal-wrapper-mobile {
-    position: absolute;
-    z-index: var(--layer-menu);
-    background-color: var(--mk-ui-background-overlay);
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-}
+.is-phone .mk-palette-search {
+    background: var(--mk-ui-background-input);
+    border-radius: 8px;
+    border-bottom: none;
+  padding: 8px;
+  margin: 8px;
+  display: flex;
+  }
+  .mk-palette-search input {
+    border:none;
+    background: none;
+  }
+
 .mk-modal-wrapper {
     padding: 0;
     -webkit-app-region: no-drag;
@@ -150,6 +154,42 @@
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.mk-modal-message {
+  text-overflow: ellipsis;
+  width: 100%;
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+
+.mk-modal-contents {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.mk-modal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--mk-ui-background);
+  box-shadow: var(--mk-shadow-card);
+}
+
+
+.mk-modal-description {
+    font-size: var(--font-ui-small);
+    color: var(--mk-ui-text-secondary);
+}
+
+.mk-modal-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .mk-tab-group {

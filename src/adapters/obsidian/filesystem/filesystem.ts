@@ -12,6 +12,8 @@ import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 import { LocalCachePersister } from "core/middleware/types/persister";
 
 import { MobileCachePersister } from "adapters/mdb/localCache/localCacheMobile";
+import { DEFAULT_SETTINGS } from "core/schemas/settings";
+import { defaultFocusFile } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
 import { parsePathState } from "core/utils/superstate/parser";
 import { DBRows, DBTables } from "types/mdb";
 import { uniqueNameFromString } from "utils/array";
@@ -22,7 +24,7 @@ import { getAllFrontmatterKeys } from "../filetypes/frontmatter/fm";
 import { getAbstractFileAtPath, getAllAbstractFilesInVault, tFileToAFile } from "../utils/file";
 
 
-
+const illegalCharacters = ['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>'];
 
 export class ObsidianFileSystem implements FileSystemAdapter {
     public middleware: FilesystemMiddleware;
@@ -33,6 +35,9 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public cache: Map<string, FileCache> = new Map();
     private vaultQueue = Promise.resolve();
     public persister: LocalCachePersister;
+    public pathLastUpdated: Map<string, number> = new Map();
+
+    public fileNameWarnings: Set<string> = new Set();
     public addToVaultQueue(operation: () => Promise<any>) {
         //Simple queue (FIFO) for processing context changes
         this.vaultQueue = this.vaultQueue.then(operation).catch(() => {
@@ -99,6 +104,15 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public spacesDBPath  = normalizePath(
     this.plugin.app.vault.configDir + "/plugins/make-md/Spaces.mdb"
   );
+  public checkIllegalCharacters (file: {name: string, path: string}) {
+    if (illegalCharacters.some(f => file.name.includes(f)))
+    {
+            this.fileNameWarnings.add(file.path);
+        } else {
+            this.fileNameWarnings.delete(file.path);
+        }
+
+  }
     public async loadCacheFromObsidianCache () {
         //Load Spaces Database File
         await this.persister.initialize();
@@ -125,14 +139,17 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.vaultDBLoaded = true;
         await rebuildIndex(this, this.plugin, true);
 
-        const allPaths = await this.persister.loadAll('file')
+        const allPaths = await this.persister.loadAll('file');
+        this.fileNameWarnings = new Set();
         // this.persister.reset();
         this.vaultDBCache.forEach(f => {
             const file = tFileToAFile(getAbstractFileAtPath(this.plugin.app, f.path))
-            if (file.path == '/') {
+            if (file?.path == '/') {
                 file.name = this.plugin.app.vault.getName()
                 f.name = this.plugin.app.vault.getName()
             }
+            this.checkIllegalCharacters(file);
+            
             let cache : Partial<FileCache> = {
                 metadata: {},
                 tags: [],
@@ -142,9 +159,10 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                 if (h)
                 cache = {...cache, ...parsePathState(h.cache)}
                 if (file)
-                cache = {...cache,
+                {
+                    cache = {...cache,
                     file: file,
-                    ctime: file.ctime,
+                    ctime: cache.ctime > 0 ? cache.ctime : file.ctime,
                     contentTypes: file.isFolder ? [] : ['md', 'canvas', 'folder'],
                     label: {name: file.name, 
                          thumbnail: cache.label.thumbnail, 
@@ -156,6 +174,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                     type: file.isFolder ? "space" : 'file',
                     subtype: file.isFolder ? "folder" : file.extension
                 }
+            }
                 this.updateFileCache(f.path, cache, false)
         })
         const start = Date.now();
@@ -167,8 +186,36 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.plugin.registerEvent(this.plugin.app.vault.on("modify", this.onModify));
         this.plugin.registerEvent(this.plugin.app.vault.on("delete", this.onDelete));
         this.plugin.registerEvent(this.plugin.app.vault.on("rename", this.onRename));
+        this.plugin.registerEvent(this.plugin.app.vault.on("raw", this.onRaw));
         this.plugin.superstate.initialize();
       }
+        public onRaw = async (path: string) => {
+            
+            const fileStat = await this.plugin.app.vault.adapter.stat(path);
+            if (!fileStat) return;
+            const currentMTime = this.pathLastUpdated.get(path) ?? 0;
+            const needsUpdate = fileStat.mtime > currentMTime;
+            
+            if (!needsUpdate) return;
+
+            this.pathLastUpdated.set(path, fileStat.mtime);
+            const parentPath = this.parentPathForPath(path);
+            if (parentPath.split('/').pop() == this.plugin.superstate.settings.spaceSubFolder) {
+                if (path == `${this.plugin.superstate.settings.spaceSubFolder}/${defaultFocusFile}`) {
+                    this.middleware.onFocusesUpdated();
+                    return;
+                }
+                const type = path.split('/').pop();
+                const spacePath = this.parentPathForPath(parentPath);
+                this.middleware.onSpaceUpdated(spacePath, type);
+                return;
+            }
+            
+            if (path == normalizePath(this.plugin.app.vault.configDir + "/plugins/make-md/data.json")) {
+                this.plugin.superstate.settings = Object.assign({}, DEFAULT_SETTINGS, await this.plugin.loadData());
+                this.plugin.superstate.dispatchEvent("settingsChanged", null);
+            } 
+        }
 
       public keysForCacheType (type: string) {
         if (type == 'frontmatter') {
@@ -242,6 +289,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     onCreate = async (file: TAbstractFile) => {
 
         if (!file) return;
+        this.checkIllegalCharacters(file);
         this.addToVaultQueue(async () => {
         const folder = file instanceof TFolder
         const parent = file.parent
@@ -276,6 +324,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
 
         if (!file) return;
 
+        this.fileNameWarnings.delete(file.path);
         this.addToVaultQueue(async () => {
         if (file instanceof TFolder) {
             const newVaultRows = this.vaultDBCache.filter(f => f.path != file.path && !f.parent.startsWith(file.path));
@@ -290,7 +339,8 @@ export class ObsidianFileSystem implements FileSystemAdapter {
       
       onRename = async (file: TAbstractFile, oldPath: string) => {
         if (!file) return;
-       
+        this.checkIllegalCharacters(file);
+        this.fileNameWarnings.delete(oldPath);
         this.addToVaultQueue(async () => {
         if (file instanceof TFolder) {
             const newVaultRows = this.vaultDBCache.map(f => f.path == oldPath ?
@@ -323,7 +373,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
 const oldCache = this.cache.get(oldPath);
     this.cache.set(newFile.path, {...this.cache.get(oldPath), 
         file: newFile, 
-        ctime: newFile.ctime,
+        ctime:  oldCache.ctime > 0 ? oldCache.ctime : newFile.ctime,
         label: {...oldCache.label, name: (file as TFile).basename ?? file.name} as PathLabel, 
         parent: newFile.parent, 
         type: newFile.isFolder ? "space" : 'file',
@@ -421,9 +471,11 @@ return null
 }
 
 public async writeBinaryToFile (path: string, buffer: ArrayBuffer) {
-    return this.plugin.app.vault.adapter.writeBinary(
+    await this.plugin.app.vault.adapter.writeBinary(
         path,
-        buffer)
+        buffer);
+    this.pathLastUpdated.set(path, Date.now());
+    
 }
 
 public async readBinaryToFile (path: string) {
@@ -432,10 +484,20 @@ return (this.plugin.app.vault.adapter as ObsidianFileSystemAdapter).readBinary(p
     
     public async renameFile (path: string, newPath: string) {
 
-            return this.plugin.app.fileManager.renameFile(
-            this.plugin.app.vault.getAbstractFileByPath(path),
-            newPath
-        );
+        const file = this.plugin.app.vault.getAbstractFileByPath(path);
+        
+            let finalPath = newPath;
+            try {
+                if (file) {
+                await this.plugin.app.fileManager.renameFile(file,
+                    newPath)
+                } else {
+                    await this.plugin.app.vault.adapter.rename(path, newPath)
+                }
+            } catch {
+                finalPath = null;
+            }
+            return finalPath
     }
 
     

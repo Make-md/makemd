@@ -71,7 +71,7 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
   };
 
   export const reorderOpenSpace = (superstate: Superstate, path: string, index: number) => {
-    const newWaypoint = superstate.waypoints[
+    const newWaypoint = superstate.focuses[
       superstate.settings.currentWaypoint
     ] ?? { sticker: "", name: "Waypoint", paths: [] };
     const currentIndex = newWaypoint.paths.findIndex(f => f == path);
@@ -79,17 +79,17 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
     newWaypoint.paths = arrayMove(newWaypoint.paths, newWaypoint.paths.findIndex(f => f == path), newIndex);
     if (
       superstate.settings.currentWaypoint >
-      superstate.waypoints.length
+      superstate.focuses.length
     ) {
-      superstate.spaceManager.saveWaypoints([
-        ...superstate.waypoints,
+      superstate.spaceManager.saveFocuses([
+        ...superstate.focuses,
         newWaypoint,
       ]);
     }
-    const newWaypoints = superstate.waypoints.map((f, i) =>
+    const newFocuses = superstate.focuses.map((f, i) =>
       i == superstate.settings.currentWaypoint ? newWaypoint : f
     );
-    superstate.spaceManager.saveWaypoints(newWaypoints);
+    superstate.spaceManager.saveFocuses(newFocuses);
   };
 export const dropPathInSpaceAtIndex = async (superstate: Superstate,
   path: string,

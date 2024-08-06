@@ -12,7 +12,13 @@ import { OptionCellBase } from "./OptionCell";
 
 export const LinkCell = (props: TableCellMultiProp & { source?: string }) => {
   const parseValue = (v: string) =>
-    props.multi ? parseMultiString(v) ?? [] : [v].filter((f) => f);
+    props.multi
+      ? parseMultiString(v) ?? []
+      : [v]
+          .filter((f) => f)
+          .map((f) =>
+            props.superstate.spaceManager.resolvePath(f, props.source)
+          );
   useEffect(() => {
     setValue(parseValue(props.initialValue));
   }, [props.initialValue]);

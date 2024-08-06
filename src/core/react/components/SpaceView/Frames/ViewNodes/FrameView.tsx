@@ -1,5 +1,6 @@
 import { Superstate } from "core/superstate/superstate";
 import { parseStylesToClass } from "core/utils/frames/renderer";
+import { isTouchScreen } from "core/utils/ui/screen";
 import React from "react";
 import {
   FrameExecutable,
@@ -114,12 +115,12 @@ export const FrameView = (props: {
           }
         }}
         onClick={(e) => {
-          if (e.detail === 1) {
+          if (e.detail === 2 || isTouchScreen(props.superstate.ui)) {
             if (
-              typeof props.instance.state[props.treeNode.id].actions?.onClick ==
-              "function"
+              typeof props.instance.state[props.treeNode.id].actions
+                ?.onDoubleClick == "function"
             ) {
-              props.instance.state[props.treeNode.id].actions?.onClick(
+              props.instance.state[props.treeNode.id].actions?.onDoubleClick(
                 e,
                 null,
                 props.instance.state,
@@ -127,13 +128,15 @@ export const FrameView = (props: {
                 props.superstate.api
               );
               e.stopPropagation();
+              return;
             }
-          } else if (e.detail === 2) {
+          }
+          if (e.detail === 1) {
             if (
-              typeof props.instance.state[props.treeNode.id].actions
-                ?.onDoubleClick == "function"
+              typeof props.instance.state[props.treeNode.id].actions?.onClick ==
+              "function"
             ) {
-              props.instance.state[props.treeNode.id].actions?.onDoubleClick(
+              props.instance.state[props.treeNode.id].actions?.onClick(
                 e,
                 null,
                 props.instance.state,

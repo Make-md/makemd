@@ -3,12 +3,14 @@ import { FILE_TREE_VIEW_TYPE } from "adapters/obsidian/ui/navigator/NavigatorVie
 import MakeMDPlugin from "main";
 import { around } from "monkey-around";
 import {
-  EphemeralState, OpenViewState, PaneType, SplitDirection, ViewState,
+  EphemeralState, OpenViewState, PaneType,
+  ViewState,
   Workspace,
   WorkspaceContainer,
   WorkspaceItem,
   WorkspaceLeaf
 } from "obsidian";
+import { EVER_VIEW_TYPE } from "../ui/navigator/EverLeafView";
 
 export const patchFilesPlugin = (plugin: MakeMDPlugin) => {
   plugin.register(
@@ -42,8 +44,16 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
 
     getLeaf(old) {
       //Patch get leaf to always return root leaf if leaf is a flow block
-      return function (newLeaf?: "split", direction?: SplitDirection) {
-        let leaf : WorkspaceLeaf = old.call(this, newLeaf, direction);
+      return function (newLeaf?: PaneType | boolean) {
+        
+        let leaf : WorkspaceLeaf = old.call(this, newLeaf);
+        
+        if (leaf.view.getViewType() == EVER_VIEW_TYPE) {
+          if (leaf.getContainer() == plugin.app.workspace.rootSplit) {
+            leaf = plugin.app.workspace.getLeaf("split")
+            return leaf;
+          }
+        }
         if (leaf.isFlowBlock) {
           const currentLeafId = leaf.id
           let foundLeaf = false;
@@ -141,7 +151,7 @@ if (type.prototype?.getViewType && type.prototype.getViewType() == 'markdown')
       },
     getDropLocation(old) {
       return function getDropLocation(event: MouseEvent) {
-        for (const popover of FlowEditor.activePopovers()) {
+        for (const popover of FlowEditor.activePopovers(plugin.app)) {
           const dropLoc = this.recursiveGetTarget(event, popover.rootSplit);
           if (dropLoc) {
             return dropLoc;

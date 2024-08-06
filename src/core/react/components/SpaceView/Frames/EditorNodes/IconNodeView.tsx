@@ -47,13 +47,10 @@ export const IconNodeView = (props: FrameNodeViewProps) => {
   }, [props.treeNode, selectionMode, frameSelected, selected]);
   const selectIcon = (e: React.MouseEvent) => {
     props.superstate.ui.openPalette(
-      (_props: { hide: () => void }) => (
-        <StickerModal
-          ui={props.superstate.ui}
-          hide={_props.hide}
-          selectedSticker={(emoji) => updateValue(emoji)}
-        />
-      ),
+      <StickerModal
+        ui={props.superstate.ui}
+        selectedSticker={(emoji) => updateValue(emoji)}
+      />,
       windowFromDocument(e.view.document)
     );
   };

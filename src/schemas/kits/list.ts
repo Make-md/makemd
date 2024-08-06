@@ -603,6 +603,149 @@ export const flowListItem: FrameRoot = {
     ],
   }
 
+  export const overviewItem: FrameRoot = {
+    def: {
+      id: 'overviewItem',
+        type: 'listItem'
+    },
+    node: {
+      type: "group",
+      id: "$root",
+      schemaId: "$root",
+      name: "Overview Item",
+      rank: 0,
+      props: {
+        _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
+      },
+      styles: {
+        layout: `"row"`,
+        gap: `'12px'`,
+        padding: `'8px'`,
+        overflow: `'hidden'`,
+        width: `'100%'`,
+        borderBottom: `'thin solid var(--mk-ui-border)'`,
+      },
+      actions: {
+        onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} }); $api.table.open($contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'], false)`,
+        onContextMenu: `$api.table.contextMenu($event, $contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'])`,
+      },
+    },
+    id: "$root",
+    children: [
+      frameRootWithProps(
+        {
+          ...slidesNode,
+          children: [
+            frameRootWithProps(
+              {
+                ...slideNode,
+                children: [
+                  frameRootWithProps(
+                    { ...deltaNode, node: { ...deltaNode.node, ref: "$root" } },
+                    {},
+                    {
+                      background: `'var(--mk-ui-background-selected)'`,
+                    }
+                  ),
+                ],
+              },
+              { value: "true" }
+            ),
+            frameRootWithProps(
+              {
+                ...slideNode,
+                children: [
+                  frameRootWithProps(
+                    { ...deltaNode, node: { ...deltaNode.node, ref: "$root" } },
+                    {},
+                    {
+                      background: `'transparent'`,
+                    }
+                  ),
+                ],
+              },
+              { value: "false" }
+            ),
+          ],
+        },
+        {
+          value: `'_selected'`,
+        }
+      ),
+      {
+        ...groupNode,
+        node: {
+          ...groupNode.node,
+          styles: {
+            gap: `'8px'`,
+            flex: `'1'`,
+            padding: `'2px'`,
+            layout: `'column'`,
+            overflow: `'hidden'`
+          },
+        },
+        children: [
+          frameRootWithProps({...groupNode, children: [
+            frameRootWithProps(
+              iconNode,
+              {
+                value: `$api.path.label($contexts.$context['_keyValue'])?.sticker`,
+              },
+              {
+                width: `'20px'`,
+                height: `'20px'`,
+                padding: `'2px'`,
+                "--icon-size": `'14px'`,
+                borderRadius: `'4px'`,
+                overflow: `'hidden'`,
+                  background: `$api.path.label($contexts.$context['_keyValue'])?.color`,
+    
+              }
+            ),
+            frameRootWithProps(
+              textNode,
+              {
+                value: `$contexts.$context['_name']`,
+              },
+              {
+                "--font-text-size": `'14px'`,
+                "--font-text-weight": `'var(--bold-weight)'`,
+              }
+            ),
+          ]}, {}, {
+            layout: `"row"`,
+            height: `'auto'`,
+            width: `'auto'`,
+            gap: `'4px'`
+
+      }),
+          
+      
+          frameRootWithProps(textNode, {
+            value: `$api.path.label($contexts.$context['_keyValue'])?.preview`,
+          }, {
+            "--font-text-size": `'14px'`,
+            "--font-text-color": `'var(--mk-ui-text-tertiary)'`,
+            "--line-count": '2'
+          }),
+        ],
+      },
+      frameRootWithProps(
+        imageNode,
+        {
+          value: `$api.path.label($contexts.$context['_keyValue'])?.thumbnail`,
+        }, {
+          radius: `'4px'`,
+        width: `'64px'`,
+        height: `'64px'`,
+          borderRadius: `'8px'`,
+          hidden: `($api.path.label($contexts.$context['_keyValue'])?.thumbnail ?? '').length == 0`
+        }
+        
+      ),
+    ],
+  }
+
   export const detailItem: FrameRoot = {
     def: {
       id: 'detailItem',

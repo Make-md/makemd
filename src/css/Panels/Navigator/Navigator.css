@@ -11,6 +11,16 @@ display: flex;
   height: var(--icon-size);
 }
 
+.mk-tree-node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--row-height);
+  transform: translateY(var(--node-offset));
+}
+
+
 .mk-tree-wrapper {
   box-sizing: border-box;
 margin-left: 6px;
@@ -43,15 +53,15 @@ margin-left: 6px;
   transition: transform .2s ease;
 }
 
-.mk-waypoints {
+.mk-focuses {
   position: relative;
   
 }
-.mk-waypoints > .mk-indicator {
+.mk-focuses > .mk-indicator {
   border-radius: 8px;
   outline: 2px solid var(--mk-ui-active);
 }
-.mk-waypoints > .mk-waypoints-item {
+.mk-focuses > .mk-focuses-item {
   transition: transform .2s ease;
 }
 
@@ -132,8 +142,12 @@ opacity: 1;
   gap: 4px;
   flex-grow: 0 !important;
 }
-.mk-tree-new {
+.mk-sidebar:hover .mk-tree-new {
   opacity: .5
+}
+
+body:not(.is-mobile) .mk-tree-new {
+  opacity: 0;
 }
 .mk-tree-item {
   --icon-size: 16px;

@@ -8,17 +8,23 @@ import {
   updatePrimaryAlias,
 } from "core/superstate/utils/label";
 import { renamePathByName } from "core/superstate/utils/path";
-import { savePathIcon } from "core/utils/emoji";
+import { metadataPathForSpace } from "core/superstate/utils/spaces";
+import { PathState } from "core/types/superstate";
+import { removePathIcon, savePathIcon } from "core/utils/emoji";
+import { isPhone } from "core/utils/ui/screen";
 import { i18n } from "makemd-core";
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { windowFromDocument } from "utils/dom";
+import { sanitizeFileName } from "utils/sanitizers";
 import { stringFromTag } from "utils/tags";
+import { defaultMenu, menuSeparator } from "../UI/Menus/menu/SelectionMenu";
 import ImageModal from "../UI/Modals/ImageModal";
 import StickerModal from "../UI/Modals/StickerModal";
 
 export const TitleComponent = (props: {
   superstate: Superstate;
   readOnly: boolean;
+  setReposition: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const { pathState } = useContext(PathContext);
   const { spaceState } = useContext(SpaceContext);
@@ -68,7 +74,20 @@ export const TitleComponent = (props: {
           newValue
         );
       } else {
-        renamePathByName(props.superstate, pathState.path, newValue);
+        const sanitizedName = sanitizeFileName(newValue);
+
+        renamePathByName(props.superstate, pathState.path, sanitizedName).then(
+          (f) => {
+            if (f && sanitizedName != newValue) {
+              updatePrimaryAlias(
+                props.superstate,
+                f,
+                pathState.metadata?.property?.aliases,
+                newValue
+              );
+            }
+          }
+        );
       }
     }
   };
@@ -114,65 +133,137 @@ export const TitleComponent = (props: {
       ?.length > 0;
   const hasBanner =
     pathState?.metadata.property?.[props.superstate.settings.fmKeyBanner];
+  const isMobile = isPhone(props.superstate.ui);
+  const showContextMenu = (e: React.MouseEvent) => {
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const menuOptions = [];
+    if (hasSticker) {
+      menuOptions.push({
+        name: i18n.buttons.changeIcon,
+        icon: "ui//sticker",
+        onClick: (e: React.MouseEvent) =>
+          props.superstate.ui.openPalette(
+            <StickerModal
+              ui={props.superstate.ui}
+              selectedSticker={(emoji) =>
+                savePathIcon(props.superstate, pathState.path, emoji)
+              }
+            />,
+            windowFromDocument(e.view.document)
+          ),
+      });
+      menuOptions.push({
+        name: i18n.buttons.removeIcon,
+        icon: "ui//sticker",
+        onClick: (e: React.MouseEvent) => {
+          removePathIcon(props.superstate, pathState.path);
+        },
+      });
+    } else {
+      menuOptions.push({
+        name: i18n.buttons.addIcon,
+        icon: "ui//sticker",
+        onClick: (e: React.MouseEvent) =>
+          props.superstate.ui.openPalette(
+            <StickerModal
+              ui={props.superstate.ui}
+              selectedSticker={(emoji) =>
+                savePathIcon(props.superstate, pathState.path, emoji)
+              }
+            />,
+            windowFromDocument(e.view.document)
+          ),
+      });
+    }
+
+    menuOptions.push(menuSeparator);
+    if (hasBanner) {
+      menuOptions.push({
+        name: i18n.buttons.changeBanner,
+        icon: "ui//mk-make-image",
+        onClick: (e: React.MouseEvent) =>
+          props.superstate.ui.openPalette(
+            <ImageModal
+              superstate={props.superstate}
+              selectedPath={(image) =>
+                savePathBanner(props.superstate, pathState.path, image)
+              }
+            ></ImageModal>,
+            windowFromDocument(e.view.document)
+          ),
+      });
+      menuOptions.push({
+        name: i18n.labels.reposition,
+        icon: "ui//move",
+        onClick: (e: React.MouseEvent) => props.setReposition((p) => !p),
+      });
+      menuOptions.push({
+        name: i18n.buttons.removeBanner,
+        icon: "ui//file-minus",
+        onClick: (ev: React.MouseEvent) => {
+          if (props.superstate.spacesIndex.has(pathState.path)) {
+            props.superstate.spaceManager.deleteProperty(
+              metadataPathForSpace(
+                props.superstate,
+                props.superstate.spacesIndex.get(pathState.path).space
+              ),
+              props.superstate.settings.fmKeyBanner
+            );
+          }
+          props.superstate.spaceManager.deleteProperty(
+            pathState.path,
+            props.superstate.settings.fmKeyBanner
+          );
+        },
+      });
+    } else {
+      menuOptions.push({
+        name: i18n.buttons.addCover,
+        icon: "ui//mk-make-image",
+        onClick: (e: React.MouseEvent) =>
+          props.superstate.ui.openPalette(
+            <ImageModal
+              superstate={props.superstate}
+              selectedPath={(image) =>
+                savePathBanner(props.superstate, pathState.path, image)
+              }
+            ></ImageModal>,
+            windowFromDocument(e.view.document)
+          ),
+      });
+    }
+    menuOptions.push(menuSeparator);
+    if (!aliasMode) {
+      menuOptions.push({
+        name: "Edit Display Name",
+        icon: "ui//alias",
+        onClick: () => setAliasMode(true),
+      });
+    } else {
+      menuOptions.push({
+        name: "Edit File Name",
+        icon: "ui//alias",
+        onClick: () => setAliasMode(false),
+      });
+    }
+
+    props.superstate.ui.openMenu(
+      rect,
+      defaultMenu(props.superstate.ui, menuOptions),
+      windowFromDocument(e.view.document)
+    );
+  };
   return (
     pathState && (
       <>
-        <div className="mk-header-label-actions">
-          {props.superstate.settings.spacesStickers && !hasSticker && (
-            <button
-              className="mk-inline-button"
-              onClick={(e) =>
-                props.superstate.ui.openPalette(
-                  (_props: { hide: () => void }) => (
-                    <StickerModal
-                      ui={props.superstate.ui}
-                      hide={_props.hide}
-                      selectedSticker={(emoji) =>
-                        savePathIcon(props.superstate, pathState.path, emoji)
-                      }
-                    />
-                  ),
-                  windowFromDocument(e.view.document)
-                )
-              }
-            >
-              <div
-                className="mk-icon-xsmall"
-                dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//smile"),
-                }}
-              ></div>
-              {i18n.buttons.addIcon}
-            </button>
-          )}
-          {!hasBanner && (
-            <button
-              className="mk-inline-button"
-              onClick={(e) =>
-                props.superstate.ui.openPalette(
-                  (_props: { hide: () => void }) => (
-                    <ImageModal
-                      superstate={props.superstate}
-                      hide={_props.hide}
-                      selectedPath={(image) =>
-                        savePathBanner(props.superstate, pathState.path, image)
-                      }
-                    ></ImageModal>
-                  ),
-                  windowFromDocument(e.view.document)
-                )
-              }
-            >
-              <div
-                className="mk-icon-xsmall"
-                dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//mk-make-image"),
-                }}
-              ></div>
-              {i18n.buttons.addCover}
-            </button>
-          )}
-        </div>
+        {!isMobile && (
+          <HeaderLabelActions
+            superstate={props.superstate}
+            pathState={pathState}
+            hasBanner={hasBanner}
+            hasSticker={hasSticker}
+          />
+        )}
         {props.superstate.settings.spacesStickers && hasSticker && (
           <div
             className="mk-header-icon"
@@ -209,17 +300,89 @@ export const TitleComponent = (props: {
             dangerouslySetInnerHTML={{
               __html: name,
             }}
+            data-ph={aliasMode ? i18n.hintText.alias : i18n.hintText.fileName}
           ></div>
-          <button
-            className={classNames("mk-title-alias", aliasMode && "mk-active")}
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//alias"),
-            }}
-            aria-label={i18n.buttons.alias}
-            onClick={() => setAliasMode(!aliasMode)}
-          ></button>
+          {isMobile ? (
+            <div
+              className="mk-toolbar-button"
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker("ui//edit"),
+              }}
+              onClick={(e) => showContextMenu(e)}
+            ></div>
+          ) : (
+            <button
+              className={classNames("mk-title-alias", aliasMode && "mk-active")}
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker("ui//alias"),
+              }}
+              aria-label={i18n.buttons.alias}
+              onClick={() => setAliasMode(!aliasMode)}
+            ></button>
+          )}
         </div>
       </>
     )
+  );
+};
+
+const HeaderLabelActions = (props: {
+  superstate: Superstate;
+  pathState: PathState;
+  hasBanner: boolean;
+  hasSticker: boolean;
+}) => {
+  const { pathState, hasBanner, hasSticker } = props;
+  return (
+    <div className="mk-header-label-actions">
+      {props.superstate.settings.spacesStickers && !hasSticker && (
+        <button
+          className="mk-inline-button"
+          onClick={(e) =>
+            props.superstate.ui.openPalette(
+              <StickerModal
+                ui={props.superstate.ui}
+                selectedSticker={(emoji) =>
+                  savePathIcon(props.superstate, pathState.path, emoji)
+                }
+              />,
+              windowFromDocument(e.view.document)
+            )
+          }
+        >
+          <div
+            className="mk-icon-xsmall"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker("ui//smile"),
+            }}
+          ></div>
+          {i18n.buttons.addIcon}
+        </button>
+      )}
+      {!hasBanner && (
+        <button
+          className="mk-inline-button"
+          onClick={(e) =>
+            props.superstate.ui.openPalette(
+              <ImageModal
+                superstate={props.superstate}
+                selectedPath={(image) =>
+                  savePathBanner(props.superstate, pathState.path, image)
+                }
+              ></ImageModal>,
+              windowFromDocument(e.view.document)
+            )
+          }
+        >
+          <div
+            className="mk-icon-xsmall"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker("ui//mk-make-image"),
+            }}
+          ></div>
+          {i18n.buttons.addCover}
+        </button>
+      )}
+    </div>
   );
 };

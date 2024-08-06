@@ -157,7 +157,6 @@ const getFrameNodesByPath = async (
     node: FrameTreeNode,
     superstate: Superstate, uniqueID = 0, editorProps: FrameEditorProps
   ): Promise<[FrameTreeNode, number]> => {
-
   const [children, lastID] = await node.children.reduce<Promise<[FrameTreeNode[], number]>>(async (f, c) => {
 
     const [nodes, id] = await f;

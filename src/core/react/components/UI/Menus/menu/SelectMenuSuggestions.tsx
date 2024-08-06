@@ -7,6 +7,7 @@ import { Sticker } from "core/react/components/UI/Stickers/Sticker";
 import { PointerModifiers } from "core/types/ui";
 import { MenuObject } from "core/utils/ui/menu";
 import React, { useEffect, useRef, useState } from "react";
+import { Rect } from "types/Pos";
 import { matchAny } from "./concerns/matchers";
 function markIt(name: string, query: string) {
   const regexp = matchAny(query);
@@ -243,7 +244,24 @@ const SelectMenuSuggestions = (props: {
             setValue={item.onValueChange}
           ></SelectMenuInput>
         ) : item.type == SelectOptionType.Custom ? (
-          <item.fragment hide={props.hide} />
+          <item.fragment
+            hide={props.hide}
+            onSubmenu={(
+              openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
+            ) => {
+              if (props.openSubmenu) {
+                const el = props.refs?.current[index].getBoundingClientRect();
+                props.openSubmenu(
+                  openSubmenu(el, () => {
+                    if (props.onHide) {
+                      props.onHide();
+                    }
+                    props.hide();
+                  })
+                );
+              }
+            }}
+          />
         ) : (
           <SelectMenuSuggestionsComponent
             ui={props.ui}

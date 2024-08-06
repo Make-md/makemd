@@ -16,14 +16,11 @@ export const openBlinkModal = (
   onSelect?: (link: string) => void
 ) => {
   superstate.ui.openPalette(
-    (props: { hide: () => void }) => (
-      <BlinkComponent
-        superstate={superstate}
-        hide={props.hide}
-        mode={mode}
-        onSelect={onSelect}
-      ></BlinkComponent>
-    ),
+    <BlinkComponent
+      superstate={superstate}
+      mode={mode}
+      onSelect={onSelect}
+    ></BlinkComponent>,
     win,
     "mk-blink-modal"
   );

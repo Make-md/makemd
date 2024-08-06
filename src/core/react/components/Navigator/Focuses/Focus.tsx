@@ -1,9 +1,11 @@
 import { UniqueIdentifier } from "@dnd-kit/core";
 import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
+import useLongPress from "core/react/hooks/useLongPress";
 import { Superstate } from "core/superstate/superstate";
 import { Focus } from "core/types/focus";
 import React, { forwardRef, useContext, useRef } from "react";
+import { Rect } from "types/Pos";
 import { windowFromDocument } from "utils/dom";
 import { SelectOption, defaultMenu } from "../../UI/Menus/menu/SelectionMenu";
 import { eventToModifier } from "../SpaceTree/SpaceTreeItem";
@@ -17,7 +19,7 @@ export const SortablePinnedSpaceItem = ({
   index,
   ...props
 }: SortablePinnedSpaceItemProps) => {
-  return <PinnedSpace index={index} {...props} />;
+  return <FocusItem index={index} {...props} />;
 };
 
 type PinnedSpaceProps = {
@@ -35,7 +37,7 @@ type PinnedSpaceProps = {
   dragActive?: boolean;
 };
 
-export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
+export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(
   (
     {
       pin,
@@ -52,12 +54,12 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
     },
     ref
   ) => {
-    const innerRef = useRef(null);
+    const innerRef = useRef<HTMLDivElement>(null);
     const {
       activePath: activePath,
-      waypoints,
+      focuses: focuses,
       setEditFocus: setEditFocus,
-      setWaypoints,
+      setFocuses: setFocuses,
       setModifier,
     } = useContext(NavigatorContext);
     const onDragStarted = (e: React.DragEvent<HTMLDivElement>) => {
@@ -65,7 +67,11 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
         dragStart(index);
       }
     };
-
+    const onLongPress = () => {
+      const rect = innerRef.current.getBoundingClientRect();
+      openContextMenu(rect);
+    };
+    useLongPress(innerRef, onLongPress);
     const onDragEnded = (e: React.DragEvent<HTMLDivElement>) => {
       if (dragEnded) {
         dragEnded();
@@ -77,32 +83,38 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
       onDragEnd: onDragEnded,
       onDrop: onDragEnded,
     };
+
+    const openContextMenu = (rect: Rect) => {
+      const menuOptions: SelectOption[] = [
+        {
+          name: "Edit Focus",
+          icon: "ui//edit",
+          onClick: (e) => {
+            setEditFocus(true);
+          },
+        },
+        {
+          name: "Close",
+          icon: "ui//close",
+          value: "close",
+          onClick: () => {
+            setFocuses(focuses.filter((f, i) => i != index));
+            superstate.saveSettings();
+          },
+        },
+      ];
+      superstate.ui.openMenu(
+        rect,
+        defaultMenu(superstate.ui, menuOptions),
+        windowFromDocument(innerRef.current.ownerDocument)
+      );
+    };
     return pin ? (
       <div
         onContextMenu={(e) => {
-          const menuOptions: SelectOption[] = [
-            {
-              name: "Edit Focus",
-              icon: "ui//edit",
-              onClick: (e) => {
-                setEditFocus(true);
-              },
-            },
-            {
-              name: "Close",
-              icon: "ui//close",
-              value: "close",
-              onClick: () => {
-                setWaypoints(waypoints.filter((f, i) => i != index));
-                superstate.saveSettings();
-              },
-            },
-          ];
-          superstate.ui.openMenu(
-            (e.target as HTMLElement).getBoundingClientRect(),
-            defaultMenu(superstate.ui, menuOptions),
-            windowFromDocument(e.view.document)
-          );
+          e.preventDefault();
+          const rect = (e.target as HTMLElement).getBoundingClientRect();
+          openContextMenu(rect);
         }}
         ref={innerRef}
         className="mk-waypoint"
@@ -126,7 +138,7 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
           ref={ref}
           aria-label={pin.name}
           className={classNames(
-            "mk-waypoints-item",
+            "mk-focuses-item",
             "clickable-icon",
             "nav-action-button",
             (superstate.settings.currentWaypoint == index || highlighted) &&
@@ -148,14 +160,14 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
         <div
           ref={ref}
           onClick={(e) => {
-            setWaypoints([
-              ...waypoints,
+            setFocuses([
+              ...focuses,
               { sticker: "ui//spaces", name: "Waypoint", paths: [] },
             ]);
             superstate.saveSettings();
           }}
           className={classNames(
-            "mk-waypoints-item",
+            "mk-focuses-item",
             "clickable-icon",
             "nav-action-button",
             highlighted && "mk-active",
@@ -169,4 +181,4 @@ export const PinnedSpace = forwardRef<HTMLDivElement, PinnedSpaceProps>(
   }
 );
 
-PinnedSpace.displayName = "PinnedSpace";
+FocusItem.displayName = "PinnedSpace";

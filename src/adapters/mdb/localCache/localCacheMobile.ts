@@ -10,6 +10,7 @@ import { LocalCachePersister } from "../../../core/middleware/types/persister";
 /** Simpler wrapper for a file-backed cache for arbitrary metadata. */
 export class MobileCachePersister implements LocalCachePersister {
     public indexVersion = Date.now().toString();
+    private initialized = false;
     private maps : Record<string, Map<string, DBRow>>;
     public constructor( public storageDBPath: string, private mdbAdapter: MDBFileTypeAdapter, private types: string[]) {
 
@@ -37,9 +38,17 @@ export class MobileCachePersister implements LocalCachePersister {
         }
         this.maps = this.types.reduce((p, type) => ({...p, [type]: new Map((selectDB(db, type)?.rows ?? []).map(f => [f.path, f]))}), {});
         db.close();
+        this.initialized = true;
         
     }
+    public unload () {
+        this.initialized = false;
+    }
+    public isInitialized() {
+        return this.initialized;
+    }
 public async reset() {
+    if (!this.initialized) return;
     const db = await this.getDB();
     replaceDB(db, this.types.reduce((acc, type) => ({...acc, [type]: CacheDBSchema}), {}));
             await saveZippedDBFile(this.mdbAdapter, this.storageDBPath, db.export().buffer)
@@ -49,16 +58,19 @@ public async reset() {
 
     /** Store file metadata by path. */
     public async store(path: string, cache: string, type: string): Promise<void> {
+        if (!this.initialized) return;
         this.maps[type].set(path, {path, cache, version: this.indexVersion});
         this.debounceSaveSpaceDatabase(this.maps);
         return;
     }
     public async remove(path: string, type: string): Promise<void> {
+        if (!this.initialized) return;
         this.maps[type].delete(path)
         this.debounceSaveSpaceDatabase(this.maps);
         return;
     }
     public async cleanType (type: string) {
+        if (!this.initialized) return;
         this.maps[type] = new Map( [...this.maps[type]]
             .filter(([k, f]) => f.version == this.indexVersion))
         this.debounceSaveSpaceDatabase(this.maps);
@@ -82,6 +94,7 @@ public async reset() {
 
     /** Obtain a list of all persisted files. */
     public async loadAll(type: string): Promise<DBRow[]> {
+        if (!this.initialized) return [];
         return [...this.maps[type].values()] ?? []
     }
 

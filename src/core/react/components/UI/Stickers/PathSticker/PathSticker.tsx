@@ -29,15 +29,12 @@ export const PathStickerView = (props: {
       icon: "ui//sticker",
       onClick: (e) => {
         props.superstate.ui.openPalette(
-          (_props: { hide: () => void }) => (
-            <StickerModal
-              ui={props.superstate.ui}
-              hide={_props.hide}
-              selectedSticker={(emoji) =>
-                savePathSticker(props.superstate, pathState?.path, emoji)
-              }
-            />
-          ),
+          <StickerModal
+            ui={props.superstate.ui}
+            selectedSticker={(emoji) =>
+              savePathSticker(props.superstate, pathState?.path, emoji)
+            }
+          />,
           windowFromDocument(e.view.document)
         );
       },
@@ -63,30 +60,24 @@ export const PathStickerView = (props: {
     e.stopPropagation();
     if (pathState?.type == "space") {
       props.superstate.ui.openPalette(
-        (_props: { hide: () => void }) => (
-          <StickerModal
-            ui={props.superstate.ui}
-            hide={_props.hide}
-            selectedSticker={(emoji) =>
-              savePathSticker(props.superstate, pathState.path, emoji)
-            }
-          />
-        ),
+        <StickerModal
+          ui={props.superstate.ui}
+          selectedSticker={(emoji) =>
+            savePathSticker(props.superstate, pathState.path, emoji)
+          }
+        />,
         windowFromDocument(e.view.document)
       );
 
       return;
     }
     props.superstate.ui.openPalette(
-      (_props: { hide: () => void }) => (
-        <StickerModal
-          ui={props.superstate.ui}
-          hide={_props.hide}
-          selectedSticker={(emoji) =>
-            savePathSticker(props.superstate, pathState.path, emoji)
-          }
-        />
-      ),
+      <StickerModal
+        ui={props.superstate.ui}
+        selectedSticker={(emoji) =>
+          savePathSticker(props.superstate, pathState.path, emoji)
+        }
+      />,
       windowFromDocument(e.view.document)
     );
   };

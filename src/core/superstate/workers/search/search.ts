@@ -106,6 +106,18 @@ export class Searcher {
             })
             this.busy[workerId] = true;
         }
+        if (job.type == 'fastSearch') {
+            this.message(workerId, {
+                job, 
+                payload:{
+                    query: job.payload.query,
+                    pathsIndex: this.cache.pathsIndex,
+                    count: job.payload.count,
+                }
+            })
+            this.busy[workerId] = true
+        }
+
     
 
 }

@@ -51,13 +51,10 @@ export const ImageCell = (props: TableCellMultiProp) => {
   };
   const showModal = (index: number, e: React.MouseEvent) => {
     props.superstate.ui.openPalette(
-      (_props: { hide: () => void }) => (
-        <ImageModal
-          superstate={props.superstate}
-          hide={_props.hide}
-          selectedPath={(image) => saveValue(index, image)}
-        ></ImageModal>
-      ),
+      <ImageModal
+        superstate={props.superstate}
+        selectedPath={(image) => saveValue(index, image)}
+      ></ImageModal>,
       windowFromDocument(e.view.document)
     );
 

@@ -3,7 +3,7 @@ import { Superstate } from "makemd-core";
 import { uniq } from "utils/array";
 import { renameTag } from "utils/tags";
 
-export const renamePathByName = async (superstate: Superstate, oldPath: string, newName: string) => {
+export const renamePathByName = async (superstate: Superstate, oldPath: string, newName: string) : Promise<string> => {
     if (superstate.spacesIndex.has(oldPath)) {
         const spaceState = superstate.spacesIndex.get(oldPath);
         if (spaceState.type == 'tag') {

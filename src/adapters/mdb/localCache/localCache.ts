@@ -11,12 +11,17 @@ import { LocalCachePersister } from "../../../core/middleware/types/persister";
 /** Simpler wrapper for a file-backed cache for arbitrary metadata. */
 export class LocalStorageCache implements LocalCachePersister {
     public db: Database;
+    private initialized: boolean;
     public indexVersion = Date.now().toString();
     private defaultTables : DBTables;
     public constructor( public storageDBPath: string, private mdbAdapter: MDBFileTypeAdapter, types: string[]) {
         this.defaultTables = types.reduce((acc, type) => ({...acc, [type]: CacheDBSchema}), {})
     }
 
+    public async unload() {
+        this.initialized = false;
+        this.db?.close();
+    }
     public async initialize () {
 
         this.db = await getZippedDB(this.mdbAdapter, await this.mdbAdapter.sqlJS(), this.storageDBPath);
@@ -34,13 +39,19 @@ export class LocalStorageCache implements LocalCachePersister {
         if (tables.length == 0) {
             replaceDB(this.db, this.defaultTables);
         }
+        this.initialized = true;
     }
 
+    public isInitialized() {
+        return this.initialized;
+    }
 public reset() {
+    if (!this.initialized) return;
     replaceDB(this.db, this.defaultTables);
 }
     /** Store file metadata by path. */
     public async store(path: string, cache: string, type: string): Promise<void> {
+        if (!this.initialized) return;
         if (!this.db) return;
 
         await insertIntoDB(this.db, {
@@ -50,12 +61,14 @@ public reset() {
         return;
     }
     public async remove(path: string, type: string): Promise<void> {
+        if (!this.initialized) return;
         if (!this.db) return;
         await deleteFromDB(this.db, type, `path='${sanitizeSQLStatement(path)}'`)
         this.debounceSaveSpaceDatabase();
         return;
     }
     public cleanType (type: string) {
+        if (!this.initialized) return;
         if (!this.db) return;
         deleteFromDB(this.db, type, `version != '${this.indexVersion}'`)
         return;
@@ -70,7 +83,8 @@ public reset() {
 
     /** Obtain a list of all persisted files. */
     public async loadAll(type: string): Promise<DBRow[]> {
-        if (!this.db) return;
+        if (!this.initialized) return [];
+        if (!this.db) return [];
         return selectDB(this.db, type)?.rows ?? []
     }
 

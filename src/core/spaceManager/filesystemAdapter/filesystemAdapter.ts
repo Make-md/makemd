@@ -4,11 +4,11 @@ import { mdbFrameToDBTables } from "core/utils/frames/frame";
 import { FileCache, FilesystemMiddleware } from "core/middleware/filesystem";
 import { AFile, PathLabel } from "core/middleware/types/afile";
 
-import { DefaultFolderNoteMDBTables, DefaultMDBTables } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
+import { DefaultEverViewTables, DefaultFolderNoteMDBTables, DefaultMDBTables } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
-import { parseSpaceMetadata, spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/superstate/utils/spaces";
+import { parseSpaceMetadata } from "core/superstate/utils/spaces";
 import { Focus } from "core/types/focus";
-import { SpaceDefinition, tagsSpacePath } from "core/types/space";
+import { builtinSpacePathPrefix, builtinSpaces, spaceContextsKey, SpaceDefinition, spaceFilterKey, spaceLinksKey, spaceRecursiveKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { executeCode } from "core/utils/frames/runner";
@@ -17,20 +17,20 @@ import { movePath } from "core/utils/uri";
 import { defaultContextDBSchema, defaultContextSchemaID, defaultContextTable, defaultFieldsForContext, defaultFramesTable, defaultTablesForContext, fieldSchema } from "schemas/mdb";
 import { Command, CommandResult, Library } from "types/commands";
 import { Kit } from "types/kits";
-import { DBTables, SpaceInfo, SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from "types/mdb";
+import { DBTables, SpaceInfo, SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "types/mdb";
 import { MDBFrame, MDBFrames } from "types/mframe";
 import { uniqueNameFromString } from "utils/array";
+import { excludePathPredicate } from "utils/hide";
 import { safelyParseJSON } from "utils/parsers";
 import { tagPathToTag } from "utils/tags";
 import { SpaceAdapter, SpaceManager } from "../spaceManager";
 
 
 //Space Adapter that works on a generic filesystem middleware
-const defaultTemplatesFolder = '.space/templates';
-const defaultKitsFolder = '.space/kits';
-const defaultActionsFolder = '.space/actions';
-const defaultWaypointsFile = '.space/waypoints.json';
-const defaultSpaceFolder = '.space'
+const defaultTemplatesFolder = 'templates';
+const defaultKitsFolder = 'kits';
+const defaultActionsFolder = 'actions';
+export const defaultFocusFile = 'waypoints.json';
 
 
 export class FilesystemSpaceAdapter implements SpaceAdapter {
@@ -38,6 +38,8 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         fileSystem.eventDispatch.addListener("onCreate", this.onCreate, 0, this)
         fileSystem.eventDispatch.addListener("onRename", this.onRename, 0, this)
         fileSystem.eventDispatch.addListener("onDelete", this.onDelete, 0, this)
+        fileSystem.eventDispatch.addListener("onFocusesUpdated", this.onFocusesUpdated, 0, this)
+        fileSystem.eventDispatch.addListener("onSpaceUpdated", this.onSpaceUpdated, 0, this)
         fileSystem.eventDispatch.addListener("onCacheUpdated", this.onMetadataChange, 0, this)
 
     }
@@ -49,37 +51,51 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
       this.spaceManager = manager;
     }
 
+    public onFocusesUpdated = () => {
+      this.spaceManager.onFocusesUpdated()
+    }
+
+    public onSpaceUpdated = (payload: {path: string, type: string}) => {
+      if (payload.type == 'views.mdb') {
+        this.spaceManager.onSpaceUpdated(payload.path, 'frame')
+      } else if (payload.type == 'context.mdb') {
+        this.spaceManager.onSpaceUpdated(payload.path, 'context')
+      } else if (payload.type == 'commands.mdb') {
+        this.spaceManager.onSpaceUpdated(payload.path, 'action')
+      }
+    }
+
     public async readTemplates (path: string) : Promise<string[]> {
-      return (await this.childrenForPath(`${path}/.space/templates`)).filter(f => !f.startsWith('.')).map(f => f.split('/').pop())
+      return (await this.childrenForPath(`${path}/${this.spaceManager.superstate.settings.spaceSubFolder}/templates`)).filter(f => !f.startsWith('.')).map(f => f.split('/').pop())
     }
 
     public async saveTemplate (path: string, space: string) {
-      return this.copyPath(path, `${space}/.space/templates`)
+      return this.copyPath(path, `${space}/${this.spaceManager.superstate.settings.spaceSubFolder}/templates`)
     }
     public deleteTemplate (path: string, space: string) {
-      return this.deletePath(`${space}/.space/templates/${path}`)
+      return this.deletePath(`${space}/${this.spaceManager.superstate.settings.spaceSubFolder}/templates/${path}`)
     }
-    public async readWaypoints () : Promise<Focus[]> {
-      if (!await this.fileSystem.fileExists(defaultSpaceFolder)) {
-        await this.fileSystem.createFolder(defaultSpaceFolder)
+    public async readFocuses () : Promise<Focus[]> {
+      if (!await this.fileSystem.fileExists(this.spaceManager.superstate.settings.spaceSubFolder)) {
+        await this.fileSystem.createFolder(this.spaceManager.superstate.settings.spaceSubFolder)
       }
-      if (!await this.fileSystem.fileExists(defaultWaypointsFile)) {
+      if (!await this.fileSystem.fileExists(`${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultFocusFile}`)) {
         return [];
       }
-      return  this.fileSystem.readTextFromFile(defaultWaypointsFile).then(f => ensureArray(safelyParseJSON(f)))
+      return  this.fileSystem.readTextFromFile(`${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultFocusFile}`).then(f => ensureArray(safelyParseJSON(f)))
     }
-    public async saveWaypoints (waypoints: Focus[]) {
-      if (!await this.fileSystem.fileExists(defaultSpaceFolder)) {
-        await this.fileSystem.createFolder(defaultSpaceFolder)
+    public async saveFocuses (focuses: Focus[]) {
+      if (!await this.fileSystem.fileExists(this.spaceManager.superstate.settings.spaceSubFolder)) {
+        await this.fileSystem.createFolder(this.spaceManager.superstate.settings.spaceSubFolder)
       }
-      return this.fileSystem.writeTextToFile(defaultWaypointsFile, JSON.stringify(waypoints))
+      return this.fileSystem.writeTextToFile(`${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultFocusFile}`, JSON.stringify(focuses))
     }
 
     public async readTemplate (name: string) {
-      const g = `${defaultTemplatesFolder}/${name}`;
+      const g = `${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultTemplatesFolder}/${name}`;
       if ( await this.fileSystem.fileExists(g)) {
         return this.fileSystem.readFileFragments({
-          path: g+'/.space/views.mdb',
+          path: `${g}/${this.spaceManager.superstate.settings.spaceSubFolder}/views.mdb`,
           name: 'views',
           filename: 'views.mdb',
           parent: g,
@@ -90,7 +106,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
     
     public async readAllKits () : Promise<Kit[]> {
-      const strings = (await this.childrenForPath(defaultKitsFolder)).map(f => f.split('/').pop());
+      const strings = (await this.childrenForPath(`${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultKitsFolder}`)).map(f => f.split('/').pop());
       const kits = Promise.all(strings.map(async f => {
         const frames = await this.readKitFrames(f);
         return {
@@ -104,7 +120,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
 
     public async readAllTemplates () : Promise<{[key: string]: MDBFrames}> {
-      const strings = (await this.childrenForPath(defaultTemplatesFolder)).map(f => f.split('/').pop());
+      const strings = (await this.childrenForPath(`${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultTemplatesFolder}`)).map(f => f.split('/').pop());
       const templates : {[key: string]: MDBFrames} = {};
       for (const string of strings) {
        const template = await this.readTemplate(string);
@@ -116,10 +132,10 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
     public async readKitFrames (name: string) : Promise<MDBFrames> {
       return this.fileSystem.readFileFragments({
-        path: `${defaultKitsFolder}/${name}/kit.mdb`,
+        path: `${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultKitsFolder}/${name}/kit.mdb`,
         name: 'kit',
         filename: 'kit.mdb',
-        parent: `${defaultKitsFolder}/${name}`,
+        parent: `${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultKitsFolder}/${name}`,
         isFolder: false,
         extension: 'mdb'
       }, 'mdbTables') as Promise<MDBFrames>
@@ -127,10 +143,10 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
     public async saveFrameKit (frames: MDBFrame, name: string) {
       const mdbFile = {
-        path: `${defaultKitsFolder}/${name}/kit.mdb`,
+        path: `${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultKitsFolder}/${name}/kit.mdb`,
         name: 'kit',
         filename: 'kit.mdb',
-        parent: `${defaultKitsFolder}/${name}`,
+        parent: `${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultKitsFolder}/${name}`,
         isFolder: false,
         extension: 'mdb'
       };
@@ -139,11 +155,11 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
     public async saveSpaceTemplate (frames: MDBFrames, name: string) {
       let templateName = name;
-      if (await this.fileSystem.fileExists(defaultTemplatesFolder)) {
-        const paths = await this.childrenForPath(`${defaultTemplatesFolder}/${name}`);
+      if (await this.fileSystem.fileExists(`${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultTemplatesFolder}`)) {
+        const paths = await this.childrenForPath(`${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultTemplatesFolder}/${name}`);
         templateName = uniqueNameFromString(templateName, paths)
       }
-      await this.fileSystem.newFile(`${defaultTemplatesFolder}/${templateName}/.space`, 'view', 'mdb', frames)
+      await this.fileSystem.newFile(`${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultTemplatesFolder}/${templateName}/${this.spaceManager.superstate.settings.spaceSubFolder}`, 'view', 'mdb', frames)
     }
 
     private async onMetadataChange(payload: {path: string}) {
@@ -175,14 +191,15 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
     return this.fileSystem.newFile(parent, name, type, content).then(f => f?.path);
   }
-  public async renamePath (oldPath: string, path: string) {
+  public async renamePath (oldPath: string, path: string) : Promise<string> {
 
     const uri = this.uriByPath(oldPath);
     const newUri = this.uriByPath(path);
     const file = await this.fileSystem.getFile(uri.path);
     if (uri.refStr) {
       const refType = await this.fileSystem.getFileCacheTypeByRefString(file, uri.refStr);
-      return await this.fileSystem.saveFileFragment(file, refType, uri.refStr, () => newUri.refStr);
+      await this.fileSystem.saveFileFragment(file, refType, uri.refStr, () => newUri.refStr);
+      return path;
     }
     return await this.fileSystem.renameFile(oldPath, path);
   }
@@ -213,21 +230,25 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
   public async readPathCache (path: string) : Promise<FileCache> {
     const uri = this.uriByPath(path);
     if (uri.scheme == 'spaces') {
-      if (path.startsWith(tagsSpacePath)) {
-        return {
-          file: null,
-          metadata: null,
-          label: {
-            name: "Tags",
-            sticker: '',
-            color: ''
-          },
-          readOnly: false,
-          type: 'space',
-          parent: '',
-          tags: []
-          } as FileCache
+      if (uri.authority.charAt(0) == '$') {
+      const builtIn = Object.keys(builtinSpaces).find(f => f == uri.authority.slice(1));
+        if (builtIn) {
+          return {
+            file: null,
+            metadata: null,
+            label: {
+              name: builtinSpaces[builtIn].name,
+              sticker: builtinSpaces[builtIn].icon,
+              color: ''
+            },
+            readOnly: false,
+            type: 'space',
+            parent: '',
+            tags: []
+            } as FileCache
+        }
       }
+        
       if (uri.authority.charAt(0) == '#')
       {
         return {
@@ -243,21 +264,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
           tags: [],
           readOnly: false
           } as FileCache
-        } else {
-          return {
-            file: null,
-            metadata: null,
-            label: {
-              name: "Tags",
-              sticker: '',
-              color: ''
-            },
-            type: 'space',
-            parent: '',
-            tags: [],
-            readOnly: false
-            } as FileCache
-        }
+        } 
       }
     
     return this.fileSystem.getFileCache(path)
@@ -308,7 +315,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath)
 
     if (!mdbFile) {
-      const defaultTemplate = this.defaultFrame();
+      const defaultTemplate = this.defaultFrame(path);
       if (Object.keys(defaultTemplate).some(f => f == schema))
       { const defaultTable = defaultTemplate[schema];
       return defaultTable
@@ -320,7 +327,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
   public async readAllFrames (path: string) : Promise<MDBFrames> {
     const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath)
     if (!mdbFile) {
-      return this.defaultFrame();
+      return this.defaultFrame(path);
     }
     return this.fileSystem.readFileFragments(mdbFile, 'mdbTables')
   }
@@ -393,7 +400,12 @@ private defaultDBTablesForContext (spaceInfo: SpaceInfo) {
       },
     };
 }
-  public defaultFrame () {
+  public defaultFrame (path: string) {
+    if (path.startsWith(builtinSpacePathPrefix)) {
+      if (path == builtinSpacePathPrefix + 'overview') {
+        return DefaultEverViewTables
+      }
+    }
     if (this.spaceManager.superstate.settings.defaultSpaceTemplate.length > 0 && this.spaceManager.superstate.templateCache.has(this.spaceManager.superstate.settings.defaultSpaceTemplate)) {
       return this.spaceManager.superstate.templateCache.get(this.spaceManager.superstate.settings.defaultSpaceTemplate)
     }
@@ -414,7 +426,7 @@ private defaultDBTablesForContext (spaceInfo: SpaceInfo) {
   }
 
   public async createDefaultFrames (path: string) {
-const defaultSpaceTemplate = this.defaultFrame();
+const defaultSpaceTemplate = this.defaultFrame(path);
     const dbField : DBTables=  {
           ...mdbFrameToDBTables(defaultSpaceTemplate),
           m_schema: defaultFramesTable,
@@ -479,7 +491,7 @@ const defaultSpaceTemplate = this.defaultFrame();
   public async framesForSpace (path: string) {
     const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath)
     if (!mdbFile) {
-      const frames = this.defaultFrame();
+      const frames = this.defaultFrame(path);
       return Object.values(frames).map(f => f.schema)
     }
     return this.fileSystem.readFileFragments(mdbFile, 'schemas', null)
@@ -573,7 +585,7 @@ const defaultSpaceTemplate = this.defaultFrame();
   }
 
   public async readSystemCommands (): Promise<Library[]> {
-    const strings = (await this.childrenForPath(defaultActionsFolder, 'folder')).map(f => f.split('/').pop());
+    const strings = (await this.childrenForPath(`${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultActionsFolder}`, 'folder')).map(f => f.split('/').pop());
       const kits = Promise.all(strings.map(async f => {
         const frames = await this.readLibraryCommands(f);
         return {
@@ -586,10 +598,10 @@ const defaultSpaceTemplate = this.defaultFrame();
 
   public async readLibraryCommands (name: string) : Promise<Command[]> {
     return this.fileSystem.readFileFragments({
-      path: `${defaultActionsFolder}/${name}/commands.mdb`,
+      path: `${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultActionsFolder}/${name}/commands.mdb`,
       name: 'commands',
       filename: 'commands.mdb',
-      parent: `${defaultKitsFolder}/${name}`,
+      parent: `${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultActionsFolder}/${name}`,
       isFolder: false,
       extension: 'mdb'
     }, 'mdbCommands') as Promise<Command[]>
@@ -598,10 +610,10 @@ const defaultSpaceTemplate = this.defaultFrame();
 
   public async saveSystemCommand (lib: string, command: Command) {
     const mdbFile = {
-      path: `${defaultActionsFolder}/${lib}/commands.mdb`,
+      path: `${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultActionsFolder}/${lib}/commands.mdb`,
       name: 'commands',
       filename: 'commands.mdb',
-      parent: `${defaultActionsFolder}/${lib}`,
+      parent: `${this.spaceManager.superstate.settings.spaceSubFolder}/${defaultActionsFolder}/${lib}`,
       isFolder: false,
       extension: 'mdb'
     };
@@ -673,7 +685,7 @@ const defaultSpaceTemplate = this.defaultFrame();
   public async saveProperties (path: string, properties:  {[key:string]: any}) {
     const file = await this.fileSystem.getFile(path)
 
-    this.fileSystem.saveFileFragment(file, 'property', null, (prev) => ({...prev, ...properties}))
+    return this.fileSystem.saveFileFragment(file, 'property', null, (prev) => ({...prev, ...properties}))
   }
 
   public async readLabel (path: string) {
@@ -749,19 +761,18 @@ const defaultSpaceTemplate = this.defaultFrame();
 
     public allSpaces ()  {
       // if (this.spaceManager.superstate.settings.enableTagSpaces) {
-        
-        const tagSpace = this.spaceManager.spaceInfoForPath(tagsSpacePath);
+        const builtins = Object.keys(builtinSpaces).map(f => this.spaceManager.spaceInfoForPath(`spaces://$${f}`));
       // }
         const getAllTagContextFiles = () : SpaceInfo[] => this.readTags().map(f => fileSystemSpaceInfoFromTag(this.spaceManager, tagPathToTag(f))) as SpaceInfo[] ?? [];
           
           const getAllFolderContextFiles = () => {
-            const folders = this.allPaths(['folder']).filter(f => !f.startsWith(this.spaceManager.superstate.settings.spacesFolder+'/#'))
+            const folders = this.allPaths(['folder']).filter(f => !excludePathPredicate(this.spaceManager.superstate.settings, f) && !f.startsWith(this.spaceManager.superstate.settings.spacesFolder+'/#'))
             
             return folders.map(f => fileSystemSpaceInfoFromFolder(this.spaceManager, f));
           }
           const allTagSpaces = this.spaceManager.superstate.settings.enableDefaultSpaces ? getAllTagContextFiles() : [];
           const allFolders = getAllFolderContextFiles();
-           return [tagSpace, ...allTagSpaces, ...allFolders]
+           return [...builtins, ...allTagSpaces, ...allFolders]
     }
 
     public readTags () {
@@ -834,12 +845,13 @@ const defaultSpaceTemplate = this.defaultFrame();
       }
       await this.fileSystem.saveFileFragment(defFile, "property", null, (frontmatter) => ({
         ...frontmatter,
-        [spaceFilterKey(this.spaceManager.superstate.settings)] : metadata.filters,
-        [spaceContextsKey(this.spaceManager.superstate.settings)] : metadata.contexts,
-        [spaceLinksKey(this.spaceManager.superstate.settings)] : metadata.links,
-        [spaceSortKey(this.spaceManager.superstate.settings)] : metadata.sort,
-        [spaceTemplateKey(this.spaceManager.superstate.settings)] : metadata.template,
-        [spaceTemplateNameKey(this.spaceManager.superstate.settings)] : metadata.templateName
+        [spaceFilterKey] : metadata.filters,
+        [spaceContextsKey] : metadata.contexts,
+        [spaceLinksKey] : metadata.links,
+        [spaceSortKey] : metadata.sort,
+        [spaceTemplateKey] : metadata.template,
+        [spaceTemplateNameKey] : metadata.templateName,
+        [spaceRecursiveKey]: metadata.recursive,
       }))
     // await this.spaceManager.onPathPropertyChanged(file.path);
       // await this.spaceManager.onSpaceCreated(path);
@@ -850,10 +862,11 @@ const defaultSpaceTemplate = this.defaultFrame();
       
       const spaceInfo = this.spaceInfoForPath(oldPath);
       const newSpaceInfo = this.spaceInfoForPath(newPath);
-      this.fileSystem.renameFile(spaceInfo.folderPath, newSpaceInfo.folderPath).then(f => 
+      return this.fileSystem.renameFile(spaceInfo.folderPath, newSpaceInfo.folderPath).then(f => 
       {
         if (this.spaceManager.superstate.settings.enableFolderNote)
           this.fileSystem.renameFile(movePath(spaceInfo.notePath, newSpaceInfo.path), newSpaceInfo.notePath)
+        return f
       });
     }
     public deleteSpace (path: string) {

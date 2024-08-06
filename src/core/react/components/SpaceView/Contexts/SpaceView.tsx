@@ -1,8 +1,5 @@
 import { FrameSelectionProvider } from "core/react/context/FrameSelectionContext";
-import {
-  FramesMDBContext,
-  FramesMDBProvider,
-} from "core/react/context/FramesMDBContext";
+import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext, PathProvider } from "core/react/context/PathContext";
 import { SpaceContext, SpaceProvider } from "core/react/context/SpaceContext";
 import { Superstate } from "core/superstate/superstate";
@@ -28,7 +25,7 @@ export const SpaceView = (
         readMode={false}
       >
         <SpaceProvider superstate={props.superstate}>
-          <FramesMDBProvider superstate={props.superstate} schema={"main"}>
+          <SpaceRoot superstate={props.superstate}>
             <FrameSelectionProvider
               id={"main"}
               superstate={props.superstate}
@@ -36,11 +33,9 @@ export const SpaceView = (
                 props.readOnly ? FrameEditorMode.Read : FrameEditorMode.Page
               }
             >
-              <SpaceRoot superstate={props.superstate}>
-                {props.children}
-              </SpaceRoot>
+              {props.children}
             </FrameSelectionProvider>
-          </FramesMDBProvider>
+          </SpaceRoot>
         </SpaceProvider>
       </PathProvider>
     </ErrorBoundary>

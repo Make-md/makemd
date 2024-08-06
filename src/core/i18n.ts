@@ -6,6 +6,8 @@ class T {
   all = {
     en: {
       hintText: {
+        fileName: "Enter File Name",
+        alias: "Enter Display Name",
         dragDropModifierKeys: "Hold ${1} to Pin and ${2} to Copy",
         createListItem: "Select/Create List Item Frame",
         dragDropProperties: "Drag and drop properties to link them into the list",
@@ -155,7 +157,7 @@ class T {
         catalogView: "Catalog View",
         galleryView: "Gallery View",
         deleteContext: "Delete Context",
-        openSpace: 'Open Space',
+        openSpace: 'Open',
         revealInDefault: 'Reveal in Finder',
         revealInExplorer: 'Reveal in Explorer',
         setNone: 'None',
@@ -181,7 +183,6 @@ class T {
         expandAllFolders: "Expand All Folders",
         spaceTitle: "Add/Remove in Space",
         home: "Home",
-        waypoints: "Waypoints",
         none: "None",
         tableView: "Table View",
         cardView: "Card View",
@@ -200,7 +201,6 @@ class T {
         mergeProperties: "Merge Properties",
 
         removeFromSpace: "Unpin from Space",
-        removeFromWaypoints: "Unpin from Waypoints",
         editCode: "Edit Code",
         editProperties: "Edit Properties",
         properties: "Properties",
@@ -301,6 +301,8 @@ class T {
       },
       buttons: {
         add: "Add",
+        refresh: "Refresh",
+        showHidden: "Show Hidden",
         alias: "Alias",
         addFilter: "Add Filter",
         loadMore: "Load More",
@@ -327,6 +329,7 @@ class T {
         createCanvas: "New Canvas",
         addIntoSpace: "New Pin",
         addSmartSearch: "Add Live Search",
+        subFolders: "Sub Folders",
         addItem: "Add Item",
         addProperty: "Add Property",
         editProperty: "Edit Property",
@@ -556,7 +559,7 @@ class T {
         noFile: "is not created yet. Click to create.",
         navigatorSearchPlaceholder: 'Search by Text or Filters',
         blinkPlaceholder:
-          "Quickly Search a File, Folder, Tag... Press Tab to Edit",
+          "Search for notes, spaces...",
         searchPlaceholder: "Type to search...",
         contextItemSelectPlaceholder: "Find Item",
         linkItemSelectPlaceholder: "Find or Create Note",

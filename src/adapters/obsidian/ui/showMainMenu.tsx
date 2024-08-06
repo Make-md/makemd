@@ -1,12 +1,14 @@
+import { showWarningsModal } from "core/react/components/Navigator/SyncWarnings";
 import {
   defaultMenu,
   menuSeparator,
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
-import { isTouchScreen } from "core/utils/ui/screen";
+import { isPhone, isTouchScreen } from "core/utils/ui/screen";
+import MakeMDPlugin from "main";
 import { SelectOption, Superstate, i18n } from "makemd-core";
-import { App, WorkspaceLeaf, WorkspaceMobileDrawer } from "obsidian";
+import { WorkspaceLeaf, WorkspaceMobileDrawer } from "obsidian";
 import React from "react";
 import { windowFromDocument } from "utils/dom";
 import { FILE_TREE_VIEW_TYPE } from "./navigator/NavigatorView";
@@ -14,11 +16,11 @@ import { FILE_TREE_VIEW_TYPE } from "./navigator/NavigatorView";
 export const showMainMenu = (
   el: HTMLElement,
   superstate: Superstate,
-  app: App
+  plugin: MakeMDPlugin
 ) => {
   const toggleSections = (collapse: boolean) => {
     const spaces =
-      superstate.waypoints[superstate.settings.currentWaypoint].paths;
+      superstate.focuses[superstate.settings.currentWaypoint].paths;
     const newSections = collapse ? [] : spaces;
     superstate.settings.expandedSpaces = newSections;
     superstate.saveSettings();
@@ -33,13 +35,15 @@ export const showMainMenu = (
     );
   };
 
-  const isMobile = app.workspace.leftSplit && isTouchScreen(superstate.ui);
+  const isMobile =
+    plugin.app.workspace.leftSplit && isTouchScreen(superstate.ui);
 
   const refreshLeafs = () => {
     const leafs = [];
     let spaceActive = true;
     if (isMobile) {
-      const mobileDrawer = app.workspace.leftSplit as WorkspaceMobileDrawer;
+      const mobileDrawer = plugin.app.workspace
+        .leftSplit as WorkspaceMobileDrawer;
       const leaves = mobileDrawer.children as WorkspaceLeaf[];
       const index = leaves.reduce((p: number, c, i) => {
         return c.getViewState().type == FILE_TREE_VIEW_TYPE ? i : p;
@@ -54,16 +58,27 @@ export const showMainMenu = (
   const { spaceActive, leafs } = refreshLeafs();
   const menuOptions: SelectOption[] = [];
 
-  // menuOptions.push({
-  //   name: superstate.settings.flowState
-  //     ? i18n.menu.exitFlowState
-  //     : i18n.menu.enterFlowState,
-  //   icon: "ui//flow",
-  //   onClick: () => {
-  //     toggleFlowState();
-  //   },
-  // });
-  menuOptions.push(menuSeparator);
+  if (superstate.ui.getWarnings().length > 0) {
+    menuOptions.push({
+      name: "Show Warnings",
+      icon: "ui//warning",
+      onClick: (e) => {
+        showWarningsModal(superstate, windowFromDocument(e.view.document));
+      },
+    });
+    menuOptions.push(menuSeparator);
+  }
+  if (!isPhone(superstate.ui)) {
+    menuOptions.push({
+      name: "Open Overview",
+      icon: "ui//columns",
+      onClick: () => {
+        plugin.openEverView();
+      },
+    });
+    menuOptions.push(menuSeparator);
+  }
+
   menuOptions.push({
     name: i18n.menu.collapseAllSections,
     icon: "ui//chevrons-down-up",
@@ -88,17 +103,14 @@ export const showMainMenu = (
     onClick: (e) => {
       superstate.ui.openModal(
         "Rename System",
-        (props: { hide: () => void }) => (
-          <InputModal
-            value=""
-            saveLabel={"Rename System"}
-            hide={props.hide}
-            saveValue={(value) => {
-              superstate.settings.systemName = value;
-              superstate.saveSettings();
-            }}
-          ></InputModal>
-        ),
+        <InputModal
+          value=""
+          saveLabel={"Rename System"}
+          saveValue={(value) => {
+            superstate.settings.systemName = value;
+            superstate.saveSettings();
+          }}
+        ></InputModal>,
         windowFromDocument(e.view.document)
       );
     },
@@ -110,9 +122,7 @@ export const showMainMenu = (
     onClick: (e) => {
       superstate.ui.openModal(
         i18n.labels.hiddenFiles,
-        (props: { hide: () => void }) => (
-          <HiddenPaths superstate={superstate} close={props.hide}></HiddenPaths>
-        ),
+        <HiddenPaths superstate={superstate}></HiddenPaths>,
         windowFromDocument(e.view.document)
       );
     },
@@ -125,9 +135,10 @@ export const showMainMenu = (
       name: i18n.views.navigator,
       icon: "ui//spaces",
       onClick: () => {
-        const leaves = app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
+        const leaves =
+          plugin.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
         if (leaves.length > 0) {
-          app.workspace.revealLeaf(leaves[0]);
+          plugin.app.workspace.revealLeaf(leaves[0]);
         }
       },
     });
@@ -138,7 +149,7 @@ export const showMainMenu = (
       name: l.getDisplayText(),
       icon: "lucide//" + l.view.icon,
       onClick: () => {
-        app.workspace.revealLeaf(l);
+        plugin.app.workspace.revealLeaf(l);
       },
     })
   );
@@ -149,7 +160,7 @@ export const showMainMenu = (
     name: i18n.menu.obSettings,
     icon: "ui//settings",
     onClick: () => {
-      app.commands.commands["app:open-settings"].callback();
+      plugin.app.commands.commands["app:open-settings"].callback();
     },
   });
 
@@ -157,7 +168,7 @@ export const showMainMenu = (
     name: i18n.menu.openVault,
     icon: "ui//vault",
     onClick: () => {
-      app.commands.commands["app:open-vault"].callback();
+      plugin.app.commands.commands["app:open-vault"].callback();
     },
   });
 

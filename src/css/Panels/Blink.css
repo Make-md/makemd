@@ -33,7 +33,7 @@
 
 .mk-blink-modal
    {
-  height: var(--prompt-max-height);
+  /* height: var(--prompt-max-height); */
 }
 
 .mk-blink-modal .mk-options-menu__selected {
@@ -131,6 +131,9 @@ align-items:center;
 .is-phone .mk-blink-suggester .mk-blink-preview {
   width: 100%;
     height: 50%;
+    padding: 0; margin: 0; 
+    border-radius: 0;
+    transition: all 0.3s ease-in-out;
 }
 .mk-flowspace-editor {
   padding: 0 !important;
@@ -178,9 +181,41 @@ align-items:center;
 
 }
 
-.mk-blink-suggester .mk-blink-suggestion .mk-blink-suggestion-title {
+.mk-blink-suggestion-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.mk-blink-suggestion-icon svg {
+  width: 24px;
+  height: 24px;
+
+}
+
+.mk-blink-suggestion-text {
+  display: flex;
+  flex-direction: column;
   flex: 1;
 }
+.mk-blink-suggester .mk-blink-suggestion .mk-blink-suggestion-title {
+  flex: 1;
+  font-size: 14px;
+}
+.mk-blink-suggestion-description {
+  color: var(--mk-ui-text-tertiary);
+  font-size: 12px;
+}
+.mk-blink-suggestion-preview {
+  color: var(--mk-ui-text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    white-space: pre-wrap;
+}
+
 .mk-blink-suggester .mk-blink-preview {
   flex: 1;
   margin: 8px;

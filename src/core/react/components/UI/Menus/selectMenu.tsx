@@ -10,7 +10,8 @@ export const showSelectMenu = (
   optionProps: SelectMenuProps,
   win: Window,
   defaultAnchor: Anchors,
-  onHide?: () => void
+  onHide?: () => void,
+  force?: boolean
 ) => {
   return showMenu({
     ui: optionProps.ui,
@@ -19,5 +20,7 @@ export const showSelectMenu = (
     win,
     fc: <SelectMenu {...optionProps} />,
     onHide,
+    className: optionProps.searchable ? "mk-combo-menu" : "mk-select-menu",
+    force,
   });
 };

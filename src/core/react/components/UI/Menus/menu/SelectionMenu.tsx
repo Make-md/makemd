@@ -25,7 +25,12 @@ export type SelectSection = {
 export type SelectOption = {
   id?: number;
   name: string;
-  fragment?: React.FC<{ hide: () => void }>;
+  fragment?: React.FC<{
+    hide: () => void;
+    onSubmenu?: (
+      openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
+    ) => void;
+  }>;
   value?: any;
   color?: string;
   section?: string;

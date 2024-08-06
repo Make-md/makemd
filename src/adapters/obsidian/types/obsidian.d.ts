@@ -10,6 +10,10 @@ declare module "obsidian" {
   }
   interface Vault {
     getConfig(config: string): any
+    on(name: 'raw', callback: (path: string) => any, ctx?: any): EventRef;
+    config: {
+      cssTheme: string;
+    }
   }
   interface App {
     appId: string;
@@ -33,6 +37,8 @@ declare module "obsidian" {
     };
     internalPlugins: {
       getPluginById(id: string): { instance: { options: { pinned: [] } } };
+      config: Record<string, boolean>;
+      plugins: any
     };
   }
 
@@ -139,13 +145,16 @@ declare module "obsidian" {
   interface Editor {
     cm: EditorView;
   }
-
+interface WorkspaceTabs {
+  children: WorkspaceLeaf[];
+}
   interface View {
     headerEl: HTMLDivElement;
     editor?: Editor,
     setMode?: (unknown) => unknown,
     editMode?: unknown,
     file?: TAbstractFile,
+    getMode?: () => unknown,
   }
   interface MenuItem {
     dom: HTMLElement;

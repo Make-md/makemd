@@ -160,6 +160,7 @@ esbuild.build({
 	logLevel: "info",
 	sourcemap: buildv ? false : 'inline',
 	treeShaking: true,
+  minify: true,
 	outfile: outputDir+'/main.js',
   define: { 'process.env.NODE_ENV': prod ? '"production"' : '"development"' },
 	plugins: [renamePlugin, 

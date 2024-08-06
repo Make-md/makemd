@@ -277,8 +277,8 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     selectedPaths: selectedPaths,
     setSelectedPaths: setSelectedPaths,
     activeFocus: activeFocus,
-    waypoints,
-    setWaypoints,
+    focuses: focuses,
+    setFocuses: setFocuses,
     dragPaths,
     setDragPaths,
     modifier,
@@ -292,8 +292,11 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   const [flattenedTree, setFlattenedTree] = useState<TreeNode[]>([]);
   const nextTreeScrollPath = useRef(null);
   const [presetRowHeight, setPresetRowHeight] = useState<number>(
-    props.superstate.settings.spaceRowHeight
+    isTouchScreen(props.superstate.ui)
+      ? props.superstate.settings.mobileSpaceRowHeight
+      : props.superstate.settings.spaceRowHeight
   );
+
   // const [dropPlaceholderItem, setDropPlaceholderItem] = useState<[Record<string, string>, number] | null>(null);
   const [offset, setOffset] = useState<{
     x: number;
@@ -340,7 +343,11 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   useEffect(() => {
     const settingsChanged = () => {
       setExpandedSpaces(superstate.settings.expandedSpaces);
-      setPresetRowHeight(superstate.settings.spaceRowHeight);
+      setPresetRowHeight(
+        isTouchScreen(props.superstate.ui)
+          ? props.superstate.settings.mobileSpaceRowHeight
+          : props.superstate.settings.spaceRowHeight
+      );
     };
     superstate.eventsDispatcher.addListener("settingsChanged", settingsChanged);
 
@@ -689,11 +696,11 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
       {flattenedTree.length == 1 || editFocus ? (
         <FocusEditor
           superstate={superstate}
-          focus={waypoints[activeFocus]}
+          focus={focuses[activeFocus]}
           saveFocus={(focus) => {
             setEditFocus(false);
-            setWaypoints(
-              waypoints.map((f, i) => {
+            setFocuses(
+              focuses.map((f, i) => {
                 return i == activeFocus ? focus : f;
               })
             );

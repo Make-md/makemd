@@ -9,7 +9,7 @@ import { PathPropertyName } from "core/types/context";
 import { Focus } from "core/types/focus";
 import { IndexMap } from "core/types/indexMap";
 import { MakeMDSettings } from "core/types/settings";
-import { SpaceDefinition, SpaceType, tagsSpacePath } from "core/types/space";
+import { SpaceDefinition, SpaceType, builtinSpaces, tagsSpacePath } from "core/types/space";
 import { ContextState, PathState, SpaceState } from "core/types/superstate";
 import { buildRootFromMDBFrame } from "core/utils/frames/ast";
 import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
@@ -22,7 +22,7 @@ import _ from "lodash";
 import * as math from 'mathjs';
 import { rootToFrame } from "schemas/frames";
 import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
-import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemNode, rowGroup } from "schemas/kits/list";
+import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemNode, overviewItem, rowGroup } from "schemas/kits/list";
 import { buttonNode, callout, circularProgressNode, dividerNode, fieldNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
 import { mainFrameID } from "schemas/mdb";
 import { Command } from "types/commands";
@@ -58,6 +58,8 @@ export type SuperstateEvent = {
     "frameStateUpdated": {path: string, schemaId?: string},
     "actionStateUpdated": {path: string},
     "settingsChanged": null,
+    "warningsChanged": null,
+    "focusesChanged": null,
     "superstateUpdated": null,
     "superstateReindex": null,
 }
@@ -93,7 +95,10 @@ public api: API;
 
     public loadouts: Loadout[] = []
 
-    public kit : FrameRoot[] = [buttonNode, dividerNode, progressNode,
+    public kit : FrameRoot[] = [
+        buttonNode, 
+        dividerNode, 
+        progressNode,
         callout,
         toggleNode,
         eventItem,
@@ -101,7 +106,8 @@ public api: API;
         previewNode,
          linkNode, 
          imageListItem,
-        detailItem, 
+        detailItem,
+        overviewItem, 
         flowListItem, 
         cardListItem, 
         cardsListItem,
@@ -144,7 +150,7 @@ public api: API;
     public indexer: Indexer;
 
     public searcher: Searcher;
-    public waypoints: Focus[];
+    public focuses: Focus[];
     private constructor(public indexVersion: string, public onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CLIManager) {
         this.eventsDispatcher= new EventDispatcher<SuperstateEvent>();
 
@@ -172,6 +178,7 @@ public api: API;
         this.spaceManager = spaceManager;
         this.spaceManager.superstate = this;
         this.ui = uiManager;
+        this.ui.superstate = this;
         this.cli = commandsManager;
         const spaceCommands = new SpacesCommandsAdapter(this.cli, this);
         this.cli.superstate = this;
@@ -189,7 +196,7 @@ public api: API;
         this.kits = new Map();
         this.actions = new Map();
         this.templateCache = new Map();
-        this.waypoints = [];
+        this.focuses = [];
         //Initiate Maps
         this.spacesMap = new IndexMap();
         this.linksMap = new IndexMap();
@@ -234,12 +241,13 @@ public api: API;
         const start = Date.now();
         
         this.initializeActions();
-        this.initializeWaypoints();
+        this.initializeFocuses();
         this.initializeKits();
         this.initializeTemplates();
         if (this.settings.spacesEnabled)
                 await this.initializeSpaces();
             
+        await this.initializeBuiltins();
         await this.initializeTags();
         await this.initializePaths();
         await this.initializeContexts();
@@ -390,10 +398,17 @@ public api: API;
     public dispatchEvent(event: keyof SuperstateEvent, payload: any) {
         this.eventsDispatcher.dispatchEvent(event, payload);
     }
+
+    public async initializeBuiltins() {
+        const allBuiltins = builtinSpaces;
+        const promises = Object.keys(allBuiltins).map(f => this.reloadPath("spaces://$"+f, true));
+        await Promise.all(promises);
+    }
+    
     public async initializeTags() {
 
         const allTags = this.spaceManager.readTags().map(f => tagSpacePathFromTag(f));
-        const promises = [tagsSpacePath, ...allTags].map(l => this.reloadPath(l, true));
+        const promises = [...allTags].map(l => this.reloadPath(l, true));
         await Promise.all(promises);
     }
 
@@ -423,19 +438,14 @@ public api: API;
         
     }
 
-    public async initializeWaypoints() {
-        const allWaypoints = await this.spaceManager.readWaypoints();
-        if (allWaypoints.length == 0 && this.settings.waypoints.length > 0) {
-            let newWaypoints : Focus[] = this.settings.waypoints.map(f => {
-                return {name: this.pathsIndex.get(f)?.label.name, paths: [f], sticker: f == 'spaces://$tags' ? 'ui//tags' : this.pathsIndex.get(f)?.label?.sticker}
-            })
-            if (newWaypoints.length == 0) {
-                newWaypoints = [{name: "Home", sticker: "ui//home", paths: ['/']}]
-            }
-            this.spaceManager.saveWaypoints(newWaypoints);
+    public async initializeFocuses() {
+        const allFocuses = await this.spaceManager.readFocuses();
+        if (allFocuses.length == 0) {
+            this.spaceManager.saveFocuses([{name: "Home", sticker: "ui//home", paths: ['/']}]);
             return;
         }
-        this.waypoints = allWaypoints;
+        this.focuses = allFocuses;
+        this.dispatchEvent("focusesChanged", null);
     }
 
     public async initializePaths() {
@@ -479,7 +489,7 @@ public api: API;
                 saveSpaceCache(this, spaceCache.space, {...spaceCache.metadata, contexts: spaceCache.metadata.contexts.map(f => f == tag ? newTag : f)})
             }
         }
-        this.dispatchEvent("spaceStateUpdated", { path: "spaces://$tags"});
+        this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath});
         
     }
 
@@ -506,7 +516,7 @@ public api: API;
         }
 
         this.addToContextStateQueue(() => removeTagInContexts(this.spaceManager, tag, allContextsWithTag));
-        this.dispatchEvent("spaceStateUpdated", { path: "spaces://$tags"});
+        this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath});
     }
 
     public async deleteTagInPath(tag: string, path: string) {
@@ -549,7 +559,7 @@ public api: API;
                 const allContextsWithFile = pathState.spaces.map(f => this.spacesIndex.get(f)?.space).filter(f => f);   
         this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile).then(() => {
             allContextsWithFile.forEach(f => {
-                this.dispatchEvent("spaceStateUpdated", {path: f.path})
+                this.dispatchEvent("contextStateUpdated", {path: f.path})
             })
         }));
                 this.dispatchEvent("pathStateUpdated", {path: path})
@@ -583,7 +593,7 @@ public api: API;
                 if (space.metadata?.links?.includes(oldPath)) {
                     this.addToContextStateQueue(() => saveSpaceMetadataValue(this, space.path, "links", space.metadata.links.map(f => f == oldPath ? newPath : f)))
                 }
-                await this.reloadContext(space.space)
+                await this.reloadContext(space.space, true)
             }
             const allContextsWithLink : SpaceInfo[] = [];
             for(const [contextPath, contextCache] of this.contextsIndex) {
@@ -591,14 +601,21 @@ public api: API;
                     allContextsWithLink.push(this.spacesIndex.get(contextCache.path).space)
                 }
             }
-            this.addToContextStateQueue(() => renameLinkInContexts(this.spaceManager, oldPath, newFilePath, allContextsWithLink).then(f => Promise.all(allContextsWithLink.map(c => this.reloadContext(c)))))
+            this.addToContextStateQueue(() => renameLinkInContexts(this.spaceManager, oldPath, newFilePath, allContextsWithLink).then(f => Promise.all(allContextsWithLink.map(c => this.reloadContext(c, true)))))
         }
         
-        if (this.settings.waypoints.includes(oldPath)) {
-            this.settings.waypoints = this.settings.waypoints.map(f => f == oldPath ? newPath : f)
-            this.saveSettings();
-            this.dispatchEvent("settingsChanged", null);
+        let focusChanged = false;
+        this.focuses.forEach(focus => {
+            if (focus.paths.includes(oldPath)) {
+                focus.paths = focus.paths.map(f => f == oldPath ? newPath : f)
+                focusChanged = true;
+            }
+        })
+        if (focusChanged) {
+            await this.spaceManager.saveFocuses(this.focuses);
+            this.dispatchEvent("focusesChanged", null)
         }
+        
         
         await this.reloadPath(newPath, true)
         
@@ -675,7 +692,7 @@ public api: API;
             this.contextsIndex.delete(oldPath);
             this.actionsIndex.delete(oldPath);
             await this.reloadSpace(newSpaceInfo, oldmetadata).then(f => this.onSpaceDefinitionChanged(f, oldmetadata))
-            await this.reloadContext(newSpaceInfo);
+            await this.reloadContext(newSpaceInfo, true);
             await this.reloadActions(newSpaceInfo);
         }
         
@@ -704,23 +721,23 @@ public api: API;
     }
 
     
-    public async reloadContextByPath (path: string) {
-        return this.reloadContext(this.spaceManager.spaceInfoForPath(path))
+    public async reloadContextByPath (path: string, force?: boolean) {
+        return this.reloadContext(this.spaceManager.spaceInfoForPath(path), force)
     }
-    public async reloadContext (space: SpaceInfo) {
+    public async reloadContext (space: SpaceInfo, force?: boolean) {
         
         if (!space) return false;
 
         return this.indexer.reload<{cache: ContextState, changed: boolean}>({ type: 'context', path: space.path}).then(r => {
 
-            return this.contextReloaded(space.path, r.cache, r.changed);
+            return this.contextReloaded(space.path, r.cache, r.changed, force);
         });
     }
 
     
 
-    public async contextReloaded(path: string, cache: ContextState, changed: boolean) {
-            if (!changed) { return false }
+    public async contextReloaded(path: string, cache: ContextState, changed: boolean, force?: boolean) {
+            if (!changed && !force) { return false }
             this.contextsIndex.set(path, cache);
             const pathState = this.pathsIndex.get(path);
             if (pathState && cache.dbExists && !pathState.readOnly) {
@@ -754,7 +771,8 @@ public api: API;
                 }
 
             }
-            await this.spaceManager.saveTable(path, cache.contextTable);
+            if (cache.dbExists && changed)
+                await this.spaceManager.saveTable(path, cache.contextTable);
             this.persister.store(path,  JSON.stringify(cache), 'context');
             this.dispatchEvent("contextStateUpdated", {path: path});
             
@@ -768,7 +786,7 @@ public api: API;
         return [...this.spacesIndex.values()]
     }
     public spaceOrder () {
-        return [...this.settings.waypoints]
+        return [...this.focuses.flatMap(f => f.paths)]
     }
 
     
@@ -935,7 +953,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
                 );
                 const allPromises = Promise.all(promises)
                 allPromises.then(f => {
-                    this.dispatchEvent("spaceStateUpdated", {path: "spaces://$tags"});
+                    this.dispatchEvent("spaceStateUpdated", {path: tagsSpacePath});
                 })
                 
             }

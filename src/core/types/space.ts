@@ -2,13 +2,16 @@ import i18n from "core/i18n"
 import { fileSystemSpaceInfoFromFolder } from "core/spaceManager/filesystemAdapter/spaceInfo"
 import { SpaceManager } from "makemd-core"
 
+
 import { Filter } from "./predicate"
 import { MakeMDSettings } from "./settings"
 import { PathState, SpaceState } from "./superstate"
 
 
 
-export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanner, settings.fmKeySticker, settings.fmKeyColor, settings.fmKeyBanner, settings.fmKeyBannerOffset]
+export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanner, settings.fmKeySticker, settings.fmKeyColor, settings.fmKeyBanner, settings.fmKeyBannerOffset,
+  spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey
+]
 export type SpaceSort = {
   field: string,
   asc: boolean,
@@ -27,7 +30,7 @@ export type SpaceDefGroup = {
 export type SpaceType = 'folder' | 'tag' | 'vault' | 'default' | 'unknown';
 
 
-  
+  export const builtinSpacePathPrefix = "spaces://$";
 export const tagsSpacePath = "spaces://$tags";
   
 
@@ -42,32 +45,9 @@ export const tagsSpacePath = "spaces://$tags";
   });
 
 
-export const waypointsPath: PathState= {
-  name: i18n.menu.waypoints,
-  readOnly: false,
-  path: "spaces://$waypoints",
-  label: {
-    name: i18n.menu.waypoints,
-    thumbnail: '',
-    sticker: "ui//tags",
-    color: ''
-  },
-  type: "default",
-};
+
   
-export const tagsPath: PathState= {
-    name: i18n.menu.tags,
-    readOnly: false,
-    path: "spaces://$tags",
-    label: {
-      thumbnail: '',
-      name: i18n.menu.tags,
-      sticker: "ui//tags",
-      color: ''
-    },
-    type: "default",
-  };
-  
+
 
   
 
@@ -93,4 +73,36 @@ export type SpaceDefinition = {
   tags?: string[];
   template?: string;
   templateName?: string;
+  recursive?: string;
 };
+
+export type BuiltinSpace = {
+  name: string;
+  icon: string;
+  readOnly: boolean;
+  hidden: boolean;
+}
+
+export const builtinSpaces : Record<string, BuiltinSpace> = {
+  tags: {
+    name: "Tags",
+    icon: "ui//tags",
+    readOnly: false,
+    hidden: false
+  },
+  overview: {
+    name: "Overview",
+    icon: "ui//overview",
+    readOnly: true,
+    hidden: true
+  },
+};
+
+export const spaceContextsKey = "_contexts";
+export const spaceTemplateKey = "_template";
+export const spaceTemplateNameKey = "_templateName";
+export const spaceFilterKey = "_filters";
+export const spaceLinksKey = "_links";
+export const spaceSortKey = "_sort";
+export const spaceRecursiveKey = "_subfolders";
+

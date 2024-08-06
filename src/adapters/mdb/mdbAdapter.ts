@@ -144,7 +144,6 @@ export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
         }
     }
     public async newContent (file: AFile, fragmentType: keyof MDBContent, name: string, content: any, options: { [key: string]: any; }) {
-
         if (fragmentType == 'schema') {
             const schemas = await this.readContent(file, "schemas", null) as SpaceTableSchema[];
             const dbTables = saveSchemaToDBTables(content, schemas);

@@ -51,7 +51,7 @@ body:not(.is-mobile) .mk-view-options {
 }
 
 button.mk-toolbar-button {
-  padding: 4px 8px;
+  padding: 4px 8px !important;
   --icon-size: 14px;
   font-size: max(13px,1em);
   gap: 8px;
@@ -63,6 +63,10 @@ button.mk-toolbar-button {
   height: 30px;
 }
 
+button.mk-toolbar-button.mk-active {
+  color: var(--mk-ui-text-primary);
+  background: var(--nav-item-background-hover);
+}
 
 body:not(.is-mobile) button.mk-toolbar-button:hover {
   color: var(--mk-ui-text-primary);
@@ -77,7 +81,7 @@ body:not(.is-mobile) button.mk-toolbar-button:hover {
   margin-bottom: 8px;
 }
 
-.mk-view-config input {
+.mk-view-search input {
   background: none;
   border: none;
   flex-grow: 1;
@@ -89,10 +93,10 @@ body:not(.is-mobile) button.mk-toolbar-button:hover {
   align-items: center;
   gap: 8px;
 }
-.mk-context-title .mk-toolbar-button  {
+body:not(.is-mobile) .mk-context-title .mk-toolbar-button  {
   opacity: 0
 }
-.mk-context-title:hover .mk-toolbar-button {
+body:not(.is-mobile) .mk-context-title:hover .mk-toolbar-button {
   opacity: 1;
 }
 .mk-context-title {
@@ -105,12 +109,13 @@ body:not(.is-mobile) button.mk-toolbar-button:hover {
   gap: 8px;
 }
 .is-phone .mk-view-config {
-  flex-direction: column;
   align-items: stretch;
   gap: 0px;
   margin-top: 8px;
 }
 .is-phone .mk-toolbar-button {
+
+  --icon-size: 16px;
   width: unset;
 }
 

@@ -34,13 +34,10 @@ export const ImageNodeView = (props: FrameNodeViewProps) => {
     )
       return;
     props.superstate.ui.openPalette(
-      (_props: { hide: () => void }) => (
-        <ImageModal
-          superstate={props.superstate}
-          hide={_props.hide}
-          selectedPath={(image) => saveValue(image)}
-        ></ImageModal>
-      ),
+      <ImageModal
+        superstate={props.superstate}
+        selectedPath={(image) => saveValue(image)}
+      ></ImageModal>,
       windowFromDocument(e.view.document)
     );
   };

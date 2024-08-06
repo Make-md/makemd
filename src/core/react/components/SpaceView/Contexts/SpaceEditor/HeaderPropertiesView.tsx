@@ -15,7 +15,6 @@ import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle"
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import {
-  FMSpaceKeys,
   createSpace,
   saveNewProperty,
   saveProperties,
@@ -178,57 +177,52 @@ export const HeaderPropertiesView = (props: {
   const newAction = (e: React.MouseEvent) => {
     props.superstate.ui.openModal(
       i18n.labels.newAction,
-      (_props: { hide: () => void }) => (
-        <InputModal
-          value=""
-          saveLabel={i18n.buttons.save}
-          hide={_props.hide}
-          saveValue={(value) => {
-            props.superstate.spaceManager.createCommand(spaceState.path, {
-              id: value,
-              name: value,
-              type: "actions",
-            });
-          }}
-        ></InputModal>
-      ),
+      <InputModal
+        value=""
+        saveLabel={i18n.buttons.save}
+        saveValue={(value) => {
+          props.superstate.spaceManager.createCommand(spaceState.path, {
+            id: value,
+            name: value,
+            type: "actions",
+          });
+        }}
+      ></InputModal>,
       windowFromDocument(e.view.document)
     );
   };
   const newTable = (e: React.MouseEvent) => {
     props.superstate.ui.openModal(
       i18n.labels.newTable,
-      (_props: { hide: () => void }) => (
-        <InputModal
-          value=""
-          saveLabel={i18n.buttons.save}
-          hide={_props.hide}
-          saveValue={(value) => {
-            props.superstate.spaceManager
-              .tablesForSpace(spaceState.path)
-              .then((schemas) => {
-                if (schemas) {
-                  const newSchema: SpaceTableSchema = {
-                    id: uniqueNameFromString(
-                      sanitizeTableName(value),
-                      schemas.map((g) => g.id)
-                    ),
-                    name: value,
-                    type: "db",
-                  };
-                  return props.superstate.spaceManager
-                    .createTable(spaceState.path, newSchema)
-                    .then((f) => {
-                      return props.superstate.spaceManager.addSpaceProperty(
-                        spaceState.path,
-                        { ...defaultTableFields[0], schemaId: newSchema.id }
-                      );
-                    });
-                }
-              });
-          }}
-        ></InputModal>
-      ),
+
+      <InputModal
+        value=""
+        saveLabel={i18n.buttons.save}
+        saveValue={(value) => {
+          props.superstate.spaceManager
+            .tablesForSpace(spaceState.path)
+            .then((schemas) => {
+              if (schemas) {
+                const newSchema: SpaceTableSchema = {
+                  id: uniqueNameFromString(
+                    sanitizeTableName(value),
+                    schemas.map((g) => g.id)
+                  ),
+                  name: value,
+                  type: "db",
+                };
+                return props.superstate.spaceManager
+                  .createTable(spaceState.path, newSchema)
+                  .then((f) => {
+                    return props.superstate.spaceManager.addSpaceProperty(
+                      spaceState.path,
+                      { ...defaultTableFields[0], schemaId: newSchema.id }
+                    );
+                  });
+              }
+            });
+        }}
+      ></InputModal>,
       windowFromDocument(e.view.document)
     );
   };
@@ -384,10 +378,7 @@ export const HeaderPropertiesView = (props: {
   const toggleCollapsed = () => {
     startTransition(() => setCollapsed((f) => !f));
   };
-  const excludedKeys = [
-    ...FMMetadataKeys(props.superstate.settings),
-    ...FMSpaceKeys(props.superstate.settings),
-  ];
+  const excludedKeys = [...FMMetadataKeys(props.superstate.settings)];
   return (
     <div className="mk-props-contexts">
       {!readMode && props.collapseSpaces && (
@@ -440,10 +431,10 @@ export const HeaderPropertiesView = (props: {
               <span
                 className="mk-icon-xsmall"
                 dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//plus"),
+                  __html: props.superstate.ui.getSticker("ui//space-add"),
                 }}
               ></span>
-              {i18n.buttons.addToSpace}
+              {i18n.labels.spaces}
             </div>
           </div>
         </div>

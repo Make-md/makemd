@@ -1,6 +1,5 @@
 import { arrayMove } from "@dnd-kit/sortable";
 import { Superstate } from "core/superstate/superstate";
-import { FMSpaceKeys } from "core/superstate/utils/spaces";
 import { FMMetadataKeys } from "core/types/space";
 import {
   buildFrameTree,
@@ -144,10 +143,7 @@ export const FrameEditorProvider: React.FC<
   const [root, setRoot] = useState<FrameTreeNode>(null);
 
   const frameProperties = useMemo(() => {
-    const hiddenFields = [
-      ...FMMetadataKeys(props.superstate.settings),
-      ...FMSpaceKeys(props.superstate.settings),
-    ];
+    const hiddenFields = [...FMMetadataKeys(props.superstate.settings)];
     return root?.id
       ? [
           ...(tableData?.cols.map((f) => ({ ...f, table: "" })) ?? []),

@@ -7,6 +7,7 @@ import {
   newTemplateInSpace,
 } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
+import { tagsSpacePath } from "core/types/space";
 import { SpaceState } from "core/types/superstate";
 import React from "react";
 import { Rect } from "types/Pos";
@@ -25,19 +26,14 @@ export const defaultAddAction = (
   win: Window,
   location?: TargetLocation
 ) => {
-  if (space?.path == "spaces://$tags") {
+  if (space?.path == tagsSpacePath) {
     superstate.ui.openModal(
       "New Tag",
-      (props: { hide: () => void }) => {
-        return (
-          <InputModal
-            value=""
-            saveLabel={i18n.labels.saveView}
-            hide={props.hide}
-            saveValue={(value) => addTag(superstate, value)}
-          ></InputModal>
-        );
-      },
+      <InputModal
+        value=""
+        saveLabel={i18n.labels.saveView}
+        saveValue={(value) => addTag(superstate, value)}
+      ></InputModal>,
       win
     );
   } else if (space) {
@@ -62,7 +58,8 @@ export const showSpaceAddMenu = (
   offset: Rect,
   win: Window,
   space: SpaceState,
-  dontOpen?: boolean
+  dontOpen?: boolean,
+  isSubmenu?: boolean
 ) => {
   const menuOptions: SelectOption[] = [];
   if (space.type == "default") {
@@ -72,16 +69,11 @@ export const showSpaceAddMenu = (
       onClick: (e) => {
         superstate.ui.openModal(
           "New Tag",
-          (props: { hide: () => void }) => {
-            return (
-              <InputModal
-                value=""
-                saveLabel={i18n.labels.saveView}
-                hide={props.hide}
-                saveValue={(value) => addTag(superstate, value)}
-              ></InputModal>
-            );
-          },
+          <InputModal
+            value=""
+            saveLabel={i18n.labels.saveView}
+            saveValue={(value) => addTag(superstate, value)}
+          ></InputModal>,
           windowFromDocument(e.view.document)
         );
       },
@@ -113,40 +105,37 @@ export const showSpaceAddMenu = (
       onClick: (e) => {
         superstate.ui.openModal(
           i18n.labels.createSection,
-          (props: { hide: () => void }) => (
-            <InputModal
-              saveLabel={i18n.buttons.createFolder}
-              value={""}
-              hide={props.hide}
-              saveValue={(v) => {
-                let pathState = superstate.pathsIndex.get(space?.path);
-                if (!pathState) {
-                  pathState = superstate.pathsIndex.get("/");
-                }
-                const newName = v.replace(/\//g, "");
-                const parentPath =
-                  pathState?.subtype == "folder"
-                    ? pathState.path
-                    : pathState.parent
-                    ? pathState.parent
-                    : "/";
+          <InputModal
+            saveLabel={i18n.buttons.createFolder}
+            value={""}
+            saveValue={(v) => {
+              let pathState = superstate.pathsIndex.get(space?.path);
+              if (!pathState) {
+                pathState = superstate.pathsIndex.get("/");
+              }
+              const newName = v.replace(/\//g, "");
+              const parentPath =
+                pathState?.subtype == "folder"
+                  ? pathState.path
+                  : pathState.parent
+                  ? pathState.parent
+                  : "/";
 
-                const newPath =
-                  !parentPath || parentPath == "/"
-                    ? newName
-                    : parentPath + "/" + newName;
-                if (newName.length == 0) {
-                  superstate.ui.notify(i18n.notice.newSpaceName);
-                  return;
-                }
-                if (superstate.spacesIndex.has(newPath)) {
-                  superstate.ui.notify(i18n.notice.duplicateSpaceName);
-                  return;
-                }
-                createSpace(superstate, newPath, {});
-              }}
-            ></InputModal>
-          ),
+              const newPath =
+                !parentPath || parentPath == "/"
+                  ? newName
+                  : parentPath + "/" + newName;
+              if (newName.length == 0) {
+                superstate.ui.notify(i18n.notice.newSpaceName);
+                return;
+              }
+              if (superstate.spacesIndex.has(newPath)) {
+                superstate.ui.notify(i18n.notice.duplicateSpaceName);
+                return;
+              }
+              createSpace(superstate, newPath, {});
+            }}
+          ></InputModal>,
           windowFromDocument(e.view.document)
         );
       },
@@ -167,6 +156,7 @@ export const showSpaceAddMenu = (
   return superstate.ui.openMenu(
     offset,
     defaultMenu(superstate.ui, menuOptions),
-    win
+    win,
+    "bottom"
   );
 };

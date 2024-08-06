@@ -51,18 +51,16 @@ export const SystemSettings = (props: { superstate: Superstate }) => {
             onClick={(e) =>
               props.superstate.ui.openModal(
                 "New Loadout",
-                (_props: { hide: () => void }) => (
-                  <InputModal
-                    value={""}
-                    saveLabel={"Save"}
-                    hide={_props.hide}
-                    saveValue={(label: string) => {
-                      setLoadOut({
-                        name: label,
-                      });
-                    }}
-                  ></InputModal>
-                ),
+
+                <InputModal
+                  value={""}
+                  saveLabel={"Save"}
+                  saveValue={(label: string) => {
+                    setLoadOut({
+                      name: label,
+                    });
+                  }}
+                ></InputModal>,
                 windowFromDocument(e.view.document)
               )
             }

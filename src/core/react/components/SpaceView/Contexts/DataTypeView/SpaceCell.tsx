@@ -55,21 +55,21 @@ export const SpaceCell = (props: TableCellProp & { isTable: boolean }) => {
     showAll: true,
     onHide: () => props.setEditMode(null),
   });
-  const showMenu = () => {
-    const offset = (ref.current as HTMLElement).getBoundingClientRect();
+  const showMenu = (e: React.MouseEvent) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
     menuRef.current = props.superstate.ui.openMenu(
       offset,
       menuProps(),
-      windowFromDocument(ref.current.document)
+      windowFromDocument(e.view.document)
     );
   };
 
-  const showSchemaMenu = () => {
-    const offset = (ref.current as HTMLElement).getBoundingClientRect();
+  const showSchemaMenu = (e: React.MouseEvent) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
     menuRef.current = props.superstate.ui.openMenu(
       offset,
       menuSchemaProps(),
-      windowFromDocument(ref.current.document)
+      windowFromDocument(e.view.document)
     );
   };
 
@@ -81,7 +81,7 @@ export const SpaceCell = (props: TableCellProp & { isTable: boolean }) => {
           <>
             <span></span>
             <div
-              onClick={(e) => showMenu()}
+              onClick={(e) => showMenu(e)}
               className="mk-cell-option-select mk-icon-xxsmall mk-icon-rotated"
               dangerouslySetInnerHTML={{
                 __html: props.superstate.ui.getSticker("ui//collapse-solid"),
@@ -95,7 +95,7 @@ export const SpaceCell = (props: TableCellProp & { isTable: boolean }) => {
           <div onClick={() => openLink()}>{spaceObject?.schemaName}</div>
           {spaceObject?.space && (
             <div
-              onClick={(e) => showSchemaMenu()}
+              onClick={(e) => showSchemaMenu(e)}
               className="mk-cell-option-select mk-icon-xxsmall mk-icon-rotated"
               dangerouslySetInnerHTML={{
                 __html: props.superstate.ui.getSticker("ui//collapse-solid"),

@@ -23,6 +23,7 @@ export interface MakeMDSettings {
   spacesDisablePatch: boolean;
   spacesPerformance: boolean;
   spaceRowHeight: number;
+  mobileSpaceRowHeight: number;
   spacesStickers: boolean;
   bannerHeight: number;
   spaceViewEnabled: boolean;
@@ -41,8 +42,6 @@ export interface MakeMDSettings {
   spacesFolder: string;
   spacesMDBInHidden: boolean;
   autoAddContextsToSubtags: boolean;
-  folderContextFile: string;
-  folderFrameFile: string;
   folderNoteInsideFolder: boolean;
   folderNoteName: string;
   enableFolderNote: boolean;
@@ -67,28 +66,20 @@ export interface MakeMDSettings {
   dataviewInlineContext: boolean;
   inlineContextNameLayout: InlineContextLayout;
   spacesUseAlias: boolean,
+  spaceSubFolder: string,
+  suppressedWarnings: string[],
   fmKeyAlias: string;
   fmKeyBanner: string;
   fmKeyBannerOffset: string;
   fmKeyColor: string;
   fmKeySticker: string;
-  fmKeyContexts: string;
-  fmKeyLinks: string;
-  fmKeyTemplate: string;
-  fmKeyTemplateName: string;
-  fmKeyFilter: string;
-  fmKeySort: string;
   openSpacesOnLaunch: boolean;
   indexSVG: boolean;
-  quickFrames: string[];
   readableLineWidth: boolean;
-  waypoints: string[];
-syncFormulaToFrontmatter: boolean;
-  autoMigration08: boolean;
+  syncFormulaToFrontmatter: boolean;
   releaseNotesPrompt: number;
   enableDefaultSpaces: boolean;
   showSpacePinIcon: boolean;
-  minimalFix: boolean;
   experimental: boolean;
   systemName: string;
   defaultSpaceTemplate: string;
@@ -96,4 +87,5 @@ syncFormulaToFrontmatter: boolean;
   actionMaxSteps: number;
   contextPagination: number;
   searchWorker: boolean;
+  cacheIndex: boolean;
 }

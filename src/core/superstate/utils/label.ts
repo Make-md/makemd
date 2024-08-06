@@ -42,7 +42,7 @@ export const updatePrimaryAlias = (superstate: Superstate,
   path: string, aliases: string[],
   value: string) => {
   const newValue = serializeMultiDisplayString([value, ...ensureArray(aliases).filter(f => f == value)]);
-  saveProperties(superstate, path, { [superstate.settings.fmKeyAlias]: parseMDBStringValue("option-multi", newValue, true) });
+  return saveProperties(superstate, path, { [superstate.settings.fmKeyAlias]: parseMDBStringValue("option-multi", newValue, true) });
 
 };
 

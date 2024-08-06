@@ -1,5 +1,5 @@
 import { getAllAbstractFilesInVault } from "adapters/obsidian/utils/file";
-import { FMSpaceKeys, saveProperties } from "core/superstate/utils/spaces";
+import { saveProperties } from "core/superstate/utils/spaces";
 import { PathPropertyName } from "core/types/context";
 import MakeMDPlugin from "main";
 import {
@@ -19,7 +19,7 @@ export const stripFrontmatterFromString = (string: string) => {
 };
 
 export const getAllFrontmatterKeys = (plugin: MakeMDPlugin): string[] => {
-  return uniq(getAllAbstractFilesInVault(plugin.app).flatMap(f => Object.keys(frontMatterForFile(app, f) ?? {}) ?? []).filter(f => !FMSpaceKeys(plugin.superstate.settings).includes(f)));
+  return uniq(getAllAbstractFilesInVault(plugin.app).flatMap(f => Object.keys(frontMatterForFile(plugin.app, f) ?? {}) ?? []));
 }
 
 export const frontMatterForFile = (app: App, file: TAbstractFile): FrontMatterCache => {

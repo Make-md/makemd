@@ -6,6 +6,7 @@ import { PathPropertyName } from "core/types/context";
 import { Predicate, Sort } from "core/types/predicate";
 import { filterReturnForCol } from "core/utils/contexts/predicate/filter";
 import { sortReturnForCol } from "core/utils/contexts/predicate/sort";
+import { serializeOptionValue } from "core/utils/serializer";
 import { tagSpacePathFromTag } from "core/utils/strings";
 import _, { isEqual } from "lodash";
 import React, {
@@ -33,7 +34,11 @@ import {
 } from "types/mdb";
 import { FrameSchema } from "types/mframe";
 import { uniq, uniqueNameFromString } from "utils/array";
-import { parseProperty, safelyParseJSON } from "utils/parsers";
+import {
+  parseMultiString,
+  parseProperty,
+  safelyParseJSON,
+} from "utils/parsers";
 import { parseMDBStringValue } from "utils/properties";
 import { sanitizeColumnName } from "utils/sanitizers";
 import {
@@ -118,6 +123,7 @@ export const ContextEditorContext = createContext<ContextEditorContextProps>({
 export const ContextEditorProvider: React.FC<
   React.PropsWithChildren<{
     superstate: Superstate;
+    source?: string;
   }>
 > = (props) => {
   const { frameSchemas, saveSchema, frameSchema } =
@@ -137,7 +143,9 @@ export const ContextEditorProvider: React.FC<
   const [predicate, setPredicate] = useState<Predicate>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [editMode, setEditMode] = useState<number>(0);
-  const contextPath = frameSchema?.def?.context ?? spaceInfo?.path;
+  const contextPath =
+    props.source ?? frameSchema?.def?.context ?? spaceInfo?.path;
+
   const dbSchema: SpaceTableSchema = useMemo(() => {
     if (frameSchema && frameSchema.def?.db) {
       if (schemaTable)
@@ -264,12 +272,12 @@ export const ContextEditorProvider: React.FC<
 
   useEffect(() => {
     loadTables();
-  }, [spaceInfo, frameSchema]);
+  }, [spaceInfo, frameSchema, props.source]);
   const saveDB = async (newTable: SpaceTable) => {
     if (spaceInfo.readOnly) return;
     await props.superstate.spaceManager
       .saveTable(contextPath, newTable, true)
-      .then((f) => props.superstate.reloadContext(spaceInfo));
+      .then((f) => props.superstate.reloadContext(spaceInfo, true));
   };
 
   const cols: SpaceTableColumn[] = useMemo(
@@ -555,23 +563,31 @@ export const ContextEditorProvider: React.FC<
 
     const getPathProperties = async (
       paths: string[],
-      fmKeys: string[]
+      fmKeys: SpaceProperty[]
     ): Promise<DBTable> => {
-      let rows: DBTable = { uniques: [], cols: fmKeys, rows: [] };
+      let rows: DBTable = {
+        uniques: [],
+        cols: fmKeys.map((f) => f.name),
+        rows: [],
+      };
       for (const c of paths) {
         const properties =
           props.superstate.pathsIndex.get(c)?.metadata.property;
         rows = {
           uniques: [],
-          cols: fmKeys,
+          cols: fmKeys.map((f) => f.name),
           rows: [
             ...rows.rows,
             {
               [PathPropertyName]: c,
               ...(properties
                 ? fmKeys.reduce((p, c) => {
-                    const value = parseProperty(c, properties[c]);
-                    if (value?.length > 0) return { ...p, [c]: value };
+                    const value = parseProperty(
+                      c.name,
+                      properties[c.name],
+                      c.type
+                    );
+                    if (value?.length > 0) return { ...p, [c.name]: value };
                     return p;
                   }, {})
                 : {}),
@@ -585,7 +601,7 @@ export const ContextEditorProvider: React.FC<
 
     const pathPropertiesTable = await getPathProperties(
       paths,
-      f.cols.filter((f) => !f.type.includes("file")).map((f) => f.name)
+      f.cols.filter((f) => !f.type.includes("file"))
     );
     const newRows = f.rows.map((r) => {
       const fmRow = pathPropertiesTable.rows.find(
@@ -744,6 +760,27 @@ export const ContextEditorProvider: React.FC<
       props.superstate.ui.notify(i18n.notice.duplicatePropertyName);
       return false;
     }
+    if (
+      !oldColumn &&
+      newColumn.schemaId == defaultContextSchemaID &&
+      newColumn.type.startsWith("option")
+    ) {
+      const allOptions = uniq(
+        [...(props.superstate.spacesMap.getInverse(contextPath) ?? [])].flatMap(
+          (f) =>
+            parseMultiString(
+              props.superstate.pathsIndex.get(f)?.metadata?.property?.[
+                newColumn.name
+              ]
+            ) ?? []
+        )
+      );
+      const values = serializeOptionValue(
+        allOptions.map((f) => ({ value: f, name: f })),
+        {}
+      );
+      column.value = values;
+    }
     const oldFieldIndex = oldColumn
       ? mdbtable.cols.findIndex((f) => f.name == oldColumn.name)
       : -1;
@@ -764,6 +801,7 @@ export const ContextEditorProvider: React.FC<
           : f
       ),
     };
+
     if (oldColumn)
       savePredicate({
         filters: (predicate?.filters ?? []).map((f) =>

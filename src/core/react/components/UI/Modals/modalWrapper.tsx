@@ -1,6 +1,7 @@
 import { useDndMonitor, useDroppable } from "@dnd-kit/core";
 import { UIManager } from "makemd-core";
 import React, { useEffect, useTransition } from "react";
+import { Transition } from "react-transition-group";
 
 export const ModalWrapper = (props: {
   ui: UIManager;
@@ -20,6 +21,7 @@ export const ModalWrapper = (props: {
       }
     },
   });
+
   return (
     <div className={`mk-modal-container`} ref={setNodeRef}>
       <ModalInner ui={props.ui} hide={props.hide} className={props.className}>
@@ -87,22 +89,31 @@ export const ModalInner = (
       props.ui.inputManager.off("keydown", onKeyDown);
     };
   }, [props.hide]);
+  const transitionStyles = {
+    entering: { opacity: 1 },
+    entered: { opacity: 1 },
+    exiting: { opacity: 0 },
+    exited: { opacity: 0 },
+    unmounted: { opacity: 0 },
+  };
   return (
-    <div
-      className={`${props.className}`}
-      style={
-        !isPending
-          ? {
-              // animation: ".15s ease-out 0s 1 slideInFromBottom",
-            }
-          : {}
-      }
-      ref={(el) => {
-        setNodeRef(el);
-        ref.current = el;
-      }}
-    >
-      {props.children}
-    </div>
+    <Transition timeout={300} appear={true} in={true} nodeRef={ref}>
+      {(state) => (
+        <div
+          className={`${props.className}`}
+          style={{
+            transition: `all 100ms ease-in`,
+            transform: "translateY(0px)",
+            ...transitionStyles[state],
+          }}
+          ref={(el) => {
+            setNodeRef(el);
+            ref.current = el;
+          }}
+        >
+          {props.children}
+        </div>
+      )}
+    </Transition>
   );
 };

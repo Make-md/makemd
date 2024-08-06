@@ -5,16 +5,12 @@ import { Pos } from "types/Pos";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { Superstate } from "core/superstate/superstate";
-import {
-  TreeNode,
-  createSpace,
-  spaceRowHeight,
-} from "core/superstate/utils/spaces";
+import { TreeNode, createSpace } from "core/superstate/utils/spaces";
 import { DragProjection } from "core/utils/dnd/dragPath";
 import { i18n } from "makemd-core";
-import React, { useContext } from "react";
+import React, { CSSProperties, useContext } from "react";
 import { windowFromDocument } from "utils/dom";
-import { showSpacesMenu } from "../../UI/Menus/properties/selectSpaceMenu";
+import { BlinkMode, openBlinkModal } from "../../Blink/Blink";
 import { TreeItem } from "./SpaceTreeItem";
 
 export const VirtualizedList = React.memo(function VirtualizedList(props: {
@@ -140,29 +136,26 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
       >
         {rowVirtualizer.getVirtualItems().map((virtualRow) => (
           <div
-            key={virtualRow.index}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: `${rowHeights[virtualRow.index]}px`,
-              transform: `translateY(${virtualRow.start}px)`,
-            }}
+            key={flattenedTree[virtualRow.index].id}
+            data-index={virtualRow.index}
+            className="mk-tree-node"
+            style={
+              {
+                "--row-height": `${rowHeights[virtualRow.index]}px`,
+                "--node-offset": `${virtualRow.start}px`,
+              } as CSSProperties
+            }
           >
             {flattenedTree[virtualRow.index].type == "new" ? (
               <div
                 className={"mk-tree-wrapper mk-tree-section"}
                 onClick={(e) => {
-                  const offset = (
-                    e.target as HTMLButtonElement
-                  ).getBoundingClientRect();
-                  showSpacesMenu(
-                    offset,
-                    windowFromDocument(e.view.document),
+                  openBlinkModal(
                     props.superstate,
+                    BlinkMode.Open,
+                    windowFromDocument(e.view.document),
                     (link) => {
-                      const isNew = !props.superstate.spacesIndex.has(link);
+                      const isNew = !props.superstate.pathsIndex.has(link);
                       if (isNew) {
                         createSpace(props.superstate, link, {}).then((f) => {
                           saveActiveSpace(link);
@@ -171,9 +164,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                         return;
                       }
                       saveActiveSpace(link);
-                    },
-                    true,
-                    true
+                    }
                   );
                 }}
               >

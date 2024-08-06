@@ -6,6 +6,7 @@ import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
 import { PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
 import { Superstate } from "core/superstate/superstate";
+import { SpaceFragmentType } from "core/superstate/utils/spaces";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   defaultFrameListViewID,
@@ -28,7 +29,7 @@ export interface SpaceFragmentViewComponentProps {
 
 type SpaceFragmentObject = {
   path: string;
-  type: "context" | "frame" | "action";
+  type: SpaceFragmentType;
   contextSchema?: string;
   frameSchema?: string;
   actionSchema?: string;
@@ -59,7 +60,7 @@ export const SpaceFragmentViewComponent = (
       props.superstate.spaceManager
         .readFrame(path.basePath, path.ref)
         .then((s) => {
-          let schema = s.schema;
+          let schema = s?.schema;
           if (!schema && path.ref == defaultFrameListViewSchema.id) {
             schema = defaultFrameListViewSchema;
             setSpaceFragment({

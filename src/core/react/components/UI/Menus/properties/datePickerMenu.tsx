@@ -1,7 +1,7 @@
 import { UIManager } from "core/middleware/ui";
 import { Anchors, Rect } from "types/Pos";
 
-import { format } from "date-fns";
+import { formatDate } from "core/utils/date";
 import React, { useEffect, useState } from "react";
 import { CaptionProps, DayPicker, useNavigation } from "react-day-picker";
 
@@ -41,7 +41,7 @@ const DatePickerHeader = (props: CaptionProps & { ui: UIManager }) => {
           __html: props.ui.getSticker("ui//chevron-left"),
         }}
       ></button>
-      {format(props.displayMonth, "MMM yyy")}
+      {formatDate(props.ui.superstate, props.displayMonth, "MMM yyy")}
 
       <button
         disabled={!nextMonth}

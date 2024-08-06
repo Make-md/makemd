@@ -92,7 +92,9 @@ export const triggerMultiPathMenu = (
           offset,
           windowFromDocument(e.view.document),
           "",
-          (value) => saveColorForPaths(superstate, paths, value)
+          (value) => saveColorForPaths(superstate, paths, value),
+          false,
+          true
         );
       },
     });
@@ -102,15 +104,12 @@ export const triggerMultiPathMenu = (
       icon: "ui//sticker",
       onClick: (e) => {
         superstate.ui.openPalette(
-          (_props: { hide: () => void }) => (
-            <StickerModal
-              ui={superstate.ui}
-              hide={_props.hide}
-              selectedSticker={(emoji) =>
-                saveIconsForPaths(superstate, paths, emoji)
-              }
-            />
-          ),
+          <StickerModal
+            ui={superstate.ui}
+            selectedSticker={(emoji) =>
+              saveIconsForPaths(superstate, paths, emoji)
+            }
+          />,
           windowFromDocument(e.view.document)
         );
       },
@@ -162,21 +161,18 @@ export const triggerMultiPathMenu = (
     onClick: (e) => {
       superstate.ui.openModal(
         i18n.labels.deleteFiles,
-        (_props: { hide: () => void }) => (
-          <ConfirmationModal
-            hide={_props.hide}
-            confirmAction={() => {
-              paths.forEach((f) => {
-                deletePath(superstate, f);
-              });
-            }}
-            confirmLabel={i18n.buttons.delete}
-            message={i18n.descriptions.deleteFiles.replace(
-              "${1}",
-              paths.length.toString()
-            )}
-          ></ConfirmationModal>
-        ),
+        <ConfirmationModal
+          confirmAction={() => {
+            paths.forEach((f) => {
+              deletePath(superstate, f);
+            });
+          }}
+          confirmLabel={i18n.buttons.delete}
+          message={i18n.descriptions.deleteFiles.replace(
+            "${1}",
+            paths.length.toString()
+          )}
+        ></ConfirmationModal>,
         windowFromDocument(e.view.document)
       );
     },
@@ -281,8 +277,14 @@ export const showPathContextMenu = (
       icon: "ui//palette",
       type: SelectOptionType.Submenu,
       onSubmenu: (offset) => {
-        return showColorPickerMenu(superstate, offset, win, "", (value) =>
-          savePathColor(superstate, path, value)
+        return showColorPickerMenu(
+          superstate,
+          offset,
+          win,
+          "",
+          (value) => savePathColor(superstate, path, value),
+          false,
+          true
         );
       },
     });
@@ -292,13 +294,10 @@ export const showPathContextMenu = (
       icon: "ui//sticker",
       onClick: (e) => {
         superstate.ui.openPalette(
-          (_props: { hide: () => void }) => (
-            <StickerModal
-              ui={superstate.ui}
-              hide={_props.hide}
-              selectedSticker={(emoji) => savePathIcon(superstate, path, emoji)}
-            />
-          ),
+          <StickerModal
+            ui={superstate.ui}
+            selectedSticker={(emoji) => savePathIcon(superstate, path, emoji)}
+          />,
           windowFromDocument(e.view.document)
         );
       },
@@ -319,14 +318,11 @@ export const showPathContextMenu = (
     onClick: (e) => {
       superstate.ui.openModal(
         i18n.labels.rename,
-        (_props: { hide: () => void }) => (
-          <InputModal
-            saveLabel={i18n.buttons.rename}
-            value={cache.name}
-            hide={_props.hide}
-            saveValue={(v) => renamePathByName(superstate, path, v)}
-          ></InputModal>
-        ),
+        <InputModal
+          saveLabel={i18n.buttons.rename}
+          value={cache.name}
+          saveValue={(v) => renamePathByName(superstate, path, v)}
+        ></InputModal>,
         windowFromDocument(e.view.document)
       );
     },

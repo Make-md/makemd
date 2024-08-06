@@ -65,7 +65,7 @@ export const dividerNode: FrameRoot = {
     name: i18n.frames.divider.label,
     rank: 0,
     id: "divider",
-    type: "frame",
+    type: "group",
     styles: {
       width: `'100%'`,
       height: `'16px'`,

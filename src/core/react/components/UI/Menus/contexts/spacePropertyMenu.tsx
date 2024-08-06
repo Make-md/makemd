@@ -1,14 +1,16 @@
 import i18n from "core/i18n";
 
-import { UIManager } from "core/middleware/ui";
 import { Superstate } from "core/superstate/superstate";
 import { Sort } from "core/types/predicate";
 import { normalizedSortForType } from "core/utils/contexts/predicate/sort";
+import { nameForField } from "core/utils/frames/frames";
+import { MenuObject } from "core/utils/ui/menu";
 import React, { useState } from "react";
 import { fieldTypeForType, fieldTypes } from "schemas/mdb";
 import { Anchors, Rect } from "types/Pos";
 import { SpaceTableColumn } from "types/mdb";
 import { windowFromDocument } from "utils/dom";
+import { safelyParseJSON } from "utils/parsers";
 import StickerModal from "../../Modals/StickerModal";
 import {
   SelectOption,
@@ -18,36 +20,6 @@ import {
   menuSeparator,
 } from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
-import { safelyParseJSON } from "utils/parsers";
-import { nameForField } from "core/utils/frames/frames";
-
-export const selectPropertyTypeMenu = (
-  e: React.MouseEvent,
-  ui: UIManager,
-  selectedType: (_: string[], value: string[]) => void
-) => {
-  ui.openMenu(
-    (e.target as HTMLElement).getBoundingClientRect(),
-    {
-      ui: ui,
-      multi: false,
-      editable: false,
-      searchable: false,
-      saveOptions: selectedType,
-      value: [],
-      showAll: true,
-      options: fieldTypes
-        .filter((f) => !f.restricted)
-        .map((f, i) => ({
-          id: i + 1,
-          name: f.label,
-          value: f.type,
-          icon: f.icon,
-        })),
-    },
-    windowFromDocument(e.view.document)
-  );
-};
 
 export const PropertyMenuComponent = (props: {
   superstate: Superstate;
@@ -56,6 +28,9 @@ export const PropertyMenuComponent = (props: {
   contextPath: string;
   options: string[];
   saveField: (field: SpaceTableColumn) => void;
+  onSubmenu: (
+    openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
+  ) => void;
 }) => {
   const [field, setField] = useState(props.field);
   const selectedType = (_: string[], value: string[]) => {
@@ -67,6 +42,34 @@ export const PropertyMenuComponent = (props: {
     setField(newField);
     props.saveField(newField);
   };
+  const selectPropertyTypeMenu = (
+    rect: Rect,
+    win: Window,
+    selectedType: (_: string[], value: string[]) => void
+  ) => {
+    return props.superstate.ui.openMenu(
+      rect,
+      {
+        ui: props.superstate.ui,
+        multi: false,
+        editable: false,
+        searchable: false,
+        saveOptions: selectedType,
+        value: [],
+        showAll: true,
+        options: fieldTypes
+          .filter((f) => !f.restricted)
+          .map((f, i) => ({
+            id: i + 1,
+            name: f.label,
+            value: f.type,
+            icon: f.icon,
+          })),
+      },
+      win
+    );
+  };
+
   const selectedValue = (value: string) => {
     const newField = { ...field, value: value };
     setField(newField);
@@ -105,7 +108,13 @@ export const PropertyMenuComponent = (props: {
         <div
           className="mk-menu-option"
           onClick={(e) =>
-            selectPropertyTypeMenu(e, props.superstate.ui, selectedType)
+            props.onSubmenu((rect, onHide) =>
+              selectPropertyTypeMenu(
+                rect,
+                windowFromDocument(e.view.document),
+                selectedType
+              )
+            )
           }
         >
           <span>{i18n.labels.propertyType}</span>
@@ -159,7 +168,8 @@ type PropertyMenuProps = {
 };
 export const showPropertyMenu = (
   props: PropertyMenuProps,
-  onHide?: () => void
+  onHide?: () => void,
+  isSubmenu?: boolean
 ) => {
   const {
     superstate,
@@ -181,28 +191,35 @@ export const showPropertyMenu = (
   const saveName = (value: string) => {
     if (!editable) {
       const fieldValue = safelyParseJSON(field.value);
-      saveField({ ...field, value: JSON.stringify({
-        ...fieldValue,
-        alias: value,
-      }) });
+      saveField({
+        ...field,
+        value: JSON.stringify({
+          ...fieldValue,
+          alias: value,
+        }),
+      });
       return;
-    } 
+    }
     saveField({ ...field, name: value });
-  }
+  };
   const menuOptions: SelectOption[] = [];
 
-  
-    menuOptions.push(
-      menuInput(nameForField(field, props.superstate) ?? "", (value) =>
-        saveName(value)
-      )
-    );
-    menuOptions.push(menuSeparator);
-    if (editable) {
+  menuOptions.push(
+    menuInput(nameForField(field, props.superstate) ?? "", (value) =>
+      saveName(value)
+    )
+  );
+  menuOptions.push(menuSeparator);
+  if (editable) {
     menuOptions.push({
       name: "",
       type: SelectOptionType.Custom,
-      fragment: () => (
+      fragment: (props: {
+        hide: () => void;
+        onSubmenu: (
+          openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
+        ) => void;
+      }) => (
         <PropertyMenuComponent
           superstate={superstate}
           field={field}
@@ -210,32 +227,30 @@ export const showPropertyMenu = (
           contextPath={contextPath}
           options={options}
           saveField={saveField}
+          onSubmenu={props.onSubmenu}
         ></PropertyMenuComponent>
       ),
     });
   }
-    menuOptions.push(menuSeparator);
+  menuOptions.push(menuSeparator);
 
-    menuOptions.push({
-      name: i18n.menu.setIcon,
-      icon: "ui//gem",
-      onClick: (e: React.MouseEvent) => {
-        superstate.ui.openPalette(
-          (_props: { hide: () => void }) => (
-            <StickerModal
-              ui={superstate.ui}
-              hide={_props.hide}
-              selectedSticker={(emoji) =>
-                saveField({ ...field, attrs: JSON.stringify({ icon: emoji }) })
-              }
-            />
-          ),
-          windowFromDocument(e.view.document)
-        );
-      },
-    });
-    menuOptions.push(menuSeparator);
-  
+  menuOptions.push({
+    name: i18n.menu.setIcon,
+    icon: "ui//gem",
+    onClick: (e: React.MouseEvent) => {
+      superstate.ui.openPalette(
+        <StickerModal
+          ui={superstate.ui}
+          selectedSticker={(emoji) =>
+            saveField({ ...field, attrs: JSON.stringify({ icon: emoji }) })
+          }
+        />,
+        windowFromDocument(e.view.document)
+      );
+    },
+  });
+  menuOptions.push(menuSeparator);
+
   const sortableString = normalizedSortForType(field.type, false);
 
   if (sortableString && sortColumn) {
@@ -260,28 +275,28 @@ export const showPropertyMenu = (
       },
     });
   }
- 
-    menuOptions.push(menuSeparator);
-    if (hide) {
-      if (!hidden) {
-        menuOptions.push({
-          name: i18n.menu.hideProperty,
-          icon: "ui//eye-off",
-          onClick: () => {
-            hide(field, true);
-          },
-        });
-      } else {
-        menuOptions.push({
-          name: i18n.menu.unhideProperty,
-          icon: "ui//eye",
-          onClick: () => {
-            hide(field, false);
-          },
-        });
-      }
+
+  menuOptions.push(menuSeparator);
+  if (hide) {
+    if (!hidden) {
+      menuOptions.push({
+        name: i18n.menu.hideProperty,
+        icon: "ui//eye-off",
+        onClick: () => {
+          hide(field, true);
+        },
+      });
+    } else {
+      menuOptions.push({
+        name: i18n.menu.unhideProperty,
+        icon: "ui//eye",
+        onClick: () => {
+          hide(field, false);
+        },
+      });
     }
-    if (editable) {
+  }
+  if (editable) {
     if (editCode) {
       menuOptions.push({
         name: i18n.menu.editCode,

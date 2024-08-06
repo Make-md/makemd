@@ -11,7 +11,7 @@ import { PathState } from "core/types/superstate";
 import { wrapQuotes } from "core/utils/strings";
 import Fuse from "fuse.js";
 import { i18n } from "makemd-core";
-import React, { useContext, useMemo, useState, useTransition } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import { FrameEditorMode } from "types/mframe";
 import { Suggester } from "../SpaceCommand/Suggester";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";
@@ -137,8 +137,6 @@ export const FlowNodeView = (
         },
       });
   };
-  const [isTransition, startTransition] = useTransition();
-
   return (
     <div className="mk-node-flow">
       {!props.state?.styles?.["--mk-min-mode"] && (

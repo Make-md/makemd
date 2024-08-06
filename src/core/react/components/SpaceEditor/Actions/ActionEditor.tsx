@@ -32,6 +32,7 @@ export const ActionEditor = (props: {
         fields={props.fields}
         values={props.value}
         saveTree={(tree) => {
+          console.log("saving tree", tree);
           props.saveFormula(JSON.stringify(tree));
           setActionTree(tree);
         }}

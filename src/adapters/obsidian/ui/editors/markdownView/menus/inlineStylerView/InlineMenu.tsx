@@ -24,7 +24,6 @@ export const loadStylerIntoContainer = (
   el: HTMLElement,
   plugin: MakeMDPlugin
 ) => {
-  // el.removeChild(el.querySelector('.mobile-toolbar-options-container'))
   const root = plugin.ui.createRoot(el);
   root.render(
     <InlineMenuComponent
@@ -225,7 +224,7 @@ export const InlineMenuComponent: React.FC<{
           setMode(1);
         }}
         dangerouslySetInnerHTML={{
-          __html: props.plugin.superstate.ui.getSticker("ui//mk-ui-close"),
+          __html: props.plugin.superstate.ui.getSticker("ui//close"),
         }}
       ></div>
       {colors.map((c, i) => (
@@ -440,7 +439,7 @@ export const InlineMenuComponent: React.FC<{
             setMode(0);
           }}
           dangerouslySetInnerHTML={{
-            __html: props.plugin.superstate.ui.getSticker("ui//mk-ui-close"),
+            __html: props.plugin.superstate.ui.getSticker("ui//close"),
           }}
         ></div>
       ) : (
@@ -572,7 +571,9 @@ export const InlineMenuComponent: React.FC<{
 
   return (
     <div
-      className={classNames("mk-style-menu", props.mobile ? "" : "menu")}
+      className={classNames(
+        props.mobile ? "mk-style-toolbar" : "mk-style-menu menu"
+      )}
       onMouseDown={(e) => e.preventDefault()}
     >
       {mode == 0 && props.mobile

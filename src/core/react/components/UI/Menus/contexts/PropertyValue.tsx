@@ -210,16 +210,14 @@ export const PropertyValueComponent = (props: {
       onClick={(e) => {
         props.superstate.ui.openModal(
           "Object Name",
-          (_props: { hide: () => void }) => (
-            <InputModal
-              value={parsedValue.typeName}
-              saveLabel={"Rename Object"}
-              saveValue={(value) => {
-                saveParsedValue("typeName", value);
-              }}
-              hide={_props.hide}
-            ></InputModal>
-          ),
+
+          <InputModal
+            value={parsedValue.typeName}
+            saveLabel={"Rename Object"}
+            saveValue={(value) => {
+              saveParsedValue("typeName", value);
+            }}
+          ></InputModal>,
           windowFromDocument(e.view.document)
         );
       }}

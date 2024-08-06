@@ -1,0 +1,39 @@
+.mk-ever-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.mk-ever-view-header {
+        display: flex;
+        
+        padding: 8px 12px;
+        gap: 4px;
+}
+.mk-ever-view-header-title {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+.mk-ever-view-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--mk-ui-text-primary);
+}
+
+.mk-ever-view-filters {
+    padding: 4px 8px;
+}
+
+.mk-ever-view-contents {
+    flex: 1;
+    overflow: auto;
+}
+
+.mk-ever-view-count {
+    font-size: 12px;
+    color: var(--mk-ui-text-secondary);
+}
+.mk-ever-view-filter {
+    padding: 8px;
+}
+

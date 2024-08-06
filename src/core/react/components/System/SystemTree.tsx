@@ -39,25 +39,23 @@ export const SystemTree = (props: { superstate: Superstate }) => {
                   onClick={(e) => {
                     props.superstate.ui.openModal(
                       i18n.labels.newAction,
-                      (_props: { hide: () => void }) => (
-                        <InputModal
-                          value=""
-                          saveLabel={i18n.buttons.save}
-                          hide={_props.hide}
-                          saveValue={(value) => {
-                            props.superstate.spaceManager.saveSystemCommand(f, {
-                              schema: {
-                                id: value,
-                                name: value,
-                                type: "action",
-                              },
-                              fields: [],
-                              code: "",
-                              codeType: "script",
-                            });
-                          }}
-                        ></InputModal>
-                      ),
+
+                      <InputModal
+                        value=""
+                        saveLabel={i18n.buttons.save}
+                        saveValue={(value) => {
+                          props.superstate.spaceManager.saveSystemCommand(f, {
+                            schema: {
+                              id: value,
+                              name: value,
+                              type: "action",
+                            },
+                            fields: [],
+                            code: "",
+                            codeType: "script",
+                          });
+                        }}
+                      ></InputModal>,
                       windowFromDocument(e.view.document)
                     );
                   }}
@@ -89,19 +87,14 @@ export const SystemTree = (props: { superstate: Superstate }) => {
           onClick={(e) => {
             props.superstate.ui.openModal(
               i18n.labels.newAction,
-              (_props: { hide: () => void }) => (
-                <InputModal
-                  value=""
-                  saveLabel={i18n.buttons.save}
-                  hide={_props.hide}
-                  saveValue={(value) => {
-                    props.superstate.spaceManager.saveSystemCommand(
-                      value,
-                      null
-                    );
-                  }}
-                ></InputModal>
-              ),
+
+              <InputModal
+                value=""
+                saveLabel={i18n.buttons.save}
+                saveValue={(value) => {
+                  props.superstate.spaceManager.saveSystemCommand(value, null);
+                }}
+              ></InputModal>,
               windowFromDocument(e.view.document)
             );
           }}

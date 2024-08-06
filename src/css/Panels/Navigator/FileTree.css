@@ -47,6 +47,7 @@
   .workspace-drawer-inner
   .workspace-drawer-header {
   padding-right: 0 !important;
+  padding-top: 0;
 }
 
 .mk-spaces-enabled.is-mobile

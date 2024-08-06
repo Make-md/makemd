@@ -5,7 +5,7 @@ import { urlRegex } from "utils/regex";
 interface ImageModalProps {
   superstate: Superstate;
   selectedPath: (path: string) => void;
-  hide: () => void;
+  hide?: () => void;
 }
 
 export type ImagePreview = {

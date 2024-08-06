@@ -14,7 +14,7 @@ import { metadataPathForSpace } from "core/superstate/utils/spaces";
 import { Superstate } from "makemd-core";
 import { defaultContextFields } from "schemas/mdb";
 import { serializeMultiString } from "utils/serializers";
-import { parseMultiString, safelyParseJSON } from "../../../utils/parsers";
+import { parseMultiString, parseProperty, safelyParseJSON } from "../../../utils/parsers";
 
 export type ContextPath = {
   space: string;
@@ -90,7 +90,6 @@ const saveContext = async (
   newTable: SpaceTable,
   force?: boolean
 ): Promise<void> => {
-
   await manager.saveTable(spaceInfo.path, newTable, force).then(f => {
     if (f)
     return manager.superstate.reloadContextByPath(spaceInfo.path)
@@ -253,7 +252,7 @@ export const columnsForContext = async (
 
 
 
-const getPathProperties = async (superstate: Superstate, _path: string, cols: string[]) => {
+const getPathProperties = async (superstate: Superstate, _path: string, cols: SpaceProperty[]) => {
   let path = _path;
   if (superstate.spacesIndex.has(path)) {
     path = metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space);
@@ -261,8 +260,8 @@ const getPathProperties = async (superstate: Superstate, _path: string, cols: st
   const properties = await superstate.spaceManager.readProperties(path)
   if (!properties) return {}
   return Object.keys(properties).reduce((p, c) => {
-  if (cols.includes(c)) {
-    return {...p, [c]: properties[c]}
+  if (cols.some(f => f.name == c)) {
+    return {...p, [c]: parseProperty(c, properties[c], cols.find(f => f.name == c).type)}
   }
   return p;
     }, {});
@@ -290,7 +289,7 @@ export const updateContextWithProperties = async (
     const properties = await getPathProperties(
       superstate,
       path,
-      mdb.cols.map((f) => f.name),
+      mdb.cols
     );
 
     if (objectExists) {

@@ -1,10 +1,10 @@
 import { EditorView } from "@codemirror/view";
-import { InteractionType, ScreenType } from "core/middleware/ui";
+import { InteractionType, ScreenType, Warning } from "core/middleware/ui";
 
 import MakeMDPlugin from "main";
 import { Sticker, Superstate, UIAdapter, UIManager, i18n } from "makemd-core";
 import { Notice, Platform, TFile, getIcon } from "obsidian";
-import React, { FC } from "react";
+import React from "react";
 
 import { Container } from "react-dom";
 import { Root, createRoot } from "react-dom/client";
@@ -51,7 +51,7 @@ export class ObsidianUI implements UIAdapter {
     this.plugin.quickOpen(superstate);
   };
   public mainMenu = (el: HTMLElement, superstate: Superstate) => {
-    showMainMenu(el, superstate, this.plugin.app);
+    showMainMenu(el, superstate, this.plugin);
   };
   public onMetadataRefresh = () => {
     modifyTabSticker(this.plugin);
@@ -79,11 +79,7 @@ export class ObsidianUI implements UIAdapter {
   public openToast = (content: string) => {
     new Notice(content);
   };
-  public openPalette = (
-    modal: React.FC<{ hide: () => void }>,
-    win: Window,
-    className: string
-  ) => {
+  public openPalette = (modal: JSX.Element, win: Window, className: string) => {
     return showModal({
       ui: this,
       fc: modal,
@@ -95,7 +91,7 @@ export class ObsidianUI implements UIAdapter {
 
   public openModal = (
     title: string,
-    modal: FC<{ hide: () => void }>,
+    modal: JSX.Element,
     win?: Window,
     className?: string,
     props?: any
@@ -109,7 +105,7 @@ export class ObsidianUI implements UIAdapter {
       win,
     });
   };
-  public openPopover = (position: Pos, popover: FC<{ hide: () => void }>) => {};
+  public openPopover = (position: Pos, popover: JSX.Element) => {};
 
   public dragStarted = (
     e: React.DragEvent<HTMLDivElement>,
@@ -167,6 +163,42 @@ export class ObsidianUI implements UIAdapter {
   };
 
   public dragEnded = (e: React.DragEvent<HTMLDivElement>) => {};
+
+  public getWarnings = () => {
+    const warnings: Warning[] = [];
+    if (this.plugin.obsidianAdapter.fileNameWarnings.size > 0) {
+      warnings.push({
+        id: "obsidian-sync-space-folder",
+        message: "Some files have invalid names",
+        description:
+          "Files contain invalid characters which may cause issues during sync, use alias to display these characters to prevent the issue",
+        command: "obsidian://make-md:path-fixer",
+      });
+    }
+    if (this.plugin.app.internalPlugins.config.sync) {
+      if (this.plugin.superstate.settings.spaceSubFolder.startsWith(".")) {
+        warnings.push({
+          id: "obsidian-sync-space-folder",
+          message: "Obsidian Sync currently won't sync your Spaces",
+          description: "Change the space folder name to a non-hidden folder",
+          command: "obsidian://make-md:move-space-folder",
+        });
+      }
+      const allowedTypes = this.plugin.app.internalPlugins.plugins?.sync
+        ?.instance?.allowTypes as Set<string>;
+      if (allowedTypes && ![...allowedTypes].some((f) => f == "unsupported")) {
+        warnings.push({
+          id: "obsidian-sync-space-config",
+          message:
+            "Obsidian Sync currently won't sync your Space Views or Context",
+          description:
+            "Change the sync settings to include unsupported file types",
+          command: "obsidian://app:open-settings",
+        });
+      }
+    }
+    return warnings;
+  };
 
   public allStickers = () => {
     const allLucide: Sticker[] = lucideIcons.map((f) => ({
@@ -261,6 +293,9 @@ export class ObsidianUI implements UIAdapter {
         });
     }
   };
+  public isEverViewOpen = () => {
+    return this.plugin.app.workspace.getLeavesOfType("mk-ever-view").length > 0;
+  };
   public openPath = (
     path: string,
     newLeaf: TargetLocation,
@@ -271,6 +306,17 @@ export class ObsidianUI implements UIAdapter {
       // @ts-ignore
       this.plugin.app.showInFolder(path);
       return;
+    }
+    if (newLeaf == "overview") {
+      const everLeaves =
+        this.plugin.app.workspace.getLeavesOfType("mk-ever-view");
+      if (everLeaves.length > 0) {
+        everLeaves[0].setViewState({
+          type: "mk-ever-view",
+          state: { path: path },
+        });
+        return;
+      }
     }
 
     if (newLeaf == "hover") {
@@ -318,7 +364,7 @@ export class ObsidianUI implements UIAdapter {
     return Platform.isMobile ? InteractionType.Touch : InteractionType.Mouse;
   };
   public getScreenType = () => {
-    return Platform.isMobileApp
+    return Platform.isPhone
       ? ScreenType.Phone
       : Platform.isTablet
       ? ScreenType.Tablet

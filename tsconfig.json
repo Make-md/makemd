@@ -13,6 +13,7 @@
     "noImplicitAny": true,
     "moduleResolution": "node",
     "importHelpers": true,
+    "removeComments": true,
     "allowSyntheticDefaultImports": true,
     "lib": ["dom", "es5", "scripthost", "es2020", "es2022"],
     "skipLibCheck": true,

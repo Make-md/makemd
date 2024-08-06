@@ -60,7 +60,9 @@ export const showSpaceContextMenu = (
         superstate,
         offset,
         windowFromDocument(e.view.document),
-        space
+        space,
+        false,
+        true
       );
     },
     icon: "ui//plus",
@@ -158,7 +160,9 @@ export const showSpaceContextMenu = (
           offset,
           windowFromDocument(e.view.document),
           "",
-          (value) => savePathColor(superstate, space.path, value)
+          (value) => savePathColor(superstate, space.path, value),
+          false,
+          true
         );
       },
     });
@@ -167,15 +171,12 @@ export const showSpaceContextMenu = (
       icon: "ui//sticker",
       onClick: (e) => {
         superstate.ui.openPalette(
-          (_props: { hide: () => void }) => (
-            <StickerModal
-              ui={superstate.ui}
-              hide={_props.hide}
-              selectedSticker={(emoji) =>
-                savePathSticker(superstate, space.path, emoji)
-              }
-            />
-          ),
+          <StickerModal
+            ui={superstate.ui}
+            selectedSticker={(emoji) =>
+              savePathSticker(superstate, space.path, emoji)
+            }
+          />,
           windowFromDocument(e.view.document)
         );
       },
@@ -364,7 +365,8 @@ export const showSpaceContextMenu = (
         return superstate.ui.openMenu(
           offset,
           defaultMenu(superstate.ui, sortOptions),
-          windowFromDocument(e.view.document)
+          windowFromDocument(e.view.document),
+          "bottom"
         );
       },
     });
@@ -379,16 +381,11 @@ export const showSpaceContextMenu = (
       onClick: (e) => {
         superstate.ui.openModal(
           i18n.labels.rename,
-          (_props: { hide: () => void }) => (
-            <InputModal
-              saveLabel={i18n.buttons.rename}
-              value={
-                space.type == "tag" ? stringFromTag(space.name) : space.name
-              }
-              hide={_props.hide}
-              saveValue={(v) => renamePathByName(superstate, space.path, v)}
-            ></InputModal>
-          ),
+          <InputModal
+            saveLabel={i18n.buttons.rename}
+            value={space.type == "tag" ? stringFromTag(space.name) : space.name}
+            saveValue={(v) => renamePathByName(superstate, space.path, v)}
+          ></InputModal>,
           windowFromDocument(e.view.document)
         );
       },
@@ -457,14 +454,11 @@ export const showSpaceContextMenu = (
       onClick: (e) => {
         superstate.ui.openModal(
           i18n.labels.deleteSpace,
-          (_props: { hide: () => void }) => (
-            <ConfirmationModal
-              hide={_props.hide}
-              confirmAction={() => removeSpace(superstate, space.path)}
-              confirmLabel={i18n.buttons.delete}
-              message={i18n.descriptions.deleteSpace}
-            ></ConfirmationModal>
-          ),
+          <ConfirmationModal
+            confirmAction={() => removeSpace(superstate, space.path)}
+            confirmLabel={i18n.buttons.delete}
+            message={i18n.descriptions.deleteSpace}
+          ></ConfirmationModal>,
           windowFromDocument(e.view.document)
         );
       },

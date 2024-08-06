@@ -24,7 +24,7 @@ export const openTestModal = (plugin: MakeMDPlugin) => {
   const superstate = plugin.superstate;
   superstate.ui.openModal(
     "Tests",
-    (props) => <TestComponent plugin={plugin}></TestComponent>,
+    <TestComponent plugin={plugin}></TestComponent>,
     window
   );
 };
@@ -90,9 +90,23 @@ export const TestComponent = (props: { plugin: MakeMDPlugin }) => {
       }
     );
   }, []);
+  useEffect(() => {
+    const styles = window.getComputedStyle(document.body);
+    setOutput(
+      JSON.stringify({
+        paddingTop: styles.paddingTop,
+      })
+    );
+  }, []);
   return (
     <div className="mk-layout-row" style={{ fontSize: "10px" }}>
       <div>
+        <InlineMenuComponent
+          plugin={props.plugin}
+          cm={null}
+          activeMarks={[]}
+          mobile={true}
+        />
         <InlineMenuComponent
           plugin={props.plugin}
           cm={null}
@@ -293,13 +307,10 @@ export const TestComponent = (props: { plugin: MakeMDPlugin }) => {
           <button
             onClick={() =>
               superstate.ui.openPalette(
-                (props: { hide: () => void }) => (
-                  <ImageModal
-                    hide={props.hide}
-                    superstate={superstate}
-                    selectedPath={(value) => setImage(value)}
-                  />
-                ),
+                <ImageModal
+                  superstate={superstate}
+                  selectedPath={(value) => setImage(value)}
+                />,
                 window
               )
             }
@@ -309,13 +320,10 @@ export const TestComponent = (props: { plugin: MakeMDPlugin }) => {
           <button
             onClick={() =>
               superstate.ui.openPalette(
-                (props: { hide: () => void }) => (
-                  <StickerModal
-                    hide={props.hide}
-                    ui={superstate.ui}
-                    selectedSticker={(value) => setSticker(value)}
-                  />
-                ),
+                <StickerModal
+                  ui={superstate.ui}
+                  selectedSticker={(value) => setSticker(value)}
+                />,
                 window
               )
             }

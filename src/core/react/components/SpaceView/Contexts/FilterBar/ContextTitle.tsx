@@ -11,25 +11,22 @@ export const ContextTitle = (props: { superstate: Superstate }) => {
 
   const triggerStickerMenu = (e: React.MouseEvent) => {
     props.superstate.ui.openPalette(
-      (_props: { hide: () => void }) => (
-        <StickerModal
-          ui={props.superstate.ui}
-          hide={_props.hide}
-          selectedSticker={(emoji) =>
-            props.superstate.spaceManager.saveTableSchema(
-              source,
-              dbSchema.id,
-              () => ({
-                ...dbSchema,
-                def: JSON.stringify({
-                  ...(safelyParseJSON(dbSchema?.def) ?? {}),
-                  icon: emoji,
-                }),
-              })
-            )
-          }
-        />
-      ),
+      <StickerModal
+        ui={props.superstate.ui}
+        selectedSticker={(emoji) =>
+          props.superstate.spaceManager.saveTableSchema(
+            source,
+            dbSchema.id,
+            () => ({
+              ...dbSchema,
+              def: JSON.stringify({
+                ...(safelyParseJSON(dbSchema?.def) ?? {}),
+                icon: emoji,
+              }),
+            })
+          )
+        }
+      />,
       windowFromDocument(e.view.document)
     );
   };

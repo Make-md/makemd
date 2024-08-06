@@ -1,8 +1,7 @@
-import { arrayMove } from "@dnd-kit/sortable";
 import i18n from "core/i18n";
 import { PathStateWithRank, Superstate } from "core/superstate/superstate";
 import { MakeMDSettings } from "core/types/settings";
-import { SpaceDefFilter, SpaceDefGroup, SpaceDefinition, SpaceSort } from "core/types/space";
+import { spaceContextsKey, SpaceDefFilter, SpaceDefGroup, SpaceDefinition, spaceFilterKey, spaceLinksKey, spaceRecursiveKey, SpaceSort, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
 import { CacheState, PathState, SpaceState } from "core/types/superstate";
 import { reorderPathsInContext } from "core/utils/contexts/context";
 import { runFormulaWithContext } from "core/utils/formula/parser";
@@ -14,28 +13,21 @@ import { movePath } from "core/utils/uri";
 import { SpaceInfo, SpaceProperty } from "types/mdb";
 import { MDBFrame } from "types/mframe";
 import { TargetLocation } from "types/path";
-import { insert } from "utils/array";
 import { defaultValueForType } from "utils/properties";
 import { sanitizeColumnName } from "utils/sanitizers";
 import { deletePath } from "./path";
 import { addTagToPath, deleteTagFromPath } from "./tags";
+
+export type SpaceFragmentType = "context" | 'frame' | 'action'
 
 export type SpaceFragmentSchema = {
   id: string;
   name: string;
   sticker?: string;
   frameType?: string;
-  type: "context" | 'frame' | 'action';
+  type: SpaceFragmentType;
   path: string;
 };
-
-export const spaceContextsKey = (settings: MakeMDSettings) => settings.fmKeyContexts
-export const spaceTemplateKey = (settings: MakeMDSettings) => settings.fmKeyTemplate
-export const spaceTemplateNameKey = (settings: MakeMDSettings) => settings.fmKeyTemplateName
-export const spaceFilterKey = (settings: MakeMDSettings) => settings.fmKeyFilter
-export const spaceLinksKey = (settings: MakeMDSettings) => settings.fmKeyLinks
-export const spaceSortKey = (settings: MakeMDSettings) => settings.fmKeySort
-export const FMSpaceKeys = (settings: MakeMDSettings) => [spaceContextsKey(settings), spaceFilterKey(settings), spaceLinksKey(settings), spaceSortKey(settings), spaceTemplateNameKey(settings), spaceTemplateKey(settings)]
 
 export const uriToSpaceFragmentSchema = async (
   superstate: Superstate,
@@ -122,12 +114,13 @@ const parseSpaceFilterGroup = (value: any) : SpaceDefGroup => {
 
 export const parseSpaceMetadata = (metadata: Record<string, any>, settings: MakeMDSettings) : SpaceDefinition => {
     return {
-      sort: parseSpaceSort(metadata[spaceSortKey(settings)]), 
-      contexts: ensureArray(metadata[spaceContextsKey(settings)]), 
-      links: ensureArray(metadata[spaceLinksKey(settings)]), 
-      filters: ensureArray(metadata[spaceFilterKey(settings)]).map(f => parseSpaceFilterGroup(f)),
-      template: ensureString(metadata[spaceTemplateKey(settings)]),
-      templateName: ensureString(metadata[spaceTemplateNameKey(settings)])
+      sort: parseSpaceSort(metadata[spaceSortKey]), 
+      recursive: ensureString(metadata[spaceRecursiveKey]),
+      contexts: ensureArray(metadata[spaceContextsKey]), 
+      links: ensureArray(metadata[spaceLinksKey]), 
+      filters: ensureArray(metadata[spaceFilterKey]).map(f => parseSpaceFilterGroup(f)),
+      template: ensureString(metadata[spaceTemplateKey]),
+      templateName: ensureString(metadata[spaceTemplateNameKey])
     }
 }
 
@@ -199,8 +192,8 @@ export const pathStateToTreeNode = (
 });
 
 export const spaceRowHeight = (superstate: Superstate, preset: number, section: boolean) => {
-  const spaceHeight = preset ?? 29;
-  return isTouchScreen(superstate.ui) ? 40 : section ?  spaceHeight + 10 : spaceHeight;
+  const spaceHeight = preset ?? (isTouchScreen(superstate.ui) ? 40 : 29);
+  return spaceHeight + (section ? 10 : 0);
 }
 
 export const spaceSortFn =
@@ -461,25 +454,6 @@ export const updateSpaceSort = (
   })
 };
 
-export const toggleWaypoint = (
-  superstate: Superstate,
-  spacePath: string,
-  remove: boolean,
-  rank?: number,
-) => {
-const settings = superstate.settings;
-    if (remove) {
-      settings.waypoints = settings.waypoints.filter(f => f != spacePath) 
-    } else if (settings.waypoints.some(f => f == spacePath)) {
-        const currIndex = settings.waypoints.findIndex(f => f == spacePath);
-        settings.waypoints = arrayMove(settings.waypoints, currIndex, rank);
-      
-    } else {
-      settings.waypoints = insert(settings.waypoints, rank, spacePath);
-    }
-  superstate.saveSettings();
-  
-};
 
 export const metadataPathForSpace = (superstate: Superstate, space: SpaceInfo) => {
   if (superstate.settings.enableFolderNote) {
@@ -506,12 +480,7 @@ export const removePathsFromSpace = async (
 ) => {
 const space = superstate.spacesIndex.get(spacePath);
 if (!space) return;
-  if (space.type == 'default') {
-    if (space.path == 'spaces://$waypoints') {
-      toggleWaypoint(superstate, paths[0], true)
-      return;
-    }
-  }
+  
   if (space.type == 'tag') {
     paths.forEach(path => deleteTagFromPath(superstate, path, space.name))
   } else if (space.type == 'folder' || space.type == 'vault') {
@@ -535,11 +504,11 @@ export const newTemplateInSpace = async (
     }
   } catch (e) {
   }
-  if (!(await superstate.spaceManager.pathExists(`${space.path}/.space/templates/${name}`))) {
+  if (!(await superstate.spaceManager.pathExists(`${space.path}/${superstate.settings.spaceSubFolder}/templates/${name}`))) {
     newPathInSpace(superstate, space, "md", null, false, null, location);
     return;
   }
-const newPath = await superstate.spaceManager.copyPath(`${space.path}/.space/templates/${name}`, space.path, newName)
+const newPath = await superstate.spaceManager.copyPath(`${space.path}/${superstate.settings.spaceSubFolder}/templates/${name}`, space.path, newName)
 if (newPath)
 superstate.ui.openPath(newPath, location)
 }
@@ -612,6 +581,7 @@ export  const saveNewProperty = async (superstate: Superstate, path: string, pro
       superstate.ui.notify(i18n.notice.duplicatePropertyName);
       return false;
     }
+    
     const oldFieldIndex = oldColumn
       ? mdbtable.cols.findIndex((f) => f.name == oldColumn.name)
       : -1;
@@ -636,9 +606,9 @@ export  const saveNewProperty = async (superstate: Superstate, path: string, pro
 
 export const saveProperties = (superstate: Superstate, path: string, properties: Record<string, any>) => {
     if (superstate.spacesIndex.has(path)) {
-        saveSpaceProperties(superstate, path, properties)
+        return saveSpaceProperties(superstate, path, properties)
     } else {
-      superstate.spaceManager.saveProperties(path, properties);
+      return superstate.spaceManager.saveProperties(path, properties);
     }
 };
 

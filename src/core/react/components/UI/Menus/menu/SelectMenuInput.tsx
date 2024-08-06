@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { SelectSection } from "./SelectionMenu";
 
 const SIZER_STYLES: CSSProperties = {
   position: "absolute",
@@ -37,6 +38,7 @@ const SelectMenuSearch = forwardRef(
       inputAttributes: any;
       inputEventHandlers: any;
       index: number;
+      currentSection: SelectSection;
     },
     input: any
   ) => {
@@ -79,20 +81,29 @@ const SelectMenuSearch = forwardRef(
     };
 
     return (
-      <div className={classNames.searchWrapper}>
-        <input
-          {...inputAttributes}
-          {...inputEventHandlers}
-          ref={input}
-          value={props.query}
-          placeholder={placeholderText}
-          className={classNames.searchInput}
-          role="combobox"
-          style={{ width: "100%" }}
-          onClick={(e) => e.stopPropagation()}
-        />
-        <div ref={sizer} style={SIZER_STYLES}>
-          {props.query || placeholderText}
+      <div className={classNames.search}>
+        <div className={classNames.searchWrapper}>
+          <div
+            className="mk-icon-xsmall"
+            dangerouslySetInnerHTML={{
+              __html: props.ui.getSticker("ui//search"),
+            }}
+          ></div>
+          <input
+            {...inputAttributes}
+            {...inputEventHandlers}
+            ref={input}
+            value={props.query}
+            placeholder={placeholderText}
+            className={classNames.searchInput}
+            role="combobox"
+            style={{ width: "100%" }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div ref={sizer} style={SIZER_STYLES}>
+            {props.query || placeholderText}
+          </div>
+          <span></span>
         </div>
       </div>
     );

@@ -1,9 +1,9 @@
 import i18n from "core/i18n";
 
 import { Superstate } from "core/superstate/superstate";
-import { FMSpaceKeys } from "core/superstate/utils/spaces";
 import { FMMetadataKeys } from "core/types/space";
 import { allPropertiesForPaths } from "core/utils/properties/allProperties";
+import { MenuObject } from "core/utils/ui/menu";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   defaultContextSchemaID,
@@ -33,6 +33,9 @@ const NewPropertyMenuComponent = (
   props: {
     superstate: Superstate;
     hide?: () => void;
+    onSubmenu?: (
+      openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
+    ) => void;
   } & NewPropertyMenuProps
 ) => {
   const [fieldName, setFieldName] = useState<string>("");
@@ -91,30 +94,34 @@ const NewPropertyMenuComponent = (
   };
 
   const selectType = (e: React.MouseEvent) => {
-    props.superstate.ui.openMenu(
-      (e.target as HTMLElement).getBoundingClientRect(),
-      {
-        ui: props.superstate.ui,
-        multi: false,
-        editable: false,
-        searchable: true,
-        saveOptions: selectedType,
-        value: [],
-        showAll: true,
-        options: fieldTypes
-          .filter((f) =>
-            fieldSource == "$fm" && !props.isSpace ? f.metadata : !f.restricted
-          )
-          .map((f, i) => ({
-            id: i + 1,
-            name: f.label,
-            value: f.type,
-            icon: f.icon,
-            description: f.description,
-          })),
-      },
-      windowFromDocument(e.view.document)
-    );
+    props.onSubmenu((rect: Rect, onHide: () => void) => {
+      return props.superstate.ui.openMenu(
+        rect,
+        {
+          ui: props.superstate.ui,
+          multi: false,
+          editable: false,
+          searchable: true,
+          value: [],
+          showAll: true,
+          options: fieldTypes
+            .filter((f) =>
+              fieldSource == "$fm" && !props.isSpace
+                ? f.metadata
+                : !f.restricted
+            )
+            .map((f, i) => ({
+              id: i + 1,
+              name: f.label,
+              value: f.type,
+              icon: f.icon,
+              description: f.description,
+              onClick: () => setFieldType(f.type),
+            })),
+        },
+        windowFromDocument(e.view.document)
+      );
+    });
   };
   const selectedContext = (value: string) => {
     setFieldValue(value);
@@ -180,7 +187,6 @@ const NewPropertyMenuComponent = (
             ...FMMetadataKeys(props.superstate.settings),
             props.superstate.settings.fmKeyAlias,
             "tags",
-            ...FMSpaceKeys(props.superstate.settings),
           ].some((g) => g == f.name)
       )
       .map((f) => ({
@@ -325,7 +331,8 @@ export const showNewPropertyMenu = (
   rect: Rect,
   win: Window,
   props: NewPropertyMenuProps,
-  onHide?: () => void
+  onHide?: () => void,
+  isSubmenu?: boolean
 ) => {
   return superstate.ui.openCustomMenu(
     rect,
@@ -335,7 +342,7 @@ export const showNewPropertyMenu = (
     ></NewPropertyMenuComponent>,
     {},
     win,
-    "bottom",
+    null,
     onHide
   );
 };

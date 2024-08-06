@@ -12,7 +12,7 @@ import { emojiFromString } from "utils/stickers";
 interface StickerModalProps {
   ui: UIManager;
   selectedSticker: (path: string) => void;
-  hide: () => void;
+  hide?: () => void;
 }
 
 const StickerModal: React.FC<StickerModalProps> = (props) => {
@@ -106,14 +106,22 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
   }, [ref.current]);
   return (
     <>
-      <input
-        value={query}
-        onChange={handleInputChange}
-        onKeyDown={handleKeyDown}
-        placeholder={i18n.labels.findStickers}
-        className="mk-input mk-input-large mk-border-bottom"
-        ref={ref}
-      />
+      <div className="mk-palette-search">
+        <div
+          className="mk-icon-small"
+          dangerouslySetInnerHTML={{
+            __html: props.ui.getSticker("ui//search"),
+          }}
+        ></div>
+        <input
+          value={query}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          placeholder={i18n.labels.findStickers}
+          ref={ref}
+        />
+        <button className="mk-toolbar-button"></button>
+      </div>
       <div className="mk-menu-sections">
         <div
           onClick={() => setSelectedCategory(null)}

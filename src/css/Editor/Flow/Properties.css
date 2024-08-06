@@ -57,6 +57,7 @@ align-items: center;
     font-size: 12px;
     gap: 4px;
     border-radius: 12px;
+    border: var(--tag-border-width) solid var(--tag-border-color);
 }
 .mk-props-contexts-space-add {
     display: flex;

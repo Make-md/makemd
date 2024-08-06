@@ -43,20 +43,17 @@ export const SpaceActionProperty = (props: {
   const newAction = (e: React.MouseEvent) => {
     props.superstate.ui.openModal(
       i18n.labels.newAction,
-      (_props: { hide: () => void }) => (
-        <InputModal
-          value=""
-          saveLabel={i18n.buttons.save}
-          hide={_props.hide}
-          saveValue={(value) => {
-            props.superstate.spaceManager.createCommand(spaceState.path, {
-              id: value,
-              name: value,
-              type: "actions",
-            });
-          }}
-        ></InputModal>
-      ),
+      <InputModal
+        value=""
+        saveLabel={i18n.buttons.save}
+        saveValue={(value) => {
+          props.superstate.spaceManager.createCommand(spaceState.path, {
+            id: value,
+            name: value,
+            type: "actions",
+          });
+        }}
+      ></InputModal>,
       windowFromDocument(e.view.document)
     );
   };

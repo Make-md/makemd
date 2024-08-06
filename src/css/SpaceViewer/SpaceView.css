@@ -7,10 +7,11 @@
   height: 100%;
   position: relative;
   z-index: 0;
-  padding-bottom: 100px;
   width: 100%;
   overflow-x: hidden; 
   padding: var(--file-margins);
+  padding-bottom: 100px;
+
 }
 
 body.mk-readable-line {
@@ -353,15 +354,18 @@ margin-left: calc((max(100%, var(--max-width)) - var(--max-width)) /2) !importan
   color: var(--mk-ui-text-tertiary);
 }
 
-.mk-minimal-fix .mk-space-body {
-  max-width: calc(100% - 60px);
+
+.mk-minimal-fix .mk-space-header, .mk-minimal-fix .mk-space-body {
+  max-width: calc(100% - 60px) !important;
     margin: 0 auto;
 }
 .mk-minimal-fix .mk-floweditor .markdown-source-view.mod-cm6.is-readable-line-width .cm-contentContainer.cm-contentContainer>.cm-content>div {
   margin-inline: inherit !important;
+  max-width: 100%;
 }
 
 .mk-minimal-fix .mk-floweditor-container .mk-floweditor .markdown-source-view.mod-cm6.is-readable-line-width .cm-line {
   padding: var(--embed-padding) !important;
+  
   margin: 0 !important;
 }

@@ -2,9 +2,11 @@ import { Superstate } from "core/superstate/superstate";
 import { saveSpaceCache } from "core/superstate/utils/spaces";
 import { SpaceDefinition } from "core/types/space";
 import { SpaceState } from "core/types/superstate";
-import { i18n } from "makemd-core";
+import { i18n, SelectOption } from "makemd-core";
 import React, { useEffect, useMemo, useState } from "react";
+import { windowFromDocument } from "utils/dom";
 import { PathCrumb } from "../UI/Crumbs/PathCrumb";
+import { defaultMenu, SelectOptionType } from "../UI/Menus/menu/SelectionMenu";
 import { CollapseToggleSmall } from "../UI/Toggles/CollapseToggleSmall";
 
 export const SpaceItemProperty = (props: {
@@ -96,21 +98,76 @@ export const SpaceItemProperty = (props: {
             <button
               className="mk-toolbar-button"
               aria-label={i18n.buttons.addSmartSearch}
-              onClick={() =>
-                saveMetadata({
-                  ...metadata,
-                  filters: [
-                    ...(metadata.filters ?? []),
-                    {
-                      type: "any",
-                      trueFalse: true,
-                      filters: [],
-                    },
-                  ],
-                })
-              }
+              onClick={(e) => {
+                const menuOptions: SelectOption[] = [];
+                menuOptions.push({
+                  name: i18n.buttons.addSmartSearch,
+                  icon: "ui//live",
+                  onClick: () => {
+                    saveMetadata({
+                      ...metadata,
+                      filters: [
+                        ...(metadata.filters ?? []),
+                        {
+                          type: "any",
+                          trueFalse: true,
+                          filters: [],
+                        },
+                      ],
+                    });
+                  },
+                });
+                menuOptions.push({
+                  name: i18n.buttons.subFolders,
+                  icon: "ui//folder",
+                  type: SelectOptionType.Submenu,
+                  onSubmenu: (rect, onHide) => {
+                    const menuOptions: SelectOption[] = [];
+                    menuOptions.push({
+                      name: "Include all items in subfolders",
+                      onClick: () => {
+                        saveMetadata({
+                          ...metadata,
+                          recursive: "file",
+                        });
+                      },
+                    });
+                    menuOptions.push({
+                      name: "Include all folders and items in subfolders",
+                      onClick: () => {
+                        saveMetadata({
+                          ...metadata,
+                          recursive: "all",
+                        });
+                      },
+                    });
+                    menuOptions.push({
+                      name: "Don't include items in subfolder",
+                      onClick: () => {
+                        saveMetadata({
+                          ...metadata,
+                          recursive: "",
+                        });
+                      },
+                    });
+                    return props.superstate.ui.openMenu(
+                      rect,
+                      defaultMenu(props.superstate.ui, menuOptions),
+                      windowFromDocument(e.view.document),
+                      null,
+                      onHide
+                    );
+                  },
+                });
+                const rect = e.currentTarget.getBoundingClientRect();
+                props.superstate.ui.openMenu(
+                  rect,
+                  defaultMenu(props.superstate.ui, menuOptions),
+                  windowFromDocument(e.view.document)
+                );
+              }}
               dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//live"),
+                __html: props.superstate.ui.getSticker("ui//plus"),
               }}
             ></button>
           </div>

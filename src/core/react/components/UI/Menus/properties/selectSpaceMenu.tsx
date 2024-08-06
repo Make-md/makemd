@@ -27,7 +27,7 @@ export const showSpacesMenu = (
         f.type == "tag" ? f.name : f.type == "folder" ? f.path : f.path,
     }));
 
-  superstate.ui.openMenu(
+  return superstate.ui.openMenu(
     offset,
     {
       ui: superstate.ui,

@@ -3,10 +3,36 @@
 import { SpaceDefGroup } from "core/types/space";
 import { PathState } from "core/types/superstate";
 import { pathByDef } from "core/utils/spaces/query";
+import Fuse from "fuse.js";
+
+export function fastSearch (payload: { query: string, pathsIndex: Map<string, PathState>, count: number}) {
+    const { query, pathsIndex, count } = payload;
+
+    const paths = [];
+
+    const fuseOptions = {
+      // isCaseSensitive: false,
+      // includeScore: false,
+      shouldSort: true,
+      // includeMatches: false,
+      // findAllMatches: false,
+      // minMatchCharLength: 1,
+      // location: 0,
+      threshold: 0,
+      // distance: 100,
+      // useExtendedSearch: false,
+      ignoreLocation: true,
+      // ignoreFieldNorm: false,
+      // fieldNormWeight: 1,
+      keys: ["name", "path", 'label.preview'],
+    };
+    const fuse = new Fuse([...pathsIndex.values()], fuseOptions);
+    return fuse.search(query).map((result) => result.item).slice(0, count);
+
+}
 
 export function searchPath (payload: { queries: SpaceDefGroup[], pathsIndex: Map<string, PathState>, count: number}) {
     const { queries, pathsIndex, count } = payload;
-
     const paths = [];
 
     for (const [k, f] of pathsIndex) {

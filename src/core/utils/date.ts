@@ -1,6 +1,6 @@
 import { Superstate } from "core/superstate/superstate";
 import { format, parseISO } from "date-fns";
-import { isDate, isNumber, isString } from "lodash";
+import { isDate, isFinite, isString } from "lodash";
 
 export const isValidDate = (d: Date) => {
     return d instanceof Date && !isNaN(d as any);
@@ -23,7 +23,8 @@ export const formatDate = (superstate: Superstate, date: Date, dateFormat?: stri
 }
 
 export const parseDate = (str: any) => {
-    if (isNumber(str)) {
+    if (!str) return null;
+    if (isFinite(str)) {
         return new Date(str);
     }
     if (isString(str))
@@ -32,5 +33,5 @@ export const parseDate = (str: any) => {
         
     }
 if (isDate(str))return str;
-return new Date()
+return null;
 }

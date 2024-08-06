@@ -6,13 +6,15 @@ import { getAllAbstractFilesInVault } from "../utils/file";
 
 
 export const indexCurrentFileTree = (plugin: MakeMDPlugin, vaultDB: DBRows): DBTables => {
-  const treeItems: DBRows = getAllAbstractFilesInVault(plugin.app).map(file => ({
-    ...(vaultDB.find(f => f.path == file.path) ?? {}),
+  const treeItems: DBRows = getAllAbstractFilesInVault(plugin.app).map(file => {
+    const currentCache = vaultDB.find(f => f.path == file.path) ?? {};
+    return {
+    ...currentCache,
     path: file.path,
     parent: file.parent?.path,
-    created: file instanceof TFile ? file.stat.ctime.toString() : undefined,
+    created: currentCache?.ctime?.length > 0 ? currentCache.ctime : file instanceof TFile ? file.stat.ctime.toString() : undefined,
     folder: file instanceof TFolder ? "true" : "false",
-  }));
+  }});
   
   return {
     vault: {

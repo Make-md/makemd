@@ -52,10 +52,10 @@ export const excludeVaultItemPredicate =
   (settings: MakeMDSettings) =>
   (f: VaultItem, index: number, folder: VaultItem[]) =>
     !(
-      f.folder != "true" &&
+      (f.path.endsWith('/'+settings.spaceSubFolder) || f.path == settings.spaceSubFolder ||
       settings.hiddenExtensions.find(
         (e) => (f.path).endsWith(e)
-      )
+      ))
     ) &&
     !settings.hiddenFiles.find((e) => e == f.path) &&
     (!settings.enableFolderNote ||

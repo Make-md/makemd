@@ -5,7 +5,7 @@ import { Focus } from "core/types/focus";
 import { i18n, Superstate } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
 import { windowFromDocument } from "utils/dom";
-import { showSpacesMenu } from "../../UI/Menus/properties/selectSpaceMenu";
+import { BlinkMode, openBlinkModal } from "../../Blink/Blink";
 import StickerModal from "../../UI/Modals/StickerModal";
 export const FocusEditor = (props: {
   superstate: Superstate;
@@ -16,8 +16,8 @@ export const FocusEditor = (props: {
     saveActiveSpace,
     editFocus: editFocus,
     activeFocus: activeFocus,
-    setWaypoints,
-    waypoints,
+    setFocuses: setFocuses,
+    focuses: focuses,
     setEditFocus: setEditFocus,
   } = useContext(NavigatorContext);
   const [focus, setFocus] = useState<Focus>(props.focus);
@@ -28,21 +28,18 @@ export const FocusEditor = (props: {
     props.focus.name?.length == 0 || editFocus ? (
       <div className="mk-path-tree-focus">
         <div
-          className={classNames("mk-waypoints-item")}
+          className={classNames("mk-focuses-item")}
           dangerouslySetInnerHTML={{
             __html: props.superstate.ui.getSticker(focus.sticker),
           }}
           onClick={(e) =>
             props.superstate.ui.openPalette(
-              (_props: { hide: () => void }) => (
-                <StickerModal
-                  ui={props.superstate.ui}
-                  hide={_props.hide}
-                  selectedSticker={(emoji) => {
-                    setFocus({ ...focus, sticker: emoji });
-                  }}
-                />
-              ),
+              <StickerModal
+                ui={props.superstate.ui}
+                selectedSticker={(emoji) => {
+                  setFocus({ ...focus, sticker: emoji });
+                }}
+              />,
               windowFromDocument(e.view.document)
             )
           }
@@ -58,7 +55,7 @@ export const FocusEditor = (props: {
           <button
             onClick={() => {
               if (props.focus.name.length == 0) {
-                setWaypoints(waypoints.filter((f, i) => i != activeFocus));
+                setFocuses(focuses.filter((f, i) => i != activeFocus));
                 props.superstate.saveSettings();
               } else {
                 setEditFocus(false);
@@ -77,11 +74,10 @@ export const FocusEditor = (props: {
         </div>
         <button
           onClick={(e) => {
-            const offset = (e.target as HTMLElement).getBoundingClientRect();
-            showSpacesMenu(
-              offset,
-              windowFromDocument(e.view.document),
+            openBlinkModal(
               props.superstate,
+              BlinkMode.Open,
+              windowFromDocument(e.view.document),
               (link) => {
                 const isNew = !props.superstate.spacesIndex.has(link);
                 if (isNew) {
@@ -92,9 +88,7 @@ export const FocusEditor = (props: {
                   return;
                 }
                 saveActiveSpace(link);
-              },
-              true,
-              true
+              }
             );
           }}
         >

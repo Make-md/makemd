@@ -57,6 +57,7 @@
     text-decoration: var(--font-text-decoration);
     color: var(--font-text-color);
     font-family: var(--font-text);
+    white-space: pre-wrap;
 }
 .mk-frame-text p {
     display: inline;

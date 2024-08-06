@@ -9,6 +9,7 @@ import { insert } from "utils/array";
 import { defaultMDBTableForContext } from "../../../schemas/mdb";
 import { uniq } from "../../../utils/array";
 import { parseMultiString } from "../../../utils/parsers";
+import { formatDate } from "../date";
 
 
 export const optionValuesForColumn = (column: string, table: SpaceTable) => {
@@ -24,7 +25,7 @@ export const defaultTableDataForContext = (superstate: Superstate, space: SpaceI
   const paths = [...superstate.getSpaceItems(space.path, true)];
   return {
     ...defaultMDBTableForContext(space),
-    rows: paths.map((f) => ({ [PathPropertyName]: f.path })),
+    rows: paths.map((f) => ({ [PathPropertyName]: f.path, "Created": formatDate(superstate, f.metadata?.ctime, "yyyy-MM-dd") })),
   };
 
 };

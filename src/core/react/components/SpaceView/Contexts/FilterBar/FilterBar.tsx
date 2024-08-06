@@ -1,3 +1,4 @@
+import classNames from "classnames";
 import i18n from "core/i18n";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
@@ -33,9 +34,10 @@ import {
   predicateFnsForType,
 } from "core/utils/contexts/predicate/predicate";
 import { sortFnTypes } from "core/utils/contexts/predicate/sort";
+import { formatDate } from "core/utils/date";
 import { nameForField } from "core/utils/frames/frames";
 import { tagSpacePathFromTag } from "core/utils/strings";
-import { format } from "date-fns";
+import { isPhone } from "core/utils/ui/screen";
 import React, { useContext, useEffect, useState } from "react";
 import {
   defaultContextSchemaID,
@@ -44,6 +46,7 @@ import {
 } from "schemas/mdb";
 import { Rect } from "types/Pos";
 import { SpaceProperty, SpaceTableColumn } from "types/mdb";
+import { FrameEditorMode } from "types/mframe";
 import { windowFromDocument } from "utils/dom";
 import { parseMultiString } from "utils/parsers";
 import { parseMDBStringValue } from "utils/properties";
@@ -57,6 +60,7 @@ export const FilterBar = (props: {
   superstate: Superstate;
   showTitle?: boolean;
   setView?: (view: string) => void;
+  minMode?: boolean;
 }) => {
   const { spaceState: spaceCache } = useContext(SpaceContext);
   const { readMode } = useContext(PathContext);
@@ -75,6 +79,7 @@ export const FilterBar = (props: {
 
   const { frameSchema, saveSchema, setFrameSchema } =
     useContext(FramesMDBContext);
+  const [searchActive, setSearchActive] = useState(false);
 
   const properties = spaceCache?.propertyTypes ?? [];
   const propertiesForFrame = async (path: string) => {
@@ -305,6 +310,15 @@ export const FilterBar = (props: {
         },
       });
     });
+    if (props.superstate.settings.experimental) {
+      menuOptions.push({
+        name: i18n.menu.customView,
+        icon: "ui//brush",
+        onClick: (e) => {
+          setEditMode(FrameEditorMode.Group);
+        },
+      });
+    }
 
     return props.superstate.ui.openMenu(
       offset,
@@ -313,25 +327,19 @@ export const FilterBar = (props: {
     );
   };
 
-  const selectSource = (e: React.MouseEvent) => {
-    const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-    showSpacesMenu(
-      offset,
-      windowFromDocument(e.view.document),
-      props.superstate,
-      (link: string) => {
-        const newSchema = {
-          ...frameSchema,
-          name: frameSchema.name,
-          def: {
-            db: dbSchema.id,
-            context: link,
-          },
-          type: "view",
-        };
-        saveSchema(newSchema).then((f) => setFrameSchema(newSchema));
-      }
-    );
+  const selectSource = (offset: Rect, win: Window) => {
+    return showSpacesMenu(offset, win, props.superstate, (link: string) => {
+      const newSchema = {
+        ...frameSchema,
+        name: frameSchema.name,
+        def: {
+          db: dbSchema.id,
+          context: link,
+        },
+        type: "view",
+      };
+      saveSchema(newSchema).then((f) => setFrameSchema(newSchema));
+    });
   };
 
   const showViewOptionsMenu = async (e: React.MouseEvent) => {
@@ -405,8 +413,8 @@ export const FilterBar = (props: {
         icon: "ui//table",
         type: SelectOptionType.Disclosure,
         value: sourceSpace.name,
-        onClick: (e) => {
-          selectSource(e);
+        onSubmenu: (rect, onHide) => {
+          return selectSource(rect, windowFromDocument(e.view.document));
         },
       });
       menuOptions.push({
@@ -870,7 +878,8 @@ export const FilterBar = (props: {
           deleteColumn: delColumn,
           hidden: predicate?.colsHidden.includes(f.name + f.table),
         },
-        onHide
+        onHide,
+        true
       );
     };
     const options: SelectOption[] = [];
@@ -1003,7 +1012,7 @@ export const FilterBar = (props: {
         const saveValue = (date: Date) => {
           const newFilter: Filter = {
             ...filter,
-            value: date ? format(date, "yyyy-MM-dd") : "",
+            value: date ? formatDate(props.superstate, date) : "",
           };
           savePredicate({
             filters: (predicate?.filters ?? []).map((s, i) =>
@@ -1189,68 +1198,131 @@ export const FilterBar = (props: {
 
   return (
     <>
-      {props.showTitle && (
-        <div className="mk-context-config">
-          <ContextTitle superstate={props.superstate}></ContextTitle>
+      {props.minMode ? (
+        <div className="mk-view-config">
+          <SearchBar
+            superstate={props.superstate}
+            setSearchString={setSearchString}
+            closeSearch={() => setSearchActive(false)}
+          ></SearchBar>
 
-          <span></span>
+          <button
+            className="mk-toolbar-button"
+            onClick={(e) => {
+              const rect = (e.target as HTMLElement).getBoundingClientRect();
 
-          {dbSchema?.id == defaultContextSchemaID &&
-            !spaceCache.space.readOnly && (
-              <>
+              showSortMenu(rect, windowFromDocument(e.view.document), null);
+            }}
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker("ui//sort-desc"),
+            }}
+          ></button>
+          <button
+            className="mk-toolbar-button"
+            onClick={(e) => {
+              const rect = (e.target as HTMLElement).getBoundingClientRect();
+
+              showAddFilterMenu(
+                rect,
+                windowFromDocument(e.view.document),
+                null
+              );
+            }}
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker("ui//filter"),
+            }}
+          ></button>
+        </div>
+      ) : (
+        <>
+          {props.showTitle && (
+            <div className="mk-context-config">
+              <ContextTitle superstate={props.superstate}></ContextTitle>
+
+              <span></span>
+
+              {dbSchema?.id == defaultContextSchemaID &&
+                !spaceCache.space.readOnly && (
+                  <>
+                    <button
+                      className="mk-button-new"
+                      onClick={(e) =>
+                        showSpaceAddMenu(
+                          props.superstate,
+                          (e.target as HTMLElement).getBoundingClientRect(),
+                          windowFromDocument(e.view.document),
+                          spaceCache,
+                          true
+                        )
+                      }
+                      dangerouslySetInnerHTML={{
+                        __html: props.superstate.ui.getSticker("ui//plus"),
+                      }}
+                    ></button>
+                  </>
+                )}
+            </div>
+          )}
+          <div className="mk-view-config">
+            {!expanded && (
+              <ListSelector
+                superstate={props.superstate}
+                expanded={false}
+                setView={props.setView}
+              ></ListSelector>
+            )}
+
+            {
+              <div className="mk-view-options">
+                <span></span>
+                {(isPhone(props.superstate.ui) || !searchActive) && (
+                  <button
+                    className={classNames(
+                      "mk-toolbar-button",
+                      searchActive && "mk-active"
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSearchActive((f) => !f);
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: props.superstate.ui.getSticker("ui//search"),
+                    }}
+                  ></button>
+                )}
+                {!isPhone(props.superstate.ui) && searchActive && (
+                  <SearchBar
+                    superstate={props.superstate}
+                    setSearchString={setSearchString}
+                    closeSearch={() => setSearchActive(false)}
+                  ></SearchBar>
+                )}
+
                 <button
-                  className="mk-button-new"
-                  onClick={(e) =>
-                    showSpaceAddMenu(
-                      props.superstate,
-                      (e.target as HTMLElement).getBoundingClientRect(),
-                      windowFromDocument(e.view.document),
-                      spaceCache,
-                      true
-                    )
-                  }
+                  className="mk-toolbar-button"
+                  onClick={(e) => showLayoutMenu(e)}
                   dangerouslySetInnerHTML={{
-                    __html: props.superstate.ui.getSticker("ui//plus"),
+                    __html: props.superstate.ui.getSticker("ui//layout"),
                   }}
                 ></button>
-              </>
-            )}
-        </div>
-      )}
-      <div className="mk-view-config">
-        {!expanded && (
-          <ListSelector
-            superstate={props.superstate}
-            expanded={false}
-            setView={props.setView}
-          ></ListSelector>
-        )}
-
-        {
-          <div className="mk-view-options">
-            <span></span>
+                <button
+                  className="mk-toolbar-button"
+                  onClick={(e) => showViewOptionsMenu(e)}
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker("ui//view-options"),
+                  }}
+                ></button>
+              </div>
+            }
+          </div>
+          {isPhone(props.superstate.ui) && searchActive && (
             <SearchBar
               superstate={props.superstate}
               setSearchString={setSearchString}
             ></SearchBar>
-
-            <button
-              className="mk-toolbar-button"
-              onClick={(e) => showLayoutMenu(e)}
-              dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//layout"),
-              }}
-            ></button>
-            <button
-              className="mk-toolbar-button"
-              onClick={(e) => showViewOptionsMenu(e)}
-              dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//view-options"),
-              }}
-            ></button>
-          </div>
-        }
-      </div>
+          )}
+        </>
+      )}
       {(predicate?.filters.length > 0 ||
         predicate?.sort.length > 0 ||
         predicate?.groupBy.length > 0) && (

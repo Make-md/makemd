@@ -306,9 +306,9 @@ export const FrameEditorNodeView = (props: {
       select(null);
     }
     if (!selected) {
-      if (e.detail === 1) {
-        if (typeof state.actions?.onClick == "function") {
-          state.actions?.onClick(
+      if (e.detail === 2 || isTouchScreen(props.superstate.ui)) {
+        if (typeof state.actions?.onDoubleClick == "function") {
+          state.actions?.onDoubleClick(
             e,
             null,
             props.instance.state,
@@ -316,10 +316,12 @@ export const FrameEditorNodeView = (props: {
             props.superstate.api
           );
           e.stopPropagation();
+          return;
         }
-      } else if (e.detail === 2 || isTouchScreen(props.superstate.ui)) {
-        if (typeof state.actions?.onDoubleClick == "function") {
-          state.actions?.onDoubleClick(
+      }
+      if (e.detail === 1) {
+        if (typeof state.actions?.onClick == "function") {
+          state.actions?.onClick(
             e,
             null,
             props.instance.state,

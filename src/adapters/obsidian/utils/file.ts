@@ -14,13 +14,13 @@ import {
 
 import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
 import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
-import { tagsSpacePath } from "core/types/space";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { TargetLocation } from "types/path";
 import { selectElementContents } from "utils/dom";
 import { folderPathToString, getParentPathFromString, removeTrailingSlashFromFolder } from "utils/path";
 import { sanitizeFileName, sanitizeFolderName } from "utils/sanitizers";
 import { SPACE_FRAGMENT_VIEW_TYPE } from "../ui/editors/SpaceFragmentViewComponent";
+import { EVER_VIEW_TYPE } from "../ui/navigator/EverLeafView";
   
 
 export const tFileToAFile = (file: TAbstractFile | TFile) : AFile => {
@@ -93,11 +93,10 @@ export const renameFile = async (plugin: MakeMDPlugin, file: TAbstractFile, newN
   const afile = tFileToAFile(file);
   const fileName = afile.isFolder ? uniqueFolderName(file.name, newName, file.parent) : uniqueFileName(file.name, newName, afile.extension, file.parent);
   const newPath = file.parent.path == "/" ? fileName : file.parent.path + "/" + fileName
-  await plugin.files.renameFile(
+  return await plugin.files.renameFile(
     file.path,
     newPath
   );
-  return fileName;
 };
 
 export const folderRenamed = async (plugin: MakeMDPlugin, oldPath: string, newPath: string) => {
@@ -271,7 +270,7 @@ export const openSpace = async (
   plugin: MakeMDPlugin,
   newLeaf: TargetLocation
 ) => {
-if (spacePath == tagsSpacePath) return;
+// if (spacePath == tagsSpacePath) return;
   if (!plugin.superstate.settings.spaceViewEnabled) {
     if (!plugin.superstate.settings.enableFolderNote) {
       return;
@@ -303,6 +302,8 @@ export const getLeaf = (app: App, location: TargetLocation) => {
     leaf = app.workspace.getRightLeaf(false);
   } else if (location == 'left') {
     leaf = app.workspace.getLeftLeaf(false);
+  } else if (location == 'overview') {
+    leaf = app.workspace.getLeavesOfType(EVER_VIEW_TYPE)[0];
   } else {
     leaf = app.workspace.getLeaf(location)
   }

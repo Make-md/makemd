@@ -83,13 +83,18 @@ import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
 import { loadFlowCommands } from "adapters/obsidian/commands/flowCommands";
+import { openPathFixer } from "adapters/obsidian/fileSystemPathFixer";
+import { moveSpaceFiles } from "adapters/obsidian/filesystem/spaceFileOps";
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
 import { SPACE_FRAGMENT_VIEW_TYPE, SpaceFragmentView } from "adapters/obsidian/ui/editors/SpaceFragmentViewComponent";
 import { installKitModal } from "adapters/obsidian/ui/kit/InstallKitModal";
 import { exportSpaceKit } from "adapters/obsidian/ui/kit/kits";
+import { EVER_VIEW_TYPE, EverLeafView } from "adapters/obsidian/ui/navigator/EverLeafView";
 import { InteractionType } from "core/middleware/ui";
+import { showWarningsModal } from "core/react/components/Navigator/SyncWarnings";
+import { openInputModal } from "core/react/components/UI/Modals/InputModal";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
-import { isTouchScreen } from "core/utils/ui/screen";
+import { isPhone, isTouchScreen } from "core/utils/ui/screen";
 import "css/DefaultVibe.css";
 import "css/Editor/Actions/Actions.css";
 import "css/Editor/Context/ContextList.css";
@@ -114,9 +119,10 @@ import "css/Obsidian/Mods.css";
 import "css/Panels/Blink.css";
 import "css/Panels/ContextBuilder.css";
 import "css/Panels/FileContext.css";
+import "css/Panels/Navigator/EverView.css";
 import "css/Panels/Navigator/FileTree.css";
+import "css/Panels/Navigator/Focuses.css";
 import "css/Panels/Navigator/Navigator.css";
-import "css/Panels/Navigator/Waypoints.css";
 import "css/Panels/SpaceEditor.css";
 import "css/SpaceViewer/Frame.css";
 import "css/SpaceViewer/Layout.css";
@@ -246,6 +252,9 @@ loadSuperState() {
 }
   
 loadViews () {
+  this.registerView(EVER_VIEW_TYPE, (leaf) => {
+    return new EverLeafView(leaf, this.superstate, this.ui);
+  });
   this.registerView(FILE_TREE_VIEW_TYPE, (leaf) => {
     return new FileTreeView(leaf, this.superstate, this.ui);
   });
@@ -276,23 +285,26 @@ loadViews () {
   }
 }
 
-  async loadSpaces() {
+  async loadSpaces()  {
+  document.body.querySelector(".app-container").setAttribute("vaul-drawer-wrapper", "");
+  
     
-    
+  
     document.body.classList.toggle("mk-readable-line", this.app.vault.getConfig("readableLineLength"));
     this.superstate.settings.readableLineWidth = this.app.vault.getConfig("readableLineLength");
     if (this.superstate.settings.spacesEnabled) {
       document.body.classList.toggle("mk-hide-tabs", !this.superstate.settings.sidebarTabs);
+      document.body.classList.toggle("mk-mobile-styler", this.superstate.settings.mobileMakeBar);
     document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
-    // document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
+    document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
     document.body.classList.toggle(
       "mk-folder-lines",
       this.superstate.settings.folderIndentationLines
     );
-    document.body.classList.toggle(
-      "mk-minimal-fix",
-      this.superstate.settings.minimalFix
-    );
+    if (this.app.vault.config.cssTheme == 'Minimal')
+    {document.body.classList.toggle(
+      "mk-minimal-fix", true
+    );}
     
 
       document.body.classList.toggle(
@@ -352,6 +364,10 @@ loadViews () {
   }
     return filePath;
   }
+
+  fixFileWarnings () {
+    openPathFixer(this);
+  }
   activeFileChange() {
 
     
@@ -398,6 +414,37 @@ loadViews () {
       }
 
   });
+  if (!isPhone(this.superstate.ui))
+  this.addCommand({
+    id: "open-ever-view",
+    name: "Open Overview",
+    callback: () => {
+      this.openEverView();
+    
+    },
+  })
+  this.addCommand({
+    id: "show-warnings",
+    name: "Show Sync Warnings",
+    callback: () => {
+      showWarningsModal(this.superstate, window);
+    },
+  })
+  this.addCommand({
+    id: "path-fixer",
+    name: "Fix Unsupported Characters in Paths",
+    callback: () => {
+      openPathFixer(this);
+    },
+  })
+  this.addCommand({
+    id: "move-space-folder",
+    name: "Move Space Data Folder",
+    callback: () => {
+      const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument)
+      openInputModal(this.superstate, "Move Space Data Folder", this.superstate.settings.spaceSubFolder, (path) => {moveSpaceFiles(this, this.superstate.settings.spaceSubFolder, path)}, "Move", win);
+    },
+  })
     if (this.superstate.settings.spacesEnabled) {
       
       this.addCommand({
@@ -505,16 +552,16 @@ loadViews () {
         },
       });
     }
-    // this.addCommand({
-    //   id: "mk-test",
-    //   name: "Open Test Page",
-    //   callback: () => {
-    //     this.testPage()
-    //   },
-    //   hotkeys: [
+    this.addCommand({
+      id: "mk-test",
+      name: "Open Test Page",
+      callback: () => {
+        this.testPage()
+      },
+      hotkeys: [
         
-    //   ],
-    // });
+      ],
+    });
     if (this.superstate.settings.blinkEnabled) {
       this.addCommand({
         id: "mk-blink",
@@ -559,6 +606,24 @@ loadViews () {
     }
   }
 
+  openEverView () {
+    const leafs = this.app.workspace.getLeavesOfType(EVER_VIEW_TYPE);
+    if (leafs.length == 0) {
+      const leaf = this.app.workspace.createLeafBySplit(this.app.workspace.getLeaf(), "vertical", true);
+      leaf.setViewState({ type: EVER_VIEW_TYPE });
+      leaf.setPinned(true);
+    } else {
+        leafs.forEach((oldLeaf) => {
+          if (oldLeaf.getRoot() != this.app.workspace.rootSplit)
+          {
+            oldLeaf.detach();
+          }
+            const leaf = this.app.workspace.createLeafBySplit(this.app.workspace.getLeaf(), "vertical", true);
+            leaf.setViewState({ type: EVER_VIEW_TYPE });
+            leaf.setPinned(true);
+        });
+    }
+  }
   loadFlowEditor() {
 
     patchWorkspace(this);
@@ -668,7 +733,9 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
       // cachePersister = new MobileCachePersister('.makemd/superstate.mdc', this.mdbFileAdapter, ['path', 'space', 'frame', 'context', 'icon'])
       cachePersister = new LocalStorageCache('.makemd/superstate.mdc', this.mdbFileAdapter, ['path', 'space', 'frame', 'context', 'icon'])
     }
+    if (this.superstate.settings.cacheIndex) {
     await cachePersister.initialize()
+    }
     this.superstate.persister = cachePersister;
     this.loadSuperState();
     this.addSettingTab(new MakeMDPluginSettingsTab(this.app, this));
@@ -718,13 +785,13 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
       await leaf.setViewState({ type: FILE_TREE_VIEW_TYPE });
       if (showAfterAttach && !this.app.workspace.leftSplit.collapsed) this.app.workspace.revealLeaf(leaf);
     } else {
-      if (!app.workspace.leftSplit.collapsed && showAfterAttach)
+      if (!this.app.workspace.leftSplit.collapsed && showAfterAttach)
       leafs.forEach((leaf) => this.app.workspace.revealLeaf(leaf));
     }
     if (isTouchScreen(this.superstate.ui)) {
       this.app.workspace.leftSplit.collapse();
     }
-    replaceMobileMainMenu(this.superstate);
+    replaceMobileMainMenu(this);
     this.closeDuplicateTabs();
   };
 
@@ -789,6 +856,7 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
   async saveSettings(refresh = true) {
 
     await this.saveData(this.superstate.settings);
+    this.obsidianAdapter.pathLastUpdated.set(normalizePath(this.app.vault.configDir + "/plugins/make-md/data.json"), Date.now());
     if (refresh)
     this.superstate.dispatchEvent("settingsChanged", null)
     
@@ -796,7 +864,7 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
 
   onunload() {
     console.log("Unloading Make.md");
-
+    this.superstate.persister.unload();
     
     this.detachFileTreeLeafs();
   }

@@ -1,12 +1,13 @@
+import { MobileDrawer } from "core/react/components/UI/Drawer";
 import { ModalWrapper } from "core/react/components/UI/Modals/modalWrapper";
 import { isTouchScreen } from "core/utils/ui/screen";
-import React from "react";
+import React, { cloneElement } from "react";
 import { Root } from "react-dom/client";
 import { ObsidianUI } from "./ui";
 
 export const showModal = (props: {
   ui: ObsidianUI;
-  fc: React.FC<{ hide: () => void }>;
+  fc: JSX.Element;
   title?: string;
   isPalette?: boolean;
   className?: string;
@@ -35,6 +36,19 @@ export const showModal = (props: {
   const root = props.ui.createRoot(portalElement);
   const hide = hideFunction(root);
   const updateRoot = (newProps: any) => {
+    if (isTouchScreen(props.ui.manager)) {
+      root.render(
+        <MobileDrawer
+          fc={props.fc}
+          hide={() => hide()}
+          newProps={newProps}
+          className={`${
+            props.isPalette ? "mk-drawer-palette" : "mk-drawer-modal"
+          } ${props.className ? props.className : ""}`}
+        />
+      );
+      return;
+    }
     root.render(
       <ModalWrapper
         ui={props.ui.manager}
@@ -56,7 +70,10 @@ export const showModal = (props: {
           </div>
         )}
 
-        <props.fc hide={() => hide()} {...newProps} />
+        {cloneElement(props.fc, {
+          hide: () => hide(),
+          ...newProps,
+        })}
       </ModalWrapper>
     );
   };

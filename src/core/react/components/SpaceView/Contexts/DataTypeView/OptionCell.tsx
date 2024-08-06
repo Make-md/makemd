@@ -8,6 +8,7 @@ import {
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "core/superstate/superstate";
+import { serializeOptionValue } from "core/utils/serializer";
 import { uniq } from "lodash";
 import React, {
   PropsWithChildren,
@@ -42,20 +43,6 @@ export const OptionCell = (
       ),
     [props.propertyValue, props.source]
   );
-
-  const serializeValue = (
-    newOptions: SelectOption[],
-    value: Record<string, any>
-  ) => {
-    return JSON.stringify({
-      ...value,
-      options: newOptions.map((f) => ({
-        name: f.name,
-        value: f.value,
-        color: f.color,
-      })),
-    });
-  };
 
   const parseOptions = (
     _options: SelectOption[],
@@ -138,12 +125,12 @@ export const OptionCell = (
     setValue(newValues);
     if (props.multi) {
       props.saveOptions(
-        serializeValue(newOptions, parsedValue),
+        serializeOptionValue(newOptions, parsedValue),
         serializeMultiString(newValues)
       );
     } else {
       props.saveOptions(
-        serializeValue(newOptions, parsedValue),
+        serializeOptionValue(newOptions, parsedValue),
         serializeMultiDisplayString(newValues)
       );
     }
@@ -151,12 +138,12 @@ export const OptionCell = (
   const savePropValue = (options: SelectOption[], value: string[]) => {
     if (props.multi) {
       props.saveOptions(
-        serializeValue(options, parsedValue),
+        serializeOptionValue(options, parsedValue),
         serializeMultiString(value)
       );
     } else {
       props.saveOptions(
-        serializeValue(options, parsedValue),
+        serializeOptionValue(options, parsedValue),
         serializeMultiDisplayString(value)
       );
     }
@@ -268,7 +255,7 @@ export const OptionCell = (
                   : "var(--mk-color-white)",
             }}
           >
-            {_props.value}
+            <span>{_props.value}</span>
             {_props.children}
           </div>
         );
@@ -290,11 +277,7 @@ export const OptionCellBase = (props: {
 }) => {
   const { value, menuProps } = props;
   const menuRef = useRef(null);
-  useEffect(() => {
-    if (props.editMode == CellEditMode.EditModeActive) {
-      if (!menuRef.current) showMenu();
-    }
-  }, [props.editMode]);
+
   const ref = useRef(null);
   const showMenu = () => {
     if (menuRef.current) {
@@ -321,22 +304,17 @@ export const OptionCellBase = (props: {
               <props.labelElement value={o}>
                 {editable ? (
                   !props.multi && value.length > 0 ? (
-                    <>
-                      <span></span>
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          showMenu();
-                        }}
-                        className="mk-cell-option-select mk-icon-xxsmall mk-icon-rotated"
-                        dangerouslySetInnerHTML={{
-                          __html:
-                            props.superstate.ui.getSticker(
-                              "ui//collapse-solid"
-                            ),
-                        }}
-                      />
-                    </>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showMenu();
+                      }}
+                      className="mk-cell-option-select mk-icon-xxsmall mk-icon-rotated"
+                      dangerouslySetInnerHTML={{
+                        __html:
+                          props.superstate.ui.getSticker("ui//collapse-solid"),
+                      }}
+                    />
                   ) : props.multi ? (
                     <div
                       className="mk-cell-option-remove mk-icon-xxsmall"
@@ -378,7 +356,10 @@ export const OptionCellBase = (props: {
       )}
       {editable && props.multi ? (
         <div
-          onClick={(e) => editable && showMenu()}
+          onClick={(e) => {
+            e.stopPropagation();
+            editable && showMenu();
+          }}
           className="mk-cell-option-new mk-icon-small"
           dangerouslySetInnerHTML={{
             __html: props.superstate.ui.getSticker("ui//plus"),

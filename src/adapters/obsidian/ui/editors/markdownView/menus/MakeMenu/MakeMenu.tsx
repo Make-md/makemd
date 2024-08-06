@@ -175,22 +175,19 @@ export default class MakeMenu extends EditorSuggest<Command> {
       );
     } else if (cmd.value == "image") {
       this.plugin.superstate.ui.openPalette(
-        (_props: { hide: () => void }) => (
-          <ImageModal
-            superstate={this.plugin.superstate}
-            hide={_props.hide}
-            selectedPath={(image) => {
-              editor.replaceRange(
-                `![[${image}]]`,
-                { ...start, ch: startCh },
-                end
-              );
-              this.resetInfos();
+        <ImageModal
+          superstate={this.plugin.superstate}
+          selectedPath={(image) => {
+            editor.replaceRange(
+              `![[${image}]]`,
+              { ...start, ch: startCh },
+              end
+            );
+            this.resetInfos();
 
-              this.close();
-            }}
-          ></ImageModal>
-        ),
+            this.close();
+          }}
+        ></ImageModal>,
         editor.cm.dom.win
       );
     } else if (

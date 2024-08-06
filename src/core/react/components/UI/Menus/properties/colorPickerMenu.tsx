@@ -318,7 +318,8 @@ export const showColorPickerMenu = (
   win: Window,
   value: string,
   setValue: (color: string) => void,
-  stayOpen?: boolean
+  stayOpen?: boolean,
+  isSubmenu?: boolean
 ) => {
   return superstate.ui.openCustomMenu(
     rect,
@@ -329,6 +330,7 @@ export const showColorPickerMenu = (
       stayOpen={stayOpen}
     ></ColorPicker>,
     {},
-    win
+    win,
+    "bottom"
   );
 };

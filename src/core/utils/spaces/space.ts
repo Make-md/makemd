@@ -12,8 +12,8 @@ export const pathIsSpace = (superstate: Superstate, path: string) => {
 
 export const spaceFolderPathFromSpace = (path: string, manager: SpaceManager) => {
     if (manager.superstate.settings.spacesMDBInHidden) {
-        if (path == '/') return '.space/'
-        return path + '.space/'
+        if (path == '/') return manager.superstate.settings.spaceSubFolder+'/';
+        return path + manager.superstate.settings.spaceSubFolder + '/'
     }
     return path
 }
@@ -26,7 +26,7 @@ export const spaceFolderForMDBPath = (path: string, manager: SpaceManager) : str
     let parentPath = path.substring(0, indexOfLastSlash)
     if (manager.superstate.settings.spacesMDBInHidden) {
         const indexOfSecondLastSlash = parentPath.lastIndexOf('/')
-        if (parentPath.substring(indexOfSecondLastSlash+1) == '.space')
+        if (parentPath.substring(indexOfSecondLastSlash+1) == manager.superstate.settings.spaceSubFolder)
         {
             parentPath = parentPath.substring(0, indexOfSecondLastSlash)
         } else {

@@ -17,6 +17,12 @@ export type UIManagerEventTypes = {
 }
 export enum ScreenType {Phone, Desktop, Tablet}
 export enum InteractionType {Touch, Mouse, Controller, Voice }
+export type Warning = {
+    id: string;
+    message: string;
+    description: string;
+    command: string;
+}
 export type Sticker = {
     type: string;
     name: string;
@@ -38,12 +44,13 @@ export interface UIAdapter {
     viewsByPath: (path: string) => ViewAdapter[];
     createRoot: (container: Element | DocumentFragment, options?: RootOptions) => Root;
     openToast: (content: string) => void;
-    openModal: (title: string, modal: React.FC<{hide: () => void}>, win: Window, className?: string, props?: any) => MenuObject;
-    openPalette: (modal: React.FC<{hide: () => void}>, win: Window, className?: string) => MenuObject;
+    openModal: (title: string, modal: JSX.Element, win: Window, className?: string, props?: any) => MenuObject;
+    openPalette: (modal: JSX.Element, win: Window, className?: string) => MenuObject;
     openPath: (path: string, newLeaf: TargetLocation, source?: any, props?: Record<string, any>) => void;
-    openPopover: (position: Pos, popover: React.FC<{hide: () => void}>) => void
+    openPopover: (position: Pos, popover: JSX.Element) => void
     getScreenType: () => ScreenType;
     getOS: () => string;
+    getWarnings: () => Warning[];
     primaryInteractionType: () => InteractionType;
     getSticker: (icon: string) => string;
     allStickers: () => Sticker[];
@@ -54,11 +61,13 @@ export interface UIAdapter {
     navigationHistory: () => string[];
     mainMenu: (el: HTMLElement, superstate: Superstate) => void;
     quickOpen: (superstate: Superstate) => void;
+    isEverViewOpen: () => boolean;
 }
 
 export class UIManager {
 
     inputManager: InputManager;
+    superstate: Superstate;
     mainFrame: UIAdapter;
     public resetFunctions: ((id:string) => void)[] = [];
     public addResetFunction = (reset: (id: string) => void) => {
@@ -90,6 +99,7 @@ export class UIManager {
     public mainMenu (el: HTMLElement, superstate: Superstate) {
         this.mainFrame.mainMenu(el, superstate);
     }
+    
     public navigationHistory () {
         return this.mainFrame.navigationHistory();
     }
@@ -102,6 +112,9 @@ export class UIManager {
     public static create(adapter: UIAdapter, adapters?: UIAdapter[]): UIManager {
         return new UIManager(adapter, adapters);
     }
+    public isEverViewOpen () {
+        return this.mainFrame.isEverViewOpen();
+    }
     public adapters : UIAdapter[] = [];
     private constructor(primaryAdapter : UIAdapter, adapters: UIAdapter[]) {
         this.adapters = adapters ?? [];
@@ -110,17 +123,22 @@ export class UIManager {
         this.mainFrame = primaryAdapter
         this.inputManager = new InputManager();
     }
+    public getWarnings () {
+        return this.mainFrame.getWarnings();
+    }
 
     public createRoot(container: Element | DocumentFragment, options?: RootOptions) {
         return this.mainFrame.createRoot(container)
     }
 
-    public openMenu (rect: Rect, menuProps: SelectMenuProps, win: Window, defaultAnchor: Anchors = 'right', onHide?: () => void) : MenuObject {
-        return showSelectMenu(rect, menuProps, win, defaultAnchor, onHide);
+    public openMenu (rect: Rect, menuProps: SelectMenuProps, win: Window, defaultAnchor: Anchors = 'right', onHide?: () => void, force?: boolean) : MenuObject {
+        return showSelectMenu(rect, menuProps, win, defaultAnchor, onHide, force);
     }
 
-    public openCustomMenu (rect: Rect, fc: JSX.Element, props: any, win: Window, defaultAnchor: Anchors = 'right', onHide?: () => void) : MenuObject {
-        return showMenu({rect, anchor: defaultAnchor, win, ui: this, fc, props, onHide});
+    public openCustomMenu (rect: Rect, fc: JSX.Element, props: any, win: Window, defaultAnchor: Anchors = 'right', onHide?: () => void, className?: string, onSubmenu?: (
+        openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
+      ) => MenuObject) : MenuObject {
+        return showMenu({rect, anchor: defaultAnchor, win, ui: this, fc, props, onHide, className, onSubmenu});
     }
     public notify (content: string, destination?: string) {
         if (destination == 'console') {
@@ -132,13 +150,13 @@ export class UIManager {
     public error (error: any) {
         console.log(error);
     }
-    public openPalette (modal: React.FC<{hide: () => void}>, win: Window, className?: string, ) {
+    public openPalette (modal: JSX.Element, win: Window, className?: string, ) {
         return this.mainFrame.openPalette(modal, win, className);
     }
-    public openModal (title: string, modal: React.FC<{hide: () => void}>, win: Window, className?: string, props?: any) : MenuObject {
+    public openModal (title: string, modal: JSX.Element, win: Window, className?: string, props?: any) : MenuObject {
         return this.mainFrame.openModal(title, modal, win, className, props);
     }
-    public openPopover (position: Pos, popover: React.FC<{hide: () => void}>) {
+    public openPopover (position: Pos, popover: JSX.Element) {
         this.mainFrame.openPopover(position, popover);
     }
     public openPath (path: string, newLeaf?: TargetLocation, source?: any, props?: Record<string, any>) {

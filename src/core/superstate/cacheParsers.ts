@@ -6,7 +6,7 @@ import { SpaceInfo, SpaceTable, SpaceTables } from "types/mdb";
 import { orderStringArrayByArray, uniq } from "utils/array";
 
 import { PathPropertyName } from "core/types/context";
-import { tagsSpacePath } from "core/types/space";
+import { builtinSpacePathPrefix, builtinSpaces, tagsSpacePath } from "core/types/space";
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { pathByDef } from "core/utils/spaces/query";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
@@ -71,7 +71,8 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
         dbExists
     }
     let changed = false;
-    if (!_.isEqual(contextTable, mdb)) {
+    if (!_.isEqual(contextTable, mdb[defaultContextSchemaID])) {
+
         changed = true;
     }
     return {changed, cache}
@@ -123,6 +124,11 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     const tags : string[] = [];
     const fileTags : string[] = pathCache?.tags?.map(f => f) ?? [];
     let hidden = excludePathPredicate(settings, path);
+    if (path.startsWith(builtinSpacePathPrefix)) {
+        const builtin = path.replace(builtinSpacePathPrefix, '');
+        hidden = builtinSpaces[builtin]?.hidden;
+        cache.readOnly = builtinSpaces[builtin]?.readOnly;
+    }
     const getTagsFromCache = (map: Map<string, SpaceState>, spaces: string[], seen = new Set()) =>{
         const keys : string[] = [];
         
@@ -202,6 +208,20 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
                 if (spacesCache.has(dep)) {
                     evalSpace(dep, spacesCache.get(dep))
                 }
+            }
+        }
+        if (space.metadata.recursive?.length > 0) {
+            if (pathState.path.startsWith(space.path+'/')) {
+                if (space.metadata.recursive == 'all') {
+                    spaces.push(s);
+                    return;
+                } else if(space.metadata.recursive == 'file') {
+                    if (pathState.type != 'space') {
+                        spaces.push(s);
+                        return;
+                    }
+                }
+
             }
         }
         if (space.space.notePath == path && space.path != space.space.notePath) {

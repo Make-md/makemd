@@ -1,3 +1,4 @@
+import { SpaceFragmentType } from "core/superstate/utils/spaces";
 import { URI } from "types/path";
 import { removeTrailingSlashFromFolder } from "utils/path";
 
@@ -30,7 +31,7 @@ export const parseURI = (uri: string): URI => {
       let path: string | null = null;
       let alias: string | null = null;
       let reference: string | null = null;
-      let refType: "context" | "frame" | 'action' = null;
+      let refType: SpaceFragmentType= null;
       let query: { [key: string]: string } | null = null;
       let scheme: string | null = 'vault';
     
@@ -39,13 +40,19 @@ export const parseURI = (uri: string): URI => {
       const spaceStr = uri.slice(uri.indexOf('://')+3);
         
         if (spaceStr.charAt(0) == "#" || spaceStr.charAt(0) == "$") {
-          const endIndex = spaceStr.lastIndexOf('#');
+          const endIndex = spaceStr.split('/')[0].lastIndexOf('#');
           if (endIndex > 0) {
             space = removeTrailingSlashFromFolder(spaceStr.slice(0, endIndex))
             uri = spaceStr.slice(endIndex)
           } else {
-            space = spaceStr;
-            uri = '/'
+            space = spaceStr.split('/')[0];
+            uri = spaceStr.replace(space, '')
+            if (uri.length > 0) {
+              uri = uri.slice(1)
+            }
+            if (uri == '') {
+              uri = '/'
+            }
           }
         } else {
           const spaceParts = spaceStr.split('/');  

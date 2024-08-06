@@ -42,6 +42,7 @@ export const ContextListView = (props: {
     contextTable,
     cols,
     dbSchema,
+    source,
   } = useContext(ContextEditorContext);
 
   const [pageId, setPageId] = useState(1);
@@ -131,7 +132,7 @@ export const ContextListView = (props: {
     return sortedColumns.filter((f) => !predicate?.colsHidden.includes(f.name));
   }, [predicate, sortedColumns]);
   const context = {
-    _path: spaceInfo?.path,
+    _path: source,
     _schema: dbSchema?.id,
     _key: primaryKey,
     _properties: visibleCols,

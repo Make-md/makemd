@@ -130,16 +130,16 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       })
     );
 
-    // new Setting(spaceAppearances)
-    // .setName(t.settings.flowState.name)
-    // .setDesc(t.settings.flowState.desc)
-    // .addToggle((toggle) =>
-    //   toggle.setValue(this.plugin.superstate.settings.flowState).onChange((value) => {
-    //     this.plugin.superstate.settings.flowState = value;
-    //     this.plugin.saveSettings();
-    //     document.body.classList.toggle("mk-flow-state", !value);
-    //   })
-    // );
+    new Setting(spaceAppearances)
+    .setName(t.settings.flowState.name)
+    .setDesc(t.settings.flowState.desc)
+    .addToggle((toggle) =>
+      toggle.setValue(this.plugin.superstate.settings.flowState).onChange((value) => {
+        this.plugin.superstate.settings.flowState = value;
+        this.plugin.saveSettings();
+        document.body.classList.toggle("mk-flow-state", !value);
+      })
+    );
 
 
   
@@ -355,16 +355,7 @@ containerEl.createEl("h3", { text: t.settings.sectionStickers });
             await this.plugin.saveSettings();
           });
       });
-    new Setting(containerEl)
-    .setName(t.settings.minimalThemeFix.name)
-    .setDesc(t.settings.minimalThemeFix.description)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.minimalFix).onChange((value) => {
-        this.plugin.superstate.settings.minimalFix = value;
-        this.plugin.saveSettings();
-        document.body.classList.toggle("mk-minimal-fix", !value);
-      })
-    );
+
       }
     containerEl.createEl("h1", { text: t.settings.sectionContext });
     new Setting(containerEl)
@@ -730,6 +721,24 @@ containerEl.createEl("h3", { text: t.settings.sectionStickers });
           this.plugin.saveSettings();
         })
     );
+
+    new Setting(containerEl)
+    .setName("Use Cache Index")
+    .setDesc("Use cache index to speed up launch")
+    .addToggle((toggle) =>
+      toggle
+        .setValue(this.plugin.superstate.settings.cacheIndex)
+        .onChange((value) => {
+          this.plugin.superstate.settings.cacheIndex = value;
+          this.plugin.saveSettings();
+          if (value == false) {
+            this.plugin.superstate.persister.unload()
+          }
+        })
+    );
+
+    containerEl.createEl("h3", { text: t.settings.sectionAdvanced });
+
     new Setting(containerEl)
     .setName(t.settings.experimental.name)
     .setDesc(t.settings.experimental.desc)
@@ -742,6 +751,32 @@ containerEl.createEl("h3", { text: t.settings.sectionStickers });
           this.refreshView();
         })
     );
+
+    new Setting(containerEl)
+      .setName("Space Sub Folder Name")
+      .setDesc("The folder name containing the space files, default is .space")
+      .addText((text) => {
+        text
+          .setValue(this.plugin.superstate.settings.spaceSubFolder)
+          .setPlaceholder("Folder Name")
+          .onChange(async (value) => {
+            this.plugin.superstate.settings.spaceSubFolder = value;
+            await this.plugin.saveSettings();
+          });
+      });  
+
+      new Setting(containerEl)
+      .setName("Tag Space Folder Name")
+      .setDesc("The folder name containing the tag space files, default is Tags")
+      .addText((text) => {
+        text
+          .setValue(this.plugin.superstate.settings.spacesFolder)
+          .setPlaceholder("Folder Name")
+          .onChange(async (value) => {
+            this.plugin.superstate.settings.spacesFolder = value;
+            await this.plugin.saveSettings();
+          });
+      });  
     
   }
 }

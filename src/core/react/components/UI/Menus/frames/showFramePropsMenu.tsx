@@ -138,15 +138,12 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
       case "icon":
         {
           props.superstate.ui.openPalette(
-            (_props: { hide: () => void }) => (
-              <StickerModal
-                ui={props.superstate.ui}
-                hide={_props.hide}
-                selectedSticker={(emoji) =>
-                  savePropValue(field.name, wrapQuotes(emoji))
-                }
-              />
-            ),
+            <StickerModal
+              ui={props.superstate.ui}
+              selectedSticker={(emoji) =>
+                savePropValue(field.name, wrapQuotes(emoji))
+              }
+            />,
             windowFromDocument(e.view.document)
           );
         }
@@ -154,15 +151,12 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
       case "image":
         {
           props.superstate.ui.openPalette(
-            (_props: { hide: () => void }) => (
-              <ImageModal
-                superstate={props.superstate}
-                hide={_props.hide}
-                selectedPath={(image) =>
-                  savePropValue(field.name, wrapQuotes(image))
-                }
-              ></ImageModal>
-            ),
+            <ImageModal
+              superstate={props.superstate}
+              selectedPath={(image) =>
+                savePropValue(field.name, wrapQuotes(image))
+              }
+            ></ImageModal>,
             windowFromDocument(e.view.document)
           );
         }

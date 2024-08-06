@@ -487,20 +487,20 @@ const SelectMenuComponent = React.forwardRef(
                 ))}
               </div>
             )}
-            <div className={classNames.search}>
-              <SelectMenuSearch
-                ui={props.ui}
-                ref={inputRef}
-                query={query}
-                index={index}
-                id={props.id}
-                classNames={classNames}
-                inputAttributes={props.inputAttributes}
-                inputEventHandlers={inputEventHandlers}
-                expanded={expanded}
-                placeholderText={props.placeholderText}
-              />
-            </div>
+
+            <SelectMenuSearch
+              ui={props.ui}
+              ref={inputRef}
+              query={query}
+              index={index}
+              id={props.id}
+              currentSection={sections.find((f) => f.value == section)}
+              classNames={classNames}
+              inputAttributes={props.inputAttributes}
+              inputEventHandlers={inputEventHandlers}
+              expanded={expanded}
+              placeholderText={props.placeholderText}
+            />
           </div>
         ) : null}
         {props.showSections ? (

@@ -24,13 +24,10 @@ export const IconCell = (props: TableCellMultiProp) => {
 
   const triggerStickerMenu = (e: React.MouseEvent) => {
     props.superstate.ui.openPalette(
-      (_props: { hide: () => void }) => (
-        <StickerModal
-          ui={props.superstate.ui}
-          hide={_props.hide}
-          selectedSticker={(emoji) => props.saveValue(emoji)}
-        />
-      ),
+      <StickerModal
+        ui={props.superstate.ui}
+        selectedSticker={(emoji) => props.saveValue(emoji)}
+      />,
       windowFromDocument(e.view.document)
     );
   };

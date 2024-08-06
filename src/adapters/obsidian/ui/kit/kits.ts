@@ -1,7 +1,7 @@
 
 import { getMDBTables } from "adapters/mdb/utils/mdb";
 import { regexYaml } from "adapters/text/textCacher";
-import { FMSpaceKeys, createSpace, newPathInSpace, parseSpaceMetadata, saveProperties } from "core/superstate/utils/spaces";
+import { createSpace, newPathInSpace, parseSpaceMetadata, saveProperties } from "core/superstate/utils/spaces";
 import { PathPropertyName } from "core/types/context";
 import { SpaceDefinition, SpaceType } from "core/types/space";
 import MakeMDPlugin from "main";
@@ -17,9 +17,9 @@ export const installSpaceTemplate = async (plugin: MakeMDPlugin, superstate: Sup
     
     if (template.type === 'folder') {
         if (template.content as SpaceKit)
-            await installSpaceKit(plugin, superstate, template.content as SpaceKit, space+'/.space/templates', true);
+            await installSpaceKit(plugin, superstate, template.content as SpaceKit, `${space}/${plugin.superstate.settings.spaceSubFolder}/templates`, true);
     } else {
-        await plugin.files.writeTextToFile(space+'/.space/templates/'+template.name, template.content as string);
+        await plugin.files.writeTextToFile(`${space}/${plugin.superstate.settings.spaceSubFolder}/templates/${template.name}`, template.content as string);
     }
 
 }
@@ -96,10 +96,10 @@ export const installSpaceKit = async (plugin: MakeMDPlugin, superstate: Supersta
                 name: kit.name,
                 isRemote: false,
                 readOnly: false,
-                defPath: `${path}/.space/def.json`,
+                defPath: `${path}/${plugin.superstate.settings.spaceSubFolder}/def.json`,
                 notePath: `${path}/${kit.name}.md`,
-                dbPath: `${path}/.space/context.mdb`,
-                framePath: `${path}/.space/views.mdb`,
+                dbPath: `${path}/${plugin.superstate.settings.spaceSubFolder}/context.mdb`,
+                framePath: `${path}/${plugin.superstate.settings.spaceSubFolder}/views.mdb`,
             } as FilesystemSpaceInfo
         }
     } else {
@@ -133,7 +133,7 @@ export const installSpaceKit = async (plugin: MakeMDPlugin, superstate: Supersta
 
         }
         if (kit.templates?.length > 0) {
-            await plugin.files.createFolder(space+'/.space/templates');
+            await plugin.files.createFolder(`${space}/${plugin.superstate.settings.spaceSubFolder}/templates`);
             for (const template of kit.templates) {
                 await installSpaceTemplate(plugin, superstate, newSpace.path, template);
             }
@@ -191,7 +191,7 @@ export const exportSpaceKit = async (plugin: MakeMDPlugin, superstate: Superstat
         context = await superstate.spaceManager.readAllTables(space);
         content = await superstate.spaceManager.readPath(spaceCache.space.notePath);
         frames = await superstate.spaceManager.readAllFrames(space);
-        properties = Object.keys(spaceCache.properties).filter(f => !FMSpaceKeys(superstate.settings).includes(f)).reduce((p, c) => {
+        properties = Object.keys(spaceCache.properties).reduce((p, c) => {
             return {
                 ...p,
                 [c]: spaceCache.properties[c]
@@ -215,7 +215,7 @@ export const exportSpaceKit = async (plugin: MakeMDPlugin, superstate: Superstat
             }
 
     for (const template of spaceCache.templates) {
-        const path = spaceCache.path+'/.space/templates/'+template;
+        const path = `${spaceCache.path}/${plugin.superstate.settings.spaceSubFolder}/templates/${template}`;
         const templateItem = await superstate.spaceManager.getPathInfo(path);
         
         if (template.startsWith('.')) continue;

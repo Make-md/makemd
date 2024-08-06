@@ -60,37 +60,34 @@ export const SpaceListProperty = (props: {
   const newTable = (e: React.MouseEvent) => {
     props.superstate.ui.openModal(
       i18n.labels.newTable,
-      (_props: { hide: () => void }) => (
-        <InputModal
-          value=""
-          saveLabel={i18n.buttons.save}
-          hide={_props.hide}
-          saveValue={(value) => {
-            props.superstate.spaceManager
-              .tablesForSpace(spaceState.path)
-              .then((schemas) => {
-                if (schemas) {
-                  const newSchema: SpaceTableSchema = {
-                    id: uniqueNameFromString(
-                      sanitizeTableName(value),
-                      schemas.map((g) => g.id)
-                    ),
-                    name: value,
-                    type: "db",
-                  };
-                  return props.superstate.spaceManager
-                    .createTable(spaceState.path, newSchema)
-                    .then((f) => {
-                      return props.superstate.spaceManager.addSpaceProperty(
-                        spaceState.path,
-                        { ...defaultTableFields[0], schemaId: newSchema.id }
-                      );
-                    });
-                }
-              });
-          }}
-        ></InputModal>
-      ),
+      <InputModal
+        value=""
+        saveLabel={i18n.buttons.save}
+        saveValue={(value) => {
+          props.superstate.spaceManager
+            .tablesForSpace(spaceState.path)
+            .then((schemas) => {
+              if (schemas) {
+                const newSchema: SpaceTableSchema = {
+                  id: uniqueNameFromString(
+                    sanitizeTableName(value),
+                    schemas.map((g) => g.id)
+                  ),
+                  name: value,
+                  type: "db",
+                };
+                return props.superstate.spaceManager
+                  .createTable(spaceState.path, newSchema)
+                  .then((f) => {
+                    return props.superstate.spaceManager.addSpaceProperty(
+                      spaceState.path,
+                      { ...defaultTableFields[0], schemaId: newSchema.id }
+                    );
+                  });
+              }
+            });
+        }}
+      ></InputModal>,
       windowFromDocument(e.view.document)
     );
   };
@@ -147,46 +144,42 @@ export const SpaceListProperty = (props: {
       onClick: (e) => {
         props.superstate.ui.openModal(
           "Duplicate Table",
-          (_props: { hide: () => void }) => (
-            <InputModal
-              value=""
-              hide={_props.hide}
-              saveLabel="Save"
-              saveValue={async (value) => {
-                const table = await props.superstate.spaceManager.readTable(
-                  spaceState.path,
-                  _schema.id
-                );
-                const tables =
-                  await props.superstate.spaceManager.readAllTables(
-                    spaceState.path
-                  );
-                table.schema.id = uniqueNameFromString(
-                  sanitizeTableName(value),
-                  Object.keys(tables)
-                );
-                table.cols = table.cols.map((f) => ({
-                  ...f,
-                  schemaId: table.schema.id,
-                }));
-                props.superstate.spaceManager
-                  .createTable(spaceState.path, table.schema)
-                  .then((f) =>
-                    props.superstate.spaceManager.saveTable(
-                      spaceState.path,
-                      table
-                    )
+          <InputModal
+            value=""
+            saveLabel="Save"
+            saveValue={async (value) => {
+              const table = await props.superstate.spaceManager.readTable(
+                spaceState.path,
+                _schema.id
+              );
+              const tables = await props.superstate.spaceManager.readAllTables(
+                spaceState.path
+              );
+              table.schema.id = uniqueNameFromString(
+                sanitizeTableName(value),
+                Object.keys(tables)
+              );
+              table.cols = table.cols.map((f) => ({
+                ...f,
+                schemaId: table.schema.id,
+              }));
+              props.superstate.spaceManager
+                .createTable(spaceState.path, table.schema)
+                .then((f) =>
+                  props.superstate.spaceManager.saveTable(
+                    spaceState.path,
+                    table
                   )
-                  .then((f) => {
-                    if (f)
-                      return props.superstate.reloadContextByPath(
-                        spaceState.path
-                      );
-                    return f;
-                  });
-              }}
-            ></InputModal>
-          ),
+                )
+                .then((f) => {
+                  if (f)
+                    return props.superstate.reloadContextByPath(
+                      spaceState.path
+                    );
+                  return f;
+                });
+            }}
+          ></InputModal>,
           windowFromDocument(e.view.document)
         );
       },
@@ -198,23 +191,20 @@ export const SpaceListProperty = (props: {
       onClick: (e) => {
         props.superstate.ui.openModal(
           i18n.labels.renameView,
-          (_props: { hide: () => void }) => (
-            <InputModal
-              value={_schema.name}
-              saveLabel={i18n.labels.renameView}
-              hide={_props.hide}
-              saveValue={(value) => {
-                props.superstate.spaceManager.saveTableSchema(
-                  pathState.path,
-                  _schema.id,
-                  () => ({
-                    ..._schema,
-                    name: value,
-                  })
-                );
-              }}
-            ></InputModal>
-          ),
+          <InputModal
+            value={_schema.name}
+            saveLabel={i18n.labels.renameView}
+            saveValue={(value) => {
+              props.superstate.spaceManager.saveTableSchema(
+                pathState.path,
+                _schema.id,
+                () => ({
+                  ..._schema,
+                  name: value,
+                })
+              );
+            }}
+          ></InputModal>,
           windowFromDocument(e.view.document)
         );
       },

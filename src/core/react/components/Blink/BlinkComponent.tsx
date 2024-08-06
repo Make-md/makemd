@@ -16,11 +16,12 @@ import { PathView } from "../PathView/PathView";
 import { SpaceQuery } from "../SpaceEditor/SpaceQuery";
 import { PathCrumb } from "../UI/Crumbs/PathCrumb";
 import { BlinkMode } from "./Blink";
+
 export const BlinkComponent = (props: {
   superstate: Superstate;
   mode: BlinkMode;
   onSelect?: (path: string) => void;
-  hide: () => void;
+  hide?: () => void;
 }) => {
   const [previewPath, setPreviewPath] = useState<string>(null);
   const [showBlink, setShowBlink] = useState(false);
@@ -55,19 +56,25 @@ export const BlinkComponent = (props: {
   const recentPaths = props.superstate.ui
     .navigationHistory()
     .map((f) => props.superstate.pathsIndex.get(f))
-    .filter((f) => f)
-    .map((f) => ({
-      name: f.name,
-      icon: f.label.sticker,
-      description: f.path,
-      value: f.path,
-    }));
-  const [suggestions, setFilteredPaths] = useState<SelectOption[]>(recentPaths);
+    .filter((f) => f && !f.hidden);
+
+  const [suggestions, setFilteredPaths] = useState<PathState[]>(recentPaths);
 
   useEffect(() => {
     const runQuery = (path: string, _queries: SpaceDefGroup[]) => {
       if (path.length == 0 && query.length == 0) {
         setFilteredPaths(recentPaths);
+        return;
+      }
+
+      if (filters.length == 0) {
+        props.superstate.searcher
+          .run<PathState[]>({
+            type: "fastSearch",
+            path: path,
+            payload: { query: query, count: 10 },
+          })
+          .then((g) => setFilteredPaths(g));
         return;
       }
 
@@ -77,15 +84,7 @@ export const BlinkComponent = (props: {
           count: 10,
           pathsIndex: props.superstate.pathsIndex,
         });
-        setFilteredPaths([
-          ...results.map((f) => ({
-            name: f.name,
-            icon: f.label.sticker,
-            description:
-              f.subtype == "tag" || f.subtype == "default" ? null : f.path,
-            value: f.path,
-          })),
-        ]);
+        setFilteredPaths([...results]);
         return;
       }
       props.superstate.searcher
@@ -94,17 +93,7 @@ export const BlinkComponent = (props: {
           path: path,
           payload: { queries: _queries, count: 10 },
         })
-        .then((g) =>
-          setFilteredPaths([
-            ...g.map((f) => ({
-              name: f.name,
-              icon: f.label.sticker,
-              description:
-                f.subtype == "tag" || f.subtype == "default" ? null : f.path,
-              value: f.path,
-            })),
-          ])
-        );
+        .then((g) => setFilteredPaths(g));
     };
     debounce(() => runQuery(query, queries), 300)();
 
@@ -112,29 +101,29 @@ export const BlinkComponent = (props: {
   }, [query, queries]);
 
   useEffect(() => {
-    const path = suggestions[index]?.value;
+    const path = suggestions[index]?.path;
     if (!path || path == previewPath) return;
-    setPreviewPath(suggestions[index]?.value);
+    setPreviewPath(suggestions[index]?.path);
   }, [index, suggestions]);
-  const selectItem = (item: SelectOption, e?: PointerModifiers) => {
+  const selectItem = (item: PathState, e?: PointerModifiers) => {
     if (!item) return;
     if (props.mode == BlinkMode.Open) {
-      props.onSelect(item.value);
+      props.onSelect(item.path);
       props.hide();
       return;
     }
     if (!showBlink) {
-      props.superstate.ui.openPath(item.value);
+      props.superstate.ui.openPath(item.path);
       props.hide();
       return;
     }
 
     if (e.doubleClick) {
-      props.superstate.ui.openPath(item.value);
+      props.superstate.ui.openPath(item.path);
       props.hide();
       return;
     }
-    setIndex(suggestions.findIndex((f) => f.value == item.value));
+    setIndex(suggestions.findIndex((f) => f.path == item.path));
   };
 
   const sections: SelectOption[] = [];
@@ -150,7 +139,7 @@ export const BlinkComponent = (props: {
       const size = 0;
       const newIndex = index <= size ? suggestions.length - 1 : index - 1;
       if (suggestions.length == 0) return;
-      if (suggestions[newIndex].disabled) {
+      if (!suggestions[newIndex]) {
         setIndex(newIndex < size ? suggestions.length - 1 : newIndex - 1);
       } else {
         setIndex(newIndex);
@@ -160,7 +149,7 @@ export const BlinkComponent = (props: {
     if (e.key == "ArrowDown") {
       const size = suggestions.length - 1;
       const newIndex = index >= size ? 0 : index + 1;
-      if (suggestions[newIndex].disabled) {
+      if (!suggestions[newIndex]) {
         setIndex(newIndex >= size ? 0 : newIndex + 1);
       } else {
         setIndex(newIndex);
@@ -170,7 +159,7 @@ export const BlinkComponent = (props: {
     }
     if (e.key == "Enter") {
       props.superstate.ui.openPath(
-        suggestions[index].value,
+        suggestions[index].path,
         e.ctrlKey || e.metaKey ? (e.altKey ? "split" : "tab") : false
       );
       props.hide();
@@ -213,20 +202,24 @@ export const BlinkComponent = (props: {
           contentEditable
           className="mk-blink-input"
         ></div>
-        <button
-          onClick={() => setShowBlink((f) => !f)}
-          className="mk-toolbar-button"
-          dangerouslySetInnerHTML={{
-            __html: props.superstate.ui.getSticker("ui//blink"),
-          }}
-        ></button>
-        <button
-          className="mk-toolbar-button"
-          dangerouslySetInnerHTML={{
-            __html: props.superstate.ui.getSticker("ui//filter"),
-          }}
-          onClick={() => setShowFilters(!showFilters)}
-        ></button>
+        {props.mode == BlinkMode.Blink && (
+          <>
+            <button
+              onClick={() => setShowBlink((f) => !f)}
+              className="mk-toolbar-button"
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker("ui//blink"),
+              }}
+            ></button>
+            <button
+              className="mk-toolbar-button"
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker("ui//filter"),
+              }}
+              onClick={() => setShowFilters(!showFilters)}
+            ></button>
+          </>
+        )}
       </div>
       {showFilters && (
         <div className="mk-blink-filters">
@@ -257,12 +250,18 @@ export const BlinkComponent = (props: {
               onClick={(e) => selectItem(f, e)}
             >
               <div
-                className="mk-icon-small"
+                className="mk-blink-suggestion-icon"
                 dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker(f.icon),
+                  __html: props.superstate.ui.getSticker(f.label.sticker),
                 }}
               ></div>
-              <div className="mk-blink-suggestion-title">{f.name}</div>
+              <div className="mk-blink-suggestion-text">
+                <div className="mk-blink-suggestion-title">{f.name}</div>
+                <div className="mk-blink-suggestion-description">{f.path}</div>
+                <div className="mk-blink-suggestion-preview">
+                  {f.label.preview}
+                </div>
+              </div>
             </div>
           ))}
         </div>

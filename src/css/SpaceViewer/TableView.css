@@ -553,6 +553,7 @@ height: 60px;
 }
 .mk-cell-option span {
   flex-grow: 1;
+  overflow:hidden;
 }
 
 .mk-cell-option-placeholder {

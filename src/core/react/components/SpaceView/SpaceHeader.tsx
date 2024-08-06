@@ -15,15 +15,21 @@ export interface SpaceProps {
 export const SpaceHeader = (props: { superstate: Superstate }) => {
   const { readMode } = useContext(PathContext);
   const { spaceState } = useContext(SpaceContext);
+  const [repositionMode, setRepositionMode] = React.useState(false);
 
   return (
     <>
-      <BannerView superstate={props.superstate}></BannerView>
+      <BannerView
+        superstate={props.superstate}
+        reposition={repositionMode}
+        setReposition={setRepositionMode}
+      ></BannerView>
       <div className="mk-space-header">
         <div className="mk-path-context-label">
           <TitleComponent
             superstate={props.superstate}
             readOnly={readMode}
+            setReposition={setRepositionMode}
           ></TitleComponent>
         </div>
         {spaceState?.type == "folder" &&

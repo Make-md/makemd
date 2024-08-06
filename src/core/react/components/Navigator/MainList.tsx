@@ -3,8 +3,8 @@ import { Superstate } from "core/superstate/superstate";
 import { isTouchScreen } from "core/utils/ui/screen";
 import React, { useEffect } from "react";
 import { ErrorBoundary, useErrorBoundary } from "react-error-boundary";
+import { FocusSelector } from "./Focuses/FocusSelector";
 import { MainMenu } from "./MainMenu";
-import { SpaceSwitcher } from "./Waypoints/Waypoints";
 
 export const MainList = (props: { superstate: Superstate }) => {
   const [indexing, setIndexing] = React.useState(false);
@@ -43,7 +43,7 @@ export const MainList = (props: { superstate: Superstate }) => {
         {!isTouchScreen(props.superstate.ui) && (
           <MainMenu superstate={props.superstate}></MainMenu>
         )}
-        <SpaceSwitcher superstate={props.superstate}></SpaceSwitcher>
+        <FocusSelector superstate={props.superstate}></FocusSelector>
 
         <SpaceTreeComponent superstate={props.superstate} />
       </ErrorBoundary>

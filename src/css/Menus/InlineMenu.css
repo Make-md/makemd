@@ -13,38 +13,45 @@ body:not(.is-mobile) .mk-style-menu {
   padding: 4px;
   margin-top: -50px;
   align-items: center;
+  gap: 4px;
 }
 
-.is-mobile .mk-style-menu svg {
-  width: 32px;
-  height: 32px;
+.mk-style-toolbar svg, .mk-style-menu svg {
+  width: 16px;
+  height: 16px;
 }
 
-.is-mobile .mk-style-menu {
+.mk-style-toolbar .mk-mark, .mk-style-menu .mk-mark {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+}
+
+.mk-style-toolbar {
   --mobile-toolbar-height: 48px;
   border-radius: 0;
   width: 100%;
   margin-top: 0;
   overflow-x: auto;
   justify-content: center;
-  height: 48px;
-  border-top: 1px solid var(--mk-ui-divider);
+  height: 100%;
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .mk-style-menu .mk-mark {
   margin: 4px;
-  padding: 4px;
   border-radius: 4px;
   display: flex;
 }
-.mk-style-menu .mk-mark {
-  width: 24px;
-  height: 24px;
-  padding: 6px;
+
+
+.mk-mobile-styler .mobile-toolbar-options-list {
+  display: none;
 }
-.mk-style-menu .mk-mark svg {
-  width: 12px;
-  height: 12px;
+.mk-mobile-styler .mobile-toolbar-floating-options {
+  display: none;
 }
 
 .mk-mark div {

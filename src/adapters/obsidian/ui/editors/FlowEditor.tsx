@@ -90,7 +90,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
   originalPath: string; // these are kept to avoid adopting targets w/a different link
   originalLinkText: string;
 
-  static activeWindows() {
+  static activeWindows(app: App) {
     const windows: Window[] = [window];
     const { floatingSplit } = app.workspace;
     if (floatingSplit) {
@@ -109,9 +109,8 @@ export class FlowEditor extends nosuper(HoverPopover) {
     return app.workspace.rootSplit;
   }
 
-  static activePopovers() {
-    //@ts-ignore
-    return this.activeWindows().flatMap(this.popoversForWindow);
+  static activePopovers(app: App) {
+    return this.activeWindows(app).flatMap(this.popoversForWindow);
   }
 
   static popoversForWindow(win?: Window) {
@@ -152,7 +151,6 @@ export class FlowEditor extends nosuper(HoverPopover) {
     this.onTarget = true;
     this.parent = parent;
     this.waitTime = waitTime;
-    //@ts-ignore
     this.state = PopoverState.Showing;
     const { hoverEl } = this;
 
@@ -182,7 +180,6 @@ export class FlowEditor extends nosuper(HoverPopover) {
   }
 
   getDefaultMode() {
-    //@ts-ignore
     return this.parent?.view?.getMode ? this.parent.view.getMode() : "preview";
   }
 
@@ -224,7 +221,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
       this.rootSplit,
       0
     );
-    //@ts-ignore
+
     leaf.isFlowBlock = true;
     this.updateLeaves();
     return leaf;
@@ -237,11 +234,10 @@ export class FlowEditor extends nosuper(HoverPopover) {
       this.plugin.app.workspace.on("layout-change", this.updateLeaves, this)
     );
     this.registerEvent(
-      app.workspace.on("layout-change", () => {
+      this.plugin.app.workspace.on("layout-change", () => {
         // Ensure that top-level items in a popover are not tabbed
         this.rootSplit.children.forEach((item, index) => {
           if (item instanceof WorkspaceTabs) {
-            //@ts-ignore
             this.rootSplit.replaceChild(index, item.children[0]);
           }
         });
@@ -318,8 +314,7 @@ export class FlowEditor extends nosuper(HoverPopover) {
   }
 
   shouldShowChild(): boolean {
-    //@ts-ignore
-    return FlowEditor.activePopovers().some((popover) => {
+    return FlowEditor.activePopovers(this.plugin.app).some((popover) => {
       if (
         popover !== this &&
         popover.targetEl &&

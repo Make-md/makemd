@@ -6,7 +6,7 @@ import { pathNameToString } from "utils/path";
 
 export const HiddenPaths = (props: {
   superstate: Superstate;
-  close: () => void;
+  hide?: () => void;
 }) => {
   const { superstate } = props;
   const ref = useRef(null);
@@ -99,19 +99,17 @@ export const HiddenPaths = (props: {
     );
   };
   return (
-    <div className="modal-content">
-      <div className="setting-item setting-item-heading">
-        {i18n.labels.hiddenFilePattern}
-      </div>
-      <div className="setting-item-description">
+    <div className="mk-modal-contents">
+      <div className="mk-modal-heading">{i18n.labels.hiddenFilePattern}</div>
+      <div className="mk-modal-description">
         {i18n.descriptions.hiddenFileOptions}
       </div>
       <div>
         {hiddenExtensions.map((f, index) => (
-          <div key={index} className="mobile-option-setting-item">
-            <span className="mobile-option-setting-item-name">{f}</span>
+          <div key={index} className="mk-modal-items">
+            <span className="mk-modal-item">{f}</span>
             <div
-              className="clickable-icon mobile-option-setting-item-option-icon"
+              className="mk-modal-item-button"
               aria-label={i18n.buttons.delete}
               dangerouslySetInnerHTML={{
                 __html: props.superstate.ui.getSticker("ui//close"),
@@ -121,7 +119,7 @@ export const HiddenPaths = (props: {
           </div>
         ))}
       </div>
-      <div className="setting-item">
+      <div className="mk-modal-item">
         <input
           placeholder={i18n.labels.addExtension}
           type="text"
@@ -130,18 +128,16 @@ export const HiddenPaths = (props: {
         <button onClick={(e) => addExtension()}>{i18n.buttons.add}</button>
       </div>
 
-      <div className="setting-item setting-item-heading">
-        {i18n.subViews.filesAndFolders}
-      </div>
-      <div className="setting-item-description">
+      <div className="mk-modal-heading">{i18n.subViews.filesAndFolders}</div>
+      <div className="mk-modal-description">
         {i18n.labels.hiddenFileSpecific}
       </div>
       <div>
         {hiddenPaths.map((f, index) => (
-          <div key={index} className="mobile-option-setting-item">
-            <span className="mobile-option-setting-item-name">{f}</span>
+          <div key={index} className="mk-modal-item">
+            <span className="mk-modal-item-name">{f}</span>
             <div
-              className="clickable-icon mobile-option-setting-item-option-icon"
+              className="mk-modal-item-button"
               aria-label={i18n.buttons.delete}
               dangerouslySetInnerHTML={{
                 __html: props.superstate.ui.getSticker("ui//close"),
@@ -151,7 +147,7 @@ export const HiddenPaths = (props: {
           </div>
         ))}
       </div>
-      <div className="setting-item">
+      <div className="mk-modal-item">
         <button onClick={(e) => addMenu(e)}>+ {i18n.buttons.addFile}</button>
       </div>
     </div>

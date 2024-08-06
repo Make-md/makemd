@@ -84,17 +84,13 @@ export const ObjectEditor = (props: {
       onClick: (e) => {
         props.superstate.ui.openModal(
           i18n.labels.rename,
-          (props: { hide: () => void }) => (
-            <InputModal
-              value={field}
-              saveLabel={i18n.labels.rename}
-              hide={props.hide}
-              saveValue={(value) => {
-                saveKey(field, value);
-                props.hide();
-              }}
-            ></InputModal>
-          ),
+          <InputModal
+            value={field}
+            saveLabel={i18n.labels.rename}
+            saveValue={(value) => {
+              saveKey(field, value);
+            }}
+          ></InputModal>,
           windowFromDocument(e.view.document)
         );
       },
@@ -491,7 +487,7 @@ export const ObjectEditorModal = (
               [field.name]: "",
             }
           );
-          return true
+          return true;
         },
         fileMetadata: true,
       }

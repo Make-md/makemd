@@ -20,6 +20,7 @@ export const renameTag = async (
   for (const subtag of tags) {
     await renameTag(superstate, subtag, subtag.replace(tag, newTag));
   }
+  return newTag
 };
 export const getAllParentTags = (str: string) => {
   if (str.startsWith('#')) {

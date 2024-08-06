@@ -1,14 +1,19 @@
 import { PathLabel } from "core/middleware/types/afile";
 import { Superstate } from "core/superstate/superstate";
+import { SpaceFragmentType } from "core/superstate/utils/spaces";
 import { ActionInstance } from "core/types/actions";
 import { Focus } from "core/types/focus";
-import { SpaceDefinition, SpaceType, tagsSpacePath } from "core/types/space";
+import { builtinSpacePathPrefix, SpaceDefinition, SpaceType } from "core/types/space";
+import { serializeOptionValue } from "core/utils/serializer";
 import { parseURI } from "core/utils/uri";
+import { defaultContextSchemaID } from "schemas/mdb";
 import { Command, CommandResult, Library } from "types/commands";
 import { Kit } from "types/kits";
-import { SpaceInfo, SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from "types/mdb";
+import { SpaceInfo, SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "types/mdb";
 import { MDBFrame, MDBFrames } from "types/mframe";
 import { URI } from "types/path";
+import { uniq } from "utils/array";
+import { parseMultiString } from "utils/parsers";
 
 export type PathCache = {
    [key: string]: any,
@@ -31,12 +36,13 @@ export abstract class SpaceAdapter {
     public schemes: string[];
    public initiateAdapter:(manager: SpaceManager) => void;
     //basic space operations
+    
     public spaceInfoForPath: (path: string) => SpaceInfo;
     public spaceDefForSpace: (path: string) => Promise<SpaceDefinition>;
     public parentPathForPath: (path: string) => string;
     public createSpace: (name: string, parentPath: string, definition: SpaceDefinition) => void
     public saveSpace: (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) => void
-    public renameSpace: (path: string, newPath: string) => void
+    public renameSpace: (path: string, newPath: string) => Promise<string>
     public deleteSpace: (path: string) => void
     public childrenForSpace: (path: string) => string[]
     public allPaths: (type?: string[]) => string[]
@@ -78,7 +84,7 @@ export abstract class SpaceAdapter {
     public resolvePath: (path: string, source: string) => string;
     public pathExists: (path: string) => Promise<boolean>;
     public createItemAtPath: (parent: string, type: string, name: string, content: any) => Promise<string>;
-    public renamePath: (oldPath: string, newPath: string) => void;
+    public renamePath: (oldPath: string, newPath: string) => Promise<string>;
       public copyPath: (source: string, destination: string, newName?: string) => Promise<string>;
     public getPathInfo: (path: string) => Promise<Record<string, any>>;
       public deletePath: (path: string) => void;
@@ -93,7 +99,7 @@ export abstract class SpaceAdapter {
     public allCaches: () => Map<string, PathCache>;
     public addProperty: (path: string, property: SpaceProperty) => void;
     public readProperties: (path: string) => Promise<{[key:string]: any}>;
-    public saveProperties: (path: string, properties: {[key:string]: any}) => void;
+    public saveProperties: (path: string, properties: {[key:string]: any}) => Promise<boolean>;
     public renameProperty: (path: string, property: string, newProperty: string) => void;
     public deleteProperty: (path: string, property: string) => void;
 
@@ -117,8 +123,8 @@ export abstract class SpaceAdapter {
     public saveSpaceTemplate: (frames: MDBFrames, name: string) => Promise<void>;
     public childrenForPath: (path: string, type?: string) => Promise<string[]>;
 
-    public readWaypoints: () => Promise<Focus[]>;
-    public saveWaypoints: (waypoints: Focus[]) => Promise<void>;
+    public readFocuses: () => Promise<Focus[]>;
+    public saveFocuses: (focuses: Focus[]) => Promise<void>;
     public readTemplates: (path: string) => Promise<string[]>;
     public saveTemplate: (path: string, space: string) => Promise<string>;
     public deleteTemplate: (path: string, space: string) => Promise<void>;
@@ -141,6 +147,28 @@ export class SpaceManager {
       return this.primarySpaceAdapter.saveSystemCommand(lib, action).then(f => this.superstate.reloadSystemActions());
     }
 
+    public onSpaceUpdated (path: string, type: SpaceFragmentType) {
+      if (!this.superstate.spacesIndex.has(path)) {
+        return;
+      }
+      if (type == 'context') {
+        this.superstate.reloadContextByPath(path);
+      }
+      if (type == 'frame') {
+        this.superstate.dispatchEvent("frameStateUpdated", {path})
+      }
+      if (type == 'action') {
+        this.superstate.reloadActions(this.spaceInfoForPath(path));
+      }
+
+    }
+
+    public onFocusesUpdated = () => {
+      this.readFocuses().then(f => {
+        this.superstate.focuses = f    
+        this.superstate.dispatchEvent("focusesChanged", null)
+      });
+    }
 
     public saveFrameKit (frames: MDBFrame, name: string) {
       return this.primarySpaceAdapter.saveFrameKit(frames, name);
@@ -211,6 +239,7 @@ export class SpaceManager {
     return [...sourceParts, ...pathParts].join('/');
       }
       if (this.superstate.spacesIndex.has(path)) return path;
+      if (this.superstate.pathsIndex.has(path)) return path;
       return this.primarySpaceAdapter.resolvePath(path, source) ?? path;
     }
     public uriByString(uri: string, source?: string): URI {
@@ -224,7 +253,7 @@ export class SpaceManager {
     }
 
     public spaceTypeByString = (uri: URI): SpaceType => {
-      if (uri.fullPath == tagsSpacePath) {
+      if (uri.fullPath.startsWith(builtinSpacePathPrefix)) {
         return 'default';
       }
       if (uri.scheme == 'space') {
@@ -460,6 +489,14 @@ export class SpaceManager {
      }
  
      public addSpaceProperty (path: string, property: SpaceProperty) {
+      if (
+        property.schemaId == defaultContextSchemaID &&
+        property.type.startsWith("option")
+      ) {
+        const allOptions = uniq([...this.superstate.spacesMap.getInverse(path) ?? []].flatMap(f => parseMultiString(this.superstate.pathsIndex.get(f)?.metadata?.property?.[property.name]) ?? []));
+        const values = serializeOptionValue(allOptions.map(f => ({ value: f, name: f })), {});
+        property.value = values;
+      }
         return this.adapterForPath(path).addSpaceProperty(path, property).then(f => 
           this.superstate.reloadContextByPath(path));
      
@@ -501,13 +538,13 @@ export class SpaceManager {
     public childrenForPath (path: string, type?: string) {
         return this.adapterForPath(path).childrenForPath(path, type);
     }
-    public readWaypoints () {
-        return this.primarySpaceAdapter.readWaypoints();
+    public readFocuses () {
+        return this.primarySpaceAdapter.readFocuses();
     }
-    public saveWaypoints (waypoints: Focus[]) {
-      this.superstate.waypoints = waypoints;
-      this.superstate.dispatchEvent("superstateUpdated", null)
-        return this.primarySpaceAdapter.saveWaypoints(waypoints);
+    public saveFocuses (focuses: Focus[]) {
+      this.superstate.focuses = focuses;
+      this.superstate.dispatchEvent("focusesChanged", null)
+        return this.primarySpaceAdapter.saveFocuses(focuses);
     }
     public readTemplates (path:string) {
         return this.adapterForPath(path).readTemplates(path);

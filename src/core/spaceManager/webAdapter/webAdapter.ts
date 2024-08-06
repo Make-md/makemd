@@ -49,10 +49,10 @@ export class WebSpaceAdapter implements SpaceAdapter {
     public deleteTemplate (path: string, space: string) : Promise<void> {
       return
     }
-    public async readWaypoints () : Promise<Focus[]> {
+    public async readFocuses () : Promise<Focus[]> {
       return []
     }
-    public async saveWaypoints (waypoints: Focus[]) {
+    public async saveFocuses (focuses: Focus[]) {
       return
     }
 
@@ -90,8 +90,8 @@ export class WebSpaceAdapter implements SpaceAdapter {
   public async createItemAtPath (parent: string, type: string, name: string, content?: any) : Promise<string> {
     return null;
   }
-  public async renamePath (oldPath: string, path: string) {
-    return
+  public async renamePath (oldPath: string, path: string) : Promise<string> {
+    return null;
   }
   public async deletePath (path: string) {
     return;
@@ -320,8 +320,8 @@ public async contextInitiated (path: string) {
   public async deleteProperty (path: string, property: string) {
     return;
   }
-public async saveProperties (path: string, properties: SpaceProperty[]) {
-    return
+public async saveProperties (path: string, properties: SpaceProperty[]) : Promise<boolean> {
+    return false
     }
     
       
@@ -368,8 +368,8 @@ public async saveProperties (path: string, properties: SpaceProperty[]) {
       return;
     }
 
-    public renameSpace (oldPath: string, newPath: string) {
-      return;
+    public async renameSpace (oldPath: string, newPath: string) : Promise<string> {
+      return null;
     }
     public deleteSpace (path: string) {
       return;

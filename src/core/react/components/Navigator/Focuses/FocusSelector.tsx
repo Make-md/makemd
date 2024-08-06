@@ -16,13 +16,13 @@ import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { isTouchScreen } from "core/utils/ui/screen";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { SortablePinnedSpaceItem } from "./Waypoint";
-export const SpaceSwitcher = (props: { superstate: Superstate }) => {
+import { SortablePinnedSpaceItem } from "./Focus";
+export const FocusSelector = (props: { superstate: Superstate }) => {
   const {
-    waypoints: waypoints,
+    focuses: focuses,
     modifier,
     setModifier,
-    setWaypoints,
+    setFocuses: setFocuses,
   } = useContext(NavigatorContext);
   const { superstate } = props;
 
@@ -38,8 +38,8 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
       setProjected(null);
       return;
     }
-    const waypoint = waypoints.find((f, i) => i == overId);
-    if (!waypoint) return;
+    const focus = focuses.find((f, i) => i == overId);
+    if (!focus) return;
     const _projected: DragProjection = {
       depth: 0,
       overId: overId,
@@ -52,7 +52,7 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
     };
     setProjected(_projected);
     return;
-  }, [overId, dragPaths, offset, modifier, waypoints, activeId]);
+  }, [overId, dragPaths, offset, modifier, focuses, activeId]);
   const resetState = () => {
     setModifier(null);
     setOverId(null);
@@ -94,7 +94,7 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
       setOverId(id);
     } else {
       if (id == activeId) return;
-      setWaypoints(arrayMove(waypoints, activeId, id));
+      setFocuses(arrayMove(focuses, activeId, id));
       setActiveId(id);
     }
   };
@@ -115,10 +115,10 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
 
       if (activeId !== null) {
         const fromIndex = activeId;
-        setWaypoints(arrayMove(waypoints, fromIndex, toIndex));
+        setFocuses(arrayMove(focuses, fromIndex, toIndex));
       } else {
-        setWaypoints(
-          waypoints.map((f, i) =>
+        setFocuses(
+          focuses.map((f, i) =>
             i == toIndex ? { ...f, paths: [...f.paths, dragPaths[0]] } : f
           )
         );
@@ -153,9 +153,7 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
       if (activeId == null) {
         setOverId(overId);
       } else {
-        setWaypoints(
-          arrayMove(waypoints, overId as number, parseInt(activeId))
-        );
+        setFocuses(arrayMove(focuses, overId as number, parseInt(activeId)));
       }
 
       // }
@@ -193,13 +191,13 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
   return (
     <>
       <div
-        className="mk-waypoints nav-header"
+        className="mk-focuses nav-header"
         onDragEnter={() => dragEnter()}
         onDragLeave={() => dragLeave()}
         onDragOver={(e) => e.preventDefault()}
       >
-        <div className="mk-waypoints-inner nav-buttons-container">
-          {waypoints.map((pin, i) => (
+        <div className="mk-focuses-inner nav-buttons-container">
+          {focuses.map((pin, i) => (
             <SortablePinnedSpaceItem
               id={i}
               superstate={props.superstate}
@@ -230,13 +228,12 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
           <div
             className="mk-waypoint-new"
             onClick={(e) => {
-              const newWaypoints = [
-                ...waypoints,
+              const newFocuses = [
+                ...focuses,
                 { sticker: "ui//spaces", name: "", paths: [] },
               ];
-              props.superstate.settings.currentWaypoint =
-                newWaypoints.length - 1;
-              setWaypoints(newWaypoints);
+              props.superstate.settings.currentWaypoint = newFocuses.length - 1;
+              setFocuses(newFocuses);
             }}
             dangerouslySetInnerHTML={{
               __html: props.superstate.ui.getSticker("ui//plus"),
@@ -244,10 +241,10 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
           ></div>
           {overId != null && activeId === null && (
             <SortablePinnedSpaceItem
-              id={waypoints.length}
+              id={focuses.length}
               superstate={props.superstate}
               highlighted={false}
-              index={waypoints.length}
+              index={focuses.length}
               pin={null}
             ></SortablePinnedSpaceItem>
           )}
@@ -266,7 +263,7 @@ export const SpaceSwitcher = (props: { superstate: Superstate }) => {
                 clone
                 index={activeId}
                 indicator={false}
-                pin={waypoints[activeId]}
+                pin={focuses[activeId]}
               ></SortablePinnedSpaceItem>
             ) : null}
           </DragOverlay>,

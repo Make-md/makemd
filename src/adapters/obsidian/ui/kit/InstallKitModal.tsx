@@ -15,14 +15,7 @@ export const installKitModal = (
 ) => {
   superstate.ui.openModal(
     "Add Kit",
-    (props: { hide: () => void }) => (
-      <InstallKit
-        plugin={plugin}
-        superstate={superstate}
-        hide={props.hide}
-        kit={kit}
-      ></InstallKit>
-    ),
+    <InstallKit plugin={plugin} superstate={superstate} kit={kit}></InstallKit>,
     win
   );
 };
@@ -30,7 +23,7 @@ export const installKitModal = (
 export const InstallKit = (props: {
   plugin: MakeMDPlugin;
   superstate: Superstate;
-  hide: () => void;
+  hide?: () => void;
   kit: string;
 }) => {
   const [kit, setKit] = useState(props.kit);

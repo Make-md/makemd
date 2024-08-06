@@ -31,7 +31,7 @@ export const MarkdownHeaderView = (props: {
   useLayoutEffect(() => {
     props.editorView?.requestMeasure();
   }, []);
-
+  const [repositionMode, setRepositionMode] = React.useState(false);
   return (
     pathState && (
       <>
@@ -43,10 +43,15 @@ export const MarkdownHeaderView = (props: {
                 : ""
             }`}
           >
-            <BannerView superstate={props.superstate}></BannerView>
+            <BannerView
+              superstate={props.superstate}
+              reposition={repositionMode}
+              setReposition={setRepositionMode}
+            ></BannerView>
             <TitleComponent
               superstate={props.superstate}
               readOnly={!props.editable}
+              setReposition={setRepositionMode}
             ></TitleComponent>
           </div>
           {props.editable &&
@@ -113,15 +118,12 @@ export const NoteActionBar = (props: { superstate: Superstate }) => {
 
   const changeCover = (e: React.MouseEvent) => {
     props.superstate.ui.openPalette(
-      (_props: { hide: () => void }) => (
-        <ImageModal
-          superstate={props.superstate}
-          hide={_props.hide}
-          selectedPath={(image) => {
-            savePathBanner(props.superstate, pathState.path, image);
-          }}
-        />
-      ),
+      <ImageModal
+        superstate={props.superstate}
+        selectedPath={(image) => {
+          savePathBanner(props.superstate, pathState.path, image);
+        }}
+      />,
       windowFromDocument(e.view.document)
     );
   };

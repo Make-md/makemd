@@ -53,48 +53,94 @@
   color: var(--mk-ui-text-tertiary); 
 }
 
-.mk-menu-mobile {
-  padding: 0;
-  
-  -webkit-app-region: no-drag;
-  background-color: var(--mk-ui-background-overlay);
-  position: fixed;
-  z-index: var(--layer-menu);
-  user-select: none;
-  overflow: hidden;
-}
+
 .mk-menu-wrapper {
   max-height: inherit;
 }
 .mk-menu-suggester {
   visibility: hidden;
 }
+.mk-combo-menu {
+  height: 90%;
+}
+.mk-drawer-overlay {
+  position: fixed;
+  inset: 0px;
+  z-index: calc(var(--layer-menu) + calc(var(--drawer-index) * 2) );
+  background-color: var(--mk-ui-background-overlay);
+}
+
+.mk-drawer-content.mk-drawer-palette {
+  top: var(--safe-area-inset-top) !important;
+  bottom: 0;
+  height: auto !important;
+  max-height: auto !important;
+}
+.mk-drawer-handle {
+  margin-bottom: 12px;
+  background: var(--mk-ui-divider);
+  min-height: 5px;
+}
+.app-container[vaul-drawer-wrapper] {
+  transform-origin: center top;
+}
+
+.workspace-split {
+  padding-top: var(--safe-area-inset-top);
+  background: var(--editor-bg-color);
+}
+.workspace-drawer {
+position: absolute;
+}
+
+body {
+  padding-top: 0 !important;
+}
+.mk-drawer-content.mk-drawer-modal {
+  width: 90%;
+  margin: 0 auto;
+  padding: 14px;
+  margin-bottom: 50px;
+  border-radius: 8px;
+}
+.mk-drawer-content.mk-drawer-modal .mk-drawer-handle {
+  display:none;
+}
+
+[vaul-drawer][vaul-drawer-direction=bottom]:after {
+  display:none; 
+}
+.mk-drawer-content {
+  position: absolute;
+  box-shadow: var(--mk-shadow-menu);
+  background: var(--mk-ui-background);
+  z-index: calc(var(--layer-menu) + calc(var(--drawer-index) * 2) + 1);
+  max-height: 96%;
+  width: 100%;
+  margin-top: 24px;
+  left: 0;
+  right: 0;
+  padding-bottom: var(--safe-area-inset-bottom);
+  bottom: 0;
+  overflow: auto;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
 .mk-menu-suggester.mk-ready {
     animation: .15s ease-out 0s 1 slideInFromBottom;
     visibility: visible;
 }
-.mk-menu-mobile > .mk-menu-wrapper {
-  visibility: hidden;
-}
-.mk-menu-mobile > .mk-menu-wrapper.mk-ready {
-  visibility: visible;
-  animation: .15s ease-out 0s 1 slideInFromBottom;
-}
-.mk-menu-mobile > .mk-menu-wrapper {
-  box-shadow: var(--mk-shadow-menu);
-  background-color: var(--mk-ui-background-menu);
-  border-radius: var(--mk-ui-radius-small);
-height: auto;
-position: absolute;
-width: 100%;
-z-index: var(--layer-menu);
-left: 0;
-bottom: 0;
-padding-bottom: var(--safe-area-inset-bottom);
-}
 
-.mk-menu-mobile .mk-menu-container {
+
+
+
+.mk-drawer-content .mk-menu-container {
   width: 100%;
+  padding-bottom: var(--safe-area-inset-bottom);
 }
 
 .mk-menu svg {
@@ -130,11 +176,21 @@ padding-bottom: var(--safe-area-inset-bottom);
 .mk-menu-input-wrapper {
   width: 100%;
 }
+.is-phone .mk-menu-input-wrapper {
+padding: 8px;
+}
+.is-phone .mk-menu-search {
+  background: var(--mk-ui-background-input);
+  border-radius: 8px;
+  margin-top: 0;
+  border-bottom: none;
+}
 .mk-menu-container {
   height: 100%;
   position: relative;
   width: 240px;
   /* shared font styles */
+  flex-direction: column;
   font-size: 1em;
   line-height: 1.2;
   display: flex;
@@ -194,16 +250,27 @@ gap: 8px;
 
 .mk-menu-search {
   width: 100%;
-  display: inline-block;
-  white-space: normal;
+  display: flex;
   padding: 0px 10px;
   margin-top: 4px;
   border-bottom: 1px solid var(--mk-ui-border);
 }
 
-.mk-menu-search-container {
-  display: inline-block;
+button.mk-menu-search-button {
+  background : none;
+  border: none;
+  box-shadow: none;
+  --icon-size: 16px;
+}
 
+button.mk-menu-search-button svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.mk-menu-search-container {
+  display: flex;
+gap: 8px;
   /* match tag layout */
   padding: 7px 2px;
 
@@ -232,13 +299,19 @@ gap: 8px;
   display: none;
 }
 
-.mk-menu-suggestions {
+body:not(.is-phone) .mk-menu-suggestions {
   width: 100%;
   height: 100%;
 overflow-y: auto;
 overflow-x: hidden;
 margin: 4px -1px;
 max-height: var(--mk-menu-max-height)
+}
+
+.is-phone .mk-menu-suggestions {
+  width: 100%;
+  flex: 1;
+  overflow-y: auto;
 }
 
 

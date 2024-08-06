@@ -9,7 +9,7 @@ export const stickerFromString = (sticker: string, plugin: MakeMDPlugin) => {
   const [type, value] = parseStickerString(sticker);
   if (type == '' || type == 'emoji') {
     return `
-    <svg viewBox="0 0 18 18">
+    <svg viewBox="0 0 18 18" font-family="Apple Color Emoji, Android Emoji", Segoe UI">
       <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="114%">${emojiFromString(value)}</text>
     </svg>
     `;
