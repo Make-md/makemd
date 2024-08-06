@@ -158,7 +158,6 @@ const treeForRoot = (
     return tree;
   }
   const children = superstate.getSpaceItems(space.path) ?? [];
-
   children.sort(spaceSortFn(spaceSort)).forEach((item) => {
     const _parentId = space.path;
     if (item.type != "space") {

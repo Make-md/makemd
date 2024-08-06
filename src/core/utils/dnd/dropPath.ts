@@ -56,7 +56,6 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
       const newSpace = projected.depth == 0 && !projected.insert ? null : clonedItems.find(({ id }) => id === parentId)?.item.path;
 
       const newRank = parentId == null ? activeSpaces.findIndex(f => f?.path == overItem.id) :  parentId == overItem.id ? -1 : overItem.rank ?? -1;
-
       if (!active) {
         
         dropPathInSpaceAtIndex(superstate, path, null, newSpace, projected.sortable && newRank, modifier);

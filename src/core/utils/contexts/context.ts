@@ -92,7 +92,7 @@ const saveContext = async (
 ): Promise<void> => {
   await manager.saveTable(spaceInfo.path, newTable, force).then(f => {
     if (f)
-    return manager.superstate.reloadContextByPath(spaceInfo.path)
+    return manager.superstate.reloadContextByPath(spaceInfo.path, true)
   return f});
 };
 

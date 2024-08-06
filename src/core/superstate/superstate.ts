@@ -324,7 +324,6 @@ public api: API;
         const items = [...this.spacesMap.getInverse(spacePath)]
         const ranks = this.contextsIndex.get(spacePath)?.paths ?? [];
         
-        
         return items.map<PathStateWithRank>((f, i) => {
 
             const pathCache = this.pathsIndex.get(f);
@@ -343,7 +342,7 @@ public api: API;
     private async initializeContexts() {
         
         await this.indexer.reload<Map<string, {cache: ContextState, changed: boolean}>>({ type: 'contexts', path: ''}).then(async r => {
-            const promises = [...r.entries()].map(([path, {cache, changed}]) => this.contextReloaded(path, cache, changed));
+            const promises = [...r.entries()].map(([path, {cache, changed}]) => this.contextReloaded(path, cache, changed, true));
             await Promise.all(promises);
         });
 
