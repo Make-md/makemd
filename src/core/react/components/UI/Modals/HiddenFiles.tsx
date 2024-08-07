@@ -104,10 +104,10 @@ export const HiddenPaths = (props: {
       <div className="mk-modal-description">
         {i18n.descriptions.hiddenFileOptions}
       </div>
-      <div>
+      <div className="mk-modal-items">
         {hiddenExtensions.map((f, index) => (
-          <div key={index} className="mk-modal-items">
-            <span className="mk-modal-item">{f}</span>
+          <div key={index} className="mk-modal-item">
+            <span>{f}</span>
             <div
               className="mk-modal-item-button"
               aria-label={i18n.buttons.delete}
@@ -132,7 +132,7 @@ export const HiddenPaths = (props: {
       <div className="mk-modal-description">
         {i18n.labels.hiddenFileSpecific}
       </div>
-      <div>
+      <div className="mk-modal-items">
         {hiddenPaths.map((f, index) => (
           <div key={index} className="mk-modal-item">
             <span className="mk-modal-item-name">{f}</span>

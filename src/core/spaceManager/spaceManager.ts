@@ -238,7 +238,6 @@ export class SpaceManager {
     }
     return [...sourceParts, ...pathParts].join('/');
       }
-      if (this.superstate.spacesIndex.has(path)) return path;
       if (this.superstate.pathsIndex.has(path)) return path;
       return this.primarySpaceAdapter.resolvePath(path, source) ?? path;
     }
@@ -253,6 +252,7 @@ export class SpaceManager {
     }
 
     public spaceTypeByString = (uri: URI): SpaceType => {
+      
       if (uri.fullPath.startsWith(builtinSpacePathPrefix)) {
         return 'default';
       }

@@ -66,6 +66,7 @@ export const fileSystemSpaceInfoByPath = (
         }
   }
   const uri = manager.uriByString(contextPath);
+  if (!uri) return null;
   const pathType = manager.spaceTypeByString(uri);
   
   if (pathType == "folder") {
@@ -94,7 +95,7 @@ export const fileSystemSpaceInfoFromFolder = (
       folderPath: folder,
       defPath: `${manager.superstate.settings.spaceSubFolder}/def.json`,
       notePath: vaultName + ".md",
-      dbPath: spaceFolderPathFromSpace(folder, manager) + + "context.mdb",
+      dbPath: spaceFolderPathFromSpace(folder, manager)  + "context.mdb",
       framePath: spaceFolderPathFromSpace(folder, manager) + "views.mdb",
       commandsPath: spaceFolderPathFromSpace(folder, manager) + "commands.mdb",
     };

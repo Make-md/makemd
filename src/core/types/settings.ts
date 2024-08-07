@@ -52,6 +52,8 @@ export interface MakeMDSettings {
   emojiTriggerChar: string;
   makerMode: boolean;
   hiddenFiles: string[];
+  skipFolders: string[];
+  skipFolderNames: string[];
   hiddenExtensions: string[];
   newFileLocation: string;
   newFileFolderPath: string;

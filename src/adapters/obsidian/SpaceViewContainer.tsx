@@ -143,7 +143,7 @@ export class SpaceViewContainer extends ItemView {
     this.root = this.ui.createRoot(this.contentEl);
     if (this.root) {
       this.root.render(
-        <div className="mk-space-view">
+        <div className="mk-space-view" data-path={path}>
           {path == "spaces://$settings" ? (
             <SystemSettings superstate={this.superstate}></SystemSettings>
           ) : (

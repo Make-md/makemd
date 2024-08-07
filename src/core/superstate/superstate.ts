@@ -830,7 +830,9 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
         const metadata = spaceMetadata ?? await this.spaceManager.spaceDefForSpace(space.path);
 
         let pathState = this.pathsIndex.get(space.path);
-        const type : SpaceType = this.spaceManager.spaceTypeByString(this.spaceManager.uriByString(space.path))
+        const uri = this.spaceManager.uriByString(space.path)
+        if (!uri) return null;
+        const type : SpaceType = this.spaceManager.spaceTypeByString(uri)
         if (type == 'default' || type == 'tag') {
             metadata.filters = [];
             metadata.links = [];

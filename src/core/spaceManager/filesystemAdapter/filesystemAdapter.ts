@@ -20,7 +20,7 @@ import { Kit } from "types/kits";
 import { DBTables, SpaceInfo, SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "types/mdb";
 import { MDBFrame, MDBFrames } from "types/mframe";
 import { uniqueNameFromString } from "utils/array";
-import { excludePathPredicate } from "utils/hide";
+import { excludeSpacesPredicate } from "utils/hide";
 import { safelyParseJSON } from "utils/parsers";
 import { tagPathToTag } from "utils/tags";
 import { SpaceAdapter, SpaceManager } from "../spaceManager";
@@ -766,7 +766,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
         const getAllTagContextFiles = () : SpaceInfo[] => this.readTags().map(f => fileSystemSpaceInfoFromTag(this.spaceManager, tagPathToTag(f))) as SpaceInfo[] ?? [];
           
           const getAllFolderContextFiles = () => {
-            const folders = this.allPaths(['folder']).filter(f => !excludePathPredicate(this.spaceManager.superstate.settings, f) && !f.startsWith(this.spaceManager.superstate.settings.spacesFolder+'/#'))
+            const folders = this.allPaths(['folder']).filter(f => !excludeSpacesPredicate(this.spaceManager.superstate.settings, f) && !f.startsWith(this.spaceManager.superstate.settings.spacesFolder+'/#'))
             
             return folders.map(f => fileSystemSpaceInfoFromFolder(this.spaceManager, f));
           }

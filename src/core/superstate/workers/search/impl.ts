@@ -26,7 +26,7 @@ export function fastSearch (payload: { query: string, pathsIndex: Map<string, Pa
       // fieldNormWeight: 1,
       keys: ["name", "path", 'label.preview'],
     };
-    const fuse = new Fuse([...pathsIndex.values()], fuseOptions);
+    const fuse = new Fuse([...pathsIndex.values()].filter(f => f.hidden == false), fuseOptions);
     return fuse.search(query).map((result) => result.item).slice(0, count);
 
 }

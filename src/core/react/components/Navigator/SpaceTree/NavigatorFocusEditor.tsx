@@ -79,7 +79,7 @@ export const FocusEditor = (props: {
               BlinkMode.Open,
               windowFromDocument(e.view.document),
               (link) => {
-                const isNew = !props.superstate.spacesIndex.has(link);
+                const isNew = !props.superstate.pathsIndex.has(link);
                 if (isNew) {
                   createSpace(props.superstate, link, {}).then((f) => {
                     saveActiveSpace(link);

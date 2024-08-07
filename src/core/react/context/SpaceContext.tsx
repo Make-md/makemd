@@ -31,6 +31,7 @@ export const SpaceProvider: React.FC<
   const spaceInfo: SpaceInfo = useMemo(() => {
     return props.superstate.spacesIndex.get(pathState.path)?.space;
   }, [pathState]);
+
   const readMode = spaceInfo?.readOnly;
   const [spaceState, setSpaceState] = useState<SpaceState>(null);
 

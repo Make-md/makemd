@@ -22,6 +22,7 @@ import MakeMDPlugin from "main";
 import { i18n } from "makemd-core";
 
 import { FlowEditorHover } from "adapters/obsidian/ui/editors/markdownView/FlowEditorHover";
+import { getLineRangeFromRef } from "adapters/obsidian/utils/flow/flowEditor";
 import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
 import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
 import { compareByField } from "core/utils/tree";
@@ -388,7 +389,16 @@ class FlowEditorWidget extends WidgetType {
         this.info.link,
         file?.path
       );
-      this.plugin.superstate.ui.openPath(uri.fullPath, false, div);
+      const selectiveRange = getLineRangeFromRef(
+        uri.basePath,
+        uri.refStr,
+        this.plugin
+      );
+
+      this.plugin.superstate.ui.openPath(uri.basePath, false, div, {
+        from: selectiveRange[0],
+        to: selectiveRange[1],
+      });
     }
     // loadFlowEditorByDOM(this.plugin, div, view, this.info.id);
     return div;

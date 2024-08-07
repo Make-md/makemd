@@ -192,6 +192,11 @@
     gap: 8px;
 }
 
+.mk-modal-item {
+  display: flex;
+  gap: 8px;
+}
+
 .mk-tab-group {
     display: flex;
     gap: 4px;

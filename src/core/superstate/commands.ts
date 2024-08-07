@@ -206,7 +206,7 @@ export class SpacesCommandsAdapter implements CLIAdapter {
     public runCommand (action: string, instance: ActionInstance) {
         
         const command = this.commandForAction(action);
-        console.log(command)
+
         let result;
         let error
         try {

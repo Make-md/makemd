@@ -239,6 +239,11 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     }
     public resolvePath (path: string, source: string) {
         if (!source || !path) return path;
+        
+        if (path.includes("#")) {
+            const [basePath, fragment] = path.split('#');
+            return this.plugin.app.metadataCache.getFirstLinkpathDest(basePath, source)?.path+'#'+fragment ?? path
+        }
         return this.plugin.app.metadataCache.getFirstLinkpathDest(path, source)?.path ?? path
     }
     

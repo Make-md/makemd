@@ -138,7 +138,6 @@ export const TableView = (props: { superstate: Superstate }) => {
   const [selectedColumn, setSelectedColumn] = useState<string>(null);
   const [currentEdit, setCurrentEdit] = useState<[string, string]>(null);
   const [overId, setOverId] = useState(null);
-  const [openFlows, setOpenFlows] = useState([]);
   const [colsSize, setColsSize] = useState<ColumnSizingState>({});
   const ref = useRef(null);
   const primaryCol = cols.find((f) => f.primary == "true");
@@ -510,13 +509,13 @@ export const TableView = (props: { superstate: Superstate }) => {
     Object.keys(predicate.colsCalc).forEach((f) => {
       result[f] = calculateAggregate(
         props.superstate,
-        tableData.rows.map((r) => r[f]),
+        data.map((r) => r[f]),
         predicate.colsCalc[f],
         cols.find((c) => c.name == f)
       );
     });
     return result;
-  }, [cols, tableData, predicate.colsCalc]);
+  }, [cols, data, predicate.colsCalc]);
 
   const selectCell = (e: React.MouseEvent, index: number, column: string) => {
     if (isTouchScreen(props.superstate.ui) || column == "+") return;
