@@ -129,6 +129,11 @@
   margin: 8px;
   display: flex;
   }
+  .mk-palette-search {
+    display:flex;
+    gap: 8px;
+    padding: 12px;
+  }
   .mk-palette-search input {
     border:none;
     background: none;

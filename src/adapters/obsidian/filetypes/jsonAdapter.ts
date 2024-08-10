@@ -77,7 +77,7 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
         }
         if (fragmentType == 'label') {
             const cache = await this.middleware.readTextFromFile(file.path);
-            const fm = safelyParseJSON(cache).label ?? {};
+            const fm = safelyParseJSON(cache)?.label ?? {};
             const sticker = parseProperty("sticker", fm[this.plugin.superstate.settings.fmKeySticker])
                const color = parseProperty("color", fm[this.plugin.superstate.settings.fmKeyColor])
                 const name = parseProperty("aliases", fm[this.plugin.superstate.settings.fmKeyAlias])[0]
