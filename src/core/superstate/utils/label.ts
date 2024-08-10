@@ -2,7 +2,7 @@ import { Superstate } from "core/superstate/superstate";
 import { ensureArray } from "core/utils/strings";
 import { parseMDBStringValue } from "utils/properties";
 import { serializeMultiDisplayString } from "utils/serializers";
-import { metadataPathForSpace, saveLabel, saveProperties, saveSpaceProperties } from "./spaces";
+import { metadataPathForSpace, saveProperties } from "./spaces";
 
 export const savePathBanner = (superstate: Superstate, path: string, banner: string) => {
   if (superstate.spacesIndex.has(path)) {
@@ -20,11 +20,7 @@ export const savePathColor = async (
   path: string,
   color: string
 ) => {
-  if (superstate.spacesIndex.has(path)) {
-    saveSpaceProperties(superstate, path, { [superstate.settings.fmKeyColor]: color })
-    return;
-}
-  saveLabel(superstate, path, "color", color);
+    superstate.spaceManager.saveLabel(path, superstate.settings.fmKeyColor, color);
 
 };
 export const savePathSticker = async (
@@ -32,11 +28,7 @@ export const savePathSticker = async (
   path: string,
   sticker: string
 ) => {
-  if (superstate.spacesIndex.has(path)) {
-    saveSpaceProperties(superstate, path, { [superstate.settings.fmKeySticker]: sticker })
-    return;
-}
-  saveLabel(superstate, path, "sticker", sticker);
+    superstate.spaceManager.saveLabel(path, superstate.settings.fmKeySticker, sticker);
 };
 export const updatePrimaryAlias = (superstate: Superstate,
   path: string, aliases: string[],

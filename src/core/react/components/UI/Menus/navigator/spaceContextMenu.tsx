@@ -208,6 +208,22 @@ export const showSpaceContextMenu = (
               field: space.metadata.sort.field,
               asc: space.metadata.sort.asc,
               group: !space.metadata.sort.group,
+              recursive: space.metadata.sort.recursive,
+            });
+          },
+        });
+        sortOptions.push(menuSeparator);
+        sortOptions.push({
+          name: i18n.menu.recurisveSort,
+          icon: "ui//arrow-up-down",
+          value: space.metadata.sort.recursive == true,
+          type: SelectOptionType.Radio,
+          onClick: (e) => {
+            updateSpaceSort(superstate, space.path, {
+              field: space.metadata.sort.field,
+              asc: space.metadata.sort.asc,
+              group: space.metadata.sort.group,
+              recursive: !space.metadata.sort.recursive,
             });
           },
         });
@@ -216,6 +232,7 @@ export const showSpaceContextMenu = (
           field: "rank",
           asc: true,
           group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
         };
         sortOptions.push({
           name: i18n.menu.customSort,
@@ -233,6 +250,7 @@ export const showSpaceContextMenu = (
           field: "name",
           asc: true,
           group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
         };
         sortOptions.push({
           name: i18n.menu.fileNameSortAlphaAsc,
@@ -249,6 +267,7 @@ export const showSpaceContextMenu = (
           field: "name",
           asc: false,
           group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
         };
         sortOptions.push({
           name: i18n.menu.fileNameSortAlphaDesc,
@@ -266,6 +285,7 @@ export const showSpaceContextMenu = (
           field: "number",
           asc: true,
           group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
         };
         sortOptions.push({
           name: i18n.menu.fileNameSortNumericalAsc,
@@ -282,6 +302,7 @@ export const showSpaceContextMenu = (
           field: "number",
           asc: false,
           group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
         };
         sortOptions.push({
           name: i18n.menu.fileNameSortNumericalDesc,
@@ -299,6 +320,7 @@ export const showSpaceContextMenu = (
           field: "ctime",
           asc: false,
           group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
         };
         sortOptions.push({
           name: i18n.menu.createdTimeSortAsc,
@@ -315,6 +337,7 @@ export const showSpaceContextMenu = (
           field: "ctime",
           asc: true,
           group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
         };
         sortOptions.push({
           name: i18n.menu.createdTimeSortDesc,
@@ -333,6 +356,7 @@ export const showSpaceContextMenu = (
           field: "size",
           asc: false,
           group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
         };
         sortOptions.push({
           name: i18n.menu.sizeSortAsc,
@@ -349,6 +373,7 @@ export const showSpaceContextMenu = (
           field: "size",
           asc: true,
           group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
         };
         sortOptions.push({
           name: i18n.menu.sizeSortDesc,
@@ -365,8 +390,7 @@ export const showSpaceContextMenu = (
         return superstate.ui.openMenu(
           offset,
           defaultMenu(superstate.ui, sortOptions),
-          windowFromDocument(e.view.document),
-          "bottom"
+          windowFromDocument(e.view.document)
         );
       },
     });

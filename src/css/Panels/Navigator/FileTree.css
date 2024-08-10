@@ -59,12 +59,13 @@
 .mk-spaces-enabled.is-mobile
   .workspace-drawer.mod-left
   .workspace-drawer-inner
-  .mod-settings {
+  .mod-settings, .mk-spaces-enabled.is-mobile
+  .workspace-drawer.mod-left
+  .workspace-drawer-inner
+  .mod-pin {
   display: none;
 }
-.is-tablet .workspace-drawer.mod-left .workspace-drawer-header-left .mk-main-menu-container{
-  margin-right: 34px;
-}
+
 .is-mobile .mk-sidebar button:not(.clickable-icon) {
 
 }

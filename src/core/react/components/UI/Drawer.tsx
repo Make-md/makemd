@@ -11,8 +11,17 @@ export const MobileDrawer = (props: {
   const { newProps } = props;
   const [open, setOpen] = React.useState(true);
   const drawerCount = useMemo(() => {
-    const drawerCounts = document.querySelectorAll(".mk-drawer-content").length;
-    return drawerCounts;
+    const drawers = document.querySelectorAll(".mk-drawer-content");
+    let drawerIndex = 0;
+    drawers.forEach((drawer) => {
+      if (drawer instanceof HTMLElement) {
+        const index = drawer.getAttribute("data-drawer-index");
+        if (index && parseInt(index) >= drawerIndex) {
+          drawerIndex = parseInt(index) + 1;
+        }
+      }
+    });
+    return drawerIndex;
   }, []);
 
   return (
@@ -31,6 +40,7 @@ export const MobileDrawer = (props: {
       <Drawer.Portal>
         <Drawer.Content
           className={classNames("mk-drawer-content", props.className)}
+          data-drawer-index={drawerCount}
           style={
             {
               "--drawer-index": drawerCount,

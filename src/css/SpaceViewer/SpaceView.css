@@ -95,7 +95,7 @@ button.mk-title-alias {
   width: 100%;
 }
 
-.markdown-source-view.mod-cm6.is-readable-line-width .mk-space-body {
+.markdown-source-view.mod-cm6 .mk-space-body {
     max-width: 100%;
     width: 100%;
     margin-left: auto;
@@ -115,7 +115,7 @@ margin-bottom: 8px;
   display: flex;
     flex-direction: column;
 }
-body:not(.is-mobile) .markdown-source-view.mod-cm6.is-readable-line-width .mk-space-header .inline-title {
+body:not(.is-mobile) .markdown-source-view.mod-cm6 .mk-space-header .inline-title {
   flex-grow: 1;
   margin-bottom: 0;
   margin-left: 0 !important;
@@ -359,7 +359,7 @@ margin-left: calc((max(100%, var(--max-width)) - var(--max-width)) /2) !importan
   max-width: calc(100% - 60px) !important;
     margin: 0 auto;
 }
-.mk-minimal-fix .mk-floweditor .markdown-source-view.mod-cm6.is-readable-line-width .cm-contentContainer.cm-contentContainer>.cm-content>div {
+.mk-minimal-fix .mk-floweditor .markdown-source-view.mod-cm6 .cm-contentContainer.cm-contentContainer>.cm-content>div {
   margin-inline: inherit !important;
   max-width: 100%;
 }

@@ -572,7 +572,7 @@ export const InlineMenuComponent: React.FC<{
   return (
     <div
       className={classNames(
-        props.mobile ? "mk-style-toolbar" : "mk-style-menu menu"
+        props.mobile ? "mk-style-toolbar" : "mk-style-menu"
       )}
       onMouseDown={(e) => e.preventDefault()}
     >

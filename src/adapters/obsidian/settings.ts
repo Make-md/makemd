@@ -130,16 +130,16 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       })
     );
 
-    new Setting(spaceAppearances)
-    .setName(t.settings.flowState.name)
-    .setDesc(t.settings.flowState.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.flowState).onChange((value) => {
-        this.plugin.superstate.settings.flowState = value;
-        this.plugin.saveSettings();
-        document.body.classList.toggle("mk-flow-state", !value);
-      })
-    );
+    // new Setting(spaceAppearances)
+    // .setName(t.settings.flowState.name)
+    // .setDesc(t.settings.flowState.desc)
+    // .addToggle((toggle) =>
+    //   toggle.setValue(this.plugin.superstate.settings.flowState).onChange((value) => {
+    //     this.plugin.superstate.settings.flowState = value;
+    //     this.plugin.saveSettings();
+    //     document.body.classList.toggle("mk-flow-state", !value);
+    //   })
+    // );
 
 
   
@@ -168,15 +168,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           this.refreshView();
         })
     );
-    new Setting(spaceAppearances)
-    .setName(t.settings.readableLineWidth.name)
-    .setDesc(t.settings.readableLineWidth.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.readableLineWidth).onChange((value) => {
-        this.plugin.superstate.settings.readableLineWidth = value;
-        this.plugin.saveSettings();
-      })
-    );
+    
     new Setting(spaceAppearances)
     .setName(t.settings.openSpacesOnLaunch.name)
     .setDesc(t.settings.openSpacesOnLaunch.desc)

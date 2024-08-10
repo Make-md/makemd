@@ -54,9 +54,9 @@ export const MenuWrapper = (props: {
     function handleClickOutside(event: MouseEvent) {
       const checkElement = (el: HTMLElement) => {
         if (
-          el.hasClass("mk-menu") ||
-          el.hasClass("mk-menu-wrapper") ||
-          el.hasClass("mk-modal")
+          el.classList.contains("mk-menu") ||
+          el.classList.contains("mk-menu-wrapper") ||
+          el.classList.contains("mk-modal")
         ) {
           return true;
         }

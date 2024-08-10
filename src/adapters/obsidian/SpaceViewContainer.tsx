@@ -1,3 +1,4 @@
+import classNames from "classnames";
 import { SystemSettings } from "core/react/components/System/SystemSettings";
 import { SpaceView, Superstate } from "makemd-core";
 import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
@@ -153,7 +154,14 @@ export class SpaceViewContainer extends ItemView {
               key={path}
               readOnly={false}
             >
-              <div className="mk-space-scroller markdown-source-view mod-cm6 is-readable-line-width">
+              <div
+                className={classNames(
+                  "mk-space-scroller markdown-source-view mod-cm6",
+                  this.superstate.settings.readableLineWidth
+                    ? "is-readable-line-width"
+                    : ""
+                )}
+              >
                 <SpaceInner
                   superstate={this.superstate}
                   header={true}

@@ -1,4 +1,3 @@
-import { EditorView } from "@codemirror/view";
 import { InteractionType, ScreenType, Warning } from "core/middleware/ui";
 
 import MakeMDPlugin from "main";
@@ -16,10 +15,12 @@ import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { SPACE_VIEW_TYPE } from "../SpaceViewContainer";
 import { getAbstractFileAtPath, getLeaf, openPath } from "../utils/file";
-import { openPathInElement } from "../utils/flow/flowEditor";
+import {
+  getLineRangeFromRef,
+  openPathInElement,
+} from "../utils/flow/flowEditor";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
 import { WindowManager } from "./WindowManager";
-import { flowIDAnnotation } from "./editors/markdownView/flowEditor/flowStateFields";
 import { editableRange } from "./editors/markdownView/flowEditor/selectiveEditor";
 import { lucideIcons } from "./icons";
 import { showModal } from "./modal";
@@ -323,6 +324,7 @@ export class ObsidianUI implements UIAdapter {
       this.plugin.app.workspace.trigger("link-hover", {}, source, path, path);
       return;
     } else if (source) {
+      const uri = this.plugin.superstate.spaceManager.uriByString(path);
       openPathInElement(
         this.plugin,
         this.plugin.app.workspace.getLeaf(), // workspaceLeafForDom(this.plugin.app, source),
@@ -331,27 +333,28 @@ export class ObsidianUI implements UIAdapter {
         async (editor) => {
           const leaf = editor.attachLeaf();
           if (
-            this.plugin.app.vault.getAbstractFileByPath(path) instanceof TFile
+            this.plugin.app.vault.getAbstractFileByPath(uri.basePath) instanceof
+            TFile
           ) {
             await leaf.openFile(
-              this.plugin.app.vault.getAbstractFileByPath(path) as TFile
+              this.plugin.app.vault.getAbstractFileByPath(uri.basePath) as TFile
             );
+            const selectiveRange = getLineRangeFromRef(
+              uri.basePath,
+              uri.refStr,
+              this.plugin
+            );
+            if (!leaf.view?.editor) {
+              return;
+            }
+
+            if (selectiveRange[0] && selectiveRange[1]) {
+              leaf.view.editor?.cm.dispatch({
+                annotations: [editableRange.of(selectiveRange)],
+              });
+            }
           } else {
             await openPath(leaf, path, this.plugin, true);
-          }
-          if (!props || !leaf.view?.editor) {
-            return;
-          }
-
-          const view = leaf.view.editor?.cm as EditorView;
-          view.dispatch({
-            annotations: [flowIDAnnotation.of(props.id)],
-          });
-
-          if (props.from && props.to) {
-            leaf.view.editor?.cm.dispatch({
-              annotations: [editableRange.of([props.from, props.to])],
-            });
           }
         }
       );

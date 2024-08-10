@@ -1,5 +1,4 @@
-import { SpaceFragmentType } from "core/superstate/utils/spaces";
-import { URI } from "types/path";
+import { PathRefTypes, URI } from "types/path";
 import { removeTrailingSlashFromFolder } from "utils/path";
 
 
@@ -20,18 +19,22 @@ export const parseURI = (uri: string): URI => {
         return query;
       };
     
-      const mapRefType = (refTypeChar: string) => {
-        if (refTypeChar === '^') return 'context';
-        if (refTypeChar === '*') return 'frame';
-        if (refTypeChar === ';') return 'action';
-        return null;
+      const mapRefType = (refTypeChar: string, isSpace: boolean) => {
+        if (isSpace) {
+          if (refTypeChar === '^') return 'context';
+          if (refTypeChar === '*') return 'frame';
+          if (refTypeChar === ';') return 'action';
+          return 'unknown';
+        }
+        if (refTypeChar === '^') return 'block';
+        return 'heading';
       };
     
       let space: string | null = null;
       let path: string | null = null;
       let alias: string | null = null;
       let reference: string | null = null;
-      let refType: SpaceFragmentType= null;
+      let refType: PathRefTypes= null;
       let query: { [key: string]: string } | null = null;
       let scheme: string | null = 'vault';
     
@@ -61,24 +64,24 @@ export const parseURI = (uri: string): URI => {
         }
         
       }
-      const queryDelimiter = '?'
-      const aliasDelimiter = '|'
-      const fragmentDelimiter = '#'
-      const pathSeparator = '/'
+      
     
       const lastSlashIndex = uri.lastIndexOf('/');
       const lastHashIndex = uri.lastIndexOf('#');
       const lastPipeIndex = uri.lastIndexOf('|');
       const queryIndex = uri.lastIndexOf('?');
-    
+    let trailSlash = false;
       if (queryIndex !== -1) {
         query = parseQuery(uri.slice(queryIndex + 1));
         uri = uri.slice(0, queryIndex);
       }
     
       if (lastHashIndex !== -1 && lastHashIndex > lastSlashIndex) {
+        if (lastHashIndex == lastSlashIndex+1) {
+          trailSlash = true
+        }
         const refPart = uri.slice(lastHashIndex + 1);
-        refType = mapRefType(refPart[0]);
+        refType = mapRefType(refPart[0], trailSlash);
         if (refType || lastHashIndex != lastSlashIndex+1) {
         refTypeChar = refPart[0];
         reference = refType ? refPart.slice(1) : refPart;
@@ -89,6 +92,9 @@ export const parseURI = (uri: string): URI => {
       if (lastPipeIndex !== -1 && lastPipeIndex > lastSlashIndex) {
         alias = uri.slice(lastPipeIndex + 1);
         uri = uri.slice(0, lastPipeIndex);
+      }
+      if (uri.charAt(uri.length - 1) == '/') {
+        trailSlash = true
       }
     path = uri
       return {
@@ -102,7 +108,8 @@ export const parseURI = (uri: string): URI => {
         ref: reference,
         refType: refType,
         refStr: refType ? refTypeChar+reference : reference,
-        query: query
+        query: query,
+        trailSlash 
       };
     }
 
@@ -135,7 +142,8 @@ export const uriForFolder = (path: string) : URI => {
     ref: null,
     refStr: null,
     refType: null,
-    query: null
+    query: null,
+    trailSlash: true
   };
 }
 

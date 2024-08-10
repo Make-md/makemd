@@ -1,6 +1,7 @@
 import { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useEffect } from "react";
 
+import classNames from "classnames";
 import { PathContext } from "core/react/context/PathContext";
 import {
   SpaceFragmentSchema,
@@ -170,7 +171,14 @@ export const SpaceFragmentWrapper = (
     }
   };
   return (
-    <div className="mk-editor-space-fragment markdown-source-view mod-cm6 is-readable-line-width">
+    <div
+      className={classNames(
+        "mk-editor-space-fragment markdown-source-view mod-cm6",
+        props.superstate.settings.readableLineWidth
+          ? "is-readable-line-width"
+          : ""
+      )}
+    >
       <div className="mk-editor-header">
         {schema && (
           <SpaceFragmentTitleComponent

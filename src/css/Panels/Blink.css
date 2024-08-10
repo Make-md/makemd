@@ -170,16 +170,31 @@ align-items:center;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
   cursor: var(--cursor);
   font-size: 13px;
   justify-content: space-between;
 
 }
+
+.mk-blink-suggester .mk-blink-section {
+  padding: 4px;
+  margin: 0px 6px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  cursor: var(--cursor);
+  font-size: 12px;
+
+
+}
+
 .mk-blink-suggestion:hover, .mk-blink-suggestion.mk-active {
   background: var(--mk-ui-background-hover);
 
 }
+
+
 
 .mk-blink-suggestion-icon {
   width: 24px;

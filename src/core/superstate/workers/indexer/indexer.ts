@@ -113,7 +113,9 @@ export class Indexer {
         if (job.type == 'path')
         {const spaceState = this.cache.spacesIndex.get(job.path);
             let cachePath = job.path;
+            let name;
             if (spaceState) {
+                name = spaceState.space.name;
                 if ( this.cache.settings.enableFolderNote) {
                     cachePath = spaceState.space.notePath;
                 } else {
@@ -121,7 +123,7 @@ export class Indexer {
                 }
             }
             const pathMetadata = await this.cache.spaceManager.readPathCache(cachePath) ?? await this.cache.spaceManager.readPathCache(job.path);
-            const label = pathMetadata?.label
+            name = name ?? pathMetadata?.label.name
             const parent = await this.cache.spaceManager.parentPathForPath(job.path)
             const type = spaceState ? 'space' : pathMetadata.type
             const subtype = spaceState ? spaceState.type : pathMetadata?.subtype
@@ -130,7 +132,7 @@ export class Indexer {
                     settings: this.cache.settings, 
                     spacesCache: this.cache.spacesIndex, 
                     pathMetadata,
-                    label,
+                    name,
                     parent,
                     type,
                     subtype,

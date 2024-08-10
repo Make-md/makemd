@@ -55,7 +55,7 @@ import { convertPathToSpace } from "core/superstate/utils/path";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, Superstate, UIManager } from "makemd-core";
 
 import { mkLogo } from "adapters/obsidian/ui/icons";
-import { patchFilesPlugin, patchWorkspace, patchWorkspaceLeaf } from "adapters/obsidian/utils/patches";
+import { patchWorkspace, patchWorkspaceLeaf } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "utils/parsers";
 import { modifyFlowDom } from "./adapters/obsidian/utils/flow/flow";
 
@@ -182,9 +182,7 @@ export default class MakeMDPlugin extends Plugin {
       }
     }
   }
-  systemName () {
-    return this.app.vault.getName();
-  }
+  
   reloadExtensions(firstLoad: boolean) {
     this.extensions = cmExtensions(this, this.superstate.ui.primaryInteractionType() == InteractionType.Touch);
     if (firstLoad) {
@@ -296,7 +294,7 @@ loadViews () {
       document.body.classList.toggle("mk-hide-tabs", !this.superstate.settings.sidebarTabs);
       document.body.classList.toggle("mk-mobile-styler", this.superstate.settings.mobileMakeBar);
     document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
-    document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
+    // document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
     document.body.classList.toggle(
       "mk-folder-lines",
       this.superstate.settings.folderIndentationLines
@@ -312,7 +310,7 @@ loadViews () {
         this.superstate.settings.spacesEnabled
       );
 
-      if (!this.superstate.settings.spacesDisablePatch && this.superstate.settings.navigatorEnabled) patchFilesPlugin(this);
+      // if (!this.superstate.settings.spacesDisablePatch && this.superstate.settings.navigatorEnabled) patchFilesPlugin(this);
       
       
     }
@@ -373,27 +371,7 @@ loadViews () {
     
     const path = this.getActiveFile();
     
-    if (this.superstate.settings.enableFolderNote && this.superstate.settings.spaceViewEnabled) {
-      if (this.superstate.spacesIndex.has(path)) {
-        const space = this.superstate.spacesIndex.get(path)
-        const leaf = this.app.workspace.getLeaf();
-        const history = leaf.history.backHistory;
-        if (history[history.length - 1]?.state?.state?.file == space.space.notePath) {
-          leaf.history.backHistory.pop();
-        }
-      }
-      const pathState = this.superstate.pathsIndex.get(path);
-      if (pathState?.metadata.spacePath?.length > 0) {
-        
-        const leaf = this.app.workspace.getLeaf();
-        this.app.workspace.setActiveLeaf(leaf, { focus: true });
-        leaf.setViewState({
-          type: SPACE_VIEW_TYPE,
-          state: { path: pathState.metadata.spacePath },
-        });
-        
-      }
-    }
+    
 
     if (path) {
       this.superstate.ui.setActivePath(path)
@@ -552,16 +530,16 @@ loadViews () {
         },
       });
     }
-    this.addCommand({
-      id: "mk-test",
-      name: "Open Test Page",
-      callback: () => {
-        this.testPage()
-      },
-      hotkeys: [
+    // this.addCommand({
+    //   id: "mk-test",
+    //   name: "Open Test Page",
+    //   callback: () => {
+    //     this.testPage()
+    //   },
+    //   hotkeys: [
         
-      ],
-    });
+    //   ],
+    // });
     if (this.superstate.settings.blinkEnabled) {
       this.addCommand({
         id: "mk-blink",
@@ -682,6 +660,7 @@ loadViews () {
   
   async onload() {
 const start = Date.now();
+const settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
     this.mdbFileAdapter = new MDBFileTypeAdapter(this);   
 
     this.files = FilesystemMiddleware.create();
@@ -698,7 +677,7 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     this.files.initiateFiletypeAdapter(new ImageFileTypeAdapter(this));
     this.files.initiateFiletypeAdapter(new IconFileTypeAdapter(this));
     
-    const filesystemCosmoform = new FilesystemSpaceAdapter(this.files)
+    const filesystemCosmoform = new FilesystemSpaceAdapter(this.files, settings.spaceSubFolder)
     const webSpaceAdapter = new WebSpaceAdapter();
     this.ui = new ObsidianUI(this);
     const uiManager = UIManager.create(this.ui);

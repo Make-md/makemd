@@ -13,5 +13,5 @@ export const excludeSpacesPredicate =
     (
       settings.skipFolderNames.some((e) => path.endsWith(e))
       || path.endsWith('/'+settings.spaceSubFolder) || path == settings.spaceSubFolder || path.split('/').pop() == settings.spaceSubFolder
-    ) || path.startsWith(settings.spacesFolder+'/#') ||
+    ) || path.startsWith(settings.spacesFolder+'/#') || path.startsWith(settings.spacesFolder+'/$') ||
     settings.skipFolders.some((e) => e == path)

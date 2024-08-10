@@ -8,6 +8,12 @@ declare module "obsidian" {
  Hidden,
  Showing
   }
+  interface  WorkspaceMobileDrawer {
+    togglePinned(): void;
+  }
+  interface WorkspaceSidedock {
+    togglePinned(): void;
+  }
   interface Vault {
     getConfig(config: string): any
     on(name: 'raw', callback: (path: string) => any, ctx?: any): EventRef;

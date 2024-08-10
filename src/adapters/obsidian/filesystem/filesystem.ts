@@ -15,6 +15,7 @@ import { MobileCachePersister } from "adapters/mdb/localCache/localCacheMobile";
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
 import { defaultFocusFile } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
 import { parsePathState } from "core/utils/superstate/parser";
+import { parseURI } from "core/utils/uri";
 import { DBRows, DBTables } from "types/mdb";
 import { uniqueNameFromString } from "utils/array";
 import { getParentPathFromString, pathToString, removeTrailingSlashFromFolder } from "utils/path";
@@ -145,8 +146,8 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.vaultDBCache.forEach(f => {
             const file = tFileToAFile(getAbstractFileAtPath(this.plugin.app, f.path))
             if (file?.path == '/') {
-                file.name = this.plugin.app.vault.getName()
-                f.name = this.plugin.app.vault.getName()
+                file.name = "Vault"
+                f.name = "Vault"
             }
             this.checkIllegalCharacters(file);
             
@@ -239,11 +240,17 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     }
     public resolvePath (path: string, source: string) {
         if (!source || !path) return path;
-        
-        if (path.includes("#")) {
-            const [basePath, fragment] = path.split('#');
-            return this.plugin.app.metadataCache.getFirstLinkpathDest(basePath, source)?.path+'#'+fragment ?? path
+        const uri = parseURI(path);
+        if (uri.refStr?.length > 0)
+        {
+            if (uri.refType == 'block' || uri.refType == 'heading') {
+            const resolvedPath =  this.plugin.app.metadataCache.getFirstLinkpathDest(uri.basePath, source)?.path;
+            if (resolvedPath)
+            return resolvedPath + "#" + uri.refStr
         }
+        return path;
+    }
+        
         return this.plugin.app.metadataCache.getFirstLinkpathDest(path, source)?.path ?? path
     }
     

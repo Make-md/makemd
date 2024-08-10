@@ -1,6 +1,6 @@
 import { SpaceFragmentType } from "core/superstate/utils/spaces";
 
-export type PathRefTypes = SpaceFragmentType | "unknown";
+export type PathRefTypes = SpaceFragmentType | 'block' | 'heading' | "unknown";
 
 export type URI = {
   basePath: string;
@@ -15,5 +15,6 @@ export type URI = {
   refType?: PathRefTypes;
   query?: {[key: string]: string}
   isRemote?: boolean;
+  trailSlash: boolean;
 };export type TargetLocation = "split" | "overview" | "window" | "tab" | "left" | "right" | 'system' | 'hover' | boolean;
 

@@ -10,6 +10,7 @@ import {
   spaceSortFn,
   spaceToTreeNode,
 } from "core/superstate/utils/spaces";
+import { SpaceSort } from "core/types/space";
 import { PathState, SpaceState } from "core/types/superstate";
 import { CustomVaultChangeEvent, eventTypes } from "core/types/types";
 import {
@@ -47,25 +48,21 @@ const treeForSpace = (
   sortable: boolean,
   root: boolean,
   parentPath: string,
-  sort: {
-    field: string;
-    asc: boolean;
-    group: boolean;
-  },
+  sort: SpaceSort,
   expandedSpaces: string[]
 ) => {
   const tree: TreeNode[] = [];
   const id = parentId ? parentId + "/" + space.path : space.path;
   const spaceCollapsed = !expandedSpaces.includes(id) || activeId == id;
   const spaceSort =
-    space.metadata?.sort?.field && space.metadata?.sort?.field != "rank"
+    space.metadata?.sort?.field && !sort.recursive
       ? space.metadata?.sort
       : sort ?? {
           field: "rank",
           asc: true,
           group: true,
+          recursive: false,
         };
-
   const children = superstate.getSpaceItems(space.path) ?? [];
   if (!spaceCollapsed || root) {
     children.sort(spaceSortFn(spaceSort)).forEach((item) => {
@@ -98,7 +95,7 @@ const treeForSpace = (
               space.sortable,
               false,
               space.path,
-              sort,
+              spaceSort,
               expandedSpaces
             )
           );
@@ -152,6 +149,7 @@ const treeForRoot = (
     field: "rank",
     asc: true,
     group: true,
+    recursive: false,
   };
 
   if (!expandedSpaces.includes(space.path) || (active && !active.parentId)) {

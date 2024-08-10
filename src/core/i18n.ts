@@ -214,6 +214,7 @@ class T {
         collapseAll: "Collapse All",
         customSort: "Custom Sort",
         groupSpaces: "Group Spaces",
+        recurisveSort: "Apply to Subfolders",
         fileNameSortAlphaAsc: "File Name (A to Z)",
         fileNameSortAlphaDesc: "File Name (Z to A)",
         fileNameSortNumericalAsc: "File Name (1 to 9)",

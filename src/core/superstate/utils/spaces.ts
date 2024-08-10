@@ -86,7 +86,8 @@ const parseSpaceSort = (value: any) : SpaceSort => {
   return {
       field: ensureString(value?.['field'] ?? 'rank'),
       asc: ensureBoolean(value?.['asc']),
-      group: ensureBoolean(value?.['group'])
+      group: ensureBoolean(value?.['group']),
+      recursive: ensureBoolean(value?.['recursive'])
   }
 }
 
@@ -243,8 +244,7 @@ if (!spaceState) return;
     // if (parseInt(item.rank) > rank) fixedRank = rank + 1;
     superstate.addToContextStateQueue(() => reorderPathsInContext(superstate.spaceManager, [path], fixedRank, spaceState.space).then(f => {
       const promises = [...superstate.spacesMap.getInverse(spaceState.path)].map(f => superstate.reloadPath(f));
-    return Promise.all(promises)
-    ;
+    return Promise.all(promises);
     }).then(f => superstate.dispatchEvent("spaceStateUpdated", {path: spaceState.path})))
     
     

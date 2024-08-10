@@ -14,6 +14,11 @@ body:not(.is-mobile) .mk-style-menu {
   margin-top: -50px;
   align-items: center;
   gap: 4px;
+  border: 1px solid var(--background-modifier-border-hover);
+    background-color: var(--background-secondary);
+    border-radius: var(--radius-m);
+    box-shadow: var(--shadow-s);
+    z-index: var(--layer-menu);
 }
 
 .mk-style-toolbar svg, .mk-style-menu svg {

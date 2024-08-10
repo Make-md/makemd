@@ -109,6 +109,7 @@ export const showMainMenu = (
           saveValue={(value) => {
             superstate.settings.systemName = value;
             superstate.saveSettings();
+            superstate.reloadPath("/", true);
           }}
         ></InputModal>,
         windowFromDocument(e.view.document)

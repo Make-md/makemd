@@ -3,7 +3,7 @@ import { FilesystemSpaceInfo } from "types/mdb";
 import { tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { builtinSpacePathPrefix } from "core/types/space";
+import { builtinSpacePathPrefix, builtinSpaces } from "core/types/space";
 import { folderPathToString, removeTrailingSlashFromFolder } from "utils/path";
 import { encodeSpaceName, tagSpacePathFromTag } from "../../utils/strings";
 
@@ -30,8 +30,7 @@ export const fileSystemSpaceInfoFromTag = (
     framePath: spaceFolderPathFromSpace(folderPath +
       "/", manager) + "views.mdb",
     dbPath: spaceFolderPathFromSpace(folderPath +
-      "/", manager) +
-      "context.mdb",
+      "/", manager) + "context.mdb",
       commandsPath: spaceFolderPathFromSpace(folderPath +
         "/", manager) + "commands.mdb",
   };
@@ -48,18 +47,18 @@ export const fileSystemSpaceInfoByPath = (
     
     const folderPath = manager.superstate.settings.spacesFolder + "/$"+builtinPath;
         return {
-          name: "Tags",
+          name: builtinSpaces[builtinPath].name,
           path: contextPath,
       
           isRemote: false,
           readOnly: false,
           folderPath,
           defPath: `${folderPath}/${manager.superstate.settings.spaceSubFolder}/def.json`,
-          notePath: `${folderPath}/${builtinPath}.md`,
+          notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
           framePath: spaceFolderPathFromSpace(folderPath +
             "/", manager) + "views.mdb",
           dbPath: spaceFolderPathFromSpace(folderPath +
-            "/", manager) +
+            "/", manager)
             + "context.mdb",
             commandsPath: spaceFolderPathFromSpace(folderPath +
               "/", manager) + "commands.mdb",

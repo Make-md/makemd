@@ -59,9 +59,9 @@ export const ModalInner = (
       // Check if the click is inside the menu
       const checkElement = (el: HTMLElement) => {
         if (
-          el.hasClass("mk-menu") ||
-          el.hasClass("mk-menu-mobile") ||
-          el.hasClass("mk-modal")
+          el.classList.contains("mk-menu") ||
+          el.classList.contains("mk-menu-mobile") ||
+          el.classList.contains("mk-modal")
         ) {
           return true;
         }

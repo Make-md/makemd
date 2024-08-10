@@ -10,7 +10,6 @@ import { builtinSpacePathPrefix, builtinSpaces, tagsSpacePath } from "core/types
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { pathByDef } from "core/utils/spaces/query";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
-import { PathLabel } from "makemd-core";
 import { defaultContextSchemaID } from "schemas/mdb";
 import { excludePathPredicate } from "utils/hide";
 import { parseLinkString, parseMultiString } from "utils/parsers";
@@ -91,16 +90,16 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
         const parent = _pathCache?.parent ?? '';
         const type = _pathCache?.type ?? '';
         const subtype = _pathCache?.subtype ?? '';
-        const label = pathCache?.label;
+        const name = spacesCache.has(path) ? spacesCache.get(path).space.name : _pathCache?.label?.name;
         const oldMetadata = oldCache?.get(path);
-        const {changed, cache: metadata} = parseMetadata(path, settings, spacesCache, pathCache, label, type, subtype, parent, oldMetadata);
+        const {changed, cache: metadata} = parseMetadata(path, settings, spacesCache, pathCache, name, type, subtype, parent, oldMetadata);
         cache[path] = { changed, cache: metadata };
     }
     return cache;
 
 }
 
-export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>,  pathCache: PathCache, label: PathLabel, type: string, subtype: string, parent: string, oldMetadata: PathState) : { changed: boolean, cache: PathState }  => {
+export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>,  pathCache: PathCache, name: string, type: string, subtype: string, parent: string, oldMetadata: PathState) : { changed: boolean, cache: PathState }  => {
     const defaultSticker = (
         sticker: string,
         type: string,
@@ -160,10 +159,12 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     
 
     tags.push(...fileTags)
-    const name = label?.name;
+    if (path == '/') {
+        name = settings.systemName;
+    }
     const aliases = pathCache?.property ? ensureArray(pathCache.property[settings.fmKeyAlias]) : [];
-    const sticker = defaultSticker(label?.sticker, type, path);
-    const color = label?.color ?? '';
+    const sticker = defaultSticker(pathCache?.label?.sticker, type, path);
+    const color = pathCache?.label?.color ?? '';
     
     const outlinks = pathCache?.resolvedLinks ?? []
     
@@ -181,8 +182,8 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
             name: settings.spacesUseAlias && aliases?.length > 0 ? aliases[0] : name,
             sticker,
             color,
-            thumbnail: label?.thumbnail ?? '',
-            preview: label?.preview ?? '',
+            thumbnail: pathCache?.label?.thumbnail ?? '',
+            preview: pathCache?.label?.preview ?? '',
         },
         metadata: {
             ...pathCache,

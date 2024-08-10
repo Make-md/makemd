@@ -17,7 +17,6 @@ export const PathStickerView = (props: {
   const { pathState } = props;
   const sticker = pathState?.label?.sticker;
   const color = pathState?.label?.color;
-  const extension = pathState?.type;
   const triggerStickerContextMenu = (e: React.MouseEvent) => {
     if (!pathState) return;
 

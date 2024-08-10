@@ -63,7 +63,7 @@ export const TitleComponent = (props: {
       if (pathState.path == "/") {
         props.superstate.settings.systemName = newValue;
         props.superstate.saveSettings();
-        props.superstate.reloadSpaceByPath("/");
+        props.superstate.reloadPath("/", true);
         return;
       }
       if (aliasMode) {
@@ -129,7 +129,7 @@ export const TitleComponent = (props: {
     }
   };
   const hasSticker =
-    pathState?.metadata.property?.[props.superstate.settings.fmKeySticker]
+    pathState?.metadata.label?.[props.superstate.settings.fmKeySticker]
       ?.length > 0;
   const hasBanner =
     pathState?.metadata.property?.[props.superstate.settings.fmKeyBanner];

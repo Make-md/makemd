@@ -15,7 +15,8 @@ export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanne
 export type SpaceSort = {
   field: string,
   asc: boolean,
-  group: boolean
+  group: boolean,
+  recursive: boolean
 }
 
 export type SpaceDefFilter = {
@@ -67,7 +68,7 @@ export const tagsSpacePath = "spaces://$tags";
 
 export type SpaceDefinition = {
   contexts?: string[];
-  sort?: { field: string; asc: boolean; group: boolean; };
+  sort?: SpaceSort;
   filters?: SpaceDefGroup[];
   links?: string[];
   tags?: string[];

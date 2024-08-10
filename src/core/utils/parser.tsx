@@ -6,7 +6,7 @@ import { pathToString } from "utils/path";
 
 export const parseSortStrat = (str: string): SpaceSort => {
   const [a, b] = str.split("_");
-  return { field: a, asc: b == "asc", group: true };
+  return { field: a, asc: b == "asc", group: true, recursive: true };
 };
 
 export const parseLinkDisplayString = (string: string) => {

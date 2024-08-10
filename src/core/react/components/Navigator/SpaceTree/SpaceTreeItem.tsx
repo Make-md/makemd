@@ -109,7 +109,7 @@ export const TreeItem = (props: TreeItemProps) => {
   );
   const pinType = pathState?.linkedSpaces?.some((f) => f == data.space)
     ? PinType.Linked
-    : pathState.liveSpaces?.some((f) => f == data.space)
+    : pathState?.liveSpaces?.some((f) => f == data.space)
     ? PinType.Live
     : PinType.Default;
 

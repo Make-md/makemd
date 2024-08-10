@@ -5,7 +5,7 @@ import { Pos } from "types/Pos";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { Superstate } from "core/superstate/superstate";
-import { TreeNode, createSpace } from "core/superstate/utils/spaces";
+import { TreeNode } from "core/superstate/utils/spaces";
 import { DragProjection } from "core/utils/dnd/dragPath";
 import { i18n } from "makemd-core";
 import React, { CSSProperties, useContext } from "react";
@@ -155,14 +155,6 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                     BlinkMode.Open,
                     windowFromDocument(e.view.document),
                     (link) => {
-                      const isNew = !props.superstate.pathsIndex.has(link);
-                      if (isNew) {
-                        createSpace(props.superstate, link, {}).then((f) => {
-                          saveActiveSpace(link);
-                          props.superstate.ui.openPath(link, false);
-                        });
-                        return;
-                      }
                       saveActiveSpace(link);
                     }
                   );
