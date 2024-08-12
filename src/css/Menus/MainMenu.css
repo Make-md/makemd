@@ -77,10 +77,15 @@
   font-size: 16px;
   font-weight: var(--font-medium);
   gap: 4px;
+  padding: 8px 12px !important;
 }
 
 .mk-main-menu-button > div {
   display: flex;
+}
+
+.workspace-drawer.mod-left.is-pinned {
+  min-width: 350px;
 }
 
 .mk-main-menu-button.mk-main-menu-button-primary {

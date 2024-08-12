@@ -149,7 +149,7 @@ export const ObsidianMobileMainMenu = (props: {
         </button>
         {props.superstate.ui.getScreenType() == ScreenType.Tablet && (
           <div
-            aria-label={i18n.buttons.newNote}
+            aria-label={i18n.buttons.togglePin}
             className="mk-main-menu-button"
             onClick={(e) => props.plugin.app.workspace.leftSplit.togglePinned()}
           >

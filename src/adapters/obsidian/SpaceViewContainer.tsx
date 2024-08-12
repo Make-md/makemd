@@ -156,10 +156,7 @@ export class SpaceViewContainer extends ItemView {
             >
               <div
                 className={classNames(
-                  "mk-space-scroller markdown-source-view mod-cm6",
-                  this.superstate.settings.readableLineWidth
-                    ? "is-readable-line-width"
-                    : ""
+                  "mk-space-scroller markdown-source-view mod-cm6"
                 )}
               >
                 <SpaceInner

@@ -343,7 +343,6 @@ export class SpaceManager {
       return f});
     }
     public saveTable (path: string, table: SpaceTable, force?: boolean) {
-      
       return this.adapterForPath(path).saveTable(path, table, force)
     }
     public deleteTable (path: string, name: string) {

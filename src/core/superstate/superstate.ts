@@ -556,11 +556,7 @@ public api: API;
 
                 }
                 const allContextsWithFile = pathState.spaces.map(f => this.spacesIndex.get(f)?.space).filter(f => f);   
-        this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile).then(() => {
-            allContextsWithFile.forEach(f => {
-                this.dispatchEvent("contextStateUpdated", {path: f.path})
-            })
-        }));
+        this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile));
                 this.dispatchEvent("pathStateUpdated", {path: path})
             }
             );
@@ -771,7 +767,9 @@ public api: API;
 
             }
             if (cache.dbExists && changed)
-                await this.spaceManager.saveTable(path, cache.contextTable);
+                {
+                    await this.spaceManager.saveTable(path, cache.contextTable);
+                }
             this.persister.store(path,  JSON.stringify(cache), 'context');
             this.dispatchEvent("contextStateUpdated", {path: path});
             
@@ -965,7 +963,6 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
                 this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile).then(g => {
 
                     allContextsWithFile.forEach(f => {
-                        this.reloadContext(f);
                         this.dispatchEvent("spaceStateUpdated", {path: f.path})
                     })
                 }));

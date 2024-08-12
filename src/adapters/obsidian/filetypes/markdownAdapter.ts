@@ -299,9 +299,8 @@ public app: App;
             if (afile && afile instanceof TFile) {
                 if (this.app.fileManager.processFrontMatter) {
                 await this.app.fileManager.processFrontMatter(afile, (frontmatter: any) => {
-
+                    
                     const newFrontmatter = content(frontmatter);
-
                     const newKeys = Object.keys(newFrontmatter);
                     newKeys.forEach((f) => {
                             frontmatter[f] = newFrontmatter?.[f];

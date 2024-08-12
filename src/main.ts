@@ -55,7 +55,7 @@ import { convertPathToSpace } from "core/superstate/utils/path";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, Superstate, UIManager } from "makemd-core";
 
 import { mkLogo } from "adapters/obsidian/ui/icons";
-import { patchWorkspace, patchWorkspaceLeaf } from "adapters/obsidian/utils/patches";
+import { patchFilesPlugin, patchWorkspace, patchWorkspaceLeaf } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "utils/parsers";
 import { modifyFlowDom } from "./adapters/obsidian/utils/flow/flow";
 
@@ -310,7 +310,7 @@ loadViews () {
         this.superstate.settings.spacesEnabled
       );
 
-      // if (!this.superstate.settings.spacesDisablePatch && this.superstate.settings.navigatorEnabled) patchFilesPlugin(this);
+      if (!this.superstate.settings.spacesDisablePatch && this.superstate.settings.navigatorEnabled) patchFilesPlugin(this);
       
       
     }

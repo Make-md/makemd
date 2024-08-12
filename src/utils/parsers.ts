@@ -50,6 +50,7 @@ export const parseMultiString = (str: string): string[] => str?.startsWith("[") 
       break;
     case "option-multi":
     case "link-multi":
+      case "context-multi":
       if (typeof value === "string") {
         return parseLinkString(value);
       }
@@ -76,6 +77,7 @@ export const parseMultiString = (str: string): string[] => str?.startsWith("[") 
       );
       break;
     case "link":
+    case "context":
       {
         if (Array.isArray(value) &&
           value.length == 1 &&
@@ -91,6 +93,7 @@ export const parseMultiString = (str: string): string[] => str?.startsWith("[") 
       break;
     case "text":
     case "tag":
+    case "option":
     case "image":
       return value;
       break;

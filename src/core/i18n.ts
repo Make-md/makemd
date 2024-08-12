@@ -302,6 +302,7 @@ class T {
       },
       buttons: {
         add: "Add",
+        togglePin: "Toggle Pin",
         refresh: "Refresh",
         showHidden: "Show Hidden",
         alias: "Alias",

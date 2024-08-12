@@ -41,6 +41,12 @@
   .workspace-drawer-header {
   padding-left: 0 !important;
 }
+.mk-spaces-enabled.is-tablet
+  .workspace-drawer.mod-left
+  .workspace-drawer-inner
+  .workspace-drawer-header {
+  padding-right: 0 !important;
+}
 
 .mk-spaces-enabled.is-phone
   .workspace-drawer.mod-left

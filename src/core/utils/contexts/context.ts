@@ -319,7 +319,7 @@ export const updateContextWithProperties = async (
       };
       if (!_.isEqual(mdb, newDB))
         {
-          await saveContext(superstate.spaceManager, space, newDB);
+          await saveContext(superstate.spaceManager, space, newDB, true);
         }
       return newDB;
     })

@@ -429,7 +429,6 @@ export const ContextEditorProvider: React.FC<
         }),
     [predicate, data, cols, searchString]
   );
-
   const updateValue = (
     column: string,
     value: string,

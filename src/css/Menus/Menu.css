@@ -89,11 +89,9 @@
   padding-top: var(--safe-area-inset-top);
   background: var(--editor-bg-color);
 }
-.workspace-drawer {
-position: absolute;
-}
 
-body {
+
+body.is-mobile {
   padding-top: 0 !important;
 }
 .mk-drawer-content.mk-drawer-modal {
