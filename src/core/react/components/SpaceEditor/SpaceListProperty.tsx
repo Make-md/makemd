@@ -174,7 +174,8 @@ export const SpaceListProperty = (props: {
                 .then((f) => {
                   if (f)
                     return props.superstate.reloadContextByPath(
-                      spaceState.path
+                      spaceState.path,
+                      true
                     );
                   return f;
                 });

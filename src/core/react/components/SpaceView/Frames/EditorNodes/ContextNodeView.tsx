@@ -25,13 +25,16 @@ function parseContent(input: string): string {
   return match1 ? match1[1] : match2 ? match2[1] : input;
 }
 
+function addSlashBeforeHash(input: string): string {
+  return input.replace(/([^/])#([*^])/g, "$1/#$2");
+}
 export const ContextNodeView = (
   props: FrameNodeViewProps & {
     containerRef?: React.RefObject<HTMLDivElement>;
     source?: string;
   }
 ) => {
-  const fullPath = props.state?.props?.value;
+  const fullPath = addSlashBeforeHash(props.state?.props?.value);
   const { updateNode } = useContext(FramesEditorRootContext);
   const { id } = useContext(FrameInstanceContext);
   const selectLink = (e: any) => {
@@ -43,7 +46,7 @@ export const ContextNodeView = (
         updateNode(props.treeNode.node, {
           props: {
             ...props.treeNode.node.props,
-            value: wrapQuotes(link + "#^" + defaultContextSchemaID),
+            value: wrapQuotes(link + "/#^" + defaultContextSchemaID),
           },
         })
     );

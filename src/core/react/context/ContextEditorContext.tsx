@@ -344,7 +344,7 @@ export const ContextEditorProvider: React.FC<
     await props.superstate.spaceManager
       .saveTable(tagSpacePathFromTag(tag), newTable, true)
       .then((f) =>
-        props.superstate.reloadContextByPath(tagSpacePathFromTag(tag))
+        props.superstate.reloadContextByPath(tagSpacePathFromTag(tag), true)
       );
   };
   // const getSchema = (

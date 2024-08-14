@@ -332,14 +332,14 @@ export class SpaceManager {
       public createTable (path: string, schema: SpaceTableSchema) {
         
          return this.adapterForPath(path).createTable(path, schema).then(f => 
-          this.superstate.reloadContextByPath(path));
+          this.superstate.reloadContextByPath(path, true));
       }
     
     public saveTableSchema (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
       
       return this.adapterForPath(path).saveTableSchema(path, schemaId, saveSchema).then(f => {
         if (f)
-        return this.superstate.reloadContextByPath(path)
+        return this.superstate.reloadContextByPath(path, true)
       return f});
     }
     public saveTable (path: string, table: SpaceTable, force?: boolean) {
@@ -348,7 +348,7 @@ export class SpaceManager {
     public deleteTable (path: string, name: string) {
       
       return this.adapterForPath(path).deleteTable(path, name).then(f => {
-        return this.superstate.reloadContextByPath(path)});
+        return this.superstate.reloadContextByPath(path, true)});
     }
 
     public readAllKits () {
@@ -497,12 +497,12 @@ export class SpaceManager {
         property.value = values;
       }
         return this.adapterForPath(path).addSpaceProperty(path, property).then(f => 
-          this.superstate.reloadContextByPath(path));
+          this.superstate.reloadContextByPath(path, true));
      
      }
      public deleteSpaceProperty (path: string, property: SpaceProperty) {
         return this.adapterForPath(path).deleteSpaceProperty(path, property).then(f => 
-          this.superstate.reloadContextByPath(path));
+          this.superstate.reloadContextByPath(path, true));
      }
      public saveSpaceProperty (path: string, property: SpaceProperty, oldProperty: SpaceProperty) {
 
@@ -513,7 +513,7 @@ export class SpaceManager {
                 this.renameProperty(f.path, oldProperty.name, property.name);
               })
             }
-            return this.superstate.reloadContextByPath(path)
+            return this.superstate.reloadContextByPath(path, true)
           });
      }
  

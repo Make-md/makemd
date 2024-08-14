@@ -216,7 +216,7 @@ const NewPropertyMenuComponent = (
                   cols: [...f.cols, ...existingProps],
                 })
               )
-              .then((f) => props.superstate.reloadContextByPath(source));
+              .then((f) => props.superstate.reloadContextByPath(source, true));
             props.hide();
             return;
           }

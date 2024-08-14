@@ -180,7 +180,7 @@ export const BlinkComponent = (props: {
     setPreviewPath(suggestions[index]?.cache?.path);
   }, [index, suggestions]);
 
-  const selectItem = (item: BlinkItem, e?: React.MouseEvent) => {
+  const selectItem = (item: BlinkItem, force?: boolean) => {
     if (!item) return;
     if (item.type == "section") return;
     if (item.type == "new-note") {
@@ -225,15 +225,17 @@ export const BlinkComponent = (props: {
       });
       return;
     }
-    if (props.mode == BlinkMode.Open) {
-      props.onSelect(item.cache?.path);
-      props.hide();
-      return;
-    }
-    if (!showBlink) {
-      props.superstate.ui.openPath(item.cache?.path);
-      props.hide();
-      return;
+    if (item.cache) {
+      if (props.mode == BlinkMode.Open) {
+        props.onSelect(item.cache?.path);
+        props.hide();
+        return;
+      }
+      if (!showBlink || force) {
+        props.superstate.ui.openPath(item.cache?.path);
+        props.hide();
+        return;
+      }
     }
 
     setIndex(suggestions.findIndex((f) => f.cache.path == item.cache?.path));
@@ -271,11 +273,7 @@ export const BlinkComponent = (props: {
       e.preventDefault();
     }
     if (e.key == "Enter") {
-      props.superstate.ui.openPath(
-        suggestions[index].cache.path,
-        e.ctrlKey || e.metaKey ? (e.altKey ? "split" : "tab") : false
-      );
-      props.hide();
+      selectItem(suggestions[index], true);
       e.preventDefault();
     }
   };
@@ -362,7 +360,7 @@ export const BlinkComponent = (props: {
                   : "mk-blink-suggestion",
                 index == i && "mk-active"
               )}
-              onClick={(e) => selectItem(f, e)}
+              onClick={(e) => selectItem(f)}
             >
               {f.type == "section" ? (
                 <div className="mk-blink-suggestion-title">{f.label}</div>
