@@ -19,7 +19,7 @@ import React from "react";
 import { flowTypeStateField } from "./flowStateFields";
 
 import MakeMDPlugin from "main";
-import { i18n } from "makemd-core";
+import { i18n, NoteView } from "makemd-core";
 
 import { FlowEditorHover } from "adapters/obsidian/ui/editors/markdownView/FlowEditorHover";
 import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
@@ -379,17 +379,22 @@ class FlowEditorWidget extends WidgetType {
     div.classList.add("mk-floweditor-container");
 
     div.setAttribute("id", "mk-flow-" + this.info.id);
-    const placeholder = div.createDiv("mk-floweditor-placeholder");
-    placeholder.style.setProperty("height", this.info.height + "px");
+    div.style.setProperty("height", this.info.height + "px");
     if (this.info.link && view.state.field(editorInfoField, false)) {
       const infoField = view.state.field(editorInfoField, false);
       const file = infoField.file;
-      const uri = this.plugin.superstate.spaceManager.resolvePath(
-        this.info.link,
-        file?.path
-      );
 
-      this.plugin.superstate.ui.openPath(uri, false, div);
+      this.plugin.superstate.ui
+        .createRoot(div)
+        .render(
+          <NoteView
+            load={true}
+            superstate={this.plugin.superstate}
+            path={this.info.link}
+            source={file.path}
+          ></NoteView>
+        );
+      // this.plugin.superstate.ui.openPath(uri, false, div);
     }
     // loadFlowEditorByDOM(this.plugin, div, view, this.info.id);
     return div;

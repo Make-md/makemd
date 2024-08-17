@@ -4,6 +4,7 @@ import { SelectMenuProps } from "core/react/components/UI/Menus/menu/SelectionMe
 import { showSelectMenu } from "core/react/components/UI/Menus/selectMenu";
 import { Superstate } from "core/superstate/superstate";
 import { MenuObject } from "core/utils/ui/menu";
+import _ from "lodash";
 import { Root, RootOptions } from "react-dom/client";
 import { TargetLocation } from "types/path";
 import { Anchors, Pos, Rect } from "../../types/Pos";
@@ -12,6 +13,7 @@ import { InputManager } from "./inputManager";
 
 export type UIManagerEventTypes = {
     'activePathChanged': string;
+    'activeStateChanged': null;
     'activeSelectionChanged': {path: string, content: string};
     'windowReady': null;
 }
@@ -88,8 +90,15 @@ export class UIManager {
         return this.mainFrame.availableViews();
     }
 
+    public activeState: Record<string, any> = {};
+    public setActiveState (state: Record<string, any>) {
+        if (_.isEqual(state, this.activeState)) return;
+        this.activeState = state;
+        this.eventsDispatch.dispatchEvent('activeStateChanged', null);
+    }
     public activePath: string;
     public setActivePath (path: string) {
+        
         this.activePath = path;
         this.eventsDispatch.dispatchEvent('activePathChanged', path);
     }

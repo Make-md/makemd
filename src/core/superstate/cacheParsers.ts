@@ -2,7 +2,7 @@ import { PathCache } from "core/spaceManager/spaceManager";
 import { MakeMDSettings } from "core/types/settings";
 import { ContextState, PathState, SpaceState } from "core/types/superstate";
 import _ from "lodash";
-import { SpaceInfo, SpaceTable, SpaceTables } from "types/mdb";
+import { SpaceInfo, SpaceProperty, SpaceTable, SpaceTables } from "types/mdb";
 import { orderStringArrayByArray, uniq } from "utils/array";
 
 import { PathPropertyName } from "core/types/context";
@@ -10,7 +10,7 @@ import { builtinSpacePathPrefix, builtinSpaces, tagsSpacePath } from "core/types
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { pathByDef } from "core/utils/spaces/query";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
-import { defaultContextSchemaID } from "schemas/mdb";
+import { defaultContextDBSchema, defaultContextFields, defaultContextSchemaID } from "schemas/mdb";
 import { excludePathPredicate } from "utils/hide";
 import { parseLinkString, parseMultiString } from "utils/parsers";
 import { pathToString } from "utils/path";
@@ -20,6 +20,7 @@ import { pathToString } from "utils/path";
 export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, paths: string[], dbExists: boolean, pathsIndex: Map<string, PathState>, runContext: math.MathJsInstance) : { changed: boolean, cache: ContextState } => {
 
     const spaceMap : { [key: string] : { [key: string] : string[] } } = {};
+
     if (!space) return {changed: false, cache: null}
     if (!mdb) {
         return {changed: false, cache: {
@@ -35,13 +36,20 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
         }}
     }
     const schemas = Object.values(mdb).map(f => f.schema);
-    
+    let cols = mdb[defaultContextSchemaID]?.cols;
+    if (!cols || cols.length == 0) {
+        cols = defaultContextFields.rows as SpaceProperty[];
+    }
+    const schema = mdb[defaultContextSchemaID]?.schema ?? defaultContextDBSchema;
     const contextPaths = mdb[defaultContextSchemaID]?.rows?.map(f => f[PathPropertyName]) ?? [];
+    
     const missingPaths = paths.filter(f => !contextPaths.includes(f));
     const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
-    const dependencies = propertyDependencies(mdb[defaultContextSchemaID].cols);
-    const rows = [...mdb[defaultContextSchemaID].rows.filter(f => paths.includes(f[PathPropertyName])), ...missingPaths.map(f => ({[PathPropertyName]: f}))].map(f => linkContextRow(runContext, pathsIndex, f, mdb[defaultContextSchemaID].cols, pathsIndex.get(space.path), dependencies))
-    const contextTable : SpaceTable =  {...mdb[defaultContextSchemaID], 
+    const dependencies = propertyDependencies(cols);
+    const rows = [...(mdb[defaultContextSchemaID]?.rows ?? []).filter(f => paths.includes(f[PathPropertyName])), ...missingPaths.map(f => ({[PathPropertyName]: f}))].map(f => linkContextRow(runContext, pathsIndex, f, cols, pathsIndex.get(space.path), dependencies))
+    const contextTable : SpaceTable =  {
+        schema,
+        cols, 
         rows: rows
     } as SpaceTable;
 

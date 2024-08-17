@@ -183,6 +183,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
       return this.spaceManager.uriByString(path);
     }
     public allPaths (type?: string[]) {
+      
       return [...this.fileSystem.allFiles().filter(f =>  type ? type.some(g =>  g == 'folder' ? f.isFolder : f.extension == g) : true).map(g => g.path).filter(f => !excludeSpacesPredicate(this.spaceManager.superstate.settings, f))];
     }
     public async pathExists (path: string) {

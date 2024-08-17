@@ -576,20 +576,19 @@ containerEl.createEl("h3", { text: t.settings.sectionStickers });
       .setName(t.settings.editorFlowStyle.name)
       .setDesc(t.settings.editorFlowStyle.desc)
       .addDropdown((dropdown: DropdownComponent) => {
-        dropdown.addOption("classic", t.settings.editorFlowStyle.classic);
         dropdown.addOption("seamless", t.settings.editorFlowStyle.seamless);
         dropdown.addOption("minimal", t.settings.editorFlowStyle.minimal);
         dropdown
           .setValue(this.plugin.superstate.settings.editorFlowStyle)
           .onChange(async (value) => {
             this.plugin.superstate.settings.editorFlowStyle = value;
-            document.body.classList.toggle("mk-flow-classic", false);
-            document.body.classList.toggle("mk-flow-seamless", false);
             document.body.classList.toggle("mk-flow-minimal", false);
+            document.body.classList.toggle("mk-flow-seamless", false);
+
             if (value == "seamless")
               document.body.classList.toggle("mk-flow-seamless", true);
             if (value == "classic")
-              document.body.classList.toggle("mk-flow-classic", true);
+              document.body.classList.toggle("mk-flow-minimal", true);
             if (value == "minimal")
               document.body.classList.toggle("mk-flow-minimal", true);
           });

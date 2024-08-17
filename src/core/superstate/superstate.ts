@@ -311,6 +311,7 @@ public api: API;
 
 
         const   allSpaces = [...this.spaceManager.allSpaces().values()]
+        
         const promises = allSpaces.map(f => 
         this.reloadSpace(f, null, true));
         [...this.spacesIndex.keys()].filter(f => !allSpaces.some(g => g.path == f)).forEach(f =>
@@ -318,6 +319,7 @@ public api: API;
             ;
             
         await Promise.all(promises);
+        
     }
 
     public  getSpaceItems(spacePath: string, filesOnly?: boolean) : PathStateWithRank[] {
@@ -340,7 +342,6 @@ public api: API;
     }
 
     private async initializeContexts() {
-        
         await this.indexer.reload<Map<string, {cache: ContextState, changed: boolean}>>({ type: 'contexts', path: ''}).then(async r => {
             const promises = [...r.entries()].map(([path, {cache, changed}]) => this.contextReloaded(path, cache, changed, true));
             await Promise.all(promises);

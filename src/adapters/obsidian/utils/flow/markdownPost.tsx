@@ -40,6 +40,7 @@ export const replaceAllTables = (
       /(?:!\[!\[|!!\[\[)([^\]]+)\]\]/g
     )) {
       const link = match[1];
+      element.style.display = "none";
       const reactEl = plugin.ui.createRoot(element.parentElement);
       //   const flowType = cm.state.field(flowTypeStateField, false);
       reactEl.render(
@@ -47,6 +48,7 @@ export const replaceAllTables = (
           load={true}
           superstate={plugin.superstate}
           path={link}
+          source={ctx.sourcePath}
         ></NoteView>
       );
     }

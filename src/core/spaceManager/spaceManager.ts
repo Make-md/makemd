@@ -410,7 +410,7 @@ export class SpaceManager {
     }
      //basic item operations
      public allPaths (type?: string[]) {
-         return this.primarySpaceAdapter.allPaths(type);
+      return this.spaceAdapters.flatMap(f => f.allPaths(type));
        }
      public createItemAtPath (parent: string, type: string, name: string, content?: any) :Promise<string> {
         return this.adapterForPath(parent).createItemAtPath(parent, type, name, content);

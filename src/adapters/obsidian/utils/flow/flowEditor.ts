@@ -52,10 +52,7 @@ export const getLineRangeFromRef = (
       (f, i) => i > index && f.level <= level
     );
 
-    const start =
-      plugin.superstate.settings.editorFlowStyle == "classic"
-        ? heading.position.start.line + 1
-        : heading.position.start.line + 2;
+    const start = heading.position.start.line + 2;
     if (index < headings.length - 1 && nextIndex != -1) {
       return [start, headings[nextIndex].position.end.line];
     }

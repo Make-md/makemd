@@ -365,6 +365,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
       if (!path || parentSpaces.length == 0) return;
 
       let newOpenFolders = expandedSpaces;
+
       parentSpaces.forEach((space) => {
         const folders = path.split("/");
         const pathLevel = space.path
@@ -379,12 +380,15 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                 : [
                     index == 0
                       ? "//" + c
-                      : p[index] + "/" + folders.slice(0, index + 1).join("/"),
+                      : space.path +
+                        "/" +
+                        folders.slice(0, index + 1).join("/"),
                   ]),
             ],
             [space.path]
           )
           .slice(0, -1);
+
         newOpenFolders = [
           ...(newOpenFolders.filter((f) => !openPaths.find((g) => g == f)) ??
             []),

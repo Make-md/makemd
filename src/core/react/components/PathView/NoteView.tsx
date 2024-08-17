@@ -9,6 +9,7 @@ export interface NoteViewProps {
   load: boolean;
   properties?: Record<string, any>;
   classname?: string;
+  forceNote?: boolean;
 }
 
 export const NoteView = forwardRef((props: NoteViewProps, ref) => {
@@ -25,11 +26,13 @@ export const NoteView = forwardRef((props: NoteViewProps, ref) => {
     );
 
     const properties: Record<string, any> = props.properties;
-    const pathState = props.superstate.pathsIndex.get(path.fullPath);
+    const pathState = props.superstate.pathsIndex.get(path.basePath);
     const filePath =
-      pathState?.type == "space"
+      pathState?.type == "space" && props.forceNote
         ? props.superstate.spacesIndex.get(props.path)?.space.notePath
-        : pathState?.path;
+        : pathState
+        ? path.fullPath
+        : null;
 
     if (!filePath) {
       if (!force) {
@@ -77,9 +80,31 @@ export const NoteView = forwardRef((props: NoteViewProps, ref) => {
   useEffect(() => {
     toggleFlow();
   }, [props.load, props.path]);
-  // useEffect(() => {
-  //   toggleFlow();
-  // }, []);
+
+  useEffect(() => {
+    const reloadFlow = () => {
+      if (
+        flowRef.current &&
+        !flowRef.current.hasChildNodes() &&
+        props.load &&
+        !existsPas
+      ) {
+        loadPath();
+      }
+    };
+    props.superstate.ui.eventsDispatch.addListener(
+      "activeStateChanged",
+      reloadFlow
+    );
+
+    return () => {
+      props.superstate.ui.eventsDispatch.removeListener(
+        "activeStateChanged",
+        reloadFlow
+      );
+    };
+  }, []);
+
   return (
     <>
       <div

@@ -10,7 +10,7 @@
   border: 0 !important;
 }
 
-.mk-floweditor-container > .mk-floweditor > .workspace-leaf > .workspace-leaf-content > .view-content > .mod-cm6 {
+.mk-flow-minimal .mk-flowspace-editor > .mk-floweditor > .workspace-leaf > .workspace-leaf-content > .view-content > .mod-cm6 {
   padding: 8px 8px 8px 18px;
     border: thin solid var(--mk-ui-active-hover);
     margin: 8px 0px;
@@ -49,7 +49,7 @@
   min-height: 600px;
   height: calc(100vh - 100px);
 }
-.mk-flow-container .mk-floweditor .cm-content,
+.mk-floweditor-container .mk-floweditor .cm-content,
 div:not(.mk-flowspace-editor) >
 .mk-floweditor .cm-content {
   padding: 0 !important;
@@ -84,9 +84,7 @@ div:not(.mk-flowspace-editor) >
 
 
 
-.mk-floweditor-placeholder {
-  border: thin solid var(--mk-ui-divider);
-}
+
 .mk-floweditor .mk-floweditor-title-container {
   display: flex;
 }
@@ -146,30 +144,7 @@ div:not(.mk-flowspace-editor) >
   display: none;
 }
 
-.mk-flow-classic .mk-flow-titlebar {
-  font-weight: var(--bold-weight);
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 4px 24px;
-}
 
-.mk-flow-classic .mk-flow-titlebar:empty {
-  margin-bottom: 0 !important;
-  padding: 0 !important;
-}
-
-.mk-flow-classic
-  .mk-floweditor-container:not(.mk-floweditor-fix)
-  > .mk-floweditor {
-  font-style: var(--embed-font-style);
-  background-color: var(--embed-background);
-  border-top: var(--embed-border-top);
-  border-right: var(--embed-border-right);
-  border-bottom: var(--embed-border-bottom);
-  border-left: var(--embed-border-left);
-  padding: var(--embed-padding);
-}
 
 .mk-flow-minimal .internal-embed > .markdown-embed,
 .mk-flow-minimal .internal-embed.markdown-embed {
@@ -184,10 +159,7 @@ div:not(.mk-flowspace-editor) >
   margin-top: 4px;
 }
 
-.mk-flow-classic .internal-embed > .markdown-embed,
-.mk-flow-classic .internal-embed.markdown-embed {
-  margin-top: 24px;
-}
+
 
 .internal-embed > .markdown-embed .markdown-rendered h1,
 .internal-embed > .markdown-embed .markdown-rendered h2,
@@ -231,10 +203,7 @@ div:not(.mk-flowspace-editor) >
 
 
 
-.mk-flow-minimal .mk-floweditor-container > .mk-floweditor:hover {
-  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.06),
-    0px 3.4px 6.7px rgba(0, 0, 0, 0.06), 0px 15px 30px rgba(0, 0, 0, 0.15);
-}
+
 
 .mk-floweditor-container {
   display: inline-block;

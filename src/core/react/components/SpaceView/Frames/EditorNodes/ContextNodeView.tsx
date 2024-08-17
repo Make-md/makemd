@@ -26,7 +26,7 @@ function parseContent(input: string): string {
 }
 
 function addSlashBeforeHash(input: string): string {
-  return input.replace(/([^/])#([*^])/g, "$1/#$2");
+  return input?.replace(/([^/])#([*^])/g, "$1/#$2");
 }
 export const ContextNodeView = (
   props: FrameNodeViewProps & {

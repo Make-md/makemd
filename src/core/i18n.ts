@@ -939,7 +939,6 @@ class T {
           name: "Flow Block Style",
           desc: "Select a theme for your flow block",
           seamless: "Seamless",
-          classic: "Classic",
           minimal: "Minimal",
         },
       },

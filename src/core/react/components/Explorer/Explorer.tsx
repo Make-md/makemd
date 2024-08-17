@@ -348,6 +348,7 @@ export const ExplorerFlowRow = (props: {
           load={true}
           superstate={props.superstate}
           path={path}
+          forceNote={true}
           properties={{
             from: block[0]?.line,
             to: block[1] ? block[1].line + 1 : null,

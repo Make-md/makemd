@@ -344,6 +344,7 @@ loadViews () {
   }
   getActiveFile() {
     let filePath = null;
+    let state = null;
     let leaf = this.app.workspace.getActiveViewOfType(MarkdownView)?.leaf;
     if (!leaf) {
       leaf = this.app.workspace.getActiveViewOfType(SpaceViewContainer)?.leaf;
@@ -354,27 +355,38 @@ loadViews () {
     if (!activeView || leaf.isFlowBlock) return null;
     if (activeView.getViewType() == SPACE_VIEW_TYPE ) {
       modifyTabSticker(this)
-      return  activeView.getState().path
+      state = activeView.getState();
+      filePath =  activeView.getState().path
+      
     } else if (activeView.getViewType() == "markdown") {
       filePath = activeView.file.path;
+      state = activeView.getState();
       modifyFlowDom(this)
       modifyTabSticker(this)
   }
-    return filePath;
+  if (!filePath || !state) return null;
+    return {
+      path: filePath,
+      state: state
+    };
   }
 
   fixFileWarnings () {
     openPathFixer(this);
   }
+  
   activeFileChange() {
-
     
-    const path = this.getActiveFile();
-    
+    const activeFile = this.getActiveFile();
     
 
-    if (path) {
-      this.superstate.ui.setActivePath(path)
+    if (activeFile) {
+      if (this.superstate.ui.activePath == activeFile?.path) {
+        this.superstate.ui.setActiveState(activeFile.state)
+        return;
+    } 
+      this.superstate.ui.setActivePath(activeFile.path);
+      this.superstate.ui.setActiveState(activeFile.state)
     }
   }
   
@@ -456,7 +468,7 @@ loadViews () {
         id: "mk-kit",
         name: "Save Space as Kit",
         callback: () => {
-          const path = this.getActiveFile();
+          const path = this.getActiveFile().path;
           if (this.superstate.spacesIndex.has(path)) {
             exportSpaceKit(this, this.superstate, path, path).then((kit) => {
               this.superstate.spaceManager.createItemAtPath('/', 'mkit', 'kit', JSON.stringify(kit))

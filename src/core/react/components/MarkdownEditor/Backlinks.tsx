@@ -57,6 +57,7 @@ const BacklinkItem = (props: {
         <div className="mk-path-context-backlink">
           <NoteView
             load={true}
+            forceNote={true}
             superstate={props.superstate}
             path={props.path}
             properties={{ from: block[0], to: block[1] }}

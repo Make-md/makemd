@@ -24,7 +24,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   contextEnabled: true,
   spaceViewEnabled: true,
   saveAllContextToFrontmatter: true,
-  editorFlowStyle: "seamless",
+  editorFlowStyle: "minimal",
   autoOpenFileContext: false,
   activeView: "/",
   hideFrontmatter: true,

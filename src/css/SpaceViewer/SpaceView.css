@@ -312,21 +312,7 @@ margin-left: calc((max(100%, var(--max-width)) - var(--max-width)) /2) !importan
   font-style: italic;
 }
 
-.mk-flow-container {
-  width: 100%;
-}
 
-.mk-flow-container > div {
-  border-bottom: thin dotted var(--mk-ui-divider);
-}
-
-.mk-flow-container > div > span {
-  font-size: var(--font-smallest);
-  color: var(--mk-ui-text-tertiary);
-  display: flex;
-  align-items: center;
-  padding: 4px
-}
 
 .mk-space-scroller .mk-flowspace-editor {
   padding: 0;

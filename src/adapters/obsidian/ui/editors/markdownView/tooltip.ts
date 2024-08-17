@@ -679,11 +679,11 @@ class HoverPlugin {
     this.checkHover = this.checkHover.bind(this);
     view.dom.addEventListener(
       "mouseleave",
-      (this.mouseleave = this.mouseleave.bind(this))
+      (this.mouseleave)
     );
     view.dom.addEventListener(
       "mousemove",
-      (this.mousemove = this.mousemove.bind(this))
+      (this.mousemove)
     );
   }
 

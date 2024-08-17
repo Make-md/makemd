@@ -185,7 +185,7 @@ public app: App;
         this.cache.set(file.path, updatedCache);
         this.middleware.updateFileCache(file.path, updatedCache, refresh);
     }
-    private metadataKeys = ['property', 'links', 'embeds', 'tags', 'headings', 'sections', 'listItems', 'frontmatter', 'frontmatterPostion', 'frontmatterLinks', 'blocks'] as Array<keyof CachedMetadata>;
+    private metadataKeys = ['property', 'links', 'embeds', 'tags', 'headings', 'sections', 'listItems', 'frontmatter', 'frontmatterPosition', 'frontmatterLinks', 'blocks'] as Array<keyof CachedMetadata>;
     public cacheTypes (file: AFile) : (keyof CleanCachedMetadata)[] {
         return this.metadataKeys;
     }

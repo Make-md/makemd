@@ -273,7 +273,6 @@ export const getMDBTableProperties = async (
     fieldsTables = dbResultsToDBTables(db.exec(`SELECT * FROM m_fields`))[0].rows as SpaceProperty[];
 
   } catch (e) {
-    adapter.plugin.superstate.ui.error(e);
     db.close();
     return [];
   }
