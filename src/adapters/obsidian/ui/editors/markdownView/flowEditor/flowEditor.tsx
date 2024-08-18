@@ -27,6 +27,7 @@ import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle"
 import { compareByField } from "core/utils/tree";
 import { genId } from "core/utils/uuid";
 import { editorInfoField } from "obsidian";
+import { Root } from "react-dom/client";
 
 //flow editor
 export enum FlowEditorState {
@@ -363,6 +364,7 @@ export const flowEditorField = (plugin: MakeMDPlugin) =>
   });
 
 class FlowEditorWidget extends WidgetType {
+  public root: Root;
   constructor(
     private readonly info: FlowEditorInfo,
     public plugin: MakeMDPlugin
@@ -384,16 +386,15 @@ class FlowEditorWidget extends WidgetType {
       const infoField = view.state.field(editorInfoField, false);
       const file = infoField.file;
 
-      this.plugin.superstate.ui
-        .createRoot(div)
-        .render(
-          <NoteView
-            load={true}
-            superstate={this.plugin.superstate}
-            path={this.info.link}
-            source={file.path}
-          ></NoteView>
-        );
+      this.root = this.plugin.superstate.ui.createRoot(div);
+      this.root.render(
+        <NoteView
+          load={true}
+          superstate={this.plugin.superstate}
+          path={this.info.link}
+          source={file.path}
+        ></NoteView>
+      );
       // this.plugin.superstate.ui.openPath(uri, false, div);
     }
     // loadFlowEditorByDOM(this.plugin, div, view, this.info.id);
@@ -401,6 +402,9 @@ class FlowEditorWidget extends WidgetType {
   }
   get estimatedHeight(): number {
     return this.info.height;
+  }
+  destroy(dom: HTMLElement): void {
+    if (this.root) this.root.unmount();
   }
 }
 

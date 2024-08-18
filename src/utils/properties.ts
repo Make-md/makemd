@@ -104,6 +104,7 @@ export const parseParameters = (fieldValues: Record<string, string>, fields: Spa
 };
 
 export const parsePropertyValue = (value: any, type: string): any => {
+  if (!type) return value;
   if (type == "number") {
     return parseFloat(value);
   } else if (type == "boolean") {
@@ -116,6 +117,9 @@ export const parsePropertyValue = (value: any, type: string): any => {
 }
 
 export const parseMDBStringValue = (type: string, value: string, frontmatter?: boolean): any => {
+  if (!type) {
+    return value;
+  }
   if (type == "object") {
     return JSON.parse(value);
   } else if (type == 'object-multi') {

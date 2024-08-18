@@ -40,6 +40,10 @@ export class ObsidianUI implements UIAdapter {
     this.root.render(<WindowManager ui={this}></WindowManager>);
   }
 
+  public destroy = () => {
+    this.root.unmount();
+  };
+
   public createRoot: typeof createRoot;
   public getRoot: (container: Container) => Root;
 

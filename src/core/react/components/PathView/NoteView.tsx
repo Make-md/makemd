@@ -98,6 +98,7 @@ export const NoteView = forwardRef((props: NoteViewProps, ref) => {
     );
 
     return () => {
+      flowRef.current = null;
       props.superstate.ui.eventsDispatch.removeListener(
         "activeStateChanged",
         reloadFlow
