@@ -45,15 +45,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           })
       );
 
-    new Setting(containerEl)
-    .setName(t.settings.tagSpaces.name)
-    .setDesc(t.settings.tagSpaces.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.enableDefaultSpaces).onChange((value) => {
-        this.plugin.superstate.settings.enableDefaultSpaces = value;
-        this.plugin.saveSettings();
-      })
-    );
     
 
       new Setting(containerEl)
@@ -79,6 +70,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       })
     );
 
+    containerEl.createEl("h2", { text: "Folder Note" });
     new Setting(containerEl)
     .setName(t.settings.folderNote.name)
     .setDesc(t.settings.folderNote.desc)
@@ -103,7 +95,27 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       });  
     
 
-
+      containerEl.createEl("h2", { text: "Tags" });
+      new Setting(containerEl)
+      .setName(t.settings.tagSpaces.name)
+      .setDesc(t.settings.tagSpaces.desc)
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.superstate.settings.enableDefaultSpaces).onChange((value) => {
+          this.plugin.superstate.settings.enableDefaultSpaces = value;
+          this.plugin.saveSettings();
+        })
+      );
+    
+      new Setting(containerEl)
+      .setName("Parents as context to subtags")
+      .setDesc("Automatically add parent tag contexts to subtags")
+      .addToggle((toggle) =>
+        toggle.setValue(this.plugin.superstate.settings.autoAddContextsToSubtags).onChange((value) => {
+          this.plugin.superstate.settings.autoAddContextsToSubtags = value;
+          this.plugin.saveSettings();
+        })
+      );
+    
 
     
     if (this.plugin.superstate.settings.spacesEnabled) {

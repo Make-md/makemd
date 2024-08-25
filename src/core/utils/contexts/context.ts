@@ -88,9 +88,9 @@ const saveContext = async (
   manager: SpaceManager,
   spaceInfo: SpaceInfo,
   newTable: SpaceTable,
-  force?: boolean
+  forceCreate?: boolean,
 ): Promise<void> => {
-  await manager.saveTable(spaceInfo.path, newTable, force).then(f => {
+  await manager.saveTable(spaceInfo.path, newTable, forceCreate).then(f => {
     if (f)
     return manager.superstate.reloadContextByPath(spaceInfo.path, true)
   return f});
@@ -207,6 +207,10 @@ export const updateTableValue = async (
     
             if (!_.isEqual(f, newMDB))
               {
+                if (manager.superstate.settings.enhancedLogs)
+                {
+                  console.log('Saving Context Change: Update Table Value')
+                }
                 await saveContext(manager, space, newMDB);}
             return newMDB;
         })
@@ -233,7 +237,9 @@ export const updateContextValue = async (
       let newMDB = updateFunction(f, PathPropertyName, path, field, value);
       if (rank)
       newMDB = reorderRowsForPath(newMDB, [path], rank);
-
+if (manager.superstate.settings.enhancedLogs) {
+  console.log('Saving Context Change: Update Context Value')
+}
       return saveContext(manager, space, newMDB).then(f => newMDB)
     }
     )
@@ -289,7 +295,7 @@ export const updateContextWithProperties = async (
     const properties = await getPathProperties(
       superstate,
       path,
-      mdb.cols
+      mdb.cols.filter(f => f.name != PathPropertyName && f.type != 'fileprop')
     );
 
     if (objectExists) {
@@ -319,6 +325,9 @@ export const updateContextWithProperties = async (
       };
       if (!_.isEqual(mdb, newDB))
         {
+          if (superstate.settings.enhancedLogs) {
+            console.log('Saving Context Change: Update Context Path Properties')
+          }
           await saveContext(superstate.spaceManager, space, newDB, true);
         }
       return newDB;
@@ -337,6 +346,9 @@ export const updateTableRow = async (manager: SpaceManager,
       const newDB = updateRowAtIndex(mdb, row, index);
       if (!_.isEqual(mdb, newDB))
         {
+          if (manager.superstate.settings.enhancedLogs) {
+            console.log('Saving Context Change: Update Table Row')
+          }
           await saveContext(manager, space, newDB);
         }
       return newDB;
@@ -357,6 +369,9 @@ export const updateValueInContext = async ( manager: SpaceManager,
 
         if (!_.isEqual(mdb, newDB))
           {
+            if (manager.superstate.settings.enhancedLogs) {
+              console.log('Saving Context Change: Update Value in Context')
+            }
             await saveContext(manager, space, newDB);
           }
         return newDB;
@@ -378,6 +393,9 @@ export const renameTagInContexts = async ( manager: SpaceManager,
         const newDB = changeTagInContextMDB(mdb);
         if (!_.isEqual(mdb, newDB))
           {
+            if (manager.superstate.settings.enhancedLogs) {
+              console.log('Saving Context Change: Rename Tag in Context')
+            }
             await saveContext(manager, space, newDB);
           }
         return newDB;
@@ -399,6 +417,9 @@ export const renameTagInContexts = async ( manager: SpaceManager,
           const newDB = deleteTagInContextMDB(mdb);
           if (!_.isEqual(mdb, newDB))
             {
+              if (manager.superstate.settings.enhancedLogs) {
+                console.log('Saving Context Change: Remove Tag in Context')
+              }
               await saveContext(manager, space, newDB);
             }
           return newDB;
@@ -414,6 +435,9 @@ export const renameTagInContexts = async ( manager: SpaceManager,
             const newDB = insertRows(mdb, [row], index);
             if (!_.isEqual(mdb, newDB))
               {
+                if (manager.superstate.settings.enhancedLogs) {
+                  console.log('Saving Context Change: Add Row in Table')
+                }
                 await saveContext(manager, space, newDB);}
             return newDB;
           })
@@ -425,6 +449,9 @@ export const renameTagInContexts = async ( manager: SpaceManager,
             const newDB = {...mdb, rows: mdb.rows.filter((f, i) => i != index)};
             if (!_.isEqual(mdb, newDB))
               {
+                if (manager.superstate.settings.enhancedLogs) {
+                  console.log('Saving Context Change: Delete Row in Table')
+                }
                 await saveContext(manager, space, newDB);}
             return newDB;
           })
@@ -440,6 +467,9 @@ export const addPathInContexts = async (manager: SpaceManager,
         const newDB = insertRowsIfUnique(mdb, [{ [PathPropertyName]: path }], index);
         if (!_.isEqual(mdb, newDB))
           {
+            if (manager.superstate.settings.enhancedLogs) {
+              console.log('Saving Context Change: Add Path in Context')
+            }
             await saveContext(manager, space, newDB);}
         return newDB;
       })
@@ -462,6 +492,9 @@ export const renameLinkInContexts = async (manager: SpaceManager,
         } ;
         if (!_.isEqual(mdb, newDB))
         {
+          if (manager.superstate.settings.enhancedLogs) {
+            console.log('Saving Context Change: Rename Link in Context')
+          }
           await saveContext(manager, space, newDB);}
         return newDB;
       })
@@ -482,6 +515,9 @@ export const removeLinkInContexts = async (manager: SpaceManager,
         } ;
         if (!_.isEqual(mdb, newDB))
         {
+          if (manager.superstate.settings.enhancedLogs) {
+            console.log('Saving Context Change: Remove link in context')
+          }
           await saveContext(manager, space, newDB);}
         return newDB;
       })
@@ -518,6 +554,9 @@ export const removePathInContexts = async (manager: SpaceManager,
         const newDB = removeRowForPath(mdb, path);
         if (!_.isEqual(mdb, newDB))
         {
+          if (manager.superstate.settings.enhancedLogs) {
+            console.log('Saving Context Change: Remove Path in Context')
+          }
           await saveContext(manager, space, newDB);}
         return newDB;
       })
@@ -535,7 +574,9 @@ export const reorderPathsInContext = async (manager: SpaceManager,
 
         if (!_.isEqual(mdb, newDB))
         {
-          
+          if (manager.superstate.settings.enhancedLogs) {
+            console.log('Saving Context Change: Reorder path in Context')
+          }
           await saveContext(manager, context, newDB, true);}
         return newDB;
       })
@@ -552,6 +593,9 @@ export const removePathsInContext = async (manager: SpaceManager,
         const newDB = removeRowsForPath(mdb, paths);
         if (!_.isEqual(mdb, newDB))
         {
+          if (manager.superstate.settings.enhancedLogs) {
+            console.log('Saving Context Change: Remove path in context')
+          }
           await saveContext(manager, context, newDB);}
         return newDB;
       })

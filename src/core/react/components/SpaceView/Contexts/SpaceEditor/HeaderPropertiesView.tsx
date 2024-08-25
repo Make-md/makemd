@@ -67,6 +67,17 @@ export const HeaderPropertiesView = (props: {
     const space = props.superstate.spacesIndex.get(path);
     if (!space) return;
 
+    let spaceIsInherited = false;
+    if (
+      space.type == "tag" &&
+      !(pathState.metadata?.tags ?? []).includes(space.space.name)
+    ) {
+      spaceIsInherited = true;
+    }
+    if (space.type == "folder" && (pathState.liveSpaces ?? []).includes(path)) {
+      spaceIsInherited = true;
+    }
+
     e.preventDefault();
     const menuOptions: SelectOption[] = [];
     menuOptions.push({
@@ -84,7 +95,7 @@ export const HeaderPropertiesView = (props: {
       },
     });
 
-    if (removeFromSpace)
+    if (removeFromSpace && !spaceIsInherited)
       menuOptions.push({
         name: i18n.menu.removeFromSpace,
         icon: "ui//trash",

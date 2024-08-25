@@ -24,7 +24,7 @@ export const parseURI = (uri: string): URI => {
           if (refTypeChar === '^') return 'context';
           if (refTypeChar === '*') return 'frame';
           if (refTypeChar === ';') return 'action';
-          return 'unknown';
+          return null
         }
         if (refTypeChar === '^') return 'block';
         return 'heading';

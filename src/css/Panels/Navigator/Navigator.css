@@ -77,7 +77,18 @@ margin-left: 6px;
   top: 0%;
 }
 
-.mk-folder-lines .mk-tree-item::before {
+.mod-rtl.mk-folder-lines .mk-tree-item::before {
+  display: block;
+  content: " ";
+  width: 1px;
+  height: var(--childrenCount);
+  border-left: 1px solid
+    var(--nav-indentation-guide-color);
+  position: absolute;
+  top: 34px;
+  right: 13px;
+}
+body:not(.mod-rtl).mk-folder-lines .mk-tree-item::before {
   display: block;
   content: " ";
   width: 1px;
@@ -148,6 +159,10 @@ opacity: 1;
 
 body:not(.is-mobile) .mk-tree-new {
   opacity: 0;
+}
+.mod-rtl .mk-tree-item {
+  margin-left: 0 !important;
+  margin-right: var(--spacing) !important;
 }
 .mk-tree-item {
   --icon-size: 16px;
@@ -356,6 +371,11 @@ body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
   height: 12px;
   margin: 2px;
 }
+
+.mod-rtl .mk-collapse.mk-collapsed svg {
+  transform: rotate(180deg);
+}
+
 .mk-collapse.mk-collapsed svg {
   transform: rotate(0deg);
 }

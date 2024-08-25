@@ -224,7 +224,7 @@ export const openPath = async (
   }
   
   if (uri.scheme == 'spaces') {
-    openTagContext(leaf, uri.authority, plugin.app)
+    openTagContext(leaf, uri.basePath, plugin.app)
     return;
   }
   plugin.files.getFile(path).then(f => {
@@ -429,7 +429,7 @@ export const openTagContext = async (
 ) => {
   const viewType = SPACE_VIEW_TYPE;
   app.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.setViewState({ type: viewType, state: { path: "spaces://"+tag } });
+  await leaf.setViewState({ type: viewType, state: { path:tag} });
   await app.workspace.requestSaveLayout();
   if (Platform.isMobile) {
     app.workspace.leftSplit.collapse();

@@ -120,6 +120,10 @@ body.is-mobile .sidebar-toggle-button {
   justify-content: center;
   height: 100%;
 }
+.mk-path-tree-focus .mk-focuses-item {
+  background: var(--mk-ui-background)
+  
+}
 
 .mk-path-tree-focus input {
   width: 60%;

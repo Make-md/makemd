@@ -5,14 +5,22 @@ import { TableCellProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
 
 export const TagCell = (props: TableCellProp) => {
+  const [metadataTags, setMetadataTags] = useState<string[]>([]);
   const [value, setValue] = useState([]);
   useEffect(() => {
+    setMetadataTags(
+      props.superstate.pathsIndex.get(props.path).metadata?.tags ?? []
+    );
     setValue([...(props.superstate.tagsMap.get(props.path) ?? [])]);
   }, []);
   useEffect(() => {
     const updateValue = (payload: { path: string }) => {
-      if (payload.path == props.path)
+      if (payload.path == props.path) {
+        setMetadataTags(
+          props.superstate.pathsIndex.get(props.path).metadata?.tags ?? []
+        );
         setValue([...(props.superstate.tagsMap.get(props.path) ?? [])]);
+      }
     };
     props.superstate.eventsDispatcher.addListener(
       "pathStateUpdated",
@@ -66,7 +74,8 @@ export const TagCell = (props: TableCellProp) => {
       labelElement={(_props: PropsWithChildren<{ value: string }>) => (
         <div className="mk-cell-tags-label">
           {_props.value}
-          {_props.children}
+          {metadataTags.some((f) => f.toLowerCase() == _props.value) &&
+            _props.children}
         </div>
       )}
     ></OptionCellBase>

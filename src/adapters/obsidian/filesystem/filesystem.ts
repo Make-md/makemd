@@ -90,7 +90,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         }
         const vaultItem = this.cache.get(path);
         if (!vaultItem) return;
-        this.updateFileLabel(path, "tags", serializeMultiDisplayString([...vaultItem.tags.filter(t => t != oldTag), newTag]))
+        this.updateFileLabel(path, "tags", serializeMultiDisplayString([...vaultItem.tags.filter(t => t.toLowerCase() != oldTag.toLowerCase()), newTag]))
     }
     public async removeTagFromFile (path: string, tag: string) {
         const file = this.plugin.app.vault.getAbstractFileByPath(path) as TFile;
@@ -100,7 +100,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         }
         const vaultItem = this.cache.get(path);
         if (!vaultItem) return;
-        this.updateFileLabel(path, "tags", serializeMultiDisplayString([...vaultItem.tags.filter(t => t != tag)]))
+        this.updateFileLabel(path, "tags", serializeMultiDisplayString([...vaultItem.tags.filter(t => t.toLowerCase() != tag.toLowerCase())]))
     }
     public spacesDBPath  = normalizePath(
     this.plugin.app.vault.configDir + "/plugins/make-md/Spaces.mdb"

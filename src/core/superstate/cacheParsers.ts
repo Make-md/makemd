@@ -129,7 +129,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     const cache : PathState = {  label: pathCache?.label, path: path, name: pathToString(path), readOnly: pathCache?.readOnly };
 
     const tags : string[] = [];
-    const fileTags : string[] = pathCache?.tags?.map(f => f) ?? [];
+    const fileTags : string[] = pathCache?.tags?.map(f => f.toLowerCase()) ?? [];
     let hidden = excludePathPredicate(settings, path);
     if (path.startsWith(builtinSpacePathPrefix)) {
         const builtin = path.replace(builtinSpacePathPrefix, '');
@@ -140,7 +140,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         const keys : string[] = [];
         
     for (const space of spaces) {
-        const valList = (map.get(space)?.contexts as string[] ?? []);
+        const valList = (map.get(space)?.contexts as string[] ?? []).map(f => f.toLowerCase());
 
         for (const key of valList){
         // If the current key is already seen, skip it to prevent infinite loops
@@ -160,7 +160,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     
     if (spacesCache.has(parent)) {
         for (const def of spacesCache.get(parent).contexts ?? []) {
-            tags.push(def);
+            tags.push(def.toLowerCase());
         }
     }
 
@@ -265,15 +265,15 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         evalSpace(s, space);
     }
 
-        const newTags = getTagsFromCache(spacesCache, spaces)
-        spaces.push(...newTags.map(f => tagSpacePathFromTag(f)));
-        
-        
-        pathState.tags.push(...newTags)
-        if (isSpaceNote)
-            {
-                pathState.metadata.spacePath = spacePath;
-            }
+    const newTags = getTagsFromCache(spacesCache, spaces)
+    spaces.push(...newTags.map(f => tagSpacePathFromTag(f)));
+    
+    
+    pathState.tags.push(...newTags)
+    if (isSpaceNote)
+        {
+            pathState.metadata.spacePath = spacePath;
+        }
     const metadata : PathState = hidden ? {...pathState, spaces: [], hidden: hidden} : {...pathState, spaces: uniq(spaces), linkedSpaces, liveSpaces, hidden };
     let changed = true;
 

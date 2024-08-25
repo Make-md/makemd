@@ -31,7 +31,7 @@ import { DBRows, SpaceInfo, SpaceProperty } from "types/mdb";
 import { FrameExecutable, FrameRoot, MDBFrames, defaultFrameEditorProps } from "types/mframe";
 import { orderArrayByArrayWithKey, uniq } from "utils/array";
 import { parseMultiString, safelyParseJSON } from "utils/parsers";
-import { ensureTag, getAllParentTags } from "utils/tags";
+import { getAllParentTags } from "utils/tags";
 import { removeLinkInContexts, removePathInContexts, removeTagInContexts, renameLinkInContexts, renamePathInContexts, renameTagInContexts, updateContextWithProperties } from "../utils/contexts/context";
 import { API } from "./api";
 import { SpacesCommandsAdapter } from "./commands";
@@ -391,7 +391,8 @@ public api: API;
             this.spacesMap.set(f.path, new Set(cache.spaces))
             this.linksMap.set(f.path, new Set(cache.outlinks))
         });
-        
+        if (this.settings.enhancedLogs)
+        console.log('Initial Cache Loaded')
         this.dispatchEvent("superstateUpdated", null)
     }
 
@@ -462,7 +463,7 @@ public api: API;
         
         this.ui.notify(`Make.md - ${allFiles.length} Paths Cached in ${(Date.now()-start)/1000} seconds`, 'console')
         
-        const allPaths = uniq([...this.spaceManager.allSpaces().map(f => f.path), ...allFiles]);
+        const allPaths = uniq([...this.spacesIndex.keys(), ...allFiles]);
         [...this.pathsIndex.keys()].filter(f => !allPaths.some(g => g == f)).forEach(f =>
             this.onPathDeleted(f))
             ;
@@ -543,23 +544,20 @@ public api: API;
 
     
     public onMetadataChange(path: string) {
-        
-        
-        
+        if (this.settings.enhancedLogs)
+        console.log('Metadata Changed', path)
         if (!this.pathsIndex.has(path)) {return}
         this.reloadPath(path).then(f => 
-            
             {
                 const pathState = this.pathsIndex.get(path);
                 const spaceState = this.spacesIndex.get(path);
                 if (spaceState) {
                     this.reloadSpace(spaceState.space).then(f => this.onSpaceDefinitionChanged(f, spaceState.metadata))
-
                 }
                 const allContextsWithFile = pathState.spaces.map(f => this.spacesIndex.get(f)?.space).filter(f => f);   
-        this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile));
-                this.dispatchEvent("pathStateUpdated", {path: path})
-            }
+                this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile));
+                    this.dispatchEvent("pathStateUpdated", {path: path})
+                }
             );
         
     }
@@ -733,6 +731,8 @@ public api: API;
     
 
     public async contextReloaded(path: string, cache: ContextState, changed: boolean, force?: boolean) {
+        if (this.settings.enhancedLogs)
+        {console.log('Context Reloaded')}
             if (!changed && !force) { return false }
             this.contextsIndex.set(path, cache);
             const pathState = this.pathsIndex.get(path);
@@ -825,7 +825,8 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
     public async reloadSpace (space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized=true) {
         
         if (!space) return;
-        
+        if (this.settings.enhancedLogs)
+        {console.log('Reloading Space')}
         const metadata = spaceMetadata ?? await this.spaceManager.spaceDefForSpace(space.path);
 
         let pathState = this.pathsIndex.get(space.path);
@@ -907,7 +908,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
             path: space.path,
             type,
             templates,
-            contexts: contexts.map(f => ensureTag(f)),
+            contexts: contexts.map(f => f.toLowerCase()),
             metadata,
             dependencies,
             sortable,
@@ -929,7 +930,8 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
         
     }
     private async pathReloaded (path: string, cache: PathState, changed: boolean, force: boolean) {
-
+        if (this.settings.enhancedLogs)
+        {console.log('Path Reloaded')}
             this.pathsIndex.set(path, cache);
             await this.onPathReloaded(path);
             if (cache.subtype == 'image' || cache.metadata?.file?.extension == 'svg') {
@@ -943,7 +945,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
             if (!_.isEqual(cache.spaces, Array.from(this.spacesMap.get(path)))) {
                 this.spacesMap.set(path, new Set(cache.spaces))
                 //initiate missing tags
-                const promises = cache.tags.map(f => this.spacesIndex.has(tagSpacePathFromTag(f)) ? null : fileSystemSpaceInfoFromTag(this.spaceManager, f)).filter(f => f).map(async f =>  
+                const promises = cache.tags.map(f => fileSystemSpaceInfoFromTag(this.spaceManager, f)).filter(f => !this.spacesIndex.has(f.path)).map(async f =>  
                     {
                         await this.reloadSpace(f);
                         this.reloadContext(f);
@@ -952,7 +954,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
                     }
                 );
                 const allPromises = Promise.all(promises)
-                allPromises.then(f => {
+                await allPromises.then(f => {
                     this.dispatchEvent("spaceStateUpdated", {path: tagsSpacePath});
                 })
                 

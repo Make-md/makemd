@@ -78,7 +78,7 @@ const positionsForTag = (plugin: MakeMDPlugin, tag: string, file: TFile) => {
   const currentCache = plugin.app.metadataCache.getFileCache(file);
   if (currentCache.tags) {
     const positions = currentCache.tags
-      .filter((f) => f.tag == tag)
+      .filter((f) => f.tag.toLowerCase() == tag.toLowerCase())
       .map((f) => f.position)
       .sort((a: Record<string, any>, b: Record<string, any>) => {
         if (a.start.offset < b.start.offset) {
@@ -115,12 +115,12 @@ const removeTagInProperties = async (manager: SpaceManager, oldTag: string, path
   const fm = await manager.readProperties(path);
   const processKey = (value: string | string[]) => {
     if (Array.isArray(value)) {
-      return value.filter((f) => stringFromTag(oldTag) != f);
+      return value.filter((f) => stringFromTag(oldTag).toLowerCase() != f.toLowerCase());
     } else if (typeof value === "string") {
       return serializeMultiDisplayString(value
         .replace(/\s/g, "")
         .split(",")
-        .filter((f) => stringFromTag(oldTag) != f)
+        .filter((f) => stringFromTag(oldTag).toLowerCase() != f.toLowerCase())
         );
     }
     return value;
@@ -133,7 +133,7 @@ const removeTagInProperties = async (manager: SpaceManager, oldTag: string, path
     } else if (typeof fm[f] === "string") {
       tags = fm[f].replace(/\s/g, "").split(",");
     }
-    if (tags.find((g) => g == stringFromTag(oldTag))) return true;
+    if (tags.find((g) => g.toLowerCase() == stringFromTag(oldTag).toLowerCase())) return true;
     return false;
   });
   editKeys.forEach((tag) => {
@@ -221,6 +221,7 @@ const editTagInFileBody = async (
   positions: Pos[],
   file: TFile
 ) => {
+  console.log("editTagInFileBody", oldTag, newTag, positions);
   const offsetOffset = newTag.length - oldTag.length;
   if (positions.length == 0) return false;
   const original = await plugin.files.readTextFromFile(file.path);
@@ -229,7 +230,7 @@ const editTagInFileBody = async (
   for (const { start, end } of positions) {
     const startOff = start.offset + offset;
     const endOff = end.offset + offset;
-    if (text.slice(startOff, endOff) !== oldTag) {
+    if (text.slice(startOff, endOff).toLowerCase() !== oldTag.toLocaleLowerCase()) {
       return false;
     }
     text =

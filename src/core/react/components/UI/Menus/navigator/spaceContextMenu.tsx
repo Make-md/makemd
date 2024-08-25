@@ -17,6 +17,7 @@ import { removePathIcon } from "core/utils/emoji";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { movePath } from "core/utils/uri";
 import React from "react";
+import { FilesystemSpaceInfo } from "types/mdb";
 import { windowFromDocument } from "utils/dom";
 import { stringFromTag } from "utils/tags";
 import { ConfirmationModal } from "../../Modals/ConfirmationModal";
@@ -452,9 +453,7 @@ export const showSpaceContextMenu = (
       icon: "ui//arrow-up-right",
       onClick: (e) => {
         superstate.ui.openPath(
-          space.type == "folder"
-            ? space.path
-            : `${superstate.settings.spacesFolder}/${space.name}`,
+          (space.space as FilesystemSpaceInfo).folderPath,
           "system"
         );
       },

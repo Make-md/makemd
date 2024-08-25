@@ -421,6 +421,14 @@ loadViews () {
     },
   })
   this.addCommand({
+    id: "logs",
+    name: "Toggle Enhanced Logs",
+    callback: () => {
+      this.superstate.settings.enhancedLogs = !this.superstate.settings.enhancedLogs;
+      this.saveSettings();
+    },
+  })
+  this.addCommand({
     id: "path-fixer",
     name: "Fix Unsupported Characters in Paths",
     callback: () => {

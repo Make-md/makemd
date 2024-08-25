@@ -38,7 +38,7 @@ export const stateChangedForProps = (
   schemaID: string
 ) => {
   return propSetters.filter(
-    (f) => newState[schemaID]?.props[f] && newState[schemaID].props[f] != props?.[f]
+    (f) => newState[schemaID]?.props[f] && !_.isEqual(newState[schemaID].props[f], props?.[f])
   );
 };
 

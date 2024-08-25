@@ -60,7 +60,7 @@ export const ensureTag = (tag: string) => {
   if (!tag) return null;
   let string = tag;
   if (string.charAt(0) != "#") string = "#" + string;
-  return string;
+  return string.toLowerCase();
 };
 export const stringFromTag = (string: string) => {
   if (string.charAt(0) == "#") {

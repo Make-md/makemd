@@ -393,9 +393,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
   }
 public async contextInitiated (path: string) {
   const spaceInfo = this.spaceInfoForPath(path);
-  const mdbFile = await this.fileSystem.getFile(spaceInfo.dbPath)
-  if (mdbFile) return true;
-  return false;
+  return await this.fileSystem.fileExists(spaceInfo.dbPath)
 }
   public async tablesForSpace (path: string) {
     const spaceInfo = this.spaceInfoForPath(path);

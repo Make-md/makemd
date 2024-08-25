@@ -91,4 +91,5 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   searchWorker: true,
   skipFolderNames: [],
   skipFolders: [],
+  enhancedLogs: false,
 };

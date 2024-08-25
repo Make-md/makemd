@@ -14,7 +14,7 @@ export const fileSystemSpaceInfoFromTag = (
   tag: string,
   readOnly?: boolean
 ): FilesystemSpaceInfo => {
-  const path = tagSpacePathFromTag(tag);
+  const path = tagSpacePathFromTag(tag.toLowerCase());
   const folderPath = manager.superstate.settings.spacesFolder +
     "/" +
     tagToTagPath(tag);
@@ -71,6 +71,9 @@ export const fileSystemSpaceInfoByPath = (
   if (pathType == "folder") {
     return fileSystemSpaceInfoFromFolder(manager, removeTrailingSlashFromFolder(uri.path));
   } else if (pathType == "tag") {
+    if (uri.path.length > 1) {
+      return fileSystemSpaceInfoFromTag(manager, uri.authority+'/'+uri.path);
+    }
     return fileSystemSpaceInfoFromTag(manager, uri.authority);
   } else if (pathType == 'vault') {
     return fileSystemSpaceInfoFromFolder(manager, '/');

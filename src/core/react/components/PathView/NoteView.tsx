@@ -1,5 +1,6 @@
 import { Superstate, i18n } from "makemd-core";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
+import { FilesystemSpaceInfo } from "types/mdb";
 import { pathToString } from "utils/path";
 
 export interface NoteViewProps {
@@ -40,10 +41,15 @@ export const NoteView = forwardRef((props: NoteViewProps, ref) => {
         setLoaded(false);
         return;
       } else {
-        const parent = props.superstate.spaceManager.parentPathForPath(
-          path.basePath
-        );
+        const parent =
+          pathState?.type == "space"
+            ? (
+                props.superstate.spacesIndex.get(props.path)
+                  ?.space as FilesystemSpaceInfo
+              ).folderPath
+            : props.superstate.spaceManager.parentPathForPath(path.basePath);
         if (!parent) return;
+        console.log(parent, props.path, path, props.path, props.source);
         const newPath = await props.superstate.spaceManager.createItemAtPath(
           parent,
           "md",

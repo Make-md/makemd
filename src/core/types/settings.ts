@@ -90,4 +90,5 @@ export interface MakeMDSettings {
   contextPagination: number;
   searchWorker: boolean;
   cacheIndex: boolean;
+  enhancedLogs: boolean;
 }
