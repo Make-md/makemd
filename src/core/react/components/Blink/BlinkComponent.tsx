@@ -238,7 +238,7 @@ export const BlinkComponent = (props: {
       }
     }
 
-    setIndex(suggestions.findIndex((f) => f.cache.path == item.cache?.path));
+    setIndex(suggestions.findIndex((f) => f.cache?.path == item.cache?.path));
   };
 
   const sections: SelectOption[] = [];

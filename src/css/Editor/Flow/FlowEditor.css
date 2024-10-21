@@ -10,7 +10,7 @@
   border: 0 !important;
 }
 
-.mk-flow-minimal .mk-flowspace-editor > .mk-floweditor > .workspace-leaf > .workspace-leaf-content > .view-content > .mod-cm6 {
+.mk-flow-minimal .mk-flowspace-editor:not(.mk-flow-node) > .mk-floweditor > .workspace-leaf > .workspace-leaf-content > .view-content > .mod-cm6 {
   padding: 8px 8px 8px 18px;
     border: thin solid var(--mk-ui-active-hover);
     margin: 8px 0px;

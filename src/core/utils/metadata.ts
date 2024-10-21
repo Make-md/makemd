@@ -32,7 +32,7 @@ export const allMetadata = (superstate: Superstate) : Record<string, {
     },
     context: {
         name: i18n.metadataTypes.contexts,
-        properties: [...superstate.contextsIndex.values()].flatMap(f => f.contextTable?.cols.filter(f => f.primary != "true").map(g => ({
+        properties: [...superstate.contextsIndex.values()].flatMap(f => f?.contextTable?.cols.filter(f => f.primary != "true").map(g => ({
             id: 'contexts.' + f.path + '.' + g.name,
             label: g.name,
         field: f.path+ '.' + g.name,

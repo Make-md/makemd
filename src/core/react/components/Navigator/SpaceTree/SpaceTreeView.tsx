@@ -380,7 +380,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                 : [
                     index == 0
                       ? "//" + c
-                      : space.path +
+                      : p.slice(1).join() +
                         "/" +
                         folders.slice(0, index + 1).join("/"),
                   ]),

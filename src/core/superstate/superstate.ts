@@ -731,6 +731,7 @@ public api: API;
     
 
     public async contextReloaded(path: string, cache: ContextState, changed: boolean, force?: boolean) {
+        if (!cache) return false;
         if (this.settings.enhancedLogs)
         {console.log('Context Reloaded')}
             if (!changed && !force) { return false }

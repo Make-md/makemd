@@ -72,7 +72,7 @@ export const FormulaCell = (
 
   return parsedValue.type == "boolean" ? (
     <BooleanCell {...props} editMode={CellEditMode.EditModeReadOnly} />
-  ) : props.initialValue.length == 0 ? (
+  ) : props.initialValue?.length == 0 ? (
     <></>
   ) : parsedValue.type == "image" ? (
     <ImageCell

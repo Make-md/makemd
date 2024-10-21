@@ -57,6 +57,9 @@ export const convertPathToSpace = async (
   const newPath = pathState.parent+'/'+pathState.name
   await superstate.spaceManager.createSpace(pathState.name, pathState.parent, {});
     await superstate.spaceManager.renamePath(path, newPath+'/'+pathState.metadata?.file?.name+'.md');
+    superstate.ui.viewsByPath(path).forEach(view => {
+      view.openPath(newPath);
+  });
   if (open) {
     superstate.ui.openPath(newPath, false);
   }

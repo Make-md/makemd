@@ -151,11 +151,11 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
     getActiveViewOfType(old) {
 
       return function getActiveViewOfType(type) {
-if (type.prototype?.getViewType && type.prototype.getViewType() == 'markdown')
-{
-  if (this.activeEditor)
-  return this.activeEditor
-}
+// if (type.prototype?.getViewType && type.prototype.getViewType() == 'markdown')
+// {
+//   if (this.activeEditor)
+//   return this.activeEditor
+// }
         return old.call(this, type);
       }
       },
