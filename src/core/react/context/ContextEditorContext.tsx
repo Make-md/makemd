@@ -395,11 +395,20 @@ export const ContextEditorProvider: React.FC<
       data
         .filter((f) => {
           return (predicate?.filters ?? []).reduce((p, c) => {
+            const row = cols.some((f) => f.name == "tags")
+              ? {
+                  ...f,
+                  tags: (
+                    props.superstate.pathsIndex.get(f[PathPropertyName])
+                      ?.tags ?? []
+                  ).join(", "),
+                }
+              : f;
             return p
               ? filterReturnForCol(
                   cols.find((col) => col.name + col.table == c.field),
                   c,
-                  f,
+                  row,
                   spaceCache.properties
                 )
               : p;

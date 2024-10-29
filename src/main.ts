@@ -280,6 +280,7 @@ loadViews () {
     this.registerView(MDB_FILE_VIEWER_TYPE, (leaf) => {
       return new MDBFileViewer(leaf, this);
     });
+    
   }
 }
 
@@ -393,6 +394,32 @@ loadViews () {
   releaseTheNotes() {
     openURL('https://www.make.md/static/latest.md', this.app, true)
   }
+  closeExtraFileTabs () {
+    let filesFound = false;
+          if (Platform.isMobile) {
+            this.app.workspace.leftSplit?.children.forEach((g: any) => {
+                if (g.view.getViewType() == 'file-explorer') {
+                  if (!filesFound) {
+                    filesFound = true;
+                  } else {
+                    this.app.workspace.leftSplit.removeChild(g);
+                  }
+                }
+            })
+            return;
+          }
+          this.app.workspace.leftSplit?.children.forEach((f: WorkspaceSplit) => {
+            f?.children.forEach((g) => {
+              if (g.view.getViewType() == 'file-explorer') {
+                if (!filesFound) {
+                  filesFound = true;
+                } else {
+                f.removeChild(g);
+                }
+              }
+            })
+          })
+  }
   loadCommands() {
     this.registerObsidianProtocolHandler("make", async (e) => {
       const parameters = e as unknown as { [key: string]: string };
@@ -449,18 +476,7 @@ loadViews () {
         id: 'mk-debug-close-tabs',
         name: "Close Extra File Tabs",
         callback: () => {
-          let filesFound = false;
-          this.app.workspace.leftSplit.children.forEach((f: WorkspaceSplit) => {
-            f?.children.forEach((g) => {
-              if (g.view.getViewType() == 'file-explorer') {
-                if (!filesFound) {
-                  filesFound = true;
-                } else {
-                f.removeChild(g);
-                }
-              }
-            })
-          })
+          this.closeExtraFileTabs();
         }
       })
 
@@ -586,6 +602,7 @@ loadViews () {
       
       
       this.app.workspace.onLayoutReady(async () => {
+        this.closeExtraFileTabs();
         if (this.superstate.settings.enableDefaultSpaces
         ) {
           await this.files.createFolder(this.superstate.settings.spacesFolder);
