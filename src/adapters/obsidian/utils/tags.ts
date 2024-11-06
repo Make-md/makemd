@@ -221,7 +221,6 @@ const editTagInFileBody = async (
   positions: Pos[],
   file: TFile
 ) => {
-  console.log("editTagInFileBody", oldTag, newTag, positions);
   const offsetOffset = newTag.length - oldTag.length;
   if (positions.length == 0) return false;
   const original = await plugin.files.readTextFromFile(file.path);

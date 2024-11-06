@@ -21,6 +21,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   editorFlow: true,
   internalLinkClickFlow: true,
   internalLinkSticker: true,
+  spacesRightSplit: false,
   contextEnabled: true,
   spaceViewEnabled: true,
   saveAllContextToFrontmatter: true,

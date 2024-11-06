@@ -53,7 +53,9 @@ export class FileTreeView extends ItemView {
   async onClose() {
     const leafs = this.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
     if (leafs.length == 0) {
-      const leaf = this.app.workspace.getLeftLeaf(false);
+      const leaf = this.superstate.settings.spacesRightSplit
+        ? this.app.workspace.getRightLeaf(false)
+        : this.app.workspace.getLeftLeaf(false);
       await leaf.setViewState({ type: FILE_TREE_VIEW_TYPE });
     }
     this.destroy();

@@ -192,6 +192,19 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           this.plugin.saveSettings();
         })
     );
+
+    new Setting(spaceAppearances)
+    .setName("Open Navigator on Right Panel")
+    .setDesc("Open navigator on right panel instead of left")
+    .addToggle((toggle) =>
+      toggle
+        .setValue(this.plugin.superstate.settings.spacesRightSplit)
+        .onChange((value) => {
+          this.plugin.superstate.settings.spacesRightSplit = value;
+          this.plugin.saveSettings();
+        })
+    );
+
     new Setting(spaceAppearances)
     .setName(t.settings.spaceRowHeight.name)
     .setDesc(t.settings.spaceRowHeight.desc)

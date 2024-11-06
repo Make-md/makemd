@@ -85,11 +85,11 @@ class T {
         closeFlow: "Close Flow Blocks in Selection",
         toggleBold: "Toggle Bold",
         toggleItalics: "Toggle Italics",
-        openSpaces: "Open Spaces",
+        openSpaces: "Open Navigator",
         blink: "Blink",
         openFileContext: "Open Explorer",
         convertPathToSpace: "Convert to Space",
-        revealFile: "Reveal File in Spaces",
+        revealFile: "Reveal File in Navigator",
         releaseNotes: "Release Notes",
         toggleBacklinks: "Toggle Backlinks",
         collapseAllFolders: "Collapse All Folders",
@@ -176,7 +176,7 @@ class T {
         openVaultInFolder: "Open Vault Folder",
         obSettings: "Obsidian Settings",
         commandPalette: "Command Palette",
-        backToSpace: "Back to Spaces",
+        backToSpace: "Back to Navigator",
         collapseAllSections: "Collapse All Spaces",
         expandAllSections: "Expand All Spaces",
         collapseAllFolders: "Collapse All Folders",
@@ -710,8 +710,8 @@ class T {
           desc: "Add inline stickers by typing :",
         },
         openSpacesOnLaunch: {
-          name: "Open Spaces as Default Tab",
-          desc: "Open the Spaces tab when Obsidian launches",
+          name: "Open Navigator as Default Tab",
+          desc: "Open the Navigator tab when Obsidian launches",
         },
         defaultSpaceTemplate: {
           name: "Default Space Template",
@@ -803,7 +803,7 @@ class T {
         },
         activeFile: {
           name: "Reveal Active File",
-          desc: "Automatically reveal the active file in Spaces",
+          desc: "Automatically reveal the active file in Navigator",
         },
         
         
@@ -821,11 +821,11 @@ class T {
         },
         spacesAlias: {
           name: "Alias",
-          desc: `Use the alias metadata to show in Spaces`,
+          desc: `Use the alias metadata to show in Navigator`,
         },
         spacesFileExplorerDual: {
           name: "Compatibility Mode",
-          desc: "This will improve the compatibility of plugins while using Spaces",
+          desc: "This will improve the compatibility of plugins while using the Navigator",
         },
         spacesDeleteOption: {
           name: "Delete File Option",
@@ -887,7 +887,7 @@ class T {
         
         spaceRowHeight: {
           name: "Row Height",
-          desc: "The height for each row in spaces (in pixels), default is 29",
+          desc: "The height for each row in navigator (in pixels), default is 29",
         },
 
         contextPagination: {

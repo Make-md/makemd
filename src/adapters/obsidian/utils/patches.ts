@@ -1,5 +1,4 @@
 import { FlowEditor } from "adapters/obsidian/ui/editors/FlowEditor";
-import { FILE_TREE_VIEW_TYPE } from "adapters/obsidian/ui/navigator/NavigatorView";
 import MakeMDPlugin from "main";
 import { around } from "monkey-around";
 import {
@@ -17,9 +16,9 @@ export const patchFilesPlugin = (plugin: MakeMDPlugin) => {
     around(Workspace.prototype, {
       getLeavesOfType(old) {
         return function (type: unknown) {
-          if (type == "file-explorer") {
-            return old.call(this, FILE_TREE_VIEW_TYPE);
-          }
+          // if (type == "file-explorer") {
+          //   return old.call(this, FILE_TREE_VIEW_TYPE);
+          // }
           return old.call(this, type);
         };
       },

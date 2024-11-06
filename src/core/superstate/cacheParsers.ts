@@ -236,7 +236,8 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         if (space.space.notePath == path && space.path != space.space.notePath) {
             isSpaceNote = true;
             spacePath = space.path;
-            hidden = true;
+            if (settings.enableFolderNote)
+                hidden = true;
         }
         if (subtype != 'tag' && subtype != 'default') {
             if (space.space && space.space.path == parent) {

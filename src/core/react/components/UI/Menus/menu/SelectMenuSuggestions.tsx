@@ -52,7 +52,10 @@ const SelectMenuSuggestionsComponent = (props: {
               : {}
           }
           dangerouslySetInnerHTML={{
-            __html: markIt(props.item.name, props.query),
+            __html:
+              props.query.length > 0
+                ? markIt(props.item.name, props.query)
+                : props.item.name,
           }}
         />
         {props.item.description && (

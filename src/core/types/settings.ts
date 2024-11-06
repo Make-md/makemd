@@ -76,6 +76,7 @@ export interface MakeMDSettings {
   fmKeyColor: string;
   fmKeySticker: string;
   openSpacesOnLaunch: boolean;
+  spacesRightSplit: boolean;
   indexSVG: boolean;
   readableLineWidth: boolean;
   syncFormulaToFrontmatter: boolean;

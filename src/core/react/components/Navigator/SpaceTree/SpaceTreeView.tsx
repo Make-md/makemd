@@ -235,15 +235,6 @@ const retrieveData = (
       }
     });
 
-  // if (nextTreeScrollPath.current) {
-  //   const index = tree.findIndex(
-  //     (f) => f.item?.path == nextTreeScrollPath.current
-  //   );
-  //   if (index != -1) {
-  //     listRef.current.scrollToIndex(index);
-  //     nextTreeScrollPath.current = null;
-  //   }
-  // }
   tree.push({
     id: "placeholder",
     parentId: null,
@@ -299,7 +290,12 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     x: number;
     y: number;
   }>({ x: 0, y: 0 });
-  const listRef = useRef<{ scrollToIndex: (index: number) => void }>(null);
+  const listRef = useRef<{
+    scrollToIndex: (
+      index: number,
+      options: { align: "start" | "center" | "end" | "auto" }
+    ) => void;
+  }>(null);
 
   const refreshableSpaces = useMemo(
     () =>
@@ -317,6 +313,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
       if (superstate.settings.revealActiveFile && activePath)
         revealPath(activePath);
     }
+
     props.superstate.ui.eventsDispatch.addListener(
       "activePathChanged",
       changeActivePath
@@ -365,7 +362,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
       if (!path || parentSpaces.length == 0) return;
 
       let newOpenFolders = expandedSpaces;
-
+      let newScrollToSpace = null;
       parentSpaces.forEach((space) => {
         const folders = path.split("/");
         const pathLevel = space.path
@@ -388,7 +385,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             [space.path]
           )
           .slice(0, -1);
-
+        newScrollToSpace = openPaths[openPaths.length - 1];
         newOpenFolders = [
           ...(newOpenFolders.filter((f) => !openPaths.find((g) => g == f)) ??
             []),
@@ -397,7 +394,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
       });
 
       superstate.settings.expandedSpaces = newOpenFolders;
-      nextTreeScrollPath.current = "/" + path;
+      nextTreeScrollPath.current = newScrollToSpace;
       superstate.saveSettings();
     },
     [expandedSpaces, activeViewSpaces]
@@ -446,9 +443,20 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   ]);
 
   useEffect(() => {
-    setFlattenedTree(
-      retrieveData(superstate, activeViewSpaces, active, expandedSpaces)
+    const tree = retrieveData(
+      superstate,
+      activeViewSpaces,
+      active,
+      expandedSpaces
     );
+    setFlattenedTree(tree);
+    if (nextTreeScrollPath.current) {
+      const index = tree.findIndex((f) => f.id == nextTreeScrollPath.current);
+      if (index != -1) {
+        listRef.current.scrollToIndex(index, { align: "center" });
+        nextTreeScrollPath.current = null;
+      }
+    }
   }, [expandedSpaces, activeViewSpaces, active]);
   const changeActivePath = (path: string) => {
     setActivePath(path);

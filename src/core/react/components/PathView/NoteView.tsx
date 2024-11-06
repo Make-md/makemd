@@ -28,10 +28,13 @@ export const NoteView = forwardRef((props: NoteViewProps, ref) => {
 
     const properties: Record<string, any> = props.properties;
     const pathState = props.superstate.pathsIndex.get(path.basePath);
+    const pathExists = await props.superstate.spaceManager.pathExists(
+      path.basePath
+    );
     const filePath =
       pathState?.type == "space" && props.forceNote
         ? props.superstate.spacesIndex.get(props.path)?.space.notePath
-        : pathState
+        : pathState || pathExists
         ? path.fullPath
         : null;
 
@@ -49,7 +52,6 @@ export const NoteView = forwardRef((props: NoteViewProps, ref) => {
               ).folderPath
             : props.superstate.spaceManager.parentPathForPath(path.basePath);
         if (!parent) return;
-        console.log(parent, props.path, path, props.path, props.source);
         const newPath = await props.superstate.spaceManager.createItemAtPath(
           parent,
           "md",
