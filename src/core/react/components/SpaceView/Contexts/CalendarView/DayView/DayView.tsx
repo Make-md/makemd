@@ -104,7 +104,6 @@ export const DayView = (props: {
             ),
           wkst: repeatDef.wkst && getWeekdayValue(repeatDef.wkst),
         };
-        console.log(repeatDef);
         const rule = new RRule(
           Object.entries(rruleOptions)
             .filter(([key, value]) => value !== undefined)
@@ -322,7 +321,6 @@ export const DayView = (props: {
             roundToQuarter(_event.endOffset + (offset / hourHeight) * 60)
           ),
         });
-        console.log(newStart, newEnd);
         props.updateItem({
           ...props.data[index],
           [props.field]: formatDate(props.superstate, newStart, isoDateFormat),

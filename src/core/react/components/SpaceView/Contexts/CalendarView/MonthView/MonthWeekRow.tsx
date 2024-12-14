@@ -95,7 +95,6 @@ export const MonthWeekRow = (props: {
           endOfDay(weekEnd),
           true
         );
-        console.log(event[PathPropertyName], repeatDef, starts);
         starts.forEach((startDate) => {
           if (startDate.getTime() == rowDate.getTime()) return;
           instances.push({
