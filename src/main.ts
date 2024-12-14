@@ -124,6 +124,7 @@ import "css/Panels/Navigator/FileTree.css";
 import "css/Panels/Navigator/Focuses.css";
 import "css/Panels/Navigator/Navigator.css";
 import "css/Panels/SpaceEditor.css";
+import "css/SpaceViewer/Calendar.css";
 import "css/SpaceViewer/Frame.css";
 import "css/SpaceViewer/Layout.css";
 import "css/SpaceViewer/Nodes.css";

@@ -35,6 +35,7 @@ export const BlinkComponent = (props: {
   mode: BlinkMode;
   onSelect?: (path: string) => void;
   hide?: () => void;
+  parentSpace?: string;
 }) => {
   const [previewPath, setPreviewPath] = useState<string>(null);
   const [showBlink, setShowBlink] = useState(false);
@@ -76,6 +77,18 @@ export const BlinkComponent = (props: {
       label: pathState.name,
     };
   };
+  const parentChildren = props.parentSpace
+    ? [
+        {
+          type: "section",
+          label: "Items",
+        },
+        ...[...props.superstate.spacesMap.getInverse(props.parentSpace)]
+          .map((f) => props.superstate.pathsIndex.get(f))
+          .filter((f) => f && !f.hidden)
+          .map((f) => pathToBlinkItem(f)),
+      ]
+    : [];
   const recentPaths = [
     {
       type: "section",
@@ -88,12 +101,14 @@ export const BlinkComponent = (props: {
       .map((f) => pathToBlinkItem(f)),
   ];
 
-  const [suggestions, setFilteredPaths] = useState<BlinkItem[]>(recentPaths);
+  const [suggestions, setFilteredPaths] = useState<BlinkItem[]>(
+    props.parentSpace ? parentChildren : recentPaths
+  );
 
   useEffect(() => {
     const runQuery = (path: string, _queries: SpaceDefGroup[]) => {
       if (path.length == 0 && query.length == 0) {
-        setFilteredPaths(recentPaths);
+        setFilteredPaths(props.parentSpace ? parentChildren : recentPaths);
         return;
       }
 
@@ -184,6 +199,20 @@ export const BlinkComponent = (props: {
     if (!item) return;
     if (item.type == "section") return;
     if (item.type == "new-note") {
+      if (props.parentSpace) {
+        const parentSpace = props.superstate.spacesIndex.get(props.parentSpace);
+        if (parentSpace) {
+          newPathInSpace(props.superstate, parentSpace, "md", query).then(
+            (f) => {
+              if (props.mode == BlinkMode.Open) {
+                props.onSelect(f);
+              }
+              props.hide();
+            }
+          );
+          return;
+        }
+      }
       defaultSpace(
         props.superstate,
         props.superstate.pathsIndex.get(props.superstate.ui.activePath)
@@ -198,7 +227,9 @@ export const BlinkComponent = (props: {
       return;
     }
     if (item.type == "new-space") {
-      const pathState = props.superstate.pathsIndex.get("/");
+      const pathState =
+        props.superstate.pathsIndex.get(props.parentSpace) ??
+        props.superstate.pathsIndex.get("/");
       const newName = query.replace(/\//g, "");
       const parentPath =
         pathState?.subtype == "folder"

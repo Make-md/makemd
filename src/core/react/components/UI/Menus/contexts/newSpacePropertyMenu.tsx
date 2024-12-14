@@ -2,6 +2,8 @@ import i18n from "core/i18n";
 
 import { Superstate } from "core/superstate/superstate";
 import { FMMetadataKeys } from "core/types/space";
+import { RepeatTemplate } from "core/utils/contexts/fields/presets";
+import { nameForField } from "core/utils/frames/frames";
 import { allPropertiesForPaths } from "core/utils/properties/allProperties";
 import { MenuObject } from "core/utils/ui/menu";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -15,7 +17,11 @@ import { SpaceProperty, SpaceTableColumn } from "types/mdb";
 import { Rect } from "types/Pos";
 import { windowFromDocument } from "utils/dom";
 import { folderPathToString } from "utils/path";
-import { menuSeparator } from "../menu/SelectionMenu";
+import {
+  menuSeparator,
+  SelectOption,
+  SelectOptionType,
+} from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
 
 export type NewPropertyMenuProps = {
@@ -94,7 +100,20 @@ const NewPropertyMenuComponent = (
   };
 
   const selectType = (e: React.MouseEvent) => {
-    props.onSubmenu((rect: Rect, onHide: () => void) => {
+    const specialMenu = (rect: Rect, onHide: () => void) => {
+      const specialTypes = [RepeatTemplate];
+      const options: SelectOption[] = specialTypes.map((f, i) => ({
+        name: nameForField(f, props.superstate),
+        value: f.name,
+        icon: stickerForField(f),
+        onClick: () => {
+          props.saveField(fieldSource, {
+            ...f,
+            schemaId: props.schemaId,
+          });
+        },
+      }));
+
       return props.superstate.ui.openMenu(
         rect,
         {
@@ -104,20 +123,44 @@ const NewPropertyMenuComponent = (
           searchable: true,
           value: [],
           showAll: true,
-          options: fieldTypes
-            .filter((f) =>
-              fieldSource == "$fm" && !props.isSpace
-                ? f.metadata
-                : !f.restricted
-            )
-            .map((f, i) => ({
-              id: i + 1,
-              name: f.label,
-              value: f.type,
-              icon: f.icon,
-              description: f.description,
-              onClick: () => setFieldType(f.type),
-            })),
+          options: options,
+        },
+        windowFromDocument(e.view.document)
+      );
+    };
+    props.onSubmenu((rect: Rect, onHide: () => void) => {
+      const options: SelectOption[] = [];
+      fieldTypes
+        .filter((f) =>
+          fieldSource == "$fm" && !props.isSpace ? f.metadata : !f.restricted
+        )
+        .forEach((f, i) => {
+          options.push({
+            id: i + 1,
+            name: f.label,
+            value: f.type,
+            icon: f.icon,
+            description: f.description,
+            onClick: () => setFieldType(f.type),
+          });
+        });
+      options.push({
+        name: "Special",
+        value: "special",
+        icon: "ui//edit",
+        type: SelectOptionType.Submenu,
+        onSubmenu: specialMenu,
+      });
+      return props.superstate.ui.openMenu(
+        rect,
+        {
+          ui: props.superstate.ui,
+          multi: false,
+          editable: false,
+          searchable: true,
+          value: [],
+          showAll: true,
+          options: options,
         },
         windowFromDocument(e.view.document)
       );

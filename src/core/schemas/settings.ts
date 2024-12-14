@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   hideFrontmatter: true,
   activeSpace: "",
   defaultDateFormat: "MMM dd yyyy",
+  defaultTimeFormat: "h:mm a",
   spacesEnabled: true,
   syncFormulaToFrontmatter: true,
   spacesPerformance: false,

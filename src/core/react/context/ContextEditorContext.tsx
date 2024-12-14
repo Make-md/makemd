@@ -1,9 +1,14 @@
 import i18n from "core/i18n";
 import { matchAny } from "core/react/components/UI/Menus/menu/concerns/matchers";
 import { Superstate } from "core/superstate/superstate";
-import { saveProperties } from "core/superstate/utils/spaces";
+import {
+  createSpace,
+  pinPathToSpaceAtIndex,
+  saveProperties,
+} from "core/superstate/utils/spaces";
 import { PathPropertyName } from "core/types/context";
 import { Predicate, Sort } from "core/types/predicate";
+import { createNewRow } from "core/utils/contexts/optionValuesForColumn";
 import { filterReturnForCol } from "core/utils/contexts/predicate/filter";
 import { sortReturnForCol } from "core/utils/contexts/predicate/sort";
 import { serializeOptionValue } from "core/utils/serializer";
@@ -39,6 +44,7 @@ import {
   parseProperty,
   safelyParseJSON,
 } from "utils/parsers";
+import { removeTrailingSlashFromFolder } from "utils/path";
 import { parseMDBStringValue } from "utils/properties";
 import { sanitizeColumnName } from "utils/sanitizers";
 import {
@@ -74,6 +80,8 @@ type ContextEditorContextProps = {
   tableData: SpaceTable;
   cols: SpaceTableColumn[];
   saveDB: (table: SpaceTable) => void;
+  data: DBRows;
+  updateRow: (row: DBRow, index: number) => Promise<void>;
   updateValue: (
     column: string,
     value: string,
@@ -113,9 +121,10 @@ export const ContextEditorContext = createContext<ContextEditorContextProps>({
   delColumn: () => null,
   searchString: "",
   setSearchString: () => null,
-
+  data: [],
   updateValue: () => null,
   updateFieldValue: () => null,
+  updateRow: () => null,
   tableData: null,
   cols: [],
 });
@@ -438,6 +447,70 @@ export const ContextEditorProvider: React.FC<
         }),
     [predicate, data, cols, searchString]
   );
+
+  const updateRow = async (row: DBRow, index: number) => {
+    const spaceState = props.superstate.spacesIndex.get(
+      contextPath ?? spaceCache.path
+    );
+    if (index == -1) {
+      if (dbSchema?.id == defaultContextSchemaID) {
+        const actualIndex = data.findIndex(
+          (f) => f[PathPropertyName] == row[PathPropertyName]
+        );
+        if (actualIndex == -1) {
+          const name = row[PathPropertyName];
+          const path = props.superstate.pathsIndex.get(name);
+          if (path) {
+            await pinPathToSpaceAtIndex(
+              props.superstate,
+              spaceState,
+              path.path
+            );
+          } else {
+            const newPath =
+              removeTrailingSlashFromFolder(spaceState.path) + "/" + name;
+
+            await createSpace(props.superstate, newPath, {});
+          }
+          const changedCols = Object.keys(row).filter(
+            (f) => f != PathPropertyName
+          );
+          saveProperties(
+            props.superstate,
+            row?.[PathPropertyName],
+            changedCols.reduce((p, c) => ({ ...p, [c]: row[c] }), {})
+          );
+          saveDB(createNewRow(tableData, row));
+          return;
+        }
+        updateRow(row, actualIndex);
+        return;
+      }
+      saveDB(createNewRow(tableData, row));
+      return;
+    }
+    const currentData = data[index];
+    const changedCols = Object.keys(row).filter(
+      (f) => row[f] != currentData[f]
+    );
+    saveProperties(
+      props.superstate,
+      currentData?.[PathPropertyName],
+      changedCols.reduce((p, c) => ({ ...p, [c]: row[c] }), {})
+    );
+    saveDB({
+      ...tableData,
+      rows: tableData.rows.map((r, i) =>
+        i == index
+          ? {
+              ...r,
+              ...row,
+            }
+          : r
+      ),
+    });
+  };
+
   const updateValue = (
     column: string,
     value: string,
@@ -885,6 +958,8 @@ export const ContextEditorProvider: React.FC<
         updateFieldValue,
         editMode,
         setEditMode,
+        data,
+        updateRow,
       }}
     >
       {props.children}

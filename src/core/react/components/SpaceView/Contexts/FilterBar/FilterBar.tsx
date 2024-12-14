@@ -25,7 +25,7 @@ import { SpaceContext } from "core/react/context/SpaceContext";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "core/superstate/superstate";
 import { saveSpaceCache } from "core/superstate/utils/spaces";
-import { Filter, Sort } from "core/types/predicate";
+import { Filter, Predicate, Sort } from "core/types/predicate";
 import { filterFnLabels } from "core/utils/contexts/predicate/filterFns/filterFnLabels";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
 import {
@@ -82,11 +82,70 @@ export const FilterBar = (props: {
   const [searchActive, setSearchActive] = useState(false);
 
   const properties = spaceCache?.propertyTypes ?? [];
-  const propertiesForFrame = async (path: string) => {
+  const propertiesForPredicate = async (
+    _predicate: Predicate,
+    frame: "listView" | "listGroup" | "listItem"
+  ) => {
+    if (_predicate.view == "table") return [];
+    if (
+      _predicate.view == "day" ||
+      _predicate.view == "week" ||
+      _predicate.view == "month"
+    ) {
+      if (frame != "listView") return [];
+      return [
+        {
+          name: "start",
+          type: "option",
+          value: JSON.stringify({
+            alias: "Start Time Property",
+            source: `$properties`,
+          }),
+        },
+        {
+          name: "end",
+          type: "option",
+          value: JSON.stringify({
+            alias: "End Time Property",
+            source: `$properties`,
+          }),
+        },
+        {
+          name: "repeat",
+          type: "option",
+          value: JSON.stringify({
+            alias: "Repeat Property",
+            source: `$properties`,
+          }),
+        },
+        {
+          name: "startOfDay",
+          type: "number",
+          value: JSON.stringify({
+            alias: "Start of Day",
+          }),
+        },
+        {
+          name: "endOfDay",
+          type: "number",
+          value: JSON.stringify({
+            alias: "End of Day",
+          }),
+        },
+        {
+          name: "hideHeader",
+          type: "boolean",
+          value: JSON.stringify({
+            alias: "Hide Header",
+          }),
+        },
+      ];
+    }
+    const path = _predicate?.[frame];
     if (!path) return [];
     const uri = props.superstate.spaceManager.uriByString(path);
     if (uri.authority == "$kit") {
-      const node = props.superstate.kitFrames.get(uri.ref).node;
+      const { node } = props.superstate.kitFrames.get(uri.ref);
       return Object.keys(node.types)
         .map((f) => ({
           type: node.types[f],
@@ -96,11 +155,10 @@ export const FilterBar = (props: {
           value: JSON.stringify(node.propsValue?.[f]),
         }))
         .filter((f) => !f.name.startsWith("_"));
-    } else {
-      return props.superstate.spaceManager
-        .readFrame(uri.path, uri.ref)
-        .then((g) => g?.cols.filter((f) => !f.name.startsWith("_")) ?? []);
     }
+    return props.superstate.spaceManager
+      .readFrame(uri.path, uri.ref)
+      .then((g) => g?.cols.filter((f) => !f.name.startsWith("_")) ?? []);
   };
 
   const filteredCols = cols.filter((f) => f.hidden != "true");
@@ -242,6 +300,7 @@ export const FilterBar = (props: {
       listGroup: "spaces://$kit/#*columnGroup",
       listItem: "spaces://$kit/#*cardListItem",
     },
+
     cards: {
       name: i18n.menu.cardView,
       icon: "ui//layout-dashboard",
@@ -273,6 +332,30 @@ export const FilterBar = (props: {
       listView: "spaces://$kit/#*listView",
       listGroup: "spaces://$kit/#*listGroup",
       listItem: "spaces://$kit/#*flowListItem",
+    },
+    day: {
+      name: "Day View",
+      icon: "ui//calendar",
+      view: "day",
+      listView: "",
+      listGroup: "",
+      listItem: "",
+    },
+    week: {
+      name: "Week View",
+      icon: "ui//calendar",
+      view: "week",
+      listView: "",
+      listGroup: "",
+      listItem: "",
+    },
+    month: {
+      name: "Month View",
+      icon: "ui//calendar",
+      view: "month",
+      listView: "",
+      listGroup: "",
+      listItem: "",
     },
     // calendar: {
     //   name: i18n.menu.calendarView,
@@ -431,9 +514,12 @@ export const FilterBar = (props: {
       });
       menuOptions.push(menuSeparator);
     }
-    const listViewOptions = await propertiesForFrame(predicate?.listView);
-    const listGroupOptions = await propertiesForFrame(predicate?.listGroup);
-    const listItemOptions = await propertiesForFrame(predicate?.listItem);
+    const listViewOptions = await propertiesForPredicate(predicate, "listView");
+    const listGroupOptions = await propertiesForPredicate(
+      predicate,
+      "listGroup"
+    );
+    const listItemOptions = await propertiesForPredicate(predicate, "listItem");
     const savePropValue = (
       type: "listGroupProps" | "listViewProps" | "listItemProps",
       prop: string,

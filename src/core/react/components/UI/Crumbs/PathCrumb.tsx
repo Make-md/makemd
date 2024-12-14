@@ -1,5 +1,5 @@
 import { PathState } from "core/types/superstate";
-import { Superstate } from "makemd-core";
+import type { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import { windowFromDocument } from "utils/dom";
 import { showPathContextMenu } from "../Menus/navigator/pathContextMenu";
@@ -11,6 +11,7 @@ export const PathCrumb = (
     path: string;
     source?: string;
     hideName?: boolean;
+    hideIcon?: boolean;
   }>
 ) => {
   const path = useMemo(
@@ -49,7 +50,6 @@ export const PathCrumb = (
   return (
     <div
       className="mk-path"
-      aria-label={path}
       onClick={() => {
         props.superstate.ui.openPath(cache?.path ?? path, false);
       }}
@@ -71,7 +71,7 @@ export const PathCrumb = (
         }
       }}
     >
-      {cache && (
+      {cache && !props.hideIcon && (
         <PathStickerView superstate={props.superstate} pathState={cache} />
       )}
       <span>{(!props.hideName && cache?.label.name) ?? path}</span>

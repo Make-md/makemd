@@ -30,6 +30,21 @@
     --icon-container-size: 24px;
 }
 
+.mk-date-picker-header .mk-date-picker-header-input {
+    display: flex;
+    gap: 4px;
+}
+.mk-date-picker-header-input input:first-child {
+    width: 30px;
+}
+.mk-date-picker-header-input input {
+    width: 60px;
+    text-align: right;
+    padding: 4px;
+    border-radius: 4px;
+    border: thin solid var(--mk-ui-border);
+}
+
 .mk-date-picker-time {
     display: flex;
     gap: 8px;

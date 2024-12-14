@@ -7,8 +7,12 @@ import _ from "lodash";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
 import React, { useContext, useEffect, useState } from "react";
+import { DBRow } from "types/mdb";
 import { FrameEditorMode } from "types/mframe";
 import { URI } from "types/path";
+import { DayView } from "./CalendarView/DayView/DayView";
+import { MonthView } from "./CalendarView/MonthView/MonthView";
+import { WeekView } from "./CalendarView/WeekView/WeekView";
 import { ContextListEditSelector } from "./ContextBuilder/ContextListEditSelector";
 import { ContextListInstance } from "./ContextBuilder/ContextListInstance";
 import {
@@ -26,8 +30,15 @@ export const ContextListContainer = (props: {
   setView?: (view: string) => void;
 }) => {
   const { pathState } = useContext(PathContext);
-  const { predicate, editMode, setEditMode, dbSchema, tableData } =
-    useContext(ContextEditorContext);
+  const {
+    predicate,
+    editMode,
+    setEditMode,
+    dbSchema,
+    tableData,
+    data,
+    updateRow,
+  } = useContext(ContextEditorContext);
   const { frameSchema } = useContext(FramesMDBContext);
   const [editSection, setEditSection] = useState<ContextListSections>(null);
   const [selectedIndex, setSelectedIndex] = useState<string>(null);
@@ -122,6 +133,58 @@ export const ContextListContainer = (props: {
         predicate.view == "db" ||
         (dbSchema?.primary != "true" && !frameSchema) ? (
           <TableView superstate={props.superstate}></TableView>
+        ) : predicate.view == "day" ? (
+          <DayView
+            superstate={props.superstate}
+            field={predicate.listViewProps?.start || "start"}
+            fieldEnd={predicate.listViewProps?.end || "end"}
+            fieldRepeat={predicate.listViewProps?.repeat}
+            startHour={predicate.listViewProps?.startOfDay ?? 0}
+            endHour={predicate.listViewProps?.endOfDay ?? 24}
+            gutter
+            header={predicate.listViewProps?.hideHeader != true}
+            hourHeight={60}
+            data={data}
+            insertItem={(row: DBRow) => {
+              updateRow(row, -1);
+            }}
+            updateItem={(row: DBRow) => {
+              updateRow(row, parseInt(row._index));
+            }}
+          ></DayView>
+        ) : predicate.view == "week" ? (
+          <WeekView
+            superstate={props.superstate}
+            field={predicate.listViewProps?.start || "start"}
+            fieldEnd={predicate.listViewProps?.end || "end"}
+            fieldRepeat={predicate.listViewProps?.repeat}
+            startHour={predicate.listViewProps?.startOfDay ?? 0}
+            endHour={predicate.listViewProps?.endOfDay ?? 24}
+            hourHeight={40}
+            header={predicate.listViewProps?.hideHeader != true}
+            data={data}
+            insertItem={(row: DBRow) => {
+              updateRow(row, -1);
+            }}
+            updateItem={(row: DBRow) => {
+              updateRow(row, parseInt(row._index));
+            }}
+          ></WeekView>
+        ) : predicate.view == "month" ? (
+          <MonthView
+            superstate={props.superstate}
+            data={data}
+            field={predicate.listViewProps?.start || "start"}
+            fieldEnd={predicate.listViewProps?.end || "end"}
+            fieldRepeat={predicate.listViewProps?.repeat}
+            header
+            insertItem={(row: DBRow) => {
+              updateRow(row, -1);
+            }}
+            updateItem={(row: DBRow) => {
+              updateRow(row, parseInt(row._index));
+            }}
+          ></MonthView>
         ) : (
           <div className="mk-editor-context" onKeyDown={onKeyDown}>
             <FrameSelectionProvider

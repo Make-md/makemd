@@ -1,6 +1,6 @@
 {
   "name": "make-md",
-  "version": "0.9.1007",
+  "version": "0.9.1012",
   "description": "make.md",
   "main": "main.js",
   "scripts": {
@@ -27,6 +27,7 @@
     "@types/react-transition-group": "^4.4.10",
     "@types/react-virtualized-auto-sizer": "^1.0.1",
     "@types/react-window": "^1.8.5",
+    "@types/rrule": "^2.2.9",
     "@types/sql.js": "^1.4.4",
     "@typescript-eslint/eslint-plugin": "^5.57.1",
     "@typescript-eslint/parser": "^5.57.1",
@@ -86,6 +87,7 @@
     "react-dropzone": "^14.2.3",
     "react-error-boundary": "^4.0.13",
     "react-transition-group": "^4.4.5",
+    "rrule": "^2.8.1",
     "sql.js": "1.8.0",
     "use-long-press": "^3.2.0",
     "vaul": "github:make-md/vaul"

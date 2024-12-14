@@ -1,0 +1,342 @@
+.mk-day-view {
+    display: flex;
+    flex: 1;
+  }
+  .mk-day-view-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+  }
+  .mk-day-view-gutter {
+    width: 50px;
+    max-width: 50px;
+  }
+  
+  .mk-day-view-container {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    position: relative;
+  }
+  .mk-day-view-hour {
+    position: relative;
+    width: 100%;
+    display: flex;
+    height: var(--hour-height);
+    border-bottom: 1px solid var(--mk-ui-background-contrast);
+  
+    box-sizing: border-box;
+    text-align: center;
+  }
+  
+  .mk-day-view-all-day {
+    position: relative;
+    width: 100%;
+    display: flex;
+    border-bottom: 1px solid var(--mk-ui-border);
+    box-sizing: border-box;
+    text-align: center;
+  }
+  .mk-day-view-hour-current {
+    position: absolute;
+    width: 100%;
+    display: flex;
+    height: 1px;
+    border-bottom: 1px solid var(--mk-color-red);
+    box-sizing: border-box;
+    text-align: center;
+    background: var(--mk-ui-active);
+    z-index: 2;
+  }
+  
+  .mk-calendar-header {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    gap: 8px;
+    position: relative;
+    margin-bottom: 8px;
+  }
+  
+  .mk-calendar-header span {
+    flex: 1;
+  }
+  
+  .mk-month-grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    gap: 1px;
+  }
+  
+  .mk-calendar-header-title span {
+    font-weight: var(--font-medium);
+    margin-right: 4px;
+  }
+  .mk-calendar-header-title {
+    font-weight: var(--font-light);
+    font-size: 18px;
+    padding: 4px;
+  }
+  
+  .mk-calendar-header svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .mk-calendar-header button {
+    background: none;
+    box-shadow: none;
+    border: none;
+    width: var(--icon-container-size);
+    height: var(--icon-container-size);
+    padding: 0;
+  }
+  
+  .mk-month-week
+  {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    gap: 8px;
+    position: relative;
+  }
+  .mk-month-header {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    gap: 8px;
+    position: relative;
+  }
+  .mk-month-header > div {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    gap: 1px;
+    position: relative;
+    border-bottom: thin solid var(--mk-ui-divider);
+    padding: 4px;
+  }
+  .mk-month-day.mk-inactive {
+    color: var(--mk-ui-text-tertiary);
+  }
+  .mk-month-day{
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    align-items: flex-start;
+    font-size: 12px;
+    height: 140px;
+    padding: 4px;
+    overflow-y: clip;
+  }
+  
+  .mk-month-day-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+  }
+  
+  .mk-month-day.mk-today .mk-month-day-number {
+    color: var(--mk-ui-active);
+  }
+  
+  .mk-week-event {
+    position: absolute;
+  }
+  
+  .mk-day-block-time {
+    display: flex;
+    justify-content: flex-end;
+    flex: 1;
+    font-size: 10px;
+    padding-right: 2px;
+    color: var(--mk-ui-text-primary);
+  }
+  .mk-month-event {
+    position: absolute;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    padding: 2px;
+    font-size: 12px;
+    height: 20px;
+    background: var(--block-bg-color);
+    border-radius: 4px;
+  }
+  .mk-month-event .mk-path {
+    color: var(--block-text-color);
+  }
+  .mk-month-event .mk-path, .mk-week-view-all-day-cell .mk-path {
+    font-size: 12px;
+    padding: 0 2px;
+    gap: 2px;
+  }
+  
+  
+  
+  .mk-week-view {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .mk-week-view-header {
+    display: flex;
+    flex: 1;
+    width: 100%;
+  }
+  
+  .mk-week-view-header div {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+  }
+  
+  .mk-week-view-all-day {
+    display: flex;
+  
+    width: 100%;
+    position: relative;
+    gap: 8px;
+  
+  }
+  .mk-week-view-all-day-cell {
+    position: relative;
+    flex: 1;
+    border-top: 1px solid var(--mk-ui-border);
+    border-bottom: 1px solid var(--mk-ui-border);
+  }
+  
+  
+  .mk-day-view-all-day .mk-day-view-hour {
+    display: flex;
+    flex-direction:column;
+    height: auto !important;
+    gap: 2px;
+    padding: 2px;
+  }
+  
+  .mk-day-block-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .mk-day-block .mk-path {
+    padding: 0;
+  }
+  .mk-day-block-time div {
+    display: flex;
+  }
+  .mk-day-block-time svg {
+    width: 12px;
+    height: 12px;
+  }
+  .mk-day-view-all-day .mk-week-event {
+    position: relative !important;
+    background: var(--block-bg-color);
+    border-radius: 8px;
+    font-size:12px;
+  }
+   .mk-week-view-all-day-cell .mk-week-event {
+    background: var(--block-bg-color);
+    border-radius: 8px;
+  }
+  .mk-week-view-content {
+    display: flex;
+    flex: 1;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    gap: 8px;
+  }
+  
+  
+  .mk-day-view-hour-title {
+    font-size: 10px;
+    padding-right: 8px;
+    color: #666;
+    position: relative;
+    width: 100%;
+    display: flex;
+    height: var(--hour-height);
+    justify-content: flex-end;
+  }
+  
+  .mk-day-view-hour-title span {
+    font-size: 14px;
+    color: var(--mk-ui-text-primary);
+    margin-right: 4px;
+  }
+  
+  
+  .mk-day-block {
+    position: absolute;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 2px;
+    font-size: 12px;
+  
+  }
+  
+  .mk-day-block-content {
+    max-height: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+  }
+  
+  .mk-day-block-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 4px;
+    border-radius: 4px;;
+    display: flex;
+    gap: 4px;
+    background: var(--mk-ui-background-contrast);
+    align-items: flex-start;;
+  }
+  
+  .mk-day-block-inner span {
+    flex: 1;
+  }
+  
+  .mk-day-block-inner-indicator {
+    height: 100%;
+    width: 2px;
+    border-radius: 4px;
+    background: var(--block-color);
+  }
+  
+  .mk-day-handle-n {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    cursor: ns-resize;
+  }
+  
+  .mk-day-handle-s {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    cursor: ns-resize;
+  }
+  

@@ -2,7 +2,12 @@ import {
   DatePickerTimeMode,
   showDatePickerMenu,
 } from "core/react/components/UI/Menus/properties/datePickerMenu";
-import { formatDate, isValidDate, parseDate } from "core/utils/date";
+import {
+  formatDate,
+  isoDateFormat,
+  isValidDate,
+  parseDate,
+} from "core/utils/date";
 
 import classNames from "classnames";
 import React, {
@@ -14,6 +19,7 @@ import React, {
 } from "react";
 import { windowFromDocument } from "utils/dom";
 import { safelyParseJSON } from "utils/parsers";
+
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
 export const DateCell = (props: TableCellProp) => {
@@ -28,8 +34,12 @@ export const DateCell = (props: TableCellProp) => {
     }
     return dateTime;
   }, [value]);
-  const saveValue = (date: Date) => {
-    const newValue = formatDate(props.superstate, date, "yyyy-MM-dd");
+  const saveValue = (date: Date, hasTime: boolean) => {
+    const newValue = formatDate(
+      props.superstate,
+      date,
+      hasTime ? isoDateFormat : "yyyy-MM-dd"
+    );
     props.saveValue(newValue);
     setValue(newValue);
     props.setEditMode(null);
@@ -60,7 +70,7 @@ export const DateCell = (props: TableCellProp) => {
         windowFromDocument(e.view.document),
         date,
         saveValue,
-        DatePickerTimeMode.None,
+        DatePickerTimeMode.Toggle,
         null,
         "bottom"
       );
@@ -72,7 +82,7 @@ export const DateCell = (props: TableCellProp) => {
     e.stopPropagation();
     if (e.key == "Enter" || e.key == "Escape") {
       (e.target as HTMLInputElement).blur();
-      saveValue(date);
+      saveValue(date, false);
       menuRef.current.hide();
     }
   };

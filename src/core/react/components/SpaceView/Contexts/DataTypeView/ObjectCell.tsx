@@ -45,7 +45,10 @@ export const ObjectEditor = (props: {
       return {
         name: f,
         type: props.type[f].type,
-        value: JSON.stringify(props.type[f].value),
+        value: JSON.stringify({
+          ...props.type[f].value,
+          alias: props.type[f].label,
+        }),
       };
     }),
     ...Object.keys(value)
@@ -81,7 +84,8 @@ export const ObjectEditor = (props: {
     menuOptions.push({
       name: i18n.menu.rename,
       icon: "ui//edit",
-      onClick: (e) => {
+      value: "edit",
+      onClick: () => {
         props.superstate.ui.openModal(
           i18n.labels.rename,
           <InputModal
@@ -98,7 +102,8 @@ export const ObjectEditor = (props: {
     menuOptions.push({
       name: i18n.buttons.delete,
       icon: "ui//trash",
-      onClick: (e) => {
+      value: "delete",
+      onClick: () => {
         props.saveType(
           Object.keys(props.type ?? {}).reduce((p, c) => {
             if (c != field) return { ...p, [c]: props.type[c] };
@@ -123,20 +128,24 @@ export const ObjectEditor = (props: {
     fieldValue: string,
     value: string
   ) => {
-    const val = parseObject(value, field.type == "object-multi");
-    if (propertyIsObjectType(field)) {
-      const parsedValue = parseFieldValue(fieldValue, field.type);
+    if (field.type == "object" || field.type == "object-multi") {
+      const val = parseObject(value, field.type == "object-multi");
+      if (propertyIsObjectType(field)) {
+        const parsedValue = parseFieldValue(fieldValue, field.type);
 
-      const newType = {
-        ...props.type,
-        [field.name]: {
-          type: field.type,
-          label: field.name,
-          value: parsedValue,
-        },
-      };
+        const newType = {
+          ...props.type,
+          [field.name]: {
+            type: field.type,
+            label: field.name,
+            value: parsedValue,
+          },
+        };
 
-      saveType(newType, val);
+        saveType(newType, val);
+      }
+    } else {
+      saveVal(field.name, value);
     }
   };
   return (
@@ -257,12 +266,14 @@ export const ObjectCell = (
     const menuOptions: SelectOption[] = [];
     menuOptions.push({
       name: i18n.menu.insertAbove,
+      value: "insert-above",
       onClick: (e) => {
         insertMultiValue(index);
       },
     });
     menuOptions.push({
       name: i18n.menu.insertBelow,
+      value: "insert-below",
       onClick: (e) => {
         insertMultiValue(index + 1);
       },
@@ -271,6 +282,7 @@ export const ObjectCell = (
     if (index > 0)
       menuOptions.push({
         name: i18n.menu.moveUp,
+        value: "move-up",
         onClick: (e) => {
           props.saveValue(
             JSON.stringify(
@@ -282,7 +294,8 @@ export const ObjectCell = (
     if (index < value.length - 1)
       menuOptions.push({
         name: i18n.menu.moveDown,
-        onClick: (e) => {
+        value: "move-down",
+        onClick: () => {
           props.saveValue(
             JSON.stringify(
               arrayMove(value as Record<string, any>[], index, index + 1)
@@ -295,7 +308,8 @@ export const ObjectCell = (
     menuOptions.push({
       name: i18n.buttons.delete,
       icon: "ui//trash",
-      onClick: (e) => {
+      value: "delete",
+      onClick: () => {
         deleteMultiValue(index);
       },
     });

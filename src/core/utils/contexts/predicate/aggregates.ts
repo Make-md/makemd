@@ -1,4 +1,4 @@
-import { formatDate } from "core/utils/date";
+import { formatDate, parseDate } from "core/utils/date";
 import { Superstate } from "makemd-core";
 import { median } from "mathjs";
 import { fieldTypeForField } from "schemas/mdb";
@@ -32,7 +32,7 @@ export const calculateAggregate = (superstate: Superstate, values: any[], fn: st
         const calcResult = aggregateFn.fn(values, col.type);
         if (aggregateFn.valueType == 'date') {
             const format = safelyParseJSON(col.value)?.format
-            result = formatDate(superstate, calcResult, format);
+            result = formatDate(superstate, parseDate(calcResult), format);
         } else {
             result = calcResult ?? '';
         }
