@@ -348,9 +348,9 @@ export const formulasInfos : Record<string, FormulaInfo> = {
 		difficulty: 2
 	},
 
-	items: {
-		name: "items",
-		fn: "items",
+	spaceItems: {
+		name: "spaceItems",
+		fn: "spaceItems",
 		args: [{name: 'path', types: ["text"]}],
 		returnType: "link-multi",
 		description: "Get the items inside of a path",
@@ -612,26 +612,34 @@ const path = (args: MathNode[], math: any, scope: Map<string, any>) => {
 	const res = args.map(function (arg) {
 		return arg.compile().evaluate(scope)
 	})
-	const value = (scope.get("$paths") as Map<string, PathState>).get(res[0]);
+	let path = res[0];
+	if (typeof res[0] != 'string' && res[0].path) {
+		path = res[0].path;
+	}
+	const value = (scope.get("$paths") as Map<string, PathState>).get(path);
 	return value;
 
 }
 path.rawArgs = true;
 
-const items = (args: MathNode[], math: any, scope: Map<string, any>) => {
+const spaceItems = (args: MathNode[], math: any, scope: Map<string, any>) => {
 	if (args.length !== 1) {
 		return "";
 	}
 	const res = args.map(function (arg) {
 		return arg.compile().evaluate(scope)
 	})
-	const value = (scope.get("$items") as Map<string, Set<string>>).get(res[0]);
+	let path = res[0];
+	if (typeof res[0] != 'string' && res[0].path) {
+		path = res[0].path;
+	}
+	const value = (scope.get("$items") as Map<string, Set<string>>).get(path);
 	const paths = (scope.get("$paths") as Map<string, PathState>);
 	const result = [...(value ?? [])].map(f => paths.get(f));
 	return result;
 
 }
-items.rawArgs = true;
+spaceItems.rawArgs = true;
 
 const spaces = (args: MathNode[], math: any, scope: Map<string, any>) => {
 	if (args.length !== 1) {
@@ -640,7 +648,11 @@ const spaces = (args: MathNode[], math: any, scope: Map<string, any>) => {
 	const res = args.map(function (arg) {
 		return arg.compile().evaluate(scope)
 	})
-	const value = (scope.get("$spaces") as Map<string, Set<string>>).get(res[0]);
+	let path = res[0];
+	if (typeof res[0] != 'string' && res[0].path) {
+		path = res[0].path;
+	}
+	const value = (scope.get("$spaces") as Map<string, Set<string>>).get(path);
 	const paths = (scope.get("$paths") as Map<string, PathState>);
 	const result = [...(value ?? [])].map(f => paths.get(f));
 	return result;
@@ -951,8 +963,7 @@ export const formulas = {
 	"now": () => {
 		return new Date();
 	},
-	"items": items,
-	"spaces": spaces,
+	
 	"minute": (date: Date) => {
 		return date.getMinutes()
 	},
@@ -1097,6 +1108,7 @@ export const formulas = {
 	flat: flat,
 	path: path,
 	let: letFunction,
-	lets: letsFunction
-	
+	lets: letsFunction,
+	spaceItems: spaceItems,
+	spaces: spaces,
 };

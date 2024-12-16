@@ -24,7 +24,11 @@ export function ensureStringValueFromSet(value: unknown, values: string[], defau
 export function ensureString(value: unknown): string {
   if (!value) return ""
   if (typeof value !== 'string') {
-    return value.toString();
+    const newValue = value.toString();
+    if (typeof newValue === 'string') {
+      return newValue;
+    }
+    return '';
   }
   return value;
 }

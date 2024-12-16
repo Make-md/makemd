@@ -1,10 +1,10 @@
 import { ContextLookup, PathPropertyName } from "core/types/context";
-import { ensureArray, indexOfCharElseEOS } from "core/utils/strings";
+import { ensureArray, ensureString, indexOfCharElseEOS } from "core/utils/strings";
 import { format } from "date-fns";
 import { detectPropertyType } from "./properties";
 import { serializeMultiDisplayString, serializeMultiString } from "./serializers";
 
-export const parseMultiString = (str: string): string[] => str?.startsWith("[") ? ensureArray(safelyParseJSON(str)) : parseMultiDisplayString(str)
+export const parseMultiString = (str: string): string[] => str?.startsWith("[") ? ensureArray(safelyParseJSON(str)).map(f => ensureString(f)) : parseMultiDisplayString(str)
   
   export const parseMultiDisplayString = (str: string):string[] => (str?.replace('\\,', ',')?.match(/(\\.|[^,])+/g) ?? []).map(f => f.trim());
   export const parseProperty = (field: string, value: any, type?: string) : string => {
@@ -16,8 +16,19 @@ export const parseMultiString = (str: string): string[] => str?.startsWith("[") 
     }
     break;
     case "object":
-      case "object-multi":
+      case "object-multi": 
+      {
+        if (Array.isArray(value)) {
+          if (value[0].path) {
+            return JSON.stringify(value.map((v: any) => v.path));
+          }
+        } else {
+          if (value.path) {
+            return value.path;
+          }
+        }
       return JSON.stringify(value);
+      }
       break;
     case "number":
       return (value as number).toString();

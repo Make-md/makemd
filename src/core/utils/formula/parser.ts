@@ -320,6 +320,9 @@ export const runFormulaWithContext = (runContext: math.MathJsInstance, paths: Ma
 		runContext.evaluate("current = _current()", scope)
 		value = runContext.evaluate(formula, scope)
 		value = parseProperty("", value)
+		if (typeof value != "string") {
+			if (emitError) throw(value)
+		}
 	} catch (e) {
 		value = ""
 		if (emitError) throw(e)

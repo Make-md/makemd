@@ -71,30 +71,38 @@ export const FormulaCell = (
   };
 
   return parsedValue.type == "boolean" ? (
-    <BooleanCell {...props} editMode={CellEditMode.EditModeReadOnly} />
-  ) : props.initialValue?.length == 0 ? (
+    <BooleanCell
+      {...props}
+      initialValue={initialValue}
+      editMode={CellEditMode.EditModeReadOnly}
+    />
+  ) : initialValue?.length == 0 ? (
     <></>
   ) : parsedValue.type == "image" ? (
     <ImageCell
       {...props}
+      initialValue={initialValue}
       editMode={CellEditMode.EditModeReadOnly}
       multi={true}
     />
   ) : parsedValue.type == "icon" ? (
     <IconCell
       {...props}
+      initialValue={initialValue}
       multi={true}
       editMode={CellEditMode.EditModeReadOnly}
     ></IconCell>
   ) : parsedValue.type == "link" ? (
     <LinkCell
       {...props}
+      initialValue={initialValue}
       multi={true}
       editMode={CellEditMode.EditModeReadOnly}
     ></LinkCell>
   ) : (
     <OptionCell
       {...props}
+      initialValue={initialValue}
       editMode={CellEditMode.EditModeReadOnly}
       multi={true}
       source={props.source}
