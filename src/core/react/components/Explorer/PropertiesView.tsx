@@ -111,6 +111,7 @@ export const PropertiesView = (props: {
       linkContextRow(
         props.superstate.formulaContext,
         props.superstate.pathsIndex,
+        props.superstate.spacesMap,
         newValues,
         cols,
         pathState

@@ -63,6 +63,7 @@ export const ActionTester = (props: {
         result = await runFormulaWithContext(
           props.superstate.formulaContext,
           props.superstate.pathsIndex,
+          props.superstate.spacesMap,
           props.code,
           props.fields.reduce((p, c) => ({ ...p, [c.name]: c }), {}),
           values,

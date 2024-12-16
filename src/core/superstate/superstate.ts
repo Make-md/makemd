@@ -880,7 +880,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
                 }
             }
             }
-            properties = await this.spaceManager.readProperties(space.notePath).then(f => linkContextRow(this.formulaContext, this.pathsIndex, f, propertyTypes, pathState));
+            properties = await this.spaceManager.readProperties(space.notePath).then(f => linkContextRow(this.formulaContext, this.pathsIndex, this.spacesMap, f, propertyTypes, pathState));
         }
    
         [...this.spacesMap.get(space.path)].map(f => this.contextsIndex.get(f)).forEach((f) => {

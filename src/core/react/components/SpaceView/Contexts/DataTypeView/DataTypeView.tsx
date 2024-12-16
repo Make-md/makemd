@@ -17,6 +17,7 @@ import { ObjectCell } from "./ObjectCell";
 import { OptionCell } from "./OptionCell";
 
 import { PropertySelectCell } from "./PropertySelectCell";
+import { ReduceCell } from "./ReduceCell";
 import { SpaceCell } from "./SpaceCell";
 import { SuperCell } from "./SuperCell";
 import { TagCell } from "./TagCell";
@@ -106,6 +107,15 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
         multi={fieldType.multiType == column.type}
         source={props.source}
       ></ContextCell>
+    );
+  } else if (fieldType.type == "aggregate") {
+    return (
+      <ReduceCell
+        {...viewProps}
+        multi={fieldType.multiType == column.type}
+        row={row}
+        source={props.source}
+      ></ReduceCell>
     );
   } else if (fieldType.type == "fileprop") {
     return (

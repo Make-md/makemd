@@ -2,10 +2,12 @@ import i18n from "core/i18n";
 import { FormulaEditor } from "core/react/components/SpaceEditor/Actions/FormulaEditor";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "core/superstate/superstate";
+import { aggregateFnTypes } from "core/utils/contexts/predicate/aggregates";
 import { spaceNameFromSpacePath } from "core/utils/strings";
 import React, { useMemo } from "react";
 import {
   defaultContextSchemaID,
+  fieldTypeForField,
   fieldTypeForType,
   fieldTypes,
 } from "schemas/mdb";
@@ -85,14 +87,29 @@ export const PropertyValueComponent = (props: {
   const saveSpaceProperty = (field: string) => {
     const colExists = props.superstate.contextsIndex
       .get(parsedValue.space)
-      ?.contextTable?.cols?.some((f) => f.name == field);
+      ?.contextTable?.cols?.find((f) => f.name == field);
     if (!colExists) {
       props.superstate.spaceManager.addSpaceProperty(parsedValue.space, {
         name: field,
         schemaId: defaultContextSchemaID,
         type: "context",
-        value: props.name,
+        value: JSON.stringify({
+          space: props.contextPath,
+          field: props.name,
+        }),
       });
+    } else {
+      props.superstate.spaceManager.saveSpaceProperty(
+        parsedValue.space,
+        {
+          ...colExists,
+          value: JSON.stringify({
+            space: props.contextPath,
+            field: props.name,
+          }),
+        },
+        colExists
+      );
     }
     saveParsedValue("field", field);
   };
@@ -107,6 +124,78 @@ export const PropertyValueComponent = (props: {
       "space"
     );
   };
+
+  const selectAggregateRef = (e: React.MouseEvent) => {
+    const properties =
+      props.fields
+        .filter((f) => f.type == "context")
+        .map((f) => ({
+          name: f.name,
+          value: f.name,
+        })) ?? [];
+    showOptions(e, null, properties, "ref");
+  };
+
+  const selectAggregateProperty = (e: React.MouseEvent) => {
+    const fieldRef = parsedValue.ref;
+    const field = props.fields.find((f) => f.name == fieldRef);
+    if (field) {
+      const fieldSpace = parseFieldValue(
+        field.value,
+        field.type,
+        props.superstate
+      )?.space;
+      if (fieldSpace) {
+        showOptions(
+          e,
+          parsedValue.field,
+          props.superstate.contextsIndex
+            .get(fieldSpace)
+            ?.contextTable?.cols.map((m) => ({
+              name: m.name,
+              value: m.name,
+            })) ?? [],
+          "field",
+          saveSpaceProperty
+        );
+      }
+    }
+  };
+
+  const selectAggregateFn = (e: React.MouseEvent) => {
+    const refField = props.fields.find((f) => f.name == parsedValue.ref);
+    if (refField) {
+      const fieldSpace = parseFieldValue(
+        refField.value,
+        refField.type,
+        props.superstate
+      )?.space;
+      if (fieldSpace) {
+        const field = props.superstate.contextsIndex
+          .get(fieldSpace)
+          ?.contextTable?.cols?.find((f) => f.name == parsedValue.field);
+        if (field) {
+          const options: SelectOption[] = [];
+          options.push({
+            name: "None",
+            value: "",
+          });
+          Object.keys(aggregateFnTypes).forEach((f) => {
+            if (
+              aggregateFnTypes[f].type.includes(fieldTypeForField(field)) ||
+              aggregateFnTypes[f].type.includes("any")
+            )
+              options.push({
+                name: aggregateFnTypes[f].label,
+                value: f,
+              });
+          });
+          showOptions(e, null, options, "fn");
+        }
+      }
+    }
+  };
+
   const selectSpaceProperty = (e: React.MouseEvent) => {
     showOptions(
       e,
@@ -189,6 +278,28 @@ export const PropertyValueComponent = (props: {
         <div className="mk-menu-option" onClick={(e) => selectSpaceProperty(e)}>
           <span>{i18n.labels.propertyValueProperty}</span>
           <span>{parsedValue.field}</span>
+        </div>
+      )}
+    </>
+  ) : props.fieldType?.startsWith("aggregate") ? (
+    <>
+      <div className="mk-menu-option" onClick={(e) => selectAggregateRef(e)}>
+        <span>{i18n.labels.propertyValueReference}</span>
+        <span>{parsedValue.ref}</span>
+      </div>
+      {parsedValue.ref?.length > 0 && (
+        <div
+          className="mk-menu-option"
+          onClick={(e) => selectAggregateProperty(e)}
+        >
+          <span>{i18n.labels.propertyValueAggregate}</span>
+          <span>{parsedValue.field}</span>
+        </div>
+      )}
+      {parsedValue.field?.length > 0 && (
+        <div className="mk-menu-option" onClick={(e) => selectAggregateFn(e)}>
+          <span>{i18n.labels.aggregateBy}</span>
+          <span>{aggregateFnTypes[parsedValue?.fn]?.label}</span>
         </div>
       )}
     </>

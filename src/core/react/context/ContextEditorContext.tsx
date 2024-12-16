@@ -1,5 +1,6 @@
 import i18n from "core/i18n";
 import { matchAny } from "core/react/components/UI/Menus/menu/concerns/matchers";
+import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "core/superstate/superstate";
 import {
   createSpace,
@@ -198,14 +199,12 @@ export const ContextEditorProvider: React.FC<
   }, [dbSchema]);
 
   const loadContextFields = useCallback(async (tag: string) => {
-    props.superstate.spaceManager
-      .contextForSpace(tagSpacePathFromTag(tag))
-      .then((f) => {
-        setContextTable((t) => ({
-          ...t,
-          [tag]: f,
-        }));
-      });
+    props.superstate.spaceManager.contextForSpace(tag).then((f) => {
+      setContextTable((t) => ({
+        ...t,
+        [tag]: f,
+      }));
+    });
   }, []);
   const retrieveCachedTable = (newSchema: SpaceTableSchema) => {
     props.superstate.spaceManager
@@ -214,7 +213,13 @@ export const ContextEditorProvider: React.FC<
         if (f) {
           if (newSchema.primary) {
             for (const c of contexts) {
-              loadContextFields(c);
+              loadContextFields(tagSpacePathFromTag(c));
+            }
+          }
+          for (const c of f.cols) {
+            if (c.type.startsWith("context")) {
+              const value = parseFieldValue(c.value, c.type, props.superstate);
+              loadContextFields(value.space);
             }
           }
           updateTable(f);
@@ -349,12 +354,10 @@ export const ContextEditorProvider: React.FC<
     }
   }, [tableData]);
 
-  const saveContextDB = async (newTable: SpaceTable, tag: string) => {
+  const saveContextDB = async (newTable: SpaceTable, space: string) => {
     await props.superstate.spaceManager
-      .saveTable(tagSpacePathFromTag(tag), newTable, true)
-      .then((f) =>
-        props.superstate.reloadContextByPath(tagSpacePathFromTag(tag), true)
-      );
+      .saveTable(space, newTable, true)
+      .then((f) => props.superstate.reloadContextByPath(space, true));
   };
   // const getSchema = (
   //   _schemaTable: FrameSchema[],
@@ -557,7 +560,7 @@ export const ContextEditorProvider: React.FC<
               : r
           ),
         },
-        table
+        tagSpacePathFromTag(table)
       );
     }
   };
@@ -635,7 +638,7 @@ export const ContextEditorProvider: React.FC<
               : r
           ),
         },
-        table
+        tagSpacePathFromTag(table)
       );
     }
   };
@@ -800,8 +803,8 @@ export const ContextEditorProvider: React.FC<
     };
     if (table == "") {
       saveDB(newTable);
-    } else if (contextTable[table]) {
-      saveContextDB(newTable, table);
+    } else if (contextTable[tagSpacePathFromTag(table)]) {
+      saveContextDB(newTable, tagSpacePathFromTag(table));
     }
   };
   const newColumn = (col: SpaceTableColumn): boolean => {
@@ -923,8 +926,8 @@ export const ContextEditorProvider: React.FC<
       } else {
         saveDB(newTable);
       }
-    } else if (contextTable[table]) {
-      saveContextDB(newTable, table);
+    } else if (contextTable[tagSpacePathFromTag(table)]) {
+      saveContextDB(newTable, tagSpacePathFromTag(table));
     }
 
     return true;

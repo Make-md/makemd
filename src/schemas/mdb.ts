@@ -132,8 +132,16 @@ export const fieldTypes: FieldType[] = [
     icon: 'ui//mk-make-note',
     multi: true,
     multiType: "context-multi",
-    configKeys: ['space'],
+    configKeys: ['space', 'field'],
     description: i18n.properties.context.description
+  },
+  {
+    type: "aggregate",
+    label: i18n.properties.aggregate.label,
+    icon: 'ui//mk-make-note',
+    multi: false,
+    configKeys: ['ref', 'field', 'fn'],
+    description: i18n.properties.aggregate.description
   },
   {
     type: "object",

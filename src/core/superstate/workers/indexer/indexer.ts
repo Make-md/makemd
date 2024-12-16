@@ -2,7 +2,7 @@
 import { Superstate } from "core/superstate/superstate";
 import { WorkerJobType } from "core/types/superstate";
 import { stringifyJob } from "core/utils/superstate/serializer";
-import { BatchContextWorkerPayload, BatchPathWorkerPayload, PathWorkerPayload } from "./impl";
+import { BatchContextWorkerPayload, BatchPathWorkerPayload, ContextWorkerPayload, PathWorkerPayload } from "./impl";
 //@ts-ignore
 import SuperstateWorker from "./indexer.worker";
 /** Callback when a file is resolved. */
@@ -156,8 +156,9 @@ export class Indexer {
                         mdb: null,
                         paths: [...this.cache.spacesMap.getInverse(job.path)],
                         
-                        pathsIndex: this.cache.pathsIndex
-                    }
+                        pathsIndex: this.cache.pathsIndex,
+                        spacesMap: this.cache.spacesMap
+                    } as ContextWorkerPayload
                 })
                 this.busy[workerId] = true;
                 return;
@@ -170,7 +171,7 @@ export class Indexer {
                     space,
                     mdb,
                     paths: [...this.cache.spacesMap.getInverse(job.path)],
-
+                    spacesMap: this.cache.spacesMap,
                     dbExists,
                     pathsIndex: this.cache.pathsIndex
                 }
@@ -190,7 +191,7 @@ export class Indexer {
                         space,
                         mdb,
                         paths: [...this.cache.spacesMap.getInverse(space.path)],
-
+                        spacesMap: this.cache.spacesMap,
                         dbExists,
             })
         })
@@ -199,7 +200,8 @@ export class Indexer {
         job, 
         payload: {
             map: payloads,
-            pathsIndex: this.cache.pathsIndex
+            pathsIndex: this.cache.pathsIndex,
+            spacesMap: this.cache.spacesMap
         } as BatchContextWorkerPayload
     })
     this.busy[workerId] = true;

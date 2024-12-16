@@ -1,3 +1,4 @@
+import { IndexMap } from "core/types/indexMap"
 import { PathState } from "core/types/superstate"
 import * as math from "mathjs"
 import { DBRow, SpaceProperty } from "types/mdb"
@@ -290,23 +291,27 @@ export const runFormulaNode = (node: FormulaNode, propMap: DBRow): string => {
 	return ""
 }
 
-export const runExec = (paths: Map<string, PathState>, exec: (scope: any) => string, properties: {[key: string]: SpaceProperty}, values: {[key: string] : any}, path?: string): string => {
+export const runExec = (paths: Map<string, PathState>, spaceMap: IndexMap, exec: (scope: any) => string, properties: {[key: string]: SpaceProperty}, values: {[key: string] : any}, path?: string): string => {
 	const scope = new Map();
 	Object.keys(values).forEach(f => scope.set(f, values[f]))
 	scope.set("$properties", properties)
 	scope.set("$paths", paths)
+	scope.set("$items", spaceMap.invMap)
+	scope.set("$spaces", spaceMap.map)
 	if (path)
 		scope.set("$current", paths?.get(path))
 	return exec(scope)
 }
 
-export const runFormulaWithContext = (runContext: math.MathJsInstance, paths: Map<string, PathState>, formula: string, properties: {[key: string]: SpaceProperty}, values: {[key: string] : any}, path?: PathState, emitError?: boolean): string => {
+export const runFormulaWithContext = (runContext: math.MathJsInstance, paths: Map<string, PathState>, spaceMap: IndexMap, formula: string, properties: {[key: string]: SpaceProperty}, values: {[key: string] : any}, path?: PathState, emitError?: boolean): string => {
 	if (!formula) return ""
 	
 	const scope = new Map();
 	Object.keys(values).forEach(f => scope.set(f, values[f]))
 	scope.set("$properties", properties)
 	scope.set("$paths", paths)
+	scope.set("$items", spaceMap.invMap)
+	scope.set("$spaces", spaceMap.map)
 	if (path)
 		scope.set("$current", path)
 	let value;
@@ -323,7 +328,7 @@ export const runFormulaWithContext = (runContext: math.MathJsInstance, paths: Ma
 	return  value
 }
 
-export const runFormula = (paths: Map<string, PathState>, formula: string, properties: {[key: string]: SpaceProperty}, values: {[key: string] : any}, path?: string): string => {
+export const runFormula = (paths: Map<string, PathState>, spaceMap: IndexMap, formula: string, properties: {[key: string]: SpaceProperty}, values: {[key: string] : any}, path?: string): string => {
 	if (!formula) return ""
 	// const parsed = parseFormula(formula, propMap)
 	// if (parsed.errors.length > 0) {
@@ -333,6 +338,8 @@ export const runFormula = (paths: Map<string, PathState>, formula: string, prope
 	Object.keys(values).forEach(f => scope.set(f, values[f]))
 	scope.set("$properties", properties)
 	scope.set("$paths", paths)
+	scope.set("$items", spaceMap.invMap)
+	scope.set("$spaces", spaceMap.map)
 	if (path)
 		scope.set("$current", paths?.get(path))
 	const all = {

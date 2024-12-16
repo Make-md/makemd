@@ -347,6 +347,25 @@ export const formulasInfos : Record<string, FormulaInfo> = {
 		category: "Date",
 		difficulty: 2
 	},
+
+	items: {
+		name: "items",
+		fn: "items",
+		args: [{name: 'path', types: ["text"]}],
+		returnType: "link-multi",
+		description: "Get the items inside of a path",
+		category: "Path",
+		difficulty: 2
+	},
+	spaces: {
+		name: "spaces",
+		fn: "spaces",
+		args: [{name: 'path', types: ["text"]}],
+		returnType: "link-multi",
+		description: "Get the spaces the path is inside of",
+		category: "Path",
+		difficulty: 2
+	},
 	
 	timeStamp: {
 		name: "timeStamp",
@@ -598,6 +617,36 @@ const path = (args: MathNode[], math: any, scope: Map<string, any>) => {
 
 }
 path.rawArgs = true;
+
+const items = (args: MathNode[], math: any, scope: Map<string, any>) => {
+	if (args.length !== 1) {
+		return "";
+	}
+	const res = args.map(function (arg) {
+		return arg.compile().evaluate(scope)
+	})
+	const value = (scope.get("$items") as Map<string, Set<string>>).get(res[0]);
+	const paths = (scope.get("$paths") as Map<string, PathState>);
+	const result = [...(value ?? [])].map(f => paths.get(f));
+	return result;
+
+}
+items.rawArgs = true;
+
+const spaces = (args: MathNode[], math: any, scope: Map<string, any>) => {
+	if (args.length !== 1) {
+		return "";
+	}
+	const res = args.map(function (arg) {
+		return arg.compile().evaluate(scope)
+	})
+	const value = (scope.get("$spaces") as Map<string, Set<string>>).get(res[0]);
+	const paths = (scope.get("$paths") as Map<string, PathState>);
+	const result = [...(value ?? [])].map(f => paths.get(f));
+	return result;
+
+}
+spaces.rawArgs = true;
 
 const current = (args: MathNode[], math: any, scope: Map<string, any>) => {
 	return scope?.get("$current");
@@ -902,6 +951,8 @@ export const formulas = {
 	"now": () => {
 		return new Date();
 	},
+	"items": items,
+	"spaces": spaces,
 	"minute": (date: Date) => {
 		return date.getMinutes()
 	},

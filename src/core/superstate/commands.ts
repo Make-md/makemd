@@ -219,7 +219,7 @@ export class SpacesCommandsAdapter implements CLIAdapter {
             if (command.schema.type == 'script')
             result = executeCode(command.code, instance.instanceProps)
           if (command.schema.type == 'formula')
-            result = runFormulaWithContext(this.superstate.formulaContext,this.superstate.pathsIndex, command.code, command.fields.reduce((p, c) => ({ ...p, [c.name]: c }), {}), instance.instanceProps)
+            result = runFormulaWithContext(this.superstate.formulaContext,this.superstate.pathsIndex, this.superstate.spacesMap, command.code, command.fields.reduce((p, c) => ({ ...p, [c.name]: c }), {}), instance.instanceProps)
           } catch (e) {
             error = e
           }

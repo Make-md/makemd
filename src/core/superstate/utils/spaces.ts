@@ -499,7 +499,7 @@ export const newTemplateInSpace = async (
   let newName: string;
   try {
     if (space.metadata.templateName?.length > 0) {
-      const result = runFormulaWithContext(superstate.formulaContext,superstate.pathsIndex, space.metadata.templateName, {}, {}, superstate.pathsIndex.get(space.path))
+      const result = runFormulaWithContext(superstate.formulaContext,superstate.pathsIndex, superstate.spacesMap, space.metadata.templateName, {}, {}, superstate.pathsIndex.get(space.path))
       if (result?.length> 0) newName = result
     }
   } catch (e) {

@@ -1,10 +1,15 @@
 import i18n from "core/i18n";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
+import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import {
+  addPathToSpaceAtIndex,
+  newPathInSpace,
+} from "core/superstate/utils/spaces";
+import { PathPropertyName } from "core/types/context";
+import {
   deletePropertyMultiValue,
-  
   updateContextValue,
 } from "core/utils/contexts/context";
 import React, {
@@ -22,7 +27,6 @@ import {
 } from "utils/serializers";
 import { TableCellMultiProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
-import { addPathToSpaceAtIndex, newPathInSpace } from "core/superstate/utils/spaces";
 
 export const ContextCell = (
   props: TableCellMultiProp & {
@@ -30,6 +34,7 @@ export const ContextCell = (
   }
 ) => {
   const { spaceState } = useContext(SpaceContext);
+  const { contextTable } = useContext(ContextEditorContext);
   const fieldValue = useMemo(
     () => parseFieldValue(props.propertyValue, "context", props.superstate),
     [props.propertyValue]
@@ -47,18 +52,20 @@ export const ContextCell = (
   const parseValue = (v: string, multi: boolean) =>
     (multi ? parseMultiString(v) ?? [] : [v]).filter((f) => f);
 
-  const [propValues, setPropValues] = useState(
-    props.superstate.contextsIndex.get(spacePath)?.spaceMap[
-      fieldValue.spaceField
-    ]?.[props.path] ?? []
-  );
+  const [propValues, setPropValues] = useState([]);
   useEffect(() => {
+    if (!fieldValue?.field || !contextTable[spacePath]) {
+      return;
+    }
     setPropValues(
-      props.superstate.contextsIndex.get(spacePath)?.spaceMap[
-        fieldValue.spaceField
-      ]?.[props.path] ?? []
+      contextTable[spacePath].rows.reduce((p, c) => {
+        if (parseMultiString(c[fieldValue.field]).includes(props.path)) {
+          return [...p, c[PathPropertyName]];
+        }
+        return p;
+      }, [])
     );
-  }, [spacePath, fieldValue]);
+  }, [spacePath, fieldValue, contextTable]);
 
   const options = [...props.superstate.spacesMap.getInverse(spacePath)]
     .map((f) => props.superstate.pathsIndex.get(f))
@@ -106,17 +113,19 @@ export const ContextCell = (
   }, [props.initialValue, props.multi]);
 
   const saveOptions = (_options: string[], _value: string[]) => {
-    const currentPaths = [...props.superstate.spacesMap.getInverse(spacePath)].filter(f => !_value.includes(f))
+    const currentPaths = [
+      ...props.superstate.spacesMap.getInverse(spacePath),
+    ].filter((f) => !_value.includes(f));
     if (currentPaths.length > 0) {
-      currentPaths.forEach(f => {
+      currentPaths.forEach((f) => {
         const space = props.superstate.spacesIndex.get(spacePath);
         if (props.superstate.pathsIndex.get(f)) {
-          addPathToSpaceAtIndex(props.superstate, space, f)
+          addPathToSpaceAtIndex(props.superstate, space, f);
         } else {
-          newPathInSpace(props.superstate, space, 'md', f, true)
+          newPathInSpace(props.superstate, space, "md", f, true);
         }
-    })
-  }
+      });
+    }
     if (!props.multi) {
       setValue(_value);
       saveValue(_value);

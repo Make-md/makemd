@@ -66,6 +66,7 @@ const SpaceOuter = forwardRef<
           const row = linkContextRow(
             props.superstate.formulaContext,
             props.superstate.pathsIndex,
+            props.superstate.spacesMap,
             properties,
             tableData?.cols ?? [],
             pathState

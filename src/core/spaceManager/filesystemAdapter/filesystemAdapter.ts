@@ -369,20 +369,20 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     if (!mdbFile && schema == defaultContextDBSchema.id) {
       const defaultTable = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
       const dependencies = propertyDependencies(defaultTable.cols);
-      const rows = defaultTable.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex, f, defaultTable.cols, this.spaceManager.superstate.pathsIndex.get(path), dependencies))
+      const rows = defaultTable.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex, this.spaceManager.superstate.spacesMap, f, defaultTable.cols, this.spaceManager.superstate.pathsIndex.get(path), dependencies))
       return {...defaultTable, rows}
     }
     const spaceTable = await this.fileSystem.readFileFragments(mdbFile, 'mdbTable', schema) as SpaceTable
     if (spaceTable && spaceTable.schema.id != defaultContextDBSchema.id) {
       const dependencies = propertyDependencies(spaceTable.cols);
-      const rows = spaceTable.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex, f, spaceTable.cols, this.spaceManager.superstate.pathsIndex.get(path), dependencies))
+      const rows = spaceTable.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex, this.spaceManager.superstate.spacesMap, f, spaceTable.cols, this.spaceManager.superstate.pathsIndex.get(path), dependencies))
       return {...spaceTable, rows}
     } else if (!spaceTable) {
       if (schema == defaultContextDBSchema.id)
       {
         const defaultTable = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
       const dependencies = propertyDependencies(defaultTable.cols);
-      const rows = defaultTable.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex, f, defaultTable.cols, this.spaceManager.superstate.pathsIndex.get(path), dependencies))
+      const rows = defaultTable.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex, this.spaceManager.superstate.spacesMap, f, defaultTable.cols, this.spaceManager.superstate.pathsIndex.get(path), dependencies))
       return {...defaultTable, rows}
     }
     }
@@ -595,7 +595,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
       if (command.schema.type == 'script')
       result = executeCode(command.code, args)
     if (command.schema.type == 'formula')
-    result = runFormulaWithContext(this.spaceManager.superstate.formulaContext,this.spaceManager.superstate.pathsIndex, command.code, command.fields.reduce((p, c) => ({ ...p, [c.name]: c }), {}), args, this.spaceManager.superstate.pathsIndex.get(path))
+    result = runFormulaWithContext(this.spaceManager.superstate.formulaContext,this.spaceManager.superstate.pathsIndex, this.spaceManager.superstate.spacesMap, command.code, command.fields.reduce((p, c) => ({ ...p, [c.name]: c }), {}), args, this.spaceManager.superstate.pathsIndex.get(path))
     } catch (e) {
       error = e
     }

@@ -267,12 +267,12 @@ export const OptionCell = (
 export const OptionCellBase = (props: {
   value: any[];
   baseClass: string;
-  menuProps: () => SelectMenuProps;
+  menuProps?: () => SelectMenuProps;
   labelElement: React.FC<PropsWithChildren<{ value: any }>>;
   multi: boolean;
   editMode: CellEditMode;
   selectLabel: string;
-  removeValue: (value: any) => void;
+  removeValue?: (value: any) => void;
   superstate: Superstate;
 }) => {
   const { value, menuProps } = props;

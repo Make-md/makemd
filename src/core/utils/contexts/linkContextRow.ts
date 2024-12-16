@@ -1,5 +1,6 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { PathPropertyName } from "core/types/context";
+import { IndexMap } from "core/types/indexMap";
 import { PathState } from "core/types/superstate";
 import { ConstantNode, FunctionNode, parse } from "mathjs";
 import { DBRow, DBRows, SpaceProperty } from "types/mdb";
@@ -76,6 +77,7 @@ const visited: Set<string> = new Set();
 export const linkContextRow = (
   runContext: math.MathJsInstance,
   paths: Map<string, PathState>,
+  spaceMap: IndexMap,
   row: DBRow,
   fields: SpaceProperty[],
   path: PathState,
@@ -98,7 +100,7 @@ const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {})
         // }
         
         const { value } = parseFieldValue(c.value, c.type);
-        return {...p, [c.name]: runFormulaWithContext(runContext, paths, value, properties, {...row, ...p}, path)};
+        return {...p, [c.name]: runFormulaWithContext(runContext, paths, spaceMap, value, properties, {...row, ...p}, path)};
         
       }, {}),
   };

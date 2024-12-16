@@ -102,7 +102,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             return this.superstate.cli.runCommand(action,  {instanceProps: {...parameters, $api: this, $contexts: contexts}, props: {}, iterations: 0})
         },
         formula: (formula: string, parameters: { [key: string]: any; }, contexts?: FrameContexts) => {
-            return runFormulaWithContext(this.superstate.formulaContext, this.superstate.pathsIndex, formula, contexts.$properties, parameters, contexts?.$contexts?.$space?.path)
+            return runFormulaWithContext(this.superstate.formulaContext, this.superstate.pathsIndex, this.superstate.spacesMap, formula, contexts.$properties, parameters, contexts?.$contexts?.$space?.path)
         }
     }
     

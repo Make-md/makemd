@@ -6,6 +6,7 @@ import { SpaceInfo, SpaceProperty, SpaceTable, SpaceTables } from "types/mdb";
 import { orderStringArrayByArray, uniq } from "utils/array";
 
 import { PathPropertyName } from "core/types/context";
+import { IndexMap } from "core/types/indexMap";
 import { builtinSpacePathPrefix, builtinSpaces, tagsSpacePath } from "core/types/space";
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { pathByDef } from "core/utils/spaces/query";
@@ -17,7 +18,7 @@ import { pathToString } from "utils/path";
 
 
 
-export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, paths: string[], dbExists: boolean, pathsIndex: Map<string, PathState>, runContext: math.MathJsInstance) : { changed: boolean, cache: ContextState } => {
+export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, paths: string[], dbExists: boolean, pathsIndex: Map<string, PathState>, spacesMap: IndexMap, runContext: math.MathJsInstance) : { changed: boolean, cache: ContextState } => {
 
     const spaceMap : { [key: string] : { [key: string] : string[] } } = {};
 
@@ -46,7 +47,7 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
     const missingPaths = paths.filter(f => !contextPaths.includes(f));
     const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
     const dependencies = propertyDependencies(cols);
-    const rows = [...(mdb[defaultContextSchemaID]?.rows ?? []).filter(f => paths.includes(f[PathPropertyName])), ...missingPaths.map(f => ({[PathPropertyName]: f}))].map(f => linkContextRow(runContext, pathsIndex, f, cols, pathsIndex.get(space.path), dependencies))
+    const rows = [...(mdb[defaultContextSchemaID]?.rows ?? []).filter(f => paths.includes(f[PathPropertyName])), ...missingPaths.map(f => ({[PathPropertyName]: f}))].map(f => linkContextRow(runContext, pathsIndex, spacesMap, f, cols, pathsIndex.get(space.path), dependencies))
     const contextTable : SpaceTable =  {
         schema,
         cols, 

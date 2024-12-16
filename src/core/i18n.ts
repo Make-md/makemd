@@ -413,6 +413,10 @@ class T {
       },
       properties: {
         defaultField: "Name",
+        aggregate: {
+          label: "Aggregate",
+          description: "Aggregate functions to calculate values",
+        },
         audio: {
           label: 'Audio',
           description: 'Audio'
@@ -514,6 +518,7 @@ class T {
       },
       labels: {
         duplicateTable: "Duplicate Table",
+        aggregateBy: "Aggregate By",
         pinned: "Pinned",
         live: "Pinned by Live Search",
         moveTable: "Move Table",
@@ -581,6 +586,8 @@ class T {
         propertyType: "Type",
         propertyDynamic: "Dyanmic",
         propertyValueSpace: "Space",
+        propertyValueReference: "Related Property",
+        propertyValueAggregate: "Aggregate Property",
         propertyValueProperty: "Property",
         propertyLookup: "Edit Formula",
         existingFrontmatter: "Existing Property",
