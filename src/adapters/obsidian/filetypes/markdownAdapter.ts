@@ -115,6 +115,7 @@ public app: App;
         this.parseCache(tFileToAFile(file), true);
         
     }
+    
     public async parseCache (file: AFile, refresh?: boolean) {
         if (!file) return;
         const fCache = this.app.metadataCache.getCache(file.path);
@@ -153,6 +154,7 @@ public app: App;
                     .map((f) => "#" + f)
                 );
                 const contents = await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile)
+                
                 const links = fCache.links?.map(f => this.plugin.app.metadataCache.getFirstLinkpathDest(f.link, file.path)?.path).filter(f => f)
                 this.linksMap.set(file.path, new Set(links));
         const updatedCache = {...fCache, 
@@ -167,6 +169,7 @@ public app: App;
             sticker: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeySticker],
             color: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyColor],
             preview: removeMarkdown(contents.slice(fCache.frontmatterPosition?.end.offset ?? 0, 1000))
+            
         }}
         
         if (currentCache) {

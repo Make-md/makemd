@@ -121,7 +121,9 @@ export const parseSpaceMetadata = (metadata: Record<string, any>, settings: Make
       links: ensureArray(metadata[spaceLinksKey]), 
       filters: ensureArray(metadata[spaceFilterKey]).map(f => parseSpaceFilterGroup(f)),
       template: ensureString(metadata[spaceTemplateKey]),
-      templateName: ensureString(metadata[spaceTemplateNameKey])
+      templateName: ensureString(metadata[spaceTemplateNameKey]),
+      defaultSticker: ensureString(metadata.defaultSticker),
+      readMode: ensureBoolean(metadata.readMode),
     }
 }
 

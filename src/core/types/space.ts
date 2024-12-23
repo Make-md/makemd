@@ -75,7 +75,11 @@ export type SpaceDefinition = {
   template?: string;
   templateName?: string;
   recursive?: string;
+  defaultSticker?: string;
+  defaultColor?: string;
+  readMode?: boolean;
 };
+
 
 export type BuiltinSpace = {
   name: string;

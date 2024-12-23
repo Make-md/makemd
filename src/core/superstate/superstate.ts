@@ -24,7 +24,7 @@ import { rootToFrame } from "schemas/frames";
 import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
 import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemNode, overviewItem, rowGroup } from "schemas/kits/list";
 import { buttonNode, callout, circularProgressNode, dividerNode, fieldNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
-import { mainFrameID } from "schemas/mdb";
+import { fieldTypeForField, mainFrameID } from "schemas/mdb";
 import { Command } from "types/commands";
 import { Kit } from "types/kits";
 import { DBRows, SpaceInfo, SpaceProperty } from "types/mdb";
@@ -44,6 +44,7 @@ import { Indexer } from "./workers/indexer/indexer";
 
 import { Loadout } from "core/react/components/System/SystemSettings";
 import { getParentPathFromString } from "utils/path";
+import { parseMDBStringValue } from "utils/properties";
 import { Searcher } from "./workers/search/search";
 export type PathStateWithRank = PathState & {rank?: number}
 export type SuperstateEvent = {
@@ -760,7 +761,7 @@ public api: API;
 
                         updatedValues.forEach(f => saveProperties(this, f[PathPropertyName], allColumns.reduce((acc, col, i) => {
                             if (col.type  == 'fileprop' && col.primary != 'true') {
-                                return {...acc, [col.name]: f[col.name]};
+                                return {...acc, [col.name]: parseMDBStringValue(fieldTypeForField(col), f[col.name], true)};
                             }
                             return acc;
                         }, {})));

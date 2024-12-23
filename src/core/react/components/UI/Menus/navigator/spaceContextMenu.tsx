@@ -31,6 +31,7 @@ import {
 import { showColorPickerMenu } from "../properties/colorPickerMenu";
 import { showLinkMenu } from "../properties/linkMenu";
 import { showSpacesMenu } from "../properties/selectSpaceMenu";
+import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
 
 export const showSpaceContextMenu = (
@@ -89,6 +90,19 @@ export const showSpaceContextMenu = (
   }
   menuOptions.push(menuSeparator);
 
+  menuOptions.push({
+    name: "Apply to All Items",
+    icon: "ui//pin",
+    value: "apply-all",
+    type: SelectOptionType.Submenu,
+    onSubmenu: (offset) =>
+      showApplyItemsMenu(
+        offset,
+        superstate,
+        space,
+        windowFromDocument(e.view.document)
+      ),
+  });
   if (onClose) {
     menuOptions.push({
       name: i18n.menu.closeSpace,

@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { FrameEditorMode } from "types/mframe";
 import { FrameInstanceContext } from "./FrameInstanceContext";
+import { SpaceContext } from "./SpaceContext";
 
 // Define the context type
 type FrameSelectionContextType = {
@@ -59,12 +60,16 @@ export const FrameSelectionProvider: React.FC<
     selectionMode: parentSelectionMode,
     setIsParentToSelection: setParentSelectable,
   } = useContext(FrameSelectionContext);
+  const { spaceState } = useContext(SpaceContext);
   const selected = useMemo(() => {
     return parentSelection.includes(props.id) || props.selected;
   }, [parentSelection, props.id, props.selected]);
   const selectionMode = useMemo(
-    () => props.editMode ?? FrameEditorMode.Read,
-    [props.editMode]
+    () =>
+      spaceState?.metadata.readMode
+        ? FrameEditorMode.Read
+        : props.editMode ?? FrameEditorMode.Read,
+    [props.editMode, spaceState]
   );
   const { instance } = useContext(FrameInstanceContext);
   const [selection, setSelection] = useState<string[]>([]);

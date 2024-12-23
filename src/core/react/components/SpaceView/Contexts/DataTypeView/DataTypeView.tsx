@@ -36,6 +36,7 @@ export type DataTypeViewProps = {
   compactMode?: boolean;
   source?: string;
   setEditMode?: (mode: [string, string]) => void;
+  contextPath?: string;
 };
 
 export const DataTypeView: React.FC<DataTypeViewProps> = (
@@ -106,6 +107,8 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
         {...viewProps}
         multi={fieldType.multiType == column.type}
         source={props.source}
+        contextTable={props.contextTable}
+        contextPath={props.contextPath}
       ></ContextCell>
     );
   } else if (fieldType.type == "aggregate") {
@@ -115,6 +118,9 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
         multi={fieldType.multiType == column.type}
         row={row}
         source={props.source}
+        contextTable={props.contextTable}
+        contextPath={props.contextPath}
+        cols={props.columns}
       ></ReduceCell>
     );
   } else if (fieldType.type == "fileprop") {

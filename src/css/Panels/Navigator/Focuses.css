@@ -46,6 +46,7 @@ padding-top: 12px;
 }
 .is-mobile .mk-focuses > div {
   gap: 8px;
+  overflow: initial;
 }
 .mk-focuses {
   display: flex;

@@ -361,6 +361,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
   left: 0;
   right: 0;
   width: 100%;
+  max-width: 100vw;
   user-select: none;
   height: var(--mk-banner-height);
   background-size: cover;

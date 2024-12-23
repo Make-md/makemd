@@ -386,6 +386,8 @@ export const TableView = (props: { superstate: Superstate }) => {
               row: data[index] as DBRow,
               contextTable: contextTable,
               source: data[index][PathPropertyName],
+              columns: cols,
+              contextPath: spaceCache.path,
             };
 
             const fieldType = fieldTypeForType(f.type, f.name);

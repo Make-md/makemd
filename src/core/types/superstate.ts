@@ -74,7 +74,8 @@ export type PathState = {
     tags?: string[]
     inlinks?: string[]
     outlinks?: string[]
-    readOnly: boolean
+    readOnly: boolean,
+    spaceNames?: string[]
 } & CacheState
 
 export const pathStateTypes = {

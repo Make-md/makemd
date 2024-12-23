@@ -288,7 +288,7 @@ loadViews () {
   async loadSpaces()  {
   document.body.querySelector(".app-container").setAttribute("vaul-drawer-wrapper", "");
   
-    
+    document.body.classList.toggle("mk-spaces-right", this.superstate.settings.spacesRightSplit);
   
     document.body.classList.toggle("mk-readable-line", this.app.vault.getConfig("readableLineLength"));
     this.superstate.settings.readableLineWidth = this.app.vault.getConfig("readableLineLength");
@@ -803,7 +803,16 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
       if (showAfterAttach && !this.app.workspace.leftSplit.collapsed) this.app.workspace.revealLeaf(leaf);
     } else {
       if (!this.app.workspace.leftSplit.collapsed && showAfterAttach)
-      leafs.forEach((leaf) => this.app.workspace.revealLeaf(leaf));
+      {
+        const leafs = this.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
+    for (const leaf of leafs) {
+      if (leaf.view instanceof FileTreeView) leaf.view.destroy();
+      leaf.detach();
+    }
+        const leaf = this.superstate.settings.spacesRightSplit ?  this.app.workspace.getRightLeaf(false) :  this.app.workspace.getLeftLeaf(false);
+        await leaf.setViewState({ type: FILE_TREE_VIEW_TYPE });
+        this.app.workspace.revealLeaf(leaf);
+      }
     }
     if (isTouchScreen(this.superstate.ui)) {
       this.app.workspace.leftSplit.collapse();

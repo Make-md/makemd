@@ -10,7 +10,7 @@ import { IndexMap } from "core/types/indexMap";
 import { builtinSpacePathPrefix, builtinSpaces, tagsSpacePath } from "core/types/space";
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { pathByDef } from "core/utils/spaces/query";
-import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
+import { ensureArray, initiateString, tagSpacePathFromTag } from "core/utils/strings";
 import { defaultContextDBSchema, defaultContextFields, defaultContextSchemaID } from "schemas/mdb";
 import { excludePathPredicate } from "utils/hide";
 import { parseLinkString, parseMultiString } from "utils/parsers";
@@ -108,10 +108,22 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
 
 }
 
-export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>,  pathCache: PathCache, name: string, type: string, subtype: string, parent: string, oldMetadata: PathState) : { changed: boolean, cache: PathState }  => {
+export const parseMetadata = (
+  path: string,
+  settings: MakeMDSettings,
+  spacesCache: Map<string, SpaceState>,
+  pathCache: PathCache,
+  name: string,
+  type: string,
+  subtype: string,
+  parent: string,
+  oldMetadata: PathState,
+): { changed: boolean; cache: PathState } => {
+  if (!pathCache) return { changed: false, cache: null };
     const defaultSticker = (
         sticker: string,
         type: string,
+    subtype: string,
         path: string,
       ): string => {
         if (sticker?.length > 0) return sticker;
@@ -123,11 +135,15 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
             if (path.startsWith('spaces://')) return "ui//tags";
             return "ui//folder";
         }
-      return "ui//file";
-      
+    return 'ui//file';
       };
 
-    const cache : PathState = {  label: pathCache?.label, path: path, name: pathToString(path), readOnly: pathCache?.readOnly };
+  const cache: PathState = {
+    label: pathCache?.label,
+    path,
+    name: pathCache?.label?.name ?? pathToString(path),
+    readOnly: pathCache?.readOnly,
+  };
 
     const tags : string[] = [];
     const fileTags : string[] = pathCache?.tags?.map(f => f.toLowerCase()) ?? [];
@@ -137,13 +153,17 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         hidden = builtinSpaces[builtin]?.hidden;
         cache.readOnly = builtinSpaces[builtin]?.readOnly;
     }
-    const getTagsFromCache = (map: Map<string, SpaceState>, spaces: string[], seen = new Set()) =>{
-        const keys : string[] = [];
+  const getTagsFromCache = (
+    map: Map<string, SpaceState>,
+    spaces: string[],
+    seen = new Set(),
+  ) => {
+    const keys: string[] = [];
         
     for (const space of spaces) {
         const valList = (map.get(space)?.contexts as string[] ?? []).map(f => f.toLowerCase());
 
-        for (const key of valList){
+      for (const key of valList) {
         // If the current key is already seen, skip it to prevent infinite loops
         if (seen.has(key)) continue;
 
@@ -153,38 +173,41 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
             seen.add(key); // Mark the key as seen
 
             // Recursively search for this key in the map
-            keys.push(...getTagsFromCache(map, [tagSpacePathFromTag(key)], seen));}
-
+        keys.push(...getTagsFromCache(map, [tagSpacePathFromTag(key)], seen));
+      }
     }
     return keys;
-    }
-    
+  };
     if (spacesCache.has(parent)) {
         for (const def of spacesCache.get(parent).contexts ?? []) {
             tags.push(def.toLowerCase());
         }
     }
 
-    
+  tags.push(...fileTags);
 
-    tags.push(...fileTags)
-    if (path == '/') {
-        name = settings.systemName;
-    }
-    const aliases = pathCache?.property ? ensureArray(pathCache.property[settings.fmKeyAlias]) : [];
-    const sticker = defaultSticker(pathCache?.label?.sticker, type, path);
-    const color = pathCache?.label?.color ?? '';
+  const aliases = pathCache?.property
+    ? ensureArray(pathCache.property[settings.fmKeyAlias])
+    : [];
+  const parentDefaultSticker = spacesCache.get(parent)?.metadata?.defaultSticker;
+  const sticker = defaultSticker(
+    initiateString(pathCache?.label?.sticker, parentDefaultSticker),
+    type,
+    subtype,
+    path,
+  );
+  const parentDefaultColor = spacesCache.get(parent)?.metadata?.defaultColor;
+  const color = pathCache?.label?.color ?? parentDefaultColor ?? '';
     
-    const outlinks = pathCache?.resolvedLinks ?? []
-    
-    
+  const outlinks = pathCache?.resolvedLinks ?? [];
+  const spaceNames = [];
     let isSpaceNote = false;
     let spacePath;
-    const pathState : PathState = {
+  const pathState: PathState = {
         ...cache,
         name,
         tags: uniq(tags),
-        type: type, 
+    type,
         subtype,
         parent,
         label: {
@@ -197,17 +220,18 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         metadata: {
             ...pathCache,
         },
-        outlinks
-    }
+    outlinks,
+  };
 
-    const spaces : string[] = [];
-    const linkedSpaces : string[] = [];
-    const liveSpaces : string[] = [];
+  const spaces: string[] = [];
+  const linkedSpaces: string[] = [];
+  const liveSpaces: string[] = [];
     if (subtype == 'tag') {
-        spaces.push(tagsSpacePath)
+    spaces.push(tagsSpacePath);
     }
     for (const s of tags) {
-        spaces.push(tagSpacePathFromTag(s))
+    spaces.push(tagSpacePathFromTag(s));
+    spaceNames.push(s);
     }
     const evaledSpaces = new Set<string>();
     const evalSpace = (s: string, space: SpaceState) => {
@@ -216,22 +240,24 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         if (space.dependencies?.length > 0) {
             for (const dep of space.dependencies) {
                 if (spacesCache.has(dep)) {
-                    evalSpace(dep, spacesCache.get(dep))
+          evalSpace(dep, spacesCache.get(dep));
                 }
             }
         }
         if (space.metadata.recursive?.length > 0) {
-            if (pathState.path.startsWith(space.path+'/')) {
+      if (pathState.path.startsWith(`${space.path}/`)) {
                 if (space.metadata.recursive == 'all') {
                     spaces.push(s);
+          spaceNames.push(space.name);
                     return;
-                } else if(space.metadata.recursive == 'file') {
+        }
+        if (space.metadata.recursive == 'file') {
                     if (pathState.type != 'space') {
                         spaces.push(s);
+            spaceNames.push(space.name);
                         return;
                     }
                 }
-
             }
         }
         if (space.space.notePath == path && space.path != space.space.notePath) {
@@ -242,46 +268,62 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         }
         if (subtype != 'tag' && subtype != 'default') {
             if (space.space && space.space.path == parent) {
-                spaces.push(s)
+        spaces.push(s);
+        spaceNames.push(space.name);
                 return;
             }
         }
         if (space.metadata?.filters?.length > 0) {
-            if (pathByDef(space.metadata.filters, {...pathState, spaces}, space.properties)) {
+      if (
+        pathByDef(
+          space.metadata.filters,
+          { ...pathState, spaces },
+          space.properties,
+        )
+      ) {
                 spaces.push(s);
+        spaceNames.push(space.name);
                 liveSpaces.push(s);
                 return;
             }
         }
-         if (space.metadata?.links?.length  > 0) {
-            const spaceItem = (space.metadata?.links ?? []).find(f => f == pathState.path);
+    if (space.metadata?.links?.length > 0) {
+      const spaceItem = (space.metadata?.links ?? []).find(
+        (f) => f == pathState.path,
+      );
             if (spaceItem) {
                 spaces.push(s);
+        spaceNames.push(space.name);
                 linkedSpaces.push(s);
-                return;
-            }
         }
     }
+  };
     for (const [s, space] of spacesCache) {
-        
         evalSpace(s, space);
     }
 
-    const newTags = getTagsFromCache(spacesCache, spaces)
-    spaces.push(...newTags.map(f => tagSpacePathFromTag(f)));
+  const newTags = getTagsFromCache(spacesCache, spaces);
+  spaces.push(...newTags.map((f) => tagSpacePathFromTag(f)));
+  spaceNames.push(...newTags);
     
-    
-    pathState.tags.push(...newTags)
-    if (isSpaceNote)
-        {
+  pathState.tags.push(...newTags);
+  if (isSpaceNote) {
             pathState.metadata.spacePath = spacePath;
         }
-    const metadata : PathState = hidden ? {...pathState, spaces: [], hidden: hidden} : {...pathState, spaces: uniq(spaces), linkedSpaces, liveSpaces, hidden };
+  const metadata: PathState = hidden
+    ? { ...pathState, spaces: [], hidden }
+    : {
+        ...pathState,
+        spaces: uniq(spaces),
+        linkedSpaces,
+        liveSpaces,
+        spaceNames,
+        hidden,
+      };
     let changed = true;
 
     if (oldMetadata && _.isEqual(metadata, oldMetadata)) {
-        
         changed = false;
     }
-    return {changed, cache: metadata }
-}
+  return { changed, cache: metadata };
+};

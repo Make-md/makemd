@@ -9,8 +9,10 @@
   display: flex !important;
   }
 
-.mk-spaces-enabled.is-mobile.mk-hide-ribbon
+.mk-spaces-enabled.is-mobile.mk-hide-ribbon:not(.mk-spaces-right)
   .workspace-drawer.mod-left
+  .workspace-drawer-inner, .mk-spaces-enabled.is-mobile.mk-hide-ribbon.mk-spaces-right
+  .workspace-drawer.mod-right
   .workspace-drawer-inner {
   padding-left: 0 !important;
 }
@@ -35,29 +37,41 @@
   display: none;
 }
 
-.mk-spaces-enabled.is-mobile
+.mk-spaces-enabled.is-mobile:not(.mk-spaces-right)
   .workspace-drawer.mod-left
+  .workspace-drawer-inner
+  .workspace-drawer-header, .mk-spaces-enabled.is-mobile.mk-spaces-right
+  .workspace-drawer.mod-right
   .workspace-drawer-inner
   .workspace-drawer-header {
   padding-left: 0 !important;
 }
-.mk-spaces-enabled.is-tablet
+.mk-spaces-enabled.is-tablet:not(.mk-spaces-right)
   .workspace-drawer.mod-left
+  .workspace-drawer-inner
+  .workspace-drawer-header, .mk-spaces-enabled.is-tablet.mk-spaces-right
+  .workspace-drawer.mod-right
   .workspace-drawer-inner
   .workspace-drawer-header {
   padding-right: 0 !important;
 }
 
-.mk-spaces-enabled.is-phone
+.mk-spaces-enabled.is-phone:not(.mk-spaces-right)
   .workspace-drawer.mod-left
+  .workspace-drawer-inner
+  .workspace-drawer-header, .mk-spaces-enabled.is-phone.mk-spaces-right
+  .workspace-drawer.mod-right
   .workspace-drawer-inner
   .workspace-drawer-header {
   padding-right: 0 !important;
   padding-top: 0;
 }
 
-.mk-spaces-enabled.is-mobile
+.mk-spaces-enabled.is-mobile:not(.mk-spaces-right)
   .workspace-drawer.mod-left
+  .workspace-drawer-active-tab-header,
+  .mk-spaces-enabled.is-mobile.mk-spaces-right
+  .workspace-drawer.mod-right
   .workspace-drawer-active-tab-header {
   display: none;
 }
@@ -65,7 +79,10 @@
 .mk-spaces-enabled.is-mobile
   .workspace-drawer.mod-left
   .workspace-drawer-inner
-  .mod-settings, .mk-spaces-enabled.is-mobile
+  .mod-settings,  .mk-spaces-enabled.is-mobile.mk-spaces-right
+  .workspace-drawer.mod-right
+  .workspace-drawer-inner
+  .mod-pin, .mk-spaces-enabled.is-mobile:not(.mk-spaces-right)
   .workspace-drawer.mod-left
   .workspace-drawer-inner
   .mod-pin {
@@ -87,7 +104,7 @@ body.is-mobile .sidebar-toggle-button {
   display: flex !important;
 }
 
-.is-mobile .workspace-drawer.mod-left .workspace-drawer-header-icon {
+.is-mobile:not(.mk-spaces-right) .workspace-drawer.mod-left .workspace-drawer-header-icon, .is-mobile.mk-spaces-right .workspace-drawer.mod-right .workspace-drawer-header-icon {
   position: absolute;
   right: 20px;
   top: 12px;

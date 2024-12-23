@@ -24,8 +24,8 @@ import {
 } from "schemas/kits/base";
 import { SpaceProperty } from "types/mdb";
 import { FrameEditorMode, FrameTreeProp } from "types/mframe";
+import { DefaultMDBTables } from "../DefaultFrames/DefaultFrames";
 import { FrameEditorNodeView } from "../EditorNodes/FrameEditorNodeView";
-import { NewNodeView } from "../EditorNodes/NewNodeView";
 export const FrameEditorInstance = (
   props: PropsWithChildren<{
     superstate: Superstate;
@@ -284,6 +284,18 @@ export const FrameEditorInstance = (
               {instance.exec.node.name}
             </div>
           )}
+          {instance.exec.children.length == 0 && frameSchema.id == "main" && (
+            <button
+              onClick={() => {
+                props.superstate.spaceManager.saveFrame(
+                  spaceInfo.path,
+                  DefaultMDBTables.main
+                );
+              }}
+            >
+              + Add View
+            </button>
+          )}
           <FrameEditorNodeView
             key={spaceInfo.path}
             superstate={props.superstate}
@@ -293,13 +305,6 @@ export const FrameEditorInstance = (
           >
             {props.children}
           </FrameEditorNodeView>
-          {instance.exec.children.length == 0 && (
-            <NewNodeView
-              superstate={props.superstate}
-              treeNode={null}
-              state={null}
-            ></NewNodeView>
-          )}
         </div>
       )}
     </>

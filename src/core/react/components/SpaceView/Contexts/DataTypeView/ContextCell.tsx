@@ -1,7 +1,5 @@
 import i18n from "core/i18n";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
-import { ContextEditorContext } from "core/react/context/ContextEditorContext";
-import { SpaceContext } from "core/react/context/SpaceContext";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import {
   addPathToSpaceAtIndex,
@@ -12,13 +10,8 @@ import {
   deletePropertyMultiValue,
   updateContextValue,
 } from "core/utils/contexts/context";
-import React, {
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
+import { SpaceTables } from "types/mdb";
 import { uniq } from "utils/array";
 import { parseMultiString } from "utils/parsers";
 import {
@@ -31,10 +24,12 @@ import { OptionCellBase } from "./OptionCell";
 export const ContextCell = (
   props: TableCellMultiProp & {
     source: string;
+    contextTable: SpaceTables;
+    contextPath: string;
   }
 ) => {
-  const { spaceState } = useContext(SpaceContext);
-  const { contextTable } = useContext(ContextEditorContext);
+  const { contextTable } = props;
+
   const fieldValue = useMemo(
     () => parseFieldValue(props.propertyValue, "context", props.superstate),
     [props.propertyValue]
@@ -44,10 +39,10 @@ export const ContextCell = (
       fieldValue
         ? props.superstate.spaceManager.resolvePath(
             fieldValue.space,
-            spaceState?.path
+            props.contextPath
           )
         : null,
-    [fieldValue.space, spaceState]
+    [fieldValue.space, props.contextPath]
   );
   const parseValue = (v: string, multi: boolean) =>
     (multi ? parseMultiString(v) ?? [] : [v]).filter((f) => f);
@@ -168,7 +163,7 @@ export const ContextCell = (
         <PathCrumb
           superstate={props.superstate}
           path={_props.value}
-          source={spaceState?.path}
+          source={props.contextPath}
         >
           {_props.children}
         </PathCrumb>

@@ -3,7 +3,8 @@ import { Superstate } from "makemd-core";
 import { median } from "mathjs";
 import { fieldTypeForField } from "schemas/mdb";
 import { SpaceProperty } from "types/mdb";
-import { safelyParseJSON } from "utils/parsers";
+import { uniq } from "utils/array";
+import { parseProperty, safelyParseJSON } from "utils/parsers";
 import { empty } from "./filter";
 
 export type AggregateFunctionType = {
@@ -12,6 +13,7 @@ export type AggregateFunctionType = {
     type: string[];
     fn: (v: any[], type: string) => any;
     valueType: string;
+    
 };
 
 export const calculateAggregate = (superstate: Superstate, values: any[], fn: string, col: SpaceProperty) => {
@@ -46,6 +48,12 @@ export const calculateAggregate = (superstate: Superstate, values: any[], fn: st
 }
 
 export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
+    values: {
+        label: "Values",
+        type: ['any'],
+        fn: (v) => uniq(v.map(f => parseProperty("", f))).join(", "),
+        valueType: "none",
+    },
     sum: {
         label: "Sum",
         type: ["number"],

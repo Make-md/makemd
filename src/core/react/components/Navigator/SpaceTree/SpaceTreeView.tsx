@@ -617,7 +617,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
   const dragEnded = (e: React.DragEvent<HTMLDivElement>, overId: string) => {
     const modifiers = eventToModifier(e);
-
     dropPathsInTree(
       superstate,
       dragPaths,

@@ -2,6 +2,7 @@ import {
   DraggableAttributes,
   DraggableSyntheticListeners,
 } from "@dnd-kit/core";
+import { showNewFrameMenu } from "core/react/components/UI/Menus/frames/newFrameMenu";
 
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
@@ -9,7 +10,6 @@ import { SpaceContext } from "core/react/context/SpaceContext";
 import { Superstate } from "core/superstate/superstate";
 import { isTouchScreen } from "core/utils/ui/screen";
 import React, { useContext } from "react";
-import { newNode } from "schemas/kits/base";
 import { FrameNode } from "types/mframe";
 export const FrameHoverMenu = (props: {
   superstate: Superstate;
@@ -64,16 +64,14 @@ export const FrameHoverMenu = (props: {
         {!isTouchScreen(props.superstate.ui) && (
           <div
             onClick={(e) => {
-              addNode(newNode.node, props.node).then((f) =>
-                setLastCreatedId(f.id)
+              showNewFrameMenu(
+                (e.target as HTMLElement).getBoundingClientRect(),
+                window,
+                props.superstate,
+                spaceInfo,
+                (newNode: FrameNode) =>
+                  addNode(newNode, props.node).then((f) => select(f.id))
               );
-              // showNewFrameMenu(
-              //   (e.target as HTMLElement).getBoundingClientRect(),
-              //   props.superstate,
-              //   spaceInfo,
-              //   (newNode: FrameNode) =>
-              //     addNode(newNode, props.node).then((f) => select(f.id))
-              // );
               e.stopPropagation();
             }}
             className={"mk-icon-small mk-editor-frame-hover-button"}

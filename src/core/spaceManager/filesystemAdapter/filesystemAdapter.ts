@@ -903,6 +903,8 @@ const defaultSpaceTemplate = this.defaultFrame(path);
         [spaceTemplateKey] : metadata.template,
         [spaceTemplateNameKey] : metadata.templateName,
         [spaceRecursiveKey]: metadata.recursive,
+        defaultSticker: metadata.defaultSticker,
+        readMode: metadata.readMode,
       }))
     // await this.spaceManager.onPathPropertyChanged(file.path);
       // await this.spaceManager.onSpaceCreated(path);

@@ -1,19 +1,12 @@
 
+import { hashCode } from "core/utils/hash";
 import MakeMDPlugin from "main";
 import { AFile, FileTypeAdapter, FilesystemMiddleware } from "makemd-core";
 import { Platform } from "obsidian";
 import pica from "pica";
 type ImageTypeCache = Record<never, never>
 
-const hashCode = (str: string) => {
-    let hash = 0;
-    for (let i = 0, len = str.length; i < len; i++) {
-        const chr = str.charCodeAt(i);
-        hash = (hash << 5) - hash + chr;
-        hash |= 0; // Convert to 32bit integer
-    }
-    return hash;
-}
+
 type ImageTypeContent = Record<never, never>
 export class ImageFileTypeAdapter implements FileTypeAdapter<ImageTypeCache, ImageTypeContent> {
 private picaInstance;

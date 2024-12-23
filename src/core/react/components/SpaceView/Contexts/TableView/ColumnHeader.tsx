@@ -9,6 +9,7 @@ import { Superstate } from "core/superstate/superstate";
 import { PathPropertyName } from "core/types/context";
 import { optionValuesForColumn } from "core/utils/contexts/optionValuesForColumn";
 import { nameForField } from "core/utils/frames/frames";
+import { tagSpacePathFromTag } from "core/utils/strings";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { stickerForField } from "schemas/mdb";
 import { SpaceTableColumn } from "types/mdb";
@@ -124,7 +125,7 @@ export const ColumnHeader = (props: {
         spaces: spaceCache?.contexts ?? [],
         fields: cols,
         saveField: (source, field) => {
-          return newColumn({ ...field, table: source })
+          return newColumn({ ...field, table: source });
         },
         schemaId: tableData.schema.id,
         contextPath: spaceInfo.path,
@@ -139,7 +140,9 @@ export const ColumnHeader = (props: {
       const offset = (e.target as HTMLElement).getBoundingClientRect();
       const options = optionValuesForColumn(
         field.name,
-        field.table == "" ? tableData : contextTable[field.table]
+        field.table == ""
+          ? tableData
+          : contextTable[tagSpacePathFromTag(field.table)]
       );
 
       showPropertyMenu({
@@ -182,7 +185,9 @@ export const ColumnHeader = (props: {
                 ),
               }}
             ></div>
-            <div className="mk-path-context-field-key">{nameForField(field, props.superstate)}</div>
+            <div className="mk-path-context-field-key">
+              {nameForField(field, props.superstate)}
+            </div>
           </>
         ) : (
           "+"

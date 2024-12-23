@@ -24,10 +24,13 @@ body:not(.is-mobile) .mk-frame-props-editor {
   .mk-path-view {
     display: flex;
     flex-direction: column;
-    overflow-y:hidden;
+    overflow-y:clip;
     animation: .15s ease-out 0s 1 fadeInFromNone;
     width: 100%;
     height: 100%;
+  }
+  .mk-node-input {
+    padding: 0 !important;
   }
   .mk-path-view iframe {
     width: 100%;

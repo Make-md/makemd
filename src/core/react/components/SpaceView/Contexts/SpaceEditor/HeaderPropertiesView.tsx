@@ -7,23 +7,30 @@ import { SpaceTemplateProperty } from "core/react/components/SpaceEditor/SpaceTe
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
 import { showPropertyMenu } from "core/react/components/UI/Menus/contexts/spacePropertyMenu";
-import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
+import {
+  defaultMenu,
+  menuSeparator,
+  SelectOptionType,
+} from "core/react/components/UI/Menus/menu/SelectionMenu";
+import { showApplyItemsMenu } from "core/react/components/UI/Menus/navigator/showApplyItemsMenu";
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
 import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
+import { parseFieldValue } from "core/schemas/parseFieldValue";
 import {
   createSpace,
   saveNewProperty,
   saveProperties,
+  saveSpaceCache,
   saveSpaceTemplate,
 } from "core/superstate/utils/spaces";
 import { addTagToPath } from "core/superstate/utils/tags";
 import { PathPropertyName } from "core/types/context";
 import { FMMetadataKeys } from "core/types/space";
-import { SelectOption, Superstate, i18n } from "makemd-core";
+import { i18n, SelectOption, Superstate } from "makemd-core";
 import React, {
   useContext,
   useEffect,
@@ -33,11 +40,15 @@ import React, {
 } from "react";
 import { defaultContextSchemaID, defaultTableFields } from "schemas/mdb";
 import { Rect } from "types/Pos";
-import { SpaceProperty, SpaceTableSchema } from "types/mdb";
+import { SpaceProperty, SpaceTables, SpaceTableSchema } from "types/mdb";
 import { uniqueNameFromString } from "utils/array";
 import { windowFromDocument } from "utils/dom";
 import { parseMDBStringValue } from "utils/properties";
 import { sanitizeTableName } from "utils/sanitizers";
+import {
+  DefaultFolderNoteMDBTables,
+  DefaultMDBTables,
+} from "../../Frames/DefaultFrames/DefaultFrames";
 import { DataPropertyView } from "../DataTypeView/DataPropertyView";
 import { CellEditMode } from "../TableView/TableView";
 
@@ -57,6 +68,8 @@ export const HeaderPropertiesView = (props: {
     props.superstate.settings.inlineContextExpanded = !collapsed;
     props.superstate.saveSettings();
   }, [collapsed]);
+
+  const [contextTable, setContextTable] = useState<SpaceTables>({});
 
   const { spaceState } = useContext(SpaceContext);
   const { addToSpace, readMode, removeFromSpace, pathState } =
@@ -267,6 +280,47 @@ export const HeaderPropertiesView = (props: {
           icon: "ui//mouse-pointer-click",
           onClick: (e) => newAction(e),
         },
+        menuSeparator,
+        {
+          name: "Toggle Read Mode",
+          description: "Toggle read mode for the space",
+          icon: "ui//eye",
+          onClick: (e) => {
+            saveSpaceCache(props.superstate, spaceState.space, {
+              ...spaceState.metadata,
+              readMode: !spaceState.metadata.readMode,
+            });
+          },
+        },
+        menuSeparator,
+        {
+          name: "Apply to Items",
+          description: i18n.descriptions.spaceProperties,
+          icon: "ui//list",
+          type: SelectOptionType.Submenu,
+          onSubmenu: (offset) => {
+            return showApplyItemsMenu(
+              offset,
+              props.superstate,
+              spaceState,
+              win
+            );
+          },
+        },
+        menuSeparator,
+        {
+          name: "Reset View",
+          description: "Reset the view to the default settings",
+          icon: "ui//table",
+          onClick: (e) => {
+            props.superstate.spaceManager.saveFrame(
+              spaceState.path,
+              props.superstate.spaceManager.superstate.settings.enableFolderNote
+                ? DefaultFolderNoteMDBTables.main
+                : DefaultMDBTables.main
+            );
+          },
+        },
       ]),
       win
     );
@@ -301,9 +355,54 @@ export const HeaderPropertiesView = (props: {
       spaces.map(async (f) =>
         props.superstate.spaceManager
           .readTable(f, defaultContextSchemaID)
-          .then((g) => ({ path: f, cols: g.cols, rows: g.rows }))
+          .then((g) => ({
+            path: f,
+            schema: g.schema,
+            cols: g.cols,
+            rows: g.rows,
+          }))
       )
     );
+    const contextTags = spaces.flatMap(
+      (f) => props.superstate.spacesIndex.get(f)?.contexts
+    );
+    const relationContexts = cols
+      .filter((f) => f.property.type.startsWith("context"))
+      .map((f) => {
+        const value = parseFieldValue(
+          f.property.value,
+          f.property.type,
+          props.superstate
+        );
+        return value.space;
+      })
+      .filter((f) => f);
+    const contextData = await Promise.all(
+      [...contextTags, ...relationContexts]
+        .filter((f) => !spaces.includes(f))
+        .map((f) => {
+          return props.superstate.spaceManager
+            .readTable(f, defaultContextSchemaID)
+            .then((g) => ({ [f]: g }));
+        })
+    );
+    const contextTable = contextData.reduce((p, c) => {
+      return { ...p, ...c };
+    }, {});
+
+    setContextTable({
+      ...contextTable,
+      ...contexts.reduce((p, c) => {
+        return {
+          ...p,
+          [c.path]: {
+            schema: c.schema,
+            cols: c.cols,
+            rows: c.rows,
+          },
+        };
+      }, {}),
+    });
     const properties: PathContextProperty[] = [];
     contexts.forEach((f) => {
       const row = f.rows.find((f) => f[PathPropertyName] == pathState.path);
@@ -518,14 +617,16 @@ export const HeaderPropertiesView = (props: {
               row={pathState.metadata.property}
               compactMode={false}
               column={{ ...f.property, table: "" }}
+              columns={cols.map((f) => f.property)}
               editMode={CellEditMode.EditModeAlways}
               updateValue={(v) => updateValue(v, f)}
               updateFieldValue={(fv, v) => updateFieldValue(fv, v, f)}
-              contextTable={{}}
+              contextTable={contextTable}
               source={pathState.path}
               path={pathState.path}
               contexts={f.contexts}
               propertyMenu={(e) => showMenu(e, f)}
+              contextPath={f.contexts[0]}
             ></DataPropertyView>
           ))}
 

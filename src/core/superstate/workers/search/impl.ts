@@ -24,7 +24,7 @@ export function fastSearch (payload: { query: string, pathsIndex: Map<string, Pa
       ignoreLocation: true,
       // ignoreFieldNorm: false,
       // fieldNormWeight: 1,
-      keys: ["name", "path", 'label.preview'],
+      keys: [{ name: 'name', weight: 2 }, "path", 'label.preview', { name: 'spaceNames', weight: 0.5 }],
     };
     const fuse = new Fuse([...pathsIndex.values()].filter(f => f.hidden == false), fuseOptions);
     return fuse.search(query).map((result) => result.item).slice(0, count);

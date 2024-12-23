@@ -14,8 +14,11 @@ import { windowFromDocument } from "utils/dom";
 export const replaceMobileMainMenu = (plugin: MakeMDPlugin) => {
   if (isTouchScreen(plugin.superstate.ui)) {
     const header = plugin.app.workspace.containerEl.querySelector(
-      ".workspace-drawer.mod-left .workspace-drawer-header-left"
+      plugin.superstate.settings.spacesRightSplit
+        ? ".workspace-drawer.mod-right .workspace-drawer-header-left"
+        : ".workspace-drawer.mod-left .workspace-drawer-header-left"
     );
+    console.log(header);
     header.innerHTML = "";
     const reactEl = plugin.superstate.ui.createRoot(header);
     reactEl.render(
@@ -151,7 +154,11 @@ export const ObsidianMobileMainMenu = (props: {
           <div
             aria-label={i18n.buttons.togglePin}
             className="mk-main-menu-button"
-            onClick={(e) => props.plugin.app.workspace.leftSplit.togglePinned()}
+            onClick={(e) =>
+              props.plugin.superstate.settings.spacesRightSplit
+                ? props.plugin.app.workspace.rightSplit.togglePinned()
+                : props.plugin.app.workspace.leftSplit.togglePinned()
+            }
           >
             <div
               className="mk-icon-small"

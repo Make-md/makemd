@@ -24,7 +24,6 @@ import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "core/superstate/superstate";
-import { saveSpaceCache } from "core/superstate/utils/spaces";
 import { Filter, Predicate, Sort } from "core/types/predicate";
 import { filterFnLabels } from "core/utils/contexts/predicate/filterFns/filterFnLabels";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
@@ -36,7 +35,6 @@ import {
 import { sortFnTypes } from "core/utils/contexts/predicate/sort";
 import { formatDate } from "core/utils/date";
 import { nameForField } from "core/utils/frames/frames";
-import { tagSpacePathFromTag } from "core/utils/strings";
 import { isPhone } from "core/utils/ui/screen";
 import React, { useContext, useEffect, useState } from "react";
 import {
@@ -51,7 +49,6 @@ import { windowFromDocument } from "utils/dom";
 import { parseMultiString } from "utils/parsers";
 import { parseMDBStringValue } from "utils/properties";
 import { serializeMultiString } from "utils/serializers";
-import { ensureTag } from "utils/tags";
 import { ContextTitle } from "./ContextTitle";
 import { ListSelector } from "./ListSelector";
 import { SearchBar } from "./SearchBar";
@@ -500,18 +497,7 @@ export const FilterBar = (props: {
           return selectSource(rect, windowFromDocument(e.view.document));
         },
       });
-      menuOptions.push({
-        name: i18n.labels.contexts,
-        icon: "ui//tags",
-        type: SelectOptionType.Submenu,
-        onSubmenu: (offset, onHide) => {
-          return showContextEditMenu(
-            offset,
-            windowFromDocument(e.view.document),
-            onHide
-          );
-        },
-      });
+
       menuOptions.push(menuSeparator);
     }
     const listViewOptions = await propertiesForPredicate(predicate, "listView");
@@ -829,114 +815,6 @@ export const FilterBar = (props: {
 
   const saveNewField = (source: string, field: SpaceProperty) => {
     return saveColumn({ ...field, table: "" });
-  };
-
-  const saveContexts = (spacePath: string, contexts: string[]) => {
-    const space = props.superstate.spacesIndex.get(spacePath);
-    saveSpaceCache(props.superstate, space.space, {
-      ...space.metadata,
-      contexts,
-    });
-  };
-
-  const newContext = (offset: Rect, win: Window, onHide: () => void) => {
-    const space = props.superstate.spacesIndex.get(source);
-    const f = props.superstate.spaceManager.readTags();
-    const addTag = async (tag: string) => {
-      const newTag = ensureTag(tag);
-      saveContexts(space.path, [
-        ...space.metadata.contexts.filter((f) => f != newTag),
-        newTag,
-      ]);
-    };
-    return props.superstate.ui.openMenu(
-      offset,
-      {
-        ui: props.superstate.ui,
-        multi: false,
-        editable: true,
-        value: [],
-        options: f.map((m) => ({ name: m, value: m })),
-        saveOptions: (_, value) => addTag(value[0]),
-        placeholder: i18n.labels.contextItemSelectPlaceholder,
-        searchable: true,
-        showAll: true,
-      },
-      win,
-      null,
-      onHide
-    );
-  };
-
-  const showContextEditMenu = (
-    offset: Rect,
-    win: Window,
-    onHide: () => void
-  ) => {
-    const options: SelectOption[] = [];
-    options.push({
-      name: i18n.buttons.addContext,
-      icon: "ui//plus",
-      type: SelectOptionType.Submenu,
-      onSubmenu: (off, onHide) => {
-        return newContext(off, win, onHide);
-      },
-    });
-    options.push(menuSeparator);
-    const space = props.superstate.spacesIndex.get(source);
-    space.contexts.forEach((f) => {
-      options.push({
-        name: f,
-        icon: "ui//tags",
-        onClick: (e) => {
-          props.superstate.ui.openPath(tagSpacePathFromTag(f));
-        },
-        onMoreOptions: (e) => {
-          const offset = (e.target as HTMLElement).getBoundingClientRect();
-          const options: SelectOption[] = [];
-          options.push({
-            name: i18n.menu.deleteContext,
-            icon: "ui//trash",
-            onClick: (e) => {
-              saveContexts(
-                space.path,
-                space.contexts.filter((s) => s != f)
-              );
-            },
-          });
-          return props.superstate.ui.openMenu(
-            offset,
-            {
-              ui: props.superstate.ui,
-              multi: false,
-              editable: false,
-              value: [],
-              options: options,
-              placeholder: i18n.labels.contextItemSelectPlaceholder,
-              searchable: false,
-              showAll: true,
-            },
-            win
-          );
-        },
-      });
-    });
-    return props.superstate.ui.openMenu(
-      offset,
-      {
-        ui: props.superstate.ui,
-        multi: false,
-        editable: false,
-        value: [],
-        options: options,
-        placeholder: i18n.labels.contextItemSelectPlaceholder,
-        searchable: false,
-        showAll: true,
-      },
-      win,
-      null,
-      onHide
-    );
   };
 
   const showPropertyEditMenu = (

@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { fieldTypeForField } from "schemas/mdb";
 import { SpaceProperty } from "types/mdb";
 import { parseMultiString } from "utils/parsers";
 import { uniq } from "./array";
@@ -99,7 +100,7 @@ export const parseParameters = (fieldValues: Record<string, string>, fields: Spa
       .filter((f) => f != "$api")
       .reduce((f, g) => {
         const col = fields.find((c) => c.name == g);
-        return { ...f, [g]: parseMDBStringValue(col.type, fieldValues[g], false) };
+        return { ...f, [g]: parseMDBStringValue(fieldTypeForField(col), fieldValues[g], false) };
       }, {});
 };
 

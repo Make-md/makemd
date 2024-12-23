@@ -32,9 +32,8 @@ export const SpaceProvider: React.FC<
     return props.superstate.spacesIndex.get(pathState.path)?.space;
   }, [pathState]);
 
-  const readMode = spaceInfo?.readOnly;
   const [spaceState, setSpaceState] = useState<SpaceState>(null);
-
+  const readMode = spaceState?.metadata.readMode ?? spaceInfo?.readOnly;
   useEffect(() => {
     const reloadSpace = () => {
       setSpaceState(props.superstate.spacesIndex.get(pathState.path));

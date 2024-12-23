@@ -49,6 +49,7 @@ class T {
         divider: "Divider",
         note: "Note Block",
         link: "Web Link",
+        internalLink: "Link",
         callout: "Callout",
         bookmark: "Bookmark",
         table: "New Table",
@@ -57,7 +58,7 @@ class T {
         emoji: "Emoji",
         image: "Image",
         
-        newNote: "New Note",
+        newNote: "Note",
         tag: "Tag",
         makeMenu: "Flow Menu",
         selectStyle: "Style",

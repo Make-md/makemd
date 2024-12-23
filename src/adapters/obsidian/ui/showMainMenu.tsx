@@ -42,8 +42,11 @@ export const showMainMenu = (
     const leafs = [];
     let spaceActive = true;
     if (isMobile) {
-      const mobileDrawer = plugin.app.workspace
-        .leftSplit as WorkspaceMobileDrawer;
+      const mobileDrawer = (
+        plugin.superstate.settings.spacesRightSplit
+          ? plugin.app.workspace.rightSplit
+          : plugin.app.workspace.leftSplit
+      ) as WorkspaceMobileDrawer;
       const leaves = mobileDrawer.children as WorkspaceLeaf[];
       const index = leaves.reduce((p: number, c, i) => {
         return c.getViewState().type == FILE_TREE_VIEW_TYPE ? i : p;

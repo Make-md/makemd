@@ -1,11 +1,9 @@
-import { newPathInSpace } from "core/superstate/utils/spaces";
 import {
   contextNode,
   flowNode,
   groupNode,
   iconNode,
   imageNode,
-  spacerNode,
   textNode,
 } from "schemas/kits/base";
 import {
@@ -18,16 +16,22 @@ import {
   tabsNode,
   toggleNode,
 } from "schemas/kits/ui";
-import { FrameNode, FrameRoot } from "types/mframe";
+import { FrameNode, FrameRoot, FrameSchema } from "types/mframe";
 
 import i18n from "core/i18n";
-import { Superstate } from "core/superstate/superstate";
+
+import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
+import { defaultViewTypes } from "core/schemas/viewTypes";
+import type { Superstate } from "core/superstate/superstate";
 import { createInlineTable } from "core/utils/contexts/inlineTable";
 import { preprocessCode } from "core/utils/frames/linker";
+import { frameSchemaToTableSchema } from "core/utils/frames/nodes";
 import { wrapQuotes } from "core/utils/strings";
+import { SelectOption } from "makemd-core";
 import { Rect } from "types/Pos";
 import { SpaceInfo } from "types/mdb";
 import { uniqueNameFromString } from "utils/array";
+import { defaultMenu, SelectOptionType } from "../menu/SelectionMenu";
 
 export const linkRoot = (
   parent: string,
@@ -115,11 +119,6 @@ export const linkRoot = (
   return returnNodes;
 };
 
-type NewItem = {
-  type: "preset" | "default" | "kit" | "element";
-  value: any;
-};
-
 export const showNewFrameMenu = (
   rect: Rect,
   win: Window,
@@ -128,29 +127,124 @@ export const showNewFrameMenu = (
   addNode: (node: FrameNode) => void,
   options: { searchable: boolean } = { searchable: true }
 ) => {
+  const insertPresetNode = async (value: string) => {
+    if (value == "note") {
+      openBlinkModal(superstate, BlinkMode.Open, win, (path) => {
+        addNode({
+          ...flowNode.node,
+          props: { value: wrapQuotes(path) },
+          styles: {
+            "--mk-min-mode": `true`,
+            "--mk-expanded": `true`,
+          },
+        });
+      });
+    } else if (value == "table") {
+      const table = await createInlineTable(superstate, space.path);
+      addNode({
+        ...contextNode.node,
+        props: { value: wrapQuotes(`./#*${table}`) },
+      });
+    } else if (value == "link") {
+      openBlinkModal(superstate, BlinkMode.Open, win, (path) => {
+        addNode({
+          ...flowNode.node,
+          props: { value: wrapQuotes(path) },
+        });
+      });
+    }
+  };
+  const insertNode = (item: FrameNode, id: string) => {
+    addNode({
+      ...item,
+      type: "frame",
+      ref: "spaces://$kit/#*" + id,
+    });
+  };
+  const insertElement = (item: FrameNode) => {
+    addNode({
+      ...item,
+    });
+  };
   const presets = [
     {
       name: i18n.commands.newNote,
-      value: { type: "preset", value: "note" },
-      section: "default",
+      value: "presetnote",
+      onClick: () => {
+        insertPresetNode("note");
+      },
       icon: "ui//mk-make-flow",
     },
     {
+      name: i18n.commands.internalLink,
+      value: "presetlink",
+      onClick: () => {
+        insertPresetNode("link");
+      },
+      icon: "ui//mk-make-link",
+    },
+    {
       name: i18n.commands.table,
-      value: { type: "preset", value: "table" },
-      section: "default",
+      value: "presettable",
+      onClick: () => {
+        insertPresetNode("table");
+      },
       icon: "ui//mk-make-table",
     },
   ];
+  const newViewSchema = async (value: string) => {
+    const schemaTable = await superstate.spaceManager.framesForSpace(
+      space.path
+    );
+    const uniqueId = uniqueNameFromString(
+      value,
+      schemaTable.map((f) => f.id)
+    );
+
+    const viewLayout = defaultViewTypes[value];
+    const newSchema = {
+      name: viewLayout.name,
+      id: uniqueId,
+      type: "view",
+      def: {
+        db: "files",
+      },
+      predicate: JSON.stringify({
+        view: viewLayout.view,
+        listView: viewLayout.listView,
+        listGroup: viewLayout.listGroup,
+        listItem: viewLayout.listItem,
+      }),
+    } as FrameSchema;
+    superstate.spaceManager
+      .saveFrameSchema(space.path, uniqueId, () =>
+        frameSchemaToTableSchema(newSchema)
+      )
+      .then(() => {
+        return addNode({
+          ...contextNode.node,
+          props: { value: wrapQuotes(`./#*${newSchema.id}`) },
+        });
+      });
+  };
+  const contextViews = Object.keys(defaultViewTypes).map((f) => {
+    const view = defaultViewTypes[f];
+    return {
+      name: view.name,
+      value: view.view,
+      onClick: () => {
+        newViewSchema(f);
+      },
+      icon: view.icon,
+    };
+  });
+
   const defaultElements: FrameRoot[] = [
-    flowNode,
-    contextNode,
     textNode,
     imageNode,
     dividerNode,
     iconNode,
     groupNode,
-    spacerNode,
     // contentNode,
   ];
   const defaultFrames: FrameRoot[] = [
@@ -162,60 +256,40 @@ export const showNewFrameMenu = (
     circularProgressNode,
     tabsNode,
   ];
-  const selectOptions = [
+
+  const selectOptions: SelectOption[] = [
     ...presets,
+    {
+      name: "List View",
+      value: "frame",
+      type: SelectOptionType.Submenu,
+      onSubmenu: (offset: Rect) => {
+        return superstate.ui.openMenu(
+          offset,
+          defaultMenu(superstate.ui, contextViews),
+          win
+        );
+      },
+      icon: "ui//mk-make-list",
+    },
+
     ...defaultElements.map((f) => ({
       name: f.node.name,
-      value: { type: "element", value: f },
-      section: "element",
+      onClick: () => {
+        insertElement(f.node);
+      },
+      value: f.node.name,
       icon: f.def?.icon,
     })),
     ...defaultFrames.map((f) => ({
       name: f.node.name,
-      value: { type: "default", value: f },
-      section: "element",
+      value: "frame" + f.node.name,
+      onClick: () => {
+        insertNode(f.node, f.def.id);
+      },
       icon: f.def?.icon,
     })),
   ];
-  const insertNode = async (item: NewItem) => {
-    if (item.type == "preset") {
-      if (item.value == "note") {
-        const _space = superstate.spacesIndex.get(space.path);
-
-        if (_space) {
-          const newPath = await newPathInSpace(
-            superstate,
-            _space,
-            "md",
-            null,
-            true
-          );
-
-          addNode({
-            ...flowNode.node,
-            props: { value: wrapQuotes(newPath) },
-          });
-        }
-      } else if (item.value == "table") {
-        const table = await createInlineTable(superstate, space.path);
-        addNode({
-          ...contextNode.node,
-          props: { value: wrapQuotes(`${space.path}/#*${table}`) },
-        });
-      } else if (item.value == "link") {
-      }
-    } else if (item.type == "default") {
-      addNode({
-        ...item.value.node,
-        type: "frame",
-        ref: "spaces://$kit/#*" + item.value.def.id,
-      });
-    } else if (item.type == "element") {
-      addNode({
-        ...item.value.node,
-      });
-    }
-  };
   superstate.ui.openMenu(
     rect,
     {
@@ -224,7 +298,6 @@ export const showNewFrameMenu = (
       editable: false,
       value: [],
       options: selectOptions,
-      saveOptions: (_, value: any[]) => insertNode(value[0]),
       searchable: options.searchable,
       showAll: true,
     },

@@ -50,7 +50,17 @@ export const coverListItem: FrameRoot = {
     name: "Cover Item",
     rank: 0,
     props: {
-
+        coverProperty: `'File'`
+    },
+    types: {
+      // hideCover: "boolean",
+      coverProperty: "option"
+    },
+    propsValue: {
+      coverProperty: {
+        alias: "Cover Image",
+        source: `$properties`
+      }
     },
     styles: {
       layout: `"column"`,
@@ -62,8 +72,9 @@ export const coverListItem: FrameRoot = {
     frameRootWithProps(
       imageNode,
       {
-        value: `$api.path.label($contexts.$context['_keyValue'])?.thumbnail`,
+        value: `$api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.thumbnail`,
       }, {
+        background: `'var(--mk-ui-background-contrast)'`,
         borderRadius: `'8px'`,
         width: `'200px'`,
       height: `'300px'`
@@ -269,6 +280,7 @@ export const flowListItem: FrameRoot = {
         {...groupNode, children: [frameRootWithProps(
           imageNode,
           {
+            
             value: `$api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.thumbnail`,
           },
           {

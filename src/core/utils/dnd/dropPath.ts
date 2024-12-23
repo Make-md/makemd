@@ -95,7 +95,6 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate,
   oldSpacePath: string | null,
   newSpacePath: string, index: number, modifier?: DropModifiers) => {
   const cache: PathState = superstate.pathsIndex.get(path);
-
   if (!cache)
     return false;
   if (!newSpacePath) {
