@@ -136,6 +136,7 @@ export const showNewFrameMenu = (
           styles: {
             "--mk-min-mode": `true`,
             "--mk-expanded": `true`,
+            width: `'100%'`,
           },
         });
       });

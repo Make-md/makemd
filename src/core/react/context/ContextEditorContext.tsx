@@ -315,7 +315,7 @@ export const ContextEditorProvider: React.FC<
                   []
                 )
               : []),
-          ]
+          ].filter((f) => f)
         : [],
     [tableData, contextTable, contexts, dbSchema]
   );

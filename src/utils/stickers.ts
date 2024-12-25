@@ -1,5 +1,4 @@
 
-
 export const emojiFromString = (emoji: string) => {
   let html;
   try {
@@ -9,7 +8,9 @@ export const emojiFromString = (emoji: string) => {
     html = emoji;
   }
   return html;
-};export function parseStickerString(input: string): [string, string] {
+};
+
+export function parseStickerString(input: string): [string, string] {
   if (!input) {
     return ["", ""];
   }

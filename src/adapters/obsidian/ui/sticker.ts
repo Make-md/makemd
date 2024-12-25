@@ -3,6 +3,7 @@ import MakeMDPlugin from "main";
 import { emojiFromString, parseStickerString } from "utils/stickers";
 import { lucideIcon } from "./icons";
 
+
 export const stickerFromString = (sticker: string, plugin: MakeMDPlugin) => {
   if (!sticker || typeof sticker != 'string')
   return "";

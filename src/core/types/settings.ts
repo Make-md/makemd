@@ -1,23 +1,12 @@
+import { MakeBasicsSettings } from "basics/types/settings";
 
 export type DeleteFileOption = "trash" | "permanent" | "system-trash";
 export type InlineContextLayout = "horizontal" | "vertical";
 
 export interface MakeMDSettings {
-  newNotePlaceholder: string;
   defaultInitialization: boolean;
   filePreviewOnHover: boolean;
   blinkEnabled: boolean;
-  markSans: boolean;
-  flowMenuEnabled: boolean;
-  makeMenuPlaceholder: boolean;
-  flowState: boolean;
-  inlineStyler: boolean;
-  mobileMakeBar: boolean;
-  inlineStylerColors: boolean;
-  editorFlow: boolean;
-  internalLinkClickFlow: boolean;
-  internalLinkSticker: boolean;
-  editorFlowStyle: string;
   spacesEnabled: boolean;
   navigatorEnabled: boolean;
   spacesDisablePatch: boolean;
@@ -25,6 +14,7 @@ export interface MakeMDSettings {
   spaceRowHeight: number;
   mobileSpaceRowHeight: number;
   spacesStickers: boolean;
+  banners: boolean;
   bannerHeight: number;
   spaceViewEnabled: boolean;
   sidebarTabs: boolean;
@@ -47,10 +37,6 @@ export interface MakeMDSettings {
   enableFolderNote: boolean;
   folderIndentationLines: boolean;
   revealActiveFile: boolean;
-  menuTriggerChar: string;
-  inlineStickerMenu: boolean;
-  emojiTriggerChar: string;
-  makerMode: boolean;
   hiddenFiles: string[];
   skipFolders: string[];
   skipFolderNames: string[];
@@ -82,6 +68,7 @@ export interface MakeMDSettings {
   readableLineWidth: boolean;
   syncFormulaToFrontmatter: boolean;
   releaseNotesPrompt: number;
+  firstLaunch: boolean;
   enableDefaultSpaces: boolean;
   showSpacePinIcon: boolean;
   experimental: boolean;
@@ -91,6 +78,10 @@ export interface MakeMDSettings {
   actionMaxSteps: number;
   contextPagination: number;
   searchWorker: boolean;
+  newNotePlaceholder: string;
   cacheIndex: boolean;
   enhancedLogs: boolean;
+  basics: boolean;
+  basicsSettings: MakeBasicsSettings;
+  
 }

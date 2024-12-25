@@ -288,6 +288,7 @@
     white-space: nowrap;
     padding: 2px;
     font-size: 12px;
+    min-height: 40px;
   
   }
   

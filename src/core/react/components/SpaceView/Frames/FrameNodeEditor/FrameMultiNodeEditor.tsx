@@ -16,7 +16,7 @@ export const FrameMultiNodeEditor = (props: { superstate: Superstate }) => {
       style={{ pointerEvents: "auto" }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="mk-mark">
+      <div className="mk-editor-frame-node-button">
         <div
           dangerouslySetInnerHTML={{
             __html: props.superstate.ui.getSticker("ui//copy-check"),
@@ -27,7 +27,7 @@ export const FrameMultiNodeEditor = (props: { superstate: Superstate }) => {
       <div className="mk-divider"></div>
       <div
         aria-label={i18n.editor.createVerticalSection}
-        className="mk-mark"
+        className="mk-editor-frame-node-button"
         dangerouslySetInnerHTML={{
           __html: props.superstate.ui.getSticker("ui//rows"),
         }}
@@ -40,7 +40,7 @@ export const FrameMultiNodeEditor = (props: { superstate: Superstate }) => {
       ></div>
       <div
         aria-label={i18n.editor.createHorizontalSection}
-        className="mk-mark"
+        className="mk-editor-frame-node-button "
         dangerouslySetInnerHTML={{
           __html: props.superstate.ui.getSticker("ui//columns"),
         }}
@@ -50,7 +50,7 @@ export const FrameMultiNodeEditor = (props: { superstate: Superstate }) => {
       ></div>
       <div className="mk-divider"></div>
       <div
-        className="mk-mark"
+        className="mk-editor-frame-node-button "
         aria-label={i18n.menu.delete}
         onClick={() => saveNodes([], selectedNodes)}
         dangerouslySetInnerHTML={{

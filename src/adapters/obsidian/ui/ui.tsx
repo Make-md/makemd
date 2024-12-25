@@ -8,20 +8,19 @@ import React from "react";
 import { Container } from "react-dom";
 import { Root, createRoot } from "react-dom/client";
 import { emojis } from "schemas/emoji";
+import { openPathInElement } from "shared/openPathInElement";
 import { Pos } from "types/Pos";
 import { EmojiData } from "types/emojis";
 import { TargetLocation } from "types/path";
 import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
+
+import { getLineRangeFromRef } from "shared/getLineRangeFromRef";
+import { editableRange } from "shared/selectiveEditor";
 import { SPACE_VIEW_TYPE } from "../SpaceViewContainer";
 import { getAbstractFileAtPath, getLeaf, openPath } from "../utils/file";
-import {
-  getLineRangeFromRef,
-  openPathInElement,
-} from "../utils/flow/flowEditor";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
 import { WindowManager } from "./WindowManager";
-import { editableRange } from "./editors/markdownView/flowEditor/selectiveEditor";
 import { lucideIcons } from "./icons";
 import { showModal } from "./modal";
 import { showMainMenu } from "./showMainMenu";
@@ -330,7 +329,7 @@ export class ObsidianUI implements UIAdapter {
     } else if (source) {
       const uri = this.plugin.superstate.spaceManager.uriByString(path);
       openPathInElement(
-        this.plugin,
+        this.plugin.app,
         this.plugin.app.workspace.getLeaf(), // workspaceLeafForDom(this.plugin.app, source),
         source,
         null,
@@ -346,7 +345,7 @@ export class ObsidianUI implements UIAdapter {
             const selectiveRange = getLineRangeFromRef(
               uri.basePath,
               uri.refStr,
-              this.plugin
+              this.plugin.app
             );
             if (!leaf.view?.editor) {
               return;

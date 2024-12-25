@@ -1,8 +1,22 @@
+import { MakeBasicsSettingsTab } from "basics/ui/SettingsPanel";
 import t from "core/i18n";
-import { App, DropdownComponent, PluginSettingTab, Setting } from "obsidian";
-import { DeleteFileOption, InlineContextLayout } from "../../core/types/settings";
+import { App, PluginSettingTab, Setting } from "obsidian";
+import { MakeMDSettings } from "../../core/types/settings";
 import MakeMDPlugin from "../../main";
 
+type SettingObject = {
+  name: keyof MakeMDSettings;
+  category: string;
+  subCategory?: string;
+  type: string;
+  props?: {
+    control?: string;
+    options?: {name: string, value: string}[],
+    limits?: [number, number, number]
+  };
+  onChange?: (value: any) => void;
+  dep?: string;
+}
 
 export class MakeMDPluginSettingsTab extends PluginSettingTab {
   plugin: MakeMDPlugin;
@@ -22,18 +36,28 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
-    containerEl.innerHTML = "";
 
-    containerEl.createEl("h1", { text: t.settings.sectionSidebar });
-    new Setting(containerEl)
-      .setName(t.settings.spaces.name)
-      .setDesc(t.settings.spaces.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.navigatorEnabled)
-          .onChange((value) => {
-            this.plugin.superstate.settings.navigatorEnabled = value;
-            this.plugin.saveSettings();
+    const settings : {
+      categories: string[],
+      subCategories: Record<string, string[]>,
+      settings: SettingObject[]
+    } = {
+      categories: ['general', 'navigator',  'space', 'notes', 'performance', 'advanced'],
+      subCategories: {
+        general: ['label', 'tags'],
+        navigator: ['appearance', 'interaction', 'advanced'],
+        label: ['appearance'],
+        notes: ['appearance'],
+        space: ['appearance', 'folderNote', 'context'],
+        performance: [],
+        advanced: []
+      },
+      settings: [
+        {
+          name: 'navigatorEnabled',
+          category: 'general',
+          type: 'boolean',
+          onChange: (value: boolean) => {
             
             if (value) {
               this.plugin.openFileTreeLeaf(true);
@@ -41,758 +65,408 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
               this.plugin.detachFileTreeLeafs();
               this.refreshObsidian();
             }
-            this.refreshView();
-          })
-      );
-
-    
-
-      new Setting(containerEl)
-    .setName(t.settings.spacesStickers.name)
-    .setDesc(t.settings.spacesStickers.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.spacesStickers)
-        .onChange((value) => {
-          this.plugin.superstate.settings.spacesStickers = value;
-          this.plugin.saveSettings();
-          this.refreshView();
-        })
-    );
-    
-    new Setting(containerEl)
-    .setName(t.settings.spaceView.name)
-    .setDesc(t.settings.spaceView.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.spaceViewEnabled).onChange((value) => {
-        this.plugin.superstate.settings.spaceViewEnabled = value;
-        this.plugin.saveSettings();
-      })
-    );
-
-    containerEl.createEl("h2", { text: "Folder Note" });
-    new Setting(containerEl)
-    .setName(t.settings.folderNote.name)
-    .setDesc(t.settings.folderNote.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.enableFolderNote).onChange((value) => {
-        this.plugin.superstate.settings.enableFolderNote = value;
-        this.plugin.saveSettings();
-      })
-    );
-
-    new Setting(containerEl)
-      .setName(t.settings.folderNoteName.name)
-      .setDesc(t.settings.folderNoteName.desc)
-      .addText((text) => {
-        text
-          .setValue(this.plugin.superstate.settings.folderNoteName)
-          .setPlaceholder("Folder Name")
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.folderNoteName = value;
-            await this.plugin.saveSettings();
-          });
-      });  
-    
-
-      containerEl.createEl("h2", { text: "Tags" });
-      new Setting(containerEl)
-      .setName(t.settings.tagSpaces.name)
-      .setDesc(t.settings.tagSpaces.desc)
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.superstate.settings.enableDefaultSpaces).onChange((value) => {
-          this.plugin.superstate.settings.enableDefaultSpaces = value;
-          this.plugin.saveSettings();
-        })
-      );
-    
-      new Setting(containerEl)
-      .setName("Parents as context to subtags")
-      .setDesc("Automatically add parent tag contexts to subtags")
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.superstate.settings.autoAddContextsToSubtags).onChange((value) => {
-          this.plugin.superstate.settings.autoAddContextsToSubtags = value;
-          this.plugin.saveSettings();
-        })
-      );
-    
-
-    
-    if (this.plugin.superstate.settings.spacesEnabled) {
-  containerEl.createEl("h3", { text: t.settings.sectionNavigator });
-  const spaceAppearances = containerEl.createEl("div");
-  new Setting(spaceAppearances)
-    .setName(t.settings.sidebarTabs.name)
-    .setDesc(t.settings.sidebarTabs.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.sidebarTabs).onChange((value) => {
-        this.plugin.superstate.settings.sidebarTabs = value;
-        this.plugin.saveSettings();
-        document.body.classList.toggle("mk-hide-tabs", !value);
-      })
-    );
-  new Setting(spaceAppearances)
-    .setName(t.settings.hideRibbon.name)
-    .setDesc(t.settings.hideRibbon.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.showRibbon).onChange((value) => {
-        this.plugin.superstate.settings.showRibbon = value;
-        this.plugin.saveSettings();
-        document.body.classList.toggle("mk-hide-ribbon", !value);
-      })
-    );
-
-    // new Setting(spaceAppearances)
-    // .setName(t.settings.flowState.name)
-    // .setDesc(t.settings.flowState.desc)
-    // .addToggle((toggle) =>
-    //   toggle.setValue(this.plugin.superstate.settings.flowState).onChange((value) => {
-    //     this.plugin.superstate.settings.flowState = value;
-    //     this.plugin.saveSettings();
-    //     document.body.classList.toggle("mk-flow-state", !value);
-    //   })
-    // );
-
-
-  
-  new Setting(spaceAppearances)
-    .setName(t.settings.folderIndentationLines.name)
-    .setDesc(t.settings.folderIndentationLines.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.folderIndentationLines)
-        .onChange((value) => {
-          this.plugin.superstate.settings.folderIndentationLines = value;
-          this.plugin.saveSettings();
-          document.body.classList.toggle("mk-folder-lines", value);
-        })
-    );
-    
-    new Setting(spaceAppearances)
-    .setName(t.settings.spacesAlias.name)
-    .setDesc(t.settings.spacesAlias.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.spacesUseAlias)
-        .onChange((value) => {
-          this.plugin.superstate.settings.spacesUseAlias = value;
-          this.plugin.saveSettings();
-          this.refreshView();
-        })
-    );
-    
-    new Setting(spaceAppearances)
-    .setName(t.settings.openSpacesOnLaunch.name)
-    .setDesc(t.settings.openSpacesOnLaunch.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.openSpacesOnLaunch)
-        .onChange((value) => {
-          this.plugin.superstate.settings.openSpacesOnLaunch = value;
-          this.plugin.saveSettings();
-        })
-    );
-
-    new Setting(spaceAppearances)
-    .setName("Open Navigator on Right Panel")
-    .setDesc("Open navigator on right panel instead of left")
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.spacesRightSplit)
-        .onChange((value) => {
-          this.plugin.superstate.settings.spacesRightSplit = value;
-          this.plugin.saveSettings();
-        })
-    );
-
-    new Setting(spaceAppearances)
-    .setName(t.settings.spaceRowHeight.name)
-    .setDesc(t.settings.spaceRowHeight.desc)
-    .addSlider((text) => {
-      text
-        .setValue(this.plugin.superstate.settings.spaceRowHeight)
-        .setDynamicTooltip()
-        .setLimits(20, 40, 1)
-        .onChange(async (value) => {
-          
-          this.plugin.superstate.settings.spaceRowHeight = value;
-          this.plugin.saveSettings();
-        });
-    });
-
-    
-    
-    new Setting(spaceAppearances)
-    .setName(t.settings.expandFolder.name)
-    .setDesc(t.settings.expandFolder.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.expandFolderOnClick)
-        .onChange((value) => {
-          this.plugin.superstate.settings.expandFolderOnClick = value;
-          this.plugin.saveSettings();
-        })
-    );
-    new Setting(spaceAppearances)
-    .setName(t.settings.hoverPreview.name)
-    .setDesc(t.settings.hoverPreview.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.filePreviewOnHover)
-        .onChange((value) => {
-          this.plugin.superstate.settings.filePreviewOnHover = value;
-          this.plugin.saveSettings();
-        })
-    );
-  new Setting(spaceAppearances)
-    .setName(t.settings.activeFile.name)
-    .setDesc(t.settings.activeFile.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.revealActiveFile)
-        .onChange((value) => {
-          this.plugin.superstate.settings.revealActiveFile = value;
-          this.plugin.saveSettings();
-        })
-    );
-  
-    new Setting(spaceAppearances)
-    .setName(t.settings.spacesFileExplorerDual.name)
-    .setDesc(t.settings.spacesFileExplorerDual.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.spacesDisablePatch)
-        .onChange((value) => {
-          this.plugin.superstate.settings.spacesDisablePatch = value;
-          this.plugin.saveSettings();
-        })
-    );
-  
-  new Setting(spaceAppearances)
-    .setName(t.settings.spacesPerformance.name)
-    .setDesc(t.settings.spacesPerformance.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.spacesPerformance)
-        .onChange((value) => {
-          this.plugin.superstate.settings.spacesPerformance = value;
-          this.plugin.saveSettings();
-        })
-    );
-
-
-
-    new Setting(spaceAppearances)
-    .setName(t.settings.generateThumbnails.name)
-    .setDesc(t.settings.generateThumbnails.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.imageThumbnails)
-        .onChange((value) => {
-          this.plugin.superstate.settings.imageThumbnails = value;
-          this.plugin.saveSettings();
-        })
-    );
-
-    new Setting(spaceAppearances)
-    .setName(t.settings.spacesDeleteOption.name)
-    .setDesc(t.settings.spacesDeleteOption.desc)
-    .addDropdown((dropdown) => {
-      dropdown.addOption(
-        "permanent",
-        t.settings.spacesDeleteOptions.permanant
-      );
-      dropdown.addOption("trash", t.settings.spacesDeleteOptions.trash);
-      dropdown.addOption(
-        "system-trash",
-        t.settings.spacesDeleteOptions["system-trash"]
-      );
-      dropdown.setValue(this.plugin.superstate.settings.deleteFileOption);
-      dropdown.onChange((option: DeleteFileOption) => {
-        this.plugin.superstate.settings.deleteFileOption = option;
-        this.plugin.saveSettings();
-      });
-    });  
-    new Setting(containerEl)
-      .setName(t.settings.newNotePlaceholder.name)
-      .setDesc(t.settings.newNotePlaceholder.desc)
-      .addText((text) => {
-        text
-          .setValue(this.plugin.superstate.settings.newNotePlaceholder)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.newNotePlaceholder = value;
-            await this.plugin.saveSettings();
-          });
-      });  
-  
-}
-
-if (this.plugin.superstate.settings.spacesStickers) {
-  
-containerEl.createEl("h3", { text: t.settings.sectionStickers });
-
-
-
-    new Setting(containerEl)
-    .setName(t.settings.indexSVG.name)
-    .setDesc(t.settings.indexSVG.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.indexSVG)
-        .onChange((value) => {
-          this.plugin.superstate.settings.indexSVG = value;
-          this.plugin.saveSettings();
-        })
-    );
-      }
-
-      new Setting(containerEl)
-    .setName(t.settings.coverHeight.name)
-    .setDesc(t.settings.coverHeight.desc)
-    .addText((text) => {
-      text
-        .setValue(this.plugin.superstate.settings.bannerHeight.toString())
-        .onChange(async (value) => {
-          text.setValue(parseInt(value).toString());
-          this.plugin.superstate.settings.bannerHeight = parseInt(value);
-          await this.plugin.saveSettings();
-        });
-    });
-      if (this.plugin.superstate.settings.spaceViewEnabled) {
-        
-    containerEl.createEl("h3", { text: t.settings.sectionSpaceView });
-    new Setting(containerEl)
-      .setName(t.settings.defaultSpaceTemplate.name)
-      .setDesc(t.settings.defaultSpaceTemplate.desc)
-      .addText((text) => {
-        text
-          .setValue(this.plugin.superstate.settings.defaultSpaceTemplate)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.defaultSpaceTemplate = value;
-            await this.plugin.saveSettings();
-          });
-      });
-
-      }
-    containerEl.createEl("h1", { text: t.settings.sectionContext });
-    new Setting(containerEl)
-      .setName(t.settings.contexts.name)
-      .setDesc(t.settings.contexts.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.contextEnabled)
-          .onChange((value) => {
-            this.plugin.superstate.settings.contextEnabled = value;
-            this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-      new Setting(containerEl)
-    .setName(t.settings.contextPagination.name)
-    .setDesc(t.settings.contextPagination.desc)
-    .addText((text) => {
-      text
-        .setValue(this.plugin.superstate.settings.contextPagination.toString())
-        .onChange(async (value) => {
-          this.plugin.superstate.settings.contextPagination = parseInt(value);
-          await this.plugin.saveSettings();
-        });
-    });
-      new Setting(containerEl)
-      .setName(t.settings.defaultDateFormat.name)
-      .setDesc(t.settings.defaultDateFormat.desc)
-      .addText((text) => {
-        text
-          .setValue(this.plugin.superstate.settings.defaultDateFormat)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.defaultDateFormat = value;
-            await this.plugin.saveSettings();
-          });
-      });
-      
-      
-      
-      containerEl.createEl("h3", { text: t.settings.sectionAdvanced });
-    new Setting(containerEl)
-      .setName(t.settings.openFileContext.name)
-      .setDesc(t.settings.openFileContext.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.autoOpenFileContext)
-          .onChange((value) => {
-            this.plugin.superstate.settings.autoOpenFileContext = value;
-            this.plugin.saveSettings();
-          })
-      );
-      
-      new Setting(containerEl)
-      .setName(t.settings.syncContextToFrontmatter.name)
-      .setDesc(t.settings.syncContextToFrontmatter.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.saveAllContextToFrontmatter)
-          .onChange((value) => {
-            this.plugin.superstate.settings.saveAllContextToFrontmatter = value;
-            this.plugin.saveSettings();
-          })
-      );
-      new Setting(containerEl)
-      .setName(t.settings.syncFormulaToFrontmatter.name)
-      .setDesc(t.settings.syncFormulaToFrontmatter.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.syncFormulaToFrontmatter)
-          .onChange((value) => {
-            this.plugin.superstate.settings.syncFormulaToFrontmatter = value;
-            this.plugin.saveSettings();
-          })
-      );
-      containerEl.createEl("h1", { text: t.settings.sectionBlink});
-      new Setting(containerEl)
-      .setName(t.settings.blink.name)
-      .setDesc(t.settings.blink.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.blinkEnabled)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.blinkEnabled = value;
-            await this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-  
-    containerEl.createEl("h1", { text: t.settings.sectionFlow });
-    new Setting(containerEl)
-    .setName(t.settings.editorMakerMode.name)
-    .setDesc(t.settings.editorMakerMode.desc)
-    .addToggle((toggle) =>
-      toggle.setValue(this.plugin.superstate.settings.makerMode).onChange((value) => {
-        this.plugin.superstate.settings.makerMode = value;
-        this.plugin.saveSettings();
-        this.refreshView();
-      })
-    );
-    if (this.plugin.superstate.settings.makerMode) {
-
-    
-    containerEl.createEl("h3", { text: t.settings.sectionInlineContext });  
-    new Setting(containerEl)
-      .setName(t.settings.inlineContextExplorer.name)
-      .setDesc(t.settings.inlineContextExplorer.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.inlineContext)
-          .onChange((value) => {
-            this.plugin.superstate.settings.inlineContext = value;
-            this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-      
-      new Setting(containerEl)
-      .setName(t.settings.inlineContextProperties.name)
-      .setDesc(t.settings.inlineContextProperties.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.inlineContextProperties)
-          .onChange((value) => {
-            this.plugin.superstate.settings.inlineContextProperties = value;
-            this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-      new Setting(containerEl)
-      .setName(t.settings.inlineContextExpanded.name)
-      .setDesc(t.settings.inlineContextExpanded.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.inlineContextSectionsExpanded)
-          .onChange((value) => {
-            this.plugin.superstate.settings.inlineContextSectionsExpanded = value;
-            this.plugin.saveSettings();
-          })
-      );
-    new Setting(containerEl)
-      .setName(t.settings.inlineContextHorizontal.name)
-      .setDesc(t.settings.inlineContextHorizontal.desc)
-      .addDropdown((dropdown) => {
-        dropdown.addOption("vertical", t.settings.layoutVertical);
-        dropdown.addOption("horizontal", t.settings.layoutHorizontal);
-        dropdown.setValue(this.plugin.superstate.settings.inlineContextNameLayout);
-        dropdown.onChange((option: InlineContextLayout) => {
-          this.plugin.superstate.settings.inlineContextNameLayout = option;
-          this.plugin.saveSettings();
-        });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.hideFrontmatter.name)
-      .setDesc(t.settings.hideFrontmatter.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.hideFrontmatter)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.hideFrontmatter = value;
-            await this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-      new Setting(containerEl)
-      .setName(t.settings.dataviewInlineContext.name)
-      .setDesc(t.settings.dataviewInlineContext.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.dataviewInlineContext)
-          .onChange((value) => {
-            this.plugin.superstate.settings.dataviewInlineContext = value;
-            this.plugin.saveSettings();
-          })
-      );
-      new Setting(containerEl)
-      .setName(t.settings.inlineBacklinks.name)
-      .setDesc(t.settings.inlineBacklinks.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.inlineBacklinks)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.inlineBacklinks = value;
-            await this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-      containerEl.createEl("h3", { text: t.settings.sectionFlow });  
-      new Setting(containerEl)
-      .setName(t.settings.editorFlowReplace.name)
-      .setDesc(t.settings.editorFlowReplace.desc)
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.superstate.settings.editorFlow).onChange((value) => {
-          this.plugin.superstate.settings.editorFlow = value;
-          this.plugin.saveSettings();
-          this.refreshView();
-        })
-      );
-    new Setting(containerEl)
-      .setName(t.settings.internalLinkFlowEditor.name)
-      .setDesc(t.settings.internalLinkFlowEditor.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.internalLinkClickFlow)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.internalLinkClickFlow = value;
-            await this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-   
-      new Setting(containerEl)
-      .setName(t.settings.internalLinkSticker.name)
-      .setDesc(t.settings.internalLinkSticker.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.internalLinkSticker)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.internalLinkSticker = value;
-            await this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-   
-    new Setting(containerEl)
-      .setName(t.settings.editorFlowStyle.name)
-      .setDesc(t.settings.editorFlowStyle.desc)
-      .addDropdown((dropdown: DropdownComponent) => {
-        dropdown.addOption("seamless", t.settings.editorFlowStyle.seamless);
-        dropdown.addOption("minimal", t.settings.editorFlowStyle.minimal);
-        dropdown
-          .setValue(this.plugin.superstate.settings.editorFlowStyle)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.editorFlowStyle = value;
-            document.body.classList.toggle("mk-flow-minimal", false);
-            document.body.classList.toggle("mk-flow-seamless", false);
-
-            if (value == "seamless")
-              document.body.classList.toggle("mk-flow-seamless", true);
-            if (value == "classic")
-              document.body.classList.toggle("mk-flow-minimal", true);
-            if (value == "minimal")
-              document.body.classList.toggle("mk-flow-minimal", true);
-          });
-      });
-
-    
-
-
-    
-      containerEl.createEl("h3", { text: t.settings.sectionFlowMenu });
-      new Setting(containerEl)
-      .setName(t.settings.editorMakeMenu.name)
-      .setDesc(t.settings.editorMakeMenu.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.flowMenuEnabled)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.flowMenuEnabled = value;
-            await this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-      new Setting(containerEl)
-      .setName(t.settings.makeChar.name)
-      .setDesc(t.settings.makeChar.desc)
-      .addText((text) => {
-        text
-          .setValue(this.plugin.superstate.settings.menuTriggerChar)
-          .onChange(async (value) => {
-            if (value.length < 1) {
-              text.setValue(this.plugin.superstate.settings.menuTriggerChar);
-              return;
-            }
-
-            let char = value[0];
-
-            if (value.length === 2) {
-              char = value.replace(this.plugin.superstate.settings.menuTriggerChar, "");
-            }
-
-            text.setValue(char);
-
-            this.plugin.superstate.settings.menuTriggerChar = char;
-
-            await this.plugin.saveSettings();
-          });
-      });
-      
-    new Setting(containerEl)
-      .setName(t.settings.editorMakePlacholder.name)
-      .setDesc(t.settings.editorMakePlacholder.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.makeMenuPlaceholder)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.makeMenuPlaceholder = value;
-            await this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-      containerEl.createEl("h3", { text: t.settings.sectionFlowStyler });
-    
-
-    new Setting(containerEl)
-      .setName(t.settings.inlineStyler.name)
-      .setDesc(t.settings.inlineStyler.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.inlineStyler)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.inlineStyler = value;
-            await this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-      new Setting(containerEl)
-      .setName(t.settings.inlineStickerMenu.name)
-      .setDesc(t.settings.inlineStickerMenu.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.inlineStickerMenu)
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.inlineStickerMenu = value;
-            await this.plugin.saveSettings();
-            this.plugin.reloadExtensions(false);
-          })
-      );
-      new Setting(containerEl)
-      .setName(t.settings.inlineStylerColor.name)
-      .setDesc(t.settings.inlineStylerColor.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.inlineStylerColors)
-          .onChange((value) => {
-            this.plugin.superstate.settings.inlineStylerColors = value;
-            this.plugin.saveSettings();
-            this.refreshView();
-          })
-      );
-      new Setting(containerEl)
-      .setName(t.settings.mobileMakeBar.name)
-      .setDesc(t.settings.mobileMakeBar.desc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.superstate.settings.mobileMakeBar)
-          .onChange((value) => {
-            this.plugin.superstate.settings.mobileMakeBar = value;
-            this.plugin.saveSettings();
-            this.refreshView();
-          })
-      );
-    }
-    new Setting(containerEl)
-    .setName("Perform Search in Background")
-    .setDesc("Perform search in background to prevent lag")
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.searchWorker)
-        .onChange((value) => {
-          this.plugin.superstate.settings.searchWorker = value;
-          this.plugin.saveSettings();
-        })
-    );
-
-    new Setting(containerEl)
-    .setName("Use Cache Index")
-    .setDesc("Use cache index to speed up launch")
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.cacheIndex)
-        .onChange((value) => {
-          this.plugin.superstate.settings.cacheIndex = value;
-          this.plugin.saveSettings();
-          if (value == false) {
-            this.plugin.superstate.persister.unload()
           }
-        })
-    );
-
-    containerEl.createEl("h3", { text: t.settings.sectionAdvanced });
-
-    new Setting(containerEl)
-    .setName(t.settings.experimental.name)
-    .setDesc(t.settings.experimental.desc)
-    .addToggle((toggle) =>
-      toggle
-        .setValue(this.plugin.superstate.settings.experimental)
-        .onChange((value) => {
-          this.plugin.superstate.settings.experimental = value;
-          this.plugin.saveSettings();
+        },
+        
+        {
+          name: 'spacesStickers',
+          category: 'general',
+          subCategory: 'label',
+          type: 'boolean',
+          
+        },
+        {
+          name: 'indexSVG',
+          category: 'general',
+            subCategory: 'label',
+          type: 'boolean',
+        },
+      {
+        name: 'enableDefaultSpaces',
+        category: 'general',
+        subCategory: 'tags',
+        type: 'boolean',
+        
+      },
+      {
+        name: 'spaceViewEnabled',
+        category: 'general',
+        type: 'boolean',
+        
+      },
+      {
+        name: 'basics',
+        category: 'notes',
+        type: 'boolean',
+      },
+      { name: 'sidebarTabs',
+        category: 'navigator',
+        subCategory: 'appearance',
+        type: 'boolean',
+        onChange: (value: boolean) => {
+          document.body.classList.toggle("mk-hide-tabs", !value);
+        }
+      },
+      {
+        name: 'showRibbon',
+        category: 'navigator',
+        subCategory: 'appearance',
+        type: 'boolean',
+        onChange: (value: boolean) => {
+          document.body.classList.toggle("mk-hide-ribbon", !value);
+        }
+      },
+      {
+        name: 'spacesUseAlias',
+        category: 'general',
+          subCategory: 'label',
+        type: 'boolean',
+        
+      },
+      {
+        name: 'openSpacesOnLaunch',
+        category: 'navigator',
+        subCategory: 'interaction',
+        type: 'boolean',
+        
+      },
+      {
+        name: 'spacesRightSplit',
+        category: 'navigator',
+        subCategory: 'appearance',
+        type: 'boolean',
+      },
+      {
+        name: 'spaceRowHeight',
+        category: 'navigator',
+        subCategory: 'appearance',
+        type: 'number',
+        props: {
+          control: 'slider',
+          limits: [20, 40, 1]
+        }
+      },
+      {
+        name: 'folderIndentationLines',
+        category: 'navigator',
+        subCategory: 'appearance',
+        type: 'boolean',
+        onChange: (value: boolean) => {
+          document.body.classList.toggle("mk-folder-lines", value);
+        }
+      },
+      {
+        
+        name: 'expandFolderOnClick',
+        category: 'navigator',
+        subCategory: 'interaction',
+        type: 'boolean',
+      },
+      {
+        name: 'filePreviewOnHover',
+        category: 'navigator',
+        subCategory: 'interaction',
+        type: 'boolean',
+      },
+      {
+        name: 'revealActiveFile',
+        category: 'navigator',
+        subCategory: 'interaction',
+        type: 'boolean', 
+      },
+      {
+        name: 'deleteFileOption',
+        category: 'navigator',
+        subCategory: 'interaction',
+        type: 'options',
+        props: {
+          options: [
+            { name: t.settings.spacesDeleteOptions.permanant, value: 'permanent' },
+            { name: t.settings.spacesDeleteOptions.trash, value: 'trash' },
+            { name: t.settings.spacesDeleteOptions["system-trash"], value: 'system-trash' }
+          ]
+        }
+      },
+      {
+        name: 'spacesDisablePatch',
+        category: 'navigator',
+        subCategory: 'advanced',
+        type: 'boolean',
+      },
+      {
+        name: 'enableFolderNote',
+        category: 'notes',
+        subCategory: 'folderNote',
+        type: 'boolean',
+      },
+      {
+        name: 'folderNoteName',
+        category: 'notes',
+        subCategory: 'folderNote',
+        type: 'text',
+      },
+      {
+        name: 'newNotePlaceholder',
+        category: 'notes',
+        type: 'text',
+      },
+      {
+        name: 'autoAddContextsToSubtags',
+        category: 'general',
+        subCategory: 'tags',
+        type: 'boolean',
+      },
+      {
+        name: 'spacesPerformance',
+        category: 'performance',
+        type: 'boolean',
+      },
+      
+      {
+        name: 'banners',
+        category: 'general',
+          subCategory: 'label',
+        type: 'boolean',
+      },
+      {
+        name: 'bannerHeight',
+        category: 'general',
+          subCategory: 'label',
+        type: 'number',
+        
+      },
+      {
+        name: 'defaultSpaceTemplate',
+        category: 'space',
+        subCategory: 'appearance',
+        type: 'text',
+      },
+      {
+        name: 'contextEnabled',
+        category: 'space',
+        subCategory: 'context',
+        type: 'boolean',
+      },
+      {
+        name: 'contextPagination',
+        category: 'space',
+        subCategory: 'context',
+        type: 'number',
+      },
+      {
+        name: 'defaultDateFormat',
+        category: 'advanced',
+        type: 'text',
+      },
+      {
+        name: 'defaultTimeFormat',
+        category: 'advanced',
+        type: 'text',
+      },
+      {
+        name: 'autoOpenFileContext',
+        category: 'space',
+        subCategory: 'context',
+        type: 'boolean',
+      },
+      {
+        name: 'saveAllContextToFrontmatter',
+        category: 'space',
+        subCategory: 'context',
+        type: 'boolean',
+      },
+      {
+        name: 'syncFormulaToFrontmatter',
+        category: 'space',
+        subCategory: 'context',
+        type: 'boolean',
+      },
+      {
+        name: 'blinkEnabled',
+        category: 'navigator',
+        subCategory: 'interaction',
+        type: 'boolean',
+      },
+      {
+        name: 'inlineContext',
+        category: 'notes',
+        type: 'boolean',
+      },
+      
+      {
+        name: 'inlineContextProperties',
+        category: 'notes',
+        subCategory: 'appearance',
+        type: 'boolean',
+      },
+      {
+        name: 'inlineContextExpanded',
+        category: 'notes',
+        subCategory: 'appearance',
+        type: 'boolean',
+      },
+      {
+        name: 'inlineContextNameLayout',
+        category: 'notes',
+        subCategory: 'appearance',
+        type: 'options',
+        props: {
+          options: [
+            { name: t.settings.layoutVertical, value: 'vertical' },
+            { name: t.settings.layoutHorizontal, value: 'horizontal' }
+          ]
+        }
+      },
+      {
+        name: 'hideFrontmatter',
+        category: 'space',
+        subCategory: 'context',
+        type: 'boolean',
+      },
+      
+      {
+        name: 'imageThumbnails',
+        category: 'performance',
+        type: 'boolean',
+      },
+      {
+        name: 'searchWorker',
+        category: 'performance',
+        type: 'boolean',
+      },
+      {
+        name: 'cacheIndex',
+        category: 'performance',
+        type: 'boolean',
+      },
+      {
+        name: 'experimental',
+        category: 'advanced',
+        type: 'boolean',
+      },
+      {
+        name: 'spaceSubFolder',
+        category: 'advanced',
+        type: 'text',
+      },
+      {
+        name: 'spacesFolder',
+        category: 'advanced',
+        type: 'text',
+      }
+      
+    ]
+      }
+      
+    containerEl.innerHTML = "";
+    const sectionKeys = t.settings.sections as unknown as Record<string, string>;
+    const insertSetting = (containerEl: HTMLElement, setting: SettingObject) => {
+      const localizationKeys = t.settings as unknown as Record<keyof MakeMDSettings, {
+        name: string;
+        desc: string;
+      }>;
+      
+      const newSetting = new Setting(containerEl)
+      .setName(localizationKeys[setting.name].name)
+      .setDesc(localizationKeys[setting.name].desc);
+      if (setting.type === 'boolean') {
+      newSetting.addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.superstate.settings[setting.name] as boolean)
+            .onChange(
+              (value: boolean) => {
+                Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
+                this.plugin.saveSettings();
+                if(setting.onChange) setting.onChange(value);
+                this.refreshView();
+              }
+            )
+        );
+      }
+      
+      if (setting.type == 'number') {
+        if (setting.props?.control === 'slider') {
+          newSetting
+          .addSlider((slider) =>
+            slider
+              .setValue(this.plugin.superstate.settings[setting.name] as number)
+              .setDynamicTooltip()
+              .setLimits(20, 40, 1)
+              .onChange((value: number) => {
+                Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
+                this.plugin.saveSettings();
+                if(setting.onChange) setting.onChange(value);
+                this.refreshView();
+              })
+          );
+        } else {
+          newSetting
+        .addText((text) =>
+          text
+            .setValue(this.plugin.superstate.settings[setting.name].toString())
+            .onChange((value: string) => {
+              Object.assign(this.plugin.superstate.settings, { [setting.name]: parseInt(value) });
+              this.plugin.saveSettings();
+              if(setting.onChange) setting.onChange(parseInt(value));
+              this.refreshView();
+            })
+        );
+      }
+      }
+      if (setting.type == 'text') {
+        
+        newSetting.addText((text) =>
+          text
+            .setValue(this.plugin.superstate.settings[setting.name] as string)
+            .onChange((value: string) => {
+              Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
+              this.plugin.saveSettings();
+              if(setting.onChange) setting.onChange(value);
+              this.refreshView();
+            })
+        );
+      }
+      if (setting.type == 'options') {
+        newSetting
+        .addDropdown((dropdown) => {
+          setting.props.options?.forEach(option => {
+            dropdown.addOption(option.value, option.name);
+          });
+          dropdown.setValue(this.plugin.superstate.settings[setting.name] as string);
+          dropdown.onChange((value: string) => {
+            Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
+              this.plugin.saveSettings();
+          if(setting.onChange) setting.onChange(value);
           this.refreshView();
-        })
-    );
-
-    new Setting(containerEl)
-      .setName("Space Sub Folder Name")
-      .setDesc("The folder name containing the space files, default is .space")
-      .addText((text) => {
-        text
-          .setValue(this.plugin.superstate.settings.spaceSubFolder)
-          .setPlaceholder("Folder Name")
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.spaceSubFolder = value;
-            await this.plugin.saveSettings();
           });
-      });  
-
-      new Setting(containerEl)
-      .setName("Tag Space Folder Name")
-      .setDesc("The folder name containing the tag space files, default is Tags")
-      .addText((text) => {
-        text
-          .setValue(this.plugin.superstate.settings.spacesFolder)
-          .setPlaceholder("Folder Name")
-          .onChange(async (value) => {
-            this.plugin.superstate.settings.spacesFolder = value;
-            await this.plugin.saveSettings();
-          });
-      });  
-    
+          
+        });
+    }
   }
-}
+
+    settings.categories.forEach((category) => {
+      containerEl.createEl("h1", { text: sectionKeys[category] });
+      settings.settings.forEach((setting) => {
+        if (setting.category === category && !setting.subCategory) {
+          insertSetting(containerEl, setting);
+        }
+      });
+      settings.subCategories[category].forEach((subCategory) => {
+        const subCategoryItems = settings.settings.filter((setting) => setting.category === category && setting.subCategory === subCategory);
+        if (subCategoryItems.length > 0) {
+          containerEl.createEl("h2", { text: sectionKeys[subCategory] });
+        }
+        subCategoryItems.forEach((setting) => {
+            insertSetting(containerEl, setting);
+        });
+      });
+    });
+
+    if (this.plugin.superstate.settings.basics) {
+      containerEl.createEl("h1", { text: "Basics Settings" });
+    const basicsSettings = new MakeBasicsSettingsTab(this.app, this.plugin.basics);
+    basicsSettings.display(containerEl);
+    }
+
+  }
+  }

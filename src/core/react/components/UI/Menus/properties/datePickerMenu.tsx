@@ -117,11 +117,12 @@ export const DatePicker = (props: {
   const [date, setDate] = useState(props.value);
   const [mode, setMode] = useState(props.time == DatePickerTimeMode.Always);
   const [yearMode, setYearMode] = useState(false);
-  useEffect(() => {
-    const date =
-      props.value ?? props.time == DatePickerTimeMode.None
-        ? startOfDay(new Date())
-        : new Date();
+  const resetMode = () => {
+    const date = props.value
+      ? props.value
+      : props.time == DatePickerTimeMode.None
+      ? startOfDay(new Date())
+      : new Date();
     const h = date.getHours();
     const m = date.getMinutes();
     const s = date.getSeconds();
@@ -129,14 +130,20 @@ export const DatePicker = (props: {
     setMinutes(m);
     setSeconds(s);
     setDate(date);
+
     if (props.time == DatePickerTimeMode.Toggle) {
-      if (h == 0 && m == 0 && s == 0) {
-        setMode(false);
+      if (h == 0 && m == 0 && s == 0 && !mode) {
       } else {
         setMode(true);
       }
     }
-  }, [props.value]);
+  };
+  useEffect(() => {
+    resetMode();
+  }, [props.value, props.time]);
+  useEffect(() => {
+    resetMode();
+  }, []);
 
   const updateDate = (time?: {
     y?: number;
@@ -146,7 +153,9 @@ export const DatePicker = (props: {
     s?: number;
   }) => {
     const newDate = new Date(date);
-    const { h, m, s } = time ?? { h: hour, m: minutes, s: seconds };
+    const h = time?.h ?? hour;
+    const m = time?.m ?? minutes;
+    const s = time?.s ?? seconds;
     if (time) {
       time.h !== undefined && setHour(time.h);
       time.m !== undefined && setMinutes(time.m);
@@ -199,9 +208,16 @@ export const DatePicker = (props: {
           labelWeekNumber: () => undefined,
         }}
         onSelect={(date: Date, s, a, e) => {
-          setDate(date);
+          const newDate = date;
+
+          if (mode) {
+            newDate.setHours(hour);
+            newDate.setMinutes(minutes);
+            newDate.setSeconds(seconds);
+          }
+          setDate(newDate);
           props.setValue(
-            date,
+            newDate,
             props.time != DatePickerTimeMode.None &&
               !(hour == 0 && minutes == 0 && seconds == 0)
           );

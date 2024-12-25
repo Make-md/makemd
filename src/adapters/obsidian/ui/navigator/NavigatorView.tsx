@@ -1,7 +1,7 @@
 import { ItemView, TAbstractFile, TFolder, WorkspaceLeaf } from "obsidian";
 import React from "react";
 export const FILE_TREE_VIEW_TYPE = "mk-path-view";
-export const VIEW_DISPLAY_TEXT = "Spaces";
+export const VIEW_DISPLAY_TEXT = "Navigator";
 export const ICON = "layout-grid";
 
 import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";

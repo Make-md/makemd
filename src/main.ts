@@ -1,8 +1,5 @@
-import { cmExtensions } from "adapters/obsidian/ui/editors/markdownView/cmExtensions";
-import { toggleMark } from "adapters/obsidian/ui/editors/markdownView/menus/inlineStylerView/marks";
 
 import { SPACE_VIEW_TYPE, SpaceViewContainer } from "adapters/obsidian/SpaceViewContainer";
-import { replaceAllEmbed, replaceAllTables } from "adapters/obsidian/utils/flow/markdownPost";
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
 import {
   eventTypes
@@ -25,8 +22,6 @@ import {
   FileTreeView
 } from "./adapters/obsidian/ui/navigator/NavigatorView";
 
-import { Extension } from "@codemirror/state";
-import { replaceMobileMainMenu } from "adapters/obsidian/replaceMobileMainMenu";
 import {
   EMBED_SPACE_VIEW_TYPE,
   EmbedSpaceView
@@ -36,16 +31,11 @@ import {
   MDB_FILE_VIEWER_TYPE
 } from "adapters/obsidian/ui/editors/MDBFileViewer";
 import { FileLinkView, LINK_VIEW_TYPE } from "adapters/obsidian/ui/editors/markdownView/FileView";
-import {
-  flowEditorInfo,
-  toggleFlowEditor
-} from "adapters/obsidian/ui/editors/markdownView/flowEditor/flowEditor";
 import { ContextExplorerLeafView, FILE_CONTEXT_VIEW_TYPE } from "adapters/obsidian/ui/explorer/ContextExplorerLeafView";
 
 
 import { i18n } from "makemd-core";
 
-import { getActiveCM } from "adapters/obsidian/utils/codemirror";
 import {
   defaultConfigFile,
   openURL
@@ -55,16 +45,15 @@ import { convertPathToSpace } from "core/superstate/utils/path";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, Superstate, UIManager } from "makemd-core";
 
 import { mkLogo } from "adapters/obsidian/ui/icons";
-import { patchFilesPlugin, patchWorkspace, patchWorkspaceLeaf } from "adapters/obsidian/utils/patches";
+import { patchFilesPlugin, patchWorkspace } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "utils/parsers";
-import { modifyFlowDom } from "./adapters/obsidian/utils/flow/flow";
+import { modifyFlowDom } from "./adapters/obsidian/inlineContextLoader";
 
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import { ObsidianFileSystem } from "adapters/obsidian/filesystem/filesystem";
 
 import { ObsidianCanvasFiletypeAdapter } from "adapters/obsidian/filetypes/canvasAdapter";
 import { ObsidianMarkdownFiletypeAdapter } from "adapters/obsidian/filetypes/markdownAdapter";
-import { registerEditorMenus } from "adapters/obsidian/ui/editors/markdownView/menus/registerMenus";
 import { ObsidianUI } from "adapters/obsidian/ui/ui";
 
 import { modifyTabSticker } from "adapters/obsidian/utils/modifyTabSticker";
@@ -77,12 +66,10 @@ import { TextCacher } from "adapters/text/textCacher";
 import { CLIManager } from "core/middleware/commands";
 import { LocalCachePersister } from "core/middleware/types/persister";
 import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
-import { openTestModal } from "core/test/TestComponent";
 
 import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
-import { loadFlowCommands } from "adapters/obsidian/commands/flowCommands";
 import { openPathFixer } from "adapters/obsidian/fileSystemPathFixer";
 import { moveSpaceFiles } from "adapters/obsidian/filesystem/spaceFileOps";
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
@@ -90,7 +77,7 @@ import { SPACE_FRAGMENT_VIEW_TYPE, SpaceFragmentView } from "adapters/obsidian/u
 import { installKitModal } from "adapters/obsidian/ui/kit/InstallKitModal";
 import { exportSpaceKit } from "adapters/obsidian/ui/kit/kits";
 import { EVER_VIEW_TYPE, EverLeafView } from "adapters/obsidian/ui/navigator/EverLeafView";
-import { InteractionType } from "core/middleware/ui";
+import MakeBasicsPlugin from "basics/basics";
 import { showWarningsModal } from "core/react/components/Navigator/SyncWarnings";
 import { openInputModal } from "core/react/components/UI/Modals/InputModal";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
@@ -144,79 +131,21 @@ export default class MakeMDPlugin extends Plugin {
   markdownAdapter: ObsidianMarkdownFiletypeAdapter;
 
   activeEditorView?: MarkdownView;
-  extensions: Extension[];
+  
   superstate: Superstate;
   ui: ObsidianUI;
 
   
-  openFlow() {
-    const cm = getActiveCM(this);
-    if (cm) {
-      const value = cm.state.field(flowEditorInfo, false);
-      const currPosition = cm.state.selection.main;
-      for (const flowEditor of value) {
-        if (
-          flowEditor.from < currPosition.to &&
-          flowEditor.to > currPosition.from
-        ) {
-          cm.dispatch({
-            annotations: toggleFlowEditor.of([flowEditor.id, 2]),
-          });
-        }
-      }
-    }
-  }
-  closeFlow() {
-    const cm = getActiveCM(this);
-    if (cm) {
-      const value = cm.state.field(flowEditorInfo, false);
-      const currPosition = cm.state.selection.main;
-      for (const flowEditor of value) {
-        if (
-          flowEditor.from < currPosition.to &&
-          flowEditor.to > currPosition.from
-        ) {
-          cm.dispatch({
-            annotations: toggleFlowEditor.of([flowEditor.id, 0]),
-          });
-        }
-      }
-    }
-  }
   
-  reloadExtensions(firstLoad: boolean) {
-    this.extensions = cmExtensions(this, this.superstate.ui.primaryInteractionType() == InteractionType.Touch);
-    if (firstLoad) {
-      this.registerEditorExtension(this.extensions);
-    } else {
-      this.app.workspace.updateOptions();
-    }
-  }
+  
+  
   quickOpen(superstate: Superstate) {
     const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument)
     openBlinkModal(superstate, BlinkMode.Blink, win);
   }
 
-  testPage() {
-    openTestModal(this);
-  }
 
-  toggleBold() {
-    const cm = getActiveCM(this);
-    if (cm) {
-      cm.dispatch({
-        annotations: toggleMark.of("strong"),
-      });
-    }
-  }
-  toggleEm() {
-    const cm = getActiveCM(this);
-    if (cm) {
-      cm.dispatch({
-        annotations: toggleMark.of("em"),
-      });
-    }
-  }
+  
 
   
 loadSuperState() {
@@ -244,9 +173,11 @@ loadSuperState() {
       this.superstate.settings.releaseNotesPrompt = makeMDVersion;
       this.saveSettings();
     }
-    
-    
-    
+    if (!this.superstate.settings.firstLaunch) {
+      this.getStarted();
+      this.superstate.settings.firstLaunch = true;
+      this.saveSettings();
+    }
   });
 }
   
@@ -294,7 +225,7 @@ loadViews () {
     this.superstate.settings.readableLineWidth = this.app.vault.getConfig("readableLineLength");
     if (this.superstate.settings.spacesEnabled) {
       document.body.classList.toggle("mk-hide-tabs", !this.superstate.settings.sidebarTabs);
-      document.body.classList.toggle("mk-mobile-styler", this.superstate.settings.mobileMakeBar);
+      
     document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
     // document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
     document.body.classList.toggle(
@@ -316,7 +247,6 @@ loadViews () {
       
       
     }
-
     
 
     this.registerEvent(
@@ -394,6 +324,9 @@ loadViews () {
   
   releaseTheNotes() {
     openURL('https://www.make.md/static/latest.md', this.app, true)
+  }
+  getStarted() {
+    openURL('https://www.make.md/static/GetStarted.md', this.app, true)
   }
   closeExtraFileTabs () {
     let filesFound = false;
@@ -502,8 +435,6 @@ loadViews () {
         },
       })
 
-      
-
       this.addCommand({
         id: "mk-collapse-folders",
         name: i18n.commandPalette.collapseAllFolders,
@@ -520,6 +451,13 @@ loadViews () {
         },
       });
       this.addCommand({
+        id: "mk-get-started",
+        name: i18n.commandPalette.getStarted,
+        callback: () => {
+          this.getStarted();
+        },
+      });
+      this.addCommand({
         id: "mk-reveal-file",
         name: i18n.commandPalette.revealFile,
         callback: () => {
@@ -531,10 +469,6 @@ loadViews () {
           window.dispatchEvent(evt);
         },
       });
-      
-      
-      
-      
       
       this.addCommand({
         id: "mk-spaces",
@@ -567,16 +501,7 @@ loadViews () {
         },
       });
     }
-    // this.addCommand({
-    //   id: "mk-test",
-    //   name: "Open Test Page",
-    //   callback: () => {
-    //     this.testPage()
-    //   },
-    //   hotkeys: [
-        
-    //   ],
-    // });
+    
     if (this.superstate.settings.blinkEnabled) {
       this.addCommand({
         id: "mk-blink",
@@ -590,9 +515,7 @@ loadViews () {
         ],
       });
     }
-    if (this.superstate.settings.editorFlow) {
-      loadFlowCommands(this);
-    }
+    
     
     
   }
@@ -619,6 +542,15 @@ loadViews () {
         }
         setTimeout(() => this.activeFileChange(), 2000);
       });
+      if (this.superstate.settings.inlineContext) {
+        this.registerMarkdownPostProcessor((element, context) => {
+          replaceInlineContext(this, element, context);
+        });
+        document.body.classList.toggle(
+          "mk-inline-context-enabled",
+          this.superstate.settings.inlineContext
+        );
+      }
     }
   }
 
@@ -639,59 +571,12 @@ loadViews () {
             leaf.setPinned(true);
         });
     }
+    patchWorkspace(this)
   }
-  loadFlowEditor() {
+  
 
-    patchWorkspace(this);
-    patchWorkspaceLeaf(this);
-    document.body.classList.toggle("mk-flow-replace", this.superstate.settings.editorFlow);
-    document.body.classList.toggle(
-      "mk-flow-" + this.superstate.settings.editorFlowStyle,
-      true
-    );
-
-      this.registerMarkdownPostProcessor((element, context) => {
-
-        const removeAllFlowMarks = (el: HTMLElement) => {
-          const embeds = el.querySelectorAll(".internal-embed.markdown-embed");
-
-          for (let index = 0; index < embeds.length; index++) {
-            const embed = embeds.item(index);
-            if (
-              embed.previousSibling &&
-              embed.previousSibling.textContent.slice(-1) == "!"
-            )
-              embed.previousSibling.textContent =
-                embed.previousSibling.textContent.slice(0, -1);
-          }
-        };
-        removeAllFlowMarks(element);
-        replaceAllTables(this, element, context);
-        replaceAllEmbed(element, context, this.superstate, this.app);
-      });
-
-      
-      
-      
-    }
-
-  loadMakerMode() {
-    if (this.superstate.settings.makerMode) {
-      if (this.superstate.settings.inlineContext) {
-        this.registerMarkdownPostProcessor((element, context) => {
-          replaceInlineContext(this, element, context);
-        });
-        document.body.classList.toggle(
-          "mk-inline-context-enabled",
-          this.superstate.settings.inlineContext
-        );
-      }
-      if (this.superstate.settings.editorFlow) {
-        this.loadFlowEditor();
-      }
-      registerEditorMenus(this);
-    }
-  }
+public basics: MakeBasicsPlugin;    
+  
   
   private debouncedRefresh: () => void = () => null;
 
@@ -759,8 +644,11 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     await this.loadSpaces();
     this.loadContext();
     
-    this.loadMakerMode();
-    this.reloadExtensions(true);
+    if (this.superstate.settings.basics) {
+    this.basics = new MakeBasicsPlugin(this);
+    this.basics.loadBasics();
+    }
+    
     this.loadCommands();
     
     
@@ -817,7 +705,7 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     if (isTouchScreen(this.superstate.ui)) {
       this.app.workspace.leftSplit.collapse();
     }
-    replaceMobileMainMenu(this);
+    
     this.closeDuplicateTabs();
   };
 

@@ -26,7 +26,6 @@ export const NoteView = forwardRef((props: NoteViewProps, ref) => {
       props.source
     );
 
-    const properties: Record<string, any> = props.properties;
     const pathState = props.superstate.pathsIndex.get(path.basePath);
     const pathExists = await props.superstate.spaceManager.pathExists(
       path.basePath
@@ -58,22 +57,13 @@ export const NoteView = forwardRef((props: NoteViewProps, ref) => {
           pathToString(props.path)
         );
         setExistsPas(false);
-        await props.superstate.ui.openPath(newPath, false, div, properties);
+        await props.superstate.ui.openPath(newPath, false, div);
       }
     } else {
       setExistsPas(false);
-      props.superstate.ui.openPath(filePath, false, div, properties);
+      props.superstate.ui.openPath(filePath, false, div);
     }
-    // if (path.refStr?.length > 0) {
-    //   const pathPropertiesFromRef ;
-    //   const [from, to] = getLineRangeFromRef(
-    //     path.path,
-    //     path.refStr,
-    //     props.superstate.spaceManager
-    //   );
-    //   properties.from = from;
-    //   properties.to = to;
-    // }
+
     setLoaded(true);
   };
 

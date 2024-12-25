@@ -1,6 +1,6 @@
 import { ReadingModeHeader } from "adapters/obsidian/ui/editors/ReadingModeHeader";
 import { RemoteMarkdownHeaderView } from "adapters/obsidian/ui/editors/markdownView/RemoteMarkdownHeaderView";
-import { replaceMarkdownForReadingMode } from "adapters/obsidian/utils/flow/markdownPost";
+import { replaceMarkdownForReadingMode } from "adapters/obsidian/ui/editors/readingMode";
 import MakeMDPlugin from "main";
 import { MarkdownPostProcessorContext, MarkdownRenderChild } from "obsidian";
 import React from "react";

@@ -26,6 +26,9 @@
   align-items: center;
   margin-bottom: 4px;
 }
+.mk-node-link .mk-path {
+  padding: 0;
+}
 .mk-node-link:hover .mk-collapse {
   opacity: 1;
 }

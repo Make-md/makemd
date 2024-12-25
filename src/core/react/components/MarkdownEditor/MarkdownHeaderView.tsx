@@ -43,11 +43,13 @@ export const MarkdownHeaderView = (props: {
                 : ""
             }`}
           >
-            <BannerView
-              superstate={props.superstate}
-              reposition={repositionMode}
-              setReposition={setRepositionMode}
-            ></BannerView>
+            {props.superstate.settings.banners && (
+              <BannerView
+                superstate={props.superstate}
+                reposition={repositionMode}
+                setReposition={setRepositionMode}
+              ></BannerView>
+            )}
             <TitleComponent
               superstate={props.superstate}
               readOnly={!props.editable}

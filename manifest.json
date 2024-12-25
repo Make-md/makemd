@@ -1,9 +1,9 @@
 {
   "id": "make-md",
   "name": "MAKE.md",
-  "version": "0.9.1014",
+  "version": "1.0.0",
   "minAppVersion": "0.16.0",
-  "description": "Make.md brings powerful and modern note-taking features to Obsidian. Capture, organize and connect information with more flexibility without any code.",
+  "description": "Make.md gives you everything you need to organize and personalize your notes.",
   "author": "MAKE.md",
   "authorUrl": "https://www.make.md",
   "isDesktopOnly": false

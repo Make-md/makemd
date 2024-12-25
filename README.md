@@ -1,4 +1,4 @@
-# Make.md
+# make.md
 
 ### Organization and Personalization Engine for your notes
 

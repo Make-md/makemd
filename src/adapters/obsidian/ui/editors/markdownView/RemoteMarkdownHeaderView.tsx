@@ -70,9 +70,10 @@ export const RemoteMarkdownHeaderView = (props: {
       pathState={pathState}
       readMode={true}
     >
-      {pathState.metadata.property.banner && (
-        <BannerView superstate={props.superstate}></BannerView>
-      )}
+      {pathState.metadata.property.banner &&
+        props.superstate.settings.banners && (
+          <BannerView superstate={props.superstate}></BannerView>
+        )}
       <div className="mk-path-context-component">
         <div
           className={`mk-path-context-label ${

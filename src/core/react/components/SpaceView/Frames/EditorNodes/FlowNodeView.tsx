@@ -1,19 +1,18 @@
 import { PathView } from "core/react/components/PathView/PathView";
 
+import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { newPathInSpace } from "core/superstate/utils/spaces";
 import { PathState } from "core/types/superstate";
 import { wrapQuotes } from "core/utils/strings";
-import Fuse from "fuse.js";
 import { i18n } from "makemd-core";
 import React, { useContext, useMemo, useState } from "react";
 import { FrameEditorMode } from "types/mframe";
-import { Suggester } from "../SpaceCommand/Suggester";
+import { windowFromDocument } from "utils/dom";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";
 
 function parseContent(input: string): string {
@@ -96,36 +95,6 @@ export const FlowNodeView = (
   const hideToggle = props.state?.styles?.["--mk-link"];
   const { id } = useContext(FrameInstanceContext);
   const [pathString, setPathString] = useState<string>("");
-  const options = useMemo(() => {
-    const fuseOptions = {
-      // isCaseSensitive: false,
-      // includeScore: false,
-      // shouldSort: true,
-      // includeMatches: false,
-      // findAllMatches: false,
-      // minMatchCharLength: 1,
-      // location: 0,
-      // threshold: 0.6,
-      // distance: 100,
-      // useExtendedSearch: false,
-      // ignoreLocation: false,
-      // ignoreFieldNorm: false,
-      // fieldNormWeight: 1,
-      keys: ["name", "value"],
-    };
-    const suggestions = [...props.superstate.pathsIndex.values()]
-      .filter((f) => (!f.hidden && f.subtype == "md") || f.subtype == "space")
-      .map((f) => ({
-        name: f.label.name,
-        value: f.path,
-        description: f.path,
-        icon: f.label?.sticker,
-      }));
-    const fuse = new Fuse(suggestions, fuseOptions);
-    return pathString?.length == 0
-      ? suggestions
-      : fuse.search(pathString).map((result) => result.item);
-  }, [pathString]);
 
   const toggleCollapse = () => {
     setExpanded((p) => !p);
@@ -139,65 +108,51 @@ export const FlowNodeView = (
   };
   return (
     <div className="mk-node-flow">
-      {!props.state?.styles?.["--mk-min-mode"] && (
-        <>
-          {pathState ? (
-            <div className="mk-node-link">
-              <PathCrumb superstate={props.superstate} path={pathState.path}>
-                {!hideToggle && (
-                  <CollapseToggle
-                    superstate={props.superstate}
-                    collapsed={!expanded}
-                    onToggle={toggleCollapse}
-                  ></CollapseToggle>
-                )}
-              </PathCrumb>
-            </div>
-          ) : (
-            selectionMode > FrameEditorMode.Read && (
-              <div className="mk-node-text-placeholder">
-                <Suggester
-                  placeholder={i18n.hintText.selectNote}
-                  onChange={(e) => {
-                    setPathString(e);
-                  }}
-                  suggestions={options}
+      {pathState ? (
+        !props.state?.styles?.["--mk-min-mode"] ? (
+          <div className="mk-node-link">
+            <PathCrumb superstate={props.superstate} path={pathState.path}>
+              {!hideToggle && (
+                <CollapseToggle
                   superstate={props.superstate}
-                  onSelect={(option) => {
-                    updateValue(option.value);
-                  }}
-                ></Suggester>
-              </div>
-            )
-          )}
-        </>
-      )}
-      {props.state &&
-        expanded &&
-        (props.state?.props?.value?.length > 0 ? (
-          <PathView
-            id={id}
-            superstate={props.superstate}
-            path={pathState?.path ?? props.state?.props?.value}
-            containerRef={props.containerRef}
-            styles={{}}
-            readOnly={true}
-          ></PathView>
-        ) : (
-          <div
-            onClick={() =>
-              newPathInSpace(
-                props.superstate,
-                spaceState,
-                "md",
-                null,
-                true
-              ).then((f) => updateValue(f))
-            }
-          >
-            New Note
+                  collapsed={!expanded}
+                  onToggle={toggleCollapse}
+                ></CollapseToggle>
+              )}
+            </PathCrumb>
           </div>
-        ))}
+        ) : (
+          <></>
+        )
+      ) : (
+        selectionMode > FrameEditorMode.Read && (
+          <div
+            className="mk-node-text-placeholder"
+            onClick={(e) => {
+              openBlinkModal(
+                props.superstate,
+                BlinkMode.Open,
+                windowFromDocument(e.view.document),
+                (path) => {
+                  updateValue(path);
+                }
+              );
+            }}
+          >
+            {i18n.hintText.selectNote}
+          </div>
+        )
+      )}
+      {props.state && expanded && props.state?.props?.value?.length > 0 && (
+        <PathView
+          id={id}
+          superstate={props.superstate}
+          path={pathState?.path ?? props.state?.props?.value}
+          containerRef={props.containerRef}
+          styles={{}}
+          readOnly={true}
+        ></PathView>
+      )}
     </div>
   );
 };

@@ -19,11 +19,13 @@ export const SpaceHeader = (props: { superstate: Superstate }) => {
 
   return (
     <>
-      <BannerView
-        superstate={props.superstate}
-        reposition={repositionMode}
-        setReposition={setRepositionMode}
-      ></BannerView>
+      {props.superstate.settings.banners && (
+        <BannerView
+          superstate={props.superstate}
+          reposition={repositionMode}
+          setReposition={setRepositionMode}
+        ></BannerView>
+      )}
       <div className="mk-space-header">
         <div className="mk-path-context-label">
           <TitleComponent

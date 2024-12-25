@@ -32,6 +32,9 @@ body:not(.is-mobile) .mk-frame-props-editor {
   .mk-node-input {
     padding: 0 !important;
   }
+  .mk-node-text-placeholder {
+   color: var(--mk-ui-text-tertiary);
+  }
   .mk-path-view iframe {
     width: 100%;
     height: 100%;

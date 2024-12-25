@@ -202,14 +202,18 @@ export const BlinkComponent = (props: {
       if (props.parentSpace) {
         const parentSpace = props.superstate.spacesIndex.get(props.parentSpace);
         if (parentSpace) {
-          newPathInSpace(props.superstate, parentSpace, "md", query).then(
-            (f) => {
-              if (props.mode == BlinkMode.Open) {
-                props.onSelect(f);
-              }
-              props.hide();
+          newPathInSpace(
+            props.superstate,
+            parentSpace,
+            "md",
+            query,
+            props.onSelect ? true : false
+          ).then((f) => {
+            if (props.mode == BlinkMode.Open) {
+              props.onSelect(f);
             }
-          );
+            props.hide();
+          });
           return;
         }
       }

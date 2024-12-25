@@ -812,19 +812,23 @@ const defaultSpaceTemplate = this.defaultFrame(path);
 
 
     public allSpaces ()  {
-      // if (this.spaceManager.superstate.settings.enableTagSpaces) {
-        const builtins = Object.keys(builtinSpaces).map(f => this.spaceManager.spaceInfoForPath(`spaces://$${f}`));
-      // }
-        const getAllTagContextFiles = () : SpaceInfo[] => this.readTags().map(f => fileSystemSpaceInfoFromTag(this.spaceManager, tagPathToTag(f))) as SpaceInfo[] ?? [];
-          
+      
           const getAllFolderContextFiles = () => {
             const folders = this.allPaths(['folder']).filter(f => !excludeSpacesPredicate(this.spaceManager.superstate.settings, f))
             
             return folders.map(f => fileSystemSpaceInfoFromFolder(this.spaceManager, f));
           }
-          const allTagSpaces = this.spaceManager.superstate.settings.enableDefaultSpaces ? getAllTagContextFiles() : [];
+          
           const allFolders = getAllFolderContextFiles();
-           return [...builtins, ...allTagSpaces, ...allFolders]
+          if (this.spaceManager.superstate.settings.enableDefaultSpaces) {
+            const builtins = Object.keys(builtinSpaces).map(f => this.spaceManager.spaceInfoForPath(`spaces://$${f}`));
+    
+            const getAllTagContextFiles = () : SpaceInfo[] => this.readTags().map(f => fileSystemSpaceInfoFromTag(this.spaceManager, tagPathToTag(f))) as SpaceInfo[] ?? [];
+            const allTagSpaces = this.spaceManager.superstate.settings.enableDefaultSpaces ? getAllTagContextFiles() : [];
+            return [...builtins, ...allTagSpaces, ...allFolders]
+          }
+          return allFolders;
+           
     }
 
     public readTags () {

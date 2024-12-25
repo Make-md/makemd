@@ -3,7 +3,6 @@ import { Superstate } from "core/superstate/superstate";
 import { savePathColor, savePathSticker } from "core/superstate/utils/label";
 
 
-
 export const saveIconsForPaths = (
   superstate: Superstate,
   paths: string[],

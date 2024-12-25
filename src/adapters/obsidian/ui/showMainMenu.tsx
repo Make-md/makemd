@@ -26,15 +26,6 @@ export const showMainMenu = (
     superstate.saveSettings();
   };
 
-  const toggleFlowState = () => {
-    superstate.settings.flowState = !superstate.settings.flowState;
-    superstate.saveSettings();
-    document.body.classList.toggle(
-      "mk-flow-state",
-      superstate.settings.flowState
-    );
-  };
-
   const isMobile =
     plugin.app.workspace.leftSplit && isTouchScreen(superstate.ui);
 

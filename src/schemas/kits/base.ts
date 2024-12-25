@@ -260,7 +260,7 @@ export const columnNode: FrameRoot = {
       layout: `"column"`,
       layoutAlign: `'left'`,
       flex: `1`,
-      gap: `'16px'`,
+      gap: `'8px'`,
       width: '0'
     },
     type: "column",

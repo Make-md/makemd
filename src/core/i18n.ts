@@ -92,6 +92,7 @@ class T {
         convertPathToSpace: "Convert to Space",
         revealFile: "Reveal File in Navigator",
         releaseNotes: "Release Notes",
+        getStarted: "Get Started",
         toggleBacklinks: "Toggle Backlinks",
         collapseAllFolders: "Collapse All Folders",
         addFileSpace: "Add File to Space",
@@ -684,15 +685,38 @@ class T {
         tableDeleted: "Table removed from note, you can find the table in the folder space"
       },
       settings: {
+        sections: {
+          general: "General",
+          navigator: "Navigator",
+          appearance: "Appearance",
+          interaction: 'Preferences',
+          context: "Context",
+          label: "Labels",
+          tags: "Tags",
+          space: "Spaces",
+          performance: "Performance",
+          advanced: "Advanced",
+          folderNote: "Folder Note",
+          notes: "Notes",
+        },
+        searchWorker: {
+          name: "Background Search",
+          desc: "Search in background to improve reponsiveness while searching",
+        },
+        cacheIndex: {
+          name: "Cache Search Index",
+          desc: "Cache the index for faster search results",
+        },
         layoutVertical: "Vertical",
         layoutHorizontal: "Horizontal",
+        sectionGeneral: "General",
         sectionSidebar: "Spaces",
         sectionEditor: "Maker Mode",
         sectionFlow: "Flow",
         sectionAdvanced: "Advanced",
         sectionDataview: "Dataview",
         sectionContext: "Context",
-        sectionStickers: "Stickers",
+        sectionStickers: "Labels",
         sectionNavigator: "Navigator",
         sectionDefault: "Default Spaces",
         sectionSpaceView: "Space View",
@@ -705,7 +729,7 @@ class T {
           name: "Experimental",
           desc:"Experimental features that are subject to change and may not be optimized for performance",
         },
-        generateThumbnails: {
+        imageThumbnails: {
           name: "Generate Thumbnails",
           desc: "Create thumbnails for images to speed up performance"
         },
@@ -721,6 +745,10 @@ class T {
           name: "Open Navigator as Default Tab",
           desc: "Open the Navigator tab when Obsidian launches",
         },
+        spacesRightSplit: {
+          name: "Navigator on Right Side",
+          desc: "Open the Navigator in the right panel",
+        },
         defaultSpaceTemplate: {
           name: "Default Space Template",
           desc: "Select the default template for new spaces",
@@ -728,6 +756,14 @@ class T {
         defaultDateFormat: {
           name: "Default Date Format",
           desc: "Set the default date format, example: yyyy-MM-dd (see https://date-fns.org/v2.30.0/docs/format)",
+        },
+        defaultTimeFormat: {
+          name: "Default Time Format",
+          desc: "Set the default time format, example: h:mm a (see https://date-fns.org/v2.30.0/docs/format)",
+        },
+        autoAddContextsToSubtags: {
+          name: "Apply Properties to Subtags",
+          desc: "Automatically apply context properties to subtags",
         },
         newNotePlaceholder: {
           name: "New Note Placeholder",
@@ -753,7 +789,7 @@ class T {
           name: "Show Stickers on Links",
           desc: "Turn on to toggle stickers shown directly by beside internal links",
         },
-        syncContextToFrontmatter: {
+        saveAllContextToFrontmatter: {
           name: "Sync Context Fields to Frontmatter",
           desc: "Turn on to automatically save all context fields to frontmatter fields, not just existing frontmatter fields.",
         },
@@ -761,39 +797,52 @@ class T {
           name: "Sync Formula Fields to Frontmatter",
           desc: "Turn on to save calculated formula values to frontmatter fields.",
         },
-        inlineBacklinks: {
-          name: "Show Inline Backlinks (Inline Context required)",
-          desc: "Show editable backlinks at the bottom of your notes",
+        spaceSubFolder: {
+          name: "Space Folder Name",
+          desc: "Name of the folder for spaces",
         },
+        basics: {
+          name: "Make.md Basics",
+          desc: "Enable features from Make.md Basics including styler and flow blocks",
+        },
+        spacesFolder: {
+          name: "Tag Space Folder",
+          desc: "Name of the folder for tag spaces",
+        },
+        
         dataviewInlineContext: {
           name: "Show Dataview in Inline Context",
           desc: "Show dataview when inline context is enabled",
         },
-        inlineContextExplorer: {
-          name: "Inline Context",
-          desc: "Display the context and a banner at the top of your notes",
+        inlineContext: {
+          name: "Notes Header",
+          desc: "Show a header to display labels and properties",
+        },
+        banners: {
+          name: "Cover Image",
+          desc: "Show a cover image for notes and spaces",
         },
         inlineContextProperties: {
-          name: "Inline Context Properties",
-          desc: "Show the properties in the inline context",
+          name: "Show Context Properties in Header",
+          desc: "Show the properties in the header for notes and spaces",
         },
         inlineContextExpanded: {
-          name: "Auto Expand Inline Context",
+          name: "Auto Expand Context Properties",
           desc: "Expand the inline context sections when opening a note",
         },
-        inlineContextHorizontal: {
-          name: "Inline Title and Sticker Layout",
+        inlineContextNameLayout: {
+          name: "Title and Sticker Layout",
           desc: "Layout for inline title and sticker in Inline Context",
         },
         hideFrontmatter: {
           name: "Hide Context Properties",
           desc: "Hide properties you have added in context from the Obsidian properties panel",
         },
-        openFileContext: {
+        autoOpenFileContext: {
           name: "Auto Open Explorer",
           desc: "Automatically open explorer panel in the right panel",
         },
-        folderNote: {
+        enableFolderNote: {
           name: "Enable Folder Note",
           desc: "Access the folder note in the folder page and hide the folder note from spaces",
         },
@@ -801,25 +850,25 @@ class T {
           name: "Folder Note Name",
           desc: "Name of the folder note, keep blank to use the same name as the folder",
         },
-        expandFolder: {
+        expandFolderOnClick: {
           name: "Auto Expand Folder",
           desc: "Auto expand folders on click",
         },
-        hoverPreview: {
+        filePreviewOnHover: {
           name: "Preview on Hover",
           desc: "Preview on Hover while holding Control/Command key",
         },
-        activeFile: {
+        revealActiveFile: {
           name: "Reveal Active File",
           desc: "Automatically reveal the active file in Navigator",
         },
         
         
-        contexts: {
+        contextEnabled: {
           name: "Contexts",
           desc: `Contexts allows you to have full control over the metadata of your files`,
         },
-        spaces: {
+        navigatorEnabled: {
           name: "Navigator",
           desc: `The navigator lets you create and organize your spaces`,
         },
@@ -827,15 +876,15 @@ class T {
           name: "Stickers",
           desc: `Use Emojis to make it easier to find your notes`,
         },
-        spacesAlias: {
+        spacesUseAlias: {
           name: "Alias",
           desc: `Use the alias metadata to show in Navigator`,
         },
-        spacesFileExplorerDual: {
+        spacesDisablePatch: {
           name: "Compatibility Mode",
           desc: "This will improve the compatibility of plugins while using the Navigator",
         },
-        spacesDeleteOption: {
+        deleteFileOption: {
           name: "Delete File Option",
           desc: "Select how you want files to be deleted",
         },
@@ -848,13 +897,13 @@ class T {
           name: "Flow State",
           desc: "Toggle the flow state",
         },
-        hideRibbon: {
+        showRibbon: {
           name: "App Ribbon",
           desc: `Show/hide the left menu aka. ribbon`,
         },
-        spaceView: {
-          name: "Space View",
-          desc: `Open the space view when you click on a space`,
+        spaceViewEnabled: {
+          name: "Spaces",
+          desc: `Customize your folders and tags with properties and views`,
         },
         defaultSpaces: {
           name: "Default Spaces",
@@ -864,7 +913,7 @@ class T {
           name: "Home Space",
           desc: `An easy-to-access space where you can add/organize your other spaces`,
         },
-        tagSpaces: {
+        enableDefaultSpaces: {
           name: "Tag Spaces",
           desc: `Automatically create spaces for each of your tags`,
         },
@@ -877,8 +926,8 @@ class T {
           desc: `Show/hide other sidebar tabs`,
         },
         spacesPerformance: {
-          name: "Performance Mode",
-          desc: `Turn on performance mode for Spaces, may affect scrolling appearance. Requires Restart`,
+          name: "Navigator Scroll Performance",
+          desc: `Turn on performance mode for Navigator, may affect scrolling appearance. Requires Restart`,
         },
         indexSVG: {
           name: "Use SVGs as Stickers",
@@ -902,7 +951,7 @@ class T {
           name: "Table View Pagination",
           desc: "Number of items per page in table view",
         },
-        coverHeight: {
+        bannerHeight: {
           name: "Cover Height",
           desc: "The height for the cover of the note or space, default is 200",
         },
@@ -927,7 +976,7 @@ class T {
           name: "Flow Menu Hint Text",
           desc: `Show a hint text on how to open the Flow Menu Shortcut`,
         },
-        blink: {
+        blinkEnabled: {
           name: "Blink",
           desc: `A faster way to search and edit your notes`,
         },

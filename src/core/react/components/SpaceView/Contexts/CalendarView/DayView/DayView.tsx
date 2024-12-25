@@ -136,11 +136,11 @@ export const DayView = (props: {
         const dayStart = startOfDay(date).getTime();
         const dayEnd = add(date, { days: 1 }).getTime();
         const startDate = parseDate(event[start]);
-        const endDate =
-          parseDate(event[end]) ??
-          startOfDay(startDate).getTime() == startDate.getTime()
-            ? startDate
-            : add(startDate, { hours: 1 });
+        const endDate = parseDate(event[end])
+          ? parseDate(event[end])
+          : startOfDay(startDate).getTime() == startDate.getTime()
+          ? startDate
+          : add(startDate, { hours: 1 });
 
         const startOffset = Math.max(
           startHour * 60,
@@ -510,7 +510,7 @@ export const DayView = (props: {
           {Array.from({ length: endHour - startHour }).map((_, hour) => (
             <div key={hour} className="mk-day-view-hour"></div>
           ))}
-          {isToday && (
+          {isToday && nowOffset > 0 && (
             <div
               className="mk-day-view-hour-current"
               style={{
