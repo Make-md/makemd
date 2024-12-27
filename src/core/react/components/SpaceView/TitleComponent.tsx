@@ -2,20 +2,19 @@ import classNames from "classnames";
 import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate } from "core/superstate/superstate";
 import {
   savePathBanner,
   updatePrimaryAlias,
 } from "core/superstate/utils/label";
 import { renamePathByName } from "core/superstate/utils/path";
 import { metadataPathForSpace } from "core/superstate/utils/spaces";
-import { PathState } from "core/types/superstate";
 import { removePathIcon, savePathIcon } from "core/utils/emoji";
 import { isPhone } from "core/utils/ui/screen";
-import { i18n } from "makemd-core";
+import { i18n, Superstate } from "makemd-core";
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { windowFromDocument } from "utils/dom";
-import { sanitizeFileName } from "utils/sanitizers";
+import { PathState } from "shared/types/PathState";
+import { windowFromDocument } from "shared/utils/dom";
+import { sanitizeFileName } from "shared/utils/sanitizers";
 import { stringFromTag } from "utils/tags";
 import { defaultMenu, menuSeparator } from "../UI/Menus/menu/SelectionMenu";
 import ImageModal from "../UI/Modals/ImageModal";

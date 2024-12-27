@@ -1,5 +1,5 @@
 import { UIManager } from "core/middleware/ui";
-import { Anchors, Rect } from "types/Pos";
+import { Anchors, Rect } from "shared/types/Pos";
 
 import { formatDate } from "core/utils/date";
 import { addMonths, startOfDay } from "date-fns";

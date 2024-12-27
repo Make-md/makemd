@@ -1,4 +1,4 @@
-import { DBTable, SpaceTableSchema } from "types/mdb";
+import { DBTable, SpaceTableSchema } from "shared/types/mdb";
 
 export const saveSchemaToDBTables = (table: SpaceTableSchema, schemas: SpaceTableSchema[]) => {
     const newSchema = schemas.find((f) => f.id == table.id)

@@ -1,12 +1,12 @@
-import i18n from "core/i18n";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
+import i18n from "shared/i18n";
 
 import { stringIsConst } from "core/utils/frames/frames";
 import { wrapQuotes } from "core/utils/strings";
 import React, { useContext, useMemo, useRef } from "react";
-import { FrameEditorMode } from "types/mframe";
+import { FrameEditorMode } from "shared/types/frameExec";
 
 import useLongPress from "core/react/hooks/useLongPress";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";

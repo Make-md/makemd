@@ -1,5 +1,5 @@
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React, { useContext } from "react";
 import { FrameView } from "./FrameView";
 

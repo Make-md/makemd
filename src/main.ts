@@ -42,7 +42,7 @@ import {
 } from "adapters/obsidian/utils/file";
 import { replaceInlineContext } from "adapters/obsidian/utils/markdownPost";
 import { convertPathToSpace } from "core/superstate/utils/path";
-import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, Superstate, UIManager } from "makemd-core";
+import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager } from "makemd-core";
 
 import { mkLogo } from "adapters/obsidian/ui/icons";
 import { patchFilesPlugin, patchWorkspace } from "adapters/obsidian/utils/patches";
@@ -64,8 +64,8 @@ import { MobileCachePersister } from "adapters/mdb/localCache/localCacheMobile";
 import { ObsidianCommands } from "adapters/obsidian/commands/obsidianCommands";
 import { TextCacher } from "adapters/text/textCacher";
 import { CLIManager } from "core/middleware/commands";
-import { LocalCachePersister } from "core/middleware/types/persister";
-import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
+import { openBlinkModal } from "core/react/components/Blink/Blink";
+import { LocalCachePersister } from "shared/types/persister";
 
 import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
@@ -81,6 +81,7 @@ import MakeBasicsPlugin from "basics/basics";
 import { showWarningsModal } from "core/react/components/Navigator/SyncWarnings";
 import { openInputModal } from "core/react/components/UI/Modals/InputModal";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
+import { Superstate } from "core/superstate/superstate";
 import { isPhone, isTouchScreen } from "core/utils/ui/screen";
 import "css/DefaultVibe.css";
 import "css/Editor/Actions/Actions.css";
@@ -119,7 +120,8 @@ import "css/SpaceViewer/SpaceView.css";
 import "css/SpaceViewer/TableView.css";
 import "css/SpaceViewer/Text.css";
 import "css/UI/Buttons.css";
-import { windowFromDocument } from "utils/dom";
+import { ISuperstate } from "shared/types/superstate";
+import { windowFromDocument } from "shared/utils/dom";
 
 const makeMDVersion = 0.999;
 
@@ -139,9 +141,9 @@ export default class MakeMDPlugin extends Plugin {
   
   
   
-  quickOpen(superstate: Superstate) {
+  quickOpen(superstate: ISuperstate, mode?: number, onSelect?: (link: string) => void, source?: string) {
     const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument)
-    openBlinkModal(superstate, BlinkMode.Blink, win);
+    openBlinkModal(superstate, mode, win, onSelect, source);
   }
 
 

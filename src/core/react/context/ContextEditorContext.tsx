@@ -1,20 +1,17 @@
-import i18n from "core/i18n";
 import { matchAny } from "core/react/components/UI/Menus/menu/concerns/matchers";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { Superstate } from "core/superstate/superstate";
 import {
   createSpace,
   pinPathToSpaceAtIndex,
   saveProperties,
 } from "core/superstate/utils/spaces";
-import { PathPropertyName } from "core/types/context";
-import { Predicate, Sort } from "core/types/predicate";
 import { createNewRow } from "core/utils/contexts/optionValuesForColumn";
 import { filterReturnForCol } from "core/utils/contexts/predicate/filter";
 import { sortReturnForCol } from "core/utils/contexts/predicate/sort";
 import { serializeOptionValue } from "core/utils/serializer";
 import { tagSpacePathFromTag } from "core/utils/strings";
 import _, { isEqual } from "lodash";
+import { Superstate } from "makemd-core";
 import React, {
   createContext,
   useCallback,
@@ -23,12 +20,13 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { defaultContextTable, fieldTypeForField } from "schemas/mdb";
+import i18n from "shared/i18n";
 import {
   defaultContextDBSchema,
   defaultContextSchemaID,
-  defaultContextTable,
-  fieldTypeForField,
-} from "schemas/mdb";
+} from "shared/schemas/context";
+import { PathPropertyName } from "shared/types/context";
 import {
   DBRow,
   DBRows,
@@ -38,17 +36,18 @@ import {
   SpaceTableColumn,
   SpaceTableSchema,
   SpaceTables,
-} from "types/mdb";
-import { FrameSchema } from "types/mframe";
-import { uniq, uniqueNameFromString } from "utils/array";
+} from "shared/types/mdb";
+import { FrameSchema } from "shared/types/mframe";
+import { Predicate, Sort } from "shared/types/predicate";
+import { uniq, uniqueNameFromString } from "shared/utils/array";
+import { removeTrailingSlashFromFolder } from "shared/utils/paths";
+import { sanitizeColumnName } from "shared/utils/sanitizers";
 import {
   parseMultiString,
   parseProperty,
   safelyParseJSON,
 } from "utils/parsers";
-import { removeTrailingSlashFromFolder } from "utils/path";
 import { parseMDBStringValue } from "utils/properties";
-import { sanitizeColumnName } from "utils/sanitizers";
 import {
   defaultPredicateForSchema,
   validatePredicate,

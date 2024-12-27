@@ -14,10 +14,12 @@ import { updateTableValue } from "core/utils/contexts/context";
 import _ from "lodash";
 import { Superstate } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
-import { defaultContextSchemaID } from "schemas/mdb";
-import { DBRow, SpaceInfo, SpaceProperty } from "types/mdb";
-import { FrameContexts, FrameEditorMode, FrameTreeProp } from "types/mframe";
-import { URI } from "types/path";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { FrameContexts, FrameEditorMode } from "shared/types/frameExec";
+import { DBRow, SpaceProperty } from "shared/types/mdb";
+import { FrameTreeProp } from "shared/types/mframe";
+import { URI } from "shared/types/path";
+import { SpaceInfo } from "shared/types/spaceInfo";
 import { FrameEditorInstance } from "../../Frames/ViewNodes/FrameEditorInstance";
 import { FrameInstanceView } from "../../Frames/ViewNodes/FrameInstance";
 export const ContextListInstance = (

@@ -1,6 +1,6 @@
 import { FilterFn, SortingFn } from "@tanstack/react-table";
-import { Predicate } from "core/types/predicate";
-import { SpaceTableColumn } from "types/mdb";
+import { SpaceTableColumn } from "shared/types/mdb";
+import { Predicate } from "shared/types/predicate";
 import { filterFnTypes } from "./filterFns/filterFnTypes";
 import { SortFunction, sortFnTypes } from "./sort";
 

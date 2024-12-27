@@ -1,10 +1,10 @@
 import { DataPropertyView } from "core/react/components/SpaceView/Contexts/DataTypeView/DataPropertyView";
 import { CellEditMode } from "core/react/components/SpaceView/Contexts/TableView/TableView";
-import { PathState } from "core/types/superstate";
 import { updateTableRow } from "core/utils/contexts/context";
 import { Superstate, i18n } from "makemd-core";
 import React, { useEffect } from "react";
-import { SpaceTable } from "types/mdb";
+import { SpaceTable } from "shared/types/mdb";
+import { PathState } from "shared/types/PathState";
 
 export const EditPropertiesSubmenu = (props: {
   superstate: Superstate;

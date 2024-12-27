@@ -1,6 +1,6 @@
 import { Superstate, i18n } from "makemd-core";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
-import { FilesystemSpaceInfo } from "types/mdb";
+import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { pathToString } from "utils/path";
 
 export interface NoteViewProps {

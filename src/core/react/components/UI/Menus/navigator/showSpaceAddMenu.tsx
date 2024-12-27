@@ -1,5 +1,3 @@
-import { default as i18n } from "core/i18n";
-import { Superstate } from "core/superstate/superstate";
 import {
   createSpace,
   defaultSpace,
@@ -7,18 +5,16 @@ import {
   newTemplateInSpace,
 } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
-import { tagsSpacePath } from "core/types/space";
-import { SpaceState } from "core/types/superstate";
+import { SelectOption, Superstate } from "makemd-core";
 import React from "react";
-import { Rect } from "types/Pos";
-import { TargetLocation } from "types/path";
-import { windowFromDocument } from "utils/dom";
+import { default as i18n } from "shared/i18n";
+import { tagsSpacePath } from "shared/schemas/builtin";
+import { TargetLocation } from "shared/types/path";
+import { SpaceState } from "shared/types/PathState";
+import { Rect } from "shared/types/Pos";
+import { windowFromDocument } from "shared/utils/dom";
 import { InputModal } from "../../Modals/InputModal";
-import {
-  SelectOption,
-  defaultMenu,
-  menuSeparator,
-} from "../menu/SelectionMenu";
+import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 
 export const defaultAddAction = (
   superstate: Superstate,

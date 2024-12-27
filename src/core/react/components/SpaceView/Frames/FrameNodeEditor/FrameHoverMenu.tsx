@@ -7,10 +7,10 @@ import { showNewFrameMenu } from "core/react/components/UI/Menus/frames/newFrame
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate } from "core/superstate/superstate";
 import { isTouchScreen } from "core/utils/ui/screen";
+import { Superstate } from "makemd-core";
 import React, { useContext } from "react";
-import { FrameNode } from "types/mframe";
+import { FrameNode } from "shared/types/mframe";
 export const FrameHoverMenu = (props: {
   superstate: Superstate;
   node: FrameNode;

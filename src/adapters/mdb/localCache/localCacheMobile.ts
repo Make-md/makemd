@@ -3,8 +3,8 @@ import { dbResultsToDBTables, getZippedDB, replaceDB, saveZippedDBFile, saveZipp
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import { debounce } from "lodash";
 import { CacheDBSchema } from "schemas/cache";
-import { DBRow } from "types/mdb";
-import { LocalCachePersister } from "../../../core/middleware/types/persister";
+import { DBRow } from "shared/types/mdb";
+import { LocalCachePersister } from "../../../shared/types/persister";
 
 
 /** Simpler wrapper for a file-backed cache for arbitrary metadata. */

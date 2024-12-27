@@ -1,9 +1,9 @@
-import { IndexMap } from "core/types/indexMap";
 import _ from "lodash";
 import MakeMDPlugin from "main";
 import { AFile, FileTypeAdapter, FilesystemMiddleware, PathLabel } from "makemd-core";
 import { App, CachedMetadata, TFile, TFolder } from "obsidian";
-import { uniq } from "utils/array";
+import { IndexMap } from "shared/types/indexMap";
+import { uniq } from "shared/utils/array";
 import { parseMultiDisplayString, parseProperty } from "utils/parsers";
 import { getAbstractFileAtPath, tFileToAFile } from "../utils/file";
 import { frontMatterForFile } from "./frontmatter/fm";

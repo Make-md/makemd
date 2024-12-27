@@ -12,7 +12,7 @@ import {
 } from "core/superstate/utils/spaces";
 import { Superstate, i18n } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { defaultMenu } from "../UI/Menus/menu/SelectionMenu";
 import { CollapseToggleSmall } from "../UI/Toggles/CollapseToggleSmall";
 export const SpaceTemplateProperty = (props: {

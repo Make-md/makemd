@@ -1,18 +1,18 @@
 import { PathView } from "core/react/components/PathView/PathView";
 
-import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
+import { BlinkMode } from "core/react/components/Blink/Blink";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { PathState } from "core/types/superstate";
 import { wrapQuotes } from "core/utils/strings";
 import { i18n } from "makemd-core";
 import React, { useContext, useMemo, useState } from "react";
-import { FrameEditorMode } from "types/mframe";
-import { windowFromDocument } from "utils/dom";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { PathState } from "shared/types/PathState";
+import { windowFromDocument } from "shared/utils/dom";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";
 
 function parseContent(input: string): string {
@@ -129,9 +129,10 @@ export const FlowNodeView = (
           <div
             className="mk-node-text-placeholder"
             onClick={(e) => {
-              openBlinkModal(
-                props.superstate,
+              const rect = e.currentTarget.getBoundingClientRect();
+              props.superstate.ui.quickOpen(
                 BlinkMode.Open,
+                rect,
                 windowFromDocument(e.view.document),
                 (path) => {
                   updateValue(path);

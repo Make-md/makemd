@@ -2,8 +2,8 @@ import { formatDate, parseDate } from "core/utils/date";
 import { Superstate } from "makemd-core";
 import { median } from "mathjs";
 import { fieldTypeForField } from "schemas/mdb";
-import { SpaceProperty } from "types/mdb";
-import { uniq } from "utils/array";
+import { SpaceProperty } from "shared/types/mdb";
+import { uniq } from "shared/utils/array";
 import { parseProperty, safelyParseJSON } from "utils/parsers";
 import { empty } from "./filter";
 

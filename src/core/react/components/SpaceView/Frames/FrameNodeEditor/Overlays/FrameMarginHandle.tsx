@@ -3,7 +3,7 @@ import classNames from "classnames";
 import { stringIsConst } from "core/utils/frames/frames";
 import { removeQuotes } from "core/utils/strings";
 import React, { useEffect } from "react";
-import { FrameTreeProp } from "types/mframe";
+import { FrameTreeProp } from "shared/types/mframe";
 import { FrameDraggableHandle } from "./FrameDraggableHandle";
 
 export const FrameMargin = (props: {

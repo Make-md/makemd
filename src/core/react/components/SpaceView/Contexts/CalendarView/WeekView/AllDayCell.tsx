@@ -1,10 +1,10 @@
 import { useDroppable } from "@dnd-kit/core";
-import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
+import { BlinkMode } from "core/react/components/Blink/Blink";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { applySat } from "core/utils/color";
 import { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useContext } from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 
 export const AllDayCell = (
   props: PropsWithChildren<{
@@ -21,9 +21,10 @@ export const AllDayCell = (
   const onClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (e.detail === 2) {
-      openBlinkModal(
-        props.superstate,
+      const rect = e.currentTarget.getBoundingClientRect();
+      props.superstate.ui.quickOpen(
         BlinkMode.Open,
+        rect,
         windowFromDocument(e.currentTarget.ownerDocument),
         (link: string) => {
           props.insertItem(link);

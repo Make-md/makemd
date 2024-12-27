@@ -1,8 +1,8 @@
 import { MakeBasicsSettingsTab } from "basics/ui/SettingsPanel";
-import t from "core/i18n";
 import { App, PluginSettingTab, Setting } from "obsidian";
-import { MakeMDSettings } from "../../core/types/settings";
+import t from "shared/i18n";
 import MakeMDPlugin from "../../main";
+import { MakeMDSettings } from "../../shared/types/settings";
 
 type SettingObject = {
   name: keyof MakeMDSettings;

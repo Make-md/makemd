@@ -9,11 +9,11 @@ import {
 } from "core/utils/contexts/embed";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
-import { defaultTableFields } from "schemas/mdb";
-import { SpaceTableSchema } from "types/mdb";
-import { uniqueNameFromString } from "utils/array";
-import { windowFromDocument } from "utils/dom";
-import { sanitizeTableName } from "utils/sanitizers";
+import { defaultTableFields } from "shared/schemas/fields";
+import { SpaceTableSchema } from "shared/types/mdb";
+import { uniqueNameFromString } from "shared/utils/array";
+import { windowFromDocument } from "shared/utils/dom";
+import { sanitizeTableName } from "shared/utils/sanitizers";
 import { showSpacesMenu } from "../UI/Menus/properties/selectSpaceMenu";
 import { CollapseToggleSmall } from "../UI/Toggles/CollapseToggleSmall";
 

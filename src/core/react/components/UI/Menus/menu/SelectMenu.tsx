@@ -1,11 +1,7 @@
 import { PointerModifiers } from "core/types/ui";
+import { SelectMenuProps, SelectOption, SelectOptionType } from "makemd-core";
 import React, { useCallback, useEffect, useState } from "react";
 import SelectMenuComponent from "./SelectMenuComponent";
-import {
-  SelectMenuProps,
-  SelectOption,
-  SelectOptionType,
-} from "./SelectionMenu";
 
 const SelectMenu = React.forwardRef(
   (props: SelectMenuProps & { hide?: () => void }, ref: any) => {

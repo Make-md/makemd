@@ -1,6 +1,6 @@
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { PathPropertyName } from "core/types/context";
-import { DBRow, SpaceProperty } from "types/mdb";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow, SpaceProperty } from "shared/types/mdb";
 import { parseLinkString } from "utils/parsers";
 import { parseMDBStringValue } from "utils/properties";
 import { serializeMultiString } from "utils/serializers";

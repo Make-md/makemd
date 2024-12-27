@@ -1,13 +1,13 @@
-import { Superstate } from "core/superstate/superstate";
 import { parseStylesToClass } from "core/utils/frames/renderer";
 import { isTouchScreen } from "core/utils/ui/screen";
+import { Superstate } from "makemd-core";
 import React from "react";
 import {
   FrameExecutable,
   FrameNodeState,
   FrameRunInstance,
   FrameState,
-} from "types/mframe";
+} from "shared/types/frameExec";
 import { AudioNodeView } from "../EditorNodes/AudioNodeView";
 import { ContentNodeView } from "../EditorNodes/ContentNodeView";
 import { ContextNodeView } from "../EditorNodes/ContextNodeView";

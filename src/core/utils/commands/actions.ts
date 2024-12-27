@@ -2,7 +2,7 @@ import { resultForFilters } from "core/utils/commands/filter";
 import { isArray } from "lodash";
 import { Superstate } from "makemd-core";
 import { safelyParseJSON } from "utils/parsers";
-import { ActionInstance, ActionTree } from "../../types/actions";
+import { ActionInstance, ActionTree } from "../../../shared/types/actions";
 
 export const parseActionString = (actionString: string): ActionTree => {
   return safelyParseJSON(actionString);

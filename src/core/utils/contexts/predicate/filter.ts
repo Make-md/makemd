@@ -1,5 +1,5 @@
-import { Filter } from "core/types/predicate";
-import { DBRow, SpaceTableColumn } from "types/mdb";
+import { DBRow, SpaceTableColumn } from "shared/types/mdb";
+import { Filter } from "shared/types/predicate";
 import { parseMultiString } from "utils/parsers";
 import { filterFnTypes } from "./filterFns/filterFnTypes";
 

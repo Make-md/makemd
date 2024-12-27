@@ -8,23 +8,22 @@ import React, {
 } from "react";
 import { defaultFrameListViewSchema } from "schemas/mdb";
 
-import { Superstate } from "core/superstate/superstate";
-import { defaultPredicate } from "core/utils/contexts/predicate/predicate";
 import {
   frameSchemaToTableSchema,
   mdbSchemaToFrameSchema,
 } from "core/utils/frames/nodes";
-import { i18n } from "makemd-core";
+import { Superstate, i18n } from "makemd-core";
+import { defaultPredicate } from "shared/schemas/predicate";
 import {
   DBTable,
   SpaceProperty,
   SpaceTable,
   SpaceTableSchema,
   SpaceTables,
-} from "types/mdb";
-import { FrameSchema, MDBFrame } from "types/mframe";
-import { uniqueNameFromString } from "utils/array";
-import { sanitizeColumnName, sanitizeTableName } from "utils/sanitizers";
+} from "shared/types/mdb";
+import { FrameSchema, MDBFrame } from "shared/types/mframe";
+import { uniqueNameFromString } from "shared/utils/array";
+import { sanitizeColumnName, sanitizeTableName } from "shared/utils/sanitizers";
 import { SpaceContext } from "./SpaceContext";
 type FramesMDBContextProps = {
   frameSchemas: FrameSchema[];

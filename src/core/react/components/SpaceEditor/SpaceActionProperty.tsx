@@ -5,8 +5,8 @@ import { actionPathForSpace } from "core/utils/contexts/embed";
 import { Superstate, i18n } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
 import { stickerForSchema } from "schemas/mdb";
-import { Command } from "types/commands";
-import { windowFromDocument } from "utils/dom";
+import { Command } from "shared/types/commands";
+import { windowFromDocument } from "shared/utils/dom";
 import { defaultMenu } from "../UI/Menus/menu/SelectionMenu";
 import { CollapseToggleSmall } from "../UI/Toggles/CollapseToggleSmall";
 export const SpaceActionProperty = (props: {

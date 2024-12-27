@@ -1,10 +1,4 @@
 import MakeBasicsPlugin from "basics/basics";
-import { uiIconSet } from "core/assets/icons";
-import {
-  contextEmbedStringFromContext,
-  contextViewEmbedStringFromContext,
-} from "core/utils/contexts/embed";
-import { createInlineTable } from "core/utils/contexts/inlineTable";
 import { i18n } from "makemd-core";
 import {
   App,
@@ -15,7 +9,8 @@ import {
   EditorSuggestTriggerInfo,
   TFile,
 } from "obsidian";
-import { Command, CommandType, resolveCommands } from "./commands";
+import { uiIconSet } from "shared/assets/icons";
+import { Command, CommandType } from "../../types/command";
 
 export default class MakeMenu extends EditorSuggest<Command> {
   inCmd = false;
@@ -75,7 +70,7 @@ export default class MakeMenu extends EditorSuggest<Command> {
   getSuggestions(
     context: EditorSuggestContext
   ): Command[] | Promise<Command[]> {
-    const suggestions = resolveCommands().filter(
+    const suggestions = this.plugin.commands.filter(
       ({ label }) =>
         label.toLowerCase().includes(context.query.toLowerCase()) ||
         //@ts-ignore
@@ -117,68 +112,20 @@ export default class MakeMenu extends EditorSuggest<Command> {
     const startCh = this.cmdStartCh;
     const editor = this.context.editor;
     if (cmd.label === i18n.commandsSuggest.noResult) return;
-    if (cmd.value == "note") {
-      this.plugin.selectLink(_evt as any, (link) => {
-        editor.replaceRange(`![![${link}]]`, { ...start, ch: startCh }, end);
-        this.resetInfos();
-
-        this.close();
-      });
-    } else if (cmd.value == "context") {
-      this.plugin.selectSpace(_evt as any, (link) => {
-        editor.replaceRange(
-          contextEmbedStringFromContext(
-            this.plugin.superstate.spacesIndex.get(link),
-            "files"
-          ),
-          { ...start, ch: startCh },
-          end
-        );
-        editor.setSelection({
-          line: start.line,
-          ch: 0,
-        });
-        this.resetInfos();
-
-        this.close();
-      });
-    } else if (cmd.value == "link") {
-      this.plugin.selectLink(_evt as any, (link) => {
-        editor.replaceRange(`[[${link}]]`, { ...start, ch: startCh }, end);
-        this.resetInfos();
-
-        this.close();
-      });
-    } else if (cmd.value == "image") {
-      this.plugin.selectImage((image) => {
-        editor.replaceRange(`![[${image}]]`, { ...start, ch: startCh }, end);
-        this.resetInfos();
-
-        this.close();
-      }, editor.cm.dom.win);
-    } else if (
-      cmd.value == "table" ||
-      cmd.value == "board" ||
-      cmd.value == "calendar"
-    ) {
-      createInlineTable(
-        this.plugin.superstate,
-        this.file.parent.path,
-        cmd.value
-      ).then((f) => {
-        editor.replaceRange(
-          contextViewEmbedStringFromContext(
-            this.plugin.superstate.spacesIndex.get(this.file.parent.path),
-            f
-          ),
-          { ...start, ch: startCh },
-          end
-        );
-        editor.setSelection({
-          line: start.line,
-          ch: 0,
-        });
-      });
+    if (cmd.onSelect) {
+      cmd.onSelect(
+        _evt,
+        this.plugin,
+        this.file,
+        editor,
+        start,
+        startCh,
+        end,
+        () => {
+          this.resetInfos();
+          this.close();
+        }
+      );
     } else {
       this.context.editor.replaceRange(
         cmd.value,

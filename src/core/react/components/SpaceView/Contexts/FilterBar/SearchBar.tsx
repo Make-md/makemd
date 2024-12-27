@@ -1,6 +1,6 @@
-import i18n from "core/i18n";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React, { useEffect } from "react";
+import i18n from "shared/i18n";
 
 export const SearchBar = (props: {
   superstate: Superstate;

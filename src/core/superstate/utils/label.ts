@@ -1,5 +1,5 @@
-import { Superstate } from "core/superstate/superstate";
 import { ensureArray } from "core/utils/strings";
+import { Superstate } from "makemd-core";
 import { parseMDBStringValue } from "utils/properties";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { metadataPathForSpace, saveProperties } from "./spaces";

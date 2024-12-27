@@ -1,11 +1,10 @@
 import SelectMenuSuggestions from "core/react/components/UI/Menus/menu/SelectMenuSuggestions";
-import { SelectSection } from "core/react/components/UI/Menus/menu/SelectionMenu";
-import { Superstate } from "core/superstate/superstate";
+
 import { calculateBoundsBasedOnPosition } from "core/utils/ui/menu";
-import { SelectOption, i18n } from "makemd-core";
+import { SelectOption, SelectSection, Superstate, i18n } from "makemd-core";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Pos } from "types/Pos";
+import { Pos } from "shared/types/Pos";
 
 export const Suggester = forwardRef(
   (

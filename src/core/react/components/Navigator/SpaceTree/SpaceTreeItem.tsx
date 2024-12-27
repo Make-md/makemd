@@ -1,6 +1,6 @@
 import classNames from "classnames";
-import { default as i18n, default as t } from "core/i18n";
-import { Pos } from "types/Pos";
+import { default as i18n, default as t } from "shared/i18n";
+import { Pos } from "shared/types/Pos";
 
 import {
   showPathContextMenu,
@@ -10,14 +10,13 @@ import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/s
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
 import { PathStickerView } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { Superstate } from "core/superstate/superstate";
 import {
   TreeNode,
   pinPathToSpaceAtIndex,
   spaceRowHeight,
 } from "core/superstate/utils/spaces";
-import { PathState } from "core/types/superstate";
 import { isTouchScreen } from "core/utils/ui/screen";
+import { Superstate } from "makemd-core";
 import React, {
   CSSProperties,
   useCallback,
@@ -27,7 +26,8 @@ import React, {
   useState,
 } from "react";
 import { useDropzone } from "react-dropzone";
-import { windowFromDocument } from "utils/dom";
+import { PathState } from "shared/types/PathState";
+import { windowFromDocument } from "shared/utils/dom";
 import { defaultAddAction } from "../../UI/Menus/navigator/showSpaceAddMenu";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 export type DropModifiers = "copy" | "link" | "move";

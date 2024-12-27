@@ -1,12 +1,11 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 
-import i18n from "core/i18n";
+import i18n from "shared/i18n";
 
 import { PathContext, PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
-import { Superstate } from "core/superstate/superstate";
-import { Backlinks } from "makemd-core";
-import { defaultContextSchemaID } from "schemas/mdb";
+import { Backlinks, Superstate } from "makemd-core";
+import { defaultContextSchemaID } from "shared/schemas/context";
 import { NoteView } from "../PathView/NoteView";
 import { HeaderPropertiesView } from "../SpaceView/Contexts/SpaceEditor/HeaderPropertiesView";
 

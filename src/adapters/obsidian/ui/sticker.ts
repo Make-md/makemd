@@ -1,6 +1,6 @@
-import { uiIconSet } from "core/assets/icons";
 import MakeMDPlugin from "main";
-import { emojiFromString, parseStickerString } from "utils/stickers";
+import { uiIconSet } from "shared/assets/icons";
+import { emojiFromString, parseStickerString } from "shared/utils/stickers";
 import { lucideIcon } from "./icons";
 
 

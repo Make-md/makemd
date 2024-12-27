@@ -1,43 +1,16 @@
-import i18n from "core/i18n"
 import { fileSystemSpaceInfoFromFolder } from "core/spaceManager/filesystemAdapter/spaceInfo"
 import { SpaceManager } from "makemd-core"
+import i18n from "shared/i18n"
 
 
-import { Filter } from "./predicate"
-import { MakeMDSettings } from "./settings"
-import { PathState, SpaceState } from "./superstate"
+import { PathState, SpaceState } from "shared/types/PathState"
+import { MakeMDSettings } from "../../shared/types/settings"
 
 
 
 export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanner, settings.fmKeySticker, settings.fmKeyColor, settings.fmKeyBanner, settings.fmKeyBannerOffset,
   spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey
 ]
-export type SpaceSort = {
-  field: string,
-  asc: boolean,
-  group: boolean,
-  recursive: boolean
-}
-
-export type SpaceDefFilter = {
-    type: string,
-    fType: string,
-} & Filter
-export type SpaceDefGroup = {
-    type: 'any' | 'all',
-    trueFalse: boolean,
-    filters: SpaceDefFilter[]
-}
-export type SpaceType = 'folder' | 'tag' | 'vault' | 'default' | 'unknown';
-
-
-  export const builtinSpacePathPrefix = "spaces://$";
-export const tagsSpacePath = "spaces://$tags";
-  
-
-  
-  
-
   export const createVaultSpace  = (manager: SpaceManager) : SpaceState => ({
     name: i18n.menu.vault,
     path: "/",
@@ -65,20 +38,6 @@ export const tagsSpacePath = "spaces://$tags";
     type: "default",
   };
 
-
-export type SpaceDefinition = {
-  contexts?: string[];
-  sort?: SpaceSort;
-  filters?: SpaceDefGroup[];
-  links?: string[];
-  tags?: string[];
-  template?: string;
-  templateName?: string;
-  recursive?: string;
-  defaultSticker?: string;
-  defaultColor?: string;
-  readMode?: boolean;
-};
 
 
 export type BuiltinSpace = {

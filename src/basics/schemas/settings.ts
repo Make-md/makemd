@@ -1,6 +1,6 @@
 import { MakeBasicsSettings } from "basics/types/settings";
 
-export const DEFAULT_SETTINGS: MakeBasicsSettings = {
+export const BasicDefaultSettings: MakeBasicsSettings = {
     flowMenuEnabled: true,
     markSans: false,
     makeMenuPlaceholder: true,

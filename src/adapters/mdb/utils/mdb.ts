@@ -1,20 +1,18 @@
 
 import {
   DBTable,
-  FilesystemSpaceInfo,
   MDB,
   SpaceProperty,
   SpaceTable,
   SpaceTableSchema,
   SpaceTables
-} from "types/mdb";
+} from "shared/types/mdb";
+import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 
 import { vaultSchema } from "adapters/obsidian/filesystem/schemas/vaultSchema";
-import {
-  defaultFieldsForContext
-} from "schemas/mdb";
+import { defaultFieldsForContext } from "shared/schemas/fields";
+import { sanitizeSQLStatement } from "shared/utils/sanitizers";
 import { Database, QueryExecResult } from "sql.js";
-import { sanitizeSQLStatement } from "utils/sanitizers";
 import {
   dbResultsToDBTables,
   deleteFromDB,

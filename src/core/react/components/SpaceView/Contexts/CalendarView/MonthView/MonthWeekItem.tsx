@@ -1,10 +1,10 @@
 import { useDraggable } from "@dnd-kit/core";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
-import { PathPropertyName } from "core/types/context";
 import { formatDate } from "core/utils/date";
 import { Superstate } from "makemd-core";
 import React, { useMemo } from "react";
-import { DBRow } from "types/mdb";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow } from "shared/types/mdb";
 
 export const MonthWeekItem = (props: {
   superstate: Superstate;

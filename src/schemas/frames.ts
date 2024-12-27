@@ -1,7 +1,7 @@
 import { flattenToFrameNodes } from "core/utils/frames/ast";
 import { relinkProps } from "core/utils/frames/linker";
 import { nodeToFrame } from "core/utils/frames/nodes";
-import { FrameRoot, MDBFrame } from "types/mframe";
+import { FrameRoot, MDBFrame } from "shared/types/mframe";
 
 export const defaultFrameSchema = {
     uniques: ["id,schemaId"],

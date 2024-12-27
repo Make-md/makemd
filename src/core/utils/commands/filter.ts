@@ -1,4 +1,4 @@
-import { SpaceDefFilter, SpaceDefGroup } from "core/types/space";
+import { SpaceDefFilter, SpaceDefGroup } from "shared/types/spaceDef";
 import { parseProperty } from "utils/parsers";
 import { filterFnTypes } from "../contexts/predicate/filterFns/filterFnTypes";
 

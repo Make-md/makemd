@@ -1,4 +1,4 @@
-import { MakeMDSettings } from "../types/settings";
+import { MakeMDSettings } from "../../shared/types/settings";
 
 
 
@@ -77,7 +77,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   selectedKit: "default",
   actionMaxSteps: 100,
   contextPagination: 25,
-  searchWorker: true,
+  searchWorker: false,
   skipFolderNames: [],
   skipFolders: [],
   enhancedLogs: false,

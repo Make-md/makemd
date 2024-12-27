@@ -1,9 +1,9 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { PathPropertyName } from "core/types/context";
 import { calculateAggregate } from "core/utils/contexts/predicate/aggregates";
 import React, { useEffect, useMemo, useState } from "react";
-import { DBRow, SpaceTableColumn, SpaceTables } from "types/mdb";
-import { uniq } from "utils/array";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow, SpaceTableColumn, SpaceTables } from "shared/types/mdb";
+import { uniq } from "shared/utils/array";
 import { parseMultiString } from "utils/parsers";
 import { TableCellMultiProp } from "../TableView/TableView";
 

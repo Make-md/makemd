@@ -1,6 +1,6 @@
 import { SelectMenu, SelectMenuProps } from "makemd-core";
 import React from "react";
-import { Anchors, Rect } from "types/Pos";
+import { Anchors, Rect } from "shared/types/Pos";
 import { showMenu } from "./menu";
 
 export type Point = { x: number; y: number };

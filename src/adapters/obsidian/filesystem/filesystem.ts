@@ -9,16 +9,17 @@ import { AFile, FileCache, FileSystemAdapter, FileTypeCache, FilesystemMiddlewar
 import { FileSystemAdapter as ObsidianFileSystemAdapter, Platform, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
-import { LocalCachePersister } from "core/middleware/types/persister";
+import { LocalCachePersister } from "shared/types/persister";
 
 import { MobileCachePersister } from "adapters/mdb/localCache/localCacheMobile";
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
 import { defaultFocusFile } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
 import { parsePathState } from "core/utils/superstate/parser";
-import { parseURI } from "core/utils/uri";
-import { DBRows, DBTables } from "types/mdb";
-import { uniqueNameFromString } from "utils/array";
-import { getParentPathFromString, pathToString, removeTrailingSlashFromFolder } from "utils/path";
+import { DBRows, DBTables } from "shared/types/mdb";
+import { uniqueNameFromString } from "shared/utils/array";
+import { removeTrailingSlashFromFolder } from "shared/utils/paths";
+import { parseURI } from "shared/utils/uri";
+import { getParentPathFromString, pathToString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { getAllFrontmatterKeys } from "../filetypes/frontmatter/fm";

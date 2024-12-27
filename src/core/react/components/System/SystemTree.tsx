@@ -1,6 +1,6 @@
 import { Superstate, i18n } from "makemd-core";
 import React, { useEffect, useState } from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { InputModal } from "../UI/Modals/InputModal";
 import { CollapseToggle } from "../UI/Toggles/CollapseToggle";
 export const SystemTree = (props: { superstate: Superstate }) => {

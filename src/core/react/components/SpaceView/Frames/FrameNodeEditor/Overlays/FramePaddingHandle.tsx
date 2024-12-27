@@ -2,7 +2,7 @@ import { DraggableSyntheticListeners } from "@dnd-kit/core";
 import classNames from "classnames";
 import { PointerModifiers } from "core/types/ui";
 import React, { useEffect } from "react";
-import { FrameTreeProp } from "types/mframe";
+import { FrameTreeProp } from "shared/types/mframe";
 import { FrameDraggableHandle } from "./FrameDraggableHandle";
 
 type PaddingTypes =

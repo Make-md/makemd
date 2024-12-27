@@ -1,10 +1,7 @@
-import {
-  SelectOption,
-  defaultMenu,
-} from "core/react/components/UI/Menus/menu/SelectionMenu";
-import { i18n } from "makemd-core";
+import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
+import { SelectOption, i18n } from "makemd-core";
 import React from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { HoverSubmenuProps } from "./HoverSubmenuProps";
 import { SizeSubmenu } from "./SizeSubmenu";
 import { SpacingSubmenu } from "./SpacingSubmenu";

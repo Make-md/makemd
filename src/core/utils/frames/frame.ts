@@ -1,11 +1,13 @@
 import * as acorn from "acorn";
 import { simple } from "acorn-walk";
-import { Superstate } from "core/superstate/superstate";
 import _ from "lodash";
+import { Superstate } from "makemd-core";
 import { defaultFrameSchema } from "schemas/frames";
-import { fieldSchema } from "schemas/mdb";
-import { DBTables, SpaceInfo, SpaceTable } from "types/mdb";
-import { FrameExecutable, FrameRoot, FrameTreeProp, LinkedContext, LinkedNode, MDBFrames, MFrame } from "types/mframe";
+import { fieldSchema } from "shared/schemas/fields";
+import { FrameExecutable, LinkedContext, LinkedNode } from "shared/types/frameExec";
+import { DBTables, SpaceTable } from "shared/types/mdb";
+import { FrameRoot, FrameTreeProp, MDBFrames, MFrame } from "shared/types/mframe";
+import { SpaceInfo } from "shared/types/spaceInfo";
 import { deepOmit } from "../objects";
 import { flattenToFrameNodes } from "./ast";
 import { stringIsConst } from "./frames";

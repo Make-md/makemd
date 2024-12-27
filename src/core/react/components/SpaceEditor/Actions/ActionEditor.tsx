@@ -1,7 +1,7 @@
 import { Superstate } from "makemd-core";
 import React from "react";
-import { SpaceProperty } from "types/mdb";
-import { ActionTree } from "../../../../types/actions";
+import { SpaceProperty } from "shared/types/mdb";
+import { ActionTree } from "../../../../../shared/types/actions";
 import { parseActionString } from "../../../../utils/commands/actions";
 import { ActionNode } from "./ActionNode";
 export const ActionEditor = (props: {

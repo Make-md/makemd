@@ -1,4 +1,4 @@
-import { FrameTreeProp } from "types/mframe";
+import { FrameTreeProp } from "shared/types/mframe";
 
 export const parseStylesToClass = (styles: FrameTreeProp) => {
     const classes = [];

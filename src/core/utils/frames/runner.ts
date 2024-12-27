@@ -1,7 +1,8 @@
 
-import { API } from 'core/superstate/api';
 import { ensureArray } from 'core/utils/strings';
-import { FrameContexts, FrameExecProp, FrameExecutable, FrameExecutableContext, FrameNode, FrameNodeState, FrameRunInstance, FrameState } from 'types/mframe';
+import { API } from 'makemd-core';
+import { FrameContexts, FrameExecProp, FrameExecutable, FrameExecutableContext, FrameNodeState, FrameRunInstance, FrameState } from "shared/types/frameExec";
+import { FrameNode } from 'shared/types/mframe';
 import { buildExecutable } from './executable';
 import { linkTreeNodes } from './linker';
 

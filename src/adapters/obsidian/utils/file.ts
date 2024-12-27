@@ -15,10 +15,11 @@ import {
 import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
 import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
 import { isTouchScreen } from "core/utils/ui/screen";
-import { TargetLocation } from "types/path";
-import { selectElementContents } from "utils/dom";
-import { folderPathToString, getParentPathFromString, removeTrailingSlashFromFolder } from "utils/path";
-import { sanitizeFileName, sanitizeFolderName } from "utils/sanitizers";
+import { TargetLocation } from "shared/types/path";
+import { selectElementContents } from "shared/utils/dom";
+import { removeTrailingSlashFromFolder } from "shared/utils/paths";
+import { sanitizeFileName, sanitizeFolderName } from "shared/utils/sanitizers";
+import { folderPathToString, getParentPathFromString } from "utils/path";
 import { SPACE_FRAGMENT_VIEW_TYPE } from "../ui/editors/SpaceFragmentViewComponent";
 import { EVER_VIEW_TYPE } from "../ui/navigator/EverLeafView";
   

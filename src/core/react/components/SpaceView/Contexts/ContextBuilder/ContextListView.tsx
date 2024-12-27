@@ -2,19 +2,20 @@ import React, { useContext, useMemo, useState } from "react";
 
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
-import { ensureArray } from "core/utils/strings";
+import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { SelectOption } from "makemd-core";
-import { DBRow } from "types/mdb";
-import { FrameEditorMode, FrameTreeProp } from "types/mframe";
-import { URI } from "types/path";
-import { uniq } from "utils/array";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { DBRow } from "shared/types/mdb";
+import { FrameTreeProp } from "shared/types/mframe";
+import { URI } from "shared/types/path";
+import { uniq } from "shared/utils/array";
 import { ContextInfiniteScroll } from "./ContextInfiniteScroll";
 import { ContextListInstance } from "./ContextListInstance";
 import { FrameContainerView } from "./FrameContainerView";
@@ -33,7 +34,7 @@ export const ContextListView = (props: {
   const { editSection, selectedIndex, setSelectedIndex, groupURI, itemURI } =
     props;
   const { readMode } = useContext(PathContext);
-  const { spaceInfo } = useContext(SpaceContext);
+  const { spaceInfo, spaceState } = useContext(SpaceContext);
   const {
     predicate,
     filteredData: data,
@@ -153,23 +154,27 @@ export const ContextListView = (props: {
                 ...context,
               },
               $properties: cols,
-              [spaceInfo.path]: cols.reduce((a, b) => {
+              [source]: cols.reduce((a, b) => {
                 return {
                   ...a,
                   [b.name]: c[b.name],
                 };
               }, {}),
-              ...Object.keys(contextTable).reduce<FrameTreeProp>((d, e) => {
-                return {
-                  ...d,
-                  [e]: contextTable[e].cols.reduce((a, b) => {
-                    return {
-                      ...a,
-                      [b.name]: c[b.name + e],
-                    };
-                  }, {}),
-                };
-              }, {}),
+              ...Object.keys(contextTable)
+                .filter((f) =>
+                  spaceState.contexts.some((g) => tagSpacePathFromTag(g) == f)
+                )
+                .reduce<FrameTreeProp>((d, e) => {
+                  return {
+                    ...d,
+                    [e]: contextTable[e].cols.reduce((a, b) => {
+                      return {
+                        ...a,
+                        [b.name]: c[b.name + e],
+                      };
+                    }, {}),
+                  };
+                }, {}),
             },
           };
         }, {})
@@ -186,7 +191,7 @@ export const ContextListView = (props: {
               },
 
               $properties: cols,
-              [spaceInfo.path]: cols.reduce((a, b) => {
+              [source]: cols.reduce((a, b) => {
                 return {
                   ...a,
                   [b.name]: c[b.name],
@@ -195,7 +200,7 @@ export const ContextListView = (props: {
             },
           };
         }, {});
-  }, [data, cols, contextTable]);
+  }, [data, cols, source, contextTable, spaceState]);
 
   return (
     <FrameContainerView

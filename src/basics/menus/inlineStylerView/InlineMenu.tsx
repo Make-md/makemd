@@ -6,11 +6,11 @@ import { getActiveCM, getActiveMarkdownView } from "basics/codemirror";
 import { i18n } from "makemd-core";
 
 import MakeBasicsPlugin from "basics/basics";
-import { uiIconSet } from "core/assets/icons";
 import { editorInfoField } from "obsidian";
 import React, { useState } from "react";
-import { colors } from "schemas/color";
-import { sanitizeFileName } from "utils/sanitizers";
+import { uiIconSet } from "shared/assets/icons";
+import { colors } from "shared/utils/color";
+import { sanitizeFileName } from "shared/utils/sanitizers";
 import { Mark } from "./Mark";
 import { InlineStyle, resolveStyles } from "./styles";
 
@@ -18,7 +18,7 @@ export const loadStylerIntoContainer = (
   el: HTMLElement,
   plugin: MakeBasicsPlugin
 ) => {
-  const root = plugin.createRoot(el);
+  const root = plugin.enactor.createRoot(el);
   root.render(
     <InlineMenuComponent
       mobile={true}
@@ -289,13 +289,13 @@ export const InlineMenuComponent: React.FC<{
     const infoField = props.cm.state.field(editorInfoField, false);
     const file = infoField.file;
     if (file) {
-      if (props.plugin.isSpace(file.parent.path)) {
+      if (props.plugin.enactor.isSpace(file.parent.path)) {
         for (let i = lineStart; i <= lineEnd; i++) {
           const line = props.cm.state.doc.line(i);
           const indentLevel = getMarkdownListIndentLevel(line.text);
           const newText = removeListFormatting(line.text);
 
-          const newFile = await props.plugin.createNote(
+          const newFile = await props.plugin.enactor.createNote(
             file.parent.path,
             newText
           );
@@ -313,7 +313,7 @@ export const InlineMenuComponent: React.FC<{
   };
 
   const linkText = (e: React.MouseEvent) => {
-    props.plugin.selectLink(e, (link) => {
+    props.plugin.enactor.selectLink(e, (link) => {
       const currentSelection = props.cm.state.selection.main;
       const selectedText = props.cm.state.sliceDoc(
         currentSelection.from,
@@ -369,10 +369,10 @@ export const InlineMenuComponent: React.FC<{
       currentSelection.to
     );
     if (file) {
-      const space = props.plugin.isSpace(file.parent.path);
+      const space = props.plugin.enactor.isSpace(file.parent.path);
       if (space) {
         const newPath = sanitizeFileName(selectedText).trim();
-        props.plugin
+        props.plugin.enactor
           .createNote(file.parent.path, newPath, content)
           .then((f) => {
             if (f) {

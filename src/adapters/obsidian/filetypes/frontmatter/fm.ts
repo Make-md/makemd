@@ -1,6 +1,5 @@
 import { getAllAbstractFilesInVault } from "adapters/obsidian/utils/file";
 import { saveProperties } from "core/superstate/utils/spaces";
-import { PathPropertyName } from "core/types/context";
 import MakeMDPlugin from "main";
 import {
   App,
@@ -9,8 +8,9 @@ import {
   TAbstractFile,
   TFile
 } from "obsidian";
-import { DBTable, SpaceTable } from "types/mdb";
-import { onlyUniquePropCaseInsensitive, uniq } from "utils/array";
+import { PathPropertyName } from "shared/types/context";
+import { DBTable, SpaceTable } from "shared/types/mdb";
+import { onlyUniquePropCaseInsensitive, uniq } from "shared/utils/array";
 
 import { defaultValueForType, parseMDBStringValue, yamlTypeToMDBType } from "utils/properties";
 

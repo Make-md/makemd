@@ -1,9 +1,8 @@
 import { defaultString } from "core/utils/strings";
 import { Superstate } from "makemd-core";
 import React from "react";
-import { stickerForSchema } from "schemas/mdb";
 
-import { FrameSchema } from "types/mframe";
+import { FrameSchema } from "shared/types/mframe";
 
 export const ContextViewCrumb = (
   props: React.PropsWithChildren<{
@@ -20,7 +19,6 @@ export const ContextViewCrumb = (
       onContextMenu={(e) => props.onContextMenu(e, props.schema)}
       className={`mk-context ${props.active ? "mk-active" : ""}`}
     >
-      
       {defaultString(props.schema.name, "Untitled")}
       {props.children}
     </div>

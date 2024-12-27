@@ -3,10 +3,10 @@ import { dbResultsToDBTables, deleteFromDB, getZippedDB, insertIntoDB, replaceDB
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import { debounce } from "lodash";
 import { CacheDBSchema } from "schemas/cache";
+import { DBRow, DBTables } from "shared/types/mdb";
+import { sanitizeSQLStatement } from "shared/utils/sanitizers";
 import { Database } from "sql.js";
-import { DBRow, DBTables } from "types/mdb";
-import { sanitizeSQLStatement } from "utils/sanitizers";
-import { LocalCachePersister } from "../../../core/middleware/types/persister";
+import { LocalCachePersister } from "../../../shared/types/persister";
 
 /** Simpler wrapper for a file-backed cache for arbitrary metadata. */
 export class LocalStorageCache implements LocalCachePersister {

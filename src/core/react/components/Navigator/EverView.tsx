@@ -4,7 +4,7 @@ import { PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
 import { Superstate } from "makemd-core";
 import React, { useEffect, useState } from "react";
-import { defaultContextSchemaID } from "schemas/mdb";
+import { defaultContextSchemaID } from "shared/schemas/context";
 import { ContextListContainer } from "../SpaceView/Contexts/ContextListContainer";
 import { FilterBar } from "../SpaceView/Contexts/FilterBar/FilterBar";
 import { showSpaceContextMenu } from "../UI/Menus/navigator/spaceContextMenu";

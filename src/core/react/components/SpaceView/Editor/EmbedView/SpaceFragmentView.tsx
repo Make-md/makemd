@@ -5,14 +5,14 @@ import { FrameRootProvider } from "core/react/context/FrameRootContext";
 import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
 import { PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
-import { Superstate } from "core/superstate/superstate";
-import { SpaceFragmentType } from "core/superstate/utils/spaces";
+import { Superstate } from "makemd-core";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   defaultFrameListViewID,
   defaultFrameListViewSchema,
 } from "schemas/mdb";
-import { URI } from "types/path";
+import { URI } from "shared/types/path";
+import { SpaceFragmentType } from "shared/types/spaceFragment";
 import { ContextListContainer } from "../../Contexts/ContextListContainer";
 import { FrameInstanceView } from "../../Frames/ViewNodes/FrameInstance";
 

@@ -1,7 +1,7 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { Superstate } from "makemd-core";
-import { Rect } from "types/Pos";
-import { SpaceProperty } from "types/mdb";
+import { Rect } from "shared/types/Pos";
+import { SpaceProperty } from "shared/types/mdb";
 import { defaultMenu, menuInput } from "../menu/SelectionMenu";
 import { DatePickerTimeMode, showDatePickerMenu } from "./datePickerMenu";
 

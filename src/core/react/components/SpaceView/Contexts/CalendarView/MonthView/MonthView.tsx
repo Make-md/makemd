@@ -2,7 +2,7 @@ import { useDndMonitor } from "@dnd-kit/core";
 import { addWeeks, endOfMonth, startOfMonth } from "date-fns";
 import { Superstate } from "makemd-core";
 import React, { useMemo, useState } from "react";
-import { DBRow, DBRows } from "types/mdb";
+import { DBRow, DBRows } from "shared/types/mdb";
 import { CalendarHeaderView } from "../CalendarHeaderView";
 import { MonthWeekRow } from "./MonthWeekRow";
 

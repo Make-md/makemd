@@ -1,9 +1,9 @@
 import { saveSpaceCache } from "core/superstate/utils/spaces";
-import { Metadata } from "core/types/metadata";
-import { SpaceDefGroup, SpaceDefinition } from "core/types/space";
-import { SpaceState } from "core/types/superstate";
 import { Superstate, i18n } from "makemd-core";
 import React, { useEffect, useState } from "react";
+import { Metadata } from "shared/types/metadata";
+import { SpaceState } from "shared/types/PathState";
+import { SpaceDefGroup, SpaceDefinition } from "shared/types/spaceDef";
 import { SpaceQuery } from "./SpaceQuery";
 export const LiveFilters = (props: {
   superstate: Superstate;

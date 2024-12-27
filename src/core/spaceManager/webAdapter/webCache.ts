@@ -1,5 +1,5 @@
-import { IndexMap } from "core/types/indexMap";
-import { Note, SpaceKit } from "types/kits";
+import { IndexMap } from "shared/types/indexMap";
+import { Note, SpaceKit } from "shared/types/kits";
 import { WebSpaceAdapter } from "./webAdapter";
 
 export class WebCacher {

@@ -1,6 +1,6 @@
-import { movePath, renamePathWithExtension, renamePathWithoutExtension } from "core/utils/uri";
 import { Superstate } from "makemd-core";
-import { uniq } from "utils/array";
+import { uniq } from "shared/utils/array";
+import { movePath, renamePathWithExtension, renamePathWithoutExtension } from "shared/utils/uri";
 import { renameTag } from "utils/tags";
 
 export const renamePathByName = async (superstate: Superstate, oldPath: string, newName: string) : Promise<string> => {

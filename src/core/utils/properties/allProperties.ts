@@ -1,4 +1,4 @@
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import { detectPropertyType } from "utils/properties";
 
 export type PropertyType = {

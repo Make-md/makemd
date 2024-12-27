@@ -1,10 +1,12 @@
 import { spaceFolderPathFromSpace } from "core/utils/spaces/space";
-import { FilesystemSpaceInfo } from "types/mdb";
+import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { builtinSpacePathPrefix, builtinSpaces } from "core/types/space";
-import { folderPathToString, removeTrailingSlashFromFolder } from "utils/path";
+import { builtinSpaces } from "core/types/space";
+import { builtinSpacePathPrefix } from "shared/schemas/builtin";
+import { removeTrailingSlashFromFolder } from "shared/utils/paths";
+import { folderPathToString } from "utils/path";
 import { encodeSpaceName, tagSpacePathFromTag } from "../../utils/strings";
 
 

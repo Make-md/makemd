@@ -1,5 +1,4 @@
 import { useDndMonitor, useDroppable } from "@dnd-kit/core";
-import { PathPropertyName } from "core/types/context";
 import { applySat } from "core/utils/color";
 import {
   formatDate,
@@ -12,9 +11,10 @@ import { add, addMilliseconds, startOfDay } from "date-fns";
 import { Superstate } from "makemd-core";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { RRule } from "rrule";
-import { DBRow, DBRows } from "types/mdb";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow, DBRows } from "shared/types/mdb";
 
-import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
+import { BlinkMode } from "core/react/components/Blink/Blink";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import React from "react";
 import { safelyParseJSON } from "utils/parsers";
@@ -481,9 +481,10 @@ export const DayView = (props: {
               minutes: placeholderEvent.endOffset,
             });
             event.preventDefault();
-            openBlinkModal(
-              props.superstate,
+            const rect = event.currentTarget.getBoundingClientRect();
+            props.superstate.ui.quickOpen(
               BlinkMode.Open,
+              rect,
               window,
               (path) => {
                 if (!path) return;

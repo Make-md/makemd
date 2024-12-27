@@ -1,6 +1,6 @@
 import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
 import React from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { TableCellProp } from "../TableView/TableView";
 
 export const ColorCell = (props: TableCellProp) => {

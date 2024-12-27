@@ -1,17 +1,12 @@
 import { saveSpaceCache } from "core/superstate/utils/spaces";
-import { SpaceState } from "core/types/superstate";
 import { tagSpacePathFromTag } from "core/utils/strings";
-import { i18n, Superstate } from "makemd-core";
+import { i18n, SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
-import { Rect } from "types/Pos";
+import { SpaceState } from "shared/types/PathState";
+import { Rect } from "shared/types/Pos";
 import { ensureTag } from "utils/tags";
 import StickerModal from "../../Modals/StickerModal";
-import {
-  defaultMenu,
-  menuSeparator,
-  SelectOption,
-  SelectOptionType,
-} from "../menu/SelectionMenu";
+import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 
 const saveContexts = (
   superstate: Superstate,

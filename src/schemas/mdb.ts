@@ -1,9 +1,12 @@
-import i18n from "core/i18n";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { PathPropertyName } from "core/types/context";
-import { DBTable, DBTables, SpaceInfo, SpaceProperty, SpaceTable, SpaceTableSchema } from "types/mdb";
-import { FrameSchema } from "types/mframe";
+import i18n from "shared/i18n";
+import { PathPropertyName } from "shared/types/context";
+import { DBTable, DBTables, SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
+import { FrameSchema } from "shared/types/mframe";
+import { SpaceInfo } from "shared/types/spaceInfo";
 import { parsePropString, safelyParseJSON } from "utils/parsers";
+import { defaultContextDBSchema, defaultContextSchemaID } from "../shared/schemas/context";
+import { defaultContextFields, defaultTagFields } from "../shared/schemas/fields";
 
 export type FieldType = {
   type: string;
@@ -244,14 +247,6 @@ export const defaultValueForPropertyType = (name: string, value: string, type: s
   }
   return ""
 };
-export const defaultContextSchemaID = "files";
-export const defaultContextDBSchema: SpaceTableSchema = {
-  id: defaultContextSchemaID,
-  name: "Items",
-  type: "db",
-  primary: "true",
-};
-
 export const defaultFrameListViewID = "filesView";
 export const defaultFrameListViewSchema: SpaceTableSchema = {
   id: defaultFrameListViewID,
@@ -278,75 +273,6 @@ export const defaultContextTable: DBTable = {
   rows: [defaultContextDBSchema] as SpaceTableSchema[],
 };
 
-
-export const fieldSchema = {
-  uniques: ["name,schemaId"],
-  cols: [
-    "name",
-    "schemaId",
-    "type",
-    "value",
-    "attrs",
-    "hidden",
-    "unique",
-    "primary",
-  ],
-};
-
-export const defaultContextFields: DBTable = {
-  ...fieldSchema,
-  rows: [
-    {
-      name: PathPropertyName,
-      schemaId: defaultContextSchemaID,
-      type: "file",
-      primary: "true",
-      hidden: "",
-      unique: "",
-      attrs: "",
-      value: "",
-    },
-    {
-      name: i18n.properties.fileProperty.createdTime,
-      schemaId: defaultContextSchemaID,
-      type: "fileprop",
-      value: PathPropertyName+".ctime",
-      hidden: "",
-      unique: "",
-      attrs: "",
-      primary: "true",
-    },
-  ] as SpaceProperty[],
-};
-
-export const defaultFieldsForContext = (space: SpaceInfo) => {
-  return defaultContextFields;
-};
-
-export const defaultTableFields: SpaceProperty[] = [
-  {
-    name: i18n.properties.defaultField,
-    schemaId: "",
-    type: "text",
-    primary: "true",
-  },
-];
-
-export const defaultTagFields: DBTable = {
-  ...fieldSchema,
-  rows: [
-    {
-      name: PathPropertyName,
-      schemaId: defaultContextSchemaID,
-      type: "file",
-      primary: "true",
-      hidden: "",
-      unique: "",
-      attrs: "",
-      value: "",
-    },
-  ],
-};
 
 export const defaultMDBTableForContext = (space: SpaceInfo) => {
   

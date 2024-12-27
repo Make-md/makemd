@@ -1,13 +1,14 @@
-import { Superstate } from "core/superstate/superstate";
 import { deletePath } from "core/superstate/utils/path";
-import { PathPropertyName } from "core/types/context";
 import { folderForTagSpace } from "core/utils/spaces/space";
 import { pathToParentPath } from "core/utils/strings";
 import { isString } from "lodash";
-import { DBRow, SpaceInfo, SpaceTable } from "types/mdb";
-import { insert } from "utils/array";
+import { Superstate } from "makemd-core";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow, SpaceTable } from "shared/types/mdb";
+import { SpaceInfo } from "shared/types/spaceInfo";
+import { insert } from "shared/utils/array";
 import { defaultMDBTableForContext } from "../../../schemas/mdb";
-import { uniq } from "../../../utils/array";
+import { uniq } from "../../../shared/utils/array";
 import { parseMultiString } from "../../../utils/parsers";
 import { formatDate, parseDate } from "../date";
 

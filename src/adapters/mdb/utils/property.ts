@@ -1,6 +1,6 @@
-import { fieldSchema } from "schemas/mdb";
-import { DBTables, SpaceProperty } from "types/mdb";
-import { sanitizeColumnName } from "utils/sanitizers";
+import { fieldSchema } from "shared/schemas/fields";
+import { DBTables, SpaceProperty } from "shared/types/mdb";
+import { sanitizeColumnName } from "shared/utils/sanitizers";
 
 export const savePropertyToDBTables = (newColumn: SpaceProperty, fields: SpaceProperty[], oldColumn?: SpaceProperty): DBTables => {
     const column = {

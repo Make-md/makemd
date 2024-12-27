@@ -1,14 +1,13 @@
-import t from "core/i18n";
 import StickerModal from "core/react/components/UI/Modals/StickerModal";
-import { Superstate } from "core/superstate/superstate";
 import { savePathSticker } from "core/superstate/utils/label";
-import { PathState } from "core/types/superstate";
 import { removeIconsForPaths } from "core/utils/emoji";
+import { SelectOption, Superstate } from "makemd-core";
 import React, { useEffect, useState } from "react";
-import { windowFromDocument } from "utils/dom";
-import { parseStickerString } from "utils/stickers";
-import { SelectOption, defaultMenu } from "../../Menus/menu/SelectionMenu";
-
+import t from "shared/i18n";
+import { PathState } from "shared/types/PathState";
+import { windowFromDocument } from "shared/utils/dom";
+import { parseStickerString } from "shared/utils/stickers";
+import { defaultMenu } from "../../Menus/menu/SelectionMenu";
 export const PathStickerView = (props: {
   superstate: Superstate;
   pathState: PathState;

@@ -4,7 +4,7 @@ import { javascript } from "@codemirror/lang-javascript";
 import { githubDark } from "@uiw/codemirror-theme-github";
 import ReactCodeMirror from "@uiw/react-codemirror";
 import { Superstate } from "makemd-core";
-import { Command } from "types/commands";
+import { Command } from "shared/types/commands";
 import { ActionTester } from "./ActionTester";
 
 export const ScriptEditor = (props: {

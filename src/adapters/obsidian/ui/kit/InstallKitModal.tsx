@@ -2,7 +2,7 @@ import { installSpaceKit } from "adapters/obsidian/ui/kit/kits";
 import MakeMDPlugin from "main";
 import { Superstate } from "makemd-core";
 import React, { useState } from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { safelyParseJSON } from "utils/parsers";
 import { Dropdown } from "../../../../core/react/components/UI/Dropdown";
 import { showSpacesMenu } from "../../../../core/react/components/UI/Menus/properties/selectSpaceMenu";

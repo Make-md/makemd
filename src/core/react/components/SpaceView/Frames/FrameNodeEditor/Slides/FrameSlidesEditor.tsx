@@ -7,10 +7,10 @@ import { removeQuotes, wrapQuotes } from "core/utils/strings";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
 import { slideNode, slidesNode } from "schemas/kits/slides";
-import { SpaceProperty } from "types/mdb";
-import { FrameNode } from "types/mframe";
-import { uniqueNameFromString } from "utils/array";
-import { windowFromDocument } from "utils/dom";
+import { SpaceProperty } from "shared/types/mdb";
+import { FrameNode } from "shared/types/mframe";
+import { uniqueNameFromString } from "shared/utils/array";
+import { windowFromDocument } from "shared/utils/dom";
 export const FrameSlidesEditor = (props: {
   superstate: Superstate;
   node: FrameNode;

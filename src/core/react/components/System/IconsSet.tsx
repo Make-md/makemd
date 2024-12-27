@@ -1,6 +1,6 @@
-import { uiIconSet } from "core/assets/icons";
 import { Superstate } from "makemd-core";
 import React, { useEffect } from "react";
+import { uiIconSet } from "shared/assets/icons";
 type IconSet = {
   name: string;
   icon: string;

@@ -1,6 +1,6 @@
-import { Superstate } from "core/superstate/superstate";
-import { PathState } from "core/types/superstate";
+import { Superstate } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
+import { PathState } from "shared/types/PathState";
 import { SpaceFragmentViewComponent } from "../SpaceView/Editor/EmbedView/SpaceFragmentView";
 import { NoteView } from "./NoteView";
 

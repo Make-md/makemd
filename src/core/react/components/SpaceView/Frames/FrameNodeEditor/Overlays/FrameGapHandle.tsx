@@ -1,7 +1,7 @@
 import { parseStylesToClass } from "core/utils/frames/renderer";
 import React, { useEffect, useMemo } from "react";
-import { Rect, Size } from "types/Pos";
-import { FrameTreeProp } from "types/mframe";
+import { Rect, Size } from "shared/types/Pos";
+import { FrameTreeProp } from "shared/types/mframe";
 import { FrameDraggableHandle } from "./FrameDraggableHandle";
 
 type FlexboxItem = {

@@ -1,5 +1,5 @@
-import { uiIconSet } from "core/assets/icons";
 import React from "react";
+import { uiIconSet } from "shared/assets/icons";
 export const UICollapse = (props: {
   collapsed: boolean;
   onToggle?: (collapsed: boolean, e: React.MouseEvent) => void;

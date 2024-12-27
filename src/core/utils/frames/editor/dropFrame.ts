@@ -1,7 +1,8 @@
 import { columnNode, columnsNode } from "schemas/kits/base";
-import { Edges } from "types/Pos";
-import { FrameEditorMode, FrameNode, FrameTreeNode } from "types/mframe";
-import { insert, uniqueNameFromString } from "utils/array";
+import { FrameEditorMode, FrameTreeNode } from "shared/types/frameExec";
+import { FrameNode } from "shared/types/mframe";
+import { Edges } from "shared/types/Pos";
+import { insert, uniqueNameFromString } from "shared/utils/array";
 import { findParent } from "../ast";
 import { newUniqueNode } from "../frames";
 import { relinkProps } from "../linker";

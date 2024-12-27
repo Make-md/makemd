@@ -1,6 +1,6 @@
-import { Rect } from "types/Pos";
+import { Rect } from "shared/types/Pos";
 
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 
 import {
   Gradient,
@@ -15,7 +15,7 @@ import {
   colors,
   colorsBase,
   textColors,
-} from "schemas/color";
+} from "shared/utils/color";
 
 export const ColorPicker = (props: {
   superstate: Superstate;

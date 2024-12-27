@@ -2,29 +2,36 @@ import { defaultTableDataForContext } from "core/utils/contexts/optionValuesForC
 import { mdbFrameToDBTables } from "core/utils/frames/frame";
 
 import { FileCache, FilesystemMiddleware } from "core/middleware/filesystem";
-import { AFile, PathLabel } from "core/middleware/types/afile";
+import { AFile } from "shared/types/afile";
+import { PathLabel } from "shared/types/caches";
 
 import { DefaultEverViewTables, DefaultFolderNoteMDBTables, DefaultMDBTables } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { parseSpaceMetadata } from "core/superstate/utils/spaces";
-import { Focus } from "core/types/focus";
-import { builtinSpacePathPrefix, builtinSpaces, spaceContextsKey, SpaceDefinition, spaceFilterKey, spaceLinksKey, spaceRecursiveKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
+import { builtinSpaces, spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceRecursiveKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { executeCode } from "core/utils/frames/runner";
 import { ensureArray } from "core/utils/strings";
-import { movePath } from "core/utils/uri";
-import { defaultContextDBSchema, defaultContextSchemaID, defaultContextTable, defaultFieldsForContext, defaultFramesTable, defaultTablesForContext, fieldSchema } from "schemas/mdb";
-import { Command, CommandResult, Library } from "types/commands";
-import { Kit } from "types/kits";
-import { DBTables, SpaceInfo, SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "types/mdb";
-import { MDBFrame, MDBFrames } from "types/mframe";
-import { uniqueNameFromString } from "utils/array";
+import { defaultContextTable, defaultFramesTable, defaultTablesForContext } from "schemas/mdb";
+import { builtinSpacePathPrefix } from "shared/schemas/builtin";
+import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
+import { defaultFieldsForContext, fieldSchema } from "shared/schemas/fields";
+import { Command, CommandResult, Library } from "shared/types/commands";
+import { Focus } from "shared/types/focus";
+import { Kit } from "shared/types/kits";
+import { DBTables, SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "shared/types/mdb";
+import { MDBFrame, MDBFrames } from "shared/types/mframe";
+import { SpaceDefinition } from "shared/types/spaceDef";
+import { SpaceInfo } from "shared/types/spaceInfo";
+import { SpaceAdapter } from "shared/types/spaceManager";
+import { uniqueNameFromString } from "shared/utils/array";
+import { movePath } from "shared/utils/uri";
 import { excludeSpacesPredicate } from "utils/hide";
 import { safelyParseJSON } from "utils/parsers";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
-import { SpaceAdapter, SpaceManager } from "../spaceManager";
+import { SpaceManager } from "../spaceManager";
 
 
 //Space Adapter that works on a generic filesystem middleware
@@ -428,7 +435,7 @@ private defaultDBTablesForContext (spaceInfo: SpaceInfo) {
       },
     };
 }
-  public defaultFrame (path: string) {
+  public defaultFrame  (path: string): MDBFrames {
     if (path.startsWith(builtinSpacePathPrefix)) {
       if (path == builtinSpacePathPrefix + 'overview') {
         return DefaultEverViewTables

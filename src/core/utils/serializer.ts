@@ -1,5 +1,5 @@
-import { ContextDef } from "core/types/context";
 import { SelectOption } from "makemd-core";
+import { ContextDef } from "shared/types/context";
 
 //named serializers for converting values to string
 

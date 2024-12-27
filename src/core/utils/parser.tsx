@@ -1,4 +1,4 @@
-import { SpaceSort } from "core/types/space";
+import { SpaceSort } from "shared/types/spaceDef";
 import { parseLinkString } from "utils/parsers";
 import { pathToString } from "utils/path";
 

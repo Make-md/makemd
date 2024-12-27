@@ -1,8 +1,8 @@
-import { PathPropertyName } from "core/types/context";
 import { deleteRowInTable } from "core/utils/contexts/context";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import React from "react";
-import { windowFromDocument } from "utils/dom";
+import { PathPropertyName } from "shared/types/context";
+import { windowFromDocument } from "shared/utils/dom";
 import { defaultMenu } from "../menu/SelectionMenu";
 import { showPathContextMenu } from "../navigator/pathContextMenu";
 import { showSpaceContextMenu } from "../navigator/spaceContextMenu";

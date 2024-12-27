@@ -4,11 +4,11 @@ import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate } from "core/superstate/superstate";
 import { contextPathForSpace } from "core/utils/contexts/embed";
 import { findParent } from "core/utils/frames/ast";
 import { dropFrame } from "core/utils/frames/editor/dropFrame";
 import { wrapQuotes } from "core/utils/strings";
+import { Superstate } from "makemd-core";
 import React, {
   PropsWithChildren,
   useCallback,
@@ -22,8 +22,9 @@ import {
   inputNode,
   textNode,
 } from "schemas/kits/base";
-import { SpaceProperty } from "types/mdb";
-import { FrameEditorMode, FrameTreeProp } from "types/mframe";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { SpaceProperty } from "shared/types/mdb";
+import { FrameTreeProp } from "shared/types/mframe";
 import { DefaultMDBTables } from "../DefaultFrames/DefaultFrames";
 import { FrameEditorNodeView } from "../EditorNodes/FrameEditorNodeView";
 export const FrameEditorInstance = (

@@ -1,11 +1,7 @@
-import i18n from "core/i18n";
 import {
   DatePickerTimeMode,
   showDatePickerMenu,
 } from "core/react/components/UI/Menus/properties/datePickerMenu";
-import { Superstate } from "core/superstate/superstate";
-import { Metadata } from "core/types/metadata";
-import { SpaceDefFilter, SpaceDefGroup } from "core/types/space";
 import { filterFnLabels } from "core/utils/contexts/predicate/filterFns/filterFnLabels";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
 import {
@@ -13,14 +9,17 @@ import {
   predicateFnsForType,
 } from "core/utils/contexts/predicate/predicate";
 import { format } from "date-fns";
+import { SelectSection, Superstate } from "makemd-core";
 import React, { PropsWithChildren, useEffect } from "react";
-import { SpaceProperty } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { SpaceProperty } from "shared/types/mdb";
+import { Metadata } from "shared/types/metadata";
+import { SpaceDefFilter, SpaceDefGroup } from "shared/types/spaceDef";
+import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 import { pathNameToString } from "utils/path";
 import { serializeMultiString } from "utils/serializers";
 import { FilterValueSpan } from "../SpaceView/Contexts/FilterBar/FilterBar";
-import { SelectSection } from "../UI/Menus/menu/SelectionMenu";
 import { showLinkMenu } from "../UI/Menus/properties/linkMenu";
 import { showSpacesMenu } from "../UI/Menus/properties/selectSpaceMenu";
 
@@ -120,7 +119,6 @@ export const SpaceQuery = (props: {
       }
       case "list":
         {
-          
           const fieldType = filter.fType;
           const saveOptions = (options: string[], values: string[]) => {
             saveFilterValue(serializeMultiString(values));

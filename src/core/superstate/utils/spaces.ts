@@ -1,33 +1,26 @@
-import i18n from "core/i18n";
-import { PathStateWithRank, Superstate } from "core/superstate/superstate";
-import { MakeMDSettings } from "core/types/settings";
-import { spaceContextsKey, SpaceDefFilter, SpaceDefGroup, SpaceDefinition, spaceFilterKey, spaceLinksKey, spaceRecursiveKey, SpaceSort, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
-import { CacheState, PathState, SpaceState } from "core/types/superstate";
+import { spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceRecursiveKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
 import { reorderPathsInContext } from "core/utils/contexts/context";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
 import { ensureArray, ensureBoolean, ensureString, ensureStringValueFromSet } from "core/utils/strings";
 import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep, compareByFieldNumerical } from "core/utils/tree";
 import { isTouchScreen } from "core/utils/ui/screen";
-import { movePath } from "core/utils/uri";
-import { SpaceInfo, SpaceProperty } from "types/mdb";
-import { MDBFrame } from "types/mframe";
-import { TargetLocation } from "types/path";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
+import { SpaceProperty } from "shared/types/mdb";
+import { MDBFrame } from "shared/types/mframe";
+import { TargetLocation } from "shared/types/path";
+import { CacheState, PathState, SpaceState } from "shared/types/PathState";
+import { MakeMDSettings } from "shared/types/settings";
+import { SpaceDefFilter, SpaceDefGroup, SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
+import { SpaceInfo } from "shared/types/spaceInfo";
+import { PathStateWithRank } from "shared/types/superstate";
+import { sanitizeColumnName } from "shared/utils/sanitizers";
+import { movePath } from "shared/utils/uri";
 import { defaultValueForType } from "utils/properties";
-import { sanitizeColumnName } from "utils/sanitizers";
+import { SpaceFragmentSchema } from "../../../shared/types/spaceFragment";
 import { deletePath } from "./path";
 import { addTagToPath, deleteTagFromPath } from "./tags";
-
-export type SpaceFragmentType = "context" | 'frame' | 'action'
-
-export type SpaceFragmentSchema = {
-  id: string;
-  name: string;
-  sticker?: string;
-  frameType?: string;
-  type: SpaceFragmentType;
-  path: string;
-};
 
 export const uriToSpaceFragmentSchema = async (
   superstate: Superstate,

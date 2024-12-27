@@ -1,18 +1,19 @@
 //handles db ops
 
-import { PathPropertyName } from "core/types/context";
 import { linkColumns, removeLinksInRow, renameLinksInRow } from "core/utils/contexts/links";
 import { removeRowForPath, removeRowsForPath, renameRowForPath, reorderRowsForPath } from "core/utils/contexts/pathUpdates";
 import _ from "lodash";
-import { DBRow, DBRows, SpaceInfo, SpaceProperty, SpaceTable } from "types/mdb";
-import { insertMulti } from "utils/array";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow, DBRows, SpaceProperty, SpaceTable } from "shared/types/mdb";
+import { SpaceInfo } from "shared/types/spaceInfo";
+import { insertMulti } from "shared/utils/array";
 
 import { arrayMove } from "@dnd-kit/sortable";
 import { DefaultSpaceCols } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { metadataPathForSpace } from "core/superstate/utils/spaces";
 import { Superstate } from "makemd-core";
-import { defaultContextFields } from "schemas/mdb";
+import { defaultContextFields } from "shared/schemas/fields";
 import { serializeMultiString } from "utils/serializers";
 import { parseMultiString, parseProperty, safelyParseJSON } from "../../../utils/parsers";
 

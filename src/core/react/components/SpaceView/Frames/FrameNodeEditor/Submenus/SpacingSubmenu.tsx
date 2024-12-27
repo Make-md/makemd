@@ -1,6 +1,6 @@
 import { i18n } from "makemd-core";
 import React from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { StepSetter } from "../../Setters/StepSetter";
 import { HoverSubmenuProps } from "./HoverSubmenuProps";
 import { MarginSubmenu } from "./MarginSubmenu";

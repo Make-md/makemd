@@ -1,4 +1,4 @@
-import { UIManager } from "makemd-core";
+import { SelectSection, UIManager } from "makemd-core";
 import React, {
   CSSProperties,
   forwardRef,
@@ -6,7 +6,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { SelectSection } from "./SelectionMenu";
 
 const SIZER_STYLES: CSSProperties = {
   position: "absolute",

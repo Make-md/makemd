@@ -1,143 +1,27 @@
-import { PathLabel } from "core/middleware/types/afile";
-import { Superstate } from "core/superstate/superstate";
-import { SpaceFragmentType } from "core/superstate/utils/spaces";
-import { ActionInstance } from "core/types/actions";
-import { Focus } from "core/types/focus";
-import { builtinSpacePathPrefix, SpaceDefinition, SpaceType } from "core/types/space";
+
 import { serializeOptionValue } from "core/utils/serializer";
-import { parseURI } from "core/utils/uri";
-import { defaultContextSchemaID } from "schemas/mdb";
-import { Command, CommandResult, Library } from "types/commands";
-import { Kit } from "types/kits";
-import { SpaceInfo, SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "types/mdb";
-import { MDBFrame, MDBFrames } from "types/mframe";
-import { URI } from "types/path";
-import { uniq } from "utils/array";
+import { builtinSpacePathPrefix } from "shared/schemas/builtin";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { ActionInstance } from "shared/types/actions";
+import { Command } from "shared/types/commands";
+import { Focus } from "shared/types/focus";
+import { SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
+import { MDBFrame, MDBFrames } from "shared/types/mframe";
+import { URI } from "shared/types/path";
+import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
+import { SpaceFragmentType } from "shared/types/spaceFragment";
+import { SpaceAdapter, SpaceManagerInterface } from "shared/types/spaceManager";
+import { ISuperstate } from "shared/types/superstate";
+import { uniq } from "shared/utils/array";
+import { parseURI } from "shared/utils/uri";
 import { parseMultiString } from "utils/parsers";
+import { PathCache } from "../../shared/types/caches";
 
-export type PathCache = {
-   [key: string]: any,
-   metadata: Record<string, any>,
-   ctime: number,
-   label: PathLabel,
-   contentTypes: string[],
-   tags: string[],
-   type: string,
-   subtype: string,
-   parent: string,
-   readOnly: boolean
-}
-
-//Space Manager creates an abstraction that manipulates Spaces and their Items
-//Works both on local systems, non-local systems, ACLed systems and cloud systems
-export abstract class SpaceAdapter {
-    //authorities that this cosmoform supports
-    
-    public schemes: string[];
-   public initiateAdapter:(manager: SpaceManager) => void;
-    //basic space operations
-    
-    public spaceInfoForPath: (path: string) => SpaceInfo;
-    public spaceDefForSpace: (path: string) => Promise<SpaceDefinition>;
-    public parentPathForPath: (path: string) => string;
-    public createSpace: (name: string, parentPath: string, definition: SpaceDefinition) => void
-    public saveSpace: (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) => void
-    public renameSpace: (path: string, newPath: string) => Promise<string>
-    public deleteSpace: (path: string) => void
-    public childrenForSpace: (path: string) => string[]
-    public allPaths: (type?: string[]) => string[]
-    public keysForCacheType: (type: string) => string[];
-    public spaceInitiated: (path: string) => Promise<boolean>
-    
-    //Space Features
-    public contextForSpace: (path: string) => Promise<SpaceTable>
-
-    //Context
-    public contextInitiated: (path: string) => Promise<boolean>
-    public tablesForSpace: (path: string) => Promise<SpaceTableSchema[]>
-    public readTable: (path: string, name: string) => Promise<SpaceTable>
-    public readAllTables: (path: string) => Promise<SpaceTables>
-    public createTable: (path: string, schema: SpaceTableSchema) => Promise<void>
-    public saveTableSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>
-    public saveTable: (path: string, table: SpaceTable, force?: boolean) => Promise<boolean>
-    public deleteTable: (path: string, name: string) => Promise<void>
-
-    //Frames
-    public framesForSpace: (path: string) => Promise<SpaceTableSchema[]>
-    public readFrame: (path: string, name: string) => Promise<MDBFrame>
-    public readAllFrames: (path: string) => Promise<SpaceTables>
-    public createFrame: (path: string, schema: SpaceTableSchema) => Promise<void>
-    public deleteFrame: (path: string, name: string) => Promise<void>
-    public saveFrameSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>
-    public saveFrame: (path: string, frame: MDBFrame) => Promise<boolean>;
-
-    //Commands
-    public commandsForSpace: (path: string) => Promise<Command[]>
-    public runCommand: (path: string, name: string, instance: ActionInstance) => Promise<CommandResult>
-    public createCommand: (path: string, schema: SpaceTableSchema) => Promise<void>
-    public deleteCommand: (path: string, name: string) => Promise<void>
-    public saveCommand: (path: string, schemaId: string, saveCommand: (prev: Command) => Command) => Promise<boolean>
-    public readSystemCommands: () => Promise<Library[]>
-    public saveSystemCommand: (lib: string, action: Command) => Promise<void>;
-
-    //basic item operations
-    public resolvePath: (path: string, source: string) => string;
-    public pathExists: (path: string) => Promise<boolean>;
-    public createItemAtPath: (parent: string, type: string, name: string, content: any) => Promise<string>;
-    public renamePath: (oldPath: string, newPath: string) => Promise<string>;
-      public copyPath: (source: string, destination: string, newName?: string) => Promise<string>;
-    public getPathInfo: (path: string) => Promise<Record<string, any>>;
-      public deletePath: (path: string) => void;
-    public readPath: (path: string) => Promise<string>;
-
-    public readPathCache: (path: string) => Promise<PathCache>;
-
-    public writeToPath: (path: string, content: any, binary?: boolean) => void;
-
-
-    public allSpaces: () => SpaceInfo[];
-    public allCaches: () => Map<string, PathCache>;
-    public addProperty: (path: string, property: SpaceProperty) => void;
-    public readProperties: (path: string) => Promise<{[key:string]: any}>;
-    public saveProperties: (path: string, properties: {[key:string]: any}) => Promise<boolean>;
-    public renameProperty: (path: string, property: string, newProperty: string) => void;
-    public deleteProperty: (path: string, property: string) => void;
-
-    public readLabel: (path: string) => Promise<PathLabel>;
-    public saveLabel: (path: string, key:string, value: any) => void;
-
-    public addSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
-    public deleteSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
-    public saveSpaceProperty: (path: string, property: SpaceProperty, oldProperty: SpaceProperty) => Promise<boolean>;
-
-    //tag management
-    public addTag: (path: string, tag: string) => void;
-    public deleteTag: (path: string, tag: string) => void;
-    public renameTag: (path: string, tag: string, newTag: string) => void;
-      public readTags: () => string[];
-
-      public pathsForTag: (tag: string) => string[];
-      public readAllKits: () => Promise<Kit[]>;
-      public readAllTemplates: () => Promise<{[key: string]: MDBFrames}>;
-      public saveFrameKit: (frames: MDBFrame, name: string) => Promise<void>;
-    public saveSpaceTemplate: (frames: MDBFrames, name: string) => Promise<void>;
-    public childrenForPath: (path: string, type?: string) => Promise<string[]>;
-
-    public readFocuses: () => Promise<Focus[]>;
-    public saveFocuses: (focuses: Focus[]) => Promise<void>;
-    public readTemplates: (path: string) => Promise<string[]>;
-    public saveTemplate: (path: string, space: string) => Promise<string>;
-    public deleteTemplate: (path: string, space: string) => Promise<void>;
-}
-
-
-
-
-export class SpaceManager {
+export class SpaceManager implements SpaceManagerInterface {
   
     public primarySpaceAdapter : SpaceAdapter;
     public spaceAdapters: SpaceAdapter[] = []
-    public superstate: Superstate;
+    public superstate: ISuperstate;
 
  
     public readSystemCommands = () => {
@@ -549,9 +433,9 @@ export class SpaceManager {
         return this.adapterForPath(path).readTemplates(path);
     }
     public saveTemplate (path: string, space: string) {
-        return this.adapterForPath(path).saveTemplate(path, space).then(f => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true));
+        return this.adapterForPath(path).saveTemplate(path, space).then(f => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true)).then(f => f.path);
     }
     public deleteTemplate (template: string, space: string) {
-        return this.primarySpaceAdapter.deleteTemplate(template, space).then(f => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true));
+        return this.primarySpaceAdapter.deleteTemplate(template, space).then(f => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true)).then(f => null);
     }
 }

@@ -1,5 +1,5 @@
 import { SidebarProvider } from "core/react/context/SidebarContext";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React from "react";
 import { MainList } from "./MainList";
 export const Navigator = (props: { superstate: Superstate }) => {

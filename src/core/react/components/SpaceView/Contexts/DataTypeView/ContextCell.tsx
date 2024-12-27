@@ -1,18 +1,18 @@
-import i18n from "core/i18n";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import {
   addPathToSpaceAtIndex,
   newPathInSpace,
 } from "core/superstate/utils/spaces";
-import { PathPropertyName } from "core/types/context";
 import {
   deletePropertyMultiValue,
   updateContextValue,
 } from "core/utils/contexts/context";
 import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
-import { SpaceTables } from "types/mdb";
-import { uniq } from "utils/array";
+import i18n from "shared/i18n";
+import { PathPropertyName } from "shared/types/context";
+import { SpaceTables } from "shared/types/mdb";
+import { uniq } from "shared/utils/array";
 import { parseMultiString } from "utils/parsers";
 import {
   serializeMultiDisplayString,

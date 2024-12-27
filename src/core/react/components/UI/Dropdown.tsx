@@ -1,6 +1,6 @@
 import { SelectOption, Superstate } from "makemd-core";
 import React from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 export const Dropdown = (props: {
   superstate: Superstate;
   options?: SelectOption[];

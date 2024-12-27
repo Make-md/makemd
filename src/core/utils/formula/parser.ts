@@ -1,7 +1,7 @@
-import { IndexMap } from "core/types/indexMap"
-import { PathState } from "core/types/superstate"
 import * as math from "mathjs"
-import { DBRow, SpaceProperty } from "types/mdb"
+import { IndexMap } from "shared/types/indexMap"
+import { DBRow, SpaceProperty } from "shared/types/mdb"
+import { PathState } from "shared/types/PathState"
 import { parseProperty } from "utils/parsers"
 import { formulas } from "./formulas"
 

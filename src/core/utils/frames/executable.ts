@@ -1,5 +1,5 @@
 import * as acorn from "acorn";
-import { FrameExecutable, FrameTreeNode } from "types/mframe";
+import { FrameExecutable, FrameTreeNode } from "shared/types/frameExec";
 import { applyFunctionToObject } from "../objects";
 import { objectIsConst, stringIsConst } from "./frames";
 

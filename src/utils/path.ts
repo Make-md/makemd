@@ -1,16 +1,10 @@
 
-import { Superstate } from "core/superstate/superstate";
 import { removeLeadingSlash } from "core/utils/strings";
+import { Superstate } from "makemd-core";
 
 
 
 
-export const removeTrailingSlashFromFolder = (path: string) => path == "/"
-  ? path
-  : path.slice(-1) == "/"
-    ? path.substring(0, path.length - 1)
-    : path;
-    
     export const pathDisplayName = (path: string, superstate: Superstate) => {
   if (!path) return "";
   const uri = superstate.spaceManager.uriByString(path);

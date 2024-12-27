@@ -2,11 +2,11 @@ import { FrameEditorProvider } from "core/react/context/FrameEditorRootContext";
 import { FrameRootProvider } from "core/react/context/FrameRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React, { useContext } from "react";
-import { SpaceProperty } from "types/mdb";
-import { FrameEditorMode } from "types/mframe";
-import { URI } from "types/path";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { SpaceProperty } from "shared/types/mdb";
+import { URI } from "shared/types/path";
 
 export const FrameContainerView = (props: {
   superstate: Superstate;

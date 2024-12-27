@@ -1,7 +1,7 @@
 
-import { Superstate } from "core/superstate/superstate";
-import { WorkerJobType } from "core/types/superstate";
 import { stringifyJob } from "core/utils/superstate/serializer";
+import { Superstate } from "makemd-core";
+import { WorkerJobType } from "shared/types/PathState";
 //@ts-ignore
 import SearchWorker from "./search.worker";
 /** Callback when a file is resolved. */

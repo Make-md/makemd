@@ -1,6 +1,6 @@
 import { frameRootWithProps, kitWithProps } from "core/utils/frames/frames";
 import { i18n } from "makemd-core";
-import { FrameRoot } from "types/mframe";
+import { FrameRoot } from "shared/types/mframe";
 import { contentNode, flowNode, groupNode, textNode } from "./base";
 import { buttonNode } from "./ui";
 

@@ -1,16 +1,9 @@
 import { CLIManager } from "core/middleware/commands";
-import { EventDispatcher } from "core/middleware/dispatchers/dispatcher";
-import { LocalCachePersister } from "core/middleware/types/persister";
 import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
-import { PathPropertyName } from "core/types/context";
-import { Focus } from "core/types/focus";
-import { IndexMap } from "core/types/indexMap";
-import { MakeMDSettings } from "core/types/settings";
-import { SpaceDefinition, SpaceType, builtinSpaces, tagsSpacePath } from "core/types/space";
-import { ContextState, PathState, SpaceState } from "core/types/superstate";
+import { builtinSpaces } from "core/types/space";
 import { buildRootFromMDBFrame } from "core/utils/frames/ast";
 import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
 import { pathByDef } from "core/utils/spaces/query";
@@ -25,51 +18,47 @@ import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
 import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemNode, overviewItem, rowGroup } from "schemas/kits/list";
 import { buttonNode, callout, circularProgressNode, dividerNode, fieldNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
 import { fieldTypeForField, mainFrameID } from "schemas/mdb";
-import { Command } from "types/commands";
-import { Kit } from "types/kits";
-import { DBRows, SpaceInfo, SpaceProperty } from "types/mdb";
-import { FrameExecutable, FrameRoot, MDBFrames, defaultFrameEditorProps } from "types/mframe";
-import { orderArrayByArrayWithKey, uniq } from "utils/array";
+import { tagsSpacePath } from "shared/schemas/builtin";
+import { Command } from "shared/types/commands";
+import { PathPropertyName } from "shared/types/context";
+import { Focus } from "shared/types/focus";
+import { defaultFrameEditorProps, FrameExecutable } from "shared/types/frameExec";
+import { IndexMap } from "shared/types/indexMap";
+import { Kit } from "shared/types/kits";
+import { SpaceProperty } from "shared/types/mdb";
+import { FrameRoot, MDBFrames } from "shared/types/mframe";
+import { ContextState, PathState, SpaceState } from "shared/types/PathState";
+import { LocalCachePersister } from "shared/types/persister";
+import { MakeMDSettings } from "shared/types/settings";
+import { SpaceDefGroup, SpaceDefinition, SpaceType } from "shared/types/spaceDef";
+import { SpaceInfo } from "shared/types/spaceInfo";
+import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
+import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { parseMultiString, safelyParseJSON } from "utils/parsers";
 import { getAllParentTags } from "utils/tags";
 import { removeLinkInContexts, removePathInContexts, removeTagInContexts, renameLinkInContexts, renamePathInContexts, renameTagInContexts, updateContextWithProperties } from "../utils/contexts/context";
 import { API } from "./api";
 import { SpacesCommandsAdapter } from "./commands";
 
-import { Metadata } from "core/types/metadata";
 import { linkContextRow } from "core/utils/contexts/linkContextRow";
 import { formulas } from "core/utils/formula/formulas";
 import { allMetadata } from "core/utils/metadata";
+import { Metadata } from "shared/types/metadata";
 import { Indexer } from "./workers/indexer/indexer";
 
-import { Loadout } from "core/react/components/System/SystemSettings";
+import { SuperstateEvent } from "shared/types/PathState";
+import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
 import { getParentPathFromString } from "utils/path";
 import { parseMDBStringValue } from "utils/properties";
 import { Searcher } from "./workers/search/search";
-export type PathStateWithRank = PathState & {rank?: number}
-export type SuperstateEvent = {
-    "pathCreated": { path: string},
-    "pathChanged": { path: string, newPath: string},
-    "pathDeleted": { path: string},
-    "pathStateUpdated": {path: string},
-    "spaceChanged": { path: string, newPath: string},
-    "spaceDeleted": {path: string},
-    "spaceStateUpdated": {path: string },
-    "contextStateUpdated": {path: string},
-    "frameStateUpdated": {path: string, schemaId?: string},
-    "actionStateUpdated": {path: string},
-    "settingsChanged": null,
-    "warningsChanged": null,
-    "focusesChanged": null,
-    "superstateUpdated": null,
-    "superstateReindex": null,
-}
-
 export type SuperProperty = {
     id: string,
     name: string,
 }
-export class Superstate {
+
+
+
+export class Superstate implements ISuperstate {
     public static create( indexVersion: string, onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CLIManager): Superstate {
         return new Superstate(indexVersion, onChange, spaceManager, uiManager, commandsManager);
     }
@@ -94,7 +83,6 @@ public api: API;
     public kitFrames : Map<string, FrameExecutable>
     public templateCache: Map<string, MDBFrames>
 
-    public loadouts: Loadout[] = []
 
     public kit : FrameRoot[] = [
         buttonNode, 
@@ -130,7 +118,6 @@ public api: API;
     columnView]
     
     //Persistant Cache
-    public vaultDBCache: DBRows
     public iconsCache: Map<string, string>
     public imagesCache: Map<string, string>
 
@@ -148,10 +135,26 @@ public api: API;
         properties: Metadata[]
     }>
     private contextStateQueue: Promise<void>;
-    public indexer: Indexer;
+    private indexer: Indexer;
 
-    public searcher: Searcher;
+    private searcher: Searcher;
     public focuses: Focus[];
+    public search (path: string, query?: string, queries?: SpaceDefGroup[]) {
+        if (query) {
+            return this.searcher
+            .run<PathState[]>({
+              type: "fastSearch",
+              path: path,
+              payload: { query: query, count: 10 },
+            })
+        }
+        return this.searcher
+        .run<PathState[]>({
+          type: "search",
+          path: path,
+          payload: { queries: queries, count: 10 },
+        })
+    }
     private constructor(public indexVersion: string, public onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CLIManager) {
         this.eventsDispatcher= new EventDispatcher<SuperstateEvent>();
 
@@ -209,7 +212,6 @@ public api: API;
         this.imagesCache = new Map();
         this.contextStateQueue = Promise.resolve();
 
-        this.vaultDBCache = [];
 
         //Intiate Workers
         this.indexer = new Indexer(2, this)
@@ -932,6 +934,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
         
     }
     private async pathReloaded (path: string, cache: PathState, changed: boolean, force: boolean) {
+        if (!cache) return false;
         if (this.settings.enhancedLogs)
         {console.log('Path Reloaded')}
             this.pathsIndex.set(path, cache);

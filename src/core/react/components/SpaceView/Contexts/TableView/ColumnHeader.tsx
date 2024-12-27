@@ -1,19 +1,19 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import i18n from "core/i18n";
 import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
 import { showPropertyMenu } from "core/react/components/UI/Menus/contexts/spacePropertyMenu";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import { useCombinedRefs } from "core/react/hooks/useCombinedRef";
-import { Superstate } from "core/superstate/superstate";
-import { PathPropertyName } from "core/types/context";
 import { optionValuesForColumn } from "core/utils/contexts/optionValuesForColumn";
 import { nameForField } from "core/utils/frames/frames";
 import { tagSpacePathFromTag } from "core/utils/strings";
+import { Superstate } from "makemd-core";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { stickerForField } from "schemas/mdb";
-import { SpaceTableColumn } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { PathPropertyName } from "shared/types/context";
+import { SpaceTableColumn } from "shared/types/mdb";
+import { windowFromDocument } from "shared/utils/dom";
 
 export const filePropTypes = [
   {

@@ -7,7 +7,7 @@ import { updatePrimaryAlias } from "core/superstate/utils/label";
 import MakeMDPlugin from "main";
 import { TFile } from "obsidian";
 import React from "react";
-import { sanitizeFileName } from "utils/sanitizers";
+import { sanitizeFileName } from "shared/utils/sanitizers";
 
 export const openPathFixer = (plugin: MakeMDPlugin) => {
   const superstate = plugin.superstate;

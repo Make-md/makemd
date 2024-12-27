@@ -2,7 +2,7 @@ import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/new
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { i18n } from "makemd-core";
 import React, { useMemo } from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { parseObject } from "utils/parsers";
 import { propertyIsObjectType } from "utils/properties";
 import { PropertyField } from "../ContextBuilder/ContextListEditSelector";

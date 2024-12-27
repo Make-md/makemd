@@ -1,11 +1,12 @@
 
 
-import { PathCache } from "core/spaceManager/spaceManager";
 import { parseAllMetadata, parseContextTableToCache, parseMetadata } from "core/superstate/cacheParsers";
-import { IndexMap } from "core/types/indexMap";
-import { MakeMDSettings } from "core/types/settings";
-import { ContextState, PathState, SpaceState } from "core/types/superstate";
-import { SpaceInfo, SpaceTables } from "types/mdb";
+import { PathCache } from "shared/types/caches";
+import { IndexMap } from "shared/types/indexMap";
+import { SpaceTables } from "shared/types/mdb";
+import { ContextState, PathState, SpaceState } from "shared/types/PathState";
+import { MakeMDSettings } from "shared/types/settings";
+import { SpaceInfo } from "shared/types/spaceInfo";
 
 export type PathWorkerPayload = {path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, pathMetadata: PathCache, name: string, type: string, subtype: string, parent: string, oldMetadata: PathState};
 export type BatchPathWorkerPayload = {pathCache: Map<string, PathCache>, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>,  oldMetadata: Map<string, PathState>};

@@ -1,5 +1,6 @@
-import { Filter, Predicate, Sort } from "core/types/predicate";
-import { SpaceTableSchema } from "types/mdb";
+import { SpaceTableSchema } from "shared/types/mdb";
+import { Filter, Predicate, Sort } from "shared/types/predicate";
+import { defaultPredicate } from "../../../../shared/schemas/predicate";
 import { FilterFunctionType } from "./filter";
 import { filterFnTypes } from "./filterFns/filterFnTypes";
 import { SortFunctionType, sortFnTypes } from "./sort";
@@ -78,38 +79,4 @@ export const defaultPredicateForSchema = (schema: SpaceTableSchema) => {
         ...defaultPredicate,
         view: "table",
       };
-};
-
-export const defaultPredicate: Predicate = {
-  view: "list",
-  filters: [],
-  listView: "",
-  listItem: "",
-  listGroup: "",
-  listGroupProps: {},
-  listViewProps: {},
-  listItemProps: {},
-  sort: [],
-  groupBy: [],
-  colsOrder: [],
-  colsHidden: [],
-  colsSize: {},
-  colsCalc: {},
-};
-
-export const defaultTablePredicate: Predicate = {
-  view: "table",
-  filters: [],
-  listView: "",
-  listItem: "",
-  listGroup: "",
-  listGroupProps: {},
-  listViewProps: {},
-  listItemProps: {},
-  sort: [],
-  groupBy: [],
-  colsOrder: [],
-  colsHidden: [],
-  colsSize: {},
-  colsCalc: {},
 };

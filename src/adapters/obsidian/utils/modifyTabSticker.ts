@@ -1,7 +1,7 @@
 import { SpaceViewContainer } from "adapters/obsidian/SpaceViewContainer";
 import MakeMDPlugin from "main";
 import { MarkdownView } from "obsidian";
-import { parseStickerString } from "utils/stickers";
+import { parseStickerString } from "shared/utils/stickers";
 import { stickerFromString } from "../ui/sticker";
 
 

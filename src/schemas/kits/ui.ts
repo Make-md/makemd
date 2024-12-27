@@ -1,7 +1,7 @@
-import i18n from "core/i18n";
 import { frameRootWithProps } from "core/utils/frames/frames";
+import i18n from "shared/i18n";
 
-import { FrameRoot } from "types/mframe";
+import { FrameRoot } from "shared/types/mframe";
 import { contentNode, flowNode, groupNode, iconNode, imageNode, textNode } from "./base";
 import { deltaNode, slideNode, slidesNode } from "./slides";
 

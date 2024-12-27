@@ -1,15 +1,15 @@
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { FrameSelectionProvider } from "core/react/context/FrameSelectionContext";
-import { Superstate } from "core/superstate/superstate";
 import { initiateString } from "core/utils/strings";
 import _ from "lodash";
+import { Superstate } from "makemd-core";
 
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
 import React, { useContext, useEffect, useState } from "react";
-import { DBRow } from "types/mdb";
-import { FrameEditorMode } from "types/mframe";
-import { URI } from "types/path";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { DBRow } from "shared/types/mdb";
+import { URI } from "shared/types/path";
 import { DayView } from "./CalendarView/DayView/DayView";
 import { MonthView } from "./CalendarView/MonthView/MonthView";
 import { WeekView } from "./CalendarView/WeekView/WeekView";

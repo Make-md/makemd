@@ -1,4 +1,3 @@
-import i18n from "core/i18n";
 import { SpaceFragmentViewComponent } from "core/react/components/SpaceView/Editor/EmbedView/SpaceFragmentView";
 import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
@@ -6,8 +5,9 @@ import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { contextPathFromPath } from "core/utils/contexts/context";
 import { wrapQuotes } from "core/utils/strings";
 import React, { useContext } from "react";
-import { defaultContextSchemaID } from "schemas/mdb";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { windowFromDocument } from "shared/utils/dom";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";
 
 function parseContent(input: string): string {

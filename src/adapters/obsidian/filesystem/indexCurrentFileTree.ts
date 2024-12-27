@@ -1,7 +1,7 @@
 import { vaultSchema } from "adapters/obsidian/filesystem/schemas/vaultSchema";
 import MakeMDPlugin from "main";
 import { TFile, TFolder } from "obsidian";
-import { DBRows, DBTables } from "types/mdb";
+import { DBRows, DBTables } from "shared/types/mdb";
 import { getAllAbstractFilesInVault } from "../utils/file";
 
 

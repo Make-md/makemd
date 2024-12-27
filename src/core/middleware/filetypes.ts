@@ -1,5 +1,5 @@
-import { AFile } from "core/middleware/types/afile";
-import { EventTypeToPayload } from "./dispatchers/dispatcher";
+import { AFile } from "shared/types/afile";
+import { EventTypeToPayload } from "../../shared/utils/dispatchers/dispatcher";
 import { FilesystemMiddleware } from "./filesystem";
 
 export interface FileTypeEventTypes extends EventTypeToPayload {

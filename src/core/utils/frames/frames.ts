@@ -1,9 +1,10 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { Superstate } from "makemd-core";
-import { DBRow, SpaceInfo, SpaceProperty } from "types/mdb";
-import { FrameNode, FrameRoot, FrameTreeProp, MFrame } from "types/mframe";
-import { uniqueNameFromString } from "utils/array";
+import { DBRow, SpaceProperty } from "shared/types/mdb";
+import { FrameNode, FrameRoot, FrameTreeProp, MFrame } from "shared/types/mframe";
+import { SpaceInfo } from "shared/types/spaceInfo";
+import { uniqueNameFromString } from "shared/utils/array";
 
 
 export const frameEmbedStringFromContext = (space: SpaceInfo, schema: string) => {

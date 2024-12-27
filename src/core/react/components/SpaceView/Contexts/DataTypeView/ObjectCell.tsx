@@ -1,20 +1,19 @@
 import { DragOverlay, useDndMonitor } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import i18n from "core/i18n";
 import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
 import {
-  SelectOption,
   defaultMenu,
   menuSeparator,
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { Superstate } from "core/superstate/superstate";
-import { MenuObject } from "core/utils/ui/menu";
+import { SelectOption, Superstate } from "makemd-core";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { DBRow, SpaceTableColumn } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { DBRow, SpaceTableColumn } from "shared/types/mdb";
+import { MenuObject } from "shared/types/menu";
+import { windowFromDocument } from "shared/utils/dom";
 import { parseObject } from "utils/parsers";
 import { propertyIsObjectType } from "utils/properties";
 import { CellEditMode, TableCellMultiProp } from "../TableView/TableView";

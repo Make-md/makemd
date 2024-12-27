@@ -10,7 +10,6 @@ import { showPropertyMenu } from "core/react/components/UI/Menus/contexts/spaceP
 import {
   defaultMenu,
   menuSeparator,
-  SelectOptionType,
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { showApplyItemsMenu } from "core/react/components/UI/Menus/navigator/showApplyItemsMenu";
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
@@ -28,9 +27,8 @@ import {
   saveSpaceTemplate,
 } from "core/superstate/utils/spaces";
 import { addTagToPath } from "core/superstate/utils/tags";
-import { PathPropertyName } from "core/types/context";
 import { FMMetadataKeys } from "core/types/space";
-import { i18n, SelectOption, Superstate } from "makemd-core";
+import { i18n, SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React, {
   useContext,
   useEffect,
@@ -38,13 +36,15 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import { defaultContextSchemaID, defaultTableFields } from "schemas/mdb";
-import { Rect } from "types/Pos";
-import { SpaceProperty, SpaceTables, SpaceTableSchema } from "types/mdb";
-import { uniqueNameFromString } from "utils/array";
-import { windowFromDocument } from "utils/dom";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { defaultTableFields } from "shared/schemas/fields";
+import { PathPropertyName } from "shared/types/context";
+import { SpaceProperty, SpaceTables, SpaceTableSchema } from "shared/types/mdb";
+import { Rect } from "shared/types/Pos";
+import { uniqueNameFromString } from "shared/utils/array";
+import { windowFromDocument } from "shared/utils/dom";
+import { sanitizeTableName } from "shared/utils/sanitizers";
 import { parseMDBStringValue } from "utils/properties";
-import { sanitizeTableName } from "utils/sanitizers";
 import {
   DefaultFolderNoteMDBTables,
   DefaultMDBTables,

@@ -1,5 +1,5 @@
 import { i18n } from "makemd-core";
-import { FrameRoot } from "types/mframe";
+import { FrameRoot } from "shared/types/mframe";
 
 
 export const iconNode: FrameRoot = {

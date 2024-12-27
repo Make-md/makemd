@@ -1,14 +1,17 @@
 
-import { PathLabel } from "core/middleware/types/afile";
+import { PathLabel } from "shared/types/caches";
 
-import { Focus } from "core/types/focus";
-import { SpaceDefinition } from "core/types/space";
-import { defaultContextSchemaID } from "schemas/mdb";
-import { Command, CommandResult, Library } from "types/commands";
-import { Kit, SpaceKit } from "types/kits";
-import { SpaceInfo, SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from "types/mdb";
-import { MDBFrame, MDBFrames } from "types/mframe";
-import { PathCache, SpaceAdapter, SpaceManager } from "../spaceManager";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { Command, CommandResult, Library } from "shared/types/commands";
+import { Focus } from "shared/types/focus";
+import { Kit, SpaceKit } from "shared/types/kits";
+import { SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from "shared/types/mdb";
+import { MDBFrame, MDBFrames } from "shared/types/mframe";
+import { SpaceDefinition } from "shared/types/spaceDef";
+import { SpaceInfo } from "shared/types/spaceInfo";
+import { SpaceAdapter } from "shared/types/spaceManager";
+import { PathCache } from "../../../shared/types/caches";
+import { SpaceManager } from "../spaceManager";
 import { WebCacher } from "./webCache";
 
 

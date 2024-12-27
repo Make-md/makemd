@@ -1,9 +1,9 @@
 
 
-import { SpaceDefGroup } from "core/types/space";
-import { PathState } from "core/types/superstate";
 import { pathByDef } from "core/utils/spaces/query";
 import Fuse from "fuse.js";
+import { PathState } from "shared/types/PathState";
+import { SpaceDefGroup } from "shared/types/spaceDef";
 
 export function fastSearch (payload: { query: string, pathsIndex: Map<string, PathState>, count: number}) {
     const { query, pathsIndex, count } = payload;

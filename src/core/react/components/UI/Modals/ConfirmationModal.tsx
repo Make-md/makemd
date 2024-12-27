@@ -1,5 +1,5 @@
-import i18n from "core/i18n";
 import React from "react";
+import i18n from "shared/i18n";
 
 export const ConfirmationModal = (props: {
   hide?: () => void;

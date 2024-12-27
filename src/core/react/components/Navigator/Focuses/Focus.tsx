@@ -2,12 +2,12 @@ import { UniqueIdentifier } from "@dnd-kit/core";
 import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import useLongPress from "core/react/hooks/useLongPress";
-import { Superstate } from "core/superstate/superstate";
-import { Focus } from "core/types/focus";
+import { SelectOption, Superstate } from "makemd-core";
 import React, { forwardRef, useContext, useRef } from "react";
-import { Rect } from "types/Pos";
-import { windowFromDocument } from "utils/dom";
-import { SelectOption, defaultMenu } from "../../UI/Menus/menu/SelectionMenu";
+import { Focus } from "shared/types/focus";
+import { Rect } from "shared/types/Pos";
+import { windowFromDocument } from "shared/utils/dom";
+import { defaultMenu } from "../../UI/Menus/menu/SelectionMenu";
 import { eventToModifier } from "../SpaceTree/SpaceTreeItem";
 
 export interface SortablePinnedSpaceItemProps extends PinnedSpaceProps {

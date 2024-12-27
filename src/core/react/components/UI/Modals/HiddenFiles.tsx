@@ -1,7 +1,7 @@
-import i18n from "core/i18n";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { windowFromDocument } from "shared/utils/dom";
 import { pathNameToString } from "utils/path";
 
 export const HiddenPaths = (props: {

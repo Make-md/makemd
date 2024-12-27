@@ -1,14 +1,9 @@
-import i18n from "core/i18n";
+import i18n from "shared/i18n";
 
-import { Superstate } from "core/superstate/superstate";
-import { Rect } from "types/Pos";
-import { SpaceProperty } from "types/mdb";
-import {
-  SelectOption,
-  defaultMenu,
-  menuInput,
-  menuSeparator,
-} from "../menu/SelectionMenu";
+import { SelectOption, Superstate } from "makemd-core";
+import { Rect } from "shared/types/Pos";
+import { SpaceProperty } from "shared/types/mdb";
+import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
 
 export const showPropertiesMenu = (
   superstate: Superstate,

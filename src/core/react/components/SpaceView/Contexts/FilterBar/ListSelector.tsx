@@ -14,8 +14,8 @@ import { defaultString } from "core/utils/strings";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import React, { useContext, useRef } from "react";
 import { stickerForSchema } from "schemas/mdb";
-import { FrameSchema } from "types/mframe";
-import { windowFromDocument } from "utils/dom";
+import { FrameSchema } from "shared/types/mframe";
+import { windowFromDocument } from "shared/utils/dom";
 export const ListSelector = (props: {
   superstate: Superstate;
   expanded: boolean;

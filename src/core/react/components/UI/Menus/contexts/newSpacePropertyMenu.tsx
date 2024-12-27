@@ -1,27 +1,19 @@
-import i18n from "core/i18n";
+import i18n from "shared/i18n";
 
-import { Superstate } from "core/superstate/superstate";
 import { FMMetadataKeys } from "core/types/space";
 import { RepeatTemplate } from "core/utils/contexts/fields/presets";
 import { nameForField } from "core/utils/frames/frames";
 import { allPropertiesForPaths } from "core/utils/properties/allProperties";
-import { MenuObject } from "core/utils/ui/menu";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  defaultContextSchemaID,
-  fieldTypeForType,
-  fieldTypes,
-  stickerForField,
-} from "schemas/mdb";
-import { SpaceProperty, SpaceTableColumn } from "types/mdb";
-import { Rect } from "types/Pos";
-import { windowFromDocument } from "utils/dom";
+import { fieldTypeForType, fieldTypes, stickerForField } from "schemas/mdb";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { SpaceProperty, SpaceTableColumn } from "shared/types/mdb";
+import { MenuObject } from "shared/types/menu";
+import { Rect } from "shared/types/Pos";
+import { windowFromDocument } from "shared/utils/dom";
 import { folderPathToString } from "utils/path";
-import {
-  menuSeparator,
-  SelectOption,
-  SelectOptionType,
-} from "../menu/SelectionMenu";
+import { menuSeparator } from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
 
 export type NewPropertyMenuProps = {

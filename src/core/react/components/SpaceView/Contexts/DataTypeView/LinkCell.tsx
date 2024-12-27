@@ -1,7 +1,7 @@
-import i18n from "core/i18n";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import React, { PropsWithChildren, useEffect, useState } from "react";
-import { uniq } from "utils/array";
+import i18n from "shared/i18n";
+import { uniq } from "shared/utils/array";
 import { parseMultiString } from "utils/parsers";
 import {
   serializeMultiDisplayString,

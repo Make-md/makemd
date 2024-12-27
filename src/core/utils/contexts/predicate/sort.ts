@@ -1,7 +1,7 @@
 
-import i18n from "core/i18n";
-import { Sort } from "core/types/predicate";
-import { DBRow, SpaceTableColumn } from "types/mdb";
+import i18n from "shared/i18n";
+import { DBRow, SpaceTableColumn } from "shared/types/mdb";
+import { Sort } from "shared/types/predicate";
 import { parseMultiString } from "utils/parsers";
 
 

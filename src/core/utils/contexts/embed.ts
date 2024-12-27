@@ -1,5 +1,5 @@
 
-import { SpaceState } from "core/types/superstate";
+import { SpaceState } from "shared/types/PathState";
 
 export const framePathForSpace = (space: SpaceState, schema: string) => {
   if (space.type == 'folder') {

@@ -1,4 +1,4 @@
-import { MakeMDSettings } from "core/types/settings";
+import { MakeMDSettings } from "shared/types/settings";
 
 export const excludePathPredicate =
   (settings: MakeMDSettings, path: string) =>

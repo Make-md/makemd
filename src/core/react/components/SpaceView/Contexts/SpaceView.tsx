@@ -2,11 +2,11 @@ import { FrameSelectionProvider } from "core/react/context/FrameSelectionContext
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext, PathProvider } from "core/react/context/PathContext";
 import { SpaceContext, SpaceProvider } from "core/react/context/SpaceContext";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useContext } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { SpaceTableColumn } from "types/mdb";
-import { FrameEditorMode } from "types/mframe";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { SpaceTableColumn } from "shared/types/mdb";
 import { ErrorFallback } from "../../Navigator/MainList";
 import { FrameContainerView } from "./ContextBuilder/FrameContainerView";
 

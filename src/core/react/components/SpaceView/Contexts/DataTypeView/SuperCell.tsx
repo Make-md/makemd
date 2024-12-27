@@ -5,8 +5,8 @@ import {
   wrapQuotes,
 } from "core/utils/strings";
 import React, { useEffect, useMemo, useState } from "react";
-import { DBRow, SpaceTableColumn } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import { DBRow, SpaceTableColumn } from "shared/types/mdb";
+import { windowFromDocument } from "shared/utils/dom";
 import { TableCellProp } from "../TableView/TableView";
 import { ParameterSetter } from "./SuperCell/ParameterSetter";
 

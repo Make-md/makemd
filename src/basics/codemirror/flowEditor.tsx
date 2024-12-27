@@ -1,14 +1,12 @@
 import {
   Annotation,
   EditorState,
-  RangeSetBuilder,
   StateField,
   Transaction,
   TransactionSpec,
 } from "@codemirror/state";
 import {
   Decoration,
-  DecorationSet,
   EditorView,
   ViewPlugin,
   WidgetType,
@@ -22,14 +20,13 @@ import { i18n } from "makemd-core";
 
 import MakeBasicsPlugin from "basics/basics";
 import { FlowEditorHover } from "basics/flow/FlowEditorHover";
-import { UICollapse } from "basics/ui/UICollapse";
 import { UINote } from "basics/ui/UINote";
-import { uiIconSet } from "core/assets/icons";
-import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
-import { compareByField } from "core/utils/tree";
-import { genId } from "core/utils/uuid";
+import { uiIconSet } from "shared/assets/icons";
+
+import { compareByField } from "basics/utils/utils";
 import { editorInfoField } from "obsidian";
 import { Root } from "react-dom/client";
+import { genId } from "shared/utils/uuid";
 
 //flow editor
 export enum FlowEditorState {
@@ -276,93 +273,6 @@ export const flowEditorInfo = StateField.define<FlowEditorInfo[]>({
   },
 });
 
-const flowEditorRangeset = (state: EditorState, plugin: MakeBasicsPlugin) => {
-  const builder = new RangeSetBuilder<Decoration>();
-  const infoFields = state.field(flowEditorInfo, false);
-  const values = [] as { start: number; end: number; decoration: Decoration }[];
-  for (const info of infoFields) {
-    const { from, to, type, expandedState } = info;
-    const lineFix =
-      from - 3 == state.doc.lineAt(from).from &&
-      to + 2 == state.doc.lineAt(from).to;
-    if (type == FlowEditorLinkType.Link) {
-      if (plugin.settings.internalLinkSticker)
-        values.push({
-          start: from - 2,
-          end: from - 2,
-          decoration: Decoration.widget({
-            widget: new LinkSticker(info, plugin),
-            side: -1,
-          }),
-        });
-      if (plugin.settings.internalLinkClickFlow)
-        values.push({
-          start: to + 2,
-          end: to + 2,
-          decoration: Decoration.widget({
-            widget: new LinkExpand(info, plugin),
-            side: -1,
-          }),
-        });
-      if (expandedState == FlowEditorState.Open) {
-        values.push({
-          start: to + 2,
-          end: to + 2,
-          decoration: flowEditorDecoration(info, plugin),
-        });
-      }
-    } else if (
-      expandedState == FlowEditorState.Open &&
-      type == FlowEditorLinkType.Embed
-    ) {
-      if (
-        !(
-          (state.selection.main.from == from - 4 &&
-            state.selection.main.to == to + 2) ||
-          (state.selection.main.from >= from - 3 &&
-            state.selection.main.to <= to + 1)
-        )
-      ) {
-        values.push({
-          start: from - 4,
-          end: from - 3,
-          decoration: flowEditorSelector(info, plugin),
-        });
-        if (lineFix) {
-          values.push({
-            start: from - 3,
-            end: to + 2,
-            decoration: flowEditorWidgetDecoration(info, plugin),
-          });
-        } else {
-          values.push({
-            start: from - 3,
-            end: to + 2,
-            decoration: flowEditorDecoration(info, plugin),
-          });
-        }
-      }
-    }
-  }
-  values.sort(compareByField("start", true));
-  for (const value of values) {
-    builder.add(value.start, value.end, value.decoration);
-  }
-  const dec = builder.finish();
-  return dec;
-};
-
-export const flowEditorField = (plugin: MakeBasicsPlugin) =>
-  StateField.define<DecorationSet>({
-    create(state) {
-      return flowEditorRangeset(state, plugin);
-    },
-    update(value, tr) {
-      return flowEditorRangeset(tr.state, plugin);
-    },
-    provide: (f) => EditorView.decorations.from(f),
-  });
-
 class FlowEditorWidget extends WidgetType {
   public root: Root;
   constructor(
@@ -386,7 +296,7 @@ class FlowEditorWidget extends WidgetType {
       const infoField = view.state.field(editorInfoField, false);
       const file = infoField.file;
 
-      this.root = this.plugin.createRoot(div);
+      this.root = this.plugin.enactor.createRoot(div);
       this.root.render(
         <UINote
           load={true}
@@ -406,79 +316,7 @@ class FlowEditorWidget extends WidgetType {
   }
 }
 
-class LinkSticker extends WidgetType {
-  flowInfo: FlowEditorInfo;
-  plugin: MakeBasicsPlugin;
-  constructor(readonly info: FlowEditorInfo, plugin: MakeBasicsPlugin) {
-    super();
-    this.flowInfo = info;
-    this.plugin = plugin;
-  }
-
-  eq(other: WidgetType) {
-    return (other as unknown as FlowEditorSelector).info.id === this.info.id;
-  }
-
-  toDOM(view: EditorView) {
-    const div = document.createElement("div");
-    div.classList.add("mk-floweditor-sticker");
-    const reactEl = this.plugin.createRoot(div);
-    if (this.info.link && view.state.field(editorInfoField, false)) {
-      const infoField = view.state.field(editorInfoField, false);
-      const file = infoField.file;
-      const uri = this.plugin.uriByString(this.info.link, file?.path);
-      reactEl.render(
-        <PathStickerContainer
-          superstate={this.plugin.superstate}
-          path={uri.basePath}
-        />
-      );
-    }
-    return div;
-  }
-}
-
-class LinkExpand extends WidgetType {
-  flowInfo: FlowEditorInfo;
-  plugin: MakeBasicsPlugin;
-  constructor(readonly info: FlowEditorInfo, plugin: MakeBasicsPlugin) {
-    super();
-    this.flowInfo = info;
-    this.plugin = plugin;
-  }
-
-  eq(other: WidgetType) {
-    return (
-      (other as unknown as FlowEditorSelector).info.id === this.info.id &&
-      (other as unknown as FlowEditorSelector).info.expandedState ==
-        this.info.expandedState
-    );
-  }
-
-  toDOM(view: EditorView) {
-    const div = document.createElement("div");
-    div.classList.add("mk-floweditor-toggle");
-    const reactEl = this.plugin.createRoot(div);
-    if (this.info.link && view.state.field(editorInfoField, false)) {
-      reactEl.render(
-        <UICollapse
-          collapsed={this.info.expandedState == 0}
-          onToggle={(collapsed: boolean) => {
-            view.dispatch({
-              annotations: toggleFlowEditor.of([
-                this.info.id,
-                collapsed ? 2 : 0,
-              ]),
-            });
-          }}
-        />
-      );
-    }
-    return div;
-  }
-}
-
-class FlowEditorSelector extends WidgetType {
+export class FlowEditorSelector extends WidgetType {
   flowInfo: FlowEditorInfo;
   plugin: MakeBasicsPlugin;
   constructor(readonly info: FlowEditorInfo, plugin: MakeBasicsPlugin) {
@@ -494,7 +332,7 @@ class FlowEditorSelector extends WidgetType {
   toDOM(view: EditorView) {
     const div = document.createElement("div");
     div.classList.add("mk-floweditor-selector");
-    const reactEl = this.plugin.createRoot(div);
+    const reactEl = this.plugin.enactor.createRoot(div);
     if (this.info.link && view.state.field(editorInfoField, false)) {
       const infoField = view.state.field(editorInfoField, false);
       const file = infoField.file;

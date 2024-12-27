@@ -6,7 +6,7 @@ import {
   TransactionSpec,
 } from "@codemirror/state";
 import { iterateTreeAtPos, iterateTreeInSelection } from "basics/codemirror";
-import { TransactionRange } from "basics/codemirror/TransactionRange";
+import { TransactionRange } from "basics/types/TransactionRange";
 import { oMark, oMarks } from "../obsidianSyntax";
 
 export const toggleMark = Annotation.define<string>();

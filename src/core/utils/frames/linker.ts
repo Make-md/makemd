@@ -2,7 +2,8 @@ import * as acorn from "acorn";
 import { AncestorVisitors, ancestor } from "acorn-walk";
 import { generate } from "astring";
 import { ensureString } from "core/utils/strings";
-import { FrameNode, FrameTreeNode, FrameTreeProp } from "types/mframe";
+import { FrameTreeNode } from "shared/types/frameExec";
+import { FrameNode, FrameTreeProp } from "shared/types/mframe";
 
 
 

@@ -2,15 +2,17 @@
 import { getMDBTables } from "adapters/mdb/utils/mdb";
 import { regexYaml } from "adapters/text/textCacher";
 import { createSpace, newPathInSpace, parseSpaceMetadata, saveProperties } from "core/superstate/utils/spaces";
-import { PathPropertyName } from "core/types/context";
-import { SpaceDefinition, SpaceType } from "core/types/space";
 import MakeMDPlugin from "main";
 import { Superstate } from "makemd-core";
 import { parseYaml } from "obsidian";
 import { defaultFrameSchema } from "schemas/frames";
-import { defaultContextSchemaID, fieldSchema } from "schemas/mdb";
-import { Note, SpaceKit, TemplateKit } from "types/kits";
-import { DBTables, FilesystemSpaceInfo, SpaceTables } from "types/mdb";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { fieldSchema } from "shared/schemas/fields";
+import { PathPropertyName } from "shared/types/context";
+import { Note, SpaceKit, TemplateKit } from "shared/types/kits";
+import { DBTables, SpaceTables } from "shared/types/mdb";
+import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
+import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { safelyParseJSON } from "utils/parsers";
 
 export const installSpaceTemplate = async (plugin: MakeMDPlugin, superstate: Superstate, space: string, template: TemplateKit) => {

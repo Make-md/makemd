@@ -10,9 +10,9 @@ import {
   TFile,
 } from "obsidian";
 import React from "react";
-import { emojis } from "schemas/emoji";
-import { Emoji, EmojiData } from "types/emojis";
-import { emojiFromString } from "utils/stickers";
+import { emojis } from "shared/assets/emoji";
+import { Emoji, EmojiData } from "shared/types/emojis";
+import { emojiFromString } from "shared/utils/stickers";
 
 export default class StickerMenu extends EditorSuggest<Emoji> {
   inCmd = false;
@@ -93,7 +93,7 @@ export default class StickerMenu extends EditorSuggest<Emoji> {
   renderSuggestion(value: Emoji, el: HTMLElement): void {
     const div = document.createElement("div");
     div.setAttribute("aria-label", value.label);
-    const reactElement = this.plugin.createRoot(div);
+    const reactElement = this.plugin.enactor.createRoot(div);
     reactElement.render(
       <>
         {value.unicode.length > 0

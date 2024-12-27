@@ -1,8 +1,7 @@
-import i18n from "core/i18n";
 import { isEqual } from "lodash";
+import i18n from "shared/i18n";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { PathStateWithRank, Superstate } from "core/superstate/superstate";
 import {
   TreeNode,
   pathStateToTreeNode,
@@ -10,8 +9,6 @@ import {
   spaceSortFn,
   spaceToTreeNode,
 } from "core/superstate/utils/spaces";
-import { SpaceSort } from "core/types/space";
-import { PathState, SpaceState } from "core/types/superstate";
 import { CustomVaultChangeEvent, eventTypes } from "core/types/types";
 import {
   DragProjection,
@@ -21,6 +18,7 @@ import {
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
 import { normalizedAltName } from "core/utils/keyboard";
 import { isTouchScreen } from "core/utils/ui/screen";
+import { Superstate } from "makemd-core";
 import React, {
   useCallback,
   useContext,
@@ -29,7 +27,10 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Pos } from "types/Pos";
+import { PathState, SpaceState } from "shared/types/PathState";
+import { Pos } from "shared/types/Pos";
+import { SpaceSort } from "shared/types/spaceDef";
+import { PathStateWithRank } from "shared/types/superstate";
 import { FocusEditor } from "./NavigatorFocusEditor";
 import { eventToModifier } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";

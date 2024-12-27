@@ -1,10 +1,11 @@
-import { ScreenType } from "core/middleware/ui";
-import { Superstate } from "core/superstate/superstate";
 import _ from "lodash";
+import { Superstate } from "makemd-core";
 import { rootToFrame } from "schemas/frames";
-import { SpaceProperty } from "types/mdb";
-import { FrameDragMode, FrameDropMode, FrameEditorMode, FrameEditorProps, FrameExecutable, FrameNode, FrameResizeMode, FrameRoot, FrameSchema, FrameState, FrameTreeNode, FrameTreeProp, MDBFrame, defaultFrameEditorProps } from "types/mframe";
-import { uniqueNameFromString } from "utils/array";
+import { FrameDragMode, FrameDropMode, FrameEditorMode, FrameEditorProps, FrameExecutable, FrameResizeMode, FrameState, FrameTreeNode, defaultFrameEditorProps } from "shared/types/frameExec";
+import { SpaceProperty } from "shared/types/mdb";
+import { FrameNode, FrameRoot, FrameSchema, FrameTreeProp, MDBFrame } from "shared/types/mframe";
+import { ScreenType } from "shared/types/ui";
+import { uniqueNameFromString } from "shared/utils/array";
 import { removeQuotes } from "../strings";
 import { buildExecutable } from "./executable";
 import { parseLinkedNode } from "./frame";

@@ -1,4 +1,4 @@
-import { Sticker, UIManager } from "core/middleware/ui";
+import { UIManager } from "core/middleware/ui";
 import { i18n } from "makemd-core";
 import React, {
   useCallback,
@@ -7,7 +7,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { emojiFromString } from "utils/stickers";
+import { Sticker } from "shared/types/ui";
+import { emojiFromString } from "shared/utils/stickers";
 
 interface StickerModalProps {
   ui: UIManager;

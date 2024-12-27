@@ -1,13 +1,10 @@
 import { UIManager } from "core/middleware/ui";
-import {
-  SelectOption,
-  SelectOptionType,
-} from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { Sticker } from "core/react/components/UI/Stickers/Sticker";
 import { PointerModifiers } from "core/types/ui";
-import { MenuObject } from "core/utils/ui/menu";
+import { SelectOption, SelectOptionType } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
-import { Rect } from "types/Pos";
+import { MenuObject } from "shared/types/menu";
+import { Rect } from "shared/types/Pos";
 import { matchAny } from "./concerns/matchers";
 function markIt(name: string, query: string) {
   const regexp = matchAny(query);

@@ -3,7 +3,7 @@ import { executeCode } from "core/utils/frames/runner";
 import { debounce } from "lodash";
 import { Superstate, i18n } from "makemd-core";
 import React, { useEffect, useState } from "react";
-import { SpaceProperty } from "types/mdb";
+import { SpaceProperty } from "shared/types/mdb";
 import { parsePropertyValue } from "utils/properties";
 import { runActionString } from "../../../../utils/commands/actions";
 export const ActionTester = (props: {

@@ -1,7 +1,6 @@
-import i18n from "core/i18n";
-import { Superstate } from "core/superstate/superstate";
-import { Rect } from "types/Pos";
-import { SelectOption } from "../menu/SelectionMenu";
+import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
+import { Rect } from "shared/types/Pos";
 
 export const showSpacesMenu = (
   offset: Rect,

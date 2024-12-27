@@ -1,11 +1,13 @@
-import i18n from "core/i18n";
-import { Predicate } from "core/types/predicate";
+import i18n from "shared/i18n";
+import { Predicate } from "shared/types/predicate";
 
 import { nodeToFrame } from "core/utils/frames/nodes";
 import { contextNode, flowNode, groupNode } from "schemas/kits/base";
-import { defaultContextFields, defaultContextSchemaID, defaultFrameListViewID, defaultFrameListViewSchema, defaultMainFrameSchema, mainFrameID } from "schemas/mdb";
-import { SpaceProperty } from "types/mdb";
-import { FrameNode, MDBFrames } from "types/mframe";
+import { defaultFrameListViewID, defaultFrameListViewSchema, defaultMainFrameSchema, mainFrameID } from "schemas/mdb";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { defaultContextFields } from "shared/schemas/fields";
+import { SpaceProperty } from "shared/types/mdb";
+import { FrameNode, MDBFrames } from "shared/types/mframe";
 
  const defaultMainFrame : FrameNode[] = [
   {

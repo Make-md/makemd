@@ -1,9 +1,9 @@
 import { UniqueIdentifier } from "@dnd-kit/core";
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
-import { Superstate } from "core/superstate/superstate";
 import { TreeNode } from "core/superstate/utils/spaces";
-import { PathState, SpaceState } from "core/types/superstate";
 import { nodeIsAncestorOfTarget } from "core/utils/tree";
+import { Superstate } from "makemd-core";
+import { PathState, SpaceState } from "shared/types/PathState";
 
 
 

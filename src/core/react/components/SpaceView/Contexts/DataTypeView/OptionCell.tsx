@@ -1,15 +1,12 @@
-import i18n from "core/i18n";
 import {
-  SelectMenuProps,
-  SelectOption,
   defaultMenu,
   menuInput,
   menuSeparator,
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { Superstate } from "core/superstate/superstate";
 import { serializeOptionValue } from "core/utils/serializer";
 import { uniq } from "lodash";
+import { SelectMenuProps, SelectOption, Superstate } from "makemd-core";
 import React, {
   PropsWithChildren,
   useEffect,
@@ -17,9 +14,10 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { colors } from "schemas/color";
-import { onlyUniqueProp } from "utils/array";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { onlyUniqueProp } from "shared/utils/array";
+import { colors } from "shared/utils/color";
+import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 import {
   serializeMultiDisplayString,

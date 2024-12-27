@@ -1,6 +1,6 @@
-import { Metadata, fileProperties, labelProperties, pathCacheMetadata } from "core/types/metadata"
 import { Superstate, i18n } from "makemd-core"
 import { fieldTypeForField } from "schemas/mdb"
+import { Metadata, fileProperties, labelProperties, pathCacheMetadata } from "shared/types/metadata"
 
 export const allMetadata = (superstate: Superstate) : Record<string, {
     name: string,

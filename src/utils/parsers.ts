@@ -1,6 +1,6 @@
-import { ContextLookup, PathPropertyName } from "core/types/context";
 import { ensureArray, ensureString, indexOfCharElseEOS } from "core/utils/strings";
 import { format } from "date-fns";
+import { ContextLookup, PathPropertyName } from "shared/types/context";
 import { detectPropertyType } from "./properties";
 import { serializeMultiDisplayString, serializeMultiString } from "./serializers";
 

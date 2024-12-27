@@ -2,8 +2,8 @@ import { FormulaEditor } from "core/react/components/SpaceEditor/Actions/Formula
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { ensureString } from "core/utils/strings";
 import React, { useMemo } from "react";
-import { DBRow, SpaceTableColumn } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import { DBRow, SpaceTableColumn } from "shared/types/mdb";
+import { windowFromDocument } from "shared/utils/dom";
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 import { BooleanCell } from "./BooleanCell";
 import { IconCell } from "./IconCell";

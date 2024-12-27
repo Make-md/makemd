@@ -38,7 +38,7 @@ const getCursorTooltips =
           create: (view: EditorView) => {
             const dom = document.createElement("div");
             dom.className = "cm-tooltip-cursor";
-            const reactElement = plugin.createRoot(dom);
+            const reactElement = plugin.enactor.createRoot(dom);
             reactElement.render(
               <>
                 <InlineMenuComponent

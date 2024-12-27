@@ -1,7 +1,7 @@
 
-import { AFile } from "core/middleware/types/afile";
-import { PathCache } from "core/spaceManager/spaceManager";
-import { EventDispatcher, EventTypeToPayload } from "./dispatchers/dispatcher";
+import { AFile } from "shared/types/afile";
+import { PathCache } from "shared/types/caches";
+import { EventDispatcher, EventTypeToPayload } from "../../shared/utils/dispatchers/dispatcher";
 import { FileTypeAdapter, FileTypeCache, FileTypeContent } from "./filetypes";
 
 export type FileCache = PathCache & {

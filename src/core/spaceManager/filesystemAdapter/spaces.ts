@@ -1,8 +1,8 @@
-import { VaultItem } from "core/middleware/types/afile";
+import { VaultItem } from "shared/types/afile";
 
-import { Superstate } from "core/superstate/superstate";
-import { MakeMDSettings } from "core/types/settings";
-import { DBRows } from "types/mdb";
+import { Superstate } from "makemd-core";
+import { DBRows } from "shared/types/mdb";
+import { MakeMDSettings } from "shared/types/settings";
 import { folderPathToString } from "utils/path";
 
 
@@ -29,24 +29,9 @@ export const onPathChanged = async (
   return superstate.onPathRename(oldPath, newPath)
 };
 
-export const onSpaceRenamed = async (
-  superstate: Superstate,
-  oldPath: string,
-  newPath: string
-) => {
 
-  const allChildren = retrieveAllRecursiveChildren(superstate.vaultDBCache, superstate.settings, oldPath)
-  await superstate.onPathRename(oldPath, newPath)
-  // await folderRenamed(plugin, oldPath, newPath)
-  allChildren.forEach(f => superstate.onPathRename(f.path, f.path.replace(oldPath, newPath)))
-};
 
-export const onSpaceDeleted = async (superstate: Superstate, oldPath: string) => {
-  const allChildren = retrieveAllRecursiveChildren(superstate.vaultDBCache, superstate.settings, oldPath)
-  allChildren.forEach(f => superstate.onPathDeleted(f.path))
-  superstate.onPathDeleted(oldPath)
-  
-};
+
 
 export const excludeVaultItemPredicate =
   (settings: MakeMDSettings) =>

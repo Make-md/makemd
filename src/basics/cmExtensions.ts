@@ -1,6 +1,5 @@
-import { editBlockExtensions } from "../shared/selectiveEditor";
+import { editBlockExtensions } from "../shared/utils/codemirror/selectiveEditor";
 import {
-  flowEditorField,
   flowEditorInfo,
   internalLinkHover,
   internalLinkToggle,
@@ -37,7 +36,10 @@ export const cmExtensions = (plugin: MakeBasicsPlugin, mobile: boolean) => {
         flowTypeStateField,
         
         preloadFlowEditor,
-        flowEditorField(plugin),
+      );
+      
+      extensions.push(
+        
         flowEditorInfo,
         flowIDStateField,
         flowViewUpdates(plugin)

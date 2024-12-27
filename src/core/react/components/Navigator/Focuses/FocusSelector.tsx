@@ -10,10 +10,10 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { Superstate } from "core/superstate/superstate";
 import { DragProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { isTouchScreen } from "core/utils/ui/screen";
+import { Superstate } from "makemd-core";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { SortablePinnedSpaceItem } from "./Focus";

@@ -2,14 +2,14 @@ import { useDraggable } from "@dnd-kit/core";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { showPathContextMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { PathPropertyName } from "core/types/context";
 import { applySat } from "core/utils/color";
 import { formatDate } from "core/utils/date";
 import { addMinutes, startOfDay } from "date-fns";
 import { Superstate } from "makemd-core";
 import React, { useContext, useMemo, useState } from "react";
-import { DBRow } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow } from "shared/types/mdb";
+import { windowFromDocument } from "shared/utils/dom";
 import { FrameDraggableHandle } from "../../../Frames/FrameNodeEditor/Overlays/FrameDraggableHandle";
 import { EventLayout } from "./DayView";
 

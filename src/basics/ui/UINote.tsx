@@ -1,9 +1,24 @@
 import MakeBasicsPlugin from "basics/basics";
 import { i18n } from "makemd-core";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
-import { FilesystemSpaceInfo } from "types/mdb";
-import { pathToString } from "utils/path";
 
+const removeLeadingSlash = (path: string) =>
+  path.charAt(0) == "/" ? path.substring(1) : path;
+
+const pathToString = (path: string) => {
+  if (path.lastIndexOf("/") != -1) {
+    if (path.lastIndexOf(".") != -1)
+      return removeLeadingSlash(
+        path.substring(path.lastIndexOf("/") + 1, path.lastIndexOf("."))
+      );
+    return path.substring(path.lastIndexOf("/") + 1);
+  }
+  if (path.lastIndexOf(".") != -1) {
+    return path.substring(0, path.lastIndexOf("."));
+  }
+
+  return path;
+};
 export interface NoteViewProps {
   plugin: MakeBasicsPlugin;
   source?: string;
@@ -22,15 +37,15 @@ export const UINote = forwardRef((props: NoteViewProps, ref) => {
   const loadPath = async (force?: boolean) => {
     const div = flowRef.current;
 
-    const path = props.plugin.uriByString(props.path, props.source);
+    const path = props.plugin.enactor.uriByString(props.path, props.source);
 
     const pathExists = await props.plugin.app.vault.adapter.exists(
       path.basePath
     );
-    const isFolder = props.plugin.isSpace(path.basePath);
+    const isFolder = props.plugin.enactor.isSpace(path.basePath);
     const filePath =
       isFolder && props.forceNote
-        ? props.plugin.spaceNotePath(props.path)
+        ? props.plugin.enactor.spaceNotePath(props.path)
         : pathExists
         ? path.fullPath
         : null;
@@ -42,24 +57,19 @@ export const UINote = forwardRef((props: NoteViewProps, ref) => {
         return;
       } else {
         const parent = isFolder
-          ? (
-              props.plugin.superstate.spacesIndex.get(props.path)
-                ?.space as FilesystemSpaceInfo
-            ).folderPath
-          : props.plugin.superstate.spaceManager.parentPathForPath(
-              path.basePath
-            );
+          ? props.plugin.enactor.spaceFolderPath(props.path)
+          : props.plugin.enactor.parentPath(path.basePath);
         if (!parent) return;
-        const newPath = await props.plugin.createNote(
+        const newPath = await props.plugin.enactor.createNote(
           parent,
           pathToString(props.path)
         );
         setExistsPas(false);
-        await props.plugin.openPath(newPath, div);
+        await props.plugin.enactor.openPath(newPath, div);
       }
     } else {
       setExistsPas(false);
-      props.plugin.openPath(filePath, div);
+      props.plugin.enactor.openPath(filePath, div);
     }
 
     setLoaded(true);
@@ -88,17 +98,11 @@ export const UINote = forwardRef((props: NoteViewProps, ref) => {
         loadPath();
       }
     };
-    props.plugin.superstate.ui.eventsDispatch.addListener(
-      "activeStateChanged",
-      reloadFlow
-    );
+    props.plugin.enactor.addActiveStateListener(reloadFlow);
 
     return () => {
       flowRef.current = null;
-      props.plugin.superstate.ui.eventsDispatch.removeListener(
-        "activeStateChanged",
-        reloadFlow
-      );
+      props.plugin.enactor.removeActiveStateListener(reloadFlow);
     };
   }, []);
 

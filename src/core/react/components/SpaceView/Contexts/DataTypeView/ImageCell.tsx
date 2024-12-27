@@ -1,6 +1,6 @@
 import ImageModal from "core/react/components/UI/Modals/ImageModal";
 import React, { useMemo, useRef } from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 import { serializeMultiString } from "utils/serializers";
 import { CellEditMode, TableCellMultiProp } from "../TableView/TableView";

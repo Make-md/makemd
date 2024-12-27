@@ -1,6 +1,6 @@
 import MakeBasicsPlugin from "basics/basics";
-import t from "core/i18n";
 import { App, DropdownComponent, Setting } from "obsidian";
+import t from "shared/i18n";
 
 export class MakeBasicsSettingsTab {
     plugin: MakeBasicsPlugin;
@@ -25,17 +25,6 @@ export class MakeBasicsSettingsTab {
   
   
     
-      new Setting(containerEl)
-      .setName(t.settings.editorMakerMode.name)
-      .setDesc(t.settings.editorMakerMode.desc)
-      .addToggle((toggle) =>
-        toggle.setValue(this.plugin.settings.makerMode).onChange((value) => {
-          this.plugin.settings.makerMode = value;
-          this.plugin.saveSettings();
-          this.refreshView();
-        })
-      );
-      if (this.plugin.settings.makerMode) {
   
       
       
@@ -44,10 +33,10 @@ export class MakeBasicsSettingsTab {
         .setDesc(t.settings.dataviewInlineContext.desc)
         .addToggle((toggle) =>
           toggle
-            .setValue(this.plugin.superstate.settings.dataviewInlineContext)
+            .setValue(this.plugin.settings.dataviewInlineContext)
             .onChange((value) => {
-              this.plugin.superstate.settings.dataviewInlineContext = value;
-              this.plugin.saveSettings();
+              this.plugin.settings.dataviewInlineContext = value;
+              this.plugin.enactor.saveSettings();
             })
         );
         
@@ -58,7 +47,7 @@ export class MakeBasicsSettingsTab {
         .addToggle((toggle) =>
           toggle.setValue(this.plugin.settings.editorFlow).onChange((value) => {
             this.plugin.settings.editorFlow = value;
-            this.plugin.saveSettings();
+            this.plugin.enactor.saveSettings();
             this.refreshView();
           })
         );
@@ -70,7 +59,7 @@ export class MakeBasicsSettingsTab {
             .setValue(this.plugin.settings.internalLinkClickFlow)
             .onChange(async (value) => {
               this.plugin.settings.internalLinkClickFlow = value;
-              await this.plugin.saveSettings();
+              await this.plugin.enactor.saveSettings();
               this.plugin.reloadExtensions(false);
             })
         );
@@ -83,7 +72,7 @@ export class MakeBasicsSettingsTab {
             .setValue(this.plugin.settings.internalLinkSticker)
             .onChange(async (value) => {
               this.plugin.settings.internalLinkSticker = value;
-              await this.plugin.saveSettings();
+              await this.plugin.enactor.saveSettings();
               this.plugin.reloadExtensions(false);
             })
         );
@@ -123,7 +112,7 @@ export class MakeBasicsSettingsTab {
             .setValue(this.plugin.settings.flowMenuEnabled)
             .onChange(async (value) => {
               this.plugin.settings.flowMenuEnabled = value;
-              await this.plugin.saveSettings();
+              await this.plugin.enactor.saveSettings();
               this.plugin.reloadExtensions(false);
             })
         );
@@ -149,7 +138,7 @@ export class MakeBasicsSettingsTab {
   
               this.plugin.settings.menuTriggerChar = char;
   
-              await this.plugin.saveSettings();
+              await this.plugin.enactor.saveSettings();
             });
         });
         
@@ -161,7 +150,7 @@ export class MakeBasicsSettingsTab {
             .setValue(this.plugin.settings.makeMenuPlaceholder)
             .onChange(async (value) => {
               this.plugin.settings.makeMenuPlaceholder = value;
-              await this.plugin.saveSettings();
+              await this.plugin.enactor.saveSettings();
               this.plugin.reloadExtensions(false);
             })
         );
@@ -176,7 +165,7 @@ export class MakeBasicsSettingsTab {
             .setValue(this.plugin.settings.inlineStyler)
             .onChange(async (value) => {
               this.plugin.settings.inlineStyler = value;
-              await this.plugin.saveSettings();
+              await this.plugin.enactor.saveSettings();
               this.plugin.reloadExtensions(false);
             })
         );
@@ -188,7 +177,7 @@ export class MakeBasicsSettingsTab {
             .setValue(this.plugin.settings.inlineStickerMenu)
             .onChange(async (value) => {
               this.plugin.settings.inlineStickerMenu = value;
-              await this.plugin.saveSettings();
+              await this.plugin.enactor.saveSettings();
               this.plugin.reloadExtensions(false);
             })
         );
@@ -200,7 +189,7 @@ export class MakeBasicsSettingsTab {
             .setValue(this.plugin.settings.inlineStylerColors)
             .onChange((value) => {
               this.plugin.settings.inlineStylerColors = value;
-              this.plugin.saveSettings();
+              this.plugin.enactor.saveSettings();
               this.refreshView();
             })
         );
@@ -212,11 +201,10 @@ export class MakeBasicsSettingsTab {
             .setValue(this.plugin.settings.mobileMakeBar)
             .onChange((value) => {
               this.plugin.settings.mobileMakeBar = value;
-              this.plugin.saveSettings();
+              this.plugin.enactor.saveSettings();
               this.refreshView();
             })
         );
-      }
       
   
       

@@ -3,8 +3,8 @@ import { retrieveAllRecursiveChildren } from "core/spaceManager/filesystemAdapte
 import MakeMDPlugin from "main";
 import { i18n } from "makemd-core";
 import React from "react";
-import { FilesystemSpaceInfo } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
+import { windowFromDocument } from "shared/utils/dom";
 
 export const moveSpaceFiles = async (
   plugin: MakeMDPlugin,
@@ -43,7 +43,7 @@ export const deleteSpaceFiles = async (plugin: MakeMDPlugin, doc: Document) => {
         const spaceSubFolder = settings.spaceSubFolder;
 
         const allChildren = retrieveAllRecursiveChildren(
-          plugin.superstate.vaultDBCache,
+          plugin.obsidianAdapter.vaultDBCache,
           settings,
           settings.spacesFolder
         );

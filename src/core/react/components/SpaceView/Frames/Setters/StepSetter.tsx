@@ -1,11 +1,8 @@
-import {
-  SelectOption,
-  defaultMenu,
-} from "core/react/components/UI/Menus/menu/SelectionMenu";
-import { Superstate } from "core/superstate/superstate";
+import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { stringIsConst } from "core/utils/frames/frames";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
 import { debounce } from "lodash";
+import { SelectOption, Superstate } from "makemd-core";
 import type { CSSProperties } from "react";
 import React, {
   useCallback,
@@ -14,7 +11,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 
 export function countDecimals(value: number) {
   if (Math.floor(value) === value) return 0;

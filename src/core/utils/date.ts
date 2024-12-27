@@ -1,6 +1,6 @@
-import type { Superstate } from 'core/superstate/superstate';
 import { format, parseISO } from 'date-fns';
 import { isDate, isFinite, isString } from 'lodash';
+import type { Superstate } from 'makemd-core';
 import { RRule } from 'rrule';
 
 export const isValidDate = (d: Date) => {

@@ -8,7 +8,7 @@ export const MonthDayCell = (
     superstate: Superstate;
     active: boolean;
     weekStart: Date;
-    insertItem: () => void;
+    insertItem: (e: React.MouseEvent) => void;
     date: Date;
   }>
 ) => {
@@ -45,7 +45,7 @@ export const MonthDayCell = (
       }`}
       onClick={(e) => {
         if (e.detail == 2) {
-          props.insertItem();
+          props.insertItem(e);
         }
       }}
       style={{

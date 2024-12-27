@@ -2,7 +2,7 @@ import { syntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { SyntaxNodeRef } from "@lezer/common";
-import { TransactionRange } from "basics/codemirror/TransactionRange";
+import { TransactionRange } from "basics/types/TransactionRange";
 import { MarkdownView } from "obsidian";
 import MakeBasicsPlugin from "./basics";
 

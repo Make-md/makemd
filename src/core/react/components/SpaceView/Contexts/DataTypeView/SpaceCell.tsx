@@ -1,8 +1,8 @@
-import i18n from "core/i18n";
-import { SelectMenuProps } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { contextPathFromPath } from "core/utils/contexts/context";
+import { SelectMenuProps } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { windowFromDocument } from "shared/utils/dom";
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
 export const SpaceCell = (props: TableCellProp & { isTable: boolean }) => {

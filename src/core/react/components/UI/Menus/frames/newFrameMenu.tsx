@@ -16,22 +16,22 @@ import {
   tabsNode,
   toggleNode,
 } from "schemas/kits/ui";
-import { FrameNode, FrameRoot, FrameSchema } from "types/mframe";
+import { FrameNode, FrameRoot, FrameSchema } from "shared/types/mframe";
 
-import i18n from "core/i18n";
+import i18n from "shared/i18n";
 
-import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
+import { BlinkMode } from "core/react/components/Blink/Blink";
 import { defaultViewTypes } from "core/schemas/viewTypes";
-import type { Superstate } from "core/superstate/superstate";
-import { createInlineTable } from "core/utils/contexts/inlineTable";
 import { preprocessCode } from "core/utils/frames/linker";
 import { frameSchemaToTableSchema } from "core/utils/frames/nodes";
 import { wrapQuotes } from "core/utils/strings";
-import { SelectOption } from "makemd-core";
-import { Rect } from "types/Pos";
-import { SpaceInfo } from "types/mdb";
-import { uniqueNameFromString } from "utils/array";
-import { defaultMenu, SelectOptionType } from "../menu/SelectionMenu";
+import type { Superstate } from "makemd-core";
+import { SelectOption, SelectOptionType } from "makemd-core";
+import { Rect } from "shared/types/Pos";
+import { SpaceInfo } from "shared/types/spaceInfo";
+import { uniqueNameFromString } from "shared/utils/array";
+import { createInlineTable } from "shared/utils/inlineTable";
+import { defaultMenu } from "../menu/SelectionMenu";
 
 export const linkRoot = (
   parent: string,
@@ -129,7 +129,7 @@ export const showNewFrameMenu = (
 ) => {
   const insertPresetNode = async (value: string) => {
     if (value == "note") {
-      openBlinkModal(superstate, BlinkMode.Open, win, (path) => {
+      superstate.ui.quickOpen(BlinkMode.Open, rect, win, (path) => {
         addNode({
           ...flowNode.node,
           props: { value: wrapQuotes(path) },
@@ -147,7 +147,7 @@ export const showNewFrameMenu = (
         props: { value: wrapQuotes(`./#*${table}`) },
       });
     } else if (value == "link") {
-      openBlinkModal(superstate, BlinkMode.Open, win, (path) => {
+      superstate.ui.quickOpen(BlinkMode.Open, rect, win, (path) => {
         addNode({
           ...flowNode.node,
           props: { value: wrapQuotes(path) },

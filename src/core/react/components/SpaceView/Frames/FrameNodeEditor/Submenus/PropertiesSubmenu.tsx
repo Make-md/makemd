@@ -1,12 +1,10 @@
 import {
-  SelectOption,
   defaultMenu,
   menuSeparator,
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 
 import classNames from "classnames";
-import { PathState } from "core/types/superstate";
 import { getContextProperties } from "core/utils/contexts/context";
 import {
   parseLinkedNode,
@@ -19,12 +17,13 @@ import {
   stringIsConst,
 } from "core/utils/frames/frames";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
-import { i18n } from "makemd-core";
+import { SelectOption, i18n } from "makemd-core";
 import React from "react";
 import { stickerForField } from "schemas/mdb";
-import { SpaceProperty } from "types/mdb";
-import { FrameRunInstance } from "types/mframe";
-import { windowFromDocument } from "utils/dom";
+import { FrameRunInstance } from "shared/types/frameExec";
+import { SpaceProperty } from "shared/types/mdb";
+import { PathState } from "shared/types/PathState";
+import { windowFromDocument } from "shared/utils/dom";
 import { propertyIsObjectType } from "utils/properties";
 import { PropertyField } from "../../../Contexts/ContextBuilder/ContextListEditSelector";
 import { DataPropertyView } from "../../../Contexts/DataTypeView/DataPropertyView";

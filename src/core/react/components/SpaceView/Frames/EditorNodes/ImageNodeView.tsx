@@ -5,8 +5,8 @@ import { FrameSelectionContext } from "core/react/context/FrameSelectionContext"
 import { stringIsConst } from "core/utils/frames/frames";
 import { wrapQuotes } from "core/utils/strings";
 import React, { useContext, useMemo } from "react";
-import { FrameEditorMode } from "types/mframe";
-import { windowFromDocument } from "utils/dom";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { windowFromDocument } from "shared/utils/dom";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";
 
 export const ImageNodeView = (props: FrameNodeViewProps) => {

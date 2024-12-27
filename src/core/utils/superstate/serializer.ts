@@ -1,4 +1,4 @@
-import { PathState, WorkerJobType } from "core/types/superstate";
+import { PathState, WorkerJobType } from "shared/types/PathState";
 
 export const serializePathState = (pathState: PathState) => {
     return JSON.stringify(pathState);

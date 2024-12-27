@@ -1,4 +1,4 @@
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React from "react";
 import { BlinkComponent } from "./BlinkComponent";
 
@@ -6,6 +6,7 @@ export enum BlinkMode {
   Search,
   Blink,
   Open,
+  OpenSpaces,
   Command,
 }
 

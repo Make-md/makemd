@@ -1,16 +1,15 @@
 import { UniqueIdentifier } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Pos } from "types/Pos";
+import { Pos } from "shared/types/Pos";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { Superstate } from "core/superstate/superstate";
 import { TreeNode } from "core/superstate/utils/spaces";
 import { DragProjection } from "core/utils/dnd/dragPath";
-import { i18n } from "makemd-core";
+import { i18n, Superstate } from "makemd-core";
 import React, { CSSProperties, useContext } from "react";
-import { windowFromDocument } from "utils/dom";
-import { BlinkMode, openBlinkModal } from "../../Blink/Blink";
+import { windowFromDocument } from "shared/utils/dom";
+import { BlinkMode } from "../../Blink/Blink";
 import { TreeItem } from "./SpaceTreeItem";
 
 export const VirtualizedList = React.memo(function VirtualizedList(props: {
@@ -150,9 +149,12 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
               <div
                 className={"mk-tree-wrapper mk-tree-section"}
                 onClick={(e) => {
-                  openBlinkModal(
-                    props.superstate,
+                  const rect = (
+                    e.target as HTMLElement
+                  ).getBoundingClientRect();
+                  props.superstate.ui.quickOpen(
                     BlinkMode.Open,
+                    rect,
                     windowFromDocument(e.view.document),
                     (link) => {
                       saveActiveSpace(link);

@@ -1,7 +1,7 @@
 import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
 import { Superstate } from "makemd-core";
 import React from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 export const ColorSetter = (props: {
   superstate: Superstate;
   value: string;

@@ -110,18 +110,18 @@ const loadFlowEditor = async (
     "#mk-flow-" + flowEditorInfo.id
   ) as HTMLElement;
   
-  const path = plugin.uriByString(flowEditorInfo.link, source);
-  const basePath = plugin.resolvePath(path.basePath, source);
+  const path = plugin.enactor.uriByString(flowEditorInfo.link, source);
+  const basePath = plugin.enactor.resolvePath(path.basePath, source);
 
   if (dom) {
 
-    const spaceCache = plugin.isSpace(path.basePath);
+    const spaceCache = plugin.enactor.isSpace(path.basePath);
     if (spaceCache) {
       
       if (!dom.hasAttribute("ready")) {
         // dom.empty();
         dom.setAttribute("ready", "");
-        plugin.openPath(path.fullPath, dom);
+        plugin.enactor.openPath(path.fullPath, dom);
         
         return;
       }
@@ -133,7 +133,7 @@ const loadFlowEditor = async (
       if (!dom.hasAttribute("ready")) {
         // dom.empty();
         dom.setAttribute("ready", "");
-        plugin.openPath(basePath, dom);
+        plugin.enactor.openPath(basePath, dom);
         
       }
     } else {

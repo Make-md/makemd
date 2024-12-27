@@ -23,6 +23,7 @@ declare module "obsidian" {
   }
   interface App {
     appId: string;
+    plugins: any;
     dragManager: any;
     commands: {
       listCommands(): Command[];

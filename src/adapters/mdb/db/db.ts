@@ -2,11 +2,11 @@ import { getParentPathFromString } from "utils/path";
 
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import JSZip from "jszip";
+import { DBRows, DBTable, DBTables, SpaceTables } from "shared/types/mdb";
+import { uniq } from "shared/utils/array";
+import { removeTrailingSlashFromFolder } from "shared/utils/paths";
+import { sanitizeSQLStatement } from "shared/utils/sanitizers";
 import { Database, QueryExecResult, SqlJsStatic } from "sql.js";
-import { DBRows, DBTable, DBTables, SpaceTables } from "types/mdb";
-import { uniq } from "utils/array";
-import { removeTrailingSlashFromFolder } from "utils/path";
-import { sanitizeSQLStatement } from "utils/sanitizers";
 import { serializeSQLFieldNames, serializeSQLStatements, serializeSQLValues } from "utils/serializers";
 
 JSZip.support.nodebuffer = false;

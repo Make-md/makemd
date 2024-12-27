@@ -1,4 +1,5 @@
-import { InteractionType, ScreenType, Warning } from "core/middleware/ui";
+import { Warning } from "shared/types/Warning";
+import { InteractionType, ScreenType } from "shared/types/ui";
 
 import MakeMDPlugin from "main";
 import { Sticker, Superstate, UIAdapter, UIManager, i18n } from "makemd-core";
@@ -7,16 +8,19 @@ import React from "react";
 
 import { Container } from "react-dom";
 import { Root, createRoot } from "react-dom/client";
-import { emojis } from "schemas/emoji";
-import { openPathInElement } from "shared/openPathInElement";
-import { Pos } from "types/Pos";
-import { EmojiData } from "types/emojis";
-import { TargetLocation } from "types/path";
+import { emojis } from "shared/assets/emoji";
+import { Pos, Rect } from "shared/types/Pos";
+import { EmojiData } from "shared/types/emojis";
+import { TargetLocation } from "shared/types/path";
+import { openPathInElement } from "shared/utils/openPathInElement";
 import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
 
-import { getLineRangeFromRef } from "shared/getLineRangeFromRef";
-import { editableRange } from "shared/selectiveEditor";
+import { BlinkMode } from "core/react/components/Blink/Blink";
+import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
+import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
+import { editableRange } from "shared/utils/codemirror/selectiveEditor";
+import { getLineRangeFromRef } from "shared/utils/obsidian";
 import { SPACE_VIEW_TYPE } from "../SpaceViewContainer";
 import { getAbstractFileAtPath, getLeaf, openPath } from "../utils/file";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
@@ -51,8 +55,25 @@ export class ObsidianUI implements UIAdapter {
     return Object.keys(this.plugin.app.viewRegistry.typeByExtension);
   };
 
-  public quickOpen = (superstate: Superstate) => {
-    this.plugin.quickOpen(superstate);
+  public quickOpen = (
+    mode?: number,
+    offset?: Rect,
+    win?: Window,
+    onSelect?: (link: string) => void,
+    source?: string
+  ) => {
+    if (this.manager.superstate.settings.blinkEnabled) {
+      this.plugin.quickOpen(this.manager.superstate, mode, onSelect, source);
+    } else {
+      if (!offset) {
+        return;
+      }
+      if (mode == BlinkMode.Open) {
+        showLinkMenu(offset, win, this.manager.superstate, onSelect);
+      } else {
+        showSpacesMenu(offset, win, this.manager.superstate, onSelect);
+      }
+    }
   };
   public mainMenu = (el: HTMLElement, superstate: Superstate) => {
     showMainMenu(el, superstate, this.plugin);

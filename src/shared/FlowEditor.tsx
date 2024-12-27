@@ -23,7 +23,7 @@ import {
   WorkspaceTabs,
 } from "obsidian";
 
-import { genId } from "core/utils/uuid";
+import { genId } from "./utils/uuid";
 
 export interface FlowEditorParent {
   flowEditors: FlowEditor[] | null;

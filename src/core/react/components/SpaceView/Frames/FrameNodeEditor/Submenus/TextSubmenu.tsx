@@ -3,7 +3,7 @@ import { listFonts } from "core/utils/fonts";
 import { removeQuotes } from "core/utils/strings";
 import { i18n } from "makemd-core";
 import React from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { ColorSetter } from "../../Setters/ColorSetter";
 import { StepSetter } from "../../Setters/StepSetter";
 import { ToggleSetter } from "../../Setters/ToggleSetter";

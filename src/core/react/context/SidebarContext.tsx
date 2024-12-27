@@ -1,10 +1,10 @@
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
-import { Superstate } from "core/superstate/superstate";
 import { TreeNode } from "core/superstate/utils/spaces";
-import { Focus } from "core/types/focus";
-import { PathState } from "core/types/superstate";
 import _ from "lodash";
+import { Superstate } from "makemd-core";
 import React, { createContext, useEffect, useState } from "react";
+import { Focus } from "shared/types/focus";
+import { PathState } from "shared/types/PathState";
 
 type NavigatorContextProps = {
   dragPaths: string[];

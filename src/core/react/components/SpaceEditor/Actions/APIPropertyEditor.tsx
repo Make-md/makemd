@@ -1,9 +1,9 @@
-import { ActionTree } from "core/types/actions";
-import { Metadata } from "core/types/metadata";
-import { SpaceDefGroup } from "core/types/space";
 import { Superstate } from "makemd-core";
 import React from "react";
-import { Command } from "types/commands";
+import { ActionTree } from "shared/types/actions";
+import { Command } from "shared/types/commands";
+import { Metadata } from "shared/types/metadata";
+import { SpaceDefGroup } from "shared/types/spaceDef";
 import { SpaceQuery } from "../SpaceQuery";
 export const APIPropertyEditor = (props: {
   command: Command;

@@ -1,5 +1,4 @@
 import classNames from "classnames";
-import { SystemSettings } from "core/react/components/System/SystemSettings";
 import { SpaceView, Superstate } from "makemd-core";
 import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
@@ -145,27 +144,23 @@ export class SpaceViewContainer extends ItemView {
     if (this.root) {
       this.root.render(
         <div className="mk-space-view" data-path={path}>
-          {path == "spaces://$settings" ? (
-            <SystemSettings superstate={this.superstate}></SystemSettings>
-          ) : (
-            <SpaceView
-              path={path}
-              superstate={this.superstate}
-              key={path}
-              readOnly={false}
+          <SpaceView
+            path={path}
+            superstate={this.superstate}
+            key={path}
+            readOnly={false}
+          >
+            <div
+              className={classNames(
+                "mk-space-scroller markdown-source-view mod-cm6"
+              )}
             >
-              <div
-                className={classNames(
-                  "mk-space-scroller markdown-source-view mod-cm6"
-                )}
-              >
-                <SpaceInner
-                  superstate={this.superstate}
-                  header={true}
-                ></SpaceInner>
-              </div>
-            </SpaceView>
-          )}
+              <SpaceInner
+                superstate={this.superstate}
+                header={true}
+              ></SpaceInner>
+            </div>
+          </SpaceView>
         </div>
       );
     } else {

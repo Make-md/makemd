@@ -1,12 +1,12 @@
 
-import { CLIAdapter, CLIManager } from "core/middleware/commands";
-import { ActionInstance } from "core/types/actions";
+import { CLIManager } from "core/middleware/commands";
 import { runActionString } from "core/utils/commands/actions";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { executeCode } from "core/utils/frames/runner";
-import { parseURI } from "core/utils/uri";
 import { Superstate } from "makemd-core";
-import { Command, CommandWithPath } from "types/commands";
+import { ActionInstance, CLIAdapter } from "shared/types/actions";
+import { Command, CommandWithPath } from "shared/types/commands";
+import { parseURI } from "shared/utils/uri";
 
 
 

@@ -1,8 +1,9 @@
-import { CLIAdapter, CLIManager } from "core/middleware/commands";
-import { parseURI } from "core/utils/uri";
+import { CLIManager } from "core/middleware/commands";
 import MakeMDPlugin from "main";
 import { Command as ObsidianCommand } from "obsidian";
-import { CommandWithPath } from "types/commands";
+import { CLIAdapter } from "shared/types/actions";
+import { CommandWithPath } from "shared/types/commands";
+import { parseURI } from "shared/utils/uri";
 
 const obsidianCommandToCommand = (command: ObsidianCommand) : CommandWithPath => {
     if (!command) return null;

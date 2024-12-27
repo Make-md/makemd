@@ -1,9 +1,12 @@
 import { buildRootFromMDBFrame } from "core/utils/frames/ast";
 import { Superstate } from "makemd-core";
 import React, { useEffect, useState } from "react";
-import { SpaceProperty } from "types/mdb";
-import { FrameExecutable, defaultFrameEditorProps } from "types/mframe";
-import { URI } from "types/path";
+import {
+  defaultFrameEditorProps,
+  FrameExecutable,
+} from "shared/types/frameExec";
+import { SpaceProperty } from "shared/types/mdb";
+import { URI } from "shared/types/path";
 
 export type FrameRootContextType = {
   root: FrameExecutable;

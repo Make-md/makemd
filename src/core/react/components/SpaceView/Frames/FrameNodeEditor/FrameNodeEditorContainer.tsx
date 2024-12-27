@@ -1,5 +1,5 @@
 import React, { PropsWithChildren, useEffect, useRef, useState } from "react";
-import { Rect } from "types/Pos";
+import { Rect } from "shared/types/Pos";
 
 export const FrameNodeEditorContainer = (
   props: PropsWithChildren<{ nodeRect: Rect; containerRect: Rect }>

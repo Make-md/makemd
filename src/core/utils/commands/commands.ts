@@ -1,6 +1,6 @@
-import { fieldSchema } from "schemas/mdb";
-import { Command, CommandSchema } from "types/commands";
-import { DBTables, SpaceProperty, SpaceTableSchema } from "types/mdb";
+import { fieldSchema } from "shared/schemas/fields";
+import { Command, CommandSchema } from "shared/types/commands";
+import { DBTables, SpaceProperty, SpaceTableSchema } from "shared/types/mdb";
 import { safelyParseJSON } from "utils/parsers";
 
 export const commandToDBTables = (tables: Command, fields: SpaceProperty[]): DBTables => {

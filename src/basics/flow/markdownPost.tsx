@@ -40,7 +40,7 @@ export const replaceAllTables = (
     )) {
       const link = match[1];
       element.style.display = "none";
-      const reactEl = plugin.createRoot(element.parentElement);
+      const reactEl = plugin.enactor.createRoot(element.parentElement);
       //   const flowType = cm.state.field(flowTypeStateField, false);
       reactEl.render(
         <UINote
@@ -106,7 +106,7 @@ export const replaceAllEmbed = (
       if (nodes[i].parentNode === dom) {
         dom.removeChild(nodes[i]);
         const div = dom.createDiv("mk-floweditor-selector");
-        const reactEl = plugin.createRoot(div);
+        const reactEl = plugin.enactor.createRoot(div);
         const cm: EditorView = getCMFromElement(el, app);
         const pos = cm?.posAtDOM(dom);
         const index = [

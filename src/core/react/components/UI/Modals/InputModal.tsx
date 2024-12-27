@@ -1,6 +1,6 @@
-import { default as i18n } from "core/i18n";
 import { Superstate } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
+import { default as i18n } from "shared/i18n";
 type Action = "rename" | "create folder" | "create note";
 
 export type SectionAction = "rename" | "create";

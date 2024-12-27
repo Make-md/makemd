@@ -3,9 +3,8 @@ import {
   DragOverlay,
   useDndMonitor,
 } from "@dnd-kit/core";
-import { BlinkMode, openBlinkModal } from "core/react/components/Blink/Blink";
+import { BlinkMode } from "core/react/components/Blink/Blink";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
-import { PathPropertyName } from "core/types/context";
 import { applySat } from "core/utils/color";
 import {
   formatDate,
@@ -27,7 +26,8 @@ import { Superstate } from "makemd-core";
 import React, { useContext, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { RRule } from "rrule";
-import { DBRow, DBRows } from "types/mdb";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow, DBRows } from "shared/types/mdb";
 import { safelyParseJSON } from "utils/parsers";
 import { MonthDayCell } from "./MonthDayCell";
 import { MonthWeekItem } from "./MonthWeekItem";
@@ -221,10 +221,10 @@ export const MonthWeekRow = (props: {
           new Date(event.over.data.current.date),
           "yyyy-MM-dd"
         );
-
-        openBlinkModal(
-          props.superstate,
+        const rect = event.over?.data?.current?.rect;
+        props.superstate.ui.quickOpen(
           BlinkMode.Open,
+          rect,
           window,
           (link) => {
             if (link) {
@@ -257,7 +257,7 @@ export const MonthWeekRow = (props: {
             weekStart={weekStart}
             active={isActiveMonth}
             date={date}
-            insertItem={() => {
+            insertItem={(e) => {
               const latestEventEnd = weekEvents.reduce((acc, event) => {
                 const newHour = parseDate(
                   props.events[event.index]
@@ -289,9 +289,10 @@ export const MonthWeekRow = (props: {
                 endTime: endOfDay(date).getTime(),
                 allDay: false,
               });
-              openBlinkModal(
-                props.superstate,
+              const rect = e.currentTarget.getBoundingClientRect();
+              props.superstate.ui.quickOpen(
                 BlinkMode.Open,
+                rect,
                 window,
                 (link: string) => {
                   if (link) {

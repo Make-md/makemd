@@ -10,11 +10,12 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import classNames from "classnames";
-import { MenuObject, calculateBoundsBasedOnPosition } from "core/utils/ui/menu";
+import { calculateBoundsBasedOnPosition } from "core/utils/ui/menu";
 import { isPhone } from "core/utils/ui/screen";
 import { UIManager } from "makemd-core";
 import React, { cloneElement, useEffect } from "react";
-import { Anchors, Rect } from "types/Pos";
+import { MenuObject } from "shared/types/menu";
+import { Anchors, Rect } from "shared/types/Pos";
 import { MobileDrawer } from "../Drawer";
 
 export const MenuWrapper = (props: {

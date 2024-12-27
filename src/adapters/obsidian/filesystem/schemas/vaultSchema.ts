@@ -1,4 +1,4 @@
-import { DBTable } from "types/mdb";
+import { DBTable } from "shared/types/mdb";
 
 
 export const vaultSchema: DBTable = {

@@ -4,8 +4,8 @@ import React, { useContext, useRef } from "react";
 
 import { useDndMonitor, useDraggable } from "@dnd-kit/core";
 import { WindowContext } from "core/react/context/WindowContext";
-import { PathState } from "core/types/superstate";
-import { defaultContextSchemaID } from "schemas/mdb";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { PathState } from "shared/types/PathState";
 import { PathCrumb } from "./PathCrumb";
 
 export const FileTableCrumb = (props: {

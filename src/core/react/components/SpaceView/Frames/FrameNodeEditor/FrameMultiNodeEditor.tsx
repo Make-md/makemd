@@ -1,8 +1,8 @@
-import i18n from "core/i18n";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React, { useContext } from "react";
+import i18n from "shared/i18n";
 export const FrameMultiNodeEditor = (props: { superstate: Superstate }) => {
   const { groupNodes, saveNodes, nodes } = useContext(FramesEditorRootContext);
   const { selection, select } = useContext(FrameSelectionContext);

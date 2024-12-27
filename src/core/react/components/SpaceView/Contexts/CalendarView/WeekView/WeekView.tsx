@@ -1,9 +1,9 @@
-import { PathPropertyName } from "core/types/context";
 import { formatDate, parseDate } from "core/utils/date";
 import { add, addDays, startOfDay, startOfWeek } from "date-fns";
 import { Superstate } from "makemd-core";
 import React, { useMemo, useState } from "react";
-import { DBRow, DBRows } from "types/mdb";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow, DBRows } from "shared/types/mdb";
 import { CalendarHeaderView } from "../CalendarHeaderView";
 import { DayGutter } from "../DayView/DayGutter";
 import { DayView } from "../DayView/DayView";

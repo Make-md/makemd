@@ -2,7 +2,7 @@ import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { parseLinkedNode } from "core/utils/frames/frame";
 import React, { useContext, useEffect, useState } from "react";
-import { FrameState } from "types/mframe";
+import { FrameState } from "shared/types/frameExec";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";
 export const InputNodeView = (props: FrameNodeViewProps) => {
   const { selectionMode } = useContext(FrameSelectionContext);

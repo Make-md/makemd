@@ -1,5 +1,5 @@
 import { ObjectType } from 'core/react/components/SpaceView/Contexts/DataTypeView/ObjectCell';
-import { SpaceProperty } from 'types/mdb';
+import { SpaceProperty } from 'shared/types/mdb';
 
 const repeatType: ObjectType = {
   freq: {

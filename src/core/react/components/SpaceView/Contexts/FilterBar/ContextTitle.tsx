@@ -4,7 +4,7 @@ import { contextPathForSpace } from "core/utils/contexts/embed";
 import { Superstate } from "makemd-core";
 import React, { useContext } from "react";
 import { stickerForDBSchema } from "schemas/mdb";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { safelyParseJSON } from "utils/parsers";
 export const ContextTitle = (props: { superstate: Superstate }) => {
   const { dbSchema, source } = useContext(ContextEditorContext);

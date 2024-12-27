@@ -1,9 +1,4 @@
-import { Anchors, Rect, Size } from "types/Pos";
-
-export type MenuObject = {
-    hide: (suppress?: boolean) => void;
-    update: (props: any) => void;
-}
+import { Anchors, Rect, Size } from "shared/types/Pos";
 
 export const calculateBoundsBasedOnPosition = (
     targetRect: Rect,

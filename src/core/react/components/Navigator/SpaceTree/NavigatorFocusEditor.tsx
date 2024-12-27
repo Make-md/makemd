@@ -1,11 +1,11 @@
 import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { createSpace } from "core/superstate/utils/spaces";
-import { Focus } from "core/types/focus";
 import { i18n, Superstate } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
-import { windowFromDocument } from "utils/dom";
-import { BlinkMode, openBlinkModal } from "../../Blink/Blink";
+import { Focus } from "shared/types/focus";
+import { windowFromDocument } from "shared/utils/dom";
+import { BlinkMode } from "../../Blink/Blink";
 import StickerModal from "../../UI/Modals/StickerModal";
 export const FocusEditor = (props: {
   superstate: Superstate;
@@ -74,9 +74,10 @@ export const FocusEditor = (props: {
         </div>
         <button
           onClick={(e) => {
-            openBlinkModal(
-              props.superstate,
+            const rect = (e.target as HTMLElement).getBoundingClientRect();
+            props.superstate.ui.quickOpen(
               BlinkMode.Open,
+              rect,
               windowFromDocument(e.view.document),
               (link) => {
                 const isNew = !props.superstate.pathsIndex.has(link);

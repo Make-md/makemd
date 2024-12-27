@@ -1,22 +1,17 @@
-import i18n from "core/i18n";
+import i18n from "shared/i18n";
 
-import { Superstate } from "core/superstate/superstate";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
+import { SelectOption, Superstate } from "makemd-core";
 import React from "react";
-import { colors } from "schemas/color";
 import { fieldTypeForType } from "schemas/mdb";
-import { Rect } from "types/Pos";
-import { SpaceProperty } from "types/mdb";
-import { FrameNode, FrameTreeProp } from "types/mframe";
-import { windowFromDocument } from "utils/dom";
+import { SpaceProperty } from "shared/types/mdb";
+import { FrameNode, FrameTreeProp } from "shared/types/mframe";
+import { Rect } from "shared/types/Pos";
+import { colors } from "shared/utils/color";
+import { windowFromDocument } from "shared/utils/dom";
 import ImageModal from "../../Modals/ImageModal";
 import StickerModal from "../../Modals/StickerModal";
-import {
-  SelectOption,
-  defaultMenu,
-  menuInput,
-  menuSeparator,
-} from "../menu/SelectionMenu";
+import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
 import {
   DatePickerTimeMode,
   showDatePickerMenu,

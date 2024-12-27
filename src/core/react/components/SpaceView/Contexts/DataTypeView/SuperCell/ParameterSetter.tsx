@@ -1,8 +1,8 @@
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
 import { Superstate } from "makemd-core";
 import React, { useState } from "react";
-import { Command } from "types/commands";
-import { DBRow, SpaceProperty } from "types/mdb";
+import { Command } from "shared/types/commands";
+import { DBRow, SpaceProperty } from "shared/types/mdb";
 import { CellEditMode } from "../../TableView/TableView";
 import { DataPropertyView } from "../DataPropertyView";
 

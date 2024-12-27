@@ -1,24 +1,18 @@
-import i18n from "core/i18n";
+import i18n from "shared/i18n";
 
-import { Superstate } from "core/superstate/superstate";
-import { Sort } from "core/types/predicate";
 import { normalizedSortForType } from "core/utils/contexts/predicate/sort";
 import { nameForField } from "core/utils/frames/frames";
-import { MenuObject } from "core/utils/ui/menu";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React, { useState } from "react";
 import { fieldTypeForType, fieldTypes } from "schemas/mdb";
-import { Anchors, Rect } from "types/Pos";
-import { SpaceTableColumn } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import { SpaceTableColumn } from "shared/types/mdb";
+import { MenuObject } from "shared/types/menu";
+import { Anchors, Rect } from "shared/types/Pos";
+import { Sort } from "shared/types/predicate";
+import { windowFromDocument } from "shared/utils/dom";
 import { safelyParseJSON } from "utils/parsers";
 import StickerModal from "../../Modals/StickerModal";
-import {
-  SelectOption,
-  SelectOptionType,
-  defaultMenu,
-  menuInput,
-  menuSeparator,
-} from "../menu/SelectionMenu";
+import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
 
 export const PropertyMenuComponent = (props: {

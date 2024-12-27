@@ -7,7 +7,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { FrameEditorMode } from "types/mframe";
+import { FrameEditorMode } from "shared/types/frameExec";
 import { FrameInstanceContext } from "./FrameInstanceContext";
 import { SpaceContext } from "./SpaceContext";
 

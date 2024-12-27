@@ -1,72 +1,19 @@
 import { uiPlaceholders } from "core/assets/placeholders";
 import { showMenu } from "core/react/components/UI/Menus/menu";
-import { SelectMenuProps } from "core/react/components/UI/Menus/menu/SelectionMenu";
+
 import { showSelectMenu } from "core/react/components/UI/Menus/selectMenu";
-import { Superstate } from "core/superstate/superstate";
-import { MenuObject } from "core/utils/ui/menu";
 import _ from "lodash";
-import { Root, RootOptions } from "react-dom/client";
-import { TargetLocation } from "types/path";
-import { Anchors, Pos, Rect } from "../../types/Pos";
-import { EventDispatcher } from "./dispatchers/dispatcher";
-import { InputManager } from "./inputManager";
+import { Superstate } from "makemd-core";
+import { RootOptions } from "react-dom/client";
+import { MenuObject, SelectMenuProps } from "shared/types/menu";
+import { TargetLocation } from "shared/types/path";
+import { Anchors, Pos, Rect } from "../../shared/types/Pos";
 
-export type UIManagerEventTypes = {
-    'activePathChanged': string;
-    'activeStateChanged': null;
-    'activeSelectionChanged': {path: string, content: string};
-    'windowReady': null;
-}
-export enum ScreenType {Phone, Desktop, Tablet}
-export enum InteractionType {Touch, Mouse, Controller, Voice }
-export type Warning = {
-    id: string;
-    message: string;
-    description: string;
-    command: string;
-}
-export type Sticker = {
-    type: string;
-    name: string;
-    value: string;
-    html: string;
-    keywords: string;
-  };
-  
-  export abstract class ViewAdapter {
-    path: string;
-    openPath: (path: string) => void;
-    parent: ViewAdapter;
-    children: ViewAdapter[];
-  }
-  
-export interface UIAdapter {
-    manager: UIManager;
-    availableViews: () => string[];
-    viewsByPath: (path: string) => ViewAdapter[];
-    createRoot: (container: Element | DocumentFragment, options?: RootOptions) => Root;
-    openToast: (content: string) => void;
-    openModal: (title: string, modal: JSX.Element, win: Window, className?: string, props?: any) => MenuObject;
-    openPalette: (modal: JSX.Element, win: Window, className?: string) => MenuObject;
-    openPath: (path: string, newLeaf: TargetLocation, source?: any, props?: Record<string, any>) => void;
-    openPopover: (position: Pos, popover: JSX.Element) => void
-    getScreenType: () => ScreenType;
-    getOS: () => string;
-    getWarnings: () => Warning[];
-    primaryInteractionType: () => InteractionType;
-    getSticker: (icon: string) => string;
-    allStickers: () => Sticker[];
-    getUIPath: (path: string, thumbnail?: boolean) => string;
-    dragStarted: (e: React.DragEvent<HTMLDivElement>, paths: string[], ) => void;
-    dragEnded: (e: React.DragEvent<HTMLDivElement>) => void;
-    setDragLabel: (label: string) => void;
-    navigationHistory: () => string[];
-    mainMenu: (el: HTMLElement, superstate: Superstate) => void;
-    quickOpen: (superstate: Superstate) => void;
-    isEverViewOpen: () => boolean;
-}
+import { IUIManager, UIAdapter, UIManagerEventTypes, ViewAdapter } from "shared/types/uiManager";
+import { EventDispatcher } from "../../shared/utils/dispatchers/dispatcher";
+import { InputManager } from "../../shared/utils/inputManager";
 
-export class UIManager {
+export class UIManager implements IUIManager {
 
     inputManager: InputManager;
     superstate: Superstate;
@@ -83,8 +30,13 @@ export class UIManager {
         this.resetFunctions.forEach(f => f(id));
       }
     public eventsDispatch: EventDispatcher<UIManagerEventTypes> = new EventDispatcher<UIManagerEventTypes>();
-    public quickOpen(superstate: Superstate) {
-        this.mainFrame.quickOpen(superstate);
+    public quickOpen(
+        mode?: number,
+        offset?: Rect,
+        win?: Window,
+        onSelect?: (link: string) => void
+      ) {
+        this.mainFrame.quickOpen(mode, offset, win, onSelect);
     }
     public availableViews () {
         return this.mainFrame.availableViews();
@@ -204,4 +156,5 @@ export class UIManager {
     public setDragLabel ( label: string) {
         this.mainFrame.setDragLabel(label);
     }
+    
 }

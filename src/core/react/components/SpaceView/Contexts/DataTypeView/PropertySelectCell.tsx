@@ -1,8 +1,8 @@
-import i18n from "core/i18n";
 import { parseLinkedPropertyToValue } from "core/utils/frames/frame";
 import { SelectMenuProps } from "makemd-core";
 import React, { useState } from "react";
-import { SpaceTableColumn } from "types/mdb";
+import i18n from "shared/i18n";
+import { SpaceTableColumn } from "shared/types/mdb";
 import { TableCellProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
 

@@ -5,7 +5,8 @@ import { wrapQuotes } from "core/utils/strings";
 import { Superstate, i18n } from "makemd-core";
 import { Resizable } from "re-resizable";
 import React, { useEffect } from "react";
-import { FrameResizeMode, FrameTreeProp } from "types/mframe";
+import { FrameResizeMode } from "shared/types/frameExec";
+import { FrameTreeProp } from "shared/types/mframe";
 
 export const FrameResizer = (props: {
   superstate: Superstate;

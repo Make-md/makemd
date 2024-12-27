@@ -12,10 +12,9 @@ import { FrameSelectionContext } from "core/react/context/FrameSelectionContext"
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate } from "core/superstate/superstate";
 import { saveProperties } from "core/superstate/utils/spaces";
-import { PathPropertyName } from "core/types/context";
 import { linkContextRow } from "core/utils/contexts/linkContextRow";
+import { Superstate } from "makemd-core";
 import React, {
   forwardRef,
   useContext,
@@ -23,6 +22,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { PathPropertyName } from "shared/types/context";
 import { FrameEditorInstance } from "./Frames/ViewNodes/FrameEditorInstance";
 import { FrameInstanceView } from "./Frames/ViewNodes/FrameInstance";
 

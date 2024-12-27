@@ -18,8 +18,9 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Edges } from "types/Pos";
-import { FrameRunInstance, FrameState, FrameTreeProp } from "types/mframe";
+import { FrameRunInstance, FrameState } from "shared/types/frameExec";
+import { FrameTreeProp } from "shared/types/mframe";
+import { Edges } from "shared/types/Pos";
 import { FramesEditorRootContext } from "./FrameEditorRootContext";
 import { FrameRootContext } from "./FrameRootContext";
 

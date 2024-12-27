@@ -1,7 +1,7 @@
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { Superstate } from "core/superstate/superstate";
-import { MakeMDSettings } from "core/types/settings";
-import { PathState } from "core/types/superstate";
+import { Superstate } from "makemd-core";
+import { PathState } from "shared/types/PathState";
+import { MakeMDSettings } from "shared/types/settings";
 
 
 export const pathIsSpace = (superstate: Superstate, path: string) => {

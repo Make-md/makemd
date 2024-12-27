@@ -1,12 +1,8 @@
-import { Superstate } from "core/superstate/superstate";
-import { PathState } from "core/types/superstate";
-import { SpaceProperty } from "types/mdb";
-import {
-  FrameNode,
-  FrameNodeState,
-  FrameRunInstance,
-  FrameTreeProp,
-} from "types/mframe";
+import { Superstate } from "makemd-core";
+import { FrameNodeState, FrameRunInstance } from "shared/types/frameExec";
+import { SpaceProperty } from "shared/types/mdb";
+import { FrameNode, FrameTreeProp } from "shared/types/mframe";
+import { PathState } from "shared/types/PathState";
 
 export type HoverSubmenuProps = {
   superstate: Superstate;

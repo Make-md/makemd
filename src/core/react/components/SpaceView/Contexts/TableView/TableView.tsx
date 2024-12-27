@@ -34,21 +34,17 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { DBRow, SpaceProperty } from "types/mdb";
-import { uniq } from "utils/array";
+import { DBRow, SpaceProperty } from "shared/types/mdb";
+import { uniq } from "shared/utils/array";
 import { ColumnHeader } from "./ColumnHeader";
 
 import classNames from "classnames";
-import i18n from "core/i18n";
 import { showRowContextMenu } from "core/react/components/UI/Menus/contexts/rowContextMenu";
 import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate } from "core/superstate/superstate";
 import { newPathInSpace } from "core/superstate/utils/spaces";
-import { PathPropertyName } from "core/types/context";
-import { Filter } from "core/types/predicate";
 import { PointerModifiers } from "core/types/ui";
 import { createNewRow } from "core/utils/contexts/optionValuesForColumn";
 import {
@@ -62,13 +58,13 @@ import {
   selectRange,
 } from "core/utils/ui/selection";
 import { debounce } from "lodash";
-import { SelectOption } from "makemd-core";
-import {
-  defaultContextSchemaID,
-  fieldTypeForField,
-  fieldTypeForType,
-} from "schemas/mdb";
-import { windowFromDocument } from "utils/dom";
+import { SelectOption, Superstate } from "makemd-core";
+import { fieldTypeForField, fieldTypeForType } from "schemas/mdb";
+import i18n from "shared/i18n";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { PathPropertyName } from "shared/types/context";
+import { Filter } from "shared/types/predicate";
+import { windowFromDocument } from "shared/utils/dom";
 import { DataTypeView, DataTypeViewProps } from "../DataTypeView/DataTypeView";
 
 declare module "@tanstack/table-core" {

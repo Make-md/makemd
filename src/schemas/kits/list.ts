@@ -1,6 +1,6 @@
 
 import { frameRootWithProps, kitWithProps } from "core/utils/frames/frames";
-import { FrameRoot } from "types/mframe";
+import { FrameRoot } from "shared/types/mframe";
 import { contentNode, flowNode, groupNode, iconNode, imageNode, inputNode, textNode } from "./base";
 import { deltaNode, slideNode, slidesNode } from "./slides";
 import { fieldNode, listItemNode, listNode, previewNode } from "./ui";

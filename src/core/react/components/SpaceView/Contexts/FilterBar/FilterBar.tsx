@@ -1,11 +1,8 @@
 import classNames from "classnames";
-import i18n from "core/i18n";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
 import { showPropertyMenu } from "core/react/components/UI/Menus/contexts/spacePropertyMenu";
 import {
-  SelectOption,
-  SelectOptionType,
   defaultMenu,
   menuInput,
   menuSeparator,
@@ -23,8 +20,6 @@ import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { Superstate } from "core/superstate/superstate";
-import { Filter, Predicate, Sort } from "core/types/predicate";
 import { filterFnLabels } from "core/utils/contexts/predicate/filterFns/filterFnLabels";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
 import {
@@ -36,16 +31,15 @@ import { sortFnTypes } from "core/utils/contexts/predicate/sort";
 import { formatDate } from "core/utils/date";
 import { nameForField } from "core/utils/frames/frames";
 import { isPhone } from "core/utils/ui/screen";
+import { SelectOption, SelectOptionType, Superstate, i18n } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
-import {
-  defaultContextSchemaID,
-  fieldTypeForField,
-  stickerForField,
-} from "schemas/mdb";
-import { Rect } from "types/Pos";
-import { SpaceProperty, SpaceTableColumn } from "types/mdb";
-import { FrameEditorMode } from "types/mframe";
-import { windowFromDocument } from "utils/dom";
+import { fieldTypeForField, stickerForField } from "schemas/mdb";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { SpaceProperty, SpaceTableColumn } from "shared/types/mdb";
+import { Rect } from "shared/types/Pos";
+import { Filter, Predicate, Sort } from "shared/types/predicate";
+import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 import { parseMDBStringValue } from "utils/properties";
 import { serializeMultiString } from "utils/serializers";

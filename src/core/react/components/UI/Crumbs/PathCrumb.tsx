@@ -1,7 +1,7 @@
-import { PathState } from "core/types/superstate";
 import type { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
-import { windowFromDocument } from "utils/dom";
+import { PathState } from "shared/types/PathState";
+import { windowFromDocument } from "shared/utils/dom";
 import { showPathContextMenu } from "../Menus/navigator/pathContextMenu";
 import { PathStickerView } from "../Stickers/PathSticker/PathSticker";
 

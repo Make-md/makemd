@@ -1,6 +1,6 @@
-import { SpaceDefFilter, SpaceDefGroup } from "core/types/space";
-import { PathState } from "core/types/superstate";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
+import { PathState } from "shared/types/PathState";
+import { SpaceDefFilter, SpaceDefGroup } from "shared/types/spaceDef";
 import { parseProperty } from "utils/parsers";
 import { serializeMultiString } from "utils/serializers";
 

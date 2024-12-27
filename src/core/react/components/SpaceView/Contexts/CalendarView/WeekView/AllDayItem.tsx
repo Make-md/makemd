@@ -1,9 +1,9 @@
-import { useDraggable } from '@dnd-kit/core';
-import { PathCrumb } from 'core/react/components/UI/Crumbs/PathCrumb';
-import { PathPropertyName } from 'core/types/context';
-import { Superstate } from 'makemd-core';
-import React from 'react';
-import { DBRow } from 'types/mdb';
+import { useDraggable } from "@dnd-kit/core";
+import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
+import { Superstate } from "makemd-core";
+import React from "react";
+import { PathPropertyName } from "shared/types/context";
+import { DBRow } from "shared/types/mdb";
 
 export const AllDayItem = (props: {
   superstate: Superstate;
@@ -15,9 +15,9 @@ export const AllDayItem = (props: {
   style?: React.CSSProperties;
 }) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: 'event-' + props.index,
+    id: "event-" + props.index,
     data: {
-      type: 'event',
+      type: "event",
       index: props.index,
     },
   });
@@ -29,7 +29,7 @@ export const AllDayItem = (props: {
       {...listeners}
       style={{
         ...props.style,
-        left: '2px',
+        left: "2px",
         width: `calc(${(props.endDay - props.startDay + 1) * 100}% - 4px)`,
         top: `${props.topOffset * 22 + 2}px`,
       }}

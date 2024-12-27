@@ -2,21 +2,21 @@ import { useDndMonitor } from "@dnd-kit/core";
 import { showPropertiesMenu } from "core/react/components/UI/Menus/properties/propertiesMenu";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
-import { Superstate } from "core/superstate/superstate";
 import {
   deleteProperty,
   renameProperty,
   saveProperties,
 } from "core/superstate/utils/spaces";
 import { updateContextValue } from "core/utils/contexts/context";
-import { SelectOption, i18n } from "makemd-core";
+import { SelectOption, Superstate, i18n } from "makemd-core";
 
 import { linkContextRow } from "core/utils/contexts/linkContextRow";
 import React, { useContext, useEffect, useState } from "react";
-import { defaultContextSchemaID, fieldTypes } from "schemas/mdb";
-import { SpaceProperty, SpaceTableColumn } from "types/mdb";
-import { uniqCaseInsensitive } from "utils/array";
-import { windowFromDocument } from "utils/dom";
+import { fieldTypes } from "schemas/mdb";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { SpaceProperty, SpaceTableColumn } from "shared/types/mdb";
+import { uniqCaseInsensitive } from "shared/utils/array";
+import { windowFromDocument } from "shared/utils/dom";
 import { parseProperty } from "utils/parsers";
 import {
   defaultValueForType,

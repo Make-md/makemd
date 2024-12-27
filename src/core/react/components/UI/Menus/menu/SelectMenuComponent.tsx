@@ -1,16 +1,13 @@
 // Adapted from React Tags https://github.com/react-tags/react-tags
 
-import i18n from "core/i18n";
 import { UIManager } from "core/middleware/ui";
-import {
-  SelectOption,
-  SelectSection,
-} from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { PointerModifiers } from "core/types/ui";
-import { MenuObject } from "core/utils/ui/menu";
 import Fuse from "fuse.js";
+import { SelectOption, SelectSection } from "makemd-core";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { uniq } from "utils/array";
+import i18n from "shared/i18n";
+import { MenuObject } from "shared/types/menu";
+import { uniq } from "shared/utils/array";
 import SelectMenuSearch from "./SelectMenuInput";
 import SelectMenuPillComponent from "./SelectMenuPill";
 import SelectMenuSuggestions from "./SelectMenuSuggestions";

@@ -1,8 +1,8 @@
-import i18n from "core/i18n";
-import { Superstate } from "core/superstate/superstate";
 import { eventTypes } from "core/types/types";
+import { Superstate } from "makemd-core";
 import React, { useEffect, useState } from "react";
-import { uniq } from "utils/array";
+import i18n from "shared/i18n";
+import { uniq } from "shared/utils/array";
 import { NoteView } from "../PathView/NoteView";
 import { PathCrumb } from "../UI/Crumbs/PathCrumb";
 import { CollapseToggle } from "../UI/Toggles/CollapseToggle";

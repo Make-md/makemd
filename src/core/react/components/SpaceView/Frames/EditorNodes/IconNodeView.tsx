@@ -3,9 +3,9 @@ import { FramesEditorRootContext } from "core/react/context/FrameEditorRootConte
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { wrapQuotes } from "core/utils/strings";
 import React, { useContext, useMemo } from "react";
-import { FrameEditorMode } from "types/mframe";
-import { windowFromDocument } from "utils/dom";
-import { parseStickerString } from "utils/stickers";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { windowFromDocument } from "shared/utils/dom";
+import { parseStickerString } from "shared/utils/stickers";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";
 
 export const IconNodeView = (props: FrameNodeViewProps) => {

@@ -18,9 +18,10 @@ import React, {
   useTransition,
 } from "react";
 import { stickerForField } from "schemas/mdb";
-import { SpaceProperty } from "types/mdb";
-import { FrameEditorMode, FrameSchema, MDBFrame } from "types/mframe";
-import { windowFromDocument } from "utils/dom";
+import { FrameEditorMode } from "shared/types/frameExec";
+import { SpaceProperty } from "shared/types/mdb";
+import { FrameSchema, MDBFrame } from "shared/types/mframe";
+import { windowFromDocument } from "shared/utils/dom";
 import { ToggleSetter } from "../../Frames/Setters/ToggleSetter";
 import { ContextListSections } from "./ContextListView";
 

@@ -1,4 +1,3 @@
-import { default as i18n } from "core/i18n";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import StickerModal from "core/react/components/UI/Modals/StickerModal";
 import { savePathColor } from "core/superstate/utils/label";
@@ -22,20 +21,16 @@ import {
   savePathIcon,
 } from "core/utils/emoji";
 import React from "react";
+import { default as i18n } from "shared/i18n";
 
-import { Superstate } from "core/superstate/superstate";
 import { deletePath, movePathToSpace } from "core/superstate/utils/path";
 import { isTouchScreen } from "core/utils/ui/screen";
-import { movePath } from "core/utils/uri";
-import { Anchors, Rect } from "types/Pos";
-import { windowFromDocument } from "utils/dom";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import { Anchors, Rect } from "shared/types/Pos";
+import { windowFromDocument } from "shared/utils/dom";
+import { movePath } from "shared/utils/uri";
 import { ConfirmationModal } from "../../Modals/ConfirmationModal";
-import {
-  SelectOption,
-  SelectOptionType,
-  defaultMenu,
-  menuSeparator,
-} from "../menu/SelectionMenu";
+import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../properties/colorPickerMenu";
 import { showSpacesMenu } from "../properties/selectSpaceMenu";
 

@@ -3,7 +3,7 @@ import { SpaceContext } from "core/react/context/SpaceContext";
 import { WindowContext } from "core/react/context/WindowContext";
 import { Superstate } from "makemd-core";
 import React, { useContext, useRef } from "react";
-import { SpaceTableSchema } from "types/mdb";
+import { SpaceTableSchema } from "shared/types/mdb";
 
 export const ContextTableCrumb = (props: {
   superstate: Superstate;

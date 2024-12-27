@@ -1,7 +1,7 @@
-import i18n from "core/i18n";
-import { Superstate } from "core/superstate/superstate";
-import { Rect } from "types/Pos";
-import { SelectMenuProps, SelectSection } from "../menu/SelectionMenu";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
+import { SelectMenuProps, SelectSection } from "shared/types/menu";
+import { Rect } from "shared/types/Pos";
 
 export const showLinkMenu = (
   offset: Rect,

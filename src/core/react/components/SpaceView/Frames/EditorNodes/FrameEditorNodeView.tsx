@@ -6,9 +6,9 @@ import {
   FrameSelectionProvider,
 } from "core/react/context/FrameSelectionContext";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
-import { Superstate } from "core/superstate/superstate";
 import { propertiesForNode } from "core/utils/frames/ast";
 import { parseStylesToClass } from "core/utils/frames/renderer";
+import { Superstate } from "makemd-core";
 import React, {
   memo,
   useContext,
@@ -23,13 +23,12 @@ import {
   FrameDropMode,
   FrameEditorMode,
   FrameExecutable,
-  FrameNode,
   FrameResizeMode,
   FrameRunInstance,
   FrameState,
   FrameTreeNode,
-  FrameTreeProp,
-} from "types/mframe";
+} from "shared/types/frameExec";
+import { FrameNode, FrameTreeProp } from "shared/types/mframe";
 import { FrameMultiNodeEditor } from "../FrameNodeEditor/FrameMultiNodeEditor";
 import { FrameNodeEditor } from "../FrameNodeEditor/FrameNodeEditor";
 import { ContentNodeView } from "./ContentNodeView";
@@ -39,7 +38,7 @@ import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { PathContext } from "core/react/context/PathContext";
 import { WindowContext } from "core/react/context/WindowContext";
 import { isTouchScreen } from "core/utils/ui/screen";
-import { Rect } from "types/Pos";
+import { Rect } from "shared/types/Pos";
 import { FrameHoverMenu } from "../FrameNodeEditor/FrameHoverMenu";
 import { FrameNodeEditorContainer } from "../FrameNodeEditor/FrameNodeEditorContainer";
 import { FrameCorners } from "../FrameNodeEditor/Overlays/FrameCorners";

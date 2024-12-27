@@ -1,12 +1,11 @@
-import { Superstate } from "core/superstate/superstate";
 import { saveSpaceCache } from "core/superstate/utils/spaces";
-import { SpaceDefinition } from "core/types/space";
-import { SpaceState } from "core/types/superstate";
-import { i18n, SelectOption } from "makemd-core";
+import { i18n, SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React, { useEffect, useMemo, useState } from "react";
-import { windowFromDocument } from "utils/dom";
+import { SpaceState } from "shared/types/PathState";
+import { SpaceDefinition } from "shared/types/spaceDef";
+import { windowFromDocument } from "shared/utils/dom";
 import { PathCrumb } from "../UI/Crumbs/PathCrumb";
-import { defaultMenu, SelectOptionType } from "../UI/Menus/menu/SelectionMenu";
+import { defaultMenu } from "../UI/Menus/menu/SelectionMenu";
 import { CollapseToggleSmall } from "../UI/Toggles/CollapseToggleSmall";
 
 export const SpaceItemProperty = (props: {

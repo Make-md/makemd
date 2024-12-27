@@ -2,8 +2,8 @@ import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/c
 import { removeQuotes } from "core/utils/strings";
 import { i18n } from "makemd-core";
 import React from "react";
-import { hexToRgb } from "schemas/color";
-import { windowFromDocument } from "utils/dom";
+import { hexToRgb } from "shared/utils/color";
+import { windowFromDocument } from "shared/utils/dom";
 import { StepSetter } from "../../Setters/StepSetter";
 import { HoverSubmenuProps } from "./HoverSubmenuProps";
 

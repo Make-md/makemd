@@ -1,5 +1,5 @@
 import { TFile } from "obsidian";
-import { uniqCaseInsensitive } from "utils/array";
+import { uniqCaseInsensitive } from "shared/utils/array";
 import { DataViewMarkdownFiletypeAdapter } from "../dataviewMarkdownAdapter";
 import { parseDataview } from "./parseDataview";
 

@@ -1,4 +1,4 @@
-import i18n from "core/i18n";
+import i18n from "shared/i18n";
 
 
 export const filterFnLabels : Record<string, string> = {

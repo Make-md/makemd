@@ -1,7 +1,7 @@
 
-import { Superstate } from "core/superstate/superstate";
-import { WorkerJobType } from "core/types/superstate";
 import { stringifyJob } from "core/utils/superstate/serializer";
+import { Superstate } from "makemd-core";
+import { WorkerJobType } from "shared/types/PathState";
 import { BatchContextWorkerPayload, BatchPathWorkerPayload, ContextWorkerPayload, PathWorkerPayload } from "./impl";
 //@ts-ignore
 import SuperstateWorker from "./indexer.worker";

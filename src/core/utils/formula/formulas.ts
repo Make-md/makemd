@@ -1,7 +1,7 @@
-import { PathState } from "core/types/superstate";
 import { format as formatDate } from "date-fns";
 import { MathNode, SymbolNode } from "mathjs";
-import { uniq } from "utils/array";
+import { PathState } from "shared/types/PathState";
+import { uniq } from "shared/utils/array";
 import { parseMultiString } from "utils/parsers";
 import { parseMDBStringValue } from "utils/properties";
 import { parseDate } from "../date";

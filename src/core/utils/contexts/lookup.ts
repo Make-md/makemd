@@ -1,5 +1,5 @@
-import { Superstate } from "core/superstate/superstate";
-import { PathState } from "core/types/superstate";
+import { Superstate } from "makemd-core";
+import { PathState } from "shared/types/PathState";
 import { serializeMultiString } from "utils/serializers";
 import { parseMultiString, parseProperty } from "../../../utils/parsers";
 import { serializeMultiDisplayString } from "../../../utils/serializers";

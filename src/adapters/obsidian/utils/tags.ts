@@ -1,5 +1,4 @@
 import { getAbstractFileAtPath } from "adapters/obsidian/utils/file";
-import { MakeMDSettings } from "core/types/settings";
 import MakeMDPlugin from "main";
 import { SpaceManager } from "makemd-core";
 import {
@@ -10,7 +9,8 @@ import {
   TFolder,
   getAllTags
 } from "obsidian";
-import { uniq } from "utils/array";
+import { MakeMDSettings } from "shared/types/settings";
+import { uniq } from "shared/utils/array";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { stringFromTag, tagPathToTag, validateName } from "utils/tags";
 

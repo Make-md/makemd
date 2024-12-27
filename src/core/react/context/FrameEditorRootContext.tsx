@@ -1,5 +1,4 @@
 import { arrayMove } from "@dnd-kit/sortable";
-import { Superstate } from "core/superstate/superstate";
 import { FMMetadataKeys } from "core/types/space";
 import {
   buildFrameTree,
@@ -13,6 +12,7 @@ import { newUniqueNode } from "core/utils/frames/frames";
 import { relinkProps } from "core/utils/frames/linker";
 import { frameToNode, nodeToFrame } from "core/utils/frames/nodes";
 import _ from "lodash";
+import { Superstate } from "makemd-core";
 import React, {
   createContext,
   useContext,
@@ -23,16 +23,14 @@ import React, {
 import { groupNode } from "schemas/kits/base";
 import { deltaNode } from "schemas/kits/slides";
 import { groupableTypes } from "schemas/kits/ui";
-import { SpaceProperty, SpaceTableColumn } from "types/mdb";
 import {
   FrameEditorMode,
-  FrameNode,
   FrameNodeState,
   FrameTreeNode,
-  FrameTreeProp,
-  MFrame,
-} from "types/mframe";
-import { insert, insertMulti, uniqueNameFromString } from "utils/array";
+} from "shared/types/frameExec";
+import { SpaceProperty, SpaceTableColumn } from "shared/types/mdb";
+import { FrameNode, FrameTreeProp, MFrame } from "shared/types/mframe";
+import { insert, insertMulti, uniqueNameFromString } from "shared/utils/array";
 import { FramesMDBContext } from "./FramesMDBContext";
 import { SpaceContext } from "./SpaceContext";
 

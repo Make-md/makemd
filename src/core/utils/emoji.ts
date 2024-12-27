@@ -1,6 +1,6 @@
 
-import { Superstate } from "core/superstate/superstate";
 import { savePathColor, savePathSticker } from "core/superstate/utils/label";
+import { Superstate } from "makemd-core";
 
 
 export const saveIconsForPaths = (

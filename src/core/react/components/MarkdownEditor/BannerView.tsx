@@ -1,13 +1,12 @@
-import i18n from "core/i18n";
 import ImageModal from "core/react/components/UI/Modals/ImageModal";
 import { PathContext } from "core/react/context/PathContext";
-import { Superstate } from "core/superstate/superstate";
 import { savePathBanner } from "core/superstate/utils/label";
 import {
   metadataPathForSpace,
   saveProperties,
 } from "core/superstate/utils/spaces";
 import { isTouchScreen } from "core/utils/ui/screen";
+import { SelectOption, Superstate } from "makemd-core";
 import React, {
   useCallback,
   useContext,
@@ -15,10 +14,11 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { URI } from "types/path";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { URI } from "shared/types/path";
+import { windowFromDocument } from "shared/utils/dom";
 import { InputModifier } from "../SpaceView/Frames/Setters/StepSetter";
-import { SelectOption, defaultMenu } from "../UI/Menus/menu/SelectionMenu";
+import { defaultMenu } from "../UI/Menus/menu/SelectionMenu";
 
 export const BannerView = (props: {
   superstate: Superstate;

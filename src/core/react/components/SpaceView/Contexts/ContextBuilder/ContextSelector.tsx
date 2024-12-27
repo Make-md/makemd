@@ -1,12 +1,9 @@
-import i18n from "core/i18n";
-import {
-  SelectOption,
-  defaultMenu,
-} from "core/react/components/UI/Menus/menu/SelectionMenu";
-import { Superstate } from "core/superstate/superstate";
+import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { tagSpacePathFromTag } from "core/utils/strings";
+import { SelectOption, Superstate } from "makemd-core";
 import React from "react";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { windowFromDocument } from "shared/utils/dom";
 import { ensureTag } from "utils/tags";
 export const ContextSelector = (props: {
   superstate: Superstate;

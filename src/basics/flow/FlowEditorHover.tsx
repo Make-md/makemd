@@ -1,11 +1,11 @@
 import { EditorView } from "@codemirror/view";
 import MakeBasicsPlugin from "basics/basics";
-import { uiIconSet } from "core/assets/icons";
-import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
-import { SpaceFragmentSchema } from "core/superstate/utils/spaces";
-import { SelectOption, i18n } from "makemd-core";
+import { i18n } from "makemd-core";
 import { App } from "obsidian";
 import React, { useMemo } from "react";
+import { uiIconSet } from "shared/assets/icons";
+import { SelectOption } from "shared/types/menu";
+import { SpaceFragmentSchema } from "shared/types/spaceFragment";
 
 export const FlowEditorHover = (props: {
   path: string;
@@ -18,12 +18,14 @@ export const FlowEditorHover = (props: {
   toggleState: boolean;
   dom?: HTMLElement;
 }) => {
-  const path = props.plugin.resolvePath(props.path, props.source);
+  const path = props.plugin.enactor.resolvePath(props.path, props.source);
   const [spaceFragment, setSpaceFragment] =
     React.useState<SpaceFragmentSchema>();
   useMemo(
     () =>
-      props.plugin.spaceFragmentSchema(path).then((f) => setSpaceFragment(f)),
+      props.plugin.enactor
+        .spaceFragmentSchema(path)
+        .then((f) => setSpaceFragment(f)),
     [path]
   );
 
@@ -37,7 +39,7 @@ export const FlowEditorHover = (props: {
     props.view.dispatch({
       changes: { from: props.pos.from - 4, to: props.pos.to + 2 },
     });
-    props.plugin.notify(i18n.notice.tableDeleted);
+    props.plugin.enactor.notify(i18n.notice.tableDeleted);
   };
   const toggleFlow = () => {
     const domPos = props.view.posAtDOM(props.dom);
@@ -64,7 +66,7 @@ export const FlowEditorHover = (props: {
       name: i18n.buttons.convertTable,
       icon: "ui//sync",
       onClick: (e) => {
-        props.plugin.convertSpaceFragmentToMarkdown(
+        props.plugin.enactor.convertSpaceFragmentToMarkdown(
           spaceFragment,
           (markdown) => {
             props.view.dispatch({
@@ -93,17 +95,13 @@ export const FlowEditorHover = (props: {
       },
     });
 
-    props.plugin.openMenu(e, menuOptions);
+    props.plugin.enactor.openMenu(e, menuOptions);
   };
 
   return (
     <div className="mk-flowblock-menu">
       {!spaceFragment ? (
         <>
-          <PathCrumb
-            superstate={props.plugin.superstate}
-            path={path}
-          ></PathCrumb>
           {props.toggle && (
             <button
               aria-label={i18n.buttons.toggleFlow}

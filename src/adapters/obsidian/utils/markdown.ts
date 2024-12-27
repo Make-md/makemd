@@ -1,5 +1,5 @@
-import { defaultContextDBSchema } from "schemas/mdb";
-import { SpaceTable } from "types/mdb";
+import { defaultContextDBSchema } from "shared/schemas/context";
+import { SpaceTable } from "shared/types/mdb";
 
 type Page = {
     title: string;

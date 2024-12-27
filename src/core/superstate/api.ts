@@ -1,26 +1,28 @@
 import { showRowContextMenu } from "core/react/components/UI/Menus/contexts/rowContextMenu";
 import { showPathContextMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { PathPropertyName } from "core/types/context";
 import { addRowInTable, updateTableRow, updateValueInContext } from "core/utils/contexts/context";
 import { formatDate } from "core/utils/date";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { parseContextNode, parseLinkedNode } from "core/utils/frames/frame";
 import { SelectOption } from "makemd-core";
-import { defaultContextSchemaID, stickerForField } from "schemas/mdb";
-import { DBRow, SpaceProperty, SpaceTableSchema } from "types/mdb";
-import { FrameContexts } from "types/mframe";
-import { TargetLocation } from "types/path";
-import { windowFromDocument } from "utils/dom";
+import { stickerForField } from "schemas/mdb";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { IAPI } from "shared/types/api";
+import { PathPropertyName } from "shared/types/context";
+import { FrameContexts } from "shared/types/frameExec";
+import { DBRow, SpaceProperty, SpaceTableSchema } from "shared/types/mdb";
+import { TargetLocation } from "shared/types/path";
+import { windowFromDocument } from "shared/utils/dom";
+import { sanitizeTableName } from "shared/utils/sanitizers";
 import { parseMDBStringValue } from "utils/properties";
-import { sanitizeTableName } from "utils/sanitizers";
 import { Superstate } from "./superstate";
 import { newPathInSpace, saveProperties } from "./utils/spaces";
 
 
 
 
-export class API  {
+export class API implements IAPI {
     private superstate: Superstate;
     public constructor(superstate: Superstate) {
         this.superstate = superstate;

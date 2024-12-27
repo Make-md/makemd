@@ -2,9 +2,9 @@ import { Superstate, i18n } from "makemd-core";
 
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import React, { useEffect, useMemo, useState } from "react";
-import { Command } from "types/commands";
-import { SpaceProperty } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import { Command } from "shared/types/commands";
+import { SpaceProperty } from "shared/types/mdb";
+import { windowFromDocument } from "shared/utils/dom";
 import { DataPropertyView } from "../../SpaceView/Contexts/DataTypeView/DataPropertyView";
 import { CellEditMode } from "../../SpaceView/Contexts/TableView/TableView";
 import { Dropdown } from "../../UI/Dropdown";
@@ -63,7 +63,8 @@ export const SpaceCommand = (props: {
     saveCommand({
       ...command,
       fields: [...command.fields, field],
-    });return true;
+    });
+    return true;
   };
 
   const deleteProperty = (field: SpaceProperty) => {

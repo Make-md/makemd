@@ -1,6 +1,6 @@
 import { nodeToPropValue, nodeToTypes } from "schemas/frames";
-import { SpaceTableSchema } from "types/mdb";
-import { FrameNode, FrameSchema, FrameTreeProp, MFrame } from "types/mframe";
+import { SpaceTableSchema } from "shared/types/mdb";
+import { FrameNode, FrameSchema, FrameTreeProp, MFrame } from "shared/types/mframe";
 import { safelyParseJSON } from "utils/parsers";
 
 export const frameSchemaToTableSchema = (frameSchema: FrameSchema) => {

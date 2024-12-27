@@ -1,11 +1,11 @@
-import { Superstate } from "core/superstate/superstate";
 import {
   addPathToSpaceAtIndex,
   removePathsFromSpace,
 } from "core/superstate/utils/spaces";
-import { PathState } from "core/types/superstate";
-import { genId } from "core/utils/uuid";
+import { Superstate } from "makemd-core";
 import React, { createContext, useEffect, useState } from "react";
+import { PathState } from "shared/types/PathState";
+import { genId } from "shared/utils/uuid";
 type PathContextProps = {
   uid: string;
   pathState: PathState;

@@ -1,11 +1,11 @@
-import { ActionTree } from "core/types/actions";
-import { Metadata } from "core/types/metadata";
-import { SpaceDefGroup } from "core/types/space";
 import { Superstate } from "makemd-core";
 import React, { useMemo } from "react";
-import { Command } from "types/commands";
-import { SpaceProperty } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import { ActionTree } from "shared/types/actions";
+import { Command } from "shared/types/commands";
+import { SpaceProperty } from "shared/types/mdb";
+import { Metadata } from "shared/types/metadata";
+import { SpaceDefGroup } from "shared/types/spaceDef";
+import { windowFromDocument } from "shared/utils/dom";
 import { SpaceQuery } from "../SpaceQuery";
 import { FormulaEditor } from "./FormulaEditor";
 export const BuiltinPropertyEditor = (props: {

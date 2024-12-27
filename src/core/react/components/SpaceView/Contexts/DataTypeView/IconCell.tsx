@@ -1,7 +1,7 @@
-import i18n from "core/i18n";
 import StickerModal from "core/react/components/UI/Modals/StickerModal";
 import React, { useEffect, useMemo, useRef } from "react";
-import { windowFromDocument } from "utils/dom";
+import i18n from "shared/i18n";
+import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 import { CellEditMode, TableCellMultiProp } from "../TableView/TableView";
 

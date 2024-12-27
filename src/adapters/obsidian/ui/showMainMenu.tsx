@@ -10,7 +10,7 @@ import MakeMDPlugin from "main";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import { WorkspaceLeaf, WorkspaceMobileDrawer } from "obsidian";
 import React from "react";
-import { windowFromDocument } from "utils/dom";
+import { windowFromDocument } from "shared/utils/dom";
 import { FILE_TREE_VIEW_TYPE } from "./navigator/NavigatorView";
 
 export const showMainMenu = (

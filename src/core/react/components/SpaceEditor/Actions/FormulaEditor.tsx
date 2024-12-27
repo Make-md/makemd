@@ -10,7 +10,7 @@ import { mathjs } from "core/utils/formula/syntax";
 import { Superstate } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
 import { fieldTypeForField } from "schemas/mdb";
-import { SpaceProperty } from "types/mdb";
+import { SpaceProperty } from "shared/types/mdb";
 import { ActionTester } from "./ActionTester";
 
 export type FormulaEditorProps = {

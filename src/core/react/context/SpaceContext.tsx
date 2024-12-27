@@ -1,5 +1,4 @@
-import { Superstate } from "core/superstate/superstate";
-import { SpaceState } from "core/types/superstate";
+import { Superstate } from "makemd-core";
 import React, {
   createContext,
   useContext,
@@ -7,7 +6,8 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { SpaceInfo } from "types/mdb";
+import { SpaceState } from "shared/types/PathState";
+import { SpaceInfo } from "shared/types/spaceInfo";
 import { PathContext } from "./PathContext";
 type SpaceContextProps = {
   spaceInfo: SpaceInfo | null;

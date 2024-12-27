@@ -1,19 +1,11 @@
-import { ActionInstance } from "core/types/actions";
-import { parseURI } from "core/utils/uri";
 import { Superstate } from "makemd-core";
-import { Command, CommandWithPath } from "types/commands";
-import { SpaceProperty } from "types/mdb";
-import { URI } from "types/path";
+import { ActionInstance, CLIAdapter, ICLIManager } from "shared/types/actions";
+import { Command, CommandWithPath } from "shared/types/commands";
+import { SpaceProperty } from "shared/types/mdb";
+import { URI } from "shared/types/path";
+import { parseURI } from "shared/utils/uri";
 
 
-export interface CLIAdapter {
-    manager: CLIManager;
-    scheme: string;
-    commandForAction: (action: string) => Command;
-    runCommand: (command: string, instance: ActionInstance) => Promise<any>;
-    allCommands: () => CommandWithPath[];
-
-}
 
 type BuiltinCommand = {
     id: string;
@@ -56,7 +48,7 @@ const builtinCommands : BuiltinCommand[] = [
 
 
 
-export class CLIManager {
+export class CLIManager implements ICLIManager {
 public builtinCommands : Command[]
     mainTerminal: CLIAdapter;
     

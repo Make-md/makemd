@@ -1,13 +1,11 @@
-import { SelectOption } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { PathProvider } from "core/react/context/PathContext";
-import { Superstate } from "core/superstate/superstate";
-import { Metadata } from "core/types/metadata";
-import { SpaceDefGroup } from "core/types/space";
-import { PathState } from "core/types/superstate";
 import { allMetadata } from "core/utils/metadata";
 import { debounce } from "lodash";
-import { i18n } from "makemd-core";
+import { i18n, SelectOption, Superstate } from "makemd-core";
 import React, { useEffect, useMemo, useState } from "react";
+import { Metadata } from "shared/types/metadata";
+import { PathState } from "shared/types/PathState";
+import { SpaceDefGroup } from "shared/types/spaceDef";
 
 import classNames from "classnames";
 import {
@@ -15,7 +13,7 @@ import {
   defaultSpace,
   newPathInSpace,
 } from "core/superstate/utils/spaces";
-import { searchPath } from "core/superstate/workers/search/impl";
+import { fastSearch, searchPath } from "core/superstate/workers/search/impl";
 import { PathView } from "../PathView/PathView";
 import { SpaceQuery } from "../SpaceEditor/SpaceQuery";
 import { PathCrumb } from "../UI/Crumbs/PathCrumb";
@@ -113,37 +111,62 @@ export const BlinkComponent = (props: {
       }
 
       if (filters.length == 0) {
-        props.superstate.searcher
-          .run<PathState[]>({
-            type: "fastSearch",
-            path: path,
-            payload: { query: query, count: 10 },
-          })
-          .then((g) =>
-            setFilteredPaths([
-              {
-                type: "section",
-                label: "Results",
-              },
-              ...g.map((f) => pathToBlinkItem(f)),
-              {
-                type: "section",
-                label: "Create New",
-              },
-              {
-                type: "new-note",
-                sticker: "ui//edit",
-                value: query,
-                label: "New Note",
-              },
-              {
-                type: "new-space",
-                sticker: "ui//folder-plus",
-                value: query,
-                label: "New Space",
-              },
-            ])
-          );
+        if (!props.superstate.settings.searchWorker) {
+          const g = fastSearch({
+            query,
+            pathsIndex: props.superstate.pathsIndex,
+            count: 10,
+          });
+          setFilteredPaths([
+            {
+              type: "section",
+              label: "Results",
+            },
+            ...g.map((f) => pathToBlinkItem(f)),
+            {
+              type: "section",
+              label: "Create New",
+            },
+            {
+              type: "new-note",
+              sticker: "ui//edit",
+              value: query,
+              label: "New Note",
+            },
+            {
+              type: "new-space",
+              sticker: "ui//folder-plus",
+              value: query,
+              label: "New Space",
+            },
+          ]);
+          return;
+        }
+        props.superstate.search(path, query).then((g) =>
+          setFilteredPaths([
+            {
+              type: "section",
+              label: "Results",
+            },
+            ...g.map((f) => pathToBlinkItem(f)),
+            {
+              type: "section",
+              label: "Create New",
+            },
+            {
+              type: "new-note",
+              sticker: "ui//edit",
+              value: query,
+              label: "New Note",
+            },
+            {
+              type: "new-space",
+              sticker: "ui//folder-plus",
+              value: query,
+              label: "New Space",
+            },
+          ])
+        );
         return;
       }
 
@@ -174,12 +197,8 @@ export const BlinkComponent = (props: {
         ]);
         return;
       }
-      props.superstate.searcher
-        .run<PathState[]>({
-          type: "search",
-          path: path,
-          payload: { queries: _queries, count: 10 },
-        })
+      props.superstate
+        .search(path, null, _queries)
         .then((g) => setFilteredPaths(g.map((f) => pathToBlinkItem(f))));
     };
     debounce(() => runQuery(query, queries), 300)();

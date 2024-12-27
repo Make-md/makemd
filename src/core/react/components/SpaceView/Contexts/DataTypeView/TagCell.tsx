@@ -1,6 +1,6 @@
-import i18n from "core/i18n";
 import { addTagToPath, deleteTagFromPath } from "core/superstate/utils/tags";
 import React, { PropsWithChildren, useEffect, useState } from "react";
+import i18n from "shared/i18n";
 import { TableCellProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
 

@@ -1,8 +1,8 @@
 import { format } from "date-fns";
 import { fieldTypeForField } from "schemas/mdb";
-import { SpaceProperty } from "types/mdb";
+import { SpaceProperty } from "shared/types/mdb";
 import { parseMultiString } from "utils/parsers";
-import { uniq } from "./array";
+import { uniq } from "../shared/utils/array";
 
 
 export const detectPropertyType = (value: any, key: string): string => {

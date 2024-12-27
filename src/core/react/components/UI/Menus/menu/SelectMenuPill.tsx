@@ -1,4 +1,4 @@
-import { SelectOption } from "core/react/components/UI/Menus/menu/SelectionMenu";
+import { SelectOption } from "makemd-core";
 import React from "react";
 
 const SelectMenuPillComponent = (props: {

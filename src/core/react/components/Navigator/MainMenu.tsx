@@ -1,11 +1,11 @@
 import classNames from "classnames";
 
-import { default as t } from "core/i18n";
-import { Warning } from "core/middleware/ui";
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React, { useContext, useEffect, useRef } from "react";
-import { windowFromDocument } from "utils/dom";
+import { default as t } from "shared/i18n";
+import { Warning } from "shared/types/Warning";
+import { windowFromDocument } from "shared/utils/dom";
 import { defaultAddAction } from "../UI/Menus/navigator/showSpaceAddMenu";
 interface MainMenuComponentProps {
   superstate: Superstate;
@@ -92,18 +92,19 @@ export const MainMenu = (props: MainMenuComponentProps) => {
               }}
             ></div>
           </div>
-
-          <div
-            className="mk-main-menu-button"
-            onClick={(e) => props.superstate.ui.quickOpen(superstate)}
-          >
+          {props.superstate.settings.blinkEnabled && (
             <div
-              className="mk-icon-small"
-              dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//search"),
-              }}
-            ></div>
-          </div>
+              className="mk-main-menu-button"
+              onClick={(e) => props.superstate.ui.quickOpen()}
+            >
+              <div
+                className="mk-icon-small"
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//search"),
+                }}
+              ></div>
+            </div>
+          )}
         </div>
 
         <button

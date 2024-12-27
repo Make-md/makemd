@@ -1,20 +1,15 @@
-import i18n from "core/i18n";
 import { FormulaEditor } from "core/react/components/SpaceEditor/Actions/FormulaEditor";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { Superstate } from "core/superstate/superstate";
 import { aggregateFnTypes } from "core/utils/contexts/predicate/aggregates";
 import { spaceNameFromSpacePath } from "core/utils/strings";
+import { SelectOption, Superstate } from "makemd-core";
 import React, { useMemo } from "react";
-import {
-  defaultContextSchemaID,
-  fieldTypeForField,
-  fieldTypeForType,
-  fieldTypes,
-} from "schemas/mdb";
-import { SpaceTableColumn } from "types/mdb";
-import { windowFromDocument } from "utils/dom";
+import { fieldTypeForField, fieldTypeForType, fieldTypes } from "schemas/mdb";
+import i18n from "shared/i18n";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { SpaceTableColumn } from "shared/types/mdb";
+import { windowFromDocument } from "shared/utils/dom";
 import { InputModal } from "../../Modals/InputModal";
-import { SelectOption } from "../menu/SelectionMenu";
 
 export const PropertyValueComponent = (props: {
   superstate: Superstate;

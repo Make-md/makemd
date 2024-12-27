@@ -1,6 +1,6 @@
-import { PathPropertyName } from "core/types/context";
-import { SpaceTable } from "types/mdb";
-import { insertMulti } from "utils/array";
+import { PathPropertyName } from "shared/types/context";
+import { SpaceTable } from "shared/types/mdb";
+import { insertMulti } from "shared/utils/array";
 
 export const renameRowForPath = (
     spaceTable: SpaceTable,

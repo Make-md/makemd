@@ -1,7 +1,7 @@
 import { PathProvider } from "core/react/context/PathContext";
 import { Superstate } from "makemd-core";
 import React from "react";
-import { SpaceInfo } from "types/mdb";
+import { SpaceInfo } from "shared/types/spaceInfo";
 import { ContextEditorProvider } from "../../context/ContextEditorContext";
 import { FramesMDBProvider } from "../../context/FramesMDBContext";
 import { SpaceProvider } from "../../context/SpaceContext";

@@ -1,5 +1,6 @@
 import React from "react";
-import { FrameNodeState, FrameTreeProp } from "types/mframe";
+import { FrameNodeState } from "shared/types/frameExec";
+import { FrameTreeProp } from "shared/types/mframe";
 
 export const FrameFill = (props: {
   state: FrameNodeState;

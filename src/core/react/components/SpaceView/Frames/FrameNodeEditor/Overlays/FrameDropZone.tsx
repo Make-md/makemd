@@ -3,9 +3,9 @@ import classNames from "classnames";
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate } from "core/superstate/superstate";
+import { Superstate } from "makemd-core";
 import React, { useContext } from "react";
-import { FrameDropMode } from "types/mframe";
+import { FrameDropMode } from "shared/types/frameExec";
 
 export const FrameDropZone = (props: {
   id: string;
