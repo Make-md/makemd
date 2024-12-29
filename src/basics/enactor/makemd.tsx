@@ -640,6 +640,9 @@ export class MakeMDEnactor implements Enactor {
     // }
     // menu.showAtMouseEvent(ev);
   }
+  pathExists(path: string) {
+    return this.superstate.spaceManager.pathExists(path);
+  }
   openPath(path: string, source?: HTMLElement) {
     const uri = this.uriByString(path);
     openPathInElement(

@@ -19,10 +19,6 @@ import { tooltips } from "./tooltip";
 export const cmExtensions = (plugin: MakeBasicsPlugin, mobile: boolean) => {
   const extensions : Extension[] = [...editBlockExtensions()];
 
-  if (plugin.settings.makerMode) {
-    
-    
-
     extensions.push(
       ...[toggleMarkExtension, tooltips({ parent: document.body })]
     );
@@ -48,7 +44,6 @@ export const cmExtensions = (plugin: MakeBasicsPlugin, mobile: boolean) => {
         extensions.push(internalLinkToggle);
       } else {
         extensions.push(internalLinkHover(plugin));
-      }
     }
   }
   

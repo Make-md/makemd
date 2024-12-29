@@ -42,6 +42,7 @@ export const BannerView = (props: {
       pathState?.metadata.property?.[props.superstate.settings.fmKeySticker]
         ?.length > 0;
     setHasSticker(hasSticker);
+
     setOffset(
       pathState?.metadata.property?.[
         props.superstate.settings.fmKeyBannerOffset
@@ -52,7 +53,7 @@ export const BannerView = (props: {
               pathState?.metadata.property?.[
                 props.superstate.settings.fmKeyBannerOffset
               ]
-            ) * 100
+            )
           ).toString()}%`
         : "center"
     );
@@ -166,7 +167,7 @@ export const BannerView = (props: {
         newValue = Math.min(newValue, 100);
         currentValue.current = newValue;
 
-        saveOffset(newValue);
+        setOffset(newValue + "%");
 
         return pos;
       });

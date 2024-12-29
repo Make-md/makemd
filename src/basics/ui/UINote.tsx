@@ -39,9 +39,7 @@ export const UINote = forwardRef((props: NoteViewProps, ref) => {
 
     const path = props.plugin.enactor.uriByString(props.path, props.source);
 
-    const pathExists = await props.plugin.app.vault.adapter.exists(
-      path.basePath
-    );
+    const pathExists = await props.plugin.enactor.pathExists(path.basePath);
     const isFolder = props.plugin.enactor.isSpace(path.basePath);
     const filePath =
       isFolder && props.forceNote

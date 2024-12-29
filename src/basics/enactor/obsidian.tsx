@@ -346,6 +346,9 @@ export class ObsidianEnactor implements Enactor {
   selectSpace(e: React.MouseEvent, onSelect: (path: string) => void) {
     return this.notify("Not implemented");
   }
+  pathExists(path: string) {
+    return this.plugin.app.vault.adapter.exists(path);
+  }
   selectImage(onSelect: (path: string) => void, win: Window) {
     return this.notify("Not implemented");
   }

@@ -194,6 +194,24 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
       return [...this.fileSystem.allFiles().filter(f =>  type ? type.some(g =>  g == 'folder' ? f.isFolder : f.extension == g) : true).map(g => g.path).filter(f => !excludeSpacesPredicate(this.spaceManager.superstate.settings, f))];
     }
     public async pathExists (path: string) {
+      const uri = this.uriByPath(path);
+        if (uri.scheme == 'spaces') {
+          if (uri.authority.charAt(0) == '$') {
+          const builtIn = Object.keys(builtinSpaces).find(f => f == uri.authority.slice(1));
+            if (builtIn) {
+              return true;
+            }
+          }
+            
+          if (uri.authority.charAt(0) == '#')
+          {
+            return true;
+          }
+          if (path == '/') {
+            return true;
+          }
+        
+      }
       return this.fileSystem.fileExists(path)
     }
   public async createItemAtPath (parent: string, type: string, name: string, content?: any) {
@@ -831,7 +849,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
             const builtins = Object.keys(builtinSpaces).map(f => this.spaceManager.spaceInfoForPath(`spaces://$${f}`));
     
             const getAllTagContextFiles = () : SpaceInfo[] => this.readTags().map(f => fileSystemSpaceInfoFromTag(this.spaceManager, tagPathToTag(f))) as SpaceInfo[] ?? [];
-            const allTagSpaces = this.spaceManager.superstate.settings.enableDefaultSpaces ? getAllTagContextFiles() : [];
+            const allTagSpaces = getAllTagContextFiles();
             return [...builtins, ...allTagSpaces, ...allFolders]
           }
           return allFolders;

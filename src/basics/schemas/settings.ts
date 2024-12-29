@@ -7,7 +7,6 @@ export const BasicDefaultSettings: MakeBasicsSettings = {
     mobileMakeBar: false,
     mobileSidepanel: false,
     inlineStyler: true,
-    makerMode: true,
     inlineStylerColors: false,
     editorFlow: true,
     internalLinkClickFlow: true,

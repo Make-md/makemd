@@ -646,6 +646,12 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     await this.loadSpaces();
     this.loadContext();
     
+    if (Object.keys(this.superstate.settings as Record<string, any>).some(f => f == "makerMode")){
+      this.superstate.settings.basics = (this.superstate.settings as any).makerMode;
+      delete (this.superstate.settings as any).makerMode;
+      this.saveSettings();
+    }
+
     if (this.superstate.settings.basics) {
     this.basics = new MakeBasicsPlugin(this);
     this.basics.loadBasics();

@@ -108,8 +108,8 @@ export const FlowNodeView = (
   };
   return (
     <div className="mk-node-flow">
-      {pathState ? (
-        !props.state?.styles?.["--mk-min-mode"] ? (
+      {pathState &&
+        (!props.state?.styles?.["--mk-min-mode"] ? (
           <div className="mk-node-link">
             <PathCrumb superstate={props.superstate} path={pathState.path}>
               {!hideToggle && (
@@ -123,7 +123,16 @@ export const FlowNodeView = (
           </div>
         ) : (
           <></>
-        )
+        ))}
+      {props.state && expanded && props.state?.props?.value?.length > 0 ? (
+        <PathView
+          id={id}
+          superstate={props.superstate}
+          path={pathState?.path ?? props.state?.props?.value}
+          containerRef={props.containerRef}
+          styles={{}}
+          readOnly={true}
+        ></PathView>
       ) : (
         selectionMode > FrameEditorMode.Read && (
           <div
@@ -143,16 +152,6 @@ export const FlowNodeView = (
             {i18n.hintText.selectNote}
           </div>
         )
-      )}
-      {props.state && expanded && props.state?.props?.value?.length > 0 && (
-        <PathView
-          id={id}
-          superstate={props.superstate}
-          path={pathState?.path ?? props.state?.props?.value}
-          containerRef={props.containerRef}
-          styles={{}}
-          readOnly={true}
-        ></PathView>
       )}
     </div>
   );

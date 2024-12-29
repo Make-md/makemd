@@ -968,10 +968,7 @@ class T {
           name: "Mark Sans 🧪",
           desc: `Use the editor without Markdown.`,
         },
-        editorMakerMode: {
-          name: "Flow (Beta)",
-          desc: `An integrated and intuitive editor experience`,
-        },
+        
         editorMakePlacholder: {
           name: "Flow Menu Hint Text",
           desc: `Show a hint text on how to open the Flow Menu Shortcut`,
