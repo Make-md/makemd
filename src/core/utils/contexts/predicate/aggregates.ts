@@ -4,7 +4,8 @@ import { median } from "mathjs";
 import { fieldTypeForField } from "schemas/mdb";
 import { SpaceProperty } from "shared/types/mdb";
 import { uniq } from "shared/utils/array";
-import { parseProperty, safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
+import { parseProperty } from "utils/parsers";
 import { empty } from "./filter";
 
 export type AggregateFunctionType = {

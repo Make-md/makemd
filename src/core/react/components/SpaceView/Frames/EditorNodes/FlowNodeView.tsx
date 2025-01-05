@@ -1,6 +1,5 @@
 import { PathView } from "core/react/components/PathView/PathView";
 
-import { BlinkMode } from "core/react/components/Blink/Blink";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
@@ -10,6 +9,7 @@ import { SpaceContext } from "core/react/context/SpaceContext";
 import { wrapQuotes } from "core/utils/strings";
 import { i18n } from "makemd-core";
 import React, { useContext, useMemo, useState } from "react";
+import { BlinkMode } from "shared/types/blink";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";

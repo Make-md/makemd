@@ -136,12 +136,15 @@ export const BannerView = (props: {
   const [modifier, setModifier] = useState<InputModifier>(null);
   const startValue = useRef(offset == "center" ? 50 : parseFloat(offset));
   const currentValue = useRef(offset == "center" ? 50 : parseFloat(offset));
-  const saveOffset = (offset: number) => {
-    setOffset(offset + "%");
-    saveProperties(props.superstate, pathState.path, {
-      [props.superstate.settings.fmKeyBannerOffset]: offset.toString(),
-    });
-  };
+  const saveOffset = useCallback(
+    (offset: number) => {
+      setOffset(offset + "%");
+      saveProperties(props.superstate, pathState.path, {
+        [props.superstate.settings.fmKeyBannerOffset]: offset.toString(),
+      });
+    },
+    [pathState]
+  );
   const [, setStartPos] = useState<[number, number]>([0, 0]);
   const step = 0.5;
   const handleMove = useCallback(
@@ -194,7 +197,7 @@ export const BannerView = (props: {
       e.preventDefault();
       e.stopPropagation();
     },
-    [handleMove]
+    [handleMove, saveOffset]
   );
 
   const handleDown = useCallback(

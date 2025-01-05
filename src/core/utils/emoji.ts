@@ -1,6 +1,7 @@
 
-import { savePathColor, savePathSticker } from "core/superstate/utils/label";
+import { savePathColor } from "core/superstate/utils/label";
 import { Superstate } from "makemd-core";
+import { savePathSticker } from "shared/utils/sticker";
 
 
 export const saveIconsForPaths = (
@@ -34,11 +35,6 @@ export const savePathIcon = (
   savePathSticker(superstate, path, icon);
 };
 
-export const removeIconsForPaths = (superstate: Superstate, paths: string[]) => {
-  paths.forEach((path) => {
-      savePathSticker(superstate, path, "");
-  });
-};
 export const removePathIcon = (superstate: Superstate, path: string) => {
   savePathSticker(superstate, path, "");
 };

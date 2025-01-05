@@ -774,5 +774,6 @@ export const uiIconSet: Record<string, string> = {
 'space-add': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
   <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.286 9h-8.572C9.768 9 9 9.768 9 10.714v8.572C9 20.233 9.768 21 10.714 21h8.572c.947 0 1.714-.767 1.714-1.714v-8.572C21 9.768 20.233 9 19.286 9ZM13 15h4m-2-2v4"/>
   <path fill="currentColor" fill-rule="evenodd" d="M4.7 5.399a.475.475 0 0 1 .384-.55l7.796-1.375a.475.475 0 0 1 .55.385L13.984 7h2.25l-.621-3.526a2.691 2.691 0 0 0-3.118-2.183L4.7 2.666a2.691 2.691 0 0 0-2.183 3.117L3.89 13.58A2.691 2.691 0 0 0 7 15.763v-2.25l-.376.066a.475.475 0 0 1-.55-.385L4.699 5.399Z" clip-rule="evenodd"/>
-</svg>`
+</svg>`,
+'apply-items': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-list-tree"><path d="M21 12h-8"/><path d="M21 6H8"/><path d="M21 18h-8"/><path d="M3 6v4c0 1.1.9 2 2 2h3"/><path d="M3 10v6c0 1.1.9 2 2 2h3"/></svg>`
   };

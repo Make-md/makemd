@@ -381,7 +381,9 @@ export const TableView = (props: { superstate: Superstate }) => {
               editMode,
               row: data[index] as DBRow,
               contextTable: contextTable,
-              source: data[index][PathPropertyName],
+              source:
+                f.schemaId == defaultContextSchemaID &&
+                data[index][PathPropertyName],
               columns: cols,
               contextPath: spaceCache.path,
             };

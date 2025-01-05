@@ -47,8 +47,8 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         general: ['label', 'tags'],
         navigator: ['appearance', 'interaction', 'advanced'],
         label: ['appearance'],
-        notes: ['appearance'],
-        space: ['appearance', 'folderNote', 'context'],
+        notes: ['appearance', 'folderNote'],
+        space: ['appearance' , 'context'],
         performance: [],
         advanced: []
       },
@@ -129,6 +129,12 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         subCategory: 'interaction',
         type: 'boolean',
         
+      },
+      {
+        name: 'editStickerInSidebar',
+        category: 'navigator',
+        subCategory: 'interaction',
+        type: 'boolean',
       },
       {
         name: 'spacesRightSplit',
@@ -216,6 +222,12 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         subCategory: 'tags',
         type: 'boolean',
       },
+      {
+        name: 'notesPreview',
+        category: 'performance',
+        type: 'boolean',
+      },
+      
       {
         name: 'spacesPerformance',
         category: 'performance',

@@ -9,3 +9,4 @@ export type SpaceFragmentSchema = {
   type: SpaceFragmentType;
   path: string;
 };
+

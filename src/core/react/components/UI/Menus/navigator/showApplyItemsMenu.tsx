@@ -5,7 +5,7 @@ import React from "react";
 import { SpaceState } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
 import { ensureTag } from "utils/tags";
-import StickerModal from "../../Modals/StickerModal";
+import StickerModal from "../../../../../../shared/components/StickerModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 
 const saveContexts = (

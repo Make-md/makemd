@@ -3,13 +3,14 @@ import React, { PropsWithChildren, useEffect } from "react";
 
 import classNames from "classnames";
 import { PathContext } from "core/react/context/PathContext";
-import { uriToSpaceFragmentSchema } from "core/superstate/utils/spaces";
+import { useContext, useRef } from "react";
+import { SpaceFragmentSchema } from "shared/types/spaceFragment";
+
+import { uriToSpaceFragmentSchema } from "shared/utils/makemd/fragment";
 import {
   frameSchemaToTableSchema,
   mdbSchemaToFrameSchema,
-} from "core/utils/frames/nodes";
-import { useContext, useRef } from "react";
-import { SpaceFragmentSchema } from "shared/types/spaceFragment";
+} from "shared/utils/makemd/schema";
 
 export const SpaceFragmentTitleComponent = (props: {
   superstate: Superstate;

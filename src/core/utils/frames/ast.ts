@@ -6,11 +6,12 @@ import { SpaceProperty } from "shared/types/mdb";
 import { FrameNode, FrameRoot, FrameSchema, FrameTreeProp, MDBFrame } from "shared/types/mframe";
 import { ScreenType } from "shared/types/ui";
 import { uniqueNameFromString } from "shared/utils/array";
+import { mdbSchemaToFrameSchema } from "../../../shared/utils/makemd/schema";
 import { removeQuotes } from "../strings";
 import { buildExecutable } from "./executable";
 import { parseLinkedNode } from "./frame";
 import { linkNodes } from "./linker";
-import { frameToNode, mdbSchemaToFrameSchema } from "./nodes";
+import { frameToNode } from "./nodes";
 
 const calculateEditorProps = (props: FrameEditorProps, treeNode: FrameTreeNode) : FrameEditorProps => {
 

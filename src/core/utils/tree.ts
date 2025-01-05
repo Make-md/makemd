@@ -46,7 +46,9 @@ export const compareByFieldCaseInsensitive =
   (_a: Record<string, any>, _b: Record<string, any>) => {
     const a = dir ? _a : _b;
     const b = dir ? _b : _a;
-    return a[field]?.toLowerCase().localeCompare(b[field]?.toLowerCase())
+    return a[field]?.toLowerCase().localeCompare(b[field]?.toLowerCase(), undefined, {
+      numeric: true,
+  })
   };
 
 

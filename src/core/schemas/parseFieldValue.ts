@@ -1,5 +1,6 @@
 import { Superstate } from "makemd-core";
-import { parseMultiString, safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
+import { parseMultiString } from "utils/parsers";
 import { fieldTypeForType } from "../../schemas/mdb";
 
 export const allActions = (superstate: Superstate, path: string) => {

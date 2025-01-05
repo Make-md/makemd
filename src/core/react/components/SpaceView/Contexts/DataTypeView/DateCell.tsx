@@ -18,7 +18,7 @@ import React, {
   useState,
 } from "react";
 import { windowFromDocument } from "shared/utils/dom";
-import { safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
 
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 

@@ -3,16 +3,16 @@ import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import {
-  contextEmbedStringFromContext,
-  contextPathForSpace,
-} from "core/utils/contexts/embed";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
 import { defaultTableFields } from "shared/schemas/fields";
 import { SpaceTableSchema } from "shared/types/mdb";
 import { uniqueNameFromString } from "shared/utils/array";
 import { windowFromDocument } from "shared/utils/dom";
+import {
+  contextEmbedStringFromContext,
+  contextPathForSpace,
+} from "shared/utils/makemd/embed";
 import { sanitizeTableName } from "shared/utils/sanitizers";
 import { showSpacesMenu } from "../UI/Menus/properties/selectSpaceMenu";
 import { CollapseToggleSmall } from "../UI/Toggles/CollapseToggleSmall";

@@ -5,7 +5,6 @@ import { SpaceManager } from "core/spaceManager/spaceManager";
 import { saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
 import { buildRootFromMDBFrame } from "core/utils/frames/ast";
-import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
 import { pathByDef } from "core/utils/spaces/query";
 import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
 import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
@@ -34,7 +33,9 @@ import { SpaceDefGroup, SpaceDefinition, SpaceType } from "shared/types/spaceDef
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
-import { parseMultiString, safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
+import { mdbSchemaToFrameSchema } from "shared/utils/makemd/schema";
+import { parseMultiString } from "utils/parsers";
 import { getAllParentTags } from "utils/tags";
 import { removeLinkInContexts, removePathInContexts, removeTagInContexts, renameLinkInContexts, renamePathInContexts, renameTagInContexts, updateContextWithProperties } from "../utils/contexts/context";
 import { API } from "./api";

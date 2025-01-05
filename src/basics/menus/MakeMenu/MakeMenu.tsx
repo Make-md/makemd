@@ -1,5 +1,4 @@
 import MakeBasicsPlugin from "basics/basics";
-import { i18n } from "makemd-core";
 import {
   App,
   Editor,
@@ -10,6 +9,7 @@ import {
   TFile,
 } from "obsidian";
 import { uiIconSet } from "shared/assets/icons";
+import i18n from "shared/i18n";
 import { Command, CommandType } from "../../types/command";
 
 export default class MakeMenu extends EditorSuggest<Command> {

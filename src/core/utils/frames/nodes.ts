@@ -1,22 +1,6 @@
 import { nodeToPropValue, nodeToTypes } from "schemas/frames";
-import { SpaceTableSchema } from "shared/types/mdb";
-import { FrameNode, FrameSchema, FrameTreeProp, MFrame } from "shared/types/mframe";
-import { safelyParseJSON } from "utils/parsers";
-
-export const frameSchemaToTableSchema = (frameSchema: FrameSchema) => {
-  return {
-    ...frameSchema,
-    def: JSON.stringify(frameSchema.def)
-  }
-}
-export const mdbSchemaToFrameSchema = (schema: SpaceTableSchema) : FrameSchema => {
-  if (!schema) return null;
-return {
-  ...schema,
-  def: safelyParseJSON(schema.def)
-}
-}
-
+import { FrameNode, FrameTreeProp, MFrame } from "shared/types/mframe";
+import { safelyParseJSON } from "shared/utils/json";
 
 export const frameToNode = (frame: MFrame): FrameNode => {
   return {

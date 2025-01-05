@@ -20,17 +20,17 @@ import { FrameNode, FrameRoot, FrameSchema } from "shared/types/mframe";
 
 import i18n from "shared/i18n";
 
-import { BlinkMode } from "core/react/components/Blink/Blink";
 import { defaultViewTypes } from "core/schemas/viewTypes";
 import { preprocessCode } from "core/utils/frames/linker";
-import { frameSchemaToTableSchema } from "core/utils/frames/nodes";
 import { wrapQuotes } from "core/utils/strings";
 import type { Superstate } from "makemd-core";
 import { SelectOption, SelectOptionType } from "makemd-core";
+import { BlinkMode } from "shared/types/blink";
 import { Rect } from "shared/types/Pos";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { uniqueNameFromString } from "shared/utils/array";
-import { createInlineTable } from "shared/utils/inlineTable";
+import { createInlineTable } from "shared/utils/makemd/inlineTable";
+import { frameSchemaToTableSchema } from "shared/utils/makemd/schema";
 import { defaultMenu } from "../menu/SelectionMenu";
 
 export const linkRoot = (

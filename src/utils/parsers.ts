@@ -1,6 +1,7 @@
 import { ensureArray, ensureString, indexOfCharElseEOS } from "core/utils/strings";
 import { format } from "date-fns";
 import { ContextLookup, PathPropertyName } from "shared/types/context";
+import { safelyParseJSON } from "../shared/utils/json";
 import { detectPropertyType } from "./properties";
 import { serializeMultiDisplayString, serializeMultiString } from "./serializers";
 
@@ -118,19 +119,6 @@ export const parseObject = (value: string, multi: boolean) => {
     : safelyParseJSON(value) ?? {};
 };
 
-export const safelyParseJSON = (json: string) => {
-  // This function cannot be optimised, it's best to
-  // keep it small!
-  let parsed;
-  try {
-    parsed = JSON.parse(json);
-  } catch (e) {
-    //
-    // Oh well, but whatever...
-  }
-
-  return parsed; // Could be undefined!
-};
 export const parsePropString = (str: string): ContextLookup => {
   const [p1, p2] = str?.match(/(\\.|[^.])+/g) ?? [];
   if (p2) return {

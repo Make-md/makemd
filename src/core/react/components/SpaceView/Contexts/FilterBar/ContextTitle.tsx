@@ -1,11 +1,11 @@
-import StickerModal from "core/react/components/UI/Modals/StickerModal";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
-import { contextPathForSpace } from "core/utils/contexts/embed";
 import { Superstate } from "makemd-core";
 import React, { useContext } from "react";
 import { stickerForDBSchema } from "schemas/mdb";
+import StickerModal from "shared/components/StickerModal";
 import { windowFromDocument } from "shared/utils/dom";
-import { safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
+import { contextPathForSpace } from "shared/utils/makemd/embed";
 export const ContextTitle = (props: { superstate: Superstate }) => {
   const { dbSchema, source } = useContext(ContextEditorContext);
 

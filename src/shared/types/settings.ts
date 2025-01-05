@@ -83,5 +83,6 @@ export interface MakeMDSettings {
   enhancedLogs: boolean;
   basics: boolean;
   basicsSettings: MakeBasicsSettings;
-  
+  notesPreview: boolean;
+  editStickerInSidebar: boolean;
 }

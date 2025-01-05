@@ -1,5 +1,5 @@
 import { EditorView } from "@codemirror/view";
-import { FlowEditor, FlowEditorParent } from "adapters/obsidian/ui/editors/FlowEditor";
+import { FlowEditor, FlowEditorParent } from "shared/FlowEditor";
 
 declare module "obsidian" {
   export enum PopoverState {

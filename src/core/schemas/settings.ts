@@ -84,4 +84,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   basics: true,
   basicsSettings: null,
   firstLaunch: false,
+  notesPreview: false,
+  editStickerInSidebar: true,
 };

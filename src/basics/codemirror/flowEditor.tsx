@@ -16,7 +16,7 @@ import { hoverTooltip } from "basics/tooltip";
 import React from "react";
 import { flowTypeStateField } from "./flowStateFields";
 
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 
 import MakeBasicsPlugin from "basics/basics";
 import { FlowEditorHover } from "basics/flow/FlowEditorHover";

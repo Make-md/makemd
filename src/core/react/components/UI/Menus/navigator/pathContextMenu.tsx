@@ -1,5 +1,4 @@
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
-import StickerModal from "core/react/components/UI/Modals/StickerModal";
 import { savePathColor } from "core/superstate/utils/label";
 import {
   convertPathToSpace,
@@ -14,14 +13,15 @@ import {
 } from "core/superstate/utils/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import {
-  removeIconsForPaths,
   removePathIcon,
   saveColorForPaths,
   saveIconsForPaths,
   savePathIcon,
 } from "core/utils/emoji";
 import React from "react";
+import StickerModal from "shared/components/StickerModal";
 import { default as i18n } from "shared/i18n";
+import { removeIconsForPaths } from "shared/utils/sticker";
 
 import { deletePath, movePathToSpace } from "core/superstate/utils/path";
 import { isTouchScreen } from "core/utils/ui/screen";
@@ -48,29 +48,6 @@ export const triggerMultiPathMenu = (
     icon: "ui//go-to-file",
     onClick: (e) => {
       paths.forEach((path) => superstate.ui.openPath(path, true));
-    },
-  });
-  menuOptions.push(menuSeparator);
-  menuOptions.push({
-    name: i18n.buttons.addToSpace,
-    icon: "ui//pin",
-    onClick: (e) => {
-      const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-      showSpacesMenu(
-        offset,
-        windowFromDocument(e.view.document),
-        superstate,
-        (link) => {
-          dropPathsInSpaceAtIndex(
-            superstate,
-            selectedPaths.map((f) => f.path),
-            link,
-            -1,
-            "link"
-          );
-        },
-        true
-      );
     },
   });
 
@@ -135,6 +112,29 @@ export const triggerMultiPathMenu = (
             movePathToSpace(superstate, f, link);
           });
         }
+      );
+    },
+  });
+
+  menuOptions.push({
+    name: i18n.buttons.addToSpace,
+    icon: "ui//pin",
+    onClick: (e) => {
+      const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+      showSpacesMenu(
+        offset,
+        windowFromDocument(e.view.document),
+        superstate,
+        (link) => {
+          dropPathsInSpaceAtIndex(
+            superstate,
+            selectedPaths.map((f) => f.path),
+            link,
+            -1,
+            "link"
+          );
+        },
+        true
       );
     },
   });
@@ -215,42 +215,6 @@ export const showPathContextMenu = (
     menuOptions.push(menuSeparator);
   }
 
-  menuOptions.push({
-    name: i18n.buttons.addToSpace,
-    icon: "ui//pin",
-    onClick: (e) => {
-      const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-      const menuOptions = [];
-      const paths = [...superstate.spacesMap.get(path)];
-      showSpacesMenu(
-        offset,
-        windowFromDocument(e.view.document),
-        superstate,
-        (link) => {
-          dropPathsInSpaceAtIndex(superstate, [path], link, -1, "link");
-        },
-        true
-      );
-    },
-  });
-
-  if (cache.type == "file" && cache.subtype == "md")
-    menuOptions.push({
-      name: i18n.menu.changeToFolderNote,
-      icon: "ui//file-plus-2",
-      onClick: (e) => {
-        convertPathToSpace(superstate, path, false);
-      },
-    });
-
-  menuOptions.push({
-    name: "Save as Template",
-    icon: "ui//clipboard-add",
-    onClick: (e) => {
-      saveSpaceTemplate(superstate, path, space);
-    },
-  });
-
   if (space && space != cache.parent) {
     const spaceCache = superstate.spacesIndex.get(space);
     if (spaceCache) {
@@ -305,8 +269,28 @@ export const showPathContextMenu = (
       },
     });
   }
+  if (superstate.ui.hasNativePathMenu(path)) {
+    menuOptions.push(menuSeparator);
+    menuOptions.push({
+      name: i18n.menu.openNativeMenu,
+      icon: "ui//options",
+      onClick: (e) => {
+        superstate.ui.nativePathMenu(e, path);
+      },
+    });
+  }
 
   menuOptions.push(menuSeparator);
+
+  if (cache.type == "file" && cache.subtype == "md")
+    menuOptions.push({
+      name: i18n.menu.changeToFolderNote,
+      icon: "ui//file-plus-2",
+      onClick: (e) => {
+        convertPathToSpace(superstate, path, false);
+      },
+    });
+
   menuOptions.push({
     name: i18n.menu.rename,
     icon: "ui//edit",
@@ -324,18 +308,22 @@ export const showPathContextMenu = (
   });
 
   menuOptions.push({
-    name: i18n.menu.duplicate,
-    icon: "ui//documents",
+    name: i18n.buttons.addToSpace,
+    icon: "ui//pin",
     onClick: (e) => {
-      superstate.spaceManager.copyPath(
-        path,
-        `${cache.parent}`,
-        `${cache.name}`
+      const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+      showSpacesMenu(
+        offset,
+        windowFromDocument(e.view.document),
+        superstate,
+        (link) => {
+          dropPathsInSpaceAtIndex(superstate, [path], link, -1, "link");
+        },
+        true
       );
     },
   });
 
-  // Move Item
   menuOptions.push({
     name: i18n.menu.moveFile,
     icon: "ui//paper-plane",
@@ -352,6 +340,28 @@ export const showPathContextMenu = (
       );
     },
   });
+
+  menuOptions.push({
+    name: i18n.menu.duplicate,
+    icon: "ui//documents",
+    onClick: (e) => {
+      superstate.spaceManager.copyPath(
+        path,
+        `${cache.parent}`,
+        `${cache.name}`
+      );
+    },
+  });
+
+  menuOptions.push({
+    name: i18n.buttons.saveTemplate,
+    icon: "ui//clipboard-add",
+    onClick: (e) => {
+      saveSpaceTemplate(superstate, path, space);
+    },
+  });
+
+  // Move Item
 
   menuOptions.push(menuSeparator);
   if (!isTouchScreen(superstate.ui)) {

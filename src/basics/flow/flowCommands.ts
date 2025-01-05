@@ -1,4 +1,4 @@
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import MakeBasicsPlugin from "../basics";
 
 export const loadFlowCommands = (plugin: MakeBasicsPlugin) => {

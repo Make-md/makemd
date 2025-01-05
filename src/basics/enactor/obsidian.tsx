@@ -1,6 +1,5 @@
 import { EditorState, RangeSetBuilder, StateField } from "@codemirror/state";
 import { Decoration, DecorationSet, EditorView } from "@codemirror/view";
-import { openPath } from "adapters/obsidian/utils/file";
 import MakeBasicsPlugin from "basics/basics";
 import { cmExtensions } from "basics/cmExtensions";
 import {
@@ -267,30 +266,6 @@ export class ObsidianEnactor implements Enactor {
         icon: "mk-make-link",
       },
       {
-        label: "image",
-        value: "image",
-        icon: "mk-make-image",
-        onSelect: (
-          _evt: any,
-          plugin: MakeBasicsPlugin,
-          file: TFile,
-          editor: Editor,
-          start: { line: number; ch: number },
-          startCh: number,
-          end: { line: number; ch: number },
-          onComplete: () => void
-        ) => {
-          plugin.enactor.selectImage((image) => {
-            editor.replaceRange(
-              `![[${image}]]`,
-              { ...start, ch: startCh },
-              end
-            );
-            onComplete();
-          }, editor.cm.dom.win);
-        },
-      },
-      {
         label: "flow",
         value: `note`,
         offset: [-2, 4],
@@ -349,7 +324,7 @@ export class ObsidianEnactor implements Enactor {
   pathExists(path: string) {
     return this.plugin.app.vault.adapter.exists(path);
   }
-  selectImage(onSelect: (path: string) => void, win: Window) {
+  selectImage(e: React.MouseEvent, onSelect: (path: string) => void) {
     return this.notify("Not implemented");
   }
   isSpace(path: string) {
@@ -445,8 +420,6 @@ export class ObsidianEnactor implements Enactor {
               annotations: [editableRange.of(selectiveRange)],
             });
           }
-        } else {
-          await openPath(leaf, path, this.plugin.plugin, true);
         }
       }
     );

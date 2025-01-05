@@ -14,8 +14,9 @@ import { SpaceManager } from "core/spaceManager/spaceManager";
 import { metadataPathForSpace } from "core/superstate/utils/spaces";
 import { Superstate } from "makemd-core";
 import { defaultContextFields } from "shared/schemas/fields";
+import { safelyParseJSON } from "shared/utils/json";
 import { serializeMultiString } from "utils/serializers";
-import { parseMultiString, parseProperty, safelyParseJSON } from "../../../utils/parsers";
+import { parseMultiString, parseProperty } from "../../../utils/parsers";
 
 export type ContextPath = {
   space: string;

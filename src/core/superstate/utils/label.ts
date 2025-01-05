@@ -23,13 +23,6 @@ export const savePathColor = async (
     superstate.spaceManager.saveLabel(path, superstate.settings.fmKeyColor, color);
 
 };
-export const savePathSticker = async (
-  superstate: Superstate,
-  path: string,
-  sticker: string
-) => {
-    superstate.spaceManager.saveLabel(path, superstate.settings.fmKeySticker, sticker);
-};
 export const updatePrimaryAlias = (superstate: Superstate,
   path: string, aliases: string[],
   value: string) => {

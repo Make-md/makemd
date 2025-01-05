@@ -3,7 +3,6 @@ import {
   DragOverlay,
   useDndMonitor,
 } from "@dnd-kit/core";
-import { BlinkMode } from "core/react/components/Blink/Blink";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { applySat } from "core/utils/color";
 import {
@@ -26,9 +25,10 @@ import { Superstate } from "makemd-core";
 import React, { useContext, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { RRule } from "rrule";
+import { BlinkMode } from "shared/types/blink";
 import { PathPropertyName } from "shared/types/context";
 import { DBRow, DBRows } from "shared/types/mdb";
-import { safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
 import { MonthDayCell } from "./MonthDayCell";
 import { MonthWeekItem } from "./MonthWeekItem";
 
@@ -114,11 +114,12 @@ export const MonthWeekRow = (props: {
       }
       instances.forEach((instance) => {
         const start = parseDate(instance[props.field]);
-        const end =
-          parseDate(instance[props.fieldEnd]) ??
-          startOfDay(start).getTime() == start.getTime()
-            ? startOfDay(start)
-            : addHours(start, 1);
+        const parsedEnd = parseDate(instance[props.fieldEnd]);
+        const end = parsedEnd
+          ? parsedEnd
+          : startOfDay(start).getTime() == start.getTime()
+          ? startOfDay(start)
+          : addHours(start, 1);
         const layoutStart = start > weekStart ? start : weekStart;
         const layoutEnd = end < weekEnd ? end : weekEnd;
         const startDay = layoutStart.getDay();

@@ -20,18 +20,18 @@ const simpleSort = (a: any, b: any) => {
   return 0;
 };
 
+const stringSort = (value: string, filterValue: string): SortResultType =>
+  value.localeCompare(filterValue, undefined, { numeric: true,  sensitivity: "base" }) as SortResultType;
+
 const linkSort: SortFunction = (
   value: string,
   filterValue: string
 ): SortResultType => {
   const a = value.split("/").pop();
   const b = filterValue.split("/").pop();
-  return simpleSort(a.toLowerCase(), b.toLowerCase());
+  return stringSort(a, b);
 }
-const stringSort: SortFunction = (
-  value: string,
-  filterValue: string
-): SortResultType => simpleSort(value?.toLowerCase(), filterValue?.toLowerCase());
+
 const numSort: SortFunction = (
   value: string,
   filterValue: string

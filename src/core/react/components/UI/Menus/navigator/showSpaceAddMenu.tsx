@@ -3,6 +3,7 @@ import {
   defaultSpace,
   newPathInSpace,
   newTemplateInSpace,
+  pinPathToSpaceAtIndex,
 } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
 import { SelectOption, Superstate } from "makemd-core";
@@ -15,6 +16,7 @@ import { Rect } from "shared/types/Pos";
 import { windowFromDocument } from "shared/utils/dom";
 import { InputModal } from "../../Modals/InputModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
+import { showLinkMenu } from "../properties/linkMenu";
 
 export const defaultAddAction = (
   superstate: Superstate,
@@ -136,6 +138,26 @@ export const showSpaceAddMenu = (
         );
       },
     });
+    if (space.type == "folder") {
+      menuOptions.push({
+        name: i18n.buttons.addIntoSpace,
+        icon: "ui//pin",
+        onClick: (e) => {
+          const offset = (
+            e.target as HTMLButtonElement
+          ).getBoundingClientRect();
+          showLinkMenu(
+            offset,
+            windowFromDocument(e.view.document),
+            superstate,
+            (link) => {
+              pinPathToSpaceAtIndex(superstate, space, link);
+            }
+          );
+          e.stopPropagation();
+        },
+      });
+    }
     if (space.templates.length > 0) {
       menuOptions.push(menuSeparator);
       for (const template of space.templates) {
@@ -153,6 +175,6 @@ export const showSpaceAddMenu = (
     offset,
     defaultMenu(superstate.ui, menuOptions),
     win,
-    "bottom"
+    "right"
   );
 };

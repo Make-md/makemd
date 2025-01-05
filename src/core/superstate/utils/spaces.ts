@@ -1,7 +1,6 @@
 import { spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceRecursiveKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
 import { reorderPathsInContext } from "core/utils/contexts/context";
 import { runFormulaWithContext } from "core/utils/formula/parser";
-import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
 import { ensureArray, ensureBoolean, ensureString, ensureStringValueFromSet } from "core/utils/strings";
 import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep, compareByFieldNumerical } from "core/utils/tree";
 import { isTouchScreen } from "core/utils/ui/screen";
@@ -18,62 +17,8 @@ import { PathStateWithRank } from "shared/types/superstate";
 import { sanitizeColumnName } from "shared/utils/sanitizers";
 import { movePath } from "shared/utils/uri";
 import { defaultValueForType } from "utils/properties";
-import { SpaceFragmentSchema } from "../../../shared/types/spaceFragment";
 import { deletePath } from "./path";
 import { addTagToPath, deleteTagFromPath } from "./tags";
-
-export const uriToSpaceFragmentSchema = async (
-  superstate: Superstate,
-  path: string
-): Promise<SpaceFragmentSchema> => {
-  const uri = superstate.spaceManager.uriByString(path);
-  if (uri.refType == "context") {
-    const schema = superstate.contextsIndex
-      .get(uri.basePath)
-      ?.schemas.find((s) => s.id == uri.ref);
-    if (schema) {
-      return {
-        id: schema.id,
-        name: schema.name,
-        type: "context",
-        path: uri.basePath,
-      };
-    }
-  }
-  if (uri.refType == "frame") {
-    return superstate.spaceManager.readFrame(uri.basePath, uri.ref).then((s) => {
-
-      const schema = s?.schema;
-      if (schema) {
-        const frameSchema = mdbSchemaToFrameSchema(schema);
-        return {
-          id: schema.id,
-          name: frameSchema.name,
-          sticker: frameSchema.def?.icon,
-          type: "frame",
-          frameType: frameSchema.type,
-          path: uri.basePath,
-        };
-      }
-      return null;
-    });
-  }
-  if (uri.refType == "action") {
-    const schema = superstate.actionsIndex
-      .get(uri.path)
-      ?.find((s) => s.schema.id == uri.ref)?.schema;
-    if (schema) {
-      return {
-        id: schema.id,
-        name: schema.name,
-        sticker: schema.def?.icon,
-        type: "action",
-        path: uri.basePath,
-      };
-    }
-  }
-  return null;
-};
 
 const parseSpaceSort = (value: any) : SpaceSort => {
   return {

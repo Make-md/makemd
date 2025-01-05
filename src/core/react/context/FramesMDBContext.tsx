@@ -8,10 +8,6 @@ import React, {
 } from "react";
 import { defaultFrameListViewSchema } from "schemas/mdb";
 
-import {
-  frameSchemaToTableSchema,
-  mdbSchemaToFrameSchema,
-} from "core/utils/frames/nodes";
 import { Superstate, i18n } from "makemd-core";
 import { defaultPredicate } from "shared/schemas/predicate";
 import {
@@ -23,6 +19,10 @@ import {
 } from "shared/types/mdb";
 import { FrameSchema, MDBFrame } from "shared/types/mframe";
 import { uniqueNameFromString } from "shared/utils/array";
+import {
+  frameSchemaToTableSchema,
+  mdbSchemaToFrameSchema,
+} from "shared/utils/makemd/schema";
 import { sanitizeColumnName, sanitizeTableName } from "shared/utils/sanitizers";
 import { SpaceContext } from "./SpaceContext";
 type FramesMDBContextProps = {

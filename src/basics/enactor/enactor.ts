@@ -13,7 +13,7 @@ export interface Enactor {
     selectLink(e: React.MouseEvent, onSelect: (path: string) => void): void;
     selectSpace(e: React.MouseEvent, onSelect: (path: string) => void): void;
     pathExists(path: string): Promise<boolean>;
-    selectImage(onSelect: (path: string) => void, win: Window): void;
+    selectImage(e: React.MouseEvent, onSelect: (path: string) => void): void;
     isSpace(path: string): boolean;
     loadExtensions(firstLoad: boolean): void;
     spaceNotePath(path: string): string | null;

@@ -1,5 +1,5 @@
 import { Superstate } from "makemd-core";
-import { safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
 
 export const defaultString = (value: any, string: string) => {
   if (!value || value.length == 0) return string;

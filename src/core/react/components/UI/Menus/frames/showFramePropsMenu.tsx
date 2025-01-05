@@ -9,8 +9,8 @@ import { FrameNode, FrameTreeProp } from "shared/types/mframe";
 import { Rect } from "shared/types/Pos";
 import { colors } from "shared/utils/color";
 import { windowFromDocument } from "shared/utils/dom";
+import StickerModal from "../../../../../../shared/components/StickerModal";
 import ImageModal from "../../Modals/ImageModal";
-import StickerModal from "../../Modals/StickerModal";
 import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
 import {
   DatePickerTimeMode,

@@ -1,9 +1,7 @@
-import StickerModal from "core/react/components/UI/Modals/StickerModal";
-import { savePathColor, savePathSticker } from "core/superstate/utils/label";
+import { savePathColor } from "core/superstate/utils/label";
 import { hidePath, renamePathByName } from "core/superstate/utils/path";
 import {
   addPathToSpaceAtIndex,
-  pinPathToSpaceAtIndex,
   removePathsFromSpace,
   removeSpace,
   saveSpaceTemplate,
@@ -13,18 +11,19 @@ import { removePathIcon } from "core/utils/emoji";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
+import StickerModal from "shared/components/StickerModal";
 import { default as i18n } from "shared/i18n";
 import { PathState } from "shared/types/PathState";
 import { SpaceSort } from "shared/types/spaceDef";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { windowFromDocument } from "shared/utils/dom";
+import { savePathSticker } from "shared/utils/sticker";
 import { movePath } from "shared/utils/uri";
 import { stringFromTag } from "utils/tags";
 import { ConfirmationModal } from "../../Modals/ConfirmationModal";
 import { InputModal } from "../../Modals/InputModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../properties/colorPickerMenu";
-import { showLinkMenu } from "../properties/linkMenu";
 import { showSpacesMenu } from "../properties/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
@@ -65,98 +64,7 @@ export const showSpaceContextMenu = (
     icon: "ui//plus",
   });
 
-  if (space.type == "folder") {
-    menuOptions.push({
-      name: i18n.buttons.addIntoSpace,
-      icon: "ui//pin",
-      onClick: (e) => {
-        const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-        showLinkMenu(
-          offset,
-          windowFromDocument(e.view.document),
-          superstate,
-          (link) => {
-            pinPathToSpaceAtIndex(superstate, space, link);
-          }
-        );
-        e.stopPropagation();
-      },
-    });
-  }
   menuOptions.push(menuSeparator);
-
-  menuOptions.push({
-    name: "Apply to All Items",
-    icon: "ui//pin",
-    value: "apply-all",
-    type: SelectOptionType.Submenu,
-    onSubmenu: (offset) =>
-      showApplyItemsMenu(
-        offset,
-        superstate,
-        space,
-        windowFromDocument(e.view.document)
-      ),
-  });
-  if (onClose) {
-    menuOptions.push({
-      name: i18n.menu.closeSpace,
-      icon: "ui//close",
-      onClick: (e) => {
-        onClose();
-      },
-    });
-  }
-  menuOptions.push(menuSeparator);
-
-  if (space.type == "folder") {
-    menuOptions.push({
-      name: i18n.buttons.addToSpace,
-      icon: "ui//pin",
-      onClick: (e) => {
-        const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-        showSpacesMenu(
-          offset,
-          windowFromDocument(e.view.document),
-          superstate,
-          (link) => {
-            const spaceCache = superstate.spacesIndex.get(link);
-            if (spaceCache)
-              addPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
-          },
-          true
-        );
-      },
-    });
-    menuOptions.push(menuSeparator);
-  }
-
-  const parentSpaceCache = superstate.spacesIndex.get(parentSpace);
-  if (
-    parentSpaceCache &&
-    (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")
-  ) {
-    menuOptions.push({
-      name: "Save as Template",
-      icon: "ui//clipboard-add",
-      onClick: (e) => {
-        saveSpaceTemplate(superstate, space.path, parentSpace);
-      },
-    });
-
-    if (parentSpace != path.parent) {
-      const spaceCache = superstate.spacesIndex.get(parentSpace);
-      if (spaceCache) {
-        menuOptions.push({
-          name: i18n.menu.removeFromSpace,
-          icon: "ui//pin-off",
-          onClick: (e) => {
-            removePathsFromSpace(superstate, spaceCache.path, [space.path]);
-          },
-        });
-      }
-    }
-  }
 
   menuOptions.push(menuSeparator);
   if (superstate.settings.spacesStickers) {
@@ -405,7 +313,30 @@ export const showSpaceContextMenu = (
       },
     });
   }
+  menuOptions.push({
+    name: i18n.menu.applyItems,
+    icon: "ui//apply-items",
+    value: "apply-all",
+    type: SelectOptionType.Submenu,
+    onSubmenu: (offset) =>
+      showApplyItemsMenu(
+        offset,
+        superstate,
+        space,
+        windowFromDocument(e.view.document)
+      ),
+  });
 
+  if (superstate.ui.hasNativePathMenu(space.path)) {
+    menuOptions.push(menuSeparator);
+    menuOptions.push({
+      name: i18n.menu.openNativeMenu,
+      icon: "ui//options",
+      onClick: (e) => {
+        superstate.ui.nativePathMenu(e, space.path);
+      },
+    });
+  }
   if (space.type != "default") {
     menuOptions.push(menuSeparator);
 
@@ -425,13 +356,55 @@ export const showSpaceContextMenu = (
       },
     });
   }
-  menuOptions.push({
-    name: i18n.menu.duplicate,
-    icon: "ui//documents",
-    onClick: (e) => {
-      superstate.spaceManager.copyPath(path.path, `${path.parent}`);
-    },
-  });
+
+  const parentSpaceCache = superstate.spacesIndex.get(parentSpace);
+  if (
+    parentSpaceCache &&
+    (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")
+  ) {
+    if (parentSpace != path.parent) {
+      const spaceCache = superstate.spacesIndex.get(parentSpace);
+      if (spaceCache) {
+        menuOptions.push({
+          name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
+          icon: "ui//pin-off",
+          onClick: (e) => {
+            removePathsFromSpace(superstate, spaceCache.path, [space.path]);
+          },
+        });
+      }
+    }
+  }
+  if (onClose) {
+    menuOptions.push({
+      name: i18n.menu.closeSpace,
+      icon: "ui//close",
+      onClick: (e) => {
+        onClose();
+      },
+    });
+  }
+  if (space.type == "folder") {
+    menuOptions.push({
+      name: i18n.buttons.addToSpace,
+      icon: "ui//pin",
+      onClick: (e) => {
+        const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+        showSpacesMenu(
+          offset,
+          windowFromDocument(e.view.document),
+          superstate,
+          (link) => {
+            const spaceCache = superstate.spacesIndex.get(link);
+            if (spaceCache)
+              addPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
+          },
+          true
+        );
+      },
+    });
+  }
+
   if (space.type == "folder") {
     menuOptions.push({
       name: i18n.menu.moveFile,
@@ -452,6 +425,27 @@ export const showSpaceContextMenu = (
       },
     });
   }
+
+  menuOptions.push({
+    name: i18n.menu.duplicate,
+    icon: "ui//documents",
+    onClick: (e) => {
+      superstate.spaceManager.copyPath(path.path, `${path.parent}`);
+    },
+  });
+  if (
+    parentSpaceCache &&
+    (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")
+  ) {
+    menuOptions.push({
+      name: i18n.buttons.saveTemplate,
+      icon: "ui//clipboard-add",
+      onClick: (e) => {
+        saveSpaceTemplate(superstate, space.path, parentSpace);
+      },
+    });
+  }
+
   menuOptions.push(menuSeparator);
   if (!isTouchScreen(superstate.ui)) {
     menuOptions.push({

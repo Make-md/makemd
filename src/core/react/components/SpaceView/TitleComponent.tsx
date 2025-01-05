@@ -1,5 +1,4 @@
 import classNames from "classnames";
-import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import {
@@ -12,13 +11,14 @@ import { removePathIcon, savePathIcon } from "core/utils/emoji";
 import { isPhone } from "core/utils/ui/screen";
 import { i18n, Superstate } from "makemd-core";
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { PathStickerContainer } from "shared/components/PathSticker";
 import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
 import { sanitizeFileName } from "shared/utils/sanitizers";
 import { stringFromTag } from "utils/tags";
+import StickerModal from "../../../../shared/components/StickerModal";
 import { defaultMenu, menuSeparator } from "../UI/Menus/menu/SelectionMenu";
 import ImageModal from "../UI/Modals/ImageModal";
-import StickerModal from "../UI/Modals/StickerModal";
 
 export const TitleComponent = (props: {
   superstate: Superstate;

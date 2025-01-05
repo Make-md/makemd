@@ -1,7 +1,7 @@
 import MakeBasicsPlugin from "basics/basics";
-import { i18n } from "makemd-core";
 import React from "react";
 import { uiIconSet } from "shared/assets/icons";
+import i18n from "shared/i18n";
 import { InlineStyle } from "./styles";
 export const Mark = (props: {
   plugin: MakeBasicsPlugin;

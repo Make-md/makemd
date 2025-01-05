@@ -1,6 +1,8 @@
 import { addTagToPath, deleteTagFromPath } from "core/superstate/utils/tags";
 import React, { PropsWithChildren, useEffect, useState } from "react";
 import i18n from "shared/i18n";
+import { parseMultiString } from "utils/parsers";
+import { serializeMultiString } from "utils/serializers";
 import { TableCellProp } from "../TableView/TableView";
 import { OptionCellBase } from "./OptionCell";
 
@@ -8,38 +10,65 @@ export const TagCell = (props: TableCellProp) => {
   const [metadataTags, setMetadataTags] = useState<string[]>([]);
   const [value, setValue] = useState([]);
   useEffect(() => {
-    setMetadataTags(
-      props.superstate.pathsIndex.get(props.path).metadata?.tags ?? []
-    );
-    setValue([...(props.superstate.tagsMap.get(props.path) ?? [])]);
+    if (props.path) {
+      setMetadataTags(
+        props.superstate.pathsIndex.get(props.path)?.metadata?.tags ?? []
+      );
+      setValue([...(props.superstate.tagsMap.get(props.path) ?? [])]);
+    } else {
+      setMetadataTags(parseMultiString(props.initialValue));
+      setValue(parseMultiString(props.initialValue));
+    }
   }, []);
   useEffect(() => {
-    const updateValue = (payload: { path: string }) => {
-      if (payload.path == props.path) {
-        setMetadataTags(
-          props.superstate.pathsIndex.get(props.path).metadata?.tags ?? []
-        );
-        setValue([...(props.superstate.tagsMap.get(props.path) ?? [])]);
-      }
-    };
-    props.superstate.eventsDispatcher.addListener(
-      "pathStateUpdated",
-      updateValue
-    );
-    return () => {
-      props.superstate.eventsDispatcher.removeListener(
+    if (!props.path) {
+      setMetadataTags(parseMultiString(props.initialValue));
+      setValue(parseMultiString(props.initialValue));
+    }
+  }, [props.initialValue]);
+  useEffect(() => {
+    if (props.path) {
+      const updateValue = (payload: { path: string }) => {
+        if (payload.path == props.path) {
+          setMetadataTags(
+            props.superstate.pathsIndex.get(props.path)?.metadata?.tags ?? []
+          );
+          setValue([...(props.superstate.tagsMap.get(props.path) ?? [])]);
+        }
+      };
+      props.superstate.eventsDispatcher.addListener(
         "pathStateUpdated",
         updateValue
       );
-    };
+      return () => {
+        props.superstate.eventsDispatcher.removeListener(
+          "pathStateUpdated",
+          updateValue
+        );
+      };
+    }
   }, [props.path]);
   const removeValue = (v: string) => {
-    deleteTagFromPath(props.superstate, props.path, v);
+    if (props.path) {
+      deleteTagFromPath(props.superstate, props.path, v);
+    } else {
+      setMetadataTags(metadataTags.filter((f) => f != v));
+      setValue(value.filter((f) => f != v));
+    }
   };
 
+  const saveValue = (_values: string[]) => {
+    props.saveValue(serializeMultiString(_values));
+  };
   const saveOptions = (_options: string[], _value: string[]) => {
     const newValue = _value[0];
-    addTagToPath(props.superstate, props.path, newValue);
+    if (props.path) {
+      addTagToPath(props.superstate, props.path, newValue);
+    } else {
+      setMetadataTags([...metadataTags, newValue]);
+      setValue([...value, newValue]);
+      saveValue([...value, newValue]);
+    }
   };
 
   const menuProps = () => {

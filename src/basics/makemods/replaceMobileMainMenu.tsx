@@ -1,9 +1,9 @@
 import classNames from "classnames";
-import { defaultAddAction } from "core/react/components/UI/Menus/navigator/showSpaceAddMenu";
-import { i18n } from "makemd-core";
+
 import { Platform } from "obsidian";
 import React, { useEffect, useRef } from "react";
 import { uiIconSet } from "shared/assets/icons";
+import i18n from "shared/i18n";
 
 import { ISuperstate } from "shared/types/superstate";
 import { Warning } from "shared/types/Warning";
@@ -133,8 +133,7 @@ export const ObsidianMobileMainMenu = (props: {
           aria-label={i18n.buttons.newNote}
           className="mk-main-menu-button"
           onClick={(e) =>
-            defaultAddAction(
-              props.superstate,
+            props.superstate.ui.defaultAdd(
               null,
               windowFromDocument(e.view.document),
               e.metaKey ? "tab" : false

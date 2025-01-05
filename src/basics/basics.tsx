@@ -29,7 +29,7 @@ export default class MakeBasicsPlugin {
     this.app = plugin.app;
     if (plugin.app.plugins.getPlugin("make-md")) {
       const mkmdEnactor = new MakeMDEnactor(
-        plugin.app.plugins.getPlugin("make-md").superstate,
+        plugin.app.plugins.getPlugin("make-md"),
         this
       );
       this.enactor = mkmdEnactor;

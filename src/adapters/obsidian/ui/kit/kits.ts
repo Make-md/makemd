@@ -13,7 +13,7 @@ import { Note, SpaceKit, TemplateKit } from "shared/types/kits";
 import { DBTables, SpaceTables } from "shared/types/mdb";
 import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
-import { safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
 
 export const installSpaceTemplate = async (plugin: MakeMDPlugin, superstate: Superstate, space: string, template: TemplateKit) => {
     

@@ -2,8 +2,8 @@ import type { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
+import { PathStickerView } from "../../../../../shared/components/PathSticker";
 import { showPathContextMenu } from "../Menus/navigator/pathContextMenu";
-import { PathStickerView } from "../Stickers/PathSticker/PathSticker";
 
 export const PathCrumb = (
   props: PropsWithChildren<{

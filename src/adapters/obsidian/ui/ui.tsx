@@ -3,7 +3,7 @@ import { InteractionType, ScreenType } from "shared/types/ui";
 
 import MakeMDPlugin from "main";
 import { Sticker, Superstate, UIAdapter, UIManager, i18n } from "makemd-core";
-import { Notice, Platform, TFile, getIcon } from "obsidian";
+import { Menu, Notice, Platform, TFile, getIcon } from "obsidian";
 import React from "react";
 
 import { Container } from "react-dom";
@@ -16,13 +16,14 @@ import { openPathInElement } from "shared/utils/openPathInElement";
 import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
 
-import { BlinkMode } from "core/react/components/Blink/Blink";
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
 import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
+import ImageModal from "core/react/components/UI/Modals/ImageModal";
+import { BlinkMode } from "shared/types/blink";
 import { editableRange } from "shared/utils/codemirror/selectiveEditor";
 import { getLineRangeFromRef } from "shared/utils/obsidian";
 import { SPACE_VIEW_TYPE } from "../SpaceViewContainer";
-import { getAbstractFileAtPath, getLeaf, openPath } from "../utils/file";
+import { getAbstractFileAtPath, getLeaf } from "../utils/file";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
 import { WindowManager } from "./WindowManager";
 import { lucideIcons } from "./icons";
@@ -56,12 +57,23 @@ export class ObsidianUI implements UIAdapter {
   };
 
   public quickOpen = (
-    mode?: number,
+    mode?: BlinkMode,
     offset?: Rect,
     win?: Window,
     onSelect?: (link: string) => void,
     source?: string
   ) => {
+    if (mode == BlinkMode.Image) {
+      this.openPalette(
+        <ImageModal
+          superstate={this.manager.superstate}
+          selectedPath={onSelect}
+        ></ImageModal>,
+        win,
+        null
+      );
+      return;
+    }
     if (this.manager.superstate.settings.blinkEnabled) {
       this.plugin.quickOpen(this.manager.superstate, mode, onSelect, source);
     } else {
@@ -378,14 +390,14 @@ export class ObsidianUI implements UIAdapter {
               });
             }
           } else {
-            await openPath(leaf, path, this.plugin, true);
+            await this.plugin.openPath(leaf, path, true);
           }
         }
       );
       return;
     }
     const leaf = getLeaf(this.plugin.app, newLeaf);
-    openPath(leaf, path, this.plugin);
+    this.plugin.openPath(leaf, path);
   };
   public primaryInteractionType = () => {
     return Platform.isMobile ? InteractionType.Touch : InteractionType.Mouse;
@@ -396,5 +408,22 @@ export class ObsidianUI implements UIAdapter {
       : Platform.isTablet
       ? ScreenType.Tablet
       : ScreenType.Desktop;
+  };
+  public hasNativePathMenu = (path: string) => {
+    return true;
+  };
+  public nativePathMenu = (e: React.MouseEvent, path: string) => {
+    const file = this.plugin.app.vault.getAbstractFileByPath(path);
+    if (file) {
+      const fileMenu = new Menu();
+      this.plugin.app.workspace.trigger(
+        "file-menu",
+        fileMenu,
+        file,
+        "file-explorer"
+      );
+      const rect = e.currentTarget.getBoundingClientRect();
+      fileMenu.showAtPosition({ x: rect.left, y: rect.bottom });
+    }
   };
 }

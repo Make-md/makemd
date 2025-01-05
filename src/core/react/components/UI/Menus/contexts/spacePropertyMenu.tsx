@@ -10,8 +10,8 @@ import { MenuObject } from "shared/types/menu";
 import { Anchors, Rect } from "shared/types/Pos";
 import { Sort } from "shared/types/predicate";
 import { windowFromDocument } from "shared/utils/dom";
-import { safelyParseJSON } from "utils/parsers";
-import StickerModal from "../../Modals/StickerModal";
+import { safelyParseJSON } from "shared/utils/json";
+import StickerModal from "../../../../../../shared/components/StickerModal";
 import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
 

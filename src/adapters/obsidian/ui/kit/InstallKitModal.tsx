@@ -3,7 +3,7 @@ import MakeMDPlugin from "main";
 import { Superstate } from "makemd-core";
 import React, { useState } from "react";
 import { windowFromDocument } from "shared/utils/dom";
-import { safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
 import { Dropdown } from "../../../../core/react/components/UI/Dropdown";
 import { showSpacesMenu } from "../../../../core/react/components/UI/Menus/properties/selectSpaceMenu";
 

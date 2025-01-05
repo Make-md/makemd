@@ -1,9 +1,9 @@
 import { EditorView } from "@codemirror/view";
 import MakeBasicsPlugin from "basics/basics";
-import { i18n } from "makemd-core";
 import { App } from "obsidian";
 import React, { useMemo } from "react";
 import { uiIconSet } from "shared/assets/icons";
+import i18n from "shared/i18n";
 import { SelectOption } from "shared/types/menu";
 import { SpaceFragmentSchema } from "shared/types/spaceFragment";
 

@@ -5,8 +5,8 @@ import { i18n, Superstate } from "makemd-core";
 import React, { useContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { windowFromDocument } from "shared/utils/dom";
-import { BlinkMode } from "../../Blink/Blink";
-import StickerModal from "../../UI/Modals/StickerModal";
+import StickerModal from "../../../../../shared/components/StickerModal";
+import { BlinkMode } from "../../../../../shared/types/blink";
 export const FocusEditor = (props: {
   superstate: Superstate;
   focus: Focus;

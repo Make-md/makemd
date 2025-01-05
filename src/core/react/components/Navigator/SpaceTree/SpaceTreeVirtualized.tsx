@@ -9,7 +9,7 @@ import { DragProjection } from "core/utils/dnd/dragPath";
 import { i18n, Superstate } from "makemd-core";
 import React, { CSSProperties, useContext } from "react";
 import { windowFromDocument } from "shared/utils/dom";
-import { BlinkMode } from "../../Blink/Blink";
+import { BlinkMode } from "../../../../../shared/types/blink";
 import { TreeItem } from "./SpaceTreeItem";
 
 export const VirtualizedList = React.memo(function VirtualizedList(props: {

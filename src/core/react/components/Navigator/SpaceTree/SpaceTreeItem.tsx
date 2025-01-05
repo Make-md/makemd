@@ -8,7 +8,6 @@ import {
 } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
-import { PathStickerView } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import {
   TreeNode,
@@ -26,6 +25,7 @@ import React, {
   useState,
 } from "react";
 import { useDropzone } from "react-dropzone";
+import { PathStickerView } from "shared/components/PathSticker";
 import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
 import { defaultAddAction } from "../../UI/Menus/navigator/showSpaceAddMenu";
@@ -255,7 +255,7 @@ export const TreeItem = (props: TreeItemProps) => {
         pathState,
         e,
         activePath,
-        data.space,
+        data.type == "group" ? null : data.space,
         data.type == "group" ? () => closeActiveSpace(data.path) : null
       );
 
@@ -412,7 +412,7 @@ export const TreeItem = (props: TreeItemProps) => {
               <PathStickerView
                 superstate={superstate}
                 pathState={pathState}
-                editable={true}
+                editable={superstate.settings.editStickerInSidebar}
               />
             )}
             <div

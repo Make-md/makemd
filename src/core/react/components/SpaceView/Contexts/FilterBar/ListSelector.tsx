@@ -9,13 +9,13 @@ import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { contextViewEmbedStringFromContext } from "core/utils/contexts/embed";
 import { defaultString } from "core/utils/strings";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import React, { useContext, useRef } from "react";
 import { stickerForSchema } from "schemas/mdb";
 import { FrameSchema } from "shared/types/mframe";
 import { windowFromDocument } from "shared/utils/dom";
+import { contextViewEmbedStringFromContext } from "shared/utils/makemd/embed";
 export const ListSelector = (props: {
   superstate: Superstate;
   expanded: boolean;

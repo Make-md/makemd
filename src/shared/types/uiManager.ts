@@ -4,6 +4,7 @@ import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { InputManager } from "shared/utils/inputManager";
 import { MenuObject } from "./menu";
 import { TargetLocation } from "./path";
+import { SpaceState } from "./PathState";
 import { Anchors, Pos, Rect } from "./Pos";
 import { ISuperstate } from "./superstate";
 import { InteractionType, ScreenType, Sticker } from "./ui";
@@ -18,6 +19,7 @@ export interface IUIManager {
     removeResetFunction: (reset: (id: string) => void) => void;
     resetSelection: (id: string) => void;
     eventsDispatch: EventDispatcher<UIManagerEventTypes>;
+    defaultAdd: (space: SpaceState, win: Window, location?: TargetLocation) => void;
     quickOpen: (
         mode?: number,
         offset?: Rect,
@@ -55,6 +57,8 @@ export interface IUIManager {
     dragStarted: (e: React.DragEvent<HTMLDivElement>, paths: string[]) => void;
     dragEnded: (e: React.DragEvent<HTMLDivElement>) => void;
     setDragLabel: (label: string) => void;
+    hasNativePathMenu: (path: string) => boolean;
+    nativePathMenu: (e: React.MouseEvent, path: string) => void;
 }
 
 export interface UIAdapter {
@@ -78,6 +82,8 @@ export interface UIAdapter {
     dragEnded: (e: React.DragEvent<HTMLDivElement>) => void;
     setDragLabel: (label: string) => void;
     navigationHistory: () => string[];
+    hasNativePathMenu: (path: string) => boolean;
+    nativePathMenu: (e: React.MouseEvent, path: string) => void;
     mainMenu: (el: HTMLElement, superstate: ISuperstate) => void;
     quickOpen: (
         mode?: number,

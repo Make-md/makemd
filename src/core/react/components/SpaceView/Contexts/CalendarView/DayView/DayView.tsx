@@ -14,10 +14,10 @@ import { RRule } from "rrule";
 import { PathPropertyName } from "shared/types/context";
 import { DBRow, DBRows } from "shared/types/mdb";
 
-import { BlinkMode } from "core/react/components/Blink/Blink";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import React from "react";
-import { safelyParseJSON } from "utils/parsers";
+import { BlinkMode } from "shared/types/blink";
+import { safelyParseJSON } from "shared/utils/json";
 import { CalendarHeaderView } from "../CalendarHeaderView";
 import { AllDayItem } from "../WeekView/AllDayItem";
 import { DayGutter } from "./DayGutter";

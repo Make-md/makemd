@@ -40,13 +40,10 @@ import {
 import { FrameSchema } from "shared/types/mframe";
 import { Predicate, Sort } from "shared/types/predicate";
 import { uniq, uniqueNameFromString } from "shared/utils/array";
+import { safelyParseJSON } from "shared/utils/json";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { sanitizeColumnName } from "shared/utils/sanitizers";
-import {
-  parseMultiString,
-  parseProperty,
-  safelyParseJSON,
-} from "utils/parsers";
+import { parseMultiString, parseProperty } from "utils/parsers";
 import { parseMDBStringValue } from "utils/properties";
 import {
   defaultPredicateForSchema,
@@ -293,6 +290,7 @@ export const ContextEditorProvider: React.FC<
   }, [spaceInfo, frameSchema, props.source]);
   const saveDB = async (newTable: SpaceTable) => {
     if (spaceInfo.readOnly) return;
+    updateTable(newTable);
     await props.superstate.spaceManager
       .saveTable(contextPath, newTable, true)
       .then((f) => props.superstate.reloadContext(spaceInfo, true));
@@ -412,7 +410,9 @@ export const ContextEditorProvider: React.FC<
       data
         .filter((f) => {
           return (predicate?.filters ?? []).reduce((p, c) => {
-            const row = cols.some((f) => f.name == "tags")
+            const row = cols.some(
+              (f) => f.schemaId == defaultContextSchemaID && f.name == "tags"
+            )
               ? {
                   ...f,
                   tags: (
@@ -501,11 +501,13 @@ export const ContextEditorProvider: React.FC<
     const changedCols = Object.keys(row).filter(
       (f) => row[f] != currentData[f]
     );
-    saveProperties(
-      props.superstate,
-      currentData?.[PathPropertyName],
-      changedCols.reduce((p, c) => ({ ...p, [c]: row[c] }), {})
-    );
+    if (props.superstate.settings.saveAllContextToFrontmatter) {
+      saveProperties(
+        props.superstate,
+        currentData?.[PathPropertyName],
+        changedCols.reduce((p, c) => ({ ...p, [c]: row[c] }), {})
+      );
+    }
     saveDB({
       ...tableData,
       rows: tableData.rows.map((r, i) =>
@@ -530,7 +532,11 @@ export const ContextEditorProvider: React.FC<
       table == "" ? tableData : contextTable[tagSpacePathFromTag(table)]
     )?.cols.find((f) => f.name == column);
 
-    if (col) {
+    if (
+      table == defaultContextSchemaID &&
+      col &&
+      props.superstate.settings.saveAllContextToFrontmatter
+    ) {
       saveProperties(
         props.superstate,
         path ?? tableData.rows[index]?.[PathPropertyName],
@@ -594,11 +600,12 @@ export const ContextEditorProvider: React.FC<
     path: string
   ) => {
     const col = tableData.cols.find((f) => f.name == column);
-    saveProperties(
-      props.superstate,
-      path ?? tableData.rows[index]?.[PathPropertyName],
-      { [column]: parseMDBStringValue(fieldTypeForField(col), value, true) }
-    );
+    if (props.superstate.settings.saveAllContextToFrontmatter)
+      saveProperties(
+        props.superstate,
+        path ?? tableData.rows[index]?.[PathPropertyName],
+        { [column]: parseMDBStringValue(fieldTypeForField(col), value, true) }
+      );
 
     if (table == "") {
       const newTable = {

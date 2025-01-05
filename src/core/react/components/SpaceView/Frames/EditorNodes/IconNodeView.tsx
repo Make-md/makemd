@@ -1,8 +1,8 @@
-import StickerModal from "core/react/components/UI/Modals/StickerModal";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { wrapQuotes } from "core/utils/strings";
 import React, { useContext, useMemo } from "react";
+import StickerModal from "shared/components/StickerModal";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { windowFromDocument } from "shared/utils/dom";
 import { parseStickerString } from "shared/utils/stickers";

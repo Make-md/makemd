@@ -1,9 +1,9 @@
 import { useDroppable } from "@dnd-kit/core";
-import { BlinkMode } from "core/react/components/Blink/Blink";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { applySat } from "core/utils/color";
 import { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useContext } from "react";
+import { BlinkMode } from "shared/types/blink";
 import { windowFromDocument } from "shared/utils/dom";
 
 export const AllDayCell = (

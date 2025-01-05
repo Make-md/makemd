@@ -13,14 +13,12 @@ import {
 } from "obsidian";
 
 import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
-import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { TargetLocation } from "shared/types/path";
 import { selectElementContents } from "shared/utils/dom";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { sanitizeFileName, sanitizeFolderName } from "shared/utils/sanitizers";
-import { folderPathToString, getParentPathFromString } from "utils/path";
-import { SPACE_FRAGMENT_VIEW_TYPE } from "../ui/editors/SpaceFragmentViewComponent";
+import { folderPathToString } from "utils/path";
 import { EVER_VIEW_TYPE } from "../ui/navigator/EverLeafView";
   
 
@@ -169,100 +167,7 @@ export const deleteFiles = (plugin: MakeMDPlugin, files: string[]) => {
 
 
 
-export const openPath = async (
-  leaf: WorkspaceLeaf,
-  path: string,
-  plugin: MakeMDPlugin,
-  flow?: boolean
-) => {
-  const uri = plugin.superstate.spaceManager.uriByString(path);
-  if (!uri) return;
-  if (uri.scheme == 'https' || uri.scheme == 'http') {
-    if (plugin.superstate.spacesIndex.has(path)) {
-      const viewType = SPACE_VIEW_TYPE;
-      plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
-      await leaf.setViewState({
-        type: viewType,
-        state: { path: path, flow },
-      });
-      return;
-    } else if (plugin.superstate.pathsIndex.has(path)) {
-      const viewType = LINK_VIEW_TYPE;
-      plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
-      await leaf.setViewState({
-        type: viewType,
-        state: { path: path, flow },
-      });
-      return;
-    }
-    window.open(uri.fullPath, '_blank');
-    return;
-  }
-  if (uri.scheme == 'obsidian') {
-      await leaf.setViewState({
-        type: uri.authority,
-      });
-    return;
-  }
 
-  if (uri.ref) {
-    const cache = plugin.superstate.pathsIndex.get(uri.path);
-
-    if (cache?.type == "space" || uri.scheme == 'spaces') {
-      if (flow && uri.ref == 'main') {
-      await leaf.setViewState({
-        type: EMBED_SPACE_VIEW_TYPE,
-        state: { path: uri.fullPath },
-      });
-    } else {
-      await leaf.setViewState({
-        type: SPACE_FRAGMENT_VIEW_TYPE,
-        state: { path: uri.fullPath, flow },
-      });
-    }
-    return;
-  }
-  }
-  
-  if (uri.scheme == 'spaces') {
-    openTagContext(leaf, uri.basePath, plugin.app)
-    return;
-  }
-  plugin.files.getFile(path).then(f => {
-    if (f)
-    {
-      if (f.isFolder) {
-        openTFolder(leaf, getAbstractFileAtPath(plugin.app, f.path) as TFolder, plugin, flow);
-      } else if (f) {
-        openTFile(leaf, getAbstractFileAtPath(plugin.app, f.path) as TFile, plugin.app);
-      } else {
-        return;
-      }
-    } else {
-      if (path.contains('/')) {
-        const folder = removeTrailingSlashFromFolder(getParentPathFromString(path));
-        const spaceFolder = plugin.superstate.spacesIndex.get(folder);
-        if (spaceFolder) {
-          newPathInSpace(
-            plugin.superstate,
-                spaceFolder,
-                fileExtensionForFile(path),
-                fileNameForFile(path),
-              );
-            }
-      } else {
-        defaultSpace(plugin.superstate, plugin.superstate.pathsIndex.get(plugin.superstate.ui.activePath)).then(f => {
-          if (f)
-        newPathInSpace(
-      plugin.superstate,
-          f,
-          fileExtensionForFile(path),
-          fileNameForFile(path),
-        )});
-      }
-  }})
-  
-};
 
 
 
@@ -377,7 +282,7 @@ export const openTFile = async (
   
 };
 
-const openTFolder = async (
+export const openTFolder = async (
   leaf: WorkspaceLeaf,
   file: TFolder,
   plugin: MakeMDPlugin,

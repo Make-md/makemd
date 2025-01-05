@@ -1,6 +1,6 @@
 import MakeBasicsPlugin from "basics/basics";
-import { i18n } from "makemd-core";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
+import i18n from "shared/i18n";
 
 const removeLeadingSlash = (path: string) =>
   path.charAt(0) == "/" ? path.substring(1) : path;

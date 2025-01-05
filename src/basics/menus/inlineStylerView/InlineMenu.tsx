@@ -3,7 +3,7 @@ import { toggleMark } from "basics/menus/inlineStylerView/marks";
 import classNames from "classnames";
 
 import { getActiveCM, getActiveMarkdownView } from "basics/codemirror";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 
 import MakeBasicsPlugin from "basics/basics";
 import { editorInfoField } from "obsidian";

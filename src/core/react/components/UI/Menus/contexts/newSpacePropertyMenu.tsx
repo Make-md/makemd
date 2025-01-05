@@ -245,12 +245,16 @@ const NewPropertyMenuComponent = (
           if (value[0] == "all") {
             props.superstate.spaceManager
               .readTable(source, defaultContextSchemaID)
-              .then((f) =>
-                props.superstate.spaceManager.saveTable(source, {
-                  ...f,
-                  cols: [...f.cols, ...existingProps],
-                })
-              )
+              .then((f) => {
+                props.superstate.spaceManager.saveTable(
+                  source,
+                  {
+                    ...f,
+                    cols: [...f.cols, ...existingProps],
+                  },
+                  true
+                );
+              })
               .then((f) => props.superstate.reloadContextByPath(source, true));
             props.hide();
             return;

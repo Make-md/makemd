@@ -2,8 +2,8 @@ import { EditorView } from "@codemirror/view";
 
 
 import MakeBasicsPlugin from "basics/basics";
-import { i18n } from "makemd-core";
 import { MarkdownView, WorkspaceLeaf } from "obsidian";
+import i18n from "shared/i18n";
 import { FlowEditorInfo, flowEditorInfo } from "../codemirror/flowEditor";
 
 export const parseOutReferences = (

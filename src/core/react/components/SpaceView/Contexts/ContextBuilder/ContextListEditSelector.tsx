@@ -7,7 +7,6 @@ import { SpaceContext } from "core/react/context/SpaceContext";
 import { WindowContext } from "core/react/context/WindowContext";
 import { replaceFrameWithFrameRoot } from "core/utils/frames/frame";
 import { nameForField } from "core/utils/frames/frames";
-import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
 import { initiateString } from "core/utils/strings";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import React, {
@@ -22,6 +21,7 @@ import { FrameEditorMode } from "shared/types/frameExec";
 import { SpaceProperty } from "shared/types/mdb";
 import { FrameSchema, MDBFrame } from "shared/types/mframe";
 import { windowFromDocument } from "shared/utils/dom";
+import { mdbSchemaToFrameSchema } from "shared/utils/makemd/schema";
 import { ToggleSetter } from "../../Frames/Setters/ToggleSetter";
 import { ContextListSections } from "./ContextListView";
 

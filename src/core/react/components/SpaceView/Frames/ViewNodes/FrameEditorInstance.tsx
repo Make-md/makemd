@@ -4,7 +4,6 @@ import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { contextPathForSpace } from "core/utils/contexts/embed";
 import { findParent } from "core/utils/frames/ast";
 import { dropFrame } from "core/utils/frames/editor/dropFrame";
 import { wrapQuotes } from "core/utils/strings";
@@ -25,6 +24,7 @@ import {
 import { FrameEditorMode } from "shared/types/frameExec";
 import { SpaceProperty } from "shared/types/mdb";
 import { FrameTreeProp } from "shared/types/mframe";
+import { contextPathForSpace } from "shared/utils/makemd/embed";
 import { DefaultMDBTables } from "../DefaultFrames/DefaultFrames";
 import { FrameEditorNodeView } from "../EditorNodes/FrameEditorNodeView";
 export const FrameEditorInstance = (

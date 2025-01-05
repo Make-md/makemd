@@ -88,7 +88,7 @@ export const linkContextRow = (
   const result = dependencies ?? propertyDependencies(fields)
   const frontmatter = (paths.get(row[PathPropertyName])?.metadata?.property ?? {});
   const filteredFrontmatter = Object.keys(frontmatter).filter(f => fields.some(g => g.name == f) && f != PathPropertyName).reduce((p, c) => ({ ...p, [c]: parseProperty(c, frontmatter[c]) }), {})
-  const fieldsSorted = result.map(f => fields.find(g => g.name == f) as SpaceProperty).filter((f) => f && (f.type == "fileprop" || f.name == 'tags'))
+  const fieldsSorted = result.map(f => fields.find(g => g.name == f) as SpaceProperty).filter((f) => f && (f.type == "fileprop"))
 const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {})
   return {
     ...row,

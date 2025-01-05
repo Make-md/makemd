@@ -4,7 +4,8 @@ import { PathPropertyName } from "shared/types/context";
 import { DBTable, DBTables, SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
 import { FrameSchema } from "shared/types/mframe";
 import { SpaceInfo } from "shared/types/spaceInfo";
-import { parsePropString, safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
+import { parsePropString } from "utils/parsers";
 import { defaultContextDBSchema, defaultContextSchemaID } from "../shared/schemas/context";
 import { defaultContextFields, defaultTagFields } from "../shared/schemas/fields";
 

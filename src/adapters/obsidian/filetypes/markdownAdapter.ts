@@ -90,7 +90,7 @@ const removeMarkdown = (str: string) => {
   return output.replace(/^\s*\n/gm, '');
 }
 
-type CleanCachedMetadata = Omit<CachedMetadata, 'tags'> & { tags: string[], resolvedLinks: string[], label: PathLabel, inlinks: string[] }
+type CleanCachedMetadata = Omit<CachedMetadata, 'tags'> & { tags: string[], resolvedLinks: string[], label: PathLabel, inlinks: string[], property: any }
 
 export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCachedMetadata, CachedMetadataContentTypes> {
     
@@ -153,25 +153,26 @@ public app: App;
                     .filter((f) => typeof f === "string")
                     .map((f) => "#" + f)
                 );
-                const contents = await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile)
+                
                 
                 const links = fCache.links?.map(f => this.plugin.app.metadataCache.getFirstLinkpathDest(f.link, file.path)?.path).filter(f => f)
                 this.linksMap.set(file.path, new Set(links));
-        const updatedCache = {...fCache, 
+        const updatedCache : CleanCachedMetadata = {
             resolvedLinks: links ?? [],
             inlinks: Array.from(incoming),
             tags: rt,
             property: fCache.frontmatter,
-            tasks: fCache.listItems?.filter(f => f.task).map(f => contents.slice(f.position.start.offset, f.position.end.offset)) ?? [],
             label: {
             name: file.name,
             thumbnail: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyBanner],
             sticker: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeySticker],
             color: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyColor],
-            preview: removeMarkdown(contents.slice(fCache.frontmatterPosition?.end.offset ?? 0, 1000))
-            
         }}
         
+        if (this.plugin.superstate.settings.notesPreview) {
+            const contents = await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile)
+            updatedCache.label.preview = removeMarkdown(contents.slice(fCache.frontmatterPosition?.end.offset ?? 0, 1000))
+        }
         if (currentCache) {
             
             if (!_.isEqual(currentCache.resolvedLinks, updatedCache.resolvedLinks)) {
@@ -186,6 +187,7 @@ public app: App;
             }
         }
         this.cache.set(file.path, updatedCache);
+        
         this.middleware.updateFileCache(file.path, updatedCache, refresh);
     }
     private metadataKeys = ['property', 'links', 'embeds', 'tags', 'headings', 'sections', 'listItems', 'frontmatter', 'frontmatterPosition', 'frontmatterLinks', 'blocks'] as Array<keyof CachedMetadata>;

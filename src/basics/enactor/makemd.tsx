@@ -5,7 +5,7 @@ import {
   EditorView,
   WidgetType,
 } from "@codemirror/view";
-import { openPath } from "adapters/obsidian/utils/file";
+
 import MakeBasicsPlugin from "basics/basics";
 import { cmExtensions } from "basics/cmExtensions";
 import {
@@ -25,28 +25,28 @@ import { BasicDefaultSettings } from "basics/schemas/settings";
 import { Command } from "basics/types/command";
 import { UICollapse } from "basics/ui/UICollapse";
 import { compareByField } from "basics/utils/utils";
-import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
-import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
-import ImageModal from "core/react/components/UI/Modals/ImageModal";
-import { PathStickerContainer } from "core/react/components/UI/Stickers/PathSticker/PathSticker";
-import { uriToSpaceFragmentSchema } from "core/superstate/utils/spaces";
+import { PathStickerContainer } from "shared/components/PathSticker";
+
 import {
   contextEmbedStringFromContext,
   contextViewEmbedStringFromContext,
-} from "core/utils/contexts/embed";
-import { createInlineTable } from "shared/utils/inlineTable";
+} from "shared/utils/makemd/embed";
+import { createInlineTable } from "shared/utils/makemd/inlineTable";
 
-import { mdbSchemaToFrameSchema } from "core/utils/frames/nodes";
 import { SelectOption } from "shared/types/menu";
 import { SpaceFragmentSchema } from "shared/types/spaceFragment";
+import { mdbSchemaToFrameSchema } from "shared/utils/makemd/schema";
 
 import { Editor, editorInfoField, TFile } from "obsidian";
 import React from "react";
+import { BlinkMode } from "shared/types/blink";
+import { IMakeMDPlugin } from "shared/types/makemd";
 import { DBRows, SpaceProperty } from "shared/types/mdb";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { ISuperstate } from "shared/types/superstate";
 import { editableRange } from "shared/utils/codemirror/selectiveEditor";
 import { windowFromDocument } from "shared/utils/dom";
+import { uriToSpaceFragmentSchema } from "shared/utils/makemd/fragment";
 import { getLineRangeFromRef } from "shared/utils/obsidian";
 import { openPathInElement } from "shared/utils/openPathInElement";
 
@@ -233,21 +233,18 @@ const flowEditorField = (plugin: MakeBasicsPlugin, superstate: ISuperstate) =>
   });
 
 export class MakeMDEnactor implements Enactor {
-  constructor(
-    public superstate: ISuperstate,
-    public plugin: MakeBasicsPlugin
-  ) {}
+  constructor(public makemd: IMakeMDPlugin, public plugin: MakeBasicsPlugin) {}
   name = "MakeMD";
   load() {
     this.plugin.settings = Object.assign(
       {},
       BasicDefaultSettings,
-      this.superstate.settings,
-      this.superstate.settings.basicsSettings
+      this.makemd.superstate.settings,
+      this.makemd.superstate.settings.basicsSettings
     );
     if (this.plugin.settings.mobileSidepanel) {
       this.plugin.app.workspace.onLayoutReady(async () => {
-        replaceMobileMainMenu(this.plugin, this.superstate);
+        replaceMobileMainMenu(this.plugin, this.makemd.superstate);
       });
     }
     this.plugin.commands = this.loadCommands();
@@ -353,14 +350,14 @@ export class MakeMDEnactor implements Enactor {
           end: { line: number; ch: number },
           onComplete: () => void
         ) => {
-          plugin.enactor.selectImage((image) => {
+          plugin.enactor.selectImage(_evt, (image) => {
             editor.replaceRange(
               `![[${image}]]`,
               { ...start, ch: startCh },
               end
             );
             onComplete();
-          }, editor.cm.dom.win);
+          });
         },
       },
       {
@@ -405,9 +402,9 @@ export class MakeMDEnactor implements Enactor {
           plugin.enactor.selectSpace(_evt as any, (link) => {
             editor.replaceRange(
               contextEmbedStringFromContext(
-                (plugin.enactor as MakeMDEnactor).superstate.spacesIndex.get(
-                  link
-                ),
+                (
+                  plugin.enactor as MakeMDEnactor
+                ).makemd.superstate.spacesIndex.get(link),
                 "files"
               ),
               { ...start, ch: startCh },
@@ -436,15 +433,15 @@ export class MakeMDEnactor implements Enactor {
           onComplete: () => void
         ) => {
           createInlineTable(
-            (plugin.enactor as MakeMDEnactor).superstate,
+            (plugin.enactor as MakeMDEnactor).makemd.superstate,
             file.parent.path,
             "table"
           ).then((f) => {
             editor.replaceRange(
               contextViewEmbedStringFromContext(
-                (plugin.enactor as MakeMDEnactor).superstate.spacesIndex.get(
-                  file.parent.path
-                ),
+                (
+                  plugin.enactor as MakeMDEnactor
+                ).makemd.superstate.spacesIndex.get(file.parent.path),
                 f
               ),
               { ...start, ch: startCh },
@@ -473,15 +470,15 @@ export class MakeMDEnactor implements Enactor {
           onComplete: () => void
         ) => {
           createInlineTable(
-            (plugin.enactor as MakeMDEnactor).superstate,
+            (plugin.enactor as MakeMDEnactor).makemd.superstate,
             file.parent.path,
             "board"
           ).then((f) => {
             editor.replaceRange(
               contextViewEmbedStringFromContext(
-                (plugin.enactor as MakeMDEnactor).superstate.spacesIndex.get(
-                  file.parent.path
-                ),
+                (
+                  plugin.enactor as MakeMDEnactor
+                ).makemd.superstate.spacesIndex.get(file.parent.path),
                 f
               ),
               { ...start, ch: startCh },
@@ -507,7 +504,7 @@ export class MakeMDEnactor implements Enactor {
   loadExtensions(firstLoad: boolean) {
     const extensions = cmExtensions(this.plugin, this.plugin.isTouchScreen());
     if (this.plugin.settings.editorFlow) {
-      extensions.push(flowEditorField(this.plugin, this.superstate));
+      extensions.push(flowEditorField(this.plugin, this.makemd.superstate));
     }
     this.plugin.extensions = extensions;
     if (firstLoad) {
@@ -521,13 +518,13 @@ export class MakeMDEnactor implements Enactor {
     onReturn: (markdown: string) => void
   ) {
     if (spaceFragment.type == "frame") {
-      const schema = await this.superstate.spaceManager
+      const schema = await this.makemd.superstate.spaceManager
         .readFrame(spaceFragment.path, spaceFragment.id)
         .then((f) => f?.schema);
 
       if (schema) {
         const mdbSchema = mdbSchemaToFrameSchema(schema);
-        this.superstate.spaceManager
+        this.makemd.superstate.spaceManager
           .readTable(spaceFragment.path, mdbSchema.def.db)
           .then((mdbTable) => {
             if (!mdbTable) return;
@@ -536,7 +533,7 @@ export class MakeMDEnactor implements Enactor {
           });
       }
     } else {
-      this.superstate.spaceManager
+      this.makemd.superstate.spaceManager
         .readTable(spaceFragment.path, spaceFragment.id)
         .then((mdbTable) => {
           if (!mdbTable) return;
@@ -547,48 +544,47 @@ export class MakeMDEnactor implements Enactor {
   }
   selectLink(e: React.MouseEvent, onSelect: (path: string) => void) {
     const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-    return showLinkMenu(
+    return this.makemd.superstate.ui.quickOpen(
+      BlinkMode.Open,
       offset,
       windowFromDocument(e.view.document),
-      this.superstate,
       onSelect
     );
   }
   selectSpace(e: React.MouseEvent, onSelect: (path: string) => void) {
     const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-    return showSpacesMenu(
+    return this.makemd.superstate.ui.quickOpen(
+      BlinkMode.OpenSpaces,
       offset,
       windowFromDocument(e.view.document),
-      this.superstate,
       onSelect
     );
   }
-  selectImage(onSelect: (path: string) => void, win: Window) {
-    this.superstate.ui.openPalette(
-      <ImageModal
-        superstate={this.superstate}
-        selectedPath={(image) => {
-          onSelect(image);
-        }}
-      ></ImageModal>,
-      win
+  selectImage(e: React.MouseEvent, onSelect: (path: string) => void) {
+    const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+    this.makemd.superstate.ui.quickOpen(
+      BlinkMode.Image,
+      offset,
+      windowFromDocument(e.view.document),
+      onSelect
     );
   }
   isSpace(path: string) {
-    return this.superstate.spacesIndex.has(path);
+    return this.makemd.superstate.spacesIndex.has(path);
   }
   spaceNotePath(path: string) {
-    return this.superstate.spacesIndex.get(path)?.space.notePath;
+    return this.makemd.superstate.spacesIndex.get(path)?.space.notePath;
   }
   spaceFolderPath(path: string) {
-    return (this.superstate.spacesIndex.get(path)?.space as FilesystemSpaceInfo)
-      .folderPath;
+    return (
+      this.makemd.superstate.spacesIndex.get(path)?.space as FilesystemSpaceInfo
+    ).folderPath;
   }
   parentPath(path: string) {
-    return this.superstate.spaceManager.parentPathForPath(path);
+    return this.makemd.superstate.spaceManager.parentPathForPath(path);
   }
   createNote(parent: string, name: string, content?: string) {
-    return this.superstate.spaceManager.createItemAtPath(
+    return this.makemd.superstate.spaceManager.createItemAtPath(
       parent,
       "md",
       name,
@@ -596,31 +592,31 @@ export class MakeMDEnactor implements Enactor {
     );
   }
   createRoot(el: Element | DocumentFragment) {
-    return this.superstate.ui.createRoot(el);
+    return this.makemd.superstate.ui.createRoot(el);
   }
   notify(message: string) {
-    return this.superstate.ui.notify(message);
+    return this.makemd.superstate.ui.notify(message);
   }
   uriByString(uri: string, source?: string) {
-    return this.superstate.spaceManager.uriByString(uri, source);
+    return this.makemd.superstate.spaceManager.uriByString(uri, source);
   }
   spaceFragmentSchema(uri: string) {
-    return uriToSpaceFragmentSchema(this.superstate, uri);
+    return uriToSpaceFragmentSchema(this.makemd.superstate, uri);
   }
 
   saveSettings() {
-    this.superstate.settings.basicsSettings = this.plugin.settings;
+    this.makemd.superstate.settings.basicsSettings = this.plugin.settings;
     this.plugin.plugin.saveSettings();
   }
   resolvePath(path: string, source?: string) {
-    return this.superstate.spaceManager.resolvePath(path, source);
+    return this.makemd.superstate.spaceManager.resolvePath(path, source);
   }
   openMenu(ev: React.MouseEvent, options: SelectOption[]) {
     const offset = (ev.target as HTMLElement).getBoundingClientRect();
-    return this.superstate.ui.openMenu(
+    return this.makemd.superstate.ui.openMenu(
       offset,
       {
-        ui: this.superstate.ui,
+        ui: this.makemd.superstate.ui,
         multi: false,
         value: [],
         editable: false,
@@ -641,7 +637,7 @@ export class MakeMDEnactor implements Enactor {
     // menu.showAtMouseEvent(ev);
   }
   pathExists(path: string) {
-    return this.superstate.spaceManager.pathExists(path);
+    return this.makemd.superstate.spaceManager.pathExists(path);
   }
   openPath(path: string, source?: HTMLElement) {
     const uri = this.uriByString(path);
@@ -674,16 +670,19 @@ export class MakeMDEnactor implements Enactor {
             });
           }
         } else {
-          await openPath(leaf, path, this.plugin.plugin, true);
+          await this.plugin.plugin.openPath(leaf, path, true);
         }
       }
     );
   }
   addActiveStateListener(reload: () => void) {
-    this.superstate.ui.eventsDispatch.addListener("activeStateChanged", reload);
+    this.makemd.superstate.ui.eventsDispatch.addListener(
+      "activeStateChanged",
+      reload
+    );
   }
   removeActiveStateListener(reload: () => void) {
-    this.superstate.ui.eventsDispatch.removeListener(
+    this.makemd.superstate.ui.eventsDispatch.removeListener(
       "activeStateChanged",
       reload
     );

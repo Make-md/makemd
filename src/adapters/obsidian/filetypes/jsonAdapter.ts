@@ -3,7 +3,8 @@ import { AFile, FileTypeAdapter, FilesystemMiddleware } from "makemd-core";
 
 import { omit } from "lodash";
 import MakeMDPlugin from "main";
-import { parseProperty, safelyParseJSON } from "utils/parsers";
+import { safelyParseJSON } from "shared/utils/json";
+import { parseProperty } from "utils/parsers";
 
 type CachedMetadataContentTypes = {
     property: any;

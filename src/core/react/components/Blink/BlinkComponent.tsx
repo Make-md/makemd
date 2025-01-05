@@ -14,10 +14,10 @@ import {
   newPathInSpace,
 } from "core/superstate/utils/spaces";
 import { fastSearch, searchPath } from "core/superstate/workers/search/impl";
+import { BlinkMode } from "../../../../shared/types/blink";
 import { PathView } from "../PathView/PathView";
 import { SpaceQuery } from "../SpaceEditor/SpaceQuery";
 import { PathCrumb } from "../UI/Crumbs/PathCrumb";
-import { BlinkMode } from "./Blink";
 
 type BlinkItem = {
   type: string;
@@ -110,6 +110,26 @@ export const BlinkComponent = (props: {
         return;
       }
 
+      const defaultSpaces: BlinkItem[] = [
+        {
+          type: "section",
+          label: "Create New",
+        },
+      ];
+      if (props.mode != BlinkMode.OpenSpaces) {
+        defaultSpaces.push({
+          type: "new-note",
+          sticker: "ui//edit",
+          value: query,
+          label: "New Note",
+        });
+      }
+      defaultSpaces.push({
+        type: "new-space",
+        sticker: "ui//folder-plus",
+        value: query,
+        label: "New Space",
+      });
       if (filters.length == 0) {
         if (!props.superstate.settings.searchWorker) {
           const g = fastSearch({
@@ -123,22 +143,7 @@ export const BlinkComponent = (props: {
               label: "Results",
             },
             ...g.map((f) => pathToBlinkItem(f)),
-            {
-              type: "section",
-              label: "Create New",
-            },
-            {
-              type: "new-note",
-              sticker: "ui//edit",
-              value: query,
-              label: "New Note",
-            },
-            {
-              type: "new-space",
-              sticker: "ui//folder-plus",
-              value: query,
-              label: "New Space",
-            },
+            ...defaultSpaces,
           ]);
           return;
         }
@@ -149,22 +154,7 @@ export const BlinkComponent = (props: {
               label: "Results",
             },
             ...g.map((f) => pathToBlinkItem(f)),
-            {
-              type: "section",
-              label: "Create New",
-            },
-            {
-              type: "new-note",
-              sticker: "ui//edit",
-              value: query,
-              label: "New Note",
-            },
-            {
-              type: "new-space",
-              sticker: "ui//folder-plus",
-              value: query,
-              label: "New Space",
-            },
+            ...defaultSpaces,
           ])
         );
         return;
@@ -182,18 +172,7 @@ export const BlinkComponent = (props: {
             label: "Results",
           },
           ...results.map((f) => pathToBlinkItem(f)),
-          {
-            type: "new-note",
-            sticker: "ui//plus",
-            value: query,
-            label: "New Note",
-          },
-          {
-            type: "new-space",
-            sticker: "ui//plus",
-            value: query,
-            label: "New Space",
-          },
+          ...defaultSpaces,
         ]);
         return;
       }
@@ -228,7 +207,7 @@ export const BlinkComponent = (props: {
             query,
             props.onSelect ? true : false
           ).then((f) => {
-            if (props.mode == BlinkMode.Open) {
+            if (props.mode == BlinkMode.Open || props.mode == BlinkMode.Image) {
               props.onSelect(f);
             }
             props.hide();
@@ -272,7 +251,7 @@ export const BlinkComponent = (props: {
         return;
       }
       createSpace(props.superstate, newPath, {}).then((f) => {
-        if (props.mode == BlinkMode.Open) {
+        if (props.mode == BlinkMode.Open || BlinkMode.OpenSpaces) {
           props.onSelect(f.path);
         }
         props.hide();
@@ -280,7 +259,7 @@ export const BlinkComponent = (props: {
       return;
     }
     if (item.cache) {
-      if (props.mode == BlinkMode.Open) {
+      if (props.mode == BlinkMode.Open || BlinkMode.OpenSpaces) {
         props.onSelect(item.cache?.path);
         props.hide();
         return;

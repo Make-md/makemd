@@ -1,5 +1,4 @@
 import MakeBasicsPlugin from "basics/basics";
-import { i18n } from "makemd-core";
 import {
   App,
   Editor,
@@ -11,6 +10,7 @@ import {
 } from "obsidian";
 import React from "react";
 import { emojis } from "shared/assets/emoji";
+import i18n from "shared/i18n";
 import { Emoji, EmojiData } from "shared/types/emojis";
 import { emojiFromString } from "shared/utils/stickers";
 
