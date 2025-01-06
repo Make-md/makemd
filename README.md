@@ -4,7 +4,7 @@
 
 [![Discord Chat](https://img.shields.io/discord/799706244264362024?color=748AD9&label=discord%20chat)](https://make.md/community) [![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=downloads&query=%24%5B%22make-md%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)](obsidian://show-plugin?id=make-md)
 
-| ![m1_1.png](https://github.com/Make-md/makemd-docs/blob/main/assets/images/m1_1.png)          | ![m1_2.png](https://github.com/Make-md/makemd-docs/blob/main/assets/images/m1_2.png?raw=true) |
+| ![m1_1.png](https://github.com/Make-md/makemd-docs/blob/main/assets/images/m1_1.png?raw=true) | ![m1_2.png](https://github.com/Make-md/makemd-docs/blob/main/assets/images/m1_2.png?raw=true) |
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | ![m1_3.png](https://github.com/Make-md/makemd-docs/blob/main/assets/images/m1_3.png?raw=true) | ![m1_4.png](https://github.com/Make-md/makemd-docs/blob/main/assets/images/m1_4.png?raw=true) |
 
