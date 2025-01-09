@@ -62,7 +62,7 @@
     "@lezer/common": "^1.0.1",
     "@lezer/highlight": "^1.2.0",
     "@tanstack/react-table": "^8.7.4",
-    "@tanstack/react-virtual": "^3.0.0-alpha.0",
+    "@tanstack/react-virtual": "^3.11.2",
     "@uiw/codemirror-theme-abcdef": "^4.21.24",
     "@uiw/codemirror-theme-github": "^4.21.24",
     "@uiw/react-codemirror": "^4.21.24",
