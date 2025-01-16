@@ -43,7 +43,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "find-cache-dir": "^4.0.0",
     "obsidian": "^1.1.1",
-    "obsidian-dataview": "^0.5.52",
+    "obsidian-dataview": "^0.5.67",
     "prop-types": "^15.7.2",
     "terser": "^5.20.0",
     "tslib": "^2.2.0",
