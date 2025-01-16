@@ -34,7 +34,7 @@
     "builtin-modules": "3.3.0",
     "cross-env": "^7",
     "dotenv": "^16.0.3",
-    "esbuild": "^0.14.47",
+    "esbuild": "^0.24.2",
     "esbuild-envfile-plugin": "^1.0.3",
     "esbuild-plugin-copy": "^1.6.0",
     "esbuild-plugin-wat": "^0.2.7",
