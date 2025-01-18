@@ -5,6 +5,7 @@ import {
   getFreqValue,
   getWeekdayValue,
   isoDateFormat,
+  isValidDate,
   parseDate,
 } from "core/utils/date";
 import { add, addMilliseconds, startOfDay } from "date-fns";
@@ -78,12 +79,17 @@ export const DayView = (props: {
       const repeatDef = safelyParseJSON(event[repeat]) as Record<string, any>;
       const instances = [];
       const rowDate = parseDate(event[start]);
+      if (!isValidDate(rowDate)) return;
       if (rowDate >= blockDate && rowDate <= add(blockDate, { days: 1 })) {
         instances.push(event);
       }
+      let endDate = parseDate(event[end]);
+      if (!isValidDate(endDate)) {
+        endDate = add(rowDate, { hours: 1 });
+      }
 
       if (repeatDef && repeatDef.freq) {
-        const duration = parseDate(event[end]).getTime() - rowDate.getTime();
+        const duration = endDate.getTime() - rowDate.getTime();
         const rruleOptions = {
           dtstart: rowDate,
           freq: repeatDef.freq && getFreqValue(repeatDef.freq),
@@ -136,12 +142,15 @@ export const DayView = (props: {
         const dayStart = startOfDay(date).getTime();
         const dayEnd = add(date, { days: 1 }).getTime();
         const startDate = parseDate(event[start]);
-        const endDate = parseDate(event[end])
-          ? parseDate(event[end])
-          : startOfDay(startDate).getTime() == startDate.getTime()
-          ? startDate
-          : add(startDate, { hours: 1 });
+        if (!isValidDate(startDate)) return;
+        let endDate = parseDate(event[end]);
 
+        if (!isValidDate(endDate)) {
+          endDate =
+            startOfDay(startDate).getTime() == startDate.getTime()
+              ? startDate
+              : add(startDate, { hours: 1 });
+        }
         const startOffset = Math.max(
           startHour * 60,
           (startDate.getTime() - dayStart) / 60000

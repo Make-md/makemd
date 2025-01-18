@@ -5,6 +5,7 @@ import { App, CachedMetadata, TFile, TFolder } from "obsidian";
 import { IndexMap } from "shared/types/indexMap";
 import { uniq } from "shared/utils/array";
 import { parseMultiDisplayString, parseProperty } from "utils/parsers";
+import { ensureTag } from "utils/tags";
 import { getAbstractFileAtPath, tFileToAFile } from "../utils/file";
 import { frontMatterForFile } from "./frontmatter/fm";
 import { frontMatterKeys } from "./frontmatter/frontMatterKeys";
@@ -140,7 +141,7 @@ public app: App;
                     : []
                     )
                     .filter((f) => typeof f === "string")
-                    .map((f) => "#" + f)
+                    .map((f) => ensureTag(f))
                 );
                 if (fCache && fCache.frontmatter?.tag)
                 rt.push(
@@ -151,7 +152,7 @@ public app: App;
                     : []
                     )
                     .filter((f) => typeof f === "string")
-                    .map((f) => "#" + f)
+                    .map((f) => ensureTag(f))
                 );
                 
                 
@@ -224,7 +225,7 @@ public app: App;
                     : []
                     )
                     .filter((f) => typeof f === "string")
-                    .map((f) => "#" + f)
+                    .map((f) => ensureTag(f))
                 );
                 if (fCache && fCache.frontmatter?.tag)
                 rt.push(
@@ -235,7 +236,7 @@ public app: App;
                     : []
                     )
                     .filter((f) => typeof f === "string")
-                    .map((f) => "#" + f)
+                    .map((f) => ensureTag(f))
                 );
             return uniq(rt) ?? [];
         }

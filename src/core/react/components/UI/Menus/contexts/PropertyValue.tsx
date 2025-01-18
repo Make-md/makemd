@@ -2,14 +2,18 @@ import { FormulaEditor } from "core/react/components/SpaceEditor/Actions/Formula
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { aggregateFnTypes } from "core/utils/contexts/predicate/aggregates";
 import { spaceNameFromSpacePath } from "core/utils/strings";
-import { SelectOption, Superstate } from "makemd-core";
+import { SelectMenuProps, SelectOption, Superstate } from "makemd-core";
 import React, { useMemo } from "react";
 import { fieldTypeForField, fieldTypeForType, fieldTypes } from "schemas/mdb";
 import i18n from "shared/i18n";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { SpaceTableColumn } from "shared/types/mdb";
+import { onlyUniqueProp, uniq } from "shared/utils/array";
+import { colors } from "shared/utils/color";
 import { windowFromDocument } from "shared/utils/dom";
+import { parseMultiString } from "utils/parsers";
 import { InputModal } from "../../Modals/InputModal";
+import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
 
 export const PropertyValueComponent = (props: {
   superstate: Superstate;
@@ -256,7 +260,151 @@ export const PropertyValueComponent = (props: {
     ];
     showOptions(e, null, formats, "format");
   };
-  return props.fieldType?.startsWith("date") ? (
+  const selectEditOptions = (e: React.MouseEvent) => {
+    const parsedValue = parseFieldValue(
+      props.value,
+      "option",
+      props.superstate,
+      props.contextPath
+    );
+
+    const parseOptions = (_options: SelectOption[]): SelectOption[] => {
+      return [
+        ...(((_options as SelectOption[]) ?? [])
+          .filter((f) => f.value)
+          .map((t) => ({
+            ...t,
+            color: t.color?.length > 0 ? t.color : "var(--mk-color-none)",
+            removeable: true,
+          })) ?? []),
+      ].filter((f) => f.value.length > 0);
+    };
+
+    const options = parseOptions(parsedValue.options ?? []);
+
+    const removeOption = (option: string) => {
+      const newOptions = options.filter((f) => f.value != option);
+      saveParsedValue("options", newOptions);
+    };
+    const savePropValue = (options: SelectOption[], value: string[]) => {
+      saveParsedValue("options", options);
+    };
+    const saveOptions = (_options: string[], _value: string[]) => {
+      const newOptions = [..._options]
+        .filter((f) => f.length > 0)
+        .map(
+          (t) =>
+            options.find((f) => f.value == t) ?? {
+              name: t,
+              value: t,
+            }
+        );
+      savePropValue(newOptions, _value);
+    };
+    const saveOption = (option: string, newValue: SelectOption) => {
+      const newOptions = options.map((t) => (t.value == option ? newValue : t));
+      saveParsedValue("options", newOptions);
+    };
+
+    const showOptionMenu = (e: React.MouseEvent, optionValue: string) => {
+      const option = options.find((f) => f.value == optionValue);
+      const menuOptions: SelectOption[] = [];
+      menuOptions.push(
+        menuInput(option.value, (value) =>
+          saveOption(option.value, { ...option, value: value })
+        )
+      );
+      menuOptions.push(menuSeparator);
+      menuOptions.push({
+        name: "None",
+        color: "var(--mk-color-none)",
+        onClick: () => {
+          saveOption(option.value, { ...option, color: "" });
+        },
+      });
+
+      colors.forEach((f) => {
+        menuOptions.push({
+          name: f[0],
+          value: f[1],
+          color: `${f[1]}`,
+          onClick: () => {
+            saveOption(option.value, { ...option, color: f[1] });
+          },
+        });
+      });
+
+      props.superstate.ui.openMenu(
+        (e.target as HTMLElement).getBoundingClientRect(),
+        defaultMenu(props.superstate.ui, menuOptions),
+        windowFromDocument(e.view.document)
+      );
+    };
+
+    const allOptions = uniq(
+      [
+        ...(props.superstate.spacesMap.getInverse(props.contextPath) ?? []),
+      ].flatMap(
+        (f) =>
+          parseMultiString(
+            props.superstate.pathsIndex.get(f)?.metadata?.property?.[props.name]
+          ) ?? []
+      )
+    );
+
+    const menuProps = (): SelectMenuProps => {
+      const _options: SelectOption[] = [
+        {
+          name: "Add from Existing Values",
+          value: "$import",
+          onClick: () => {
+            savePropValue(
+              [
+                ...options,
+                ...allOptions.map((f) => ({
+                  name: f,
+                  value: f,
+                })),
+              ].filter(onlyUniqueProp("value")),
+              []
+            );
+          },
+        },
+        menuSeparator,
+      ];
+      _options.push(
+        ...options.map((f) => ({
+          ...f,
+          onRemove: () => removeOption(f.value),
+          onMoreOptions: (e: React.MouseEvent) => showOptionMenu(e, f.value),
+        }))
+      );
+
+      return {
+        multi: false,
+        editable: true,
+        ui: props.superstate.ui,
+        value: [],
+        options: _options,
+        saveOptions,
+        placeholder: i18n.labels.optionItemSelectPlaceholder,
+        searchable: true,
+        showAll: true,
+      };
+    };
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    props.superstate.ui.openMenu(
+      offset,
+      menuProps(),
+      windowFromDocument(e.view.document),
+      "bottom"
+    );
+  };
+  return props.fieldType?.startsWith("option") ? (
+    <div className="mk-menu-option" onClick={(e) => selectEditOptions(e)}>
+      <span>{i18n.labels.editOptions}</span>
+    </div>
+  ) : props.fieldType?.startsWith("date") ? (
     <div className="mk-menu-option" onClick={(e) => selectDateFormat(e)}>
       <span>{i18n.labels.dateFormat}</span>
       <span>{parsedValue.format}</span>

@@ -1,5 +1,6 @@
 
 import { serializeOptionValue } from "core/utils/serializer";
+import { ensureString } from "core/utils/strings";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { ActionInstance } from "shared/types/actions";
@@ -75,13 +76,8 @@ export class SpaceManager implements SpaceManagerInterface {
 
     public onSpaceCreated = async (path: string) => {
 
-      if (path.startsWith(this.superstate.settings.spacesFolder)) {
-        await this.onSpaceCreated(path.replace(this.superstate.settings.spacesFolder, 'spaces:/'))
-        return;
-      }
       
       const space = await this.superstate.reloadSpace(this.spaceInfoForPath(path), null, true)
-      
       await this.superstate.onSpaceDefinitionChanged(space)
       
       await this.superstate.onPathCreated(path)
@@ -376,7 +372,7 @@ export class SpaceManager implements SpaceManagerInterface {
         property.schemaId == defaultContextSchemaID &&
         property.type.startsWith("option")
       ) {
-        const allOptions = uniq([...this.superstate.spacesMap.getInverse(path) ?? []].flatMap(f => parseMultiString(this.superstate.pathsIndex.get(f)?.metadata?.property?.[property.name]) ?? []));
+        const allOptions = uniq([...this.superstate.spacesMap.getInverse(path) ?? []].flatMap(f => parseMultiString(ensureString(this.superstate.pathsIndex.get(f)?.metadata?.property?.[property.name])) ?? []));
         const values = serializeOptionValue(allOptions.map(f => ({ value: f, name: f })), {});
         property.value = values;
       }

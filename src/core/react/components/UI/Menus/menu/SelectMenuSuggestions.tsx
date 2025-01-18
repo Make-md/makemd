@@ -16,7 +16,6 @@ const SelectMenuSuggestionsComponent = (props: {
   item: SelectOption;
   query: string;
   active: boolean;
-  onMoreOption?: (e: React.MouseEvent, option: string) => void;
   onDeleteOption?: (value: string) => void;
 }) => {
   const ref = useRef(null);
@@ -76,15 +75,12 @@ const SelectMenuSuggestionsComponent = (props: {
           }}
         ></div>
       )}
-      {props.item.onMoreOptions ||
-      (props.onMoreOption && props.item.removeable) ? (
+      {props.item.onMoreOptions ? (
         <div
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            props.item.onMoreOptions
-              ? props.item.onMoreOptions(e)
-              : props.onMoreOption(e, props.item.value);
+            props.item.onMoreOptions(e);
           }}
           className="mk-icon-small"
           dangerouslySetInnerHTML={{
@@ -92,12 +88,13 @@ const SelectMenuSuggestionsComponent = (props: {
           }}
         ></div>
       ) : null}
-      {props.item.removeable && props.onDeleteOption && (
+      {props.item.onRemove && (
         <div
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
-            props.onDeleteOption(props.item.value);
+            props.item.onRemove();
+            props.onDeleteOption?.(props.item.value);
           }}
           className="mk-icon-small"
           dangerouslySetInnerHTML={{
@@ -268,7 +265,6 @@ const SelectMenuSuggestions = (props: {
             item={item}
             query={props.query}
             active={index == props.index}
-            onMoreOption={props.moreOption}
             onDeleteOption={props.deleteOption}
           />
         )}

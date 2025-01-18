@@ -598,6 +598,7 @@ class T {
         propertyLookup: "Edit Formula",
         existingFrontmatter: "Existing Property",
         dateFormat: "Date Format",
+        editOptions: "Edit Options",
         propertyFileProp: "Property",
         multiple: "Multiple",
         filesCount: "{$1} Files",

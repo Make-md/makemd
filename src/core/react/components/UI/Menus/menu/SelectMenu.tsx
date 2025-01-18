@@ -119,7 +119,6 @@ const SelectMenu = React.forwardRef(
         hide={props.hide}
         onDelete={onDelete}
         wrapperClass={props.wrapperClass}
-        onMoreOption={props.onMoreOption}
         onDeleteOption={onDeleteOption}
         onAddition={onAddition}
         onValidate={onValidation}
