@@ -389,11 +389,12 @@ public api: API;
         
         allPaths.forEach(f => {
             const cache = parsePathState(f.cache)
-            
+            if (cache) {
             this.pathsIndex.set(f.path, cache);
             this.tagsMap.set(f.path, new Set(cache.tags))
             this.spacesMap.set(f.path, new Set(cache.spaces))
             this.linksMap.set(f.path, new Set(cache.outlinks))
+            }
         });
         if (this.settings.enhancedLogs)
         console.log('Initial Cache Loaded')
