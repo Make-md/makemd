@@ -10,6 +10,7 @@ import {
   getFreqValue,
   getWeekdayValue,
   isoDateFormat,
+  isValidDate,
   parseDate,
 } from "core/utils/date";
 import {
@@ -57,18 +58,22 @@ export const MonthWeekRow = (props: {
   const { source } = useContext(ContextEditorContext);
   const weekEvents: MonthEventLayout[] = useMemo(() => {
     const events: MonthEventLayout[] = [];
+    if (!props.fieldEnd || !props.field) return events;
     props.events.forEach((event, index) => {
       const instances = [];
       const repeatDef = safelyParseJSON(event[props.fieldRepeat] as any);
       const rowDate = parseDate(event[props.field]);
-      const rowEndDate = parseDate(event[props.fieldEnd]) ?? rowDate;
+      if (!isValidDate(rowDate)) return;
+      let rowEndDate = parseDate(event[props.fieldEnd]);
+      if (!isValidDate(rowEndDate)) {
+        rowEndDate = rowDate;
+      }
       if (rowDate <= endOfDay(weekEnd) && rowEndDate >= startOfDay(weekStart)) {
         instances.push(event);
       }
 
       if (repeatDef && repeatDef.freq) {
-        const duration =
-          parseDate(event[props.fieldEnd]).getTime() - rowDate.getTime();
+        const duration = rowEndDate.getTime() - rowDate.getTime();
         const rruleOptions = {
           dtstart: rowDate,
           freq: repeatDef.freq && getFreqValue(repeatDef.freq),

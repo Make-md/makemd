@@ -4,7 +4,7 @@ import {
   MeasuringStrategy,
   MouseSensor,
   TouchSensor,
-  rectIntersection,
+  pointerWithin,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -54,7 +54,7 @@ export const WindowManager = (props: { ui: ObsidianUI }) => {
       onDragCancel={() => {
         setDragActive(false);
       }}
-      collisionDetection={rectIntersection}
+      collisionDetection={pointerWithin}
       measuring={{
         droppable: {
           strategy: MeasuringStrategy.Always,

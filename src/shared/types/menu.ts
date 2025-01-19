@@ -67,6 +67,7 @@ export enum SelectOptionType {
     onSubmenu?: (offset: Rect, onHide: () => void) => MenuObject;
     onValueChange?: (value: string) => void;
     onMoreOptions?: (e: React.MouseEvent) => void;
+    onRemove?: () => void;
   };
 export type MenuObject = {
   hide: (suppress?: boolean) => void;

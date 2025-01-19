@@ -390,7 +390,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                 Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
                 this.plugin.saveSettings();
                 if(setting.onChange) setting.onChange(value);
-                this.refreshView();
               }
             )
         );
@@ -408,7 +407,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                 Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
                 this.plugin.saveSettings();
                 if(setting.onChange) setting.onChange(value);
-                this.refreshView();
               })
           );
         } else {
@@ -420,7 +418,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
               Object.assign(this.plugin.superstate.settings, { [setting.name]: parseInt(value) });
               this.plugin.saveSettings();
               if(setting.onChange) setting.onChange(parseInt(value));
-              this.refreshView();
             })
         );
       }
@@ -434,7 +431,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
               Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
               this.plugin.saveSettings();
               if(setting.onChange) setting.onChange(value);
-              this.refreshView();
             })
         );
       }
@@ -449,7 +445,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
             Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
               this.plugin.saveSettings();
           if(setting.onChange) setting.onChange(value);
-          this.refreshView();
           });
           
         });

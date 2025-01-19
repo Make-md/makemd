@@ -124,35 +124,37 @@ export const FlowNodeView = (
         ) : (
           <></>
         ))}
-      {props.state && expanded && props.state?.props?.value?.length > 0 ? (
-        <PathView
-          id={id}
-          superstate={props.superstate}
-          path={pathState?.path ?? props.state?.props?.value}
-          containerRef={props.containerRef}
-          styles={{}}
-          readOnly={true}
-        ></PathView>
-      ) : (
-        selectionMode > FrameEditorMode.Read && (
-          <div
-            className="mk-node-text-placeholder"
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              props.superstate.ui.quickOpen(
-                BlinkMode.Open,
-                rect,
-                windowFromDocument(e.view.document),
-                (path) => {
-                  updateValue(path);
-                }
-              );
-            }}
-          >
-            {i18n.hintText.selectNote}
-          </div>
-        )
-      )}
+      {props.state &&
+        expanded &&
+        (props.state?.props?.value?.length > 0 ? (
+          <PathView
+            id={id}
+            superstate={props.superstate}
+            path={pathState?.path ?? props.state?.props?.value}
+            containerRef={props.containerRef}
+            styles={{}}
+            readOnly={true}
+          ></PathView>
+        ) : (
+          selectionMode > FrameEditorMode.Read && (
+            <div
+              className="mk-node-text-placeholder"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                props.superstate.ui.quickOpen(
+                  BlinkMode.Open,
+                  rect,
+                  windowFromDocument(e.view.document),
+                  (path) => {
+                    updateValue(path);
+                  }
+                );
+              }}
+            >
+              {i18n.hintText.selectNote}
+            </div>
+          )
+        ))}
     </div>
   );
 };

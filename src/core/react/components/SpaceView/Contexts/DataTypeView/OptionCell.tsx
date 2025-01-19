@@ -212,22 +212,37 @@ export const OptionCell = (
     );
   };
 
-  const menuProps = (): SelectMenuProps => ({
-    multi: false,
-    editable: props.editMode >= CellEditMode.EditModeView,
-    ui: props.superstate.ui,
-    value: value,
-    options: !props.multi
-      ? [{ name: i18n.menu.none, value: "" }, ...options]
-      : options,
-    saveOptions,
-    removeOption: props.editMode >= CellEditMode.EditModeView && removeOption,
-    onMoreOption: props.editMode >= CellEditMode.EditModeView && showOptionMenu,
-    placeholder: i18n.labels.optionItemSelectPlaceholder,
-    searchable: true,
-    showAll: true,
-    onHide: () => props.setEditMode(null),
-  });
+  const menuProps = (): SelectMenuProps => {
+    const _options: SelectOption[] = [];
+    if (!props.multi) {
+      _options.push({
+        name: i18n.menu.none,
+        value: "",
+      });
+    }
+    if (props.editMode >= CellEditMode.EditModeView) {
+      _options.push(
+        ...options.map((f) => ({
+          ...f,
+          onRemove: () => removeOption(f.value),
+          onMoreOptions: (e: React.MouseEvent) => showOptionMenu(e, f.value),
+        }))
+      );
+    }
+
+    return {
+      multi: false,
+      editable: props.editMode >= CellEditMode.EditModeView,
+      ui: props.superstate.ui,
+      value: value,
+      options: _options,
+      saveOptions,
+      placeholder: i18n.labels.optionItemSelectPlaceholder,
+      searchable: true,
+      showAll: true,
+      onHide: () => props.setEditMode(null),
+    };
+  };
   return (
     <OptionCellBase
       superstate={props.superstate}

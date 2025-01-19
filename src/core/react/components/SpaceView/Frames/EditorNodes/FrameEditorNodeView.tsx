@@ -574,7 +574,8 @@ export const FrameEditorNodeView = (props: {
                     insertMode={
                       treeNode.node.type == "group"
                         ? 1
-                        : treeNode.node.type == "space"
+                        : treeNode.node.type == "space" ||
+                          treeNode.node.type == "container"
                         ? -1
                         : 0
                     }
