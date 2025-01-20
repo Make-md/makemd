@@ -208,7 +208,7 @@ export const BlinkComponent = (props: {
             props.onSelect ? true : false
           ).then((f) => {
             if (props.mode == BlinkMode.Open || props.mode == BlinkMode.Image) {
-              props.onSelect(f);
+              if (props.onSelect) props.onSelect(f);
             }
             props.hide();
           });
@@ -220,7 +220,7 @@ export const BlinkComponent = (props: {
         props.superstate.pathsIndex.get(props.superstate.ui.activePath)
       ).then((f) =>
         newPathInSpace(props.superstate, f, "md", query).then((f) => {
-          if (props.mode == BlinkMode.Open) {
+          if (props.mode == BlinkMode.Open && props.onSelect) {
             props.onSelect(f);
           }
           props.hide();
@@ -252,15 +252,15 @@ export const BlinkComponent = (props: {
       }
       createSpace(props.superstate, newPath, {}).then((f) => {
         if (props.mode == BlinkMode.Open || BlinkMode.OpenSpaces) {
-          props.onSelect(f.path);
+          if (props.onSelect) props.onSelect(f.path);
         }
         props.hide();
       });
       return;
     }
     if (item.cache) {
-      if (props.mode == BlinkMode.Open || BlinkMode.OpenSpaces) {
-        props.onSelect(item.cache?.path);
+      if (props.mode == BlinkMode.Open || props.mode == BlinkMode.OpenSpaces) {
+        if (props.onSelect) props.onSelect(item.cache?.path);
         props.hide();
         return;
       }

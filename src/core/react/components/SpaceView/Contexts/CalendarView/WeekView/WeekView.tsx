@@ -1,4 +1,4 @@
-import { formatDate, parseDate } from "core/utils/date";
+import { formatDate, isValidDate, parseDate } from "core/utils/date";
 import { add, addDays, startOfDay, startOfWeek } from "date-fns";
 import { Superstate } from "makemd-core";
 import React, { useMemo, useState } from "react";
@@ -33,7 +33,9 @@ export const WeekView = (props: {
 }) => {
   const hourHeight = props.hourHeight;
   const [date, setDate] = useState<Date>(
-    props.weekStart ?? startOfWeek(new Date())
+    isValidDate(props.weekStart)
+      ? startOfWeek(props.weekStart)
+      : startOfWeek(new Date())
   );
 
   const startHour = props.startHour ?? 0;

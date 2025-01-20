@@ -95,9 +95,9 @@ const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {})
     ...filteredFrontmatter,
     ...fieldsSorted
       .reduce((p, c) => {
-        // if (c.name == 'tags') {
-        //   return { ...p, 'tags': serializeMultiString([...(superstate.tagsMap.get(row[PathPropertyName]) ?? [])]) };
-        // }
+        if (c.name == 'tags') {
+          return { ...p, 'tags': serializeMultiString([...(paths.get(row[PathPropertyName]).tags ?? [])]) };
+        }
         
         const { value } = parseFieldValue(c.value, c.type);
         return {...p, [c.name]: runFormulaWithContext(runContext, paths, spaceMap, value, properties, {...row, ...p}, path)};

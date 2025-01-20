@@ -6,6 +6,7 @@ import { Superstate } from "makemd-core";
 
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
+import { parseDate } from "core/utils/date";
 import React, { useContext, useEffect, useState } from "react";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { DBRow } from "shared/types/mdb";
@@ -142,6 +143,10 @@ export const ContextListContainer = (props: {
             startHour={predicate.listViewProps?.startOfDay ?? 0}
             endHour={predicate.listViewProps?.endOfDay ?? 24}
             gutter
+            date={
+              predicate.listViewProps?.date &&
+              parseDate(predicate.listViewProps.date)
+            }
             header={predicate.listViewProps?.hideHeader != true}
             hourHeight={60}
             data={data}
@@ -161,6 +166,10 @@ export const ContextListContainer = (props: {
             startHour={predicate.listViewProps?.startOfDay ?? 0}
             endHour={predicate.listViewProps?.endOfDay ?? 24}
             hourHeight={40}
+            weekStart={
+              predicate.listViewProps?.date &&
+              parseDate(predicate.listViewProps.date)
+            }
             header={predicate.listViewProps?.hideHeader != true}
             data={data}
             insertItem={(row: DBRow) => {
@@ -177,6 +186,10 @@ export const ContextListContainer = (props: {
             field={predicate.listViewProps?.start || "start"}
             fieldEnd={predicate.listViewProps?.end || "end"}
             fieldRepeat={predicate.listViewProps?.repeat}
+            date={
+              predicate.listViewProps?.date &&
+              parseDate(predicate.listViewProps.date)
+            }
             header
             insertItem={(row: DBRow) => {
               updateRow(row, -1);

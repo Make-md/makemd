@@ -5,6 +5,7 @@ import React, { useEffect, useRef } from "react";
 import { uiIconSet } from "shared/assets/icons";
 import i18n from "shared/i18n";
 
+import { BlinkMode } from "shared/types/blink";
 import { ISuperstate } from "shared/types/superstate";
 import { Warning } from "shared/types/Warning";
 import { windowFromDocument } from "shared/utils/dom";
@@ -117,7 +118,7 @@ export const ObsidianMobileMainMenu = (props: {
           {props.superstate.settings.blinkEnabled && (
             <div
               className="mk-main-menu-button"
-              onClick={(e) => props.superstate.ui.quickOpen()}
+              onClick={(e) => props.superstate.ui.quickOpen(BlinkMode.Blink)}
             >
               <div
                 className="mk-icon-small"

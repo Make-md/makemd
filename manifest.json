@@ -1,10 +1,10 @@
 {
   "id": "make-md",
-  "name": "MAKE.md",
-  "version": "1.0.5",
+  "name": "make.md",
+  "version": "1.0.6",
   "minAppVersion": "0.16.0",
-  "description": "Make.md gives you everything you need to organize and personalize your notes.",
-  "author": "MAKE.md",
+  "description": "make.md gives you everything you need to organize and personalize your notes.",
+  "author": "make.md",
   "authorUrl": "https://www.make.md",
   "isDesktopOnly": false
 }

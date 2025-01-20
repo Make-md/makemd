@@ -1,4 +1,5 @@
 import { useDndMonitor } from "@dnd-kit/core";
+import { isValidDate } from "core/utils/date";
 import { addWeeks, endOfMonth, startOfMonth } from "date-fns";
 import { Superstate } from "makemd-core";
 import React, { useMemo, useState } from "react";
@@ -17,7 +18,10 @@ export const MonthView = (props: {
   insertItem: (row: DBRow) => void;
   updateItem: (row: DBRow) => void;
 }) => {
-  const [date, setDate] = useState<Date>(props.date ?? new Date());
+  const [date, setDate] = useState<Date>(
+    isValidDate(props.date) ? startOfMonth(props.date) : new Date()
+  );
+
   const monthWeeks = useMemo(() => {
     const startDate = startOfMonth(date);
     const endDate = endOfMonth(date);

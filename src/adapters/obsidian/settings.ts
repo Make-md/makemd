@@ -137,6 +137,12 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         type: 'boolean',
       },
       {
+        name: 'overrideNativeMenu',
+        category: 'navigator',
+        subCategory: 'interaction',
+        type: 'boolean',
+      },
+      {
         name: 'spacesRightSplit',
         category: 'navigator',
         subCategory: 'appearance',

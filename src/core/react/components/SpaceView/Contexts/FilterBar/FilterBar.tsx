@@ -124,6 +124,13 @@ export const FilterBar = (props: {
           }),
         },
         {
+          name: "date",
+          type: "date",
+          value: JSON.stringify({
+            alias: "Start Date",
+          }),
+        },
+        {
           name: "hideHeader",
           type: "boolean",
           value: JSON.stringify({

@@ -249,6 +249,9 @@ export const TreeItem = (props: TreeItemProps) => {
   };
   const color = pathState?.label?.color;
   const contextMenu = (e: React.MouseEvent) => {
+    if (superstate.settings.overrideNativeMenu) {
+      return superstate.ui.nativePathMenu(e, pathState.path);
+    }
     if (superstate.spacesIndex.has(pathState.path)) {
       showSpaceContextMenu(
         superstate,
