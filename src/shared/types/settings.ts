@@ -85,4 +85,5 @@ export interface MakeMDSettings {
   basicsSettings: MakeBasicsSettings;
   notesPreview: boolean;
   editStickerInSidebar: boolean;
+  overrideNativeMenu: boolean;
 }

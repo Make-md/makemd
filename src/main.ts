@@ -129,6 +129,7 @@ import "css/SpaceViewer/SpaceView.css";
 import "css/SpaceViewer/TableView.css";
 import "css/SpaceViewer/Text.css";
 import "css/UI/Buttons.css";
+import { BlinkMode } from "shared/types/blink";
 import { IMakeMDPlugin } from "shared/types/makemd";
 import { ISuperstate } from "shared/types/superstate";
 import { windowFromDocument } from "shared/utils/dom";
@@ -520,7 +521,7 @@ loadViews () {
       this.addCommand({
         id: "mk-blink",
         name: i18n.commandPalette.blink,
-        callback: () => this.quickOpen(this.superstate),
+        callback: () => this.quickOpen(this.superstate, BlinkMode.Blink),
         hotkeys: [
           {
             modifiers: ["Mod"],

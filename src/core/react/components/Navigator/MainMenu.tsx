@@ -4,6 +4,7 @@ import { NavigatorContext } from "core/react/context/SidebarContext";
 import { Superstate } from "makemd-core";
 import React, { useContext, useEffect, useRef } from "react";
 import { default as t } from "shared/i18n";
+import { BlinkMode } from "shared/types/blink";
 import { Warning } from "shared/types/Warning";
 import { windowFromDocument } from "shared/utils/dom";
 import { defaultAddAction } from "../UI/Menus/navigator/showSpaceAddMenu";
@@ -95,7 +96,7 @@ export const MainMenu = (props: MainMenuComponentProps) => {
           {props.superstate.settings.blinkEnabled && (
             <div
               className="mk-main-menu-button"
-              onClick={(e) => props.superstate.ui.quickOpen()}
+              onClick={(e) => props.superstate.ui.quickOpen(BlinkMode.Blink)}
             >
               <div
                 className="mk-icon-small"

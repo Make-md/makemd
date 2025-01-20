@@ -750,6 +750,10 @@ class T {
           name: "Open Navigator as Default Tab",
           desc: "Open the Navigator tab when Obsidian launches",
         },
+        overrideNativeMenu: {
+          name: "Use Obsidian Context Menu",
+          desc: "Show the Obsidian context menu instead of Make.md",
+        },
         editStickerInSidebar: {
           name: "Edit Stickers in Sidebar",
           desc: "Edit stickers directly in the sidebar",
@@ -895,7 +899,7 @@ class T {
         },
         spacesDisablePatch: {
           name: "Compatibility Mode",
-          desc: "This will improve the compatibility of plugins while using the Navigator",
+          desc: "This will improve the compatibility of plugins while using the Navigator, however will turn off linking to spaces from breadcrumbs",
         },
         deleteFileOption: {
           name: "Delete File Option",

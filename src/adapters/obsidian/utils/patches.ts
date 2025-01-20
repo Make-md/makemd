@@ -6,20 +6,22 @@ import {
   WorkspaceLeaf
 } from "obsidian";
 import { EVER_VIEW_TYPE } from "../ui/navigator/EverLeafView";
+import { FILE_TREE_VIEW_TYPE } from "../ui/navigator/NavigatorView";
 
 export const patchFilesPlugin = (plugin: MakeMDPlugin) => {
   plugin.register(
     around(Workspace.prototype, {
       getLeavesOfType(old) {
         return function (type: unknown) {
-          // if (type == "file-explorer") {
-          //   return old.call(this, FILE_TREE_VIEW_TYPE);
-          // }
+          if (type == "file-explorer") {
+            return old.call(this, FILE_TREE_VIEW_TYPE);
+          }
           return old.call(this, type);
         };
       },
     })
   );
+  
 };
 
 export const patchWorkspace = (plugin: MakeMDPlugin) => {

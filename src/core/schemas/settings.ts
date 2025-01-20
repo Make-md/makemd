@@ -86,4 +86,5 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   firstLaunch: false,
   notesPreview: false,
   editStickerInSidebar: true,
+  overrideNativeMenu: false,
 };

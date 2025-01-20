@@ -5,9 +5,9 @@ import { safelyParseJSON } from "../shared/utils/json";
 import { detectPropertyType } from "./properties";
 import { serializeMultiDisplayString, serializeMultiString } from "./serializers";
 
-export const parseMultiString = (str: string): string[] => str?.startsWith("[") ? ensureArray(safelyParseJSON(str)).map(f => ensureString(f)) : parseMultiDisplayString(str)
+export const parseMultiString = (str: string): string[] => ensureString(str).startsWith("[") ? ensureArray(safelyParseJSON(str)).map(f => ensureString(f)) : parseMultiDisplayString(str)
   
-  export const parseMultiDisplayString = (str: string):string[] => (str?.replace('\\,', ',')?.match(/(\\.|[^,])+/g) ?? []).map(f => f.trim());
+  export const parseMultiDisplayString = (str: string):string[] => (ensureString(str).replace('\\,', ',')?.match(/(\\.|[^,])+/g) ?? []).map(f => f.trim());
   export const parseProperty = (field: string, value: any, type?: string) : string => {
   const YAMLtype = type ?? detectPropertyType(value, field);
   if (!value) return ""

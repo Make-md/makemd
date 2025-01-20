@@ -57,7 +57,10 @@ export const DayView = (props: {
   updateItem?: (row: DBRow) => void;
 }) => {
   const { hourHeight } = props;
-  const [date, setDate] = useState<Date>(props.date ?? startOfDay(new Date()));
+  const [date, setDate] = useState<Date>(
+    isValidDate(props.date) ? startOfDay(props.date) : startOfDay(new Date())
+  );
+
   const { source } = useContext(ContextEditorContext);
   const [placeholderEvent, setPlaceholderEvent] = useState<EventLayout | null>(
     null
