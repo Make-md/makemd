@@ -19,7 +19,7 @@
     "@types/lodash": "^4.14.191",
     "@types/node": "^14.14.37",
     "@types/pica": "^9.0.4",
-    "@types/react": "^18.2.57",
+    "@types/react": "^18.3.18",
     "@types/react-color": "^3.0.6",
     "@types/react-dom": "^18.2.19",
     "@types/react-tag-autocomplete": "^6.3.0",
