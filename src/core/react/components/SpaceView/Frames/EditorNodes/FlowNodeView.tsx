@@ -106,7 +106,6 @@ export const FlowNodeView = (
         },
       });
   };
-  console.log("FlowNodeView", props.state?.props?.value, props.source);
   return (
     <div className="mk-node-flow">
       {!props.state?.styles?.["--mk-min-mode"] &&
