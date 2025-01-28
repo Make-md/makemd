@@ -32,10 +32,10 @@ export const fieldsView : FrameRoot = {
       hidden: '!($contexts[listItem.props.value.table?.length > 0 ? listItem.props.value.table : $contexts.$context._path]?.[listItem.props.value.name]?.length > 0)'
     })
   ]}, {
-    value: `$contexts.$context._properties?.filter(f => f.primary != 'true') ?? []`
+    value: `$contexts.$context._properties?.filter(f => f.primary != 'true' && !f.type.startsWith('object')) ?? []`
   }, {
     layout: `'column'`,
-    gap: `'4px'`
+    gap: `'6px'`
   })]
 }
 export const coverListItem: FrameRoot = {
@@ -64,15 +64,25 @@ export const coverListItem: FrameRoot = {
     },
     styles: {
       layout: `"column"`,
+      width: `'200px'`,
     },
     
   },
   id: "$root",
   children: [
     frameRootWithProps(
-      imageNode,
+       {...groupNode, children: [frameRootWithProps(
+        imageNode,
+        {
+          value: `$api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.thumbnail`,
+        },
+        {
+          width: `'200px'`,
+          height: `'300px'`,
+          borderRadius: `'8px'`,
+        }
+    )]},
       {
-        value: `$api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.thumbnail`,
       }, {
         background: `'var(--mk-ui-background-contrast)'`,
         borderRadius: `'8px'`,
@@ -104,8 +114,20 @@ export const imageListItem: FrameRoot = {
     name: "Image Item",
     rank: 0,
     props: {
-      _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
+        coverProperty: `'File'`,
+        _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
     },
+    types: {
+      // hideCover: "boolean",
+      coverProperty: "option"
+    },
+    propsValue: {
+      coverProperty: {
+        alias: "Cover Image",
+        source: `$properties`
+      }
+    },
+    
     styles: {
       layout: `"row"`,
       padding: `'4px'`,
@@ -123,7 +145,7 @@ export const imageListItem: FrameRoot = {
     frameRootWithProps(
       imageNode,
       {
-        value: `$api.path.label($contexts.$context['_keyValue'])?.thumbnail`,
+        value: `$api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.thumbnail`,
       }, {
         borderRadius: `'8px'`,
       }
@@ -446,6 +468,7 @@ export const flowListItem: FrameRoot = {
         node: {
           ...groupNode.node,
           styles: {
+            layout: `'column'`,
             gap: `'8px'`,
             padding: `'8px'`,
             flex: `'1'`,
@@ -457,9 +480,7 @@ export const flowListItem: FrameRoot = {
             {
               value: `$contexts.$context['_name']`,
             },
-            {
-              "--font-text-weight": `'var(--bold-weight)'`,
-            }
+            
           ),
           kitWithProps(fieldsView, {})
         ],
@@ -1042,7 +1063,7 @@ export const flowListItem: FrameRoot = {
         groupValue: `$root.props['_groupValue']`,
       },
     {
-      
+      paddingLeft: `'8px'`,
    
     })]}, {}, 
       {height: `'auto'`, marginTop: `'8px'`,

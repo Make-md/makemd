@@ -63,6 +63,11 @@
     display: flex;
 }
 
+.mk-frame[data-type="icon"] {
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
 .mk-frame[data-type="listItem"]:empty, .mk-frame[data-type="frame"]:empty, .mk-frame[data-type="icon"]:empty, .mk-frame[data-type="text"]:empty, .mk-frame[data-type="image"]:empty,
 .mk-frame-edit[data-type="icon"]:empty, .mk-frame-edit[data-type="text"]:empty, .mk-frame-edit[data-type="image"]:empty {
     display: none;

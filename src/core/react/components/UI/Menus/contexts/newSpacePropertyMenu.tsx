@@ -51,16 +51,13 @@ const NewPropertyMenuComponent = (
   const [fieldType, setFieldType] = useState<string>(props.type ?? "text");
   const options = useMemo(() => {
     const options = [];
-    if (props.fileMetadata) {
+    if (props.fileMetadata || props.contextPath == "$fm") {
       options.push({
         name: i18n.menu.setNone,
         value: "$fm",
       });
     }
-    if (
-      props.contextPath &&
-      (!props.fileMetadata || props.contextPath != "$fm")
-    ) {
+    if (props.contextPath && props.contextPath != "$fm") {
       options.push({
         name: folderPathToString(props.contextPath),
         value: "",
@@ -187,6 +184,14 @@ const NewPropertyMenuComponent = (
       props.superstate.ui.notify(i18n.notice.noPropertyName);
       return;
     }
+    console.log(
+      "Saving field",
+      fieldSource,
+      fieldName,
+      fieldType,
+      fieldValue,
+      props.schemaId
+    );
     const result = props.saveField(fieldSource, {
       name: fieldName,
       type: fieldType,

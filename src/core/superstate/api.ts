@@ -61,7 +61,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
         sticker: (property: SpaceProperty) => stickerForField(property),
         value: ( type: string, value: string) => {
             if (!type) return value
-            return parseMDBStringValue(type, value, true)
+            return parseMDBStringValue(type, value, false)
         }
     }
 

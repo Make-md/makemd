@@ -110,7 +110,9 @@ export const OptionCell = (
     if (props.multi) {
       const newValues = value.filter((f) => f != v);
       setValue(newValues);
-      props.saveValue(serializeMultiString(newValues));
+      newValues.length == 0
+        ? props.saveValue("")
+        : props.saveValue(serializeMultiString(newValues));
     } else {
       setValue([]);
       props.saveValue("");

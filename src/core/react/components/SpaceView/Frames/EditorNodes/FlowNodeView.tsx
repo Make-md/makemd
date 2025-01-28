@@ -106,24 +106,29 @@ export const FlowNodeView = (
         },
       });
   };
+  console.log("FlowNodeView", props.state?.props?.value, props.source);
   return (
     <div className="mk-node-flow">
-      {pathState &&
-        (!props.state?.styles?.["--mk-min-mode"] ? (
-          <div className="mk-node-link">
-            <PathCrumb superstate={props.superstate} path={pathState.path}>
-              {!hideToggle && (
-                <CollapseToggle
-                  superstate={props.superstate}
-                  collapsed={!expanded}
-                  onToggle={toggleCollapse}
-                ></CollapseToggle>
-              )}
-            </PathCrumb>
-          </div>
-        ) : (
-          <></>
-        ))}
+      {!props.state?.styles?.["--mk-min-mode"] && pathState ? (
+        <div className="mk-node-link">
+          <PathCrumb superstate={props.superstate} path={pathState.path}>
+            {!hideToggle && (
+              <CollapseToggle
+                superstate={props.superstate}
+                collapsed={!expanded}
+                onToggle={toggleCollapse}
+              ></CollapseToggle>
+            )}
+          </PathCrumb>
+        </div>
+      ) : (
+        <div className="mk-node-link">
+          <PathCrumb
+            superstate={props.superstate}
+            path={props.state?.props?.value}
+          ></PathCrumb>
+        </div>
+      )}
       {props.state &&
         expanded &&
         (props.state?.props?.value?.length > 0 ? (

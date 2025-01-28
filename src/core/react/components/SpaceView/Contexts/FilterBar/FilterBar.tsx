@@ -414,13 +414,39 @@ export const FilterBar = (props: {
         ...frameSchema,
         name: frameSchema.name,
         def: {
-          db: dbSchema.id,
+          db: defaultContextSchemaID,
           context: link,
         },
         type: "view",
       };
       saveSchema(newSchema).then((f) => setFrameSchema(newSchema));
     });
+  };
+
+  const selectList = (offset: Rect, win: Window) => {
+    const schemas = props.superstate.contextsIndex.get(source)?.schemas;
+    if (!schemas) return;
+    const options: SelectOption[] = schemas.map((f) => ({
+      name: f.name,
+      value: f.id,
+      onClick: (e) => {
+        const newSchema = {
+          ...frameSchema,
+          name: frameSchema.name,
+          def: {
+            db: f.id,
+            context: source,
+          },
+          type: "view",
+        };
+        saveSchema(newSchema).then((f) => setFrameSchema(newSchema));
+      },
+    }));
+    return props.superstate.ui.openMenu(
+      offset,
+      defaultMenu(props.superstate.ui, options),
+      win
+    );
   };
 
   const showViewOptionsMenu = async (e: React.MouseEvent) => {
@@ -487,20 +513,29 @@ export const FilterBar = (props: {
 
     menuOptions.push(menuSeparator);
 
-    if (dbSchema?.primary == "true") {
-      const sourceSpace = props.superstate.spacesIndex.get(source);
-      menuOptions.push({
-        name: "Source",
-        icon: "ui//table",
-        type: SelectOptionType.Disclosure,
-        value: sourceSpace.name,
-        onSubmenu: (rect, onHide) => {
-          return selectSource(rect, windowFromDocument(e.view.document));
-        },
-      });
+    const sourceSpace = props.superstate.spacesIndex.get(source);
+    menuOptions.push({
+      name: "Source",
+      icon: "ui//table",
+      type: SelectOptionType.Disclosure,
+      value: sourceSpace.name,
+      onSubmenu: (rect, onHide) => {
+        return selectSource(rect, windowFromDocument(e.view.document));
+      },
+    });
 
-      menuOptions.push(menuSeparator);
-    }
+    const table = dbSchema.name;
+    menuOptions.push({
+      name: "List",
+      icon: "ui//table",
+      type: SelectOptionType.Disclosure,
+      value: table,
+      onSubmenu: (rect, onHide) => {
+        return selectList(rect, windowFromDocument(e.view.document));
+      },
+    });
+
+    menuOptions.push(menuSeparator);
     const listViewOptions = await propertiesForPredicate(predicate, "listView");
     const listGroupOptions = await propertiesForPredicate(
       predicate,

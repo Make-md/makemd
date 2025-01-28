@@ -325,6 +325,20 @@ export const fieldNode: FrameRoot = {
     
   },
   children: [frameRootWithProps({...groupNode, children:[ 
+    frameRootWithProps(
+          iconNode,
+          {
+            value: `$api.properties.sticker($root.props.property, $root.props.value)`,
+          },
+      {
+        "width": `'16px'`,
+        "height": `'16px'`,
+        "color": `'var(--mk-ui-text-secondary)'`,
+        "marginTop": `'4px'`,
+      }
+    ),
+    frameRootWithProps({...groupNode, children:[ 
+    
     
         frameRootWithProps(
           textNode,
@@ -348,8 +362,17 @@ export const fieldNode: FrameRoot = {
       }
     ),
     frameRootWithProps(
+      textNode,
+      {
+        value: `$api.date.format($api.date.parse($root.props.value))`,
+      },
+      {
+        hidden: `$root.props.type != 'date'`,
+      }
+    ),
+    frameRootWithProps(
       {...groupNode, children: [
-        frameRootWithProps(iconNode, {value: `'ui//check'`}, { background: `'var(--mk-ui-active)'`, "width": `'16px'`, height: `'16px'`}),
+        frameRootWithProps(iconNode, {value: `'ui//check'`}, { background: `'var(--mk-ui-active)'`, "width": `'16px'`, height: `'16px'`, borderRadius: `'2px'`, padding: `'2px'`}),
         frameRootWithProps(textNode, {value: `$root.props.property?.name`})
       ]},
       {},
@@ -388,7 +411,8 @@ export const fieldNode: FrameRoot = {
       },
       {
         hidden: `$root.props.type != 'link' && $root.props.type != 'file' && $root.props.type != 'context'`,
-        padding: `'0px'`
+        padding: `'0px'`,
+        "--mk-link": `true`
       }
     ),
   ]}, {}, {
@@ -420,7 +444,8 @@ export const fieldNode: FrameRoot = {
           },
           {
             hidden: `$root.props.type != 'link-multi' && $root.props.type != 'context-multi'`,
-            padding: `'0px'`
+            padding: `'0px'`,
+            "--mk-link": `true`
           }
         )]}, {}),
       ]}, 
@@ -428,7 +453,12 @@ export const fieldNode: FrameRoot = {
       {layout: `'row'`, columnGap: `'8px'`,
       flexWrap: `'wrap'`,
       rowGap: `'4px'`, hidden: `!$root.props.type?.includes('multi')`})
-    ]
+    ]}, {}, {
+      layout: `'row'`,
+      layoutAlign: `'nw'`,
+      gap: `'8px'`,
+      height: `'auto'`,
+    })]
 }
 
 export const previewNode: FrameRoot = {

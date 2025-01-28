@@ -557,15 +557,16 @@ loadViews () {
         }
         setTimeout(() => this.activeFileChange(), 2000);
       });
-      if (this.superstate.settings.inlineContext) {
-        this.registerMarkdownPostProcessor((element, context) => {
-          replaceInlineContext(this, element, context);
-        });
-        document.body.classList.toggle(
-          "mk-inline-context-enabled",
-          this.superstate.settings.inlineContext
-        );
-      }
+      
+    }
+    if (this.superstate.settings.inlineContext) {
+      this.registerMarkdownPostProcessor((element, context) => {
+        replaceInlineContext(this, element, context);
+      });
+      document.body.classList.toggle(
+        "mk-inline-context-enabled",
+        this.superstate.settings.inlineContext
+      );
     }
   }
 

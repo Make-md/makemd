@@ -146,6 +146,7 @@ export const ContextListInstance = (
           >
             <FrameInstanceView
               superstate={props.superstate}
+              source={spaceInfo.path}
             ></FrameInstanceView>
           </FrameInstanceProvider>
         )}
@@ -170,7 +171,10 @@ export const ContextListInstance = (
             contexts={contexts}
             editable={false}
           >
-            <FrameInstanceView superstate={props.superstate}>
+            <FrameInstanceView
+              superstate={props.superstate}
+              source={spaceInfo.path}
+            >
               {props.children}
             </FrameInstanceView>
           </FrameInstanceProvider>

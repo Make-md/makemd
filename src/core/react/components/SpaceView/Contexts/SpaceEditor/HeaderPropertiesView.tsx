@@ -168,7 +168,7 @@ export const HeaderPropertiesView = (props: {
         spaces: spacePathStates.map((f) => f.path),
         fields: [],
         saveField: (source: string, field: SpaceProperty) =>
-          saveField(space, field),
+          saveField(source, field),
         schemaId: defaultContextSchemaID,
         contextPath: space,
         fileMetadata: !isSpace,
