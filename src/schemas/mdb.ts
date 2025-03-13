@@ -98,7 +98,7 @@ export const fieldTypes: FieldType[] = [
     multi: true,
     multiType: "option-multi",
     icon: 'ui//list',
-    configKeys: ['options', 'source'],
+    configKeys: ['options', 'source', 'sourceProps'],
     description: i18n.properties.option.description
   },
   {

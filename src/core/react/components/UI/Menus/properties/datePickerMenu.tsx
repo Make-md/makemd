@@ -90,7 +90,11 @@ const DatePickerHeader = (
         </div>
       ) : (
         <div onClick={() => setInputMode(true)}>
-          {formatDate(props.ui.superstate, props.displayMonth, "MMM yyy")}
+          {formatDate(
+            props.ui.superstate.settings,
+            props.displayMonth,
+            "MMM yyy"
+          )}
         </div>
       )}
 

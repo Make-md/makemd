@@ -592,7 +592,7 @@ public api: API;
                 if (space.metadata?.links?.includes(oldPath)) {
                     this.addToContextStateQueue(() => saveSpaceMetadataValue(this, space.path, "links", space.metadata.links.map(f => f == oldPath ? newPath : f)))
                 }
-                await this.reloadContext(space.space, true)
+                await this.reloadContext(space.space, { force: true, calculate: true })
             }
             const allContextsWithLink : SpaceInfo[] = [];
             for(const [contextPath, contextCache] of this.contextsIndex) {
@@ -600,7 +600,7 @@ public api: API;
                     allContextsWithLink.push(this.spacesIndex.get(contextCache.path).space)
                 }
             }
-            this.addToContextStateQueue(() => renameLinkInContexts(this.spaceManager, oldPath, newFilePath, allContextsWithLink).then(f => Promise.all(allContextsWithLink.map(c => this.reloadContext(c, true)))))
+            this.addToContextStateQueue(() => renameLinkInContexts(this.spaceManager, oldPath, newFilePath, allContextsWithLink).then(f => Promise.all(allContextsWithLink.map(c => this.reloadContext(c, { force: true, calculate: true })))))
         }
         
         let focusChanged = false;
@@ -621,7 +621,7 @@ public api: API;
         
         const changedSpaces = uniq([...(this.spacesMap.get(newPath) ?? []), ...oldSpaces]);
         //reload contexts to calculate proper paths
-        const cachedPromises = changedSpaces.map(f => this.reloadContext(this.spacesIndex.get(f)?.space));
+        const cachedPromises = changedSpaces.map(f => this.reloadContext(this.spacesIndex.get(f)?.space, { force: false, calculate: true }));
         await Promise.all(cachedPromises);
 
         changedSpaces.forEach(f => this.dispatchEvent("spaceStateUpdated", { path: f}))
@@ -658,14 +658,14 @@ public api: API;
         }
         
           const allContextsWithFile = (fileCache.spaces ?? []).map(f => this.spacesIndex.get(f)?.space).filter(f => f);
-          this.addToContextStateQueue(() => removePathInContexts(this.spaceManager, path, allContextsWithFile).then(f => allContextsWithFile.forEach(c => this.reloadContext(c))))
+          this.addToContextStateQueue(() => removePathInContexts(this.spaceManager, path, allContextsWithFile).then(f => allContextsWithFile.forEach(c => this.reloadContext(c, { force: false, calculate: true }))))
           const allContextsWithLink : SpaceInfo[] = [];
           for(const [contextPath, contextCache] of this.contextsIndex) {
             if (contextCache.outlinks.includes(path) && this.spacesIndex.has(contextCache.path)) {
                 allContextsWithLink.push(this.spacesIndex.get(contextCache.path).space)
             }
         }
-        this.addToContextStateQueue(() => removeLinkInContexts(this.spaceManager, path, allContextsWithLink).then(f => allContextsWithFile.forEach(c => this.reloadContext(c))));
+        this.addToContextStateQueue(() => removeLinkInContexts(this.spaceManager, path, allContextsWithLink).then(f => allContextsWithFile.forEach(c => this.reloadContext(c, { force: false, calculate: true }))));
 
         (fileCache.spaces ?? []).forEach(f => {
             this.dispatchEvent('spaceStateUpdated',{ path: f});
@@ -691,7 +691,7 @@ public api: API;
             this.contextsIndex.delete(oldPath);
             this.actionsIndex.delete(oldPath);
             await this.reloadSpace(newSpaceInfo, oldmetadata).then(f => this.onSpaceDefinitionChanged(f, oldmetadata))
-            await this.reloadContext(newSpaceInfo, true);
+            await this.reloadContext(newSpaceInfo, { force: true, calculate: true });
             await this.reloadActions(newSpaceInfo);
         }
         
@@ -720,16 +720,22 @@ public api: API;
     }
 
     
-    public async reloadContextByPath (path: string, force?: boolean) {
-        return this.reloadContext(this.spaceManager.spaceInfoForPath(path), force)
+    public async reloadContextByPath (path: string, options?: {
+        calculate?: boolean,
+        force?: boolean
+    }) {
+        return this.reloadContext(this.spaceManager.spaceInfoForPath(path), options)
     }
-    public async reloadContext (space: SpaceInfo, force?: boolean) {
+    public async reloadContext (space: SpaceInfo, options?: {
+        calculate?: boolean,
+        force?: boolean
+    }) {
         
         if (!space) return false;
 
-        return this.indexer.reload<{cache: ContextState, changed: boolean}>({ type: 'context', path: space.path}).then(r => {
+        return this.indexer.reload<{cache: ContextState, changed: boolean}>({ type: 'context', path: space.path, payload: options}).then(r => {
 
-            return this.contextReloaded(space.path, r.cache, r.changed, force);
+            return this.contextReloaded(space.path, r.cache, r.changed, options?.force);
         });
     }
 
@@ -739,7 +745,8 @@ public api: API;
         if (!cache) return false;
         if (this.settings.enhancedLogs)
         {console.log('Context Reloaded')}
-            if (!changed && !force) { return false }
+        if (!changed && !force) { return false }
+            
             this.contextsIndex.set(path, cache);
             const pathState = this.pathsIndex.get(path);
             if (pathState && cache.dbExists && !pathState.readOnly) {
@@ -841,7 +848,6 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
         const type : SpaceType = this.spaceManager.spaceTypeByString(uri)
         if (type == 'default' || type == 'tag') {
             metadata.filters = [];
-            metadata.links = [];
         }
         const propertyTypes : SpaceProperty[] = [];
         let properties = {};
@@ -885,7 +891,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
                 }
             }
             }
-            properties = await this.spaceManager.readProperties(space.notePath).then(f => linkContextRow(this.formulaContext, this.pathsIndex, this.spacesMap, f, propertyTypes, pathState));
+            properties = await this.spaceManager.readProperties(space.notePath).then(f => linkContextRow(this.formulaContext, this.pathsIndex, this.contextsIndex, this.spacesMap, f, propertyTypes, pathState, this.settings));
         }
    
         [...this.spacesMap.get(space.path)].map(f => this.contextsIndex.get(f)).forEach((f) => {
@@ -955,7 +961,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
                 const promises = cache.tags.map(f => fileSystemSpaceInfoFromTag(this.spaceManager, f)).filter(f => !this.spacesIndex.has(f.path)).map(async f =>  
                     {
                         await this.reloadSpace(f);
-                        this.reloadContext(f);
+                        this.reloadContext(f, { force: false, calculate: true });
                         await this.reloadPath(f.path);
                         return 
                     }

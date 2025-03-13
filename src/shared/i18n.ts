@@ -594,6 +594,8 @@ class T {
         propertyValueSpace: "Space",
         propertyValueReference: "Related Property",
         propertyValueAggregate: "Aggregate Property",
+        propertyValueLinked: "Linked Property",
+        propertyValueLinkedPlaceholder: "Add/Select Property",
         propertyValueProperty: "Property",
         propertyLookup: "Edit Formula",
         existingFrontmatter: "Existing Property",

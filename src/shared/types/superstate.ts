@@ -78,8 +78,8 @@ export abstract class ISuperstate {
     onSpaceRenamed:(oldPath: string, newSpaceInfo: SpaceInfo) => Promise<void>;
     onSpaceDeleted:(space: string) => void;
     reloadActions:(space: SpaceInfo) => Promise<boolean>;
-    reloadContextByPath:(path: string, force?: boolean) => Promise<boolean>;
-    reloadContext:(space: SpaceInfo, force?: boolean) => Promise<boolean>;
+    reloadContextByPath:(path: string, options?: {calculate?: boolean, force?: boolean}) => Promise<boolean>;
+    reloadContext:(space: SpaceInfo, options?: {calculate?: boolean, force?: boolean}) => Promise<boolean>;
     contextReloaded:(path: string, cache: ContextState, changed: boolean, force?: boolean) => Promise<boolean>;
     allSpaces:(ordered?: boolean) => SpaceState[];
     spaceOrder:() => string[];

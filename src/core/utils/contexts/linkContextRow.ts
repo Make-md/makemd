@@ -3,11 +3,13 @@ import { ConstantNode, FunctionNode, parse } from "mathjs";
 import { PathPropertyName } from "shared/types/context";
 import { IndexMap } from "shared/types/indexMap";
 import { DBRow, DBRows, SpaceProperty } from "shared/types/mdb";
-import { PathState } from "shared/types/PathState";
+import { ContextState, PathState } from "shared/types/PathState";
+import { MakeMDSettings } from "shared/types/settings";
 import { uniq } from "shared/utils/array";
 import { serializeMultiString } from "utils/serializers";
 import { parseMultiString, parseProperty } from "../../../utils/parsers";
 import { runFormulaWithContext } from "../formula/parser";
+import { calculateAggregate } from "./predicate/aggregates";
 
 
 
@@ -77,10 +79,12 @@ const visited: Set<string> = new Set();
 export const linkContextRow = (
   runContext: math.MathJsInstance,
   paths: Map<string, PathState>,
+  contextsMap: Map<string, ContextState>,
   spaceMap: IndexMap,
   row: DBRow,
   fields: SpaceProperty[],
   path: PathState,
+  settings: MakeMDSettings,
   dependencies?: string[]
 ) => {
   if (!row) return {}
@@ -88,20 +92,77 @@ export const linkContextRow = (
   const result = dependencies ?? propertyDependencies(fields)
   const frontmatter = (paths.get(row[PathPropertyName])?.metadata?.property ?? {});
   const filteredFrontmatter = Object.keys(frontmatter).filter(f => fields.some(g => g.name == f) && f != PathPropertyName).reduce((p, c) => ({ ...p, [c]: parseProperty(c, frontmatter[c]) }), {})
-  const fieldsSorted = result.map(f => fields.find(g => g.name == f) as SpaceProperty).filter((f) => f && (f.type == "fileprop"))
-const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {})
+  const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {})
+  const formulaFields = result.map(f => fields.find(g => g.name == f) as SpaceProperty).filter((f) => f && (f.type == "fileprop")).reduce((p, c) => {
+    if (c.name == 'tags') {
+      return { ...p, 'tags': serializeMultiString([...(paths.get(row[PathPropertyName]).tags ?? [])]) };
+    }
+    
+    const { value } = parseFieldValue(c.value, c.type);
+    return {...p, [c.name]: runFormulaWithContext(runContext, paths, spaceMap, value, properties, {...row, ...p}, path)};
+    
+  }, {});
+  const relationFields = fields.filter((f) => f && (f.type.startsWith('context'))).reduce((p, c) => {
+    
+    const fieldValue = parseFieldValue(c.value, c.type);
+    const multi = c.type.endsWith('multi');
+    const value = multi ? parseMultiString(row[c.name]) : row[c.name]?.length > 0 ? [row[c.name]] : [];
+    if (!fieldValue.space) {
+          return p;
+        }
+        const items = contextsMap.get(fieldValue.space)?.contextTable?.rows ?? []
+        const values = items.reduce((p, c) => {
+            if (fieldValue.field, parseMultiString(c[fieldValue.field]).includes(row[PathPropertyName])) {
+              return [...p, c[PathPropertyName]];
+            }
+            return p;
+          }, []).filter(f => f);
+
+          if (multi) {
+                return {
+                  ...p, [c.name]: serializeMultiString(uniq([...value, ...values]))
+                }
+              }
+    return {
+      ...p, [c.name]: value[0] ?? values[0] ?? ''
+    };
+  }, {} as DBRow);
+  const aggregateFields = fields.filter((f) => f && (f.type == "aggregate")).reduce((p, c) => {
+    
+
+    const fieldValue = parseFieldValue(c.value, c.type);
+    const refField = fields.find(f => f.name == fieldValue?.ref);
+    if (!refField) 
+      return p;
+    const refFieldValue = parseFieldValue(refField.value, refField.type);
+    const spacePath = refFieldValue?.space;
+    const column = fieldValue?.field;
+    
+    if (!spacePath || !column) {
+      return p;
+    }
+    
+    const propValues = parseMultiString(relationFields[refField.name]);
+    
+    const values = propValues
+    .map((f) => (contextsMap.get(spacePath)?.contextTable?.rows ?? []).find(g => g[PathPropertyName] == f))
+    .map((f) => f?.[column]).filter((f) => f)
+        const value = calculateAggregate(
+          settings,
+          values,
+          fieldValue.fn,
+          column
+        );
+    return {
+      ...p, [c.name]: value
+    };
+  }, {});
   return {
     ...row,
     ...filteredFrontmatter,
-    ...fieldsSorted
-      .reduce((p, c) => {
-        if (c.name == 'tags') {
-          return { ...p, 'tags': serializeMultiString([...(paths.get(row[PathPropertyName]).tags ?? [])]) };
-        }
-        
-        const { value } = parseFieldValue(c.value, c.type);
-        return {...p, [c.name]: runFormulaWithContext(runContext, paths, spaceMap, value, properties, {...row, ...p}, path)};
-        
-      }, {}),
+    ...formulaFields,
+    ...relationFields,
+    ...aggregateFields,
+      
   };
 };

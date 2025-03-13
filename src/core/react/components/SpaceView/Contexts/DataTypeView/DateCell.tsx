@@ -20,6 +20,7 @@ import React, {
 import { windowFromDocument } from "shared/utils/dom";
 import { safelyParseJSON } from "shared/utils/json";
 
+import { startOfDay } from "date-fns";
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
 export const DateCell = (props: TableCellProp) => {
@@ -36,7 +37,7 @@ export const DateCell = (props: TableCellProp) => {
   }, [value]);
   const saveValue = (date: Date, hasTime: boolean) => {
     const newValue = formatDate(
-      props.superstate,
+      props.superstate.settings,
       date,
       hasTime ? isoDateFormat : "yyyy-MM-dd"
     );
@@ -68,7 +69,7 @@ export const DateCell = (props: TableCellProp) => {
         props.superstate.ui,
         offset,
         windowFromDocument(e.view.document),
-        date,
+        date ?? startOfDay(new Date()),
         saveValue,
         DatePickerTimeMode.Toggle,
         null,
@@ -122,7 +123,7 @@ export const DateCell = (props: TableCellProp) => {
           <div className="mk-cell-date-value" onClick={(e) => showPicker(e)}>
             {date
               ? formatDate(
-                  props.superstate,
+                  props.superstate.settings,
                   date,
                   format?.length > 0 ? format : null
                 )

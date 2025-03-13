@@ -32,7 +32,7 @@ import { formatDate } from "core/utils/date";
 import { nameForField } from "core/utils/frames/frames";
 import { isPhone } from "core/utils/ui/screen";
 import { SelectOption, SelectOptionType, Superstate, i18n } from "makemd-core";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { fieldTypeForField, stickerForField } from "schemas/mdb";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { FrameEditorMode } from "shared/types/frameExec";
@@ -91,6 +91,10 @@ export const FilterBar = (props: {
           value: JSON.stringify({
             alias: "Start Time Property",
             source: `$properties`,
+            sourceProps: {
+              type: "date",
+            },
+            required: true,
           }),
         },
         {
@@ -99,6 +103,9 @@ export const FilterBar = (props: {
           value: JSON.stringify({
             alias: "End Time Property",
             source: `$properties`,
+            sourceProps: {
+              type: "date",
+            },
           }),
         },
         {
@@ -107,6 +114,10 @@ export const FilterBar = (props: {
           value: JSON.stringify({
             alias: "Repeat Property",
             source: `$properties`,
+            sourceProps: {
+              type: "object",
+              typeName: "Repeat",
+            },
           }),
         },
         {
@@ -449,6 +460,22 @@ export const FilterBar = (props: {
     );
   };
 
+  const [listViewOptions, setListViewOptions] = useState<SpaceProperty[]>([]);
+  const [listGroupOptions, setListGroupOptions] = useState<SpaceProperty[]>([]);
+  const [listItemOptions, setListItemOptions] = useState<SpaceProperty[]>([]);
+
+  useEffect(() => {
+    propertiesForPredicate(predicate, "listView").then((f) =>
+      setListViewOptions(f)
+    );
+    propertiesForPredicate(predicate, "listGroup").then((f) =>
+      setListGroupOptions(f)
+    );
+    propertiesForPredicate(predicate, "listItem").then((f) =>
+      setListItemOptions(f)
+    );
+  }, [predicate]);
+
   const showViewOptionsMenu = async (e: React.MouseEvent) => {
     const menuOptions: SelectOption[] = [];
 
@@ -536,12 +563,7 @@ export const FilterBar = (props: {
     });
 
     menuOptions.push(menuSeparator);
-    const listViewOptions = await propertiesForPredicate(predicate, "listView");
-    const listGroupOptions = await propertiesForPredicate(
-      predicate,
-      "listGroup"
-    );
-    const listItemOptions = await propertiesForPredicate(predicate, "listItem");
+
     const savePropValue = (
       type: "listGroupProps" | "listViewProps" | "listItemProps",
       prop: string,
@@ -559,11 +581,13 @@ export const FilterBar = (props: {
         name: nameForField(f, props.superstate),
         icon: stickerForField(f),
         type: SelectOptionType.Disclosure,
+        value: predicate.listViewProps?.[f.name],
         onClick: (e) => {
           showSetValueMenu(
             (e.target as HTMLElement).getBoundingClientRect(),
             windowFromDocument(e.view.document),
             props.superstate,
+            predicate.listViewProps?.[f.name],
             f,
             (value) =>
               savePropValue(
@@ -571,7 +595,8 @@ export const FilterBar = (props: {
                 f.name,
                 parseMDBStringValue(f.type, value, true)
               ),
-            spaceCache.path
+            spaceCache.path,
+            dbSchema.id
           );
         },
       });
@@ -581,19 +606,23 @@ export const FilterBar = (props: {
         name: nameForField(f, props.superstate),
         icon: stickerForField(f),
         type: SelectOptionType.Disclosure,
+        value: predicate.listGroupProps?.[f.name],
         onClick: (e) => {
           showSetValueMenu(
             (e.target as HTMLElement).getBoundingClientRect(),
             windowFromDocument(e.view.document),
             props.superstate,
+            predicate.listGroupProps?.[f.name],
             f,
+
             (value) =>
               savePropValue(
                 "listGroupProps",
                 f.name,
                 parseMDBStringValue(f.type, value, true)
               ),
-            spaceCache.path
+            spaceCache.path,
+            dbSchema.id
           );
         },
       });
@@ -603,11 +632,13 @@ export const FilterBar = (props: {
         name: nameForField(f, props.superstate),
         icon: stickerForField(f),
         type: SelectOptionType.Disclosure,
+        value: predicate.listItemProps?.[f.name],
         onClick: (e) => {
           showSetValueMenu(
             (e.target as HTMLElement).getBoundingClientRect(),
             windowFromDocument(e.view.document),
             props.superstate,
+            predicate.listItemProps?.[f.name],
             f,
             (value) =>
               savePropValue(
@@ -615,7 +646,8 @@ export const FilterBar = (props: {
                 f.name,
                 parseMDBStringValue(f.type, value, true)
               ),
-            spaceCache.path
+            spaceCache.path,
+            dbSchema.id
           );
         },
       });
@@ -1012,7 +1044,7 @@ export const FilterBar = (props: {
         const saveValue = (date: Date) => {
           const newFilter: Filter = {
             ...filter,
-            value: date ? formatDate(props.superstate, date) : "",
+            value: date ? formatDate(props.superstate.settings, date) : "",
           };
           savePredicate({
             filters: (predicate?.filters ?? []).map((s, i) =>
@@ -1195,7 +1227,26 @@ export const FilterBar = (props: {
         break;
     }
   };
-
+  const missingOptions = useMemo(
+    () => [
+      ...listGroupOptions.filter(
+        (f) =>
+          parseFieldValue(f.value, f.type, props.superstate).required &&
+          !(predicate.listGroupProps[f.name]?.length > 0)
+      ),
+      ...listViewOptions.filter(
+        (f) =>
+          parseFieldValue(f.value, f.type, props.superstate).required &&
+          !(predicate.listViewProps[f.name]?.length > 0)
+      ),
+      ...listItemOptions.filter(
+        (f) =>
+          parseFieldValue(f.value, f.type, props.superstate).required &&
+          !(predicate.listItemProps[f.name]?.length > 0)
+      ),
+    ],
+    [listGroupOptions, listViewOptions, listItemOptions, predicate]
+  );
   return (
     <>
       {props.minMode ? (
@@ -1323,6 +1374,15 @@ export const FilterBar = (props: {
           )}
         </>
       )}
+      {missingOptions.length > 0 && (
+        <div className="mk-view-config-warning">
+          {missingOptions.map((f) => (
+            <div key={f.name}>{nameForField(f, props.superstate)}</div>
+          ))}
+          {"are required for this layout"}
+        </div>
+      )}
+
       {(predicate?.filters.length > 0 ||
         predicate?.sort.length > 0 ||
         predicate?.groupBy.length > 0) && (

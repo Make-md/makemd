@@ -293,7 +293,12 @@ export const ContextEditorProvider: React.FC<
     updateTable(newTable);
     await props.superstate.spaceManager
       .saveTable(contextPath, newTable, true)
-      .then((f) => props.superstate.reloadContext(spaceInfo, true));
+      .then((f) =>
+        props.superstate.reloadContext(spaceInfo, {
+          force: true,
+          calculate: true,
+        })
+      );
   };
 
   const cols: SpaceTableColumn[] = useMemo(
@@ -360,7 +365,12 @@ export const ContextEditorProvider: React.FC<
   const saveContextDB = async (newTable: SpaceTable, space: string) => {
     await props.superstate.spaceManager
       .saveTable(space, newTable, true)
-      .then((f) => props.superstate.reloadContextByPath(space, true));
+      .then((f) =>
+        props.superstate.reloadContextByPath(space, {
+          force: true,
+          calculate: true,
+        })
+      );
   };
   // const getSchema = (
   //   _schemaTable: FrameSchema[],
@@ -531,12 +541,14 @@ export const ContextEditorProvider: React.FC<
     const col = (
       table == "" ? tableData : contextTable[tagSpacePathFromTag(table)]
     )?.cols.find((f) => f.name == column);
-
     if (
-      table == defaultContextSchemaID &&
+      dbSchema.id == defaultContextSchemaID &&
       col &&
       props.superstate.settings.saveAllContextToFrontmatter
     ) {
+      console.log({
+        [column]: parseMDBStringValue(fieldTypeForField(col), value, true),
+      });
       saveProperties(
         props.superstate,
         path ?? tableData.rows[index]?.[PathPropertyName],

@@ -184,14 +184,7 @@ const NewPropertyMenuComponent = (
       props.superstate.ui.notify(i18n.notice.noPropertyName);
       return;
     }
-    console.log(
-      "Saving field",
-      fieldSource,
-      fieldName,
-      fieldType,
-      fieldValue,
-      props.schemaId
-    );
+
     const result = props.saveField(fieldSource, {
       name: fieldName,
       type: fieldType,
@@ -260,7 +253,12 @@ const NewPropertyMenuComponent = (
                   true
                 );
               })
-              .then((f) => props.superstate.reloadContextByPath(source, true));
+              .then((f) =>
+                props.superstate.reloadContextByPath(source, {
+                  force: true,
+                  calculate: true,
+                })
+              );
             props.hide();
             return;
           }

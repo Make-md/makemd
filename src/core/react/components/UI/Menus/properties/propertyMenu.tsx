@@ -1,5 +1,8 @@
+import { ObjectCell } from "core/react/components/SpaceView/Contexts/DataTypeView/ObjectCell";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
+import { RepeatTemplate } from "core/utils/contexts/fields/presets";
 import { Superstate } from "makemd-core";
+import React from "react";
 import { Rect } from "shared/types/Pos";
 import { SpaceProperty } from "shared/types/mdb";
 import { defaultMenu, menuInput } from "../menu/SelectionMenu";
@@ -9,9 +12,11 @@ export const showSetValueMenu = (
   rect: Rect,
   win: Window,
   superstate: Superstate,
+  value: string,
   property: SpaceProperty,
   onChangeValue: (value: string) => void,
-  path: string
+  path: string,
+  schema?: string
 ) => {
   if (!property) return;
   if (property.type == "text") {
@@ -34,9 +39,52 @@ export const showSetValueMenu = (
       DatePickerTimeMode.None
     );
   } else if (property.type == "option") {
-    const options =
-      parseFieldValue(property.value, property.type, superstate, path)
-        ?.options ?? [];
+    const propertyValue = parseFieldValue(
+      property.value,
+      property.type,
+      superstate,
+      path
+    );
+    const options = propertyValue?.options ?? [];
+
+    if (
+      propertyValue.source == "$properties" &&
+      propertyValue.sourceProps?.type
+    ) {
+      superstate.ui.openMenu(
+        rect,
+        {
+          ...defaultMenu(superstate.ui, options),
+          editable: true,
+          placeholder: "Select or Add Property",
+          saveOptions: (options: string[], value: string[], isNew: boolean) => {
+            if (isNew) {
+              const newProperty: SpaceProperty = propertyValue.sourceProps
+                .typeName
+                ? [RepeatTemplate].find(
+                    (f) => f.name == propertyValue.sourceProps.typeName
+                  )
+                : {
+                    name: value[0],
+                    type: propertyValue.sourceProps.type,
+                  };
+              newProperty.name = value[0];
+              newProperty.schemaId = schema;
+              superstate.spaceManager.addSpaceProperty(path, newProperty);
+              onChangeValue(value[0]);
+            } else {
+              onChangeValue(value[0]);
+            }
+          },
+        },
+        win
+      );
+      return;
+    }
+    if (options.length == 0) {
+      superstate.ui.notify("No options found");
+      return;
+    }
     superstate.ui.openMenu(
       rect,
       {
@@ -60,6 +108,24 @@ export const showSetValueMenu = (
           onChangeValue(value[0]);
         },
       },
+      win
+    );
+  } else if (property.type.startsWith("object")) {
+    superstate.ui.openCustomMenu(
+      rect,
+      <ObjectCell
+        property={property}
+        propertyValue={property.value}
+        superstate={superstate}
+        saveValue={(value) => onChangeValue(value)}
+        initialValue={value}
+        multi={property.type.endsWith("multi")}
+        savePropValue={(fv, value) => onChangeValue(value)}
+        columns={[]}
+        row={{}}
+        compactMode={false}
+      ></ObjectCell>,
+      {},
       win
     );
   }

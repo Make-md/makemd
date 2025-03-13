@@ -6,6 +6,7 @@ const repeatType: ObjectType = {
     label: 'Frequency',
     type: 'option',
     value: {
+      required: true,
       options: [
         { name: 'Yearly', value: 'YEARLY' },
         { name: 'Monthly', value: 'MONTHLY' },
@@ -20,6 +21,9 @@ const repeatType: ObjectType = {
   until: {
     label: 'Until',
     type: 'date',
+    value: {
+      required: true,
+    }
   },
   interval: {
     label: 'Interval',
@@ -63,7 +67,7 @@ const repeatType: ObjectType = {
 };
 
 export const RepeatTemplate: SpaceProperty = {
-  name: 'repeat',
+  name: 'Repeat',
   type: 'object',
   value: JSON.stringify({
     typeName: 'Repeat',

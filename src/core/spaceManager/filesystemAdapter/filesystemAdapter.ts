@@ -12,7 +12,7 @@ import { builtinSpaces, spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceRe
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { executeCode } from "core/utils/frames/runner";
-import { ensureArray } from "core/utils/strings";
+import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { defaultContextTable, defaultFramesTable, defaultTablesForContext } from "schemas/mdb";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
@@ -30,7 +30,7 @@ import { safelyParseJSON } from "shared/utils/json";
 import { movePath } from "shared/utils/uri";
 import { excludeSpacesPredicate } from "utils/hide";
 import { pathToString } from "utils/path";
-import { tagPathToTag } from "utils/tags";
+import { tagPathToTag, tagToTagPath } from "utils/tags";
 import { SpaceManager } from "../spaceManager";
 
 
@@ -390,28 +390,20 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
   public async readTable (path: string, schema: string) {
     const spaceInfo = this.spaceInfoForPath(path);
     const mdbFile = await this.fileSystem.getFile(spaceInfo.dbPath)
-
+    let table : SpaceTable;
     if (!mdbFile && schema == defaultContextDBSchema.id) {
-      const defaultTable = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
-      const dependencies = propertyDependencies(defaultTable.cols);
-      const rows = defaultTable.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex, this.spaceManager.superstate.spacesMap, f, defaultTable.cols, this.spaceManager.superstate.pathsIndex.get(path), dependencies))
-      return {...defaultTable, rows}
-    }
-    const spaceTable = await this.fileSystem.readFileFragments(mdbFile, 'mdbTable', schema) as SpaceTable
-    if (spaceTable && spaceTable.schema.id != defaultContextDBSchema.id) {
-      const dependencies = propertyDependencies(spaceTable.cols);
-      const rows = spaceTable.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex, this.spaceManager.superstate.spacesMap, f, spaceTable.cols, this.spaceManager.superstate.pathsIndex.get(path), dependencies))
-      return {...spaceTable, rows}
-    } else if (!spaceTable) {
-      if (schema == defaultContextDBSchema.id)
+      table = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
+      
+    } else {
+      table = await this.fileSystem.readFileFragments(mdbFile, 'mdbTable', schema) as SpaceTable
+      if (!table && schema == defaultContextDBSchema.id)
       {
-        const defaultTable = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
-      const dependencies = propertyDependencies(defaultTable.cols);
-      const rows = defaultTable.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex, this.spaceManager.superstate.spacesMap, f, defaultTable.cols, this.spaceManager.superstate.pathsIndex.get(path), dependencies))
-      return {...defaultTable, rows}
+        table = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
+      }
     }
-    }
-    return spaceTable
+    const dependencies = propertyDependencies(table.cols);
+    const rows = table.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex,  this.spaceManager.superstate.contextsIndex, this.spaceManager.superstate.spacesMap, f, table.cols, this.spaceManager.superstate.pathsIndex.get(path), this.spaceManager.superstate.settings, dependencies))
+    return {...table, rows}
   }
   public async spaceInitiated (path: string) {
     return true;
@@ -962,8 +954,26 @@ const defaultSpaceTemplate = this.defaultFrame(path);
       return this.fileSystem.allFiles().filter(f => f.parent == path).map(f => f.path)
     }
 
-    public addTag (path: string, tag: string) {
-      this.fileSystem.addTagToFile(path, tag);
+    public async addTag (path: string, tag: string) {
+      const fileCache = this.fileSystem.getFileCache(path);
+      
+      if (fileCache.subtype == 'md' || fileCache.subtype == 'folder') {
+        
+        this.fileSystem.addTagToFile(path, tag);
+        return;
+      }
+      const tagPath = tagSpacePathFromTag(tag);
+      const metadata = await this.spaceDefForSpace(tagToTagPath(tag));
+      const spaceExists = ensureArray(metadata.links) ?? []
+      const pathExists = spaceExists.find((f) => f == path);
+      if (!pathExists) {
+        spaceExists.push(path)
+      }
+      
+      const newMetadata = {...metadata, links: spaceExists}
+      await this.saveSpace(tagPath, (oldMetadata) => ({...oldMetadata, ...newMetadata}));
+      await this.spaceManager.superstate.updateSpaceMetadata(tagPath, newMetadata)
+      this.spaceManager.superstate.reloadPath(path, true).then(f => this.spaceManager.superstate.dispatchEvent("pathStateUpdated", {path: path}))
       
     }
 

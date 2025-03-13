@@ -10,7 +10,6 @@ import {
 } from "core/utils/contexts/context";
 import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import i18n from "shared/i18n";
-import { PathPropertyName } from "shared/types/context";
 import { SpaceTables } from "shared/types/mdb";
 import { uniq } from "shared/utils/array";
 import { parseMultiString } from "utils/parsers";
@@ -28,8 +27,6 @@ export const ContextCell = (
     contextPath: string;
   }
 ) => {
-  const { contextTable } = props;
-
   const fieldValue = useMemo(
     () => parseFieldValue(props.propertyValue, "context", props.superstate),
     [props.propertyValue]
@@ -47,21 +44,6 @@ export const ContextCell = (
   const parseValue = (v: string, multi: boolean) =>
     (multi ? parseMultiString(v) ?? [] : [v]).filter((f) => f);
 
-  const [propValues, setPropValues] = useState([]);
-  useEffect(() => {
-    if (!fieldValue?.field || !contextTable[spacePath]) {
-      return;
-    }
-    setPropValues(
-      contextTable[spacePath].rows.reduce((p, c) => {
-        if (parseMultiString(c[fieldValue.field]).includes(props.path)) {
-          return [...p, c[PathPropertyName]];
-        }
-        return p;
-      }, [])
-    );
-  }, [spacePath, fieldValue, contextTable]);
-
   const options = [...props.superstate.spacesMap.getInverse(spacePath)]
     .map((f) => props.superstate.pathsIndex.get(f))
     .filter((f) => f)
@@ -74,10 +56,7 @@ export const ContextCell = (
   const [value, setValue] = useState<string[]>(
     parseValue(props.initialValue, props.multi)
   );
-  const allValues = useMemo(
-    () => uniq([...value, ...propValues]),
-    [value, propValues]
-  );
+  const allValues = useMemo(() => uniq([...value]), [value]);
   const saveValue = (_values: string[]) => {
     if (props.multi) {
       props.saveValue(serializeMultiString(_values));
@@ -85,23 +64,37 @@ export const ContextCell = (
       props.saveValue(serializeMultiDisplayString(_values));
     }
   };
-  const removeValue = (v: string) => {
-    if (propValues.includes(v)) {
-      const newPropValues = propValues.filter((f) => f != v);
-      setPropValues(newPropValues);
-      updateContextValue(
+  const removeValue = async (v: string) => {
+    //remove the value in linked property first and dont calculate and force refresh to make sure
+    if (fieldValue.field?.length > 0)
+      await updateContextValue(
         props.superstate.spaceManager,
         props.superstate.spacesIndex.get(spacePath).space,
         v,
-        fieldValue.spaceField,
+        fieldValue.field,
         props.path,
-        deletePropertyMultiValue
+        deletePropertyMultiValue,
+        null,
+        true,
+        false
       );
-    } else {
-      const newValues = value.filter((f) => f != v);
-      setValue(newValues);
-      saveValue(newValues.map((f) => f));
+    await updateContextValue(
+      props.superstate.spaceManager,
+      props.superstate.spacesIndex.get(props.contextPath).space,
+      props.path,
+      props.property.name,
+      v,
+      deletePropertyMultiValue,
+      null,
+      true,
+      true
+    );
+    if (fieldValue.field?.length > 0) {
+      //force refresh linked so that all views are uptodate
+      props.superstate.reloadContextByPath(spacePath, { force: true });
     }
+    const newValues = value.filter((f) => f != v);
+    setValue(newValues);
   };
   useEffect(() => {
     setValue(parseValue(props.initialValue, props.multi));

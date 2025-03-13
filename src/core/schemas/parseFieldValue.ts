@@ -53,11 +53,27 @@ export const parseFieldValue = (
     } else if (valueProp.source == '$super') {
       valueProp.options = allActions(superstate,path)
     } else if (valueProp.source == '$properties') {
+      if (valueProp.sourceProps?.type?.length > 0)
+      {
+        valueProp.options = (superstate.contextsIndex.get(path)?.contextTable?.cols?.filter(f => {
+          if (f.type == valueProp.sourceProps?.type) {
+          if (valueProp.sourceProps?.type == 'object') {
+            if (valueProp.sourceProps?.typeName) {
+              return parseFieldValue(f.value, f.type)?.typeName == valueProp.sourceProps?.typeName
+            }
+          }
+            return true;
+        }
+        return false;
+          
+        }).map(f => ({name: f.name, value: f.name}))) ?? []  
+      } else {
       valueProp.options = (superstate.contextsIndex.get(path)?.contextTable?.cols?.map(f => ({name: f.name, value: f.name}))) ?? []
+      }
     
     }
   }
-    return [...(fieldTypeForType(type).configKeys ?? []), 'alias', 'default'].reduce((p, c) => ({ ...p, [c]: valueProp[c] }), {});
+    return [...(fieldTypeForType(type).configKeys ?? []), 'alias', 'default', 'required'].reduce((p, c) => ({ ...p, [c]: valueProp[c] }), {});
   }
   if (!type) return {};
   if (!valueProp) {

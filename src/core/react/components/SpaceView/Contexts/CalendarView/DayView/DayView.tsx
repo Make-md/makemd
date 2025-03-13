@@ -15,9 +15,12 @@ import { RRule } from "rrule";
 import { PathPropertyName } from "shared/types/context";
 import { DBRow, DBRows } from "shared/types/mdb";
 
+import { showSetValueMenu } from "core/react/components/UI/Menus/properties/propertyMenu";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
+import { RepeatTemplate } from "core/utils/contexts/fields/presets";
 import React from "react";
 import { BlinkMode } from "shared/types/blink";
+import { windowFromDocument } from "shared/utils/dom";
 import { safelyParseJSON } from "shared/utils/json";
 import { CalendarHeaderView } from "../CalendarHeaderView";
 import { AllDayItem } from "../WeekView/AllDayItem";
@@ -97,7 +100,7 @@ export const DayView = (props: {
           dtstart: rowDate,
           freq: repeatDef.freq && getFreqValue(repeatDef.freq),
           count: repeatDef.count && Math.min(parseInt(repeatDef.count), 100),
-          interval: repeatDef.interval && parseInt(repeatDef.interval),
+          interval: repeatDef.interval ? parseInt(repeatDef.interval) : 1,
           byweekday:
             repeatDef.byweekday &&
             repeatDef.byweekday.map((d: string) => getWeekdayValue(d)),
@@ -115,7 +118,10 @@ export const DayView = (props: {
         };
         const rule = new RRule(
           Object.entries(rruleOptions)
-            .filter(([key, value]) => value !== undefined)
+            .filter(
+              ([key, value]) =>
+                value !== undefined && !isNaN(value) && value !== null
+            )
             .reduce((obj, [key, value]) => {
               obj[key] = value;
               return obj;
@@ -131,9 +137,13 @@ export const DayView = (props: {
           if (startDate.getTime() == rowDate.getTime()) return;
           instances.push({
             ...event,
-            [start]: formatDate(props.superstate, startDate, isoDateFormat),
+            [start]: formatDate(
+              props.superstate.settings,
+              startDate,
+              isoDateFormat
+            ),
             [end]: formatDate(
-              props.superstate,
+              props.superstate.settings,
               addMilliseconds(startDate, duration),
               isoDateFormat
             ),
@@ -335,8 +345,16 @@ export const DayView = (props: {
         });
         props.updateItem({
           ...props.data[index],
-          [props.field]: formatDate(props.superstate, newStart, isoDateFormat),
-          [props.fieldEnd]: formatDate(props.superstate, newEnd, isoDateFormat),
+          [props.field]: formatDate(
+            props.superstate.settings,
+            newStart,
+            isoDateFormat
+          ),
+          [props.fieldEnd]: formatDate(
+            props.superstate.settings,
+            newEnd,
+            isoDateFormat
+          ),
         });
       } else if (overPath) {
         const newStart = add(date, {
@@ -346,8 +364,16 @@ export const DayView = (props: {
           minutes: Math.round((offset / hourHeight) * 60) + 60,
         });
         props.insertItem({
-          [props.field]: formatDate(props.superstate, newStart, isoDateFormat),
-          [props.fieldEnd]: formatDate(props.superstate, newEnd, isoDateFormat),
+          [props.field]: formatDate(
+            props.superstate.settings,
+            newStart,
+            isoDateFormat
+          ),
+          [props.fieldEnd]: formatDate(
+            props.superstate.settings,
+            newEnd,
+            isoDateFormat
+          ),
           [PathPropertyName]: overPath,
         });
       }
@@ -503,12 +529,12 @@ export const DayView = (props: {
 
                 props.insertItem({
                   [props.field]: formatDate(
-                    props.superstate,
+                    props.superstate.settings,
                     startTime,
                     isoDateFormat
                   ),
                   [props.fieldEnd]: formatDate(
-                    props.superstate,
+                    props.superstate.settings,
                     endTime,
                     isoDateFormat
                   ),
@@ -551,17 +577,35 @@ export const DayView = (props: {
                   props.updateItem({
                     ...props.data[event.index],
                     [props.field]: formatDate(
-                      props.superstate,
+                      props.superstate.settings,
                       newStart,
                       isoDateFormat
                     ),
                     [props.fieldEnd]: formatDate(
-                      props.superstate,
+                      props.superstate.settings,
                       newEnd,
                       isoDateFormat
                     ),
                   });
                 }}
+                editRepeat={
+                  props.fieldRepeat
+                    ? (e) =>
+                        showSetValueMenu(
+                          e.currentTarget.getBoundingClientRect(),
+                          windowFromDocument(e.view.document),
+                          props.superstate,
+                          props.data[event.index][props.fieldRepeat],
+                          RepeatTemplate,
+                          (value) =>
+                            props.updateItem({
+                              ...props.data[event.index],
+                              [props.fieldRepeat]: value,
+                            }),
+                          source
+                        )
+                    : null
+                }
               ></DayItem>
             ))}
           {placeholderEvent &&

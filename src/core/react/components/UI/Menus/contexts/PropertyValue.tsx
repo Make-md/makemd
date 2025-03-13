@@ -30,7 +30,8 @@ export const PropertyValueComponent = (props: {
     value: string,
     options: SelectOption[],
     field: string,
-    saveProperty?: (prop: string) => void
+    saveProperty?: (prop: string) => void,
+    placeholder?: string
   ) => {
     props.superstate.ui.openMenu(
       (e.target as HTMLElement).getBoundingClientRect(),
@@ -46,7 +47,7 @@ export const PropertyValueComponent = (props: {
             saveParsedValue(field, v[0]);
           }
         },
-        placeholder: i18n.labels.propertyValueSpace,
+        placeholder: placeholder ?? i18n.labels.propertyValueSpace,
         value: [value ?? ""],
         options: options,
       },
@@ -127,7 +128,7 @@ export const PropertyValueComponent = (props: {
   const selectAggregateRef = (e: React.MouseEvent) => {
     const properties =
       props.fields
-        .filter((f) => f.type == "context")
+        .filter((f) => f.type.startsWith("context"))
         .map((f) => ({
           name: f.name,
           value: f.name,
@@ -210,7 +211,8 @@ export const PropertyValueComponent = (props: {
         })
         .map((m) => ({ name: m.name, value: m.name })) ?? [],
       "field",
-      saveSpaceProperty
+      saveSpaceProperty,
+      i18n.labels.propertyValueLinkedPlaceholder
     );
   };
   const selectProperty = (e: React.MouseEvent) => {
@@ -246,19 +248,19 @@ export const PropertyValueComponent = (props: {
   const selectDateFormat = (e: React.MouseEvent) => {
     const formats = [
       {
-        name: "2020-04-21",
-        value: "yyyy-MM-dd",
+        name: "2020-04-21 4:00PM",
+        value: "yyyy-MM-dd h:mma",
       },
       {
-        name: "Apr 21, 2020",
-        value: "MMM d, yyyy",
+        name: "Apr 21, 2020 4:00PM",
+        value: "MMM d, yyyy h:mma",
       },
       {
-        name: "Tue Apr 21, 2020",
-        value: "EEE MMM d, yyyy",
+        name: "Tue Apr 21, 2020 4:00PM",
+        value: "EEE MMM d, yyyy h:mma",
       },
     ];
-    showOptions(e, null, formats, "format");
+    showOptions(e, null, formats, "format", null, "Date Format");
   };
   const selectEditOptions = (e: React.MouseEvent) => {
     const parsedValue = parseFieldValue(
@@ -414,13 +416,15 @@ export const PropertyValueComponent = (props: {
       <div className="mk-menu-option" onClick={(e) => selectContext(e)}>
         <span>{i18n.labels.propertyValueSpace}</span>
         <span>
-          {spaceNameFromSpacePath(parsedValue.space, props.superstate)}
+          {parsedValue.space
+            ? spaceNameFromSpacePath(parsedValue.space, props.superstate)
+            : i18n.labels.select}
         </span>
       </div>
       {parsedValue.space?.length > 0 && props.contextPath && (
         <div className="mk-menu-option" onClick={(e) => selectSpaceProperty(e)}>
-          <span>{i18n.labels.propertyValueProperty}</span>
-          <span>{parsedValue.field}</span>
+          <span>{i18n.labels.propertyValueLinked}</span>
+          <span>{parsedValue.field ?? i18n.labels.select}</span>
         </div>
       )}
     </>

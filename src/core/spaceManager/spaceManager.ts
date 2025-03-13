@@ -212,14 +212,14 @@ export class SpaceManager implements SpaceManagerInterface {
       public createTable (path: string, schema: SpaceTableSchema) {
         
          return this.adapterForPath(path).createTable(path, schema).then(f => 
-          this.superstate.reloadContextByPath(path, true));
+          this.superstate.reloadContextByPath(path, { force: true, calculate: true }));
       }
     
     public saveTableSchema (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
       
       return this.adapterForPath(path).saveTableSchema(path, schemaId, saveSchema).then(f => {
         if (f)
-        return this.superstate.reloadContextByPath(path, true)
+        return this.superstate.reloadContextByPath(path, { force: true, calculate: true })
       return f});
     }
     public saveTable (path: string, table: SpaceTable, force?: boolean) {
@@ -228,7 +228,7 @@ export class SpaceManager implements SpaceManagerInterface {
     public deleteTable (path: string, name: string) {
       
       return this.adapterForPath(path).deleteTable(path, name).then(f => {
-        return this.superstate.reloadContextByPath(path, true)});
+        return this.superstate.reloadContextByPath(path, { force: true, calculate: true })});
     }
 
     public readAllKits () {
@@ -377,12 +377,15 @@ export class SpaceManager implements SpaceManagerInterface {
         property.value = values;
       }
         return this.adapterForPath(path).addSpaceProperty(path, property).then(f => 
-          this.superstate.reloadContextByPath(path, true));
+          {
+            this.superstate.ui.notify(`Property ${property.name} added to all items in ${path}`);
+           return this.superstate.reloadContextByPath(path, { force: true, calculate: true })
+          });
      
      }
      public deleteSpaceProperty (path: string, property: SpaceProperty) {
         return this.adapterForPath(path).deleteSpaceProperty(path, property).then(f => 
-          this.superstate.reloadContextByPath(path, true));
+          this.superstate.reloadContextByPath(path, { force: true, calculate: true }));
      }
      public saveSpaceProperty (path: string, property: SpaceProperty, oldProperty: SpaceProperty) {
 
@@ -393,7 +396,7 @@ export class SpaceManager implements SpaceManagerInterface {
                 this.renameProperty(f.path, oldProperty.name, property.name);
               })
             }
-            return this.superstate.reloadContextByPath(path, true)
+            return this.superstate.reloadContextByPath(path, { force: true, calculate: true })
           });
      }
  

@@ -41,6 +41,23 @@ body:not(.is-mobile) .mk-view-options {
   flex-grow: 1;
 }
 
+.mk-view-config-warning {
+  display: flex;
+  font-size: 12px;
+    background: var(--mk-ui-background-variant);
+    padding: 6px;
+    border-radius: 8px;
+    gap: 6px;
+    overflow: hidden;
+    align-items: center;;
+}
+
+.mk-view-config-warning > div {
+  background: var(--mk-ui-background-active);
+    padding: 4px;
+    border-radius: 4px;
+    
+}
 .mk-view-config .mk-active button {
   color: var(--mk-ui-text-primary);
 }

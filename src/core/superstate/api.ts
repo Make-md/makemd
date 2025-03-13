@@ -58,7 +58,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             }
             return 'var(--mk-ui-background-contrast)'
         },
-        sticker: (property: SpaceProperty) => stickerForField(property),
+        sticker: (property: SpaceProperty) => property && stickerForField(property),
         value: ( type: string, value: string) => {
             if (!type) return value
             return parseMDBStringValue(type, value, false)
@@ -123,7 +123,6 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             return updateTableRow(this.superstate.spaceManager, space.space, table, index, row)
         },
         insert: (path: string, schema: string, row: DBRow) => {
-
             if (schema == defaultContextSchemaID) {
                 this.context.insert(path, schema, row[PathPropertyName], row)
                 return;
@@ -180,10 +179,12 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
                 newPathInSpace(this.superstate, this.superstate.spacesIndex.get(path), "md", name, true).then(f =>
                 {
                     if (row)
-                    saveProperties(this.superstate, f, {
-                        ...row,
-                        [PathPropertyName]: f
+                    {
+                        delete row[PathPropertyName]
+                        saveProperties(this.superstate, f, {
+                        ...(row ?? {}),
                     })
+                }
                 })
         } else {
             const table = await this.superstate.spaceManager.readTable(path, schema)
@@ -192,7 +193,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
                 const prop = table.cols.find(f => f.primary == "true")
                 
                 const newRow = prop ? {
-                    ...row, 
+                    ...(row ?? {}), 
                     [prop.name]: name
                 } : row
                 this.table.insert(path, schema, newRow)
@@ -210,7 +211,7 @@ public date = {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     },
     format: (date: Date, format?: string) => {
-        return formatDate(this.superstate, date, format ?? 'yyyy-MM-dd')
+        return formatDate(this.superstate.settings, date, format ?? 'yyyy-MM-dd')
     },
     component: (date: Date, component: string) => {
         if (component == 'year') return date.getFullYear()
@@ -235,7 +236,7 @@ public date = {
         const dates = []
         const current = new Date(start)
         while (current <= end) {
-            dates.push(formatDate(this.superstate, current, format ?? 'yyyy-MM-dd'))
+            dates.push(formatDate(this.superstate.settings, current, format ?? 'yyyy-MM-dd'))
             current.setDate(current.getDate() + 1)
         }
         return dates;

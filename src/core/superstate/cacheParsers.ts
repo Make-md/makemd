@@ -18,10 +18,11 @@ import { IndexMap } from "shared/types/indexMap";
 import { excludePathPredicate } from "utils/hide";
 import { parseLinkString, parseMultiString } from "utils/parsers";
 import { pathToString } from "utils/path";
+import { tagPathToTag } from "utils/tags";
 
 
 
-export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, paths: string[], dbExists: boolean, pathsIndex: Map<string, PathState>, spacesMap: IndexMap, runContext: math.MathJsInstance) : { changed: boolean, cache: ContextState } => {
+export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, paths: string[], dbExists: boolean, pathsIndex: Map<string, PathState>, spacesMap: IndexMap, runContext: math.MathJsInstance, settings: MakeMDSettings, contextsIndex: Map<string, ContextState>, options: { force?: boolean, calculate?: boolean}) : { changed: boolean, cache: ContextState } => {
 
     const spaceMap : { [key: string] : { [key: string] : string[] } } = {};
 
@@ -50,7 +51,10 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
     const missingPaths = paths.filter(f => !contextPaths.includes(f));
     const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
     const dependencies = propertyDependencies(cols);
-    const rows = [...(mdb[defaultContextSchemaID]?.rows ?? []).filter(f => paths.includes(f[PathPropertyName])), ...missingPaths.map(f => ({[PathPropertyName]: f}))].map(f => linkContextRow(runContext, pathsIndex, spacesMap, f, cols, pathsIndex.get(space.path), dependencies))
+    let rows = [...(mdb[defaultContextSchemaID]?.rows ?? []).filter(f => paths.includes(f[PathPropertyName])), ...missingPaths.map(f => ({[PathPropertyName]: f}))]
+    if (options?.calculate)
+      rows = rows.map(f => linkContextRow(runContext, pathsIndex, contextsIndex, spacesMap, f, cols, pathsIndex.get(space.path), settings, dependencies))
+
     const contextTable : SpaceTable =  {
         schema,
         cols, 
@@ -181,6 +185,7 @@ export const parseMetadata = (
     }
     return keys;
   };
+  
     if (spacesCache.has(parent)) {
         for (const def of spacesCache.get(parent).contexts ?? []) {
             tags.push(def.toLowerCase());
@@ -238,6 +243,7 @@ export const parseMetadata = (
     }
     const evaledSpaces = new Set<string>();
     const evalSpace = (s: string, space: SpaceState) => {
+      
         if (evaledSpaces.has(s)) return;
         evaledSpaces.add(s);
         if (space.dependencies?.length > 0) {
@@ -295,6 +301,9 @@ export const parseMetadata = (
         (f) => f == pathState.path,
       );
             if (spaceItem) {
+              if (subtype != 'md' && subtype != 'folder' && space.type == 'tag') {
+                tags.push(tagPathToTag(space.path))
+              }
                 spaces.push(s);
         spaceNames.push(space.name);
                 linkedSpaces.push(s);
@@ -317,6 +326,7 @@ export const parseMetadata = (
     ? { ...pathState, spaces: [], hidden }
     : {
         ...pathState,
+        tags: uniq(tags),
         spaces: uniq(spaces),
         linkedSpaces,
         liveSpaces,

@@ -1,7 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { isDate, isFinite, isString } from 'lodash';
-import type { Superstate } from 'makemd-core';
 import { RRule } from 'rrule';
+import { MakeMDSettings } from 'shared/types/settings';
 
 export const isValidDate = (d: Date) => {
   return d instanceof Date && !isNaN(d as any);
@@ -10,7 +10,7 @@ export const isValidDate = (d: Date) => {
 export const isoDateFormat = `yyyy-MM-dd'T'HH:mm:ss`;
 
 export const formatDate = (
-  superstate: Superstate,
+  settings: MakeMDSettings,
   date: Date,
   dateFormat?: string,
 ) => {
@@ -24,8 +24,8 @@ export const formatDate = (
       dateFormat?.length > 0
         ? dateFormat
         : hasTime
-          ? `${superstate.settings.defaultDateFormat} ${superstate.settings.defaultTimeFormat}`
-          : superstate.settings.defaultDateFormat,
+          ? `${settings.defaultDateFormat} ${settings.defaultTimeFormat}`
+          : settings.defaultDateFormat,
     );
   } catch (e) {
     dateString = '';

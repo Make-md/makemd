@@ -1,8 +1,8 @@
 import { formatDate, parseDate } from "core/utils/date";
-import { Superstate } from "makemd-core";
 import { median } from "mathjs";
 import { fieldTypeForField } from "schemas/mdb";
 import { SpaceProperty } from "shared/types/mdb";
+import { MakeMDSettings } from "shared/types/settings";
 import { uniq } from "shared/utils/array";
 import { safelyParseJSON } from "shared/utils/json";
 import { parseProperty } from "utils/parsers";
@@ -17,7 +17,7 @@ export type AggregateFunctionType = {
     
 };
 
-export const calculateAggregate = (superstate: Superstate, values: any[], fn: string, col: SpaceProperty) => {
+export const calculateAggregate = (settings: MakeMDSettings, values: any[], fn: string, col: SpaceProperty) => {
     const aggregateFn = aggregateFnTypes[fn];
     if (!aggregateFn) {
         return null;
@@ -35,7 +35,7 @@ export const calculateAggregate = (superstate: Superstate, values: any[], fn: st
         const calcResult = aggregateFn.fn(values, col.type);
         if (aggregateFn.valueType == 'date') {
             const format = safelyParseJSON(col.value)?.format
-            result = formatDate(superstate, parseDate(calcResult), format);
+            result = formatDate(settings, parseDate(calcResult), format);
         } else {
             result = calcResult ?? '';
         }

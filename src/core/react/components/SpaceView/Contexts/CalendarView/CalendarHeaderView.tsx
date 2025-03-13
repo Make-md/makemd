@@ -9,7 +9,7 @@ export const CalendarHeaderView = (props: {
   setDate: (date: Date) => void;
 }) => {
   const monthString = formatDate(
-    props.superstate,
+    props.superstate.settings,
     props.date,
     props.mode == "day" ? "MMMM d" : "MMMM"
   );
@@ -17,7 +17,7 @@ export const CalendarHeaderView = (props: {
     <div className="mk-calendar-header">
       <div className="mk-calendar-header-title">
         <span>{monthString}</span>
-        {formatDate(props.superstate, props.date, "yyyy")}
+        {formatDate(props.superstate.settings, props.date, "yyyy")}
       </div>
       <span></span>
       <button

@@ -26,7 +26,7 @@ export const defaultTableDataForContext = (superstate: Superstate, space: SpaceI
   const paths = [...superstate.getSpaceItems(space.path, true)];
   return {
     ...defaultMDBTableForContext(space),
-    rows: paths.map((f) => ({ [PathPropertyName]: f.path, "Created": formatDate(superstate, parseDate(f.metadata?.ctime), "yyyy-MM-dd") })),
+    rows: paths.map((f) => ({ [PathPropertyName]: f.path, "Created": formatDate(superstate.settings, parseDate(f.metadata?.ctime), "yyyy-MM-dd") })),
   };
 
 };

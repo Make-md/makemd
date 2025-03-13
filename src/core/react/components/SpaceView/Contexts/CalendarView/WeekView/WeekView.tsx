@@ -103,7 +103,11 @@ export const WeekView = (props: {
         {Array.from({ length: 7 }).map((_, day) => {
           return (
             <div key={day}>
-              {formatDate(props.superstate, add(date, { days: day }), "EEE d")}
+              {formatDate(
+                props.superstate.settings,
+                add(date, { days: day }),
+                "EEE d"
+              )}
             </div>
           );
         })}
@@ -129,12 +133,12 @@ export const WeekView = (props: {
               insertItem={(path: string) => {
                 props.insertItem({
                   [props.field]: formatDate(
-                    props.superstate,
+                    props.superstate.settings,
                     addDays(date, day),
                     "yyyy-MM-dd"
                   ),
                   [props.fieldEnd]: formatDate(
-                    props.superstate,
+                    props.superstate.settings,
                     addDays(date, day),
                     "yyyy-MM-dd"
                   ),
@@ -169,7 +173,10 @@ export const WeekView = (props: {
           return (
             <DayView
               superstate={props.superstate}
-              key={formatDate(props.superstate, add(date, { days: day }))}
+              key={formatDate(
+                props.superstate.settings,
+                add(date, { days: day })
+              )}
               field={props.field}
               fieldEnd={props.fieldEnd}
               fieldRepeat={props.fieldRepeat}

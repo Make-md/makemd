@@ -91,10 +91,11 @@ const saveContext = async (
   spaceInfo: SpaceInfo,
   newTable: SpaceTable,
   forceCreate?: boolean,
+  calculate=true
 ): Promise<void> => {
   await manager.saveTable(spaceInfo.path, newTable, forceCreate).then(f => {
     if (f)
-    return manager.superstate.reloadContextByPath(spaceInfo.path, true)
+    return manager.superstate.reloadContextByPath(spaceInfo.path, { force: forceCreate, calculate })
   return f});
 };
 
@@ -230,21 +231,24 @@ export const updateContextValue = async (
     lookupValue: string,
     field: string,
     value: string) => SpaceTable, 
-    rank?: number
+    rank?: number,
+    force?: boolean,
+    calculate?: boolean
 ): Promise<void> => {
 
-  manager.contextForSpace(space.path).then(f => 
+  return manager.contextForSpace(space.path).then(f => 
     {
       const updateFunction = _updateFunction ?? updateValue
       let newMDB = updateFunction(f, PathPropertyName, path, field, value);
       if (rank)
       newMDB = reorderRowsForPath(newMDB, [path], rank);
-if (manager.superstate.settings.enhancedLogs) {
-  console.log('Saving Context Change: Update Context Value')
-}
-      return saveContext(manager, space, newMDB).then(f => newMDB)
+    if (manager.superstate.settings.enhancedLogs) {
+      console.log('Saving Context Change: Update Context Value')
+    }
+      return saveContext(manager, space, newMDB, force, calculate)
     }
     )
+    
 };
 
 

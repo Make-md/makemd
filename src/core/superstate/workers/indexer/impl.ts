@@ -10,8 +10,11 @@ import { SpaceInfo } from "shared/types/spaceInfo";
 
 export type PathWorkerPayload = {path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, pathMetadata: PathCache, name: string, type: string, subtype: string, parent: string, oldMetadata: PathState};
 export type BatchPathWorkerPayload = {pathCache: Map<string, PathCache>, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>,  oldMetadata: Map<string, PathState>};
-export type BatchContextWorkerPayload = {map: Map<string, ContextWorkerPayload>, pathsIndex: Map<string, PathState>, spacesMap: IndexMap};
-export type ContextWorkerPayload = {space: SpaceInfo, paths: string[], mdb: SpaceTables, dbExists: boolean, pathsIndex?: Map<string, PathState>, spacesMap: IndexMap};
+export type BatchContextWorkerPayload = {map: Map<string, ContextWorkerPayload>, contextsIndex: Map<string, ContextState>, pathsIndex: Map<string, PathState>, spacesMap: IndexMap, settings: MakeMDSettings};
+export type ContextWorkerPayload = {space: SpaceInfo, paths: string[], contextsIndex: Map<string, ContextState>, mdb: SpaceTables, dbExists: boolean, pathsIndex?: Map<string, PathState>, spacesMap: IndexMap, settings: MakeMDSettings, options: {
+    force?: boolean,
+    calculate?: boolean,
+}};
 
 
 export function parsePath (payload: PathWorkerPayload) {
@@ -20,16 +23,16 @@ export function parsePath (payload: PathWorkerPayload) {
 }
 
 export function parseContext (payload: ContextWorkerPayload, runContext: math.MathJsInstance) {
-    const {space, mdb, paths, dbExists, spacesMap, pathsIndex} = payload;
-    return parseContextTableToCache(space, mdb, paths, dbExists, pathsIndex, spacesMap, runContext);
+    const {space, mdb, paths, dbExists, spacesMap, pathsIndex, settings, contextsIndex, options} = payload;
+    return parseContextTableToCache(space, mdb, paths, dbExists, pathsIndex, spacesMap, runContext, settings, contextsIndex, options);
 }
 
 export function parseAllContexts (payload: BatchContextWorkerPayload, runContext: math.MathJsInstance) {
     
-    const {map, pathsIndex, spacesMap} = payload;
+    const {map, pathsIndex, spacesMap, settings, contextsIndex} = payload;
     const result = new Map<string, {cache: ContextState, changed: boolean}>();
     for (const [key, value] of map) {
-        result.set(key, parseContext({...value, pathsIndex, spacesMap}, runContext));
+        result.set(key, parseContext({...value, pathsIndex, spacesMap, settings, contextsIndex}, runContext, ));
     }
     return result;
 }

@@ -43,7 +43,7 @@ export class WebSpaceAdapter implements SpaceAdapter {
       
       const space = this.spaceInfoForPath(path)
       await this.spaceManager.onSpaceCreated(path)
-      await this.spaceManager.superstate.reloadContext(space);
+      await this.spaceManager.superstate.reloadContext(space, { force: false, calculate: true });
       };
 
     public async saveTemplate (path: string, space: string) : Promise<string> {

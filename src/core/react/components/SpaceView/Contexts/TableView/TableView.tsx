@@ -371,7 +371,7 @@ export const TableView = (props: { superstate: Superstate }) => {
                 : CellEditMode.EditModeView
               : CellEditMode.EditModeReadOnly;
             const cellProps: DataTypeViewProps = {
-              compactMode: true,
+              compactMode: false,
               initialValue: initialValue as string,
               updateValue: saveValue,
               updateFieldValue: saveFieldValue,
@@ -508,7 +508,7 @@ export const TableView = (props: { superstate: Superstate }) => {
     const result: Record<string, string> = {};
     Object.keys(predicate.colsCalc).forEach((f) => {
       result[f] = calculateAggregate(
-        props.superstate,
+        props.superstate.settings,
         data.map((r) => r[f]),
         predicate.colsCalc[f],
         cols.find((c) => c.name == f)
@@ -777,7 +777,7 @@ export const TableView = (props: { superstate: Superstate }) => {
                     if (e.key == "Enter") {
                       newRow(e.currentTarget.innerText);
                       e.currentTarget.innerText = "";
-                      e.currentTarget.blur();
+                      e.preventDefault();
                     }
                   }}
                   contentEditable={true}

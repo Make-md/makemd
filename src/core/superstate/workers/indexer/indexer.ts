@@ -155,9 +155,11 @@ export class Indexer {
                         space,
                         mdb: null,
                         paths: [...this.cache.spacesMap.getInverse(job.path)],
-                        
+                        settings: this.cache.settings, 
                         pathsIndex: this.cache.pathsIndex,
-                        spacesMap: this.cache.spacesMap
+                        spacesMap: this.cache.spacesMap,
+                        contextsIndex: this.cache.contextsIndex,
+                        options: job.payload
                     } as ContextWorkerPayload
                 })
                 this.busy[workerId] = true;
@@ -172,8 +174,11 @@ export class Indexer {
                     mdb,
                     paths: [...this.cache.spacesMap.getInverse(job.path)],
                     spacesMap: this.cache.spacesMap,
+                    settings: this.cache.settings, 
                     dbExists,
-                    pathsIndex: this.cache.pathsIndex
+                    contextsIndex: this.cache.contextsIndex,
+                    pathsIndex: this.cache.pathsIndex,
+                    options: job.payload
                 }
             })
             this.busy[workerId] = true;
@@ -191,7 +196,9 @@ export class Indexer {
                         space,
                         mdb,
                         paths: [...this.cache.spacesMap.getInverse(space.path)],
+                        settings: this.cache.settings, 
                         spacesMap: this.cache.spacesMap,
+                        contextsIndex: this.cache.contextsIndex,
                         dbExists,
             })
         })
@@ -201,7 +208,9 @@ export class Indexer {
         payload: {
             map: payloads,
             pathsIndex: this.cache.pathsIndex,
-            spacesMap: this.cache.spacesMap
+            settings: this.cache.settings, 
+            spacesMap: this.cache.spacesMap,
+            contextsIndex: this.cache.contextsIndex
         } as BatchContextWorkerPayload
     })
     this.busy[workerId] = true;

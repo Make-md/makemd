@@ -227,6 +227,20 @@
     padding: 2px;
   }
   
+  .mk-day-block-repeat {
+    padding: 2px;
+    color: var(--mk-ui-active);
+  }
+  .mk-day-block-repeat:hover {
+    background: var(--mk-ui-background-hover);
+  }
+  .mk-day-block-repeat-hover {
+    visibility: hidden;
+    color: var(--mk-ui-text-tertiary);
+  }
+  .mk-day-block-inner:hover .mk-day-block-repeat-hover {
+    visibility: visible;
+  }
   .mk-day-block-time {
     display: flex;
     align-items: center;

@@ -41,6 +41,7 @@ type MonthEventLayout = {
   offset?: number;
   startTime: number;
   endTime: number;
+  repeat: boolean;
 };
 
 export const MonthWeekRow = (props: {
@@ -86,37 +87,41 @@ export const MonthWeekRow = (props: {
           wkst: repeatDef.wkst && getWeekdayValue(repeatDef.wkst),
         };
 
-        const rule = new RRule(
-          Object.entries(rruleOptions)
-            .filter(([key, value]) => value !== undefined)
-            .reduce((obj, [key, value]) => {
-              obj[key] = value;
-              return obj;
-            }, {} as Record<string, any>)
-        );
+        const rules = Object.entries(rruleOptions)
+          .filter(
+            ([key, value]) =>
+              value !== undefined && !isNaN(value) && value !== null
+          )
+          .reduce((obj, [key, value]) => {
+            obj[key] = value;
+            return obj;
+          }, {} as Record<string, any>);
+        const rule = new RRule(rules);
 
         const starts: Date[] = rule.between(
           startOfDay(weekStart),
           endOfDay(weekEnd),
           true
         );
+
         starts.forEach((startDate) => {
           if (startDate.getTime() == rowDate.getTime()) return;
           instances.push({
             ...event,
             [props.field]: formatDate(
-              props.superstate,
+              props.superstate.settings,
               startDate,
               isoDateFormat
             ),
             [props.fieldEnd]: formatDate(
-              props.superstate,
+              props.superstate.settings,
               addMilliseconds(startDate, duration),
               isoDateFormat
             ),
           });
         });
       }
+
       instances.forEach((instance) => {
         const start = parseDate(instance[props.field]);
         const parsedEnd = parseDate(instance[props.fieldEnd]);
@@ -135,6 +140,7 @@ export const MonthWeekRow = (props: {
           endDay,
           startTime: start.getTime(),
           endTime: end.getTime(),
+          repeat: !!repeatDef,
           allDay:
             (startOfDay(start).getTime() == start.getTime() &&
               startOfDay(end).getTime() == end.getTime()) ||
@@ -142,6 +148,7 @@ export const MonthWeekRow = (props: {
         });
       });
     });
+
     events.sort((a, b) => {
       if (a.startDay == b.startDay) {
         if (a.endDay == b.endDay) {
@@ -207,6 +214,7 @@ export const MonthWeekRow = (props: {
             weekStart < startDate ? startDate.getDay() : weekStart.getDay(),
           endDay: weekEnd > endDate ? endDate.getDay() : weekEnd.getDay(),
           allDay: false,
+          repeat: false,
           startTime: startDate.getTime(),
           endTime: endDate.getTime(),
         });
@@ -218,12 +226,12 @@ export const MonthWeekRow = (props: {
         event.over?.data.current.weekStart == weekStart.getTime()
       ) {
         const startDate = formatDate(
-          props.superstate,
+          props.superstate.settings,
           dragStartDate,
           "yyyy-MM-dd"
         );
         const endDate = formatDate(
-          props.superstate,
+          props.superstate.settings,
           new Date(event.over.data.current.date),
           "yyyy-MM-dd"
         );
@@ -271,12 +279,12 @@ export const MonthWeekRow = (props: {
                 return newHour > acc ? newHour : acc;
               }, 9);
               const newStart = formatDate(
-                props.superstate,
+                props.superstate.settings,
                 addHours(startOfDay(date), latestEventEnd),
                 isoDateFormat
               );
               const newEnd = formatDate(
-                props.superstate,
+                props.superstate.settings,
                 addHours(startOfDay(date), latestEventEnd + 1),
                 isoDateFormat
               );
@@ -293,6 +301,7 @@ export const MonthWeekRow = (props: {
                 endDay: index,
                 startTime: startOfDay(date).getTime(),
                 endTime: endOfDay(date).getTime(),
+                repeat: false,
                 allDay: false,
               });
               const rect = e.currentTarget.getBoundingClientRect();
@@ -352,6 +361,7 @@ export const MonthWeekRow = (props: {
                     startEvent={event.startTime}
                     endEvent={event.endTime}
                     allDay={event.allDay}
+                    repeat={event.repeat}
                     style={
                       {
                         "--block-bg-color": event.allDay

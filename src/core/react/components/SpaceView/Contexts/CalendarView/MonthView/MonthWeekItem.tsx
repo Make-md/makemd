@@ -13,6 +13,8 @@ export const MonthWeekItem = (props: {
   startEvent: number;
   endEvent: number;
   allDay: boolean;
+  repeat?: boolean;
+  editRepeat?: (e: React.MouseEvent) => void;
   style: React.CSSProperties;
 }) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -27,7 +29,7 @@ export const MonthWeekItem = (props: {
 
     const startFormat = `h${startDate.getMinutes() == 0 ? "" : ":mm"} a`;
     return !props.allDay
-      ? `${formatDate(props.superstate, startDate, startFormat)}`
+      ? `${formatDate(props.superstate.settings, startDate, startFormat)}`
       : null;
   }, [props.startEvent, props.endEvent, props.allDay]);
   return (
@@ -45,6 +47,17 @@ export const MonthWeekItem = (props: {
         hideIcon
       />
       <div className="mk-day-block-time">{timeString}</div>
+      {(props.repeat || props.editRepeat) && (
+        <div
+          onClick={(e) => props.editRepeat(e)}
+          className={`mk-icon-xsmall mk-day-block-repeat ${
+            !props.repeat && "mk-day-block-repeat-hover"
+          }`}
+          dangerouslySetInnerHTML={{
+            __html: props.superstate.ui.getSticker("ui//sync"),
+          }}
+        ></div>
+      )}
     </div>
   );
 };

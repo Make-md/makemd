@@ -22,6 +22,7 @@ export const DayItem = (props: {
   clone?: boolean;
   updateStartEnd?: (startOffset: number, endOffset: number) => void;
   style?: React.CSSProperties;
+  editRepeat?: (e: React.MouseEvent) => void;
 }) => {
   const { event, hourHeight, startHour } = props;
   const { spaceState } = useContext(SpaceContext);
@@ -45,18 +46,18 @@ export const DayItem = (props: {
     const endDate =
       event.end ?? addMinutes(startOfDay(new Date()), props.event.endOffset);
     const startAndEndAMPM =
-      formatDate(props.superstate, startDate, "a") ===
-      formatDate(props.superstate, endDate, "a");
+      formatDate(props.superstate.settings, startDate, "a") ===
+      formatDate(props.superstate.settings, endDate, "a");
     const startFormat = `h${startDate.getMinutes() == 0 ? "" : ":mm"} ${
       startAndEndAMPM ? "" : "a"
     }`;
     const endFormat = `h${endDate.getMinutes() == 0 ? "" : ":mm"} a`;
     return props.event.startOffset > 0
-      ? `${formatDate(props.superstate, startDate, startFormat)} - ${formatDate(
-          props.superstate,
-          endDate,
-          endFormat
-        )}`
+      ? `${formatDate(
+          props.superstate.settings,
+          startDate,
+          startFormat
+        )} - ${formatDate(props.superstate.settings, endDate, endFormat)}`
       : null;
   }, [props.event]);
 
@@ -149,9 +150,12 @@ export const DayItem = (props: {
           )}
         </div>
         <span></span>
-        {displayEvent.repeat && (
+        {(displayEvent.repeat || props.editRepeat) && (
           <div
-            className="mk-icon-xsmall"
+            onClick={(e) => props.editRepeat(e)}
+            className={`mk-icon-xsmall mk-day-block-repeat ${
+              !displayEvent.repeat && "mk-day-block-repeat-hover"
+            }`}
             dangerouslySetInnerHTML={{
               __html: props.superstate.ui.getSticker("ui//sync"),
             }}
