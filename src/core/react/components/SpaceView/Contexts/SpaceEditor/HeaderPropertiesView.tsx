@@ -1,18 +1,8 @@
 import { PropertiesView } from "core/react/components/Explorer/PropertiesView";
-import { LiveFilters } from "core/react/components/SpaceEditor/LiveFilters";
-import { SpaceActionProperty } from "core/react/components/SpaceEditor/SpaceActionProperty";
-import { SpaceItemProperty } from "core/react/components/SpaceEditor/SpaceItemProperty";
-import { SpaceListProperty } from "core/react/components/SpaceEditor/SpaceListProperty";
-import { SpaceTemplateProperty } from "core/react/components/SpaceEditor/SpaceTemplateProperty";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
 import { showPropertyMenu } from "core/react/components/UI/Menus/contexts/spacePropertyMenu";
-import {
-  defaultMenu,
-  menuSeparator,
-} from "core/react/components/UI/Menus/menu/SelectionMenu";
-import { showApplyItemsMenu } from "core/react/components/UI/Menus/navigator/showApplyItemsMenu";
-import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
+import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
@@ -23,12 +13,10 @@ import {
   createSpace,
   saveNewProperty,
   saveProperties,
-  saveSpaceCache,
-  saveSpaceTemplate,
 } from "core/superstate/utils/spaces";
 import { addTagToPath } from "core/superstate/utils/tags";
 import { FMMetadataKeys } from "core/types/space";
-import { i18n, SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import { i18n, SelectOption, Superstate } from "makemd-core";
 import React, {
   useContext,
   useEffect,
@@ -37,18 +25,10 @@ import React, {
   useTransition,
 } from "react";
 import { defaultContextSchemaID } from "shared/schemas/context";
-import { defaultTableFields } from "shared/schemas/fields";
 import { PathPropertyName } from "shared/types/context";
-import { SpaceProperty, SpaceTables, SpaceTableSchema } from "shared/types/mdb";
-import { Rect } from "shared/types/Pos";
-import { uniqueNameFromString } from "shared/utils/array";
+import { SpaceProperty, SpaceTables } from "shared/types/mdb";
 import { windowFromDocument } from "shared/utils/dom";
-import { sanitizeTableName } from "shared/utils/sanitizers";
 import { parseMDBStringValue } from "utils/properties";
-import {
-  DefaultFolderNoteMDBTables,
-  DefaultMDBTables,
-} from "../../Frames/DefaultFrames/DefaultFrames";
 import { DataPropertyView } from "../DataTypeView/DataPropertyView";
 import { CellEditMode } from "../TableView/TableView";
 
@@ -171,7 +151,7 @@ export const HeaderPropertiesView = (props: {
           saveField(source, field),
         schemaId: defaultContextSchemaID,
         contextPath: space,
-        fileMetadata: !isSpace,
+        fileMetadata: true,
       }
     );
   };
@@ -213,116 +193,6 @@ export const HeaderPropertiesView = (props: {
         }}
       ></InputModal>,
       windowFromDocument(e.view.document)
-    );
-  };
-  const newTable = (e: React.MouseEvent) => {
-    props.superstate.ui.openModal(
-      i18n.labels.newTable,
-
-      <InputModal
-        value=""
-        saveLabel={i18n.buttons.save}
-        saveValue={(value) => {
-          props.superstate.spaceManager
-            .tablesForSpace(spaceState.path)
-            .then((schemas) => {
-              if (schemas) {
-                const newSchema: SpaceTableSchema = {
-                  id: uniqueNameFromString(
-                    sanitizeTableName(value),
-                    schemas.map((g) => g.id)
-                  ),
-                  name: value,
-                  type: "db",
-                };
-                return props.superstate.spaceManager
-                  .createTable(spaceState.path, newSchema)
-                  .then((f) => {
-                    return props.superstate.spaceManager.addSpaceProperty(
-                      spaceState.path,
-                      { ...defaultTableFields[0], schemaId: newSchema.id }
-                    );
-                  });
-              }
-            });
-        }}
-      ></InputModal>,
-      windowFromDocument(e.view.document)
-    );
-  };
-  const newTemplate = (offset: Rect, win: Window) => {
-    return showLinkMenu(offset, win, props.superstate, (space) => {
-      saveSpaceTemplate(props.superstate, pathState.path, space);
-    });
-  };
-
-  const addNew = (e: React.MouseEvent) => {
-    const offset = (e.target as HTMLElement).getBoundingClientRect();
-    const win = windowFromDocument(e.view.document);
-    props.superstate.ui.openMenu(
-      offset,
-      defaultMenu(props.superstate.ui, [
-        {
-          name: i18n.labels.newTable,
-          description: i18n.descriptions.spaceLists,
-          icon: "ui//table",
-          onClick: (e) => newTable(e),
-        },
-        {
-          name: i18n.labels.template,
-          description: i18n.descriptions.spaceTemplates,
-          icon: "ui//clipboard-pen",
-          onClick: (e) => newTemplate(offset, win),
-        },
-        {
-          name: i18n.labels.newAction,
-          description: i18n.descriptions.spaceActions,
-          icon: "ui//mouse-pointer-click",
-          onClick: (e) => newAction(e),
-        },
-        menuSeparator,
-        {
-          name: "Toggle Read Mode",
-          description: "Toggle read mode for the space",
-          icon: "ui//eye",
-          onClick: (e) => {
-            saveSpaceCache(props.superstate, spaceState.space, {
-              ...spaceState.metadata,
-              readMode: !spaceState.metadata.readMode,
-            });
-          },
-        },
-        menuSeparator,
-        {
-          name: "Apply to Items",
-          description: i18n.descriptions.spaceProperties,
-          icon: "ui//list",
-          type: SelectOptionType.Submenu,
-          onSubmenu: (offset) => {
-            return showApplyItemsMenu(
-              offset,
-              props.superstate,
-              spaceState,
-              win
-            );
-          },
-        },
-        menuSeparator,
-        {
-          name: "Reset View",
-          description: "Reset the view to the default settings",
-          icon: "ui//table",
-          onClick: (e) => {
-            props.superstate.spaceManager.saveFrame(
-              spaceState.path,
-              props.superstate.spaceManager.superstate.settings.enableFolderNote
-                ? DefaultFolderNoteMDBTables.main
-                : DefaultMDBTables.main
-            );
-          },
-        },
-      ]),
-      win
     );
   };
 
@@ -583,31 +453,6 @@ export const HeaderPropertiesView = (props: {
               </div>
             </div>
           )}
-          {isSpace && spaceState && (
-            <>
-              <SpaceItemProperty
-                superstate={props.superstate}
-                space={spaceState}
-                compactMode={false}
-              />
-              <LiveFilters
-                superstate={props.superstate}
-                space={spaceState}
-              ></LiveFilters>
-              <SpaceListProperty
-                superstate={props.superstate}
-                compactMode={false}
-              ></SpaceListProperty>
-              <SpaceTemplateProperty
-                superstate={props.superstate}
-                compactMode={false}
-              ></SpaceTemplateProperty>
-              <SpaceActionProperty
-                superstate={props.superstate}
-                compactMode={false}
-              ></SpaceActionProperty>
-            </>
-          )}
 
           {cols.map((f, i) => (
             <DataPropertyView
@@ -656,16 +501,6 @@ export const HeaderPropertiesView = (props: {
                 {i18n.labels.newProperty}
               </div>
             </div>
-            {isSpace && (
-              <div className="mk-path-context-new" onClick={(e) => addNew(e)}>
-                <div
-                  className="mk-path-context-field-icon"
-                  dangerouslySetInnerHTML={{
-                    __html: props.superstate.ui.getSticker("ui//options"),
-                  }}
-                ></div>
-              </div>
-            )}
           </div>
         </div>
       )}

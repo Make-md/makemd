@@ -10,7 +10,14 @@ import { metadataPathForSpace } from "core/superstate/utils/spaces";
 import { removePathIcon, savePathIcon } from "core/utils/emoji";
 import { isPhone } from "core/utils/ui/screen";
 import { i18n, Superstate } from "makemd-core";
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { PathStickerContainer } from "shared/components/PathSticker";
 import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
@@ -20,11 +27,13 @@ import StickerModal from "../../../../shared/components/StickerModal";
 import { defaultMenu, menuSeparator } from "../UI/Menus/menu/SelectionMenu";
 import ImageModal from "../UI/Modals/ImageModal";
 
-export const TitleComponent = (props: {
-  superstate: Superstate;
-  readOnly: boolean;
-  setReposition: React.Dispatch<React.SetStateAction<boolean>>;
-}) => {
+export const TitleComponent = (
+  props: PropsWithChildren<{
+    superstate: Superstate;
+    readOnly: boolean;
+    setReposition: React.Dispatch<React.SetStateAction<boolean>>;
+  }>
+) => {
   const { pathState } = useContext(PathContext);
   const { spaceState } = useContext(SpaceContext);
 
@@ -319,6 +328,7 @@ export const TitleComponent = (props: {
               onClick={() => setAliasMode(!aliasMode)}
             ></button>
           )}
+          {props.children}
         </div>
       </>
     )

@@ -3,7 +3,7 @@ import React from "react";
 import { ActionTree } from "shared/types/actions";
 import { Command } from "shared/types/commands";
 import { Metadata } from "shared/types/metadata";
-import { SpaceDefGroup } from "shared/types/spaceDef";
+import { FilterGroupDef } from "shared/types/spaceDef";
 import { SpaceQuery } from "../SpaceQuery";
 export const APIPropertyEditor = (props: {
   command: Command;
@@ -16,7 +16,7 @@ export const APIPropertyEditor = (props: {
     <SpaceQuery
       superstate={props.superstate}
       filters={props.actionTree.props["$function"] ?? []}
-      setFilters={(filters: SpaceDefGroup[]) => {
+      setFilters={(filters: FilterGroupDef[]) => {
         props.saveTree({
           ...props.actionTree,
           props: {

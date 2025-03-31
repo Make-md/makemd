@@ -7,7 +7,7 @@ export const sanitizeSQLStatement = (name: string) => {
     return ''
   }
 };export const sanitizeColumnName = (name: string): string => {
-  if (name?.charAt(0) == "_") {
+  if (name?.charAt(0) == "_" || name?.charAt(0) == "$") {
     return sanitizeColumnName(name.substring(1));
   }
   return name?.replace(/"/g, ``);

@@ -154,7 +154,8 @@ export const FilterBar = (props: {
     if (!path) return [];
     const uri = props.superstate.spaceManager.uriByString(path);
     if (uri.authority == "$kit") {
-      const { node } = props.superstate.kitFrames.get(uri.ref);
+      const node = props.superstate.kitFrames.get(uri.ref)?.node;
+      if (!node) return [];
       return Object.keys(node.types)
         .map((f) => ({
           type: node.types[f],
@@ -1232,17 +1233,17 @@ export const FilterBar = (props: {
       ...listGroupOptions.filter(
         (f) =>
           parseFieldValue(f.value, f.type, props.superstate).required &&
-          !(predicate.listGroupProps[f.name]?.length > 0)
+          !(predicate.listGroupProps?.[f.name]?.length > 0)
       ),
       ...listViewOptions.filter(
         (f) =>
           parseFieldValue(f.value, f.type, props.superstate).required &&
-          !(predicate.listViewProps[f.name]?.length > 0)
+          !(predicate.listViewProps?.[f.name]?.length > 0)
       ),
       ...listItemOptions.filter(
         (f) =>
           parseFieldValue(f.value, f.type, props.superstate).required &&
-          !(predicate.listItemProps[f.name]?.length > 0)
+          !(predicate.listItemProps?.[f.name]?.length > 0)
       ),
     ],
     [listGroupOptions, listViewOptions, listItemOptions, predicate]

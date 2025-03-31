@@ -44,6 +44,7 @@ import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
+import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { newPathInSpace } from "core/superstate/utils/spaces";
 import { PointerModifiers } from "core/types/ui";
 import { createNewRow } from "core/utils/contexts/optionValuesForColumn";
@@ -59,6 +60,7 @@ import {
 } from "core/utils/ui/selection";
 import { debounce } from "lodash";
 import { SelectOption, Superstate } from "makemd-core";
+import { format } from "numfmt";
 import { fieldTypeForField, fieldTypeForType } from "schemas/mdb";
 import i18n from "shared/i18n";
 import { defaultContextSchemaID } from "shared/schemas/context";
@@ -504,6 +506,23 @@ export const TableView = (props: { superstate: Superstate }) => {
     });
   };
 
+  const valueForAggregate = (
+    value: string,
+    agType: string,
+    col: SpaceProperty
+  ) => {
+    if (agType == "number") {
+      const parsedValue = parseFieldValue(
+        col.value,
+        col.type,
+        props.superstate
+      );
+      if (parsedValue?.format?.length > 0) {
+        return format(parsedValue.format, parseInt(value));
+      }
+    }
+    return value;
+  };
   const aggregateValues: Record<string, string> = useMemo(() => {
     const result: Record<string, string> = {};
     Object.keys(predicate.colsCalc).forEach((f) => {
@@ -840,7 +859,12 @@ export const TableView = (props: { superstate: Superstate }) => {
                           .shortLabel ??
                           aggregateFnTypes[predicate.colsCalc[col.name]].label}
                       </span>
-                      {aggregateValues[col.name]}
+                      {valueForAggregate(
+                        aggregateValues[col.name],
+                        aggregateFnTypes[predicate.colsCalc[col.name]]
+                          .valueType,
+                        col
+                      )}
                     </div>
                   ) : (
                     <div>

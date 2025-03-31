@@ -128,7 +128,7 @@ export const HiddenPaths = (props: {
         <button onClick={(e) => addExtension()}>{i18n.buttons.add}</button>
       </div>
 
-      <div className="mk-modal-heading">{i18n.subViews.filesAndFolders}</div>
+      <div className="mk-modal-heading">{i18n.labels.filesAndFolders}</div>
       <div className="mk-modal-description">
         {i18n.labels.hiddenFileSpecific}
       </div>

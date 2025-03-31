@@ -230,8 +230,8 @@ export class UIManager implements IUIManager {
   public getOS() {
     return this.mainFrame.getOS();
   }
-  public getSticker(icon: string) {
-    return this.mainFrame.getSticker(icon);
+  public getSticker(icon: string, options?: Record<string, any>) {
+    return this.mainFrame.getSticker(icon, options);
   }
   public getPlaceholderImage(icon: string) {
     return uiPlaceholders[icon];

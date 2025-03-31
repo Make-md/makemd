@@ -4,6 +4,7 @@ import i18n from "shared/i18n";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import {
   TreeNode,
+  defaultSpaceSort,
   pathStateToTreeNode,
   spaceRowHeight,
   spaceSortFn,
@@ -58,12 +59,7 @@ const treeForSpace = (
   const spaceSort =
     space.metadata?.sort?.field && !sort.recursive
       ? space.metadata?.sort
-      : sort ?? {
-          field: "rank",
-          asc: true,
-          group: true,
-          recursive: false,
-        };
+      : sort ?? defaultSpaceSort;
   const children = superstate.getSpaceItems(space.path) ?? [];
   if (!spaceCollapsed || root) {
     children.sort(spaceSortFn(spaceSort)).forEach((item) => {
@@ -146,12 +142,7 @@ const treeForRoot = (
         .length,
       type: "group",
     });
-  const spaceSort = space.metadata?.sort ?? {
-    field: "rank",
-    asc: true,
-    group: true,
-    recursive: false,
-  };
+  const spaceSort = space.metadata?.sort ?? defaultSpaceSort;
 
   if (!expandedSpaces.includes(space.path) || (active && !active.parentId)) {
     return tree;
@@ -369,28 +360,28 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         const pathLevel = space.path
           .split("/")
           .filter((f) => f.length > 0).length;
-        const openPaths = folders
-          .reduce(
-            (p, c, index) => [
+        const openPaths = folders.reduce(
+          (p, c, index) => {
+            return [
               ...p,
               ...(index < pathLevel
                 ? []
                 : [
                     index == 0
                       ? "//" + c
-                      : p.slice(1).join() +
+                      : p[p.length - 1] +
                         "/" +
                         folders.slice(0, index + 1).join("/"),
                   ]),
-            ],
-            [space.path]
-          )
-          .slice(0, -1);
+            ];
+          },
+          [space.path]
+        );
         newScrollToSpace = openPaths[openPaths.length - 1];
         newOpenFolders = [
           ...(newOpenFolders.filter((f) => !openPaths.find((g) => g == f)) ??
             []),
-          ...openPaths,
+          ...openPaths.slice(0, -1),
         ];
       });
 
@@ -411,6 +402,17 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     };
   }, [revealPath]);
 
+  useEffect(() => {
+    if (nextTreeScrollPath.current) {
+      const index = flattenedTree.findIndex(
+        (f) => f.id == nextTreeScrollPath.current
+      );
+      if (index != -1) {
+        listRef.current.scrollToIndex(index, { align: "center" });
+        nextTreeScrollPath.current = null;
+      }
+    }
+  }, [flattenedTree]);
   useEffect(() => {
     const reloadData = () => {
       setFlattenedTree(
@@ -451,13 +453,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
       expandedSpaces
     );
     setFlattenedTree(tree);
-    if (nextTreeScrollPath.current) {
-      const index = tree.findIndex((f) => f.id == nextTreeScrollPath.current);
-      if (index != -1) {
-        listRef.current.scrollToIndex(index, { align: "center" });
-        nextTreeScrollPath.current = null;
-      }
-    }
   }, [expandedSpaces, activeViewSpaces, active]);
   const changeActivePath = (path: string) => {
     setActivePath(path);

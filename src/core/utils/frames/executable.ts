@@ -33,7 +33,7 @@ const generateCodeForProp = (value: any, isClosure: boolean, type?: string) => {
     });
     
 
-    treeNode.execProps = applyFunctionToObject(treeNode.node.props, (e, k) => generateCodeForProp(e, false, treeNode.node.types[k]));
+    treeNode.execProps = applyFunctionToObject(treeNode.node.props, (e, k) => generateCodeForProp(e, false, treeNode.node.types?.[k]));
     treeNode.execStyles = applyFunctionToObject(treeNode.node.styles, (e) => generateCodeForProp(e, false));
     treeNode.execActions = applyFunctionToObject(treeNode.node.actions, (e) => generateCodeForProp(e, true));
     treeNode.children = treeNode.children.map((child) => 

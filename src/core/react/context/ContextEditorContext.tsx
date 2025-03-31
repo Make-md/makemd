@@ -180,7 +180,6 @@ export const ContextEditorProvider: React.FC<
     let schemas = props.superstate.contextsIndex.get(contextPath)?.schemas;
     if (!schemas)
       schemas = await props.superstate.spaceManager.tablesForSpace(contextPath);
-
     if (schemas && !isEqual(schemaTable?.rows, schemas)) {
       setSchemaTable(() => ({
         ...defaultSchema,
@@ -546,9 +545,6 @@ export const ContextEditorProvider: React.FC<
       col &&
       props.superstate.settings.saveAllContextToFrontmatter
     ) {
-      console.log({
-        [column]: parseMDBStringValue(fieldTypeForField(col), value, true),
-      });
       saveProperties(
         props.superstate,
         path ?? tableData.rows[index]?.[PathPropertyName],

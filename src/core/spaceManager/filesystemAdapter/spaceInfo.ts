@@ -90,8 +90,9 @@ export const fileSystemSpaceInfoFromFolder = (
 ): FilesystemSpaceInfo => {
   if (folder == '/') {
     const vaultName =  "Vault";
+    const systemName = manager.superstate.settings.systemName;
     return {
-      name: vaultName,
+      name: systemName,
 
       path: folder,
       isRemote: false,

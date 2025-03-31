@@ -50,7 +50,7 @@ export interface IUIManager {
     primaryInteractionType: () => InteractionType;
     getScreenType: () => ScreenType;
     getOS: () => string;
-    getSticker: (icon: string) => string;
+    getSticker: (icon: string, options?: Record<string, any>) => string;
     getPlaceholderImage: (icon: string) => string;
     allStickers: () => Sticker[];
     getUIPath: (path: string, thumbnail?: boolean) => string;
@@ -75,7 +75,7 @@ export interface UIAdapter {
     getOS: () => string;
     getWarnings: () => Warning[];
     primaryInteractionType: () => InteractionType;
-    getSticker: (icon: string) => string;
+    getSticker: (icon: string, options?: Record<string, any>) => string;
     allStickers: () => Sticker[];
     getUIPath: (path: string, thumbnail?: boolean) => string;
     dragStarted: (e: React.DragEvent<HTMLDivElement>, paths: string[]) => void;

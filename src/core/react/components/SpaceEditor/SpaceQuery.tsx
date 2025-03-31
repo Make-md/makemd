@@ -14,7 +14,7 @@ import React, { PropsWithChildren, useEffect } from "react";
 import i18n from "shared/i18n";
 import { SpaceProperty } from "shared/types/mdb";
 import { Metadata } from "shared/types/metadata";
-import { SpaceDefFilter, SpaceDefGroup } from "shared/types/spaceDef";
+import { FilterDef, FilterGroupDef } from "shared/types/spaceDef";
 import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 import { pathNameToString } from "utils/path";
@@ -23,22 +23,26 @@ import { FilterValueSpan } from "../SpaceView/Contexts/FilterBar/FilterBar";
 import { showLinkMenu } from "../UI/Menus/properties/linkMenu";
 import { showSpacesMenu } from "../UI/Menus/properties/selectSpaceMenu";
 
-export const SpaceQuery = (props: {
-  superstate: Superstate;
-  fields: Metadata[];
-  sections: SelectSection[];
-  filters: SpaceDefGroup[];
-  setFilters: React.Dispatch<React.SetStateAction<SpaceDefGroup[]>>;
-  removeable?: boolean;
-  linkProps?: SpaceProperty[];
-}) => {
+export const SpaceQuery = (
+  props: PropsWithChildren<{
+    superstate: Superstate;
+    fields: Metadata[];
+    sections: SelectSection[];
+    filters: FilterGroupDef[];
+    joinType?: "any" | "all";
+    setJoinType?: (type: "any" | "all") => void;
+    setFilters: (filters: FilterGroupDef[]) => void;
+    removeable?: boolean;
+    linkProps?: SpaceProperty[];
+  }>
+) => {
   useEffect(() => {
     props.superstate.refreshMetadata();
   }, []);
   const { filters, setFilters } = props;
   const selectFilterValue = (
     e: React.MouseEvent,
-    filter: SpaceDefFilter,
+    filter: FilterDef,
     i: number,
     k: number
   ) => {
@@ -165,8 +169,8 @@ export const SpaceQuery = (props: {
     }
   };
   const addDefGroup = () => {
-    setFilters((p) => [
-      ...p,
+    setFilters([
+      ...filters,
       {
         type: "any",
         trueFalse: true,
@@ -362,6 +366,28 @@ export const SpaceQuery = (props: {
       windowFromDocument(e.view.document)
     );
   };
+
+  const selectJoinType = (e: React.MouseEvent) => {
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    const filters = ["any", "all"];
+    props.superstate.ui.openMenu(
+      offset,
+      {
+        ui: props.superstate.ui,
+        multi: false,
+        editable: false,
+        value: [],
+        options: filters.map((f) => ({
+          name: f == "any" ? "or" : "and",
+          value: f,
+        })),
+        saveOptions: (_, value) => props.setJoinType(value[0] as "any" | "all"),
+        searchable: false,
+        showAll: true,
+      },
+      windowFromDocument(e.view.document)
+    );
+  };
   const selectFilter = (e: React.MouseEvent, i: number, k: number) => {
     const offset = (e.target as HTMLElement).getBoundingClientRect();
     const { type, field, fType } = filters[i].filters[k];
@@ -413,19 +439,8 @@ export const SpaceQuery = (props: {
   };
   return (
     <div className="mk-query">
-      {filters.length == 0 ? (
-        <DefFilterGroup
-          superstate={props.superstate}
-          selectGroupType={selectGroupType}
-          group={null}
-          addDefGroup={addDefGroup}
-          selectField={selectField}
-          i={0}
-          removeable={props.removeable}
-          removeDefGroup={removeDefGroup}
-        ></DefFilterGroup>
-      ) : (
-        filters.map((f, i) => (
+      {filters.map((f, i, ar) => (
+        <React.Fragment key={i}>
           <DefFilterGroup
             superstate={props.superstate}
             key={i}
@@ -462,21 +477,27 @@ export const SpaceQuery = (props: {
               </React.Fragment>
             ))}
           </DefFilterGroup>
-        ))
-      )}
+          {i != ar.length - 1 && props.setJoinType && props.joinType && (
+            <div className="mk-filter" onClick={(e) => selectJoinType(e)}>
+              <span>{props.joinType == "any" ? "or" : "and"}</span>
+            </div>
+          )}
+        </React.Fragment>
+      ))}
+      {props.children}
     </div>
   );
 };
 const DefFilter = (props: {
   superstate: Superstate;
-  filter: SpaceDefFilter;
+  filter: FilterDef;
   i: number;
   k: number;
   selectField: (e: React.MouseEvent, i: number, k: number) => void;
   selectFilter: (e: React.MouseEvent, i: number, k: number) => void;
   selectFilterValue: (
     e: React.MouseEvent,
-    h: SpaceDefFilter,
+    h: FilterDef,
     i: number,
     k: number
   ) => void;
@@ -518,7 +539,7 @@ const DefFilter = (props: {
                 superstate={props.superstate}
                 fieldType={filter.fType}
                 filter={filter}
-                selectFilterValue={(e: React.MouseEvent, h: SpaceDefFilter) =>
+                selectFilterValue={(e: React.MouseEvent, h: FilterDef) =>
                   selectFilterValue(e, h, i, k)
                 }
               ></FilterValueSpan>
@@ -589,7 +610,7 @@ const DefFilter = (props: {
 const DefFilterGroup = (
   props: PropsWithChildren<{
     superstate: Superstate;
-    group: SpaceDefGroup;
+    group: FilterGroupDef;
     addDefGroup: () => void;
     selectGroupType: (e: React.MouseEvent, i: number) => void;
     selectField: (e: React.MouseEvent, i: number, k: number) => void;

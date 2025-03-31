@@ -18,7 +18,9 @@ import { urlRegex } from "utils/regex";
 
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
 import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
+import { ConfirmationModal } from "core/react/components/UI/Modals/ConfirmationModal";
 import ImageModal from "core/react/components/UI/Modals/ImageModal";
+import { removeSpace } from "core/superstate/utils/spaces";
 import { BlinkMode } from "shared/types/blink";
 import { editableRange } from "shared/utils/codemirror/selectiveEditor";
 import { getLineRangeFromRef } from "shared/utils/obsidian";
@@ -96,8 +98,8 @@ export class ObsidianUI implements UIAdapter {
   public navigationHistory = () => {
     return this.plugin.app.workspace.getLastOpenFiles();
   };
-  public getSticker = (icon: string) => {
-    return stickerFromString(icon, this.plugin);
+  public getSticker = (icon: string, options?: Record<string, any>) => {
+    return stickerFromString(icon, this.plugin, options);
   };
 
   public getOS = () => {
@@ -416,6 +418,27 @@ export class ObsidianUI implements UIAdapter {
     const file = this.plugin.app.vault.getAbstractFileByPath(path);
     if (file) {
       const fileMenu = new Menu();
+      fileMenu.addItem((item) => {
+        item.setTitle("Delete");
+        item.setIcon("trash");
+        item.onClick(() => {
+          if (file instanceof TFile) {
+            this.plugin.app.vault.delete(file);
+            return;
+          }
+          this.openModal(
+            i18n.labels.deleteSpace,
+            <ConfirmationModal
+              confirmAction={() => {
+                removeSpace(this.manager.superstate, path);
+              }}
+              confirmLabel={i18n.buttons.delete}
+              message={i18n.descriptions.deleteSpace}
+            ></ConfirmationModal>,
+            window
+          );
+        });
+      });
       this.plugin.app.workspace.trigger(
         "file-menu",
         fileMenu,

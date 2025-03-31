@@ -161,9 +161,15 @@ export const absolutePathToRelativePath = (path: string, absolutePath: string) =
     if (relativePath.startsWith('/')) {
         return '.' + relativePath;
     } else {
-        const levelsUp = absolutePath.split('/').length;
+        const absolutePathParts = absolutePath.split('/');
+        const relativePathParts = relativePath.split('/');
+        let i = 0;
+        while (i < absolutePathParts.length && i < relativePathParts.length && absolutePathParts[i] == relativePathParts[i]) {
+            i++;
+        }
+        const levelsUp = absolutePathParts.length - i;
         const relativePrefix = levelsUp > 0 ? '../'.repeat(levelsUp) : '';
-        return relativePrefix + relativePath;
+        return relativePrefix + relativePathParts.slice(i).join('/');
     }
 }
 

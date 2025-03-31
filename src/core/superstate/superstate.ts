@@ -2,10 +2,10 @@ import { CLIManager } from "core/middleware/commands";
 import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
+import { defaultSpaceSort, saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
 import { buildRootFromMDBFrame } from "core/utils/frames/ast";
-import { pathByDef } from "core/utils/spaces/query";
+import { pathByJoins } from "core/utils/spaces/query";
 import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
 import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
@@ -29,7 +29,7 @@ import { FrameRoot, MDBFrames } from "shared/types/mframe";
 import { ContextState, PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
 import { MakeMDSettings } from "shared/types/settings";
-import { SpaceDefGroup, SpaceDefinition, SpaceType } from "shared/types/spaceDef";
+import { FilterGroupDef, SpaceDefinition, SpaceType } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
@@ -140,7 +140,7 @@ public api: API;
 
     private searcher: Searcher;
     public focuses: Focus[];
-    public search (path: string, query?: string, queries?: SpaceDefGroup[]) {
+    public search (path: string, query?: string, queries?: FilterGroupDef[]) {
         if (query) {
             return this.searcher
             .run<PathState[]>({
@@ -425,17 +425,19 @@ public api: API;
         if (space.metadata?.links && !_.isEqual(space.metadata.links, oldDef?.links)) {
             newPaths.push(...(space.metadata.links))
         }
-        if (space.metadata?.filters?.length > 0) {
+        if (space.metadata?.joins?.length > 0) {
 
-            const hasProps = space.metadata.filters.some(f => f.filters.some(g => g.fType == 'property'))
+            const hasProps = space.metadata.joins.some(f => f.groups.some(g => g.filters.some(h => h.fType == 'property')))
             
-            if (!_.isEqual(space.metadata?.filters, oldDef?.filters) || hasProps)
+            if (!_.isEqual(space.metadata?.joins, oldDef?.joins) || hasProps)
             {
                 for (const [k, f] of this.pathsIndex) {
-                if (!f.hidden && pathByDef(space.metadata?.filters, f, space.properties)) {
-                  newPaths.push(k);
+                    if (space.metadata.joins.some(g => g.path == '/' || f.path.startsWith(g.path + '/'))) {
+                        if (!f.hidden && pathByJoins(space.metadata?.joins, f, space.properties)) {
+                            newPaths.push(k);
+                        }
+                    }
                 }
-              }
             }
         }
         const diff = [..._.difference(newPaths, [...currentPaths]), ..._.difference([...currentPaths], newPaths)];
@@ -815,7 +817,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
 
     const spaceSort = metadata?.sort ?? { field: 'rank', asc: true, group: true};
         const sortable = spaceSort.field == "rank";
-        if (!_.isEqual(space.metadata.links, metadata.links) || !_.isEqual(space.metadata.filters, metadata.filters)) {
+        if (!_.isEqual(space.metadata.links, metadata.links) || !_.isEqual(space.metadata.joins, metadata.joins)) {
             spaceDefChanged = true
             
         }
@@ -847,7 +849,7 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
         if (!uri) return null;
         const type : SpaceType = this.spaceManager.spaceTypeByString(uri)
         if (type == 'default' || type == 'tag') {
-            metadata.filters = [];
+            metadata.joins = [];
         }
         const propertyTypes : SpaceProperty[] = [];
         let properties = {};
@@ -902,12 +904,12 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
             }
         })
 
-        const spaceSort = metadata?.sort ?? { field: "rank", asc: true, group: true};
+        const spaceSort = metadata?.sort ?? defaultSpaceSort;
         const sortable = (spaceSort.field == "rank" || !spaceSort);
         const contexts : string[] = metadata?.contexts ?? []
 
-        const dependencies = uniq((metadata.filters ?? []).flatMap(f => f.filters).flatMap(f =>  f.type == 'context' ? [f.field.split('.')[0]] : f.type == 'path' && f.field == 'space' ? parseMultiString(f.value) : []));
-        const linkDependencies = uniq((metadata.filters ?? []).flatMap(f => f.filters).flatMap(f =>  f.type.startsWith('link') ? parseMultiString(f.value) : []));
+        const dependencies = uniq((metadata.joins ?? []).flatMap(f => f.groups).flatMap(f => f.filters).flatMap(f =>  f.type == 'context' ? [f.field.split('.')[0]] : f.type == 'path' && f.field == 'space' ? parseMultiString(f.value) : []));
+        const linkDependencies = uniq((metadata.joins ?? []).flatMap(f => f.groups).flatMap(f => f.filters).flatMap(f =>  f.type.startsWith('link') ? parseMultiString(f.value) : []));
         if (type == 'tag' && this.settings.autoAddContextsToSubtags) {
             const parentTags = getAllParentTags(space.name);
             contexts.push(...parentTags)

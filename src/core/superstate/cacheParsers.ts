@@ -8,7 +8,7 @@ import { orderStringArrayByArray, uniq } from "shared/utils/array";
 
 import { builtinSpaces } from "core/types/space";
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
-import { pathByDef } from "core/utils/spaces/query";
+import { pathByJoins } from "core/utils/spaces/query";
 import { ensureArray, initiateString, tagSpacePathFromTag } from "core/utils/strings";
 import { builtinSpacePathPrefix, tagsSpacePath } from "shared/schemas/builtin";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
@@ -98,11 +98,21 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
     const cache : {[key: string]: { changed: boolean, cache: PathState }} = {};
     for (const [path, _pathCache] of fileCache) {
         const cachePath = settings.enableFolderNote ? spacesCache.get(path)?.space.notePath ?? path : path;
+        const isFolderNote = settings.enableFolderNote && spacesCache.has(path);
         
         const pathCache = fileCache.get(cachePath) ?? _pathCache;
-        if (!_pathCache)
+        if (!pathCache)
             continue;
 
+        if (isFolderNote) {
+          
+          pathCache.file = _pathCache.file;
+          pathCache.parent = _pathCache.parent;
+          pathCache.subtype = _pathCache.subtype;
+          pathCache.type = _pathCache.type;
+          pathCache.contentTypes = _pathCache.contentTypes;
+
+      }
         const parent = _pathCache?.parent ?? '';
         const type = _pathCache?.type ?? '';
         const subtype = _pathCache?.subtype ?? '';
@@ -253,22 +263,7 @@ export const parseMetadata = (
                 }
             }
         }
-        if (space.metadata.recursive?.length > 0) {
-      if (pathState.path.startsWith(`${space.path}/`)) {
-                if (space.metadata.recursive == 'all') {
-                    spaces.push(s);
-          spaceNames.push(space.name);
-                    return;
-        }
-        if (space.metadata.recursive == 'file') {
-                    if (pathState.type != 'space') {
-                        spaces.push(s);
-            spaceNames.push(space.name);
-                        return;
-                    }
-                }
-            }
-        }
+        
         if (space.space.notePath == path && space.path != space.space.notePath) {
             isSpaceNote = true;
             spacePath = space.path;
@@ -282,18 +277,18 @@ export const parseMetadata = (
                 return;
             }
         }
-        if (space.metadata?.filters?.length > 0) {
+        if (space.metadata?.joins?.length > 0) {
       if (
-        pathByDef(
-          space.metadata.filters,
+        pathByJoins(
+          space.metadata.joins,
           { ...pathState, spaces },
           space.properties,
         )
       ) {
-                spaces.push(s);
-        spaceNames.push(space.name);
-                liveSpaces.push(s);
-                return;
+              spaces.push(s);
+              spaceNames.push(space.name);
+              liveSpaces.push(s);
+              return;
             }
         }
     if (space.metadata?.links?.length > 0) {
@@ -327,7 +322,7 @@ export const parseMetadata = (
     : {
         ...pathState,
         tags: uniq(tags),
-        spaces: uniq(spaces),
+        spaces: uniq(spaces).filter(f => f != path),
         linkedSpaces,
         liveSpaces,
         spaceNames,

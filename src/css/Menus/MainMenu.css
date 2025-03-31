@@ -21,6 +21,7 @@
   align-items: center;
   gap: 8px;
   flex: 1;
+  overflow: hidden;;
 }
 
 .mk-main-menu.mk-hidden {
@@ -43,7 +44,7 @@
 }
 .mk-main-menu-button {
   font-weight: var(--font-medium);
-    font-size: 16px;
+    font-size: 14px;
     padding: 8px 10px;
   text-align: left;
   border-radius: 4px;
@@ -92,6 +93,13 @@
   flex-grow: 1;
   line-height: 1;
   justify-content: flex-start;
+  overflow: hidden;
+}
+.mk-main-menu-button-primary span {
+  text-overflow: ellipsis;
+    overflow: hidden;
+    display: inline-block;
+    white-space: nowrap;
 }
 
 .mk-main-menu .mk-main-menu-sticker {

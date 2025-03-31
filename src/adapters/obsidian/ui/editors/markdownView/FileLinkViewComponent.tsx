@@ -1,8 +1,9 @@
 import { regexYaml } from "adapters/text/textCacher";
 import { Superstate } from "makemd-core";
-import { App, MarkdownRenderer, parseYaml } from "obsidian";
+import { App, parseYaml } from "obsidian";
 
 import classNames from "classnames";
+import { markdownToHtml } from "core/export/toHtml/mdToHtml";
 import React, { useEffect, useRef, useState } from "react";
 import { pathToString } from "utils/path";
 import { RemoteMarkdownHeaderView } from "./RemoteMarkdownHeaderView";
@@ -21,13 +22,10 @@ export const FileLinkViewComponent = (props: {
     //   ref.current.innerHTML = html;
     // });
     if (ref.current) {
-      MarkdownRenderer.render(
-        props.app,
-        markdown,
-        ref.current,
-        props.path,
-        props.component
-      );
+      markdownToHtml(props.superstate, markdown, props.path).then((f) => {
+        ref.current.innerHTML = f;
+      });
+
       const observer = new MutationObserver(() => {
         // Get all anchor links in ref.current
         const links = ref.current.querySelectorAll("a");

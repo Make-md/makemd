@@ -8,6 +8,7 @@ import { BooleanCell } from "./BooleanCell";
 import { IconCell } from "./IconCell";
 import { ImageCell } from "./ImageCell";
 import { LinkCell } from "./LinkCell";
+import { NumberCell } from "./NumberCell";
 import { OptionCell } from "./OptionCell";
 
 export const AggregateCell = (
@@ -69,13 +70,19 @@ export const AggregateCell = (
       multi={true}
       editMode={CellEditMode.EditModeReadOnly}
     ></IconCell>
-  ) : type.startsWith("link") || type == "file" ? (
+  ) : type?.startsWith("link") || type == "file" ? (
     <LinkCell
       {...props}
       initialValue={initialValue}
       multi={true}
       editMode={CellEditMode.EditModeReadOnly}
     ></LinkCell>
+  ) : type == "number" ? (
+    <NumberCell
+      {...props}
+      initialValue={initialValue}
+      editMode={CellEditMode.EditModeReadOnly}
+    ></NumberCell>
   ) : (
     <OptionCell
       {...props}

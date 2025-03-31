@@ -12,6 +12,7 @@ export const PathCrumb = (
     source?: string;
     hideName?: boolean;
     hideIcon?: boolean;
+    onClick?: (e: React.MouseEvent) => void;
   }>
 ) => {
   const path = useMemo(
@@ -50,7 +51,11 @@ export const PathCrumb = (
   return (
     <div
       className="mk-path"
-      onClick={() => {
+      onClick={(e) => {
+        if (props.onClick) {
+          props.onClick(e);
+          return;
+        }
         props.superstate.ui.openPath(cache?.path ?? path, false);
       }}
       onContextMenu={(e) => {

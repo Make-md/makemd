@@ -526,7 +526,7 @@ height: 60px;
 .mk-icon-small svg {
   width: 16px;
   height: 16px;
-  color: var(--mk-ui-text-secondary);
+  stroke: var(--mk-ui-text-secondary);
 }
 .mk-icon-medium,
 .mk-icon-small,

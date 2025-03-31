@@ -29,6 +29,10 @@ import {
   EmbedSpaceView
 } from "adapters/obsidian/ui/editors/EmbedSpaceView";
 import {
+  HTMLFileViewer,
+  HTML_FILE_VIEWER_TYPE
+} from "adapters/obsidian/ui/editors/HTMLFileViewer";
+import {
   MDBFileViewer,
   MDB_FILE_VIEWER_TYPE
 } from "adapters/obsidian/ui/editors/MDBFileViewer";
@@ -83,10 +87,10 @@ import { moveSpaceFiles } from "adapters/obsidian/filesystem/spaceFileOps";
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
 import { SPACE_FRAGMENT_VIEW_TYPE, SpaceFragmentView } from "adapters/obsidian/ui/editors/SpaceFragmentViewComponent";
 import { installKitModal } from "adapters/obsidian/ui/kit/InstallKitModal";
-import { exportSpaceKit } from "adapters/obsidian/ui/kit/kits";
 import { EVER_VIEW_TYPE, EverLeafView } from "adapters/obsidian/ui/navigator/EverLeafView";
 import MakeBasicsPlugin from "basics/basics";
 import { showWarningsModal } from "core/react/components/Navigator/SyncWarnings";
+import { newSpaceModal } from "core/react/components/UI/Menus/navigator/showSpaceAddMenu";
 import { openInputModal } from "core/react/components/UI/Modals/InputModal";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
 import { Superstate } from "core/superstate/superstate";
@@ -227,7 +231,9 @@ loadViews () {
     this.registerView(MDB_FILE_VIEWER_TYPE, (leaf) => {
       return new MDBFileViewer(leaf, this);
     });
-    
+    this.registerView(HTML_FILE_VIEWER_TYPE, (leaf) => {
+      return new HTMLFileViewer(leaf, this);
+    });
   }
 }
 
@@ -242,6 +248,7 @@ loadViews () {
       document.body.classList.toggle("mk-hide-tabs", !this.superstate.settings.sidebarTabs);
       
     document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
+    document.body.classList.toggle("mk-hide-vault-selector", !this.superstate.settings.vaultSelector);
     // document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
     document.body.classList.toggle(
       "mk-folder-lines",
@@ -422,32 +429,19 @@ loadViews () {
     if (this.superstate.settings.spacesEnabled) {
       
       this.addCommand({
+        id: 'mk-new-space',
+        name: "New Folder",
+        callback: () => {
+          newSpaceModal(this.superstate)
+        }
+      })
+
+      this.addCommand({
         id: 'mk-debug-close-tabs',
         name: "Close Extra File Tabs",
         callback: () => {
           this.closeExtraFileTabs();
         }
-      })
-
-      this.addCommand({
-        id: "mk-open-kit",
-        name: "Open Kit",
-        callback: () => {
-            installKitModal(this, this.superstate, '', window);
-        },
-      });
-
-      this.addCommand({
-        id: "mk-kit",
-        name: "Save Space as Kit",
-        callback: () => {
-          const path = this.getActiveFile().path;
-          if (this.superstate.spacesIndex.has(path)) {
-            exportSpaceKit(this, this.superstate, path, path).then((kit) => {
-              this.superstate.spaceManager.createItemAtPath('/', 'mkit', 'kit', JSON.stringify(kit))
-            })
-          }
-        },
       })
 
       this.addCommand({
@@ -550,6 +544,7 @@ loadViews () {
       });
       
       this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
+      this.registerExtensions(["html", "htm"], HTML_FILE_VIEWER_TYPE);
       this.app.workspace.onLayoutReady(async () => {
 
         if (this.superstate.settings.autoOpenFileContext) {

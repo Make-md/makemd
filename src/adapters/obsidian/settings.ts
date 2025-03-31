@@ -107,6 +107,14 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
           document.body.classList.toggle("mk-hide-tabs", !value);
         }
       },
+      { name: 'vaultSelector',
+        category: 'navigator',
+        subCategory: 'appearance',
+        type: 'boolean',
+        onChange: (value: boolean) => {
+          document.body.classList.toggle("mk-hide-vault-selector", !value);
+        }
+      },
       {
         name: 'showRibbon',
         category: 'navigator',
@@ -275,6 +283,11 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         name: 'defaultDateFormat',
         category: 'advanced',
         type: 'text',
+      },
+      {
+        name: 'datePickerTime',
+        category: 'advanced',
+        type: 'boolean',
       },
       {
         name: 'defaultTimeFormat',

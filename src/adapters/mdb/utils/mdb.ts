@@ -10,6 +10,7 @@ import {
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 
 import { vaultSchema } from "adapters/obsidian/filesystem/schemas/vaultSchema";
+import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
 import { defaultFieldsForContext } from "shared/schemas/fields";
 import { sanitizeSQLStatement } from "shared/utils/sanitizers";
 import { Database, QueryExecResult } from "sql.js";
@@ -163,14 +164,24 @@ export const getMDBTables = async (plugin: MDBFileTypeAdapter, dbPath: string) =
   
     const db = new sqlJS.Database(new Uint8Array(buf));
   
-    let schemas = []
+    let schemas : SpaceTableSchema[] = []
     try {
        schemas = (dbResultsToDBTables(
       db.exec(`SELECT * FROM m_schema`)
     )[0]?.rows ?? []) as SpaceTableSchema[];
     } catch (e) {
-      db.close();
-      return null;
+    }
+    if (schemas.length == 0) {
+      const tables =  dbResultsToDBTables(
+        db.exec(
+            "SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
+            ))[0].rows.map(f => f.name) as string[];
+      schemas = tables.filter(f => !f.startsWith('m_')).map(f => (f == defaultContextSchemaID ? defaultContextDBSchema : { id: f, name: f, type: 'db', primary: ''}));
+      db.exec(
+        `CREATE TABLE IF NOT EXISTS m_schema ('id' char, 'name' char, 'type' char, 'def' char, 'predicate' char, 'primary' char)`
+      );
+      db.exec(schemas.map(f => `INSERT INTO m_schema ('id', 'name', 'type', 'primary') VALUES ('${f.id}', '${f.name}', '${f.type}', '${f.primary}')`).join(';'));
+      await saveDBFile(plugin, dbPath, db.export().buffer);
     }
     const mdbTables = {} as SpaceTables;
     schemas.forEach(schema => {

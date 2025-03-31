@@ -29,6 +29,7 @@ export const ContextListContainer = (props: {
   showTitle?: boolean;
   containerRef?: React.RefObject<HTMLDivElement>;
   setView?: (view: string) => void;
+  viewType?: string;
 }) => {
   const { pathState } = useContext(PathContext);
   const {
@@ -119,6 +120,7 @@ export const ContextListContainer = (props: {
     }
   };
 
+  const viewType = props.viewType ?? predicate?.view;
   return tableData ? (
     <div className="mk-context-container">
       {!props.minMode && (
@@ -130,11 +132,11 @@ export const ContextListContainer = (props: {
       )}
 
       {uris ? (
-        predicate.view == "table" ||
-        predicate.view == "db" ||
+        viewType == "table" ||
+        viewType == "db" ||
         (dbSchema?.primary != "true" && !frameSchema) ? (
           <TableView superstate={props.superstate}></TableView>
-        ) : predicate.view == "day" ? (
+        ) : viewType == "day" ? (
           <DayView
             superstate={props.superstate}
             field={predicate.listViewProps?.start || "start"}
@@ -157,7 +159,7 @@ export const ContextListContainer = (props: {
               updateRow(row, parseInt(row._index));
             }}
           ></DayView>
-        ) : predicate.view == "week" ? (
+        ) : viewType == "week" ? (
           <WeekView
             superstate={props.superstate}
             field={predicate.listViewProps?.start || "start"}
@@ -179,7 +181,7 @@ export const ContextListContainer = (props: {
               updateRow(row, parseInt(row._index));
             }}
           ></WeekView>
-        ) : predicate.view == "month" ? (
+        ) : viewType == "month" ? (
           <MonthView
             superstate={props.superstate}
             data={data}

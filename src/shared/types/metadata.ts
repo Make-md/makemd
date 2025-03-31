@@ -53,7 +53,15 @@ export const fileProperties :  Metadata[] = [
         type: 'file',
         description: "Path for a space or note"
     },
-    
+    {
+        id: 'file.isFolder',
+        label: i18n.metadataTypes.isFolder,
+        field: 'isFolder',
+        vType: 'boolean',
+        defaultFilter: 'isTrue',
+        type: 'file',
+        description: "Is the item a folder"
+    },
 {
     id: 'file.parent',
         label: i18n.metadataTypes.folder,

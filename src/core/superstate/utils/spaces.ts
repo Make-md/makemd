@@ -1,4 +1,4 @@
-import { spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceRecursiveKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
+import { spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
 import { reorderPathsInContext } from "core/utils/contexts/context";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { ensureArray, ensureBoolean, ensureString, ensureStringValueFromSet } from "core/utils/strings";
@@ -11,7 +11,7 @@ import { MDBFrame } from "shared/types/mframe";
 import { TargetLocation } from "shared/types/path";
 import { CacheState, PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
-import { SpaceDefFilter, SpaceDefGroup, SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
+import { FilterDef, FilterGroupDef, JoinDefGroup, SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { PathStateWithRank } from "shared/types/superstate";
 import { sanitizeColumnName } from "shared/utils/sanitizers";
@@ -35,7 +35,7 @@ const fixSpaceDefType = (type: string) : string => {
   return ensureString(type)
 }
 
-const parseSpaceFilterGroupFilter = (value: any) : SpaceDefFilter => {
+const parseSpaceFilterGroupFilter = (value: any) : FilterDef => {
     return {
         type: fixSpaceDefType(value['type']),
         fType: ensureString(value['fType']),
@@ -44,20 +44,28 @@ const parseSpaceFilterGroupFilter = (value: any) : SpaceDefFilter => {
         value: ensureString(value['value']),
     }
 }
-const parseSpaceFilterGroup = (value: any) : SpaceDefGroup => {
+const parseSpaceFilterGroup = (value: any) : FilterGroupDef => {
     return {type: ensureStringValueFromSet(value['type'], ['any', 'all'], 'any') as 'any' | 'all',
     trueFalse: value['truefalse'] ? true : false,
     filters: ensureArray(value['filters']).map(f => parseSpaceFilterGroupFilter(f))
 }
 }
 
+const parseSpaceJoinGroup = (value: any) : JoinDefGroup => {
+    return {
+        recursive: ensureBoolean(value['recursive']),
+        path: ensureString(value['path']),
+        type: ensureStringValueFromSet(value['type'], ['any', 'all'], 'any') as 'any' | 'all',
+        groups: ensureArray(value['groups']).map(f => parseSpaceFilterGroup(f))
+    }
+  }
+
 export const parseSpaceMetadata = (metadata: Record<string, any>, settings: MakeMDSettings) : SpaceDefinition => {
     return {
       sort: parseSpaceSort(metadata[spaceSortKey]), 
-      recursive: ensureString(metadata[spaceRecursiveKey]),
+      joins: ensureArray(metadata[spaceJoinsKey]).map(f => parseSpaceJoinGroup(f)),
       contexts: ensureArray(metadata[spaceContextsKey]), 
       links: ensureArray(metadata[spaceLinksKey]), 
-      filters: ensureArray(metadata[spaceFilterKey]).map(f => parseSpaceFilterGroup(f)),
       template: ensureString(metadata[spaceTemplateKey]),
       templateName: ensureString(metadata[spaceTemplateNameKey]),
       defaultSticker: ensureString(metadata.defaultSticker),
@@ -135,6 +143,13 @@ export const pathStateToTreeNode = (
 export const spaceRowHeight = (superstate: Superstate, preset: number, section: boolean) => {
   const spaceHeight = preset ?? (isTouchScreen(superstate.ui) ? 40 : 29);
   return spaceHeight + (section ? 10 : 0);
+}
+
+export const defaultSpaceSort = {
+  field: "rank",
+  asc: true,
+  group: true,
+  recursive: false,
 }
 
 export const spaceSortFn =

@@ -18,6 +18,49 @@ import { InputModal } from "../../Modals/InputModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showLinkMenu } from "../properties/linkMenu";
 
+export const newSpaceModal = (superstate: Superstate) => {
+  superstate.ui.openModal(
+    i18n.labels.createSection,
+    <InputModal
+      saveLabel={i18n.buttons.createFolder}
+      value={""}
+      saveValue={(v) => {
+        defaultSpace(
+          superstate,
+          superstate.pathsIndex.get(superstate.ui.activePath)
+        ).then((space) => {
+          let pathState = superstate.pathsIndex.get(space?.path);
+          if (!pathState) {
+            pathState = superstate.pathsIndex.get("/");
+          }
+          const newName = v.replace(/\//g, "");
+          const parentPath =
+            pathState?.subtype == "folder"
+              ? pathState.path
+              : pathState.parent
+              ? pathState.parent
+              : "/";
+
+          const newPath =
+            !parentPath || parentPath == "/"
+              ? newName
+              : parentPath + "/" + newName;
+          if (newName.length == 0) {
+            superstate.ui.notify(i18n.notice.newSpaceName);
+            return;
+          }
+          if (superstate.spacesIndex.has(newPath)) {
+            superstate.ui.notify(i18n.notice.duplicateSpaceName);
+            return;
+          }
+          createSpace(superstate, newPath, {});
+        });
+      }}
+    ></InputModal>,
+    window
+  );
+};
+
 export const defaultAddAction = (
   superstate: Superstate,
   space: SpaceState,

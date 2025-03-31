@@ -4,13 +4,15 @@ import { emojiFromString, parseStickerString } from "shared/utils/stickers";
 import { lucideIcon } from "./icons";
 
 
-export const stickerFromString = (sticker: string, plugin: MakeMDPlugin) => {
+export const stickerFromString = (sticker: string, plugin: MakeMDPlugin, options?: {
+  fontless?: boolean;
+}) => {
   if (!sticker || typeof sticker != 'string')
   return "";
   const [type, value] = parseStickerString(sticker);
   if (type == '' || type == 'emoji') {
     return `
-    <svg viewBox="0 0 18 18" font-family="Apple Color Emoji, Android Emoji", Segoe UI">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18"${!options?.fontless ? ' font-family="Apple Color Emoji, Android Emoji, Segoe UI"':''}>
       <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="114%">${emojiFromString(value)}</text>
     </svg>
     `;

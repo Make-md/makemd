@@ -1,10 +1,10 @@
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
 import { PathState } from "shared/types/PathState";
-import { SpaceDefFilter, SpaceDefGroup } from "shared/types/spaceDef";
+import { FilterDef, FilterGroupDef, JoinDefGroup } from "shared/types/spaceDef";
 import { parseProperty } from "utils/parsers";
 import { serializeMultiString } from "utils/serializers";
 
-const filterPathsForAny = (paths: PathState[], filters: SpaceDefFilter[], props: Record<string, string>) : PathState[] => {
+const filterPathsForAny = (paths: PathState[], filters: FilterDef[], props: Record<string, string>) : PathState[] => {
   
   const newArray = filters.reduce((p, c) => {
     const [result, remaining] = p;
@@ -16,12 +16,12 @@ const filterPathsForAny = (paths: PathState[], filters: SpaceDefFilter[], props:
   return newArray[0];
 }
 
-const filterPathsForAll = ( paths: PathState[], filters: SpaceDefFilter[], props: Record<string, string>) : PathState[] => {
+const filterPathsForAll = ( paths: PathState[], filters: FilterDef[], props: Record<string, string>) : PathState[] => {
   return filters.reduce((p, c) => {
     return  c.type == 'context' ? filterContext(p, c, props) :  c.type == 'path' ? filterPathCache(p, c, props) : c.type == 'frontmatter' ? filterFM(p, c, props) : filterPathProperties(p, c, props);
   }, paths)
 }
-const filterContext = ( paths: PathState[], def: SpaceDefFilter, props: Record<string, string>) => {
+const filterContext = ( paths: PathState[], def: FilterDef, props: Record<string, string>) => {
   const filterFn = filterFnTypes[def.fn];
   if (!filterFn || (filterFn.valueType != 'none' && def.value.length == 0)) {
     return [];
@@ -49,7 +49,7 @@ const filterContext = ( paths: PathState[], def: SpaceDefFilter, props: Record<s
   })
 }
 
-const filterFM = ( paths: PathState[], def: SpaceDefFilter, props: Record<string, string>) => {
+const filterFM = ( paths: PathState[], def: FilterDef, props: Record<string, string>) => {
   const filterFn = filterFnTypes[def.fn];
   if (!filterFn || (filterFn.valueType != 'none' && def.value.length == 0)) {
     return [];
@@ -69,7 +69,7 @@ const filterFM = ( paths: PathState[], def: SpaceDefFilter, props: Record<string
     return result;
   })
 }
-const filterPathCache = (paths: PathState[], def: SpaceDefFilter, props: Record<string, string>) => {
+const filterPathCache = (paths: PathState[], def: FilterDef, props: Record<string, string>) => {
   const filterFn = filterFnTypes[def.fn];
   if (!filterFn || (filterFn.valueType != 'none' && def.value.length == 0)) {
     return [];
@@ -97,15 +97,13 @@ const filterPathCache = (paths: PathState[], def: SpaceDefFilter, props: Record<
   });
 }
 
-const filterPathProperties = (paths: PathState[], def: SpaceDefFilter, props: Record<string, string>) => {
+const filterPathProperties = (paths: PathState[], def: FilterDef, props: Record<string, string>) => {
   const filterFn = filterFnTypes[def.fn];
   if (!filterFn || (filterFn.valueType != 'none' && def.value.length == 0)) {
     return [];
   }
   return paths.filter(f => {
     
-      
-      
       let result = true;
       if (filterFn) {
         const value =  (def.fType == 'property') ? props[def.value] : def.value;
@@ -118,12 +116,30 @@ const filterPathProperties = (paths: PathState[], def: SpaceDefFilter, props: Re
 
 
 
-export const pathByDef = ( filters: SpaceDefGroup[], path: PathState,  props: Record<string, string>) => {
+export const pathByJoins = ( joins: JoinDefGroup[], path: PathState,  props: Record<string, string>) => {
+  const pathInFilter = joins.reduce((p, c) => {
+    if (p || (c.path != '/' && !path.path.startsWith(c.path + '/')) || c.path.length == 0) return p;
+    if (!c.recursive) {
+      if (path.parent != c.path) {
+          return false;
+      }
+    }
+    if (c.groups.length == 0) return true;
+    return pathByDef(c.groups, path, props, c.type == 'all')
+  }, false);
+  return pathInFilter;
+}
+
+export const pathByDef = ( filters: FilterGroupDef[], path: PathState,  props: Record<string, string>, all: boolean) => {
 
   const pathInFilter = filters.reduce((p, c) => {
-    if (!p || c.filters.length == 0) return false;
+    if (!all && (p || c.filters.length == 0)) return true;
+    if (all) {
+      if (!p) return false;
+      if (c.filters.length == 0) return true;
+    }
     const result = (c.type == 'any') ? filterPathsForAny([path], c.filters, props).length > 0 : filterPathsForAll([path], c.filters, props).length > 0
     return result
-  }, true);
+  }, all);
 return pathInFilter; 
 }

@@ -1,5 +1,6 @@
 import { FormulaEditor } from "core/react/components/SpaceEditor/Actions/FormulaEditor";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
+import { unitTypes } from "core/utils/contexts/fields/units";
 import { aggregateFnTypes } from "core/utils/contexts/predicate/aggregates";
 import { spaceNameFromSpacePath } from "core/utils/strings";
 import { SelectMenuProps, SelectOption, Superstate } from "makemd-core";
@@ -7,7 +8,7 @@ import React, { useMemo } from "react";
 import { fieldTypeForField, fieldTypeForType, fieldTypes } from "schemas/mdb";
 import i18n from "shared/i18n";
 import { defaultContextSchemaID } from "shared/schemas/context";
-import { SpaceTableColumn } from "shared/types/mdb";
+import { SpaceProperty, SpaceTableColumn } from "shared/types/mdb";
 import { onlyUniqueProp, uniq } from "shared/utils/array";
 import { colors } from "shared/utils/color";
 import { windowFromDocument } from "shared/utils/dom";
@@ -31,14 +32,15 @@ export const PropertyValueComponent = (props: {
     options: SelectOption[],
     field: string,
     saveProperty?: (prop: string) => void,
-    placeholder?: string
+    placeholder?: string,
+    canAdd?: boolean
   ) => {
     props.superstate.ui.openMenu(
       (e.target as HTMLElement).getBoundingClientRect(),
       {
         ui: props.superstate.ui,
         multi: false,
-        editable: true,
+        editable: canAdd,
         searchable: true,
         saveOptions: (_, v) => {
           if (saveProperty) {
@@ -121,79 +123,117 @@ export const PropertyValueComponent = (props: {
         .allSpaces()
         .filter((f) => f.type != "default")
         .map((m) => ({ name: m.name, value: m.path, description: m.path })),
-      "space"
+      "space",
+      null,
+      null,
+      true
     );
   };
 
   const selectAggregateRef = (e: React.MouseEvent) => {
-    const properties =
-      props.fields
+    const childrenProperty = {
+      name: "Items",
+      value: "$items",
+    };
+    const properties = [
+      childrenProperty,
+      ...(props.fields
         .filter((f) => f.type.startsWith("context"))
         .map((f) => ({
           name: f.name,
           value: f.name,
-        })) ?? [];
+        })) ?? []),
+    ];
     showOptions(e, null, properties, "ref");
   };
 
   const selectAggregateProperty = (e: React.MouseEvent) => {
     const fieldRef = parsedValue.ref;
-    const field = props.fields.find((f) => f.name == fieldRef);
-    if (field) {
-      const fieldSpace = parseFieldValue(
-        field.value,
-        field.type,
-        props.superstate
-      )?.space;
-      if (fieldSpace) {
-        showOptions(
-          e,
-          parsedValue.field,
-          props.superstate.contextsIndex
-            .get(fieldSpace)
-            ?.contextTable?.cols.map((m) => ({
-              name: m.name,
-              value: m.name,
-            })) ?? [],
-          "field",
-          saveSpaceProperty
-        );
+
+    let options: SelectOption[] = [];
+    if (fieldRef == "$items") {
+      showOptions(
+        e,
+        parsedValue.field,
+        [],
+        "field",
+        null,
+        i18n.labels.propertyValueLinkedPlaceholder,
+        true
+      );
+      return;
+    } else {
+      const field = props.fields.find((f) => f.name == fieldRef);
+
+      let fieldSpace = null;
+
+      if (field) {
+        fieldSpace = parseFieldValue(
+          field.value,
+          field.type,
+          props.superstate
+        )?.space;
+        options = fieldSpace
+          ? props.superstate.contextsIndex
+              .get(fieldSpace)
+              ?.contextTable?.cols.map((m) => ({
+                name: m.name,
+                value: m.name,
+              })) ?? []
+          : [];
       }
+    }
+    if (options.length > 0) {
+      showOptions(
+        e,
+        parsedValue.field,
+        options,
+        "field",
+        saveSpaceProperty,
+        i18n.labels.propertyValueLinkedPlaceholder,
+        true
+      );
     }
   };
 
   const selectAggregateFn = (e: React.MouseEvent) => {
     const refField = props.fields.find((f) => f.name == parsedValue.ref);
+    let fieldSpace = null;
     if (refField) {
-      const fieldSpace = parseFieldValue(
+      fieldSpace = parseFieldValue(
         refField.value,
         refField.type,
         props.superstate
       )?.space;
-      if (fieldSpace) {
-        const field = props.superstate.contextsIndex
-          .get(fieldSpace)
-          ?.contextTable?.cols?.find((f) => f.name == parsedValue.field);
-        if (field) {
-          const options: SelectOption[] = [];
-          options.push({
-            name: "None",
-            value: "",
-          });
-          Object.keys(aggregateFnTypes).forEach((f) => {
-            if (
-              aggregateFnTypes[f].type.includes(fieldTypeForField(field)) ||
-              aggregateFnTypes[f].type.includes("any")
-            )
-              options.push({
-                name: aggregateFnTypes[f].label,
-                value: f,
-              });
-          });
-          showOptions(e, null, options, "fn");
-        }
-      }
     }
+    let field: SpaceProperty = null;
+    if (fieldSpace) {
+      field = props.superstate.contextsIndex
+        .get(fieldSpace)
+        ?.contextTable?.cols?.find((f) => f.name == parsedValue.field);
+    } else if (parsedValue.ref == "$items") {
+      field = {
+        type: "unknown",
+        name: parsedValue.field,
+      };
+    }
+    const options: SelectOption[] = [];
+    options.push({
+      name: "None",
+      value: "",
+    });
+    Object.keys(aggregateFnTypes).forEach((f) => {
+      if (
+        field.type == "unknown" ||
+        aggregateFnTypes[f].type.includes(fieldTypeForField(field)) ||
+        aggregateFnTypes[f].type.includes("any")
+      )
+        options.push({
+          name: aggregateFnTypes[f].label,
+          value: f,
+        });
+    });
+    showOptions(e, null, options, "fn");
   };
 
   const selectSpaceProperty = (e: React.MouseEvent) => {
@@ -245,6 +285,23 @@ export const PropertyValueComponent = (props: {
       "bottom"
     );
   };
+  const selectNumberFormat = (e: React.MouseEvent) => {
+    const formats = unitTypes.map((f) => ({
+      name: f.label,
+      value: f.value,
+    }));
+    showOptions(
+      e,
+      null,
+      formats,
+      "format",
+      (value: string) => {
+        saveParsedValue("format", value);
+      },
+      "Select or Enter Custom Format",
+      true
+    );
+  };
   const selectDateFormat = (e: React.MouseEvent) => {
     const formats = [
       {
@@ -293,7 +350,7 @@ export const PropertyValueComponent = (props: {
     };
     const saveOptions = (_options: string[], _value: string[]) => {
       const newOptions = [..._options]
-        .filter((f) => f.length > 0)
+        .filter((f) => f?.length > 0)
         .map(
           (t) =>
             options.find((f) => f.value == t) ?? {
@@ -402,9 +459,19 @@ export const PropertyValueComponent = (props: {
       "bottom"
     );
   };
+  const numberFormatToString = (format: string) => {
+    const formatObj = unitTypes.find((f) => f.value == format);
+    return formatObj ? formatObj.label : format;
+  };
+
   return props.fieldType?.startsWith("option") ? (
     <div className="mk-menu-option" onClick={(e) => selectEditOptions(e)}>
       <span>{i18n.labels.editOptions}</span>
+    </div>
+  ) : props.fieldType?.startsWith("number") ? (
+    <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
+      <span>{i18n.labels.numberFormat}</span>
+      <span>{numberFormatToString(parsedValue.format)}</span>
     </div>
   ) : props.fieldType?.startsWith("date") ? (
     <div className="mk-menu-option" onClick={(e) => selectDateFormat(e)}>
@@ -416,8 +483,9 @@ export const PropertyValueComponent = (props: {
       <div className="mk-menu-option" onClick={(e) => selectContext(e)}>
         <span>{i18n.labels.propertyValueSpace}</span>
         <span>
-          {parsedValue.space
-            ? spaceNameFromSpacePath(parsedValue.space, props.superstate)
+          {parsedValue.space?.length > 0
+            ? spaceNameFromSpacePath(parsedValue.space, props.superstate) ??
+              i18n.labels.select
             : i18n.labels.select}
         </span>
       </div>
@@ -432,7 +500,7 @@ export const PropertyValueComponent = (props: {
     <>
       <div className="mk-menu-option" onClick={(e) => selectAggregateRef(e)}>
         <span>{i18n.labels.propertyValueReference}</span>
-        <span>{parsedValue.ref}</span>
+        <span>{parsedValue.ref == "$items" ? "Items" : parsedValue.ref}</span>
       </div>
       {parsedValue.ref?.length > 0 && (
         <div
@@ -449,9 +517,19 @@ export const PropertyValueComponent = (props: {
           <span>{aggregateFnTypes[parsedValue?.fn]?.label}</span>
         </div>
       )}
+      {aggregateFnTypes[parsedValue?.fn]?.valueType == "number" && (
+        <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
+          <span>{i18n.labels.numberFormat}</span>
+          <span>{numberFormatToString(parsedValue.format)}</span>
+        </div>
+      )}
+      {aggregateFnTypes[parsedValue?.fn]?.valueType == "date" && (
+        <div className="mk-menu-option" onClick={(e) => selectDateFormat(e)}>
+          <span>{i18n.labels.dateFormat}</span>
+          <span>{parsedValue.format}</span>
+        </div>
+      )}
     </>
-  ) : props.fieldType == "number" ? (
-    <></>
   ) : props.fieldType == "fileprop" ? (
     <>
       <div className="mk-menu-option" onClick={(e) => editFormula(e)}>
@@ -461,6 +539,18 @@ export const PropertyValueComponent = (props: {
         <span>{i18n.labels.propertyType}</span>
         <span>{fieldTypeForType(parsedValue.type)?.label}</span>
       </div>
+      {fieldTypeForType(parsedValue.type).type == "number" && (
+        <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
+          <span>{i18n.labels.numberFormat}</span>
+          <span>{numberFormatToString(parsedValue.format)}</span>
+        </div>
+      )}
+      {fieldTypeForType(parsedValue.type).type == "date" && (
+        <div className="mk-menu-option" onClick={(e) => selectDateFormat(e)}>
+          <span>{i18n.labels.dateFormat}</span>
+          <span>{parsedValue.format}</span>
+        </div>
+      )}
     </>
   ) : props.fieldType == "object" ? (
     <div

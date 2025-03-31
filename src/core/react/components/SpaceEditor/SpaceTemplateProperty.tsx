@@ -11,40 +11,16 @@ import {
   setTemplateNameInSpace,
 } from "core/superstate/utils/spaces";
 import { Superstate, i18n } from "makemd-core";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext } from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { defaultMenu } from "../UI/Menus/menu/SelectionMenu";
-import { CollapseToggleSmall } from "../UI/Toggles/CollapseToggleSmall";
 export const SpaceTemplateProperty = (props: {
   superstate: Superstate;
-  compactMode: boolean;
+  templates: string[];
 }) => {
+  const { templates } = props;
   const { pathState } = useContext(PathContext);
   const { spaceState } = useContext(SpaceContext);
-  const [collapsed, setCollapsed] = useState(true);
-  const [templates, setTemplates] = React.useState<string[]>([]);
-  useEffect(() => {
-    refreshData({ path: pathState.path });
-  }, []);
-  const refreshData = (payload: { path: string }) => {
-    if (payload.path == pathState?.path)
-      setTemplates(
-        props.superstate.spacesIndex.get(spaceState.path)?.templates
-      );
-  };
-  useEffect(() => {
-    props.superstate.eventsDispatcher.addListener(
-      "spaceStateUpdated",
-      refreshData
-    );
-
-    return () => {
-      props.superstate.eventsDispatcher.removeListener(
-        "spaceStateUpdated",
-        refreshData
-      );
-    };
-  }, [pathState]);
   const newAction = (e: React.MouseEvent) => {
     const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
     showLinkMenu(
@@ -98,82 +74,66 @@ export const SpaceTemplateProperty = (props: {
       "bottom"
     );
   };
-  return templates?.length > 0 ? (
-    props.compactMode ? (
-      <div className="mk-props-pill" onClick={() => setCollapsed((f) => !f)}>
-        {templates.length} Templates
-      </div>
-    ) : (
-      <div className="mk-path-context-row">
-        <div className="mk-path-context-field">
+  return (
+    <div className="mk-space-editor-smart">
+      <div className="mk-space-editor-smart-header">
+        <div
+          className="mk-icon-small"
+          dangerouslySetInnerHTML={{
+            __html: props.superstate.ui.getSticker("ui//clipboard-pen"),
+          }}
+        ></div>
+        <span>Create new items using</span>
+        <span>with name</span>
+        <button
+          className="mk-toolbar-button"
+          aria-label={i18n.labels.editFormula}
+          onClick={(e) => editFormula(e)}
+        >
           <div
-            className="mk-path-context-field-icon"
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//clipboard-pen"),
-            }}
-          ></div>
-          <div className="mk-path-context-field-key">Templates</div>
-        </div>
-        <div className="mk-path-context-value">
-          <div
-            className="mk-props-pill"
-            onClick={() => setCollapsed((f) => !f)}
-          >
-            {templates.length} Templates
-            <CollapseToggleSmall
-              superstate={props.superstate}
-              collapsed={collapsed}
-            ></CollapseToggleSmall>
-          </div>
-          <button
-            className="mk-toolbar-button"
-            aria-label={i18n.labels.editFormula}
-            onClick={(e) => editFormula(e)}
+            className="mk-icon-xsmall"
             dangerouslySetInnerHTML={{
               __html: props.superstate.ui.getSticker("ui//formula"),
             }}
-          ></button>
-          {!collapsed && (
-            <div className="mk-props-list">
-              {templates.map((f, i) => (
-                <div
-                  key={i}
-                  className="mk-path"
-                  onContextMenu={(e) => showMenu(e, f)}
-                >
-                  <div
-                    className="mk-path-icon"
-                    dangerouslySetInnerHTML={{
-                      __html:
-                        props.superstate.ui.getSticker("ui//clipboard-pen"),
-                    }}
-                  ></div>
-                  <div>{f}</div>
-                  {spaceState.metadata.template == f && (
-                    <div
-                      className="mk-path-icon"
-                      aria-label="Default"
-                      dangerouslySetInnerHTML={{
-                        __html: props.superstate.ui.getSticker("ui//check"),
-                      }}
-                    ></div>
-                  )}
-                </div>
-              ))}
-              <button
-                className="mk-toolbar-button"
-                aria-label={i18n.labels.newAction}
-                onClick={(e) => newAction(e)}
-                dangerouslySetInnerHTML={{
-                  __html: props.superstate.ui.getSticker("ui//plus"),
-                }}
-              ></button>
-            </div>
-          )}
-        </div>
+          ></div>
+          Formula
+        </button>
       </div>
-    )
-  ) : (
-    <></>
+
+      <div className="mk-props-list">
+        {templates.map((f, i) => (
+          <div
+            key={i}
+            className="mk-path"
+            onContextMenu={(e) => showMenu(e, f)}
+          >
+            <div
+              className="mk-path-icon"
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker("ui//clipboard-pen"),
+              }}
+            ></div>
+            <div>{f}</div>
+            {spaceState.metadata.template == f && (
+              <div
+                className="mk-path-icon"
+                aria-label="Default"
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//check"),
+                }}
+              ></div>
+            )}
+          </div>
+        ))}
+        <button
+          className="mk-toolbar-button"
+          aria-label={i18n.labels.newAction}
+          onClick={(e) => newAction(e)}
+          dangerouslySetInnerHTML={{
+            __html: props.superstate.ui.getSticker("ui//plus"),
+          }}
+        ></button>
+      </div>
+    </div>
   );
 };

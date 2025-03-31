@@ -13,7 +13,7 @@ import { Focus } from "./focus";
 import { IndexMap } from "./indexMap";
 import { FrameRoot, MDBFrames } from "./mframe";
 import { ContextState, PathState, SpaceState, SuperstateEvent } from "./PathState";
-import { SpaceDefGroup, SpaceDefinition } from "./spaceDef";
+import { FilterGroupDef, SpaceDefinition } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
 import { SpaceManagerInterface } from "./spaceManager";
 import { IUIManager } from "./uiManager";
@@ -87,7 +87,7 @@ export abstract class ISuperstate {
     reloadSpace:(space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized?: boolean) => Promise<SpaceState>;
     reloadPath:(path: string, force?: boolean) => Promise<boolean>;
     onPathReloaded:(path: string) => Promise<boolean>;
-    search:(path: string, query?: string, queries?: SpaceDefGroup[]) => Promise<PathStateWithRank[]>;
+    search:(path: string, query?: string, queries?: FilterGroupDef[]) => Promise<PathStateWithRank[]>;
     
 }
 

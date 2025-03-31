@@ -11,6 +11,7 @@ import { Anchors, Rect } from "shared/types/Pos";
 import { Sort } from "shared/types/predicate";
 import { windowFromDocument } from "shared/utils/dom";
 import { safelyParseJSON } from "shared/utils/json";
+import { sanitizeColumnName } from "shared/utils/sanitizers";
 import StickerModal from "../../../../../../shared/components/StickerModal";
 import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
@@ -183,7 +184,8 @@ export const showPropertyMenu = (
   } = props;
 
   const saveName = (value: string) => {
-    if (!editable) {
+    const sanitizedName = sanitizeColumnName(value);
+    if (sanitizedName != field.name || !editable) {
       const fieldValue = safelyParseJSON(field.value);
       saveField({
         ...field,

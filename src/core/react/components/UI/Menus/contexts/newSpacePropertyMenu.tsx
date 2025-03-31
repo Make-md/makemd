@@ -12,6 +12,7 @@ import { SpaceProperty, SpaceTableColumn } from "shared/types/mdb";
 import { MenuObject } from "shared/types/menu";
 import { Rect } from "shared/types/Pos";
 import { windowFromDocument } from "shared/utils/dom";
+import { sanitizeColumnName } from "shared/utils/sanitizers";
 import { folderPathToString } from "utils/path";
 import { menuSeparator } from "../menu/SelectionMenu";
 import { PropertyValueComponent } from "./PropertyValue";
@@ -292,7 +293,7 @@ const NewPropertyMenuComponent = (
             ref={input}
             placeholder="Name"
             onKeyDown={onKeyDown}
-            onChange={(e) => setFieldName(e.target.value)}
+            onChange={(e) => setFieldName(sanitizeColumnName(e.target.value))}
             onMouseDown={(e) => e.stopPropagation()}
             value={fieldName}
           />

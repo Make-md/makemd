@@ -424,12 +424,14 @@ export const FrameEditorNodeView = (props: {
   const containerRect = props.containerRef?.current?.getBoundingClientRect();
   const styles = {
     ...defaultFrameStyles,
-    ...(props.treeNode.node.type != "flow"
+    ...(props.treeNode.node.type != "flow" &&
+    props.treeNode.node.type != "space"
       ? state?.styles
       : {
           width: state?.styles?.width,
           height: state?.styles?.height,
-          "--max-width": state?.styles?.["--max-width"],
+          "--max-width":
+            state?.styles?.["--max-width"] == "100%" && state?.styles?.width,
         }),
     "--translate-x": `${transform?.x ?? 0}px`,
     "--translate-y": `${transform?.y ?? 0}px`,

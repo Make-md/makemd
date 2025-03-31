@@ -7,27 +7,32 @@ export type SpaceSort = {
   recursive: boolean;
 };
 
-export type SpaceDefFilter = {
+export type FilterDef = {
   type: string;
   fType: string;
 } & Filter;
-export type SpaceDefGroup = {
+export type FilterGroupDef = {
   type: 'any' | 'all';
   trueFalse: boolean;
-  filters: SpaceDefFilter[];
+  filters: FilterDef[];
 };
+export type JoinDefGroup = {
+  recursive: boolean;
+  path: string;
+  type: 'any' | 'all';
+  groups: FilterGroupDef[];
+}
 export type SpaceType = 'folder' | 'tag' | 'vault' | 'default' | 'unknown';
 
 
 export type SpaceDefinition = {
   contexts?: string[];
   sort?: SpaceSort;
-  filters?: SpaceDefGroup[];
+  joins?: JoinDefGroup[];
   links?: string[];
   tags?: string[];
   template?: string;
   templateName?: string;
-  recursive?: string;
   defaultSticker?: string;
   defaultColor?: string;
   readMode?: boolean;

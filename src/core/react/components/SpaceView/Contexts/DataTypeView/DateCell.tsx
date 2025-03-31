@@ -55,7 +55,10 @@ export const DateCell = (props: TableCellProp) => {
       }
     }
   }, [props.editMode]);
-
+  const defaultDate =
+    date ?? props.superstate.settings.datePickerTime
+      ? new Date()
+      : startOfDay(new Date());
   const showPicker = useCallback(
     (e?: React.MouseEvent) => {
       if (props.editMode <= CellEditMode.EditModeNone) {
@@ -69,7 +72,7 @@ export const DateCell = (props: TableCellProp) => {
         props.superstate.ui,
         offset,
         windowFromDocument(e.view.document),
-        date ?? startOfDay(new Date()),
+        defaultDate,
         saveValue,
         DatePickerTimeMode.Toggle,
         null,

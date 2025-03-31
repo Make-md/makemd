@@ -73,7 +73,7 @@ export interface SpaceManagerInterface {
     getPathInfo(path: string): Promise<Record<string, any>>;
     deletePath(path: string): void;
     readPath(path: string): Promise<string>;
-    writeToPath(path: string, content: any, binary?: boolean): void;
+    writeToPath(path: string, content: any, binary?: boolean): Promise<void>;
     parentPathForPath(path: string): string;
     readPathCache(path: string): Promise<PathCache>;
     allSpaces(): SpaceInfo[];
@@ -164,7 +164,7 @@ export abstract class SpaceAdapter {
 
   public readPathCache: (path: string) => Promise<PathCache>;
 
-  public writeToPath: (path: string, content: any, binary?: boolean) => void;
+  public writeToPath: (path: string, content: any, binary?: boolean) => Promise<void>;
 
 
   public allSpaces: () => SpaceInfo[];

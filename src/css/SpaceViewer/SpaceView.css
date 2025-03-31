@@ -46,9 +46,10 @@ body:not(.mk-readable-line) {
   width: 100%;
   display: flex;
   
-  align-items: center;
+  align-items: baseline;
   gap: 4px;
   position: relative;
+  flex-wrap: wrap;
 }
 .mk-title-container .mk-title-prefix {
   display: flex;
@@ -120,7 +121,7 @@ body:not(.is-mobile) .markdown-source-view.mod-cm6 .mk-space-header .inline-titl
   margin-bottom: 0;
   margin-left: 0 !important;
   margin-right: 0;
-  width: inherit;
+  width: auto;
   max-width: inherit
 }
 .mk-space-sizer {
@@ -158,6 +159,7 @@ margin: 0 auto;
 .mk-frame[data-path="main"] > .mk-layout-row, .mk-frame-edit[data-path="main"] > .mk-layout-row {
   flex-wrap: wrap;;
 }
+
 .is-phone .mk-frame[data-path="main"] > .mk-layout-row,  .is-phone .mk-frame-edit[data-path="main"] > .mk-layout-row {
   flex-wrap: wrap;
   flex-direction: column;

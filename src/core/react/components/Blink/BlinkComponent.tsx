@@ -5,7 +5,7 @@ import { i18n, SelectOption, Superstate } from "makemd-core";
 import React, { useEffect, useMemo, useState } from "react";
 import { Metadata } from "shared/types/metadata";
 import { PathState } from "shared/types/PathState";
-import { SpaceDefGroup } from "shared/types/spaceDef";
+import { FilterGroupDef } from "shared/types/spaceDef";
 
 import classNames from "classnames";
 import {
@@ -45,7 +45,7 @@ export const BlinkComponent = (props: {
     setQuery(query);
   };
   const [filters, setFilters] = useState([]);
-  const queries: SpaceDefGroup[] = useMemo(() => {
+  const queries: FilterGroupDef[] = useMemo(() => {
     return query.length > 0
       ? [
           {
@@ -104,7 +104,7 @@ export const BlinkComponent = (props: {
   );
 
   useEffect(() => {
-    const runQuery = (path: string, _queries: SpaceDefGroup[]) => {
+    const runQuery = (path: string, _queries: FilterGroupDef[]) => {
       if (path.length == 0 && query.length == 0) {
         setFilteredPaths(props.parentSpace ? parentChildren : recentPaths);
         return;

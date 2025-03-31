@@ -8,7 +8,7 @@ import { PathLabel } from "shared/types/caches";
 import { DefaultEverViewTables, DefaultFolderNoteMDBTables, DefaultMDBTables } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { parseSpaceMetadata } from "core/superstate/utils/spaces";
-import { builtinSpaces, spaceContextsKey, spaceFilterKey, spaceLinksKey, spaceRecursiveKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
+import { builtinSpaces, spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
 import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { executeCode } from "core/utils/frames/runner";
@@ -917,13 +917,12 @@ const defaultSpaceTemplate = this.defaultFrame(path);
         }))
       }
       await this.fileSystem.saveFileFragment(defFile, "definition", null, (frontmatter) => ({
-        [spaceFilterKey] : metadata.filters,
+        [spaceJoinsKey] : metadata.joins,
         [spaceContextsKey] : metadata.contexts,
         [spaceLinksKey] : metadata.links,
         [spaceSortKey] : metadata.sort,
         [spaceTemplateKey] : metadata.template,
         [spaceTemplateNameKey] : metadata.templateName,
-        [spaceRecursiveKey]: metadata.recursive,
         defaultSticker: metadata.defaultSticker,
         readMode: metadata.readMode,
       }))

@@ -14,12 +14,13 @@ export const Dropdown = (props: {
       offset,
       {
         ui: props.superstate.ui,
-        editable: true,
+        editable: false,
         value: [props.value],
         options: props.options,
         saveOptions: (options: string[], value: string[]) => {
           props.selectValue(value[0]);
         },
+        searchable: false,
       },
       windowFromDocument(e.view.document)
     );

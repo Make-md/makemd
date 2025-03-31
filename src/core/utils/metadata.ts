@@ -6,10 +6,7 @@ export const allMetadata = (superstate: Superstate) : Record<string, {
     name: string,
     properties: Metadata[]
 }> => ({
-    label: { 
-        name: i18n.metadataTypes.label,
-        properties: labelProperties
-    },
+    
     file: {
         name: i18n.metadataTypes.fileMetadata,
         properties: fileProperties
@@ -17,6 +14,10 @@ export const allMetadata = (superstate: Superstate) : Record<string, {
     path: {
         name: i18n.metadataTypes.outlinks,
         properties: pathCacheMetadata
+    },
+    label: { 
+        name: i18n.metadataTypes.label,
+        properties: labelProperties
     },
     frontmatter: {
         name: i18n.metadataTypes.frontmatter,

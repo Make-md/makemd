@@ -377,6 +377,7 @@ export class ObsidianEnactor implements Enactor {
     this.plugin.plugin.saveData(this.plugin.settings);
   }
   resolvePath(path: string, source?: string) {
+    if (!source) return null;
     return this.plugin.app.metadataCache.getFirstLinkpathDest(path, source)
       ?.path;
   }

@@ -3,7 +3,7 @@
 import { pathByDef } from "core/utils/spaces/query";
 import Fuse from "fuse.js";
 import { PathState } from "shared/types/PathState";
-import { SpaceDefGroup } from "shared/types/spaceDef";
+import { FilterGroupDef } from "shared/types/spaceDef";
 
 export function fastSearch (payload: { query: string, pathsIndex: Map<string, PathState>, count: number}) {
     const { query, pathsIndex, count } = payload;
@@ -31,12 +31,12 @@ export function fastSearch (payload: { query: string, pathsIndex: Map<string, Pa
 
 }
 
-export function searchPath (payload: { queries: SpaceDefGroup[], pathsIndex: Map<string, PathState>, count: number}) {
+export function searchPath (payload: { queries: FilterGroupDef[], pathsIndex: Map<string, PathState>, count: number}) {
     const { queries, pathsIndex, count } = payload;
     const paths = [];
 
     for (const [k, f] of pathsIndex) {
-      if (!f.hidden && pathByDef(queries, f, {})) {
+      if (!f.hidden && pathByDef(queries, f, {}, true)) {
         paths.push(f);
       }
     }

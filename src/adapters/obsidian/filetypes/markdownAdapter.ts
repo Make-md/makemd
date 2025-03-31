@@ -1,4 +1,3 @@
-import _ from "lodash";
 import MakeMDPlugin from "main";
 import { AFile, FileTypeAdapter, FilesystemMiddleware, PathLabel } from "makemd-core";
 import { App, CachedMetadata, TFile, TFolder } from "obsidian";
@@ -91,7 +90,7 @@ const removeMarkdown = (str: string) => {
   return output.replace(/^\s*\n/gm, '');
 }
 
-type CleanCachedMetadata = Omit<CachedMetadata, 'tags'> & { tags: string[], resolvedLinks: string[], label: PathLabel, inlinks: string[], property: any }
+type CleanCachedMetadata = Omit<CachedMetadata, 'tags'> & { tags: string[], resolvedLinks: string[], label: PathLabel, inlinks: string[], property: any, tasks: { text: string, status: string }[] }
 
 export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCachedMetadata, CachedMetadataContentTypes> {
     
@@ -163,6 +162,7 @@ public app: App;
             inlinks: Array.from(incoming),
             tags: rt,
             property: fCache.frontmatter,
+            tasks: [],
             label: {
             name: file.name,
             thumbnail: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyBanner],
@@ -173,20 +173,27 @@ public app: App;
         if (this.plugin.superstate.settings.notesPreview) {
             const contents = await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile)
             updatedCache.label.preview = removeMarkdown(contents.slice(fCache.frontmatterPosition?.end.offset ?? 0, 1000))
-        }
-        if (currentCache) {
-            
-            if (!_.isEqual(currentCache.resolvedLinks, updatedCache.resolvedLinks)) {
-                const newLinks = updatedCache.resolvedLinks.filter(f => !currentCache.resolvedLinks.includes(f));
-                const removedLinks = currentCache.resolvedLinks.filter(f => !updatedCache.resolvedLinks.includes(f));
-                for (const link of [...newLinks, ...removedLinks]) {
-                    const file = this.plugin.app.vault.getAbstractFileByPath(link);
-                    if (file && file instanceof TFile) 
-                        this.metadataChange(file)
-                }
-                
+            const tasks = this.plugin.app.metadataCache.getFileCache(getAbstractFileAtPath(this.plugin.app, file.path) as TFile)?.listItems?.filter(f => f.task);
+            if (tasks) {
+                updatedCache.tasks = tasks.map(f => ({
+                    text: contents.slice(f.position.start.offset, f.position.end.offset),
+                    status: f.task,
+                }));
             }
         }
+        // if (currentCache) {
+            
+        //     if (!_.isEqual(currentCache.resolvedLinks, updatedCache.resolvedLinks)) {
+        //         const newLinks = updatedCache.resolvedLinks.filter(f => !currentCache.resolvedLinks.includes(f));
+        //         const removedLinks = currentCache.resolvedLinks.filter(f => !updatedCache.resolvedLinks.includes(f));
+        //         for (const link of [...newLinks, ...removedLinks]) {
+        //             const file = this.plugin.app.vault.getAbstractFileByPath(link);
+        //             if (file && file instanceof TFile) 
+        //                 this.metadataChange(file)
+        //         }
+                
+        //     }
+        // }
         this.cache.set(file.path, updatedCache);
         
         this.middleware.updateFileCache(file.path, updatedCache, refresh);

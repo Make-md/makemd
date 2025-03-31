@@ -1,4 +1,6 @@
-import React, { useEffect, useRef } from "react";
+import { format as formatNumber } from "numfmt";
+import React, { useEffect, useMemo, useRef } from "react";
+import { safelyParseJSON } from "shared/utils/json";
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
 export const NumberCell = (props: TableCellProp) => {
@@ -34,6 +36,10 @@ export const NumberCell = (props: TableCellProp) => {
       ref?.current?.focus();
     }
   }, [props.editMode]);
+  const format = useMemo(
+    () => safelyParseJSON(props.propertyValue)?.format,
+    [props.propertyValue]
+  );
 
   return props.editMode > CellEditMode.EditModeView ? (
     <input
@@ -46,6 +52,8 @@ export const NumberCell = (props: TableCellProp) => {
       onBlur={onBlur}
     />
   ) : (
-    <div className="mk-cell-number">{value}</div>
+    <div className="mk-cell-number">
+      {format && value ? formatNumber(format, parseInt(value)) : value}
+    </div>
   );
 };

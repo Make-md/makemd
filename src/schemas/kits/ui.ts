@@ -76,55 +76,6 @@ export const dividerNode: FrameRoot = {
 
 
 
-export const countdownNode: FrameRoot = {
-  def: {
-    id: 'countdown',
-    icon: "ui//clock"
-  },
-  node: {
-    icon: "ui//clock",
-    schemaId: "countdown",
-    parentId: "",
-    name: "Countdown",
-    rank: 0,
-    id: "countdown",
-    type: "group",
-    props: {
-      date: ''
-    },
-    types: {
-      date: "date"
-    },
-    
-    },
-    children: [
-      {
-        ...textNode, node: {
-          ...textNode.node, props: {
-            date: '',
-            value: `var _second = 1000;
-            var _minute = _second * 60;
-            var _hour = _minute * 60;
-            var _day = _hour * 24;
-            var timer;
-            var distance = new Date($root.props['date'])-$api.date.now();
-            var days = Math.floor(distance / _day);
-            var hours = Math.floor((distance % _day) / _hour);
-            var minutes = Math.floor((distance % _hour) / _minute);
-            var seconds = Math.floor((distance % _minute) / _second);
-            return days + ":" + hours + ":" + minutes + ':' + seconds;`,
-          },
-          types: {
-            date: "date",
-            value: "string"
-          },
-          actions: {
-            onRun: `setTimeout(() => $saveState({}), 1000)`
-          },
-        }
-      }
-    ]
-  }
 
 export const buttonNode: FrameRoot = {
   id: "button",
@@ -189,7 +140,7 @@ export const buttonNode: FrameRoot = {
       onClick: `$api.commands.run(button.props.action, button.props.actionValue, $contexts, $saveState)`
     },
     styles: {
-      class: `'mk-button'`,
+      sem: `'button'`,
       gap: `'4px'`
     }
   }, children: [
@@ -916,7 +867,7 @@ export const linkNode: FrameRoot = {
       
     },
     styles: {
-      class: `'mk-a'`,
+      sem: `'a'`,
       layout: '"row"',
     },
     actions: {

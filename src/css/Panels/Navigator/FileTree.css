@@ -17,6 +17,10 @@
   padding-left: 0 !important;
 }
 
+.mk-hide-vault-selector:not(.is-mobile) .workspace-sidedock-vault-profile {
+  display: none !important;
+}
+
 .mk-hide-ribbon .workspace-ribbon {
   display: none;
 }

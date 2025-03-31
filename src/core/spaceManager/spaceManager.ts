@@ -112,6 +112,7 @@ export class SpaceManager implements SpaceManagerInterface {
       } else if (path.indexOf('../') == 0 && source) {
         const sourceParts = source.split('/');
     const pathParts = path.split('/');
+    sourceParts.pop();
     while (pathParts[0] === '..') {
       sourceParts.pop();
       pathParts.shift();

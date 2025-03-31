@@ -28,17 +28,7 @@ export class MakeBasicsSettingsTab {
   
       
       
-        new Setting(containerEl)
-        .setName(t.settings.dataviewInlineContext.name)
-        .setDesc(t.settings.dataviewInlineContext.desc)
-        .addToggle((toggle) =>
-          toggle
-            .setValue(this.plugin.settings.dataviewInlineContext)
-            .onChange((value) => {
-              this.plugin.settings.dataviewInlineContext = value;
-              this.plugin.enactor.saveSettings();
-            })
-        );
+        
         
         containerEl.createEl("h3", { text: t.settings.sectionFlow });  
         new Setting(containerEl)

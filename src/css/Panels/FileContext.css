@@ -476,9 +476,14 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
 .workspace-leaf-content[data-type="mk-space"] .view-content,
 .workspace-leaf-content[data-type="mk-ever-view"] .view-content,
 .workspace-leaf-content[data-type="make-context-view"] .view-content,
+.workspace-leaf-content[data-type="mk-html-view"] .view-content,
 .workspace-leaf-content[data-type="mk-space-fragment"] .view-content,
 .workspace-leaf-content[data-type="mk-uri-view"] .view-content {
   padding: 0;
+}
+
+.workspace-leaf-content[data-type="mk-html-view"] .view-content {
+  overflow: hidden;
 }
 
 .workspace-leaf-content[data-type="mk-space-fragment"] {

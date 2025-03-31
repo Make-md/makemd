@@ -4,7 +4,7 @@ import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import { SelectOption, Superstate, i18n } from "makemd-core";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import { defaultTableFields } from "shared/schemas/fields";
 import { SpaceTableSchema } from "shared/types/mdb";
 import { uniqueNameFromString } from "shared/utils/array";
@@ -15,48 +15,16 @@ import {
 } from "shared/utils/makemd/embed";
 import { sanitizeTableName } from "shared/utils/sanitizers";
 import { showSpacesMenu } from "../UI/Menus/properties/selectSpaceMenu";
-import { CollapseToggleSmall } from "../UI/Toggles/CollapseToggleSmall";
 
 export const SpaceListProperty = (props: {
   superstate: Superstate;
-  compactMode: boolean;
+  tables: SpaceTableSchema[];
 }) => {
+  const { tables } = props;
   const { pathState } = useContext(PathContext);
   const { spaceState } = useContext(SpaceContext);
   const [collapsed, setCollapsed] = useState(true);
-  const [tables, setTables] = useState([]);
-  useEffect(() => {
-    refreshData({ path: pathState.path });
-  }, []);
-  const refreshData = (payload: { path: string }) => {
-    if (payload.path == pathState?.path)
-      props.superstate.spaceManager
-        .readAllTables(pathState?.path)
-        ?.then((f) => {
-          if (f) {
-            return (Object.values(f).map((g) => g.schema) ?? []).filter(
-              (f) => f.primary != "true"
-            );
-          }
-          return null;
-        })
-        .then((f) => {
-          if (f) setTables(f);
-        });
-  };
-  useEffect(() => {
-    props.superstate.eventsDispatcher.addListener(
-      "contextStateUpdated",
-      refreshData
-    );
 
-    return () => {
-      props.superstate.eventsDispatcher.removeListener(
-        "contextStateUpdated",
-        refreshData
-      );
-    };
-  }, [pathState]);
   const newTable = (e: React.MouseEvent) => {
     props.superstate.ui.openModal(
       i18n.labels.newTable,
@@ -224,67 +192,34 @@ export const SpaceListProperty = (props: {
       windowFromDocument(e.view.document)
     );
   };
-  return tables.length > 0 ? (
-    props.compactMode ? (
-      <div className="mk-props-pill" onClick={() => setCollapsed((f) => !f)}>
-        {tables.length} Lists
-      </div>
-    ) : (
-      <div className="mk-path-context-row">
-        <div className="mk-path-context-field">
-          <div
-            className="mk-path-context-field-icon"
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//layout-list"),
+  return (
+    <div className="mk-space-editor-smart">
+      <div className="mk-props-list">
+        {tables.map((f, i) => (
+          <ContextTableCrumb
+            key={i}
+            superstate={props.superstate}
+            schema={f}
+            onClick={(e) => {
+              props.superstate.ui.openPath(
+                contextPathForSpace(spaceState, f.id),
+                e.metaKey
+              );
             }}
-          ></div>
-          <div className="mk-path-context-field-key">Lists</div>
-        </div>
-        <div className="mk-props-value">
-          <div
-            className="mk-props-pill"
-            onClick={() => setCollapsed((f) => !f)}
-          >
-            {tables.length} Lists
-            <CollapseToggleSmall
-              superstate={props.superstate}
-              collapsed={collapsed}
-            ></CollapseToggleSmall>
-          </div>
-          {!collapsed && (
-            <>
-              <div className="mk-props-list">
-                {tables.map((f, i) => (
-                  <ContextTableCrumb
-                    key={i}
-                    superstate={props.superstate}
-                    schema={f}
-                    onClick={(e) => {
-                      props.superstate.ui.openPath(
-                        contextPathForSpace(spaceState, f.id),
-                        e.metaKey
-                      );
-                    }}
-                    onContextMenu={(e) => {
-                      viewContextMenu(e, f);
-                    }}
-                  ></ContextTableCrumb>
-                ))}
-                <button
-                  className="mk-toolbar-button"
-                  aria-label={i18n.labels.newTable}
-                  onClick={(e) => newTable(e)}
-                  dangerouslySetInnerHTML={{
-                    __html: props.superstate.ui.getSticker("ui//plus"),
-                  }}
-                ></button>
-              </div>
-            </>
-          )}
-        </div>
+            onContextMenu={(e) => {
+              viewContextMenu(e, f);
+            }}
+          ></ContextTableCrumb>
+        ))}
+        <button
+          className="mk-toolbar-button"
+          aria-label={i18n.labels.newTable}
+          onClick={(e) => newTable(e)}
+          dangerouslySetInnerHTML={{
+            __html: props.superstate.ui.getSticker("ui//plus"),
+          }}
+        ></button>
       </div>
-    )
-  ) : (
-    <></>
+    </div>
   );
 };

@@ -113,43 +113,43 @@ export const FrameNodeEditor = (props: {
       type: "h1",
       name: i18n.commands.h1,
       icon: "ui//heading-1",
-      class: "mk-t-h1",
+      sem: "h1",
     },
     {
       type: "h2",
       name: i18n.commands.h2,
       icon: "ui//heading-2",
-      class: "mk-t-h2",
+      sem: "h2",
     },
     {
       type: "h3",
       name: i18n.commands.h3,
       icon: "ui//heading-3",
-      class: "mk-t-h3",
+      sem: "h3",
     },
     {
       type: "h4",
       name: i18n.commands.h4,
       icon: "ui//heading-4",
-      class: "mk-t-h4",
+      sem: "h4",
     },
     {
       type: "h5",
       name: i18n.commands.h5,
       icon: "ui//heading-5",
-      class: "mk-t-h5",
+      sem: "h5",
     },
     {
       type: "h6",
       name: i18n.commands.h6,
       icon: "ui//heading-6",
-      class: "mk-t-h6",
+      sem: "h6",
     },
     {
       type: "p",
       name: i18n.commands.paragraph,
       icon: "ui//type",
-      class: "mk-t-p",
+      sem: "p",
     },
   ];
   const showTypographyMenu = (e: React.MouseEvent) => {
@@ -159,7 +159,7 @@ export const FrameNodeEditor = (props: {
         name: f.name,
         icon: f.icon,
         onClick: () => {
-          saveStyleValue("class", `'${f.class}'`);
+          saveStyleValue("sem", `'${f.sem}'`);
         },
       });
     });
@@ -314,14 +314,13 @@ export const FrameNodeEditor = (props: {
                   dangerouslySetInnerHTML={{
                     __html: props.superstate.ui.getSticker(
                       typographyOptions.find(
-                        (f) =>
-                          f.class == removeQuotes(props.node.styles?.["class"])
+                        (f) => f.sem == removeQuotes(props.node.styles?.["sem"])
                       )?.icon ?? "ui//type"
                     ),
                   }}
                 ></div>
                 {typographyOptions.find(
-                  (f) => f.class == removeQuotes(props.node.styles?.["class"])
+                  (f) => f.sem == removeQuotes(props.node.styles?.["sem"])
                 )?.name ?? "Paragraph"}
               </div>
               <div className="mk-divider"></div>

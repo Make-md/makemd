@@ -78,13 +78,7 @@ export const parseFieldValue = (
   if (!type) return {};
   if (!valueProp) {
     if (type == "context") {
-      if (value?.length > 0) {
-        valueProp = {
-          space: value,
-        };
-      } else {
         valueProp = {};
-      }
     } else if (type.startsWith("date")) {
       if (value?.length > 0) {
         valueProp = {

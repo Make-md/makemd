@@ -1,3 +1,4 @@
+import { isString } from "lodash";
 import { dateAfter, dateBefore, empty, FilterFunctionType, greaterThan, isSameDay, isSameDayAsToday, lessThan, listEquals, listIncludes, stringCompare, stringEqual } from "../filter";
 
 
@@ -104,12 +105,12 @@ export const filterFnTypes: FilterFunctionType = {
   },
   isTrue: {
     type: ["boolean"],
-    fn: (v, f) => v == "true",
+    fn: (v, f) => isString(v) ? v == "true" : v,
     valueType: "none",
   },
   isFalse: {
     type: ["boolean"],
-    fn: (v, f) => v != "true",
+    fn: (v, f) => isString(v) ? v != "true" : !v,
     valueType: "none",
   },
 };

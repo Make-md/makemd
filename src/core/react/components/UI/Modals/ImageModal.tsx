@@ -24,6 +24,9 @@ const ImageModal: React.FC<ImageModalProps> = (props) => {
     _allImages.push(
       ...[...props.superstate.pathsIndex.values()]
         .filter((f) => f.subtype == "image")
+        .sort((a, b) => {
+          return +b.metadata?.ctime - +a.metadata?.ctime;
+        })
         .map((f) => ({ path: f.path, thumnail: f.label.thumbnail }))
     );
     setAllImages(_allImages);

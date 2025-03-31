@@ -335,7 +335,7 @@ class T {
         createNote: "New Note",
         createCanvas: "New Canvas",
         addIntoSpace: "New Pin",
-        addSmartSearch: "Add Live Search",
+        addSmartSearch: "New Join",
         subFolders: "Sub Folders",
         addItem: "Add Item",
         addProperty: "Add Property",
@@ -376,6 +376,7 @@ class T {
       metadataTypes: {
         fileName: "File Name",
         contexts: "Contexts",
+        isFolder: "Is Folder",
         path: "Path",
         folder: "Folder",
         sticker: "Sticker",
@@ -406,6 +407,9 @@ class T {
         isNotEmpty: 'is not empty',
         isSameDate: "is same date",
         isSameDateAsToday: "today",
+      },
+      aggregateTypes: {
+
       },
       sortTypes: {
         alphaAsc: "A to Z",
@@ -513,27 +517,20 @@ class T {
         explorer: "Explorer",
         space: "Space",
       },
-      subViews: {
-        spaceItems: "Items",
-        spaceContext: "Context",
-        spaceLists: "Lists",
-        spaceActions: "Actions",
-        spaceTemplates: "Templates",
-        smartSearch: "Live Searches",
-        filesAndFolders: "Files and Folders",
-      },
+      
       labels: {
+        filesAndFolders: "Files and Folders",
         duplicateTable: "Duplicate Table",
         aggregateBy: "Aggregate By",
         pinned: "Pinned",
-        live: "Pinned by Live Search",
+        joined: "Joined",
         moveTable: "Move Table",
         editFormula: "Edit Formula",
         editObject: "Edit Object",
         properties: "Properties",
         newAction: "Action",
-        newTable: "List",
-        template: "Template",
+        newTable: "New Table",
+        template: "New Template",
         createFolder: "New Folder Name",
         rename: "Rename",
         createNew: "New",
@@ -600,6 +597,7 @@ class T {
         propertyLookup: "Edit Formula",
         existingFrontmatter: "Existing Property",
         dateFormat: "Date Format",
+        numberFormat: "Number Format",
         editOptions: "Edit Options",
         propertyFileProp: "Property",
         multiple: "Multiple",
@@ -772,6 +770,10 @@ class T {
           name: "Default Space Template",
           desc: "Select the default template for new spaces",
         },
+        datePickerTime: {
+          name: "Date Picker Time",
+          desc: "Select time by default in the date picker",
+        },
         defaultDateFormat: {
           name: "Default Date Format",
           desc: "Set the default date format, example: yyyy-MM-dd (see https://date-fns.org/v2.30.0/docs/format)",
@@ -829,10 +831,7 @@ class T {
           desc: "Name of the folder for tag spaces",
         },
         
-        dataviewInlineContext: {
-          name: "Show Dataview in Inline Context",
-          desc: "Show dataview when inline context is enabled",
-        },
+        
         inlineContext: {
           name: "Notes Header",
           desc: "Show a header to display labels and properties",
@@ -919,6 +918,10 @@ class T {
         showRibbon: {
           name: "App Ribbon",
           desc: `Show/hide the left menu aka. ribbon`,
+        },
+        vaultSelector: {
+          name: "Vault Selector",
+          desc: `Show/hide the vault selector at the bottom`,
         },
         spaceViewEnabled: {
           name: "Spaces",

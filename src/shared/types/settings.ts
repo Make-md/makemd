@@ -7,6 +7,7 @@ export interface MakeMDSettings {
   defaultInitialization: boolean;
   filePreviewOnHover: boolean;
   blinkEnabled: boolean;
+  datePickerTime: boolean;
   spacesEnabled: boolean;
   navigatorEnabled: boolean;
   spacesDisablePatch: boolean;
@@ -18,6 +19,7 @@ export interface MakeMDSettings {
   bannerHeight: number;
   spaceViewEnabled: boolean;
   sidebarTabs: boolean;
+  vaultSelector: boolean;
   showRibbon: boolean;
   deleteFileOption: DeleteFileOption;
   autoOpenFileContext: boolean;
@@ -52,7 +54,6 @@ export interface MakeMDSettings {
   inlineBacklinksExpanded: boolean;
   inlineContextExpanded: boolean;
   inlineContextSectionsExpanded: boolean;
-  dataviewInlineContext: boolean;
   inlineContextNameLayout: InlineContextLayout;
   spacesUseAlias: boolean,
   spaceSubFolder: string,

@@ -9,6 +9,7 @@ import { BooleanCell } from "./BooleanCell";
 import { IconCell } from "./IconCell";
 import { ImageCell } from "./ImageCell";
 import { LinkCell } from "./LinkCell";
+import { NumberCell } from "./NumberCell";
 import { OptionCell } from "./OptionCell";
 
 export const FormulaCell = (
@@ -44,7 +45,6 @@ export const FormulaCell = (
       "bottom"
     );
   };
-
   return parsedValue.type == "boolean" ? (
     <BooleanCell
       {...props}
@@ -74,6 +74,12 @@ export const FormulaCell = (
       multi={true}
       editMode={CellEditMode.EditModeReadOnly}
     ></LinkCell>
+  ) : parsedValue.type == "number" ? (
+    <NumberCell
+      {...props}
+      initialValue={initialValue}
+      editMode={CellEditMode.EditModeReadOnly}
+    ></NumberCell>
   ) : (
     <OptionCell
       {...props}

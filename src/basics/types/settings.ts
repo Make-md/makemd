@@ -19,6 +19,5 @@ export interface MakeBasicsSettings {
   menuTriggerChar: string;
   inlineStickerMenu: boolean;
   emojiTriggerChar: string;
-  dataviewInlineContext: boolean;
   
 }

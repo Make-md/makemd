@@ -4,7 +4,7 @@ import { ActionTree } from "shared/types/actions";
 import { Command } from "shared/types/commands";
 import { SpaceProperty } from "shared/types/mdb";
 import { Metadata } from "shared/types/metadata";
-import { SpaceDefGroup } from "shared/types/spaceDef";
+import { FilterGroupDef } from "shared/types/spaceDef";
 import { windowFromDocument } from "shared/utils/dom";
 import { SpaceQuery } from "../SpaceQuery";
 import { FormulaEditor } from "./FormulaEditor";
@@ -60,7 +60,7 @@ export const BuiltinPropertyEditor = (props: {
     <SpaceQuery
       superstate={props.superstate}
       filters={props.actionTree.props["$function"] ?? []}
-      setFilters={(filters: SpaceDefGroup[]) => {
+      setFilters={(filters: FilterGroupDef[]) => {
         props.saveTree({
           ...props.actionTree,
           props: {

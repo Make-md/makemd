@@ -105,7 +105,7 @@ export const calendarView: FrameRoot = {
                     }, {
                         padding: `'8px'`,
                         "--font-text-weight": `'bold'`,
-                        "class": `'mk-t-h1'`
+                        "sem": `'h1'`
                     }),
                     frameRootWithProps({...groupNode, children: [
                     kitWithProps(buttonNode, {

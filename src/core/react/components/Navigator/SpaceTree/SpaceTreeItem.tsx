@@ -448,11 +448,11 @@ export const TreeItem = (props: TreeItemProps) => {
                     aria-label={
                       pinType == PinType.Linked
                         ? t.labels.pinned
-                        : t.labels.live
+                        : t.labels.joined
                     }
                     dangerouslySetInnerHTML={{
                       __html: superstate.ui.getSticker(
-                        pinType == PinType.Linked ? "ui//pin" : "ui//live"
+                        pinType == PinType.Linked ? "ui//pin" : "ui//merge"
                       ),
                     }}
                   ></div>

@@ -71,13 +71,14 @@ export const MainMenu = (props: MainMenuComponentProps) => {
       <div className="mk-main-menu-inner">
         <div className={classNames("mk-main-menu")}>
           <div
+            aria-label={props.superstate.settings.systemName}
             className={`mk-main-menu-button mk-main-menu-button-primary`}
             ref={ref}
             onClick={(e) => {
               props.superstate.ui.mainMenu(ref.current, superstate);
             }}
           >
-            {props.superstate.settings.systemName}
+            <span>{props.superstate.settings.systemName}</span>
             {warnings.length > 0 && (
               <div
                 className="mk-icon-xsmall"

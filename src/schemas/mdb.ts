@@ -71,7 +71,7 @@ export const fieldTypes: FieldType[] = [
     label: i18n.properties.number.label,
     metadata: true,
     icon: 'ui//binary',
-    configKeys: ['unit'],
+    configKeys: ['format'],
     primative: true,
     description: i18n.properties.number.description
   },
@@ -117,7 +117,7 @@ export const fieldTypes: FieldType[] = [
     type: "fileprop",
     label: i18n.properties.fileProperty.label,
     icon: 'ui//formula',
-    configKeys:['field', 'value', 'type'],
+    configKeys:['field', 'value', 'type', 'format'],
     description: i18n.properties.fileProperty.description
   },
   {
@@ -144,7 +144,7 @@ export const fieldTypes: FieldType[] = [
     label: i18n.properties.aggregate.label,
     icon: 'ui//mk-make-note',
     multi: false,
-    configKeys: ['ref', 'field', 'fn'],
+    configKeys: ['ref', 'field', 'fn', 'format'],
     description: i18n.properties.aggregate.description
   },
   {

@@ -131,22 +131,28 @@ export const linkContextRow = (
     
 
     const fieldValue = parseFieldValue(c.value, c.type);
-    const refField = fields.find(f => f.name == fieldValue?.ref);
-    if (!refField) 
-      return p;
-    const refFieldValue = parseFieldValue(refField.value, refField.type);
-    const spacePath = refFieldValue?.space;
+    let rows = [];
     const column = fieldValue?.field;
-    
-    if (!spacePath || !column) {
-      return p;
+    if (fieldValue?.ref == '$items') {
+      rows = [...(spaceMap.invMap.get(row[PathPropertyName]) ?? [])].map(f => paths.get(f)?.metadata.property).filter(f => f);
+    } else {
+      const refField = fields.find(f => f.name == fieldValue?.ref);
+      if (!refField) 
+        return p;
+      const refFieldValue = parseFieldValue(refField.value, refField.type);
+      const spacePath = refFieldValue?.space;
+      
+      
+      if (!spacePath || !column) {
+        return p;
+      }
+      
+      const propValues = parseMultiString(relationFields[refField.name]);
+      
+      rows = propValues
+      .map((f) => (contextsMap.get(spacePath)?.contextTable?.rows ?? []).find(g => g[PathPropertyName] == f))
     }
-    
-    const propValues = parseMultiString(relationFields[refField.name]);
-    
-    const values = propValues
-    .map((f) => (contextsMap.get(spacePath)?.contextTable?.rows ?? []).find(g => g[PathPropertyName] == f))
-    .map((f) => f?.[column]).filter((f) => f)
+    const values = rows.map((f) => f?.[column]).filter((f) => f)
         const value = calculateAggregate(
           settings,
           values,
