@@ -985,8 +985,8 @@ export const formulas = {
 	"year": (date: Date) => {
 		return date.getFullYear();
 	},
-	'pad': (str: string, length: number, char: string) => {
-		return str.padStart(length, char);
+	'pad': (num: number, length: number, char: string) => {
+		return num.toString().padStart(length, char.toString());
 	},
 	"range": (arr: number[]) => {
 		return Math.max(...arr) - Math.min(...arr);
