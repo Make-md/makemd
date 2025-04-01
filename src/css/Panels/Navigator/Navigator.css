@@ -152,6 +152,7 @@ opacity: 1;
   display: flex;
   gap: 4px;
   flex-grow: 0 !important;
+  flex-basis: 100%;
 }
 .mk-sidebar:hover .mk-tree-new {
   opacity: .5
