@@ -17,6 +17,7 @@ import { ObjectCell } from "./ObjectCell";
 import { OptionCell } from "./OptionCell";
 
 import { AggregateCell } from "./AggregateCell";
+import { FlexCell } from "./FlexCell";
 import { PropertySelectCell } from "./PropertySelectCell";
 import { SpaceCell } from "./SpaceCell";
 import { SuperCell } from "./SuperCell";
@@ -120,7 +121,8 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
         source={props.source}
         contextTable={props.contextTable}
         contextPath={props.contextPath}
-        cols={props.columns}
+        columns={props.columns}
+        saveOptions={saveFieldValue}
       ></AggregateCell>
     );
   } else if (fieldType.type == "fileprop") {
@@ -185,6 +187,18 @@ export const DataTypeView: React.FC<DataTypeViewProps> = (
         {...viewProps}
         columns={props.columns}
       ></PropertySelectCell>
+    );
+  } else if (fieldType.type == "flex") {
+    return (
+      <FlexCell
+        {...viewProps}
+        row={row}
+        source={props.source}
+        contextTable={props.contextTable}
+        contextPath={props.contextPath}
+        columns={props.columns}
+        saveOptions={saveFieldValue}
+      ></FlexCell>
     );
   }
   return <TextCell {...viewProps}></TextCell>;

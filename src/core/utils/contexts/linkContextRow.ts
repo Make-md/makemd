@@ -1,4 +1,4 @@
-import { parseFieldValue } from "core/schemas/parseFieldValue";
+import { parseFieldValue, parseFlexValue } from "core/schemas/parseFieldValue";
 import { ConstantNode, FunctionNode, parse } from "mathjs";
 import { PathPropertyName } from "shared/types/context";
 import { IndexMap } from "shared/types/indexMap";
@@ -27,7 +27,7 @@ export const linkContextProp = (
 
 export const propertyDependencies = (fields: SpaceProperty[]) => {
   const graph = new Map<string, Set<string>>();
-  fields.filter((f) => f.type == "fileprop" || f.name.startsWith('tags')).forEach((f) => {
+  fields.filter((f) => f.type == "fileprop" || f.name.toLowerCase().startsWith('tags')).forEach((f) => {
     const { value } = parseFieldValue(f.value, f.type);
     const localDependencies = []
   try {
@@ -81,38 +81,42 @@ export const linkContextRow = (
   paths: Map<string, PathState>,
   contextsMap: Map<string, ContextState>,
   spaceMap: IndexMap,
-  row: DBRow,
+  _row: DBRow,
   fields: SpaceProperty[],
   path: PathState,
   settings: MakeMDSettings,
   dependencies?: string[]
 ) => {
-  if (!row) return {}
+  if (!_row) return {}
   
   const result = dependencies ?? propertyDependencies(fields)
-  const frontmatter = (paths.get(row[PathPropertyName])?.metadata?.property ?? {});
+  const frontmatter = (paths.get(_row[PathPropertyName])?.metadata?.property ?? {});
   const filteredFrontmatter = Object.keys(frontmatter).filter(f => fields.some(g => g.name == f) && f != PathPropertyName).reduce((p, c) => ({ ...p, [c]: parseProperty(c, frontmatter[c]) }), {})
-  const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {})
+  const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {});
+  
+  const tagData : Record<string, string> = {};
+  const tagField = fields.find(f => f.name.toLowerCase() == 'tags');
+  if (tagField) {
+    tagData[tagField.name] = serializeMultiString([...(paths.get(_row[PathPropertyName])?.tags ?? [])]) 
+  }
+  
   const formulaFields = result.map(f => fields.find(g => g.name == f) as SpaceProperty).filter((f) => f && (f.type == "fileprop")).reduce((p, c) => {
-    if (c.name == 'tags') {
-      return { ...p, 'tags': serializeMultiString([...(paths.get(row[PathPropertyName]).tags ?? [])]) };
-    }
     
     const { value } = parseFieldValue(c.value, c.type);
-    return {...p, [c.name]: runFormulaWithContext(runContext, paths, spaceMap, value, properties, {...row, ...p}, path)};
+    return {...p, [c.name]: runFormulaWithContext(runContext, paths, spaceMap, value, properties, {..._row, ...p}, path)};
     
   }, {});
   const relationFields = fields.filter((f) => f && (f.type.startsWith('context'))).reduce((p, c) => {
     
     const fieldValue = parseFieldValue(c.value, c.type);
     const multi = c.type.endsWith('multi');
-    const value = multi ? parseMultiString(row[c.name]) : row[c.name]?.length > 0 ? [row[c.name]] : [];
+    const value = multi ? parseMultiString(_row[c.name]) : _row[c.name]?.length > 0 ? [_row[c.name]] : [];
     if (!fieldValue.space) {
           return p;
         }
         const items = contextsMap.get(fieldValue.space)?.contextTable?.rows ?? []
         const values = items.reduce((p, c) => {
-            if (fieldValue.field, parseMultiString(c[fieldValue.field]).includes(row[PathPropertyName])) {
+            if (fieldValue.field, parseMultiString(c[fieldValue.field]).includes(_row[PathPropertyName])) {
               return [...p, c[PathPropertyName]];
             }
             return p;
@@ -128,23 +132,76 @@ export const linkContextRow = (
     };
   }, {} as DBRow);
   const aggregateFields = fields.filter((f) => f && (f.type == "aggregate")).reduce((p, c) => {
-    
-
     const fieldValue = parseFieldValue(c.value, c.type);
-    let rows = [];
+    const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields)
+    if (!values) return p;
+        const value = calculateAggregate(
+          settings,
+          values,
+          fieldValue.fn,
+          fieldValue.field
+        );
+    return {
+      ...p, [c.name]: value
+    };
+  }, {});
+
+  
+  const flexFields : DBRow = fields.filter(f => f.type == 'flex').reduce((p, c) => {
+    const flexValue = parseFlexValue(_row[c.name]);
+    let value = flexValue.value;
+    const config = flexValue.config;
+    const type = flexValue.type;
+    if (type == 'fileprop') {
+      value = runFormulaWithContext(runContext, paths, spaceMap, config?.value, properties, {..._row, ...p}, path);
+    }
+    if (type == 'aggregate') {
+      const fieldValue = config;
+      const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields)
+      if (!values) return p;
+      value = calculateAggregate(
+        settings,
+        values,
+        config?.fn,
+        config?.field
+      );
+    }
+    return {
+      ...p,
+      [c.name]: JSON.stringify({
+        type: type,
+        value: value,
+        config: config,
+      }),
+    };
+  }, {})
+  return {
+    ..._row,
+    
+    ...filteredFrontmatter,
+    ...tagData,
+    ...formulaFields,
+    ...relationFields,
+    ...aggregateFields,
+    ...flexFields,
+  };
+};
+
+const rowsForAggregate = (fieldValue: Record<string, any>, fields: SpaceProperty[], spaceMap: IndexMap, _row: Record<string, string>, contextsMap: Map<string, ContextState>, relationFields: Record<string, string>) => {
+  let rows = [];
     const column = fieldValue?.field;
     if (fieldValue?.ref == '$items') {
-      rows = [...(spaceMap.invMap.get(row[PathPropertyName]) ?? [])].map(f => paths.get(f)?.metadata.property).filter(f => f);
+      rows = (contextsMap.get(_row[PathPropertyName])?.contextTable?.rows ?? []);
     } else {
       const refField = fields.find(f => f.name == fieldValue?.ref);
       if (!refField) 
-        return p;
+        return null;
       const refFieldValue = parseFieldValue(refField.value, refField.type);
       const spacePath = refFieldValue?.space;
       
       
       if (!spacePath || !column) {
-        return p;
+        return null;
       }
       
       const propValues = parseMultiString(relationFields[refField.name]);
@@ -152,23 +209,5 @@ export const linkContextRow = (
       rows = propValues
       .map((f) => (contextsMap.get(spacePath)?.contextTable?.rows ?? []).find(g => g[PathPropertyName] == f))
     }
-    const values = rows.map((f) => f?.[column]).filter((f) => f)
-        const value = calculateAggregate(
-          settings,
-          values,
-          fieldValue.fn,
-          column
-        );
-    return {
-      ...p, [c.name]: value
-    };
-  }, {});
-  return {
-    ...row,
-    ...filteredFrontmatter,
-    ...formulaFields,
-    ...relationFields,
-    ...aggregateFields,
-      
-  };
-};
+    return rows.map((f) => f?.[column]).filter((f) => f)
+}

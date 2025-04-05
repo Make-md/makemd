@@ -12,6 +12,8 @@ import { ObjectType } from "./ObjectCell";
 export type DataPropertyViewProps = DataTypeViewProps & {
   propertyMenu?: (e: React.MouseEvent) => void;
   linkProp?: (e: React.MouseEvent) => void;
+  linkedProp?: string;
+  linkedColor?: string;
   path?: string;
   contexts?: string[];
   draggable?: boolean;
@@ -99,8 +101,21 @@ export const DataPropertyView = (props: DataPropertyViewProps) => {
           contexts={props.contexts}
           draggable={props.draggable}
         ></PropertyField>
+
         <div className="mk-path-context-value">
-          {isObjectType ? (
+          {props.linkProp && (
+            <div
+              className="mk-icon-small"
+              style={{ height: "24px", fill: props.linkedColor }}
+              onClick={(e) => props.linkProp(e)}
+              dangerouslySetInnerHTML={{
+                __html: props.linkedProp ? "ui//circle-solid" : "ui//circle",
+              }}
+            ></div>
+          )}
+          {props.linkedProp ? (
+            <div className="mk-active">{props.linkedProp}</div>
+          ) : isObjectType ? (
             !props.compactMode && (
               <div className="mk-cell-object-options">
                 {props.editMode > CellEditMode.EditModeValueOnly && (
@@ -137,19 +152,6 @@ export const DataPropertyView = (props: DataPropertyViewProps) => {
             <DataTypeView {...props}></DataTypeView>
           )}
         </div>
-        {props.linkProp && (
-          <>
-            <span></span>
-            <div
-              className="mk-icon-small"
-              style={{ height: "24px" }}
-              onClick={(e) => props.linkProp(e)}
-              dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//plug"),
-              }}
-            ></div>
-          </>
-        )}
       </div>
       {isObjectType && !props.compactMode && (
         <div className="mk-path-context-row" style={{ marginLeft: "30px" }}>

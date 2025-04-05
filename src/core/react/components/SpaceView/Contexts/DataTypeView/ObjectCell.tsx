@@ -450,7 +450,7 @@ export const ObjectEditorModal = (
   }
 ) => {
   const [value, setValue] = useState(props.initialValue);
-  const [fieldValue, setFieldValue] = useState(props.property.value);
+  const [fieldValue, setFieldValue] = useState(props.propertyValue);
   const saveValue = (value: string) => {
     setValue(value);
     props.saveValue(value);

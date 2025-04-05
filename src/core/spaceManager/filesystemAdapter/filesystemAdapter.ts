@@ -889,8 +889,6 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     public async saveSpace (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) {
       const metadata = definitionFn(await this.spaceDefForSpace(path)) ?? {};
 
-      
-
       const spaceInfo = this.spaceInfoForPath(path);
       let defFile = await this.fileSystem.getFile(spaceInfo.defPath)
       

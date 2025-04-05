@@ -26,6 +26,8 @@ export const PropertyMenuComponent = (props: {
   onSubmenu: (
     openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
   ) => void;
+  flex?: boolean;
+  rowPath?: string;
 }) => {
   const [field, setField] = useState(props.field);
   const selectedType = (_: string[], value: string[]) => {
@@ -140,6 +142,7 @@ export const PropertyMenuComponent = (props: {
         value={field.value}
         contextPath={props.contextPath}
         saveValue={selectedValue}
+        rowPath={props.rowPath}
       ></PropertyValueComponent>
     </>
   );
@@ -160,6 +163,8 @@ type PropertyMenuProps = {
   hidden?: boolean;
   editCode?: () => void;
   anchor?: Anchors;
+  flex?: boolean;
+  rowPath?: string;
 };
 export const showPropertyMenu = (
   props: PropertyMenuProps,
@@ -175,7 +180,8 @@ export const showPropertyMenu = (
     fields,
     contextPath,
     saveField,
-
+    flex,
+    rowPath,
     hide,
     deleteColumn,
     sortColumn,
@@ -185,7 +191,7 @@ export const showPropertyMenu = (
 
   const saveName = (value: string) => {
     const sanitizedName = sanitizeColumnName(value);
-    if (sanitizedName != field.name || !editable) {
+    if (sanitizedName != value || !editable) {
       const fieldValue = safelyParseJSON(field.value);
       saveField({
         ...field,
@@ -200,11 +206,13 @@ export const showPropertyMenu = (
   };
   const menuOptions: SelectOption[] = [];
 
-  menuOptions.push(
-    menuInput(nameForField(field, props.superstate) ?? "", (value) =>
-      saveName(value)
-    )
-  );
+  if (!flex) {
+    menuOptions.push(
+      menuInput(nameForField(field, props.superstate) ?? "", (value) =>
+        saveName(value)
+      )
+    );
+  }
   menuOptions.push(menuSeparator);
   if (editable) {
     menuOptions.push({
@@ -224,29 +232,32 @@ export const showPropertyMenu = (
           options={options}
           saveField={saveField}
           onSubmenu={props.onSubmenu}
+          flex={flex}
+          rowPath={rowPath}
         ></PropertyMenuComponent>
       ),
     });
   }
-  menuOptions.push(menuSeparator);
 
-  menuOptions.push({
-    name: i18n.menu.setIcon,
-    icon: "ui//gem",
-    onClick: (e: React.MouseEvent) => {
-      superstate.ui.openPalette(
-        <StickerModal
-          ui={superstate.ui}
-          selectedSticker={(emoji) =>
-            saveField({ ...field, attrs: JSON.stringify({ icon: emoji }) })
-          }
-        />,
-        windowFromDocument(e.view.document)
-      );
-    },
-  });
-  menuOptions.push(menuSeparator);
-
+  if (!flex) {
+    menuOptions.push(menuSeparator);
+    menuOptions.push({
+      name: i18n.menu.setIcon,
+      icon: "ui//gem",
+      onClick: (e: React.MouseEvent) => {
+        superstate.ui.openPalette(
+          <StickerModal
+            ui={superstate.ui}
+            selectedSticker={(emoji) =>
+              saveField({ ...field, attrs: JSON.stringify({ icon: emoji }) })
+            }
+          />,
+          windowFromDocument(e.view.document)
+        );
+      },
+    });
+    menuOptions.push(menuSeparator);
+  }
   const sortableString = normalizedSortForType(field.type, false);
 
   if (sortableString && sortColumn) {

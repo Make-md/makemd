@@ -40,7 +40,6 @@ export const NumberCell = (props: TableCellProp) => {
     () => safelyParseJSON(props.propertyValue)?.format,
     [props.propertyValue]
   );
-
   return props.editMode > CellEditMode.EditModeView ? (
     <input
       className="mk-cell-text"
@@ -53,7 +52,9 @@ export const NumberCell = (props: TableCellProp) => {
     />
   ) : (
     <div className="mk-cell-number">
-      {format && value ? formatNumber(format, parseInt(value)) : value}
+      {format?.length > 0 && value
+        ? formatNumber(format, parseFloat(value))
+        : value ?? ""}
     </div>
   );
 };

@@ -13,6 +13,7 @@ export type FieldType = {
   type: string;
   label: string;
   restricted?: boolean;
+  flex?: boolean;
   icon?: string;
   multi?: boolean;
   primative?: boolean;
@@ -37,7 +38,7 @@ export const stickerForDBSchema = (f: SpaceTableSchema) => safelyParseJSON(f?.de
 
 export const fieldTypeForType = (type: string, name?: string) =>
     name == PathPropertyName ? 
-    fieldTypes.find((t) => t.type == 'file') : name == 'tags' ? 
+    fieldTypes.find((t) => t.type == 'file') : name?.toLowerCase() == 'tags' ? 
     fieldTypes.find((t) => t.type == 'tags-multi') : name == 'aliases' ? 
     fieldTypes.find((t) => t.type == 'option-multi') : name == 'sticker' ? 
     fieldTypes.find((t) => type == 'icon') : fieldTypes.find((t) => type == t.type) ||
@@ -64,6 +65,7 @@ export const fieldTypes: FieldType[] = [
     metadata: true,
     icon: 'ui//text',
     primative: true,
+    flex: true,
     description: i18n.properties.text.description
   },
   {
@@ -73,6 +75,7 @@ export const fieldTypes: FieldType[] = [
     icon: 'ui//binary',
     configKeys: ['format'],
     primative: true,
+    flex: true,
     description: i18n.properties.number.description
   },
   {
@@ -81,6 +84,7 @@ export const fieldTypes: FieldType[] = [
     metadata: true,
     icon: 'ui//check-square',
     primative: true,
+    flex: true,
     description: i18n.properties.boolean.description
   },
   {
@@ -90,6 +94,7 @@ export const fieldTypes: FieldType[] = [
     icon: 'ui//calendar',
     configKeys: ['format'],
     primative: true,
+    flex: true,
     description: i18n.properties.date.description
   },
   {
@@ -98,6 +103,7 @@ export const fieldTypes: FieldType[] = [
     multi: true,
     multiType: "option-multi",
     icon: 'ui//list',
+    primative: true,
     configKeys: ['options', 'source', 'sourceProps'],
     description: i18n.properties.option.description
   },
@@ -118,6 +124,7 @@ export const fieldTypes: FieldType[] = [
     label: i18n.properties.fileProperty.label,
     icon: 'ui//formula',
     configKeys:['field', 'value', 'type', 'format'],
+    flex: true,
     description: i18n.properties.fileProperty.description
   },
   {
@@ -128,6 +135,7 @@ export const fieldTypes: FieldType[] = [
     metadata: true,
     icon: 'ui//file-text',
     primative: true,
+    flex: true,
     description: i18n.properties.link.description
   },
   {
@@ -140,11 +148,20 @@ export const fieldTypes: FieldType[] = [
     description: i18n.properties.context.description
   },
   {
+    type: "flex",
+    label: i18n.properties.flex.label,
+    icon: 'ui//flex',
+    multi: false,
+    configKeys: ['type', 'format', 'options'],
+    description: i18n.properties.flex.description
+  },
+  {
     type: "aggregate",
     label: i18n.properties.aggregate.label,
-    icon: 'ui//mk-make-note',
+    icon: 'ui//aggregate',
     multi: false,
     configKeys: ['ref', 'field', 'fn', 'format'],
+    flex: true,
     description: i18n.properties.aggregate.description
   },
   {
@@ -164,7 +181,6 @@ export const fieldTypes: FieldType[] = [
     multiType: "icon-multi",
     icon: 'ui//gem',
     restricted: true,
-    primative: true,
     description: i18n.properties.icon.description
   },
   {
@@ -175,6 +191,7 @@ export const fieldTypes: FieldType[] = [
     metadata: true,
     icon: 'ui//mk-make-image',
     primative: true,
+    flex: true,
     description: i18n.properties.image.description
   },
   {

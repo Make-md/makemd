@@ -1,6 +1,6 @@
+import { parseFlexValue } from "core/schemas/parseFieldValue";
 import { formatDate, parseDate } from "core/utils/date";
 import { median } from "mathjs";
-import { fieldTypeForField } from "schemas/mdb";
 import { SpaceProperty } from "shared/types/mdb";
 import { MakeMDSettings } from "shared/types/settings";
 import { uniq } from "shared/utils/array";
@@ -11,7 +11,7 @@ import { empty } from "./filter";
 export type AggregateFunctionType = {
     label: string;
     shortLabel?: string;
-    type: string[];
+    type: string;
     fn: (v: any[], type: string) => any;
     valueType: string;
     
@@ -22,7 +22,13 @@ export const calculateAggregate = (settings: MakeMDSettings, values: any[], fn: 
     if (!aggregateFn) {
         return null;
     }
-    const type = fieldTypeForField(col)
+    if (col.type == 'flex') {
+        values = values.map((v) => {
+            const parsed = parseFlexValue(v);
+            return parsed.value;
+        });
+    }
+    const type = aggregateFn.type;
     let result = '';
     try {
         
@@ -55,19 +61,19 @@ export const calculateAggregate = (settings: MakeMDSettings, values: any[], fn: 
 export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
     values: {
         label: "Values",
-        type: ['any'],
+        type: 'any',
         fn: (v) => uniq(v.map(f => parseProperty("", f))).join(", "),
         valueType: "none",
     },
     sum: {
         label: "Sum",
-        type: ["number"],
+        type: "number",
         fn: (v) => v.map(f => parseInt(f)).filter(f => !isNaN(f)).reduce((a, b) => b ? a + b : a, 0),
         valueType: "number",
     },
     avg: {
         label: "Average",
-        type: ["number"],
+        type: "number",
         fn: (v) => {
             const filtered = v.map(f => parseInt(f)).filter((f) => !isNaN(f));
             return filtered.reduce((a, b) => a + b, 0) / filtered.length
@@ -76,7 +82,7 @@ export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
     },
     median: {
         label: "Median",
-        type: ["number"],
+        type: "number",
         fn: (v) => {
             const filtered = v.map(f => parseInt(f)).filter((f) => !isNaN(f));
             return median(filtered)
@@ -85,103 +91,103 @@ export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
     },
     count: {
         label: "Count",
-        type: ['any'],
+        type: 'any',
         fn: (v) => v.length,
         valueType: "number",
     },
     countValues: {
         label: "Count Values",
         shortLabel: "Values",
-        type: ['any'],
+        type: 'any',
         fn: (v) => v.flat().length,
         valueType: "number",
     },
     countUniques: {
         label: "Count Uniques",
         shortLabel: "Uniques",
-        type: ['any'],
+        type: 'any',
         fn: (v) => new Set(v.flat()).size,
         valueType: "number",
     },
     percentageEmpty: {
         label: "Percentage Empty",
         shortLabel: "Empty",
-        type: ['any'],
+        type: 'any',
         fn: (v) => v.filter((f) => empty(f, '')).length / v.length * 100 + "%",
         valueType: "string",
     },
     percentageNotEmpty: {
         label: "Percentage Not Empty",
         shortLabel: "Not Empty",
-        type: ['any'],
+        type: 'any',
         fn: (v) => v.filter((f) => !empty(f, '')).length / v.length * 100 + "%",
         valueType: "string",
     },
     min: {
         label: "Min",
-        type: ["number"],
+        type: "number",
         fn: (v) => Math.min(...v.map(f => parseInt(f)).filter(f => !isNaN(f))),
         valueType: "number",
     },
     max: {
         label: "Max",
-        type: ["number"],
+        type: "number",
         fn: (v, f) => Math.max(...v.map(f => parseInt(f)).filter(f => !isNaN(f))),
         valueType: "number",
     },
     range: {
         label: "Range",
-        type: ["number"],
+        type: "number",
         fn: (v) => Math.max(...v.map(f => parseInt(f)).filter(f => !isNaN(f))) - Math.min(...v.filter(f => !isNaN(f))),
         valueType: "number",
     },
     empty: {
         label: "Empty",
-        type: ['any'],
+        type: 'any',
         fn: (v) => v.filter((f) => empty(f, '')).length,
         valueType: "none",
     },
     notEmpty: {
         label: "Not Empty",
-        type: ['any'],
+        type: 'any',
         fn: (v) => v.filter((f) => !empty(f, '')).length,
         valueType: "none",
     },
     earliest: {
         label: "Earliest",
-        type: ["date"],
+        type: "date",
         fn: (v) => new Date(Math.min(...v.map((f) => f.getTime()))),
         valueType: "date",
     },
     latest: {
         label: "Latest",
-        type: ["date"],
+        type: "date",
         fn: (v) => new Date(Math.max(...v.map((f) => f.getTime()))),
         valueType: "date",
     },
     complete: {
         label: "Complete",
-        type: ['boolean'],
+        type: 'boolean',
         fn: (v) => v.filter((f) => f == 'true').length,
         valueType: "number",
     },
     incomplete: {
         label: "Not Complete",
-        type: ['boolean'],
+        type: 'boolean',
         fn: (v) => v.filter((f) => f != 'true').length,
         valueType: "number",
     },
     percentageComplete: {
         label: "Percentage Complete",
         shortLabel: "Complete",
-        type: ['boolean'],
+        type: 'boolean',
         fn: (v) => v.filter((f) => f == 'true').length / v.length * 100 + "%",
         valueType: "string",
     },
     dateRange: {
         label: "Date Range",
         shortLabel: "Range",
-        type: ["date"],
+        type: "date",
         fn: (v) => {
             const dates = v.map((f) => f.getTime());
             return Math.max(...dates) - Math.min(...dates);

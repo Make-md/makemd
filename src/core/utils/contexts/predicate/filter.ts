@@ -1,3 +1,4 @@
+import { parseFlexValue } from "core/schemas/parseFieldValue";
 import { DBRow, SpaceTableColumn } from "shared/types/mdb";
 import { Filter } from "shared/types/predicate";
 import { parseMultiString } from "utils/parsers";
@@ -138,7 +139,8 @@ export const filterReturnForCol = (
   let result = true;
   if (filterType && filterType.fn) {
     const value = (filter.fType == 'property') ? properties[filter.value] : filter.value;
-    result = filterType.fn(row[filter.field], value);
+    const rowValue = col.type == 'flex' ? parseFlexValue(row[filter.field])?.value : row[filter.field];
+    result = filterType.fn(rowValue, value);
   }
 
   return result;

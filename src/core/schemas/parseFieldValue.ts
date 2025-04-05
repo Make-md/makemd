@@ -33,6 +33,19 @@ const convertFileProp = ({field, value} : {field: string, value: string}) : File
   return { value: ``, type: 'string'};
 }
 
+export const parseFlexValue = (dataString: string) => {
+  const value = safelyParseJSON(dataString);
+    const initialValue = value?.value;
+    const initialType = value?.type;
+    const initialConfig = value?.config;
+    return {
+      value: initialValue,
+      type: initialType,
+      config: initialConfig,
+    }
+    
+}
+
 export const parseFieldValue = (
   value: string,
   type: string,

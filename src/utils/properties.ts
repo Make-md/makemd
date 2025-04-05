@@ -1,3 +1,4 @@
+import { parseFlexValue } from "core/schemas/parseFieldValue";
 import { format } from "date-fns";
 import { fieldTypeForField } from "schemas/mdb";
 import { SpaceProperty } from "shared/types/mdb";
@@ -120,6 +121,10 @@ export const parsePropertyValue = (value: any, type: string): any => {
 export const parseMDBStringValue = (type: string, value: string, frontmatter?: boolean): any => {
   if (!type) {
     return value;
+  }
+  if (type == 'flex') {
+    const flexObject = parseFlexValue(value)
+    return parseMDBStringValue(flexObject.type, flexObject.value, frontmatter)
   }
   if (type == "object") {
     return JSON.parse(value);

@@ -116,12 +116,15 @@ const filterPathProperties = (paths: PathState[], def: FilterDef, props: Record<
 
 
 
-export const pathByJoins = ( joins: JoinDefGroup[], path: PathState,  props: Record<string, string>) => {
+export const pathByJoins = ( joins: JoinDefGroup[], path: PathState,  props: Record<string, string>, inclusive?: boolean) => {
   const pathInFilter = joins.reduce((p, c) => {
-    if (p || (c.path != '/' && !path.path.startsWith(c.path + '/')) || c.path.length == 0) return p;
-    if (!c.recursive) {
-      if (path.parent != c.path) {
-          return false;
+    if (p || (c.path != '/' && !path.path.startsWith(inclusive ? c.path : c.path + '/')) || c.path.length == 0) return p;
+    if (!(path.path == c.path && inclusive)) {
+      if (!c.recursive) {
+        
+        if (path.parent != c.path) {
+            return false;
+        }
       }
     }
     if (c.groups.length == 0) return true;

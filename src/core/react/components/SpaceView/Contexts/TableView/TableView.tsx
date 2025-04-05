@@ -831,10 +831,9 @@ export const TableView = (props: { superstate: Superstate }) => {
                     });
                     Object.keys(aggregateFnTypes).forEach((f) => {
                       if (
-                        aggregateFnTypes[f].type.includes(
-                          fieldTypeForField(col)
-                        ) ||
-                        aggregateFnTypes[f].type.includes("any")
+                        aggregateFnTypes[f].type == fieldTypeForField(col) ||
+                        aggregateFnTypes[f].type == "any" ||
+                        col.type == "flex"
                       )
                         options.push({
                           name: aggregateFnTypes[f].label,

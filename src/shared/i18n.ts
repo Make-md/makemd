@@ -427,6 +427,10 @@ class T {
           label: "Aggregate",
           description: "Aggregate functions to calculate values",
         },
+        flex: {
+          label: "Flex",
+          description: "Flexible field to display any type of data",
+        },
         audio: {
           label: 'Audio',
           description: 'Audio'

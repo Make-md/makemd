@@ -138,7 +138,9 @@ export const sortReturnForCol = (
   if (!col) return 0;
   const sortType = sortFnTypes[sort.fn];
   if (sortType) {
-    return sortType.fn(row[sort.field], row2[sort.field]);
+    const value = col.type == "flex" ? parseMultiString(row[sort.field]) : row[sort.field];
+    const value2 = col.type == "flex" ? parseMultiString(row2[sort.field]) : row2[sort.field];
+    return sortType.fn(value, value2);
   }
   return 0;
 };

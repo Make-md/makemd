@@ -420,11 +420,13 @@ export const ContextEditorProvider: React.FC<
         .filter((f) => {
           return (predicate?.filters ?? []).reduce((p, c) => {
             const row = cols.some(
-              (f) => f.schemaId == defaultContextSchemaID && f.name == "tags"
+              (f) =>
+                f.schemaId == defaultContextSchemaID &&
+                f.name.toLowerCase() == "tags"
             )
               ? {
                   ...f,
-                  tags: (
+                  [f.name]: (
                     props.superstate.pathsIndex.get(f[PathPropertyName])
                       ?.tags ?? []
                   ).join(", "),
@@ -495,7 +497,17 @@ export const ContextEditorProvider: React.FC<
           saveProperties(
             props.superstate,
             row?.[PathPropertyName],
-            changedCols.reduce((p, c) => ({ ...p, [c]: row[c] }), {})
+            changedCols.reduce(
+              (p, c) => ({
+                ...p,
+                [c]: parseMDBStringValue(
+                  cols.find((f) => f.name == c)?.type,
+                  row[c],
+                  true
+                ),
+              }),
+              {}
+            )
           );
           saveDB(createNewRow(tableData, row));
           return;
@@ -514,7 +526,17 @@ export const ContextEditorProvider: React.FC<
       saveProperties(
         props.superstate,
         currentData?.[PathPropertyName],
-        changedCols.reduce((p, c) => ({ ...p, [c]: row[c] }), {})
+        changedCols.reduce(
+          (p, c) => ({
+            ...p,
+            [c]: parseMDBStringValue(
+              cols.find((f) => f.name == c)?.type,
+              row[c],
+              true
+            ),
+          }),
+          {}
+        )
       );
     }
     saveDB({

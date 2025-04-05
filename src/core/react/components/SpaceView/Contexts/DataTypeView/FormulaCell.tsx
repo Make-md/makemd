@@ -29,6 +29,7 @@ export const FormulaCell = (
     props.saveOptions(JSON.stringify({ ...parsedValue, [field]: value }), "");
   };
   const editFormula = (e: React.MouseEvent) => {
+    if (e.detail != 2) return;
     const _props = {
       superstate: props.superstate,
       saveFormula: (value: string) => saveParsedValue("value", value),
@@ -45,48 +46,52 @@ export const FormulaCell = (
       "bottom"
     );
   };
-  return parsedValue.type == "boolean" ? (
-    <BooleanCell
-      {...props}
-      initialValue={initialValue}
-      editMode={CellEditMode.EditModeReadOnly}
-    />
-  ) : initialValue?.length == 0 ? (
-    <></>
-  ) : parsedValue.type == "image" ? (
-    <ImageCell
-      {...props}
-      initialValue={initialValue}
-      editMode={CellEditMode.EditModeReadOnly}
-      multi={true}
-    />
-  ) : parsedValue.type == "icon" ? (
-    <IconCell
-      {...props}
-      initialValue={initialValue}
-      multi={true}
-      editMode={CellEditMode.EditModeReadOnly}
-    ></IconCell>
-  ) : parsedValue.type == "link" ? (
-    <LinkCell
-      {...props}
-      initialValue={initialValue}
-      multi={true}
-      editMode={CellEditMode.EditModeReadOnly}
-    ></LinkCell>
-  ) : parsedValue.type == "number" ? (
-    <NumberCell
-      {...props}
-      initialValue={initialValue}
-      editMode={CellEditMode.EditModeReadOnly}
-    ></NumberCell>
-  ) : (
-    <OptionCell
-      {...props}
-      initialValue={initialValue}
-      editMode={CellEditMode.EditModeReadOnly}
-      multi={true}
-      source={props.source}
-    />
+  return (
+    <div className="mk-cell-formula" onClick={editFormula}>
+      {parsedValue.type == "boolean" ? (
+        <BooleanCell
+          {...props}
+          initialValue={initialValue}
+          editMode={CellEditMode.EditModeReadOnly}
+        />
+      ) : initialValue?.length == 0 ? (
+        <></>
+      ) : parsedValue.type == "image" ? (
+        <ImageCell
+          {...props}
+          initialValue={initialValue}
+          editMode={CellEditMode.EditModeReadOnly}
+          multi={true}
+        />
+      ) : parsedValue.type == "icon" ? (
+        <IconCell
+          {...props}
+          initialValue={initialValue}
+          multi={true}
+          editMode={CellEditMode.EditModeReadOnly}
+        ></IconCell>
+      ) : parsedValue.type == "link" ? (
+        <LinkCell
+          {...props}
+          initialValue={initialValue}
+          multi={true}
+          editMode={CellEditMode.EditModeReadOnly}
+        ></LinkCell>
+      ) : parsedValue.type == "number" ? (
+        <NumberCell
+          {...props}
+          initialValue={initialValue}
+          editMode={CellEditMode.EditModeReadOnly}
+        ></NumberCell>
+      ) : (
+        <OptionCell
+          {...props}
+          initialValue={initialValue}
+          editMode={CellEditMode.EditModeReadOnly}
+          multi={true}
+          source={props.source}
+        />
+      )}
+    </div>
   );
 };

@@ -1,6 +1,6 @@
 export const unitTypes = [{
     label: "None",
-    value: "0",
+    value: "",
 }, {
     label: "Percent",
     value: "0%",

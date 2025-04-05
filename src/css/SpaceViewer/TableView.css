@@ -220,6 +220,43 @@
   display: flex;
 }
 
+.mk-cell-flex {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+}
+
+.mk-cell-flex .mk-cell-number, .mk-cell-flex .mk-cell-boolean {
+  flex: 1;
+}
+
+.mk-path-context-value > .mk-cell-flex, .mk-cell-flex:has(.mk-cell-number) {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.mk-cell-flex > .mk-icon-small {
+  visibility: hidden;
+  color: var(--mk-ui-text-secondary);
+  padding: 4px;
+}
+.mk-cell-flex:hover > .mk-icon-small {
+  visibility: visible;
+}
+.mk-path-context-value > .mk-cell-flex > .mk-icon-small
+ {
+  visibility: visible;
+ }
+ .mk-path-context-value .mk-cell-number {
+  text-align: left;
+ }
+.mk-cell-flex:hover > .mk-icon-small:hover {
+  background: var(--mk-ui-background-hover);
+  border-radius: 4px;
+}
+.mk-cell-aggregate, .mk-cell-formula {
+  flex: 1;
+}
 .mk-cell-text {
   white-space: pre-line;
   width: 100%;
@@ -322,6 +359,7 @@ height: 60px;
   gap: 4px;
   display: flex;
   flex-wrap: wrap;
+  overflow:hidden;
 }
 
 .mk-cell-context .mk-path,

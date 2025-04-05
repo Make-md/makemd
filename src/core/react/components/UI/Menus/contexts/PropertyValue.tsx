@@ -24,6 +24,7 @@ export const PropertyValueComponent = (props: {
   value: string;
   fields: SpaceTableColumn[];
   contextPath?: string;
+  rowPath?: string;
   saveValue: (value: string) => void;
 }) => {
   const showOptions = (
@@ -131,57 +132,48 @@ export const PropertyValueComponent = (props: {
   };
 
   const selectAggregateRef = (e: React.MouseEvent) => {
+    const properties: SelectOption[] = [];
     const childrenProperty = {
       name: "Items",
       value: "$items",
     };
-    const properties = [
-      childrenProperty,
+    if (props.rowPath) properties.push(childrenProperty);
+    properties.push(
       ...(props.fields
-        .filter((f) => f.type.startsWith("context"))
+        ?.filter((f) => f.type.startsWith("context"))
         .map((f) => ({
           name: f.name,
           value: f.name,
-        })) ?? []),
-    ];
+        })) ?? [])
+    );
     showOptions(e, null, properties, "ref");
   };
 
   const selectAggregateProperty = (e: React.MouseEvent) => {
     const fieldRef = parsedValue.ref;
-
     let options: SelectOption[] = [];
+    let fieldSpace = null;
     if (fieldRef == "$items") {
-      showOptions(
-        e,
-        parsedValue.field,
-        [],
-        "field",
-        null,
-        i18n.labels.propertyValueLinkedPlaceholder,
-        true
-      );
-      return;
+      fieldSpace = props.rowPath;
     } else {
       const field = props.fields.find((f) => f.name == fieldRef);
-
-      let fieldSpace = null;
-
       if (field) {
         fieldSpace = parseFieldValue(
           field.value,
           field.type,
           props.superstate
         )?.space;
-        options = fieldSpace
-          ? props.superstate.contextsIndex
-              .get(fieldSpace)
-              ?.contextTable?.cols.map((m) => ({
-                name: m.name,
-                value: m.name,
-              })) ?? []
-          : [];
       }
+    }
+    if (fieldSpace) {
+      options = fieldSpace
+        ? props.superstate.contextsIndex
+            .get(fieldSpace)
+            ?.contextTable?.cols.map((m) => ({
+              name: m.name,
+              value: m.name,
+            })) ?? []
+        : [];
     }
     if (options.length > 0) {
       showOptions(
@@ -189,7 +181,7 @@ export const PropertyValueComponent = (props: {
         parsedValue.field,
         options,
         "field",
-        saveSpaceProperty,
+        null,
         i18n.labels.propertyValueLinkedPlaceholder,
         true
       );
@@ -197,25 +189,26 @@ export const PropertyValueComponent = (props: {
   };
 
   const selectAggregateFn = (e: React.MouseEvent) => {
-    const refField = props.fields.find((f) => f.name == parsedValue.ref);
+    const fieldRef = parsedValue.ref;
+
     let fieldSpace = null;
-    if (refField) {
-      fieldSpace = parseFieldValue(
-        refField.value,
-        refField.type,
-        props.superstate
-      )?.space;
+    if (fieldRef == "$items") {
+      fieldSpace = props.rowPath;
+    } else {
+      const refField = props.fields?.find((f) => f.name == parsedValue.ref);
+      if (refField) {
+        fieldSpace = parseFieldValue(
+          refField.value,
+          refField.type,
+          props.superstate
+        )?.space;
+      }
     }
     let field: SpaceProperty = null;
     if (fieldSpace) {
       field = props.superstate.contextsIndex
         .get(fieldSpace)
         ?.contextTable?.cols?.find((f) => f.name == parsedValue.field);
-    } else if (parsedValue.ref == "$items") {
-      field = {
-        type: "unknown",
-        name: parsedValue.field,
-      };
     }
     const options: SelectOption[] = [];
     options.push({
@@ -224,9 +217,8 @@ export const PropertyValueComponent = (props: {
     });
     Object.keys(aggregateFnTypes).forEach((f) => {
       if (
-        field.type == "unknown" ||
-        aggregateFnTypes[f].type.includes(fieldTypeForField(field)) ||
-        aggregateFnTypes[f].type.includes("any")
+        aggregateFnTypes[f].type == fieldTypeForField(field) ||
+        aggregateFnTypes[f].type == "any"
       )
         options.push({
           name: aggregateFnTypes[f].label,
@@ -258,7 +250,7 @@ export const PropertyValueComponent = (props: {
   const selectProperty = (e: React.MouseEvent) => {
     const properties =
       props.fields
-        .filter(
+        ?.filter(
           (f) => f.type == "file" || f.type == "link" || f.type == "context"
         )
         .map((f) => ({
@@ -570,7 +562,7 @@ export const PropertyValueComponent = (props: {
         );
       }}
     >
-      <span>Name</span>
+      <span>{i18n.labels.name}</span>
       <span>{parsedValue.typeName}</span>
     </div>
   ) : props.fieldType == "super" ? (
@@ -589,6 +581,25 @@ export const PropertyValueComponent = (props: {
         <span>{parsedValue.field}</span>
       </div>
     </>
+  ) : props.fieldType == "flex" ? (
+    <div>
+      <div className="mk-menu-option" onClick={(e) => selectType(e)}>
+        <span>{i18n.labels.propertyType}</span>
+        <span>{fieldTypeForType(parsedValue.type)?.label}</span>
+      </div>
+      {fieldTypeForType(parsedValue.type).type == "number" && (
+        <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
+          <span>{i18n.labels.numberFormat}</span>
+          <span>{numberFormatToString(parsedValue.format)}</span>
+        </div>
+      )}
+      {fieldTypeForType(parsedValue.type).type == "date" && (
+        <div className="mk-menu-option" onClick={(e) => selectDateFormat(e)}>
+          <span>{i18n.labels.dateFormat}</span>
+          <span>{parsedValue.format}</span>
+        </div>
+      )}
+    </div>
   ) : (
     <></>
   );

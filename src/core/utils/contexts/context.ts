@@ -301,7 +301,7 @@ export const updateContextWithProperties = async (
     const properties = await getPathProperties(
       superstate,
       path,
-      mdb.cols.filter(f => f.name != PathPropertyName && f.type != 'fileprop')
+      mdb.cols.filter(f => f.name != PathPropertyName && f.type != 'fileprop' && f.type != 'flex')
     );
 
     if (objectExists) {

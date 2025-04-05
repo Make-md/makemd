@@ -16,6 +16,7 @@ import {
 } from "core/superstate/utils/spaces";
 import { addTagToPath } from "core/superstate/utils/tags";
 import { FMMetadataKeys } from "core/types/space";
+import { updateContextValue } from "core/utils/contexts/context";
 import { i18n, SelectOption, Superstate } from "makemd-core";
 import React, {
   useContext,
@@ -301,6 +302,17 @@ export const HeaderPropertiesView = (props: {
         true
       ),
     });
+    Promise.all(
+      field.contexts.map((f) => {
+        updateContextValue(
+          props.superstate.spaceManager,
+          props.superstate.spacesIndex.get(f).space,
+          pathState.path,
+          field.property.name,
+          value
+        );
+      })
+    );
   };
   const updateFieldValue = (
     fv: string,
@@ -459,7 +471,10 @@ export const HeaderPropertiesView = (props: {
               key={i}
               superstate={props.superstate}
               initialValue={f.value}
-              row={pathState.metadata.property}
+              row={{
+                [PathPropertyName]: pathState.path,
+                ...pathState.metadata.property,
+              }}
               compactMode={false}
               column={{ ...f.property, table: "" }}
               columns={cols.map((f) => f.property)}

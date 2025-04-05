@@ -2,6 +2,7 @@ import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { aggregateFnTypes } from "core/utils/contexts/predicate/aggregates";
 import { ensureString } from "core/utils/strings";
 import React, { useMemo } from "react";
+import { PathPropertyName } from "shared/types/context";
 import { DBRow, SpaceTableColumn, SpaceTables } from "shared/types/mdb";
 import { CellEditMode, TableCellMultiProp } from "../TableView/TableView";
 import { BooleanCell } from "./BooleanCell";
@@ -17,7 +18,8 @@ export const AggregateCell = (
     row: DBRow;
     contextTable: SpaceTables;
     contextPath: string;
-    cols: SpaceTableColumn[];
+    columns: SpaceTableColumn[];
+    saveOptions: (options: string, value: string) => void;
   }
 ) => {
   const initialValue = ensureString(props.initialValue);
@@ -28,7 +30,15 @@ export const AggregateCell = (
       props.superstate
     );
     if (fieldValue.fn == "values") {
-      const refField = props.cols.find((f) => f.name == fieldValue?.ref);
+      const ref = fieldValue?.ref;
+      if (ref == "$items") {
+        const spacePath = props.row[PathPropertyName];
+        const col = props.superstate.contextsIndex
+          .get(spacePath)
+          ?.contextTable?.cols?.find((f) => f.name == fieldValue?.field);
+        return col?.type ?? "none";
+      }
+      const refField = props.columns.find((f) => f.name == fieldValue?.ref);
       if (refField) {
         const refFieldValue = parseFieldValue(
           refField.value,

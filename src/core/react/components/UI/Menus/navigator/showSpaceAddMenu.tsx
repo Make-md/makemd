@@ -61,12 +61,13 @@ export const newSpaceModal = (superstate: Superstate) => {
   );
 };
 
-export const defaultAddAction = (
+export const defaultAddAction = async (
   superstate: Superstate,
-  space: SpaceState,
+  _space: SpaceState,
   win: Window,
   location?: TargetLocation
 ) => {
+  let space = _space;
   if (space?.path == tagsSpacePath) {
     superstate.ui.openModal(
       "New Tag",
@@ -77,20 +78,19 @@ export const defaultAddAction = (
       ></InputModal>,
       win
     );
-  } else if (space) {
-    if (space?.metadata.template?.length > 0) {
-      newTemplateInSpace(superstate, space, space.metadata.template, location);
-      return;
-    } else {
-      newPathInSpace(superstate, space, "md", null, false, null, location);
-    }
-  } else {
-    defaultSpace(
+    return;
+  }
+  if (!space || space.type == "tag") {
+    space = await defaultSpace(
       superstate,
       superstate.pathsIndex.get(superstate.ui.activePath)
-    ).then((f) => {
-      if (f) newPathInSpace(superstate, f, "md", null, false, null, location);
-    });
+    );
+  }
+  if (space?.metadata.template?.length > 0) {
+    newTemplateInSpace(superstate, space, space.metadata.template, location);
+    return;
+  } else {
+    newPathInSpace(superstate, space, "md", null, false, null, location);
   }
 };
 
