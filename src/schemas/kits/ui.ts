@@ -449,12 +449,12 @@ export const previewNode: FrameRoot = {
     frameRootWithProps(
       imageNode,
       {
-        value: `$api.path.label(preview.props.path)?.thumbnail`,
+        value: `$api.path.label(preview.props.path)?.cover`,
       },
       {
         width: `$root.props.width`,
         height: `$root.props.height`,
-        hidden: `$api.path.label(preview.props.path)?.thumbnail?.length == 0`,
+        hidden: `$api.path.label(preview.props.path)?.cover?.length == 0`,
         borderRadius: `$root.props.radius`,
       }
     ),
@@ -466,7 +466,7 @@ export const previewNode: FrameRoot = {
       {
         width: `$root.props.width`,
         height: `$root.props.height`,
-        hidden: `$api.path.label(preview.props.path)?.thumbnail?.length > 0`,
+        hidden: `$api.path.label(preview.props.path)?.cover?.length > 0`,
         borderRadius: `$root.props.radius`,
           background: `$api.path.label(preview.props.path)?.color`,
           padding: `$root.props.padding`,

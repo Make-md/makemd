@@ -126,6 +126,7 @@ export const FrameInstanceProvider: React.FC<
         runID,
         selectedSlide,
         exec: _exec,
+        styleAst: instance.styleAst,
       }
     ).then((s) => {
       setInstance((p) => {
@@ -182,6 +183,7 @@ export const FrameInstanceProvider: React.FC<
           exec: newRoot,
           runID,
           selectedSlide,
+          styleAst: null,
         }
       ).then((s) => {
         setInstance((p) => {

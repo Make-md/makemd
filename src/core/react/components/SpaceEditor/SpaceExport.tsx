@@ -65,16 +65,25 @@ export const SpaceExport = (props: {
     if (pathState.type == "space") {
       htmlPath = path + "/index.html";
       output = await spaceToHtml(props.superstate, path, {
-        header: true,
+        header: {
+          enabled: true,
+          cover: true,
+        },
         nav: {
           enabled: options.nav,
           root: root,
         },
         head: {
+          enabled: true,
           styles: {
             enabled: true,
             themes: true,
             payload: style,
+          },
+        },
+        body: {
+          main: {
+            enabled: true,
           },
         },
       });
@@ -86,16 +95,25 @@ export const SpaceExport = (props: {
       }
       htmlPath = path.replace(new RegExp(".md$"), ".html");
       output = await noteToHtml(props.superstate, path, {
-        header: true,
+        header: {
+          cover: true,
+          enabled: true,
+        },
         nav: {
           enabled: options.nav,
           root: root,
         },
         head: {
+          enabled: true,
           styles: {
             enabled: true,
             themes: true,
             payload: style,
+          },
+        },
+        body: {
+          main: {
+            enabled: true,
           },
         },
       });

@@ -72,6 +72,9 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         this.spaceManager.onSpaceUpdated(payload.path, 'action')
       }
     }
+    public loadPath = async (path: string)  => {
+      return this.fileSystem.loadPath(path)
+    }
 
     public async readTemplates (path: string) : Promise<string[]> {
       return (await this.childrenForPath(`${path}/${this.spaceManager.superstate.settings.spaceSubFolder}/templates`)).filter(f => !f.startsWith('.')).map(f => f.split('/').pop())

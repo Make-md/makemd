@@ -65,6 +65,8 @@ export const coverListItem: FrameRoot = {
     styles: {
       layout: `"column"`,
       width: `'200px'`,
+      sem: `'contextItem'`,
+      hidden: `($api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.thumbnail ?? '').length == 0`
     },
     
   },
@@ -130,7 +132,12 @@ export const imageListItem: FrameRoot = {
     
     styles: {
       layout: `"row"`,
-      padding: `'4px'`,
+      boxShadow: `'var(--mk-shadow-card)'`,
+      margin: `'2px'`,
+      marginBottom: `'8px'`,
+      borderRadius: `'8px'`,
+      sem: `'contextItem'`,
+      hidden: `($api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.thumbnail ?? '').length == 0`
       
     },
     actions: {
@@ -186,6 +193,7 @@ export const flowListItem: FrameRoot = {
       styles: {
         layout: `"row"`,
         gap: `'8px'`,
+        sem: `'contextItem'`
       },
       actions: {
         
@@ -247,7 +255,8 @@ export const flowListItem: FrameRoot = {
         width: `'100%'`,
         height: `'100%'`,
         border: `'1px solid var(--mk-ui-border)'`,
-        boxShadow: `'var(--mk-shadow-card)'`
+        boxShadow: `'var(--mk-shadow-card)'`,
+        sem: `'contextItem'`
       },
       actions: {
         onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} });`,
@@ -303,7 +312,7 @@ export const flowListItem: FrameRoot = {
           imageNode,
           {
             
-            value: `$api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.thumbnail`,
+            value: `$api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.cover`,
           },
           {
             width: `'100%'`,
@@ -402,6 +411,7 @@ export const flowListItem: FrameRoot = {
         borderRadius: `'8px'`,
         width: `'100%'`,
         border: `'1px solid var(--mk-ui-border)'`,
+        sem: `'contextItem'`
       },
       actions: {
         onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} });`,
@@ -454,7 +464,7 @@ export const flowListItem: FrameRoot = {
       frameRootWithProps(
         imageNode,
         {
-          value: `$api.path.label($contexts.$context['_keyValue'])?.thumbnail`,
+          value: `$api.path.label($contexts.$context['_keyValue'])?.cover`,
         },
         {
           width: `'100%'`,
@@ -509,7 +519,8 @@ export const flowListItem: FrameRoot = {
         padding: `'4px'`,
         overflow: `'hidden'`,
         width: `'100%'`,
-        layoutAlign: `'n'`
+        layoutAlign: `'n'`,
+        sem: `'contextItem'`
       },
       actions: {
         onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} });`,
@@ -657,6 +668,7 @@ export const flowListItem: FrameRoot = {
         overflow: `'hidden'`,
         width: `'100%'`,
         borderBottom: `'thin solid var(--mk-ui-border)'`,
+        sem: `'contextItem'`
       },
       actions: {
         onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} }); $api.table.open($contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'], false)`,
@@ -766,13 +778,13 @@ export const flowListItem: FrameRoot = {
       frameRootWithProps(
         imageNode,
         {
-          value: `$api.path.label($contexts.$context['_keyValue'])?.thumbnail`,
+          value: `$api.path.label($contexts.$context['_keyValue'])?.cover`,
         }, {
           radius: `'4px'`,
         width: `'64px'`,
         height: `'64px'`,
           borderRadius: `'8px'`,
-          hidden: `($api.path.label($contexts.$context['_keyValue'])?.thumbnail ?? '').length == 0`
+          hidden: `($api.path.label($contexts.$context['_keyValue'])?.cover ?? '').length == 0`
         }
         
       ),
@@ -798,7 +810,8 @@ export const flowListItem: FrameRoot = {
         gap: `'12px'`,
         padding: `'8px'`,
         overflow: `'hidden'`,
-        width: `'100%'`
+        width: `'100%'`,
+        sem: `'contextItem'`
       },
       actions: {
         onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} });`,
@@ -968,6 +981,9 @@ export const flowListItem: FrameRoot = {
           alias: "Show New Item Button",
         }
       },
+      styles:{
+        sem: `'contextGroup'`
+      },
       id: "$root",
       schemaId: "$root",
       name: "Rows",
@@ -1096,7 +1112,8 @@ export const flowListItem: FrameRoot = {
       styles: {
         layout: `'column'`,
         padding:`'6px'`,
-        gap: `'8px'`
+        gap: `'8px'`,
+        sem: `'contextGroup'`
       },
       id: "$root",
       schemaId: "$root",
@@ -1146,7 +1163,8 @@ export const flowListItem: FrameRoot = {
       styles: {
         layout: `'column'`,
         padding:`'6px'`,
-        gap: `'8px'`
+        gap: `'8px'`,
+        sem: `'contextGroup'`
       },
       id: "$root",
       schemaId: "$root",
@@ -1191,6 +1209,7 @@ export const flowListItem: FrameRoot = {
       rank: 0,
         styles: {
           layout: `'column'`,
+          sem: `'contextGroup'`
         }
     },
     id: "$root",
@@ -1220,6 +1239,9 @@ export const flowListItem: FrameRoot = {
     node: {
       type: "group",
       props: {},
+      styles: {
+        sem: `'contextView'`
+      },
       id: "$root",
       schemaId: "$root",
       name: "List View",
@@ -1243,6 +1265,9 @@ export const flowListItem: FrameRoot = {
       type: "group",
       props: {},
       id: "$root",
+      styles: {
+        sem: `'contextView'`
+      },
       schemaId: "$root",
       name: "Column View",
       rank: 0,

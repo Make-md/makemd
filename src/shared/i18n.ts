@@ -738,8 +738,12 @@ class T {
           name: "Experimental",
           desc:"Experimental features that are subject to change and may not be optimized for performance",
         },
+        noteThumbnails: {
+          name: "Note Thumbnails",
+          desc: "Create thumbnails for notes"
+        },
         imageThumbnails: {
-          name: "Generate Thumbnails",
+          name: "Image Thumbnails",
           desc: "Create thumbnails for images to speed up performance"
         },
         minimalThemeFix: {

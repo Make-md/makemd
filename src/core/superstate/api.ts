@@ -122,7 +122,12 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             if (space)
             return updateTableRow(this.superstate.spaceManager, space.space, table, index, row)
         },
-        insert: (path: string, schema: string, row: DBRow) => {
+        insert: (path: string, schema: string, _row: DBRow) => {
+            const row: DBRow = Object.keys(_row).reduce((f, g) => {
+                if (g == 'undefined' || g == 'null') return f
+                return {
+                    ...f, [g]: _row[g]}
+            }, {});
             if (schema == defaultContextSchemaID) {
                 this.context.insert(path, schema, row[PathPropertyName], row)
                 return;

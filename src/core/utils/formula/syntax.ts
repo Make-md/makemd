@@ -1,6 +1,6 @@
 //adapted from https://github.com/hrbn/tally/blob/main/src/helpers/syntax.ts
 
-import { formulas } from './formulas';
+import { formulasInfos } from './formulasInfos';
 import { builtins, constants, functions, operatorKeywords, units } from './keywords';
 
 function words(array: string[]): Record<string, boolean> {
@@ -98,7 +98,7 @@ export const mathjs = {
   },
 
   languageData: {
-    autocomplete: Object.keys(formulas),
+    autocomplete: Object.keys(formulasInfos),
     closeBrackets: { brackets: ['(', '[', '{', "'", '"', '`'] },
     commentTokens: { line: '#' }
   }

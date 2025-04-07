@@ -238,7 +238,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       },
       {
         name: 'notesPreview',
-        category: 'performance',
+        category: 'notes',
         type: 'boolean',
       },
       
@@ -355,6 +355,11 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         type: 'boolean',
       },
       
+      {
+        name: 'noteThumbnails',
+        category: 'notes',
+        type: 'boolean',
+      },
       {
         name: 'imageThumbnails',
         category: 'performance',

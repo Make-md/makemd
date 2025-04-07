@@ -79,11 +79,12 @@ export const parseFieldValue = (
         }
         return false;
           
-        }).map(f => ({name: f.name, value: f.name}))) ?? []  
+        }).map(f => ({name: f.name, value: f.name}))) ?? [];
+        
       } else {
-      valueProp.options = (superstate.contextsIndex.get(path)?.contextTable?.cols?.map(f => ({name: f.name, value: f.name}))) ?? []
+        valueProp.options = (superstate.contextsIndex.get(path)?.contextTable?.cols?.map(f => ({name: f.name, value: f.name}))) ?? []
       }
-    
+      valueProp.options.unshift({name: "None", value: ''})
     }
   }
     return [...(fieldTypeForType(type).configKeys ?? []), 'alias', 'default', 'required'].reduce((p, c) => ({ ...p, [c]: valueProp[c] }), {});

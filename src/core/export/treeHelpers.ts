@@ -12,7 +12,7 @@ import { SelectOption, Superstate } from "makemd-core";
 import { defaultFrameListViewID } from "schemas/mdb";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { defaultPredicate } from "shared/schemas/predicate";
-import { FrameContexts, FrameRunInstance } from "shared/types/frameExec";
+import { FrameContexts, FrameRunInstance, StyleAst } from "shared/types/frameExec";
 import { DBRows, SpaceProperty } from "shared/types/mdb";
 import { FrameNode, FrameTreeProp, MDBFrame } from "shared/types/mframe";
 import { Predicate } from "shared/types/predicate";
@@ -33,6 +33,7 @@ export const resolvePath = (superstate: Superstate, oldPath: string, path: strin
 
 
 export const transformPath = (superstate: Superstate, oldPath: string, path: string, absolute?: boolean) => {
+  if (oldPath.startsWith('http')) return oldPath;
   let transformedPath = resolvePath(superstate, oldPath, path);
   if (oldPath.endsWith('.md')) {
       transformedPath = oldPath.replace(new RegExp('.md$'), '.html');
@@ -52,7 +53,7 @@ export const transformPath = (superstate: Superstate, oldPath: string, path: str
 return absolutePathToRelativePath(transformedPath, path);
 }
 
-export const getFrameInstanceFromPath = async (superstate: Superstate, path: string, schema: string, props: FrameTreeProp, context: FrameContexts) => {
+export const getFrameInstanceFromPath = async (superstate: Superstate, path: string, schema: string, props: FrameTreeProp, context: FrameContexts, styleAst?: StyleAst) => {
     const frameSchema = await superstate.spaceManager.readFrame(path, schema);
     const root = await buildRoot(mdbSchemaToFrameSchema(frameSchema.schema), [], frameSchema.rows.map(row => frameToNode(row)), superstate);
     const treeNode = executeTreeNode(
@@ -71,6 +72,7 @@ export const getFrameInstanceFromPath = async (superstate: Superstate, path: str
               exec: root,
               runID: '',
               selectedSlide: '',
+              styleAst: styleAst,
             }
         )
     return treeNode;
@@ -130,7 +132,7 @@ export const contextNodeToInstances = async (superstate: Superstate, node: Frame
     {
       $context: context,
 
-    })));
+    }, instance.styleAst)));
 
     const listItemInstaces = await Promise.all(Object.keys(data).map((c) => Promise.all(data[c].map((r) => getFrameInstance(superstate, listItemFrame, {
       _groupValue: c,
@@ -154,7 +156,7 @@ export const contextNodeToInstances = async (superstate: Superstate, node: Frame
           [b.name]: r[b.name],
         };
       }, {}),
-    })
+    }, instance.styleAst)
     ))));
 
     const listViewInstance = await getFrameInstance(superstate, listViewFrame, {
@@ -163,7 +165,7 @@ export const contextNodeToInstances = async (superstate: Superstate, node: Frame
     },
     {
 
-    });
+    }, instance.styleAst);
     return {
       type: 'list',
       instances: {
@@ -179,7 +181,7 @@ export const contextNodeToInstances = async (superstate: Superstate, node: Frame
       source,
     }
   }
-const getFrameInstance = async (superstate: Superstate, framePath: string, props: FrameTreeProp, context: FrameContexts) => {
+const getFrameInstance = async (superstate: Superstate, framePath: string, props: FrameTreeProp, context: FrameContexts, styleAst?: StyleAst) => {
   if (!framePath) return null;
     const uri = parseURI(framePath);
         if (uri.authority == '$kit') {
@@ -199,10 +201,11 @@ const getFrameInstance = async (superstate: Superstate, framePath: string, props
                 exec: root,
                 runID: '',
                 selectedSlide: '',
+                styleAst: styleAst
               });
             return instance;
         }
-        return await getFrameInstanceFromPath(superstate, uri.basePath, uri.ref, props, context);
+        return await getFrameInstanceFromPath(superstate, uri.basePath, uri.ref, props, context, styleAst);
 
 }
 const filterContextData = (superstate: Superstate, data: DBRows, cols: SpaceProperty[], predicate: Predicate) => {

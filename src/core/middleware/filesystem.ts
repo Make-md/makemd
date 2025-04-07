@@ -68,6 +68,16 @@ export class FilesystemMiddleware {
         
     }
 
+    public loadPath  = async (path: string) : Promise<void> => {
+        const file = await this.getFile(path);
+        if (!file) return null;
+        this.filetypeAdaptersForFile(file).forEach((adapter) => {
+            if (adapter.loadFile)
+            adapter.loadFile(file);
+        });
+        return null;
+    }
+
     public resolvePath (path: string, source: string) {
         return this.primary.resolvePath(path, source);
     }

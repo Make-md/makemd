@@ -48,6 +48,7 @@ export interface MakeMDSettings {
   inlineContext: boolean;
   inlineContextProperties: boolean;
   imageThumbnails: boolean;
+  noteThumbnails: boolean;
   inlineBacklinks: boolean;
   defaultDateFormat: string;
   defaultTimeFormat: string;

@@ -74,7 +74,6 @@ import { modifyTabSticker } from "adapters/obsidian/utils/modifyTabSticker";
 import { IconFileTypeAdapter } from "adapters/icons/iconsAdapter";
 import { MobileCachePersister } from "adapters/mdb/localCache/localCacheMobile";
 import { ObsidianCommands } from "adapters/obsidian/commands/obsidianCommands";
-import { TextCacher } from "adapters/text/textCacher";
 import { CLIManager } from "core/middleware/commands";
 import { openBlinkModal } from "core/react/components/Blink/Blink";
 import { LocalCachePersister } from "shared/types/persister";
@@ -722,8 +721,7 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
       )
     await this.loadSettings();
     
-    if (this.superstate.settings.experimental)
-      this.files.initiateFiletypeAdapter(new TextCacher(this));
+
 
     this.superstate.spaceManager.addSpaceAdapter(filesystemCosmoform, true);
     this.superstate.spaceManager.addSpaceAdapter(webSpaceAdapter);

@@ -232,9 +232,11 @@ export const parseMetadata = (
             name: settings.spacesUseAlias && aliases?.length > 0 ? aliases[0] : name,
             sticker,
             color,
-            thumbnail: pathCache?.label?.thumbnail ?? '',
+            cover: pathCache?.label?.cover ?? '',
             preview: pathCache?.label?.preview ?? '',
+            thumbnail: pathCache?.label?.thumbnail ?? '',
         },
+        
         metadata: {
             ...pathCache,
         },

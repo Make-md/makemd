@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   blinkEnabled: true,
   datePickerTime: false,
   imageThumbnails: false,
+  noteThumbnails: false,
   spacesMDBInHidden: true,
   cacheIndex: true,
   spacesRightSplit: false,

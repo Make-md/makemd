@@ -191,6 +191,9 @@ export class SpaceManager implements SpaceManagerInterface {
      public deleteSpace (path: string) {
         return this.adapterForPath(path).deleteSpace(path);
      }
+     public loadPath (path: string)  {
+        return this.adapterForPath(path).loadPath(path);
+     }
      public childrenForSpace (path: string) {
         return this.adapterForPath(path).childrenForSpace(path);
      }

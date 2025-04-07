@@ -24,6 +24,7 @@ export type FrameExecutableContext = {
   api: IAPI;
   contexts: FrameContexts;
   selectedSlide: string;
+  styleAst?: StyleAst;
 };export type FrameRunInstance = {
   id: string;
   state: FrameState;
@@ -33,6 +34,7 @@ export type FrameExecutableContext = {
   exec: FrameExecutable;
   newState?: FrameState;
   contexts: FrameContexts;
+  styleAst?: StyleAst;
 };
 export type FrameContexts = { [key: string]: FrameTreeProp; };
 export type FrameStateKeys = 'props' | 'actions' | 'styles';
@@ -107,5 +109,12 @@ export type FrameTreeNode = {
   children: FrameTreeNode[];
   editorProps: FrameEditorProps;
   parent: FrameTreeNode | null;
+};
+export type StyleAst = {
+    sem: string;
+    type: string;
+    selector: string;
+    styles: FrameTreeProp;
+    children: StyleAst[];
 };
 

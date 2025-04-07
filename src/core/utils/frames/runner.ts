@@ -1,12 +1,35 @@
 
 import { ensureArray } from 'core/utils/strings';
 import { API } from 'makemd-core';
-import { FrameContexts, FrameExecProp, FrameExecutable, FrameExecutableContext, FrameNodeState, FrameRunInstance, FrameState } from "shared/types/frameExec";
-import { FrameNode } from 'shared/types/mframe';
+import { FrameContexts, FrameExecProp, FrameExecutable, FrameExecutableContext, FrameNodeState, FrameRunInstance, FrameState, StyleAst } from "shared/types/frameExec";
+import { FrameNode, FrameTreeProp } from 'shared/types/mframe';
 import { buildExecutable } from './executable';
 import { linkTreeNodes } from './linker';
 
-export type ResultStore = { state: FrameState, newState: FrameState, slides: FrameState, prevState: FrameState };
+export type ResultStore = { state: FrameState, newState: FrameState, slides: FrameState, prevState: FrameState, styleAsts?: StyleAst[] };
+
+const styleAstsForNode = (style: FrameTreeProp, styleAsts?: StyleAst[]) : [FrameTreeProp, StyleAst[]] => {
+    if (!styleAsts) return null;
+    const newStyleAsts = [];
+    newStyleAsts.push(...styleAsts);
+        const matchedStyleAsts = styleAsts.filter(f => f.sem == style.sem);
+        
+        matchedStyleAsts.forEach(f => {
+            f.children.forEach((c) => {
+                newStyleAsts.push(c)
+            });
+        })
+        const styles = {
+            ...matchedStyleAsts.reduce((acc, curr) => {
+                return {
+                    ...acc,
+                    ...curr.styles
+                };
+            }
+            , {}),
+        }
+    return [{...style, ...styles}, newStyleAsts]
+}
 
 
 export const executeTreeNode = async (
@@ -43,8 +66,22 @@ export const executeTreeNode = async (
         
     }
     let execState = await executeNode(treeNode, store, executionContext.contexts, executionContext.api);
+    if (executionContext.styleAst) {
+        let style = execState.state[treeNode.id].styles
+        if (!store.styleAsts) {
+            store.styleAsts = executionContext.styleAst.children;
+        }
+        const computedStyles = styleAstsForNode(style, store.styleAsts);
+        if (computedStyles) {
+            const [newStyle, styleAsts] = computedStyles ?? [null, null];
+            if (newStyle) {
+                style = newStyle;
+            }
+            store.styleAsts = styleAsts;
+        }
+        execState.state[treeNode.id].styles = style;
+    }
     if (treeNode.node.type == 'list') {
-        
         
         let uid = 0;
         treeNode.children = ensureArray(execState.state[treeNode.id].props.value).flatMap((f, i) => treeNode.execPropsOptions.template.map((n) => {

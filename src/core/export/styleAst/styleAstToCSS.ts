@@ -1,5 +1,5 @@
+import { StyleAst } from "shared/types/frameExec";
 import { hyphenate } from "../treeToAst/treeToHast";
-import { StyleAst } from "./treeToStyleAst";
 
 export const styleAstToCSS = (styleAst: StyleAst): string => {
     let css = "* { box-sizing: border-box; }\n";

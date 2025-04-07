@@ -331,7 +331,11 @@ public api: API;
         const ranks = this.contextsIndex.get(spacePath)?.paths ?? [];
         
         return items.map<PathStateWithRank>((f, i) => {
-
+            if (this.spacesIndex.has(f)) {
+                this.spaceManager.loadPath(this.spacesIndex.get(f).space.notePath);
+            } else {
+                this.spaceManager.loadPath(f);
+            }
             const pathCache = this.pathsIndex.get(f);
   
             return {

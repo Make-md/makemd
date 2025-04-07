@@ -24,8 +24,8 @@ this.picaInstance = pica();
         this.middleware = middleware;
         this.cache = new Map();
     }
-public async generateThumnail (file: AFile, thumbnail: string, size=256) {
-    const binary = await this.middleware.readBinaryToFile(file.path);
+    public async generateThumbnail (file: AFile, thumbnail: string, size=256) {
+        const binary = await this.middleware.readBinaryToFile(file.path);
             if (!binary) return false;
             const srcImage = new Image();
             srcImage.src = this.middleware.resourcePathForPath(file.path);
@@ -50,6 +50,7 @@ public async generateThumnail (file: AFile, thumbnail: string, size=256) {
             await this.middleware.writeBinaryToFile(thumbnail, resizedBinary);
             return true;
 }
+public loadFile: (file: AFile) => Promise<void>;
     public async parseCache (file: AFile, refresh: boolean) {
         
         
@@ -60,7 +61,7 @@ public async generateThumnail (file: AFile, thumbnail: string, size=256) {
             if (!(await this.middleware.fileExists(thumbnailPath)))
             {
                 if (!Platform.isMobile) {
-                const thumbnailResult = await this.generateThumnail(file, thumbnailPath);
+                const thumbnailResult = await this.generateThumbnail(file, thumbnailPath);
                     if (thumbnailResult) {
                         thumbnail = thumbnailPath
                     }
@@ -77,7 +78,11 @@ public async generateThumnail (file: AFile, thumbnail: string, size=256) {
             sticker: label?.sticker.length > 0 ? label.sticker : "ui//mk-make-image",
             color: label?.color,
             thumbnail: thumbnail,
-        }}
+        },
+        preview: {
+            thumbnail: thumbnail,
+        }
+    }
         this.cache.set(file.path, updatedCache);
         this.middleware.updateFileCache(file.path, this.cache.get(file.path), refresh);
     }

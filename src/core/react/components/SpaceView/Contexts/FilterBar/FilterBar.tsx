@@ -32,7 +32,7 @@ import { formatDate } from "core/utils/date";
 import { nameForField } from "core/utils/frames/frames";
 import { isPhone } from "core/utils/ui/screen";
 import { SelectOption, SelectOptionType, Superstate, i18n } from "makemd-core";
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { fieldTypeForField, stickerForField } from "schemas/mdb";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { FrameEditorMode } from "shared/types/frameExec";
@@ -150,8 +150,18 @@ export const FilterBar = (props: {
         },
       ];
     }
-    const path = _predicate?.[frame];
-    if (!path) return [];
+    let path = _predicate?.[frame];
+    if (!path || path.length == 0) {
+      if (frame == "listView") {
+        path = "spaces://$kit/#*listView";
+      }
+      if (frame == "listGroup") {
+        path = "spaces://$kit/#*listGroup";
+      }
+      if (frame == "listItem") {
+        path = "spaces://$kit/#*rowItem";
+      }
+    }
     const uri = props.superstate.spaceManager.uriByString(path);
     if (uri.authority == "$kit") {
       const node = props.superstate.kitFrames.get(uri.ref)?.node;
@@ -477,7 +487,11 @@ export const FilterBar = (props: {
     );
   }, [predicate]);
 
-  const showViewOptionsMenu = async (e: React.MouseEvent) => {
+  const optionsMenuRef = useRef(null);
+  const showViewOptionsMenu = async (
+    e?: React.MouseEvent,
+    update?: boolean
+  ) => {
     const menuOptions: SelectOption[] = [];
 
     if (!readMode) {
@@ -654,13 +668,29 @@ export const FilterBar = (props: {
       });
     });
 
+    if (update) {
+      optionsMenuRef.current?.update(
+        defaultMenu(props.superstate.ui, menuOptions)
+      );
+      return;
+    }
     const offset = (e.target as HTMLElement).getBoundingClientRect();
-    props.superstate.ui.openMenu(
+    optionsMenuRef.current = props.superstate.ui.openMenu(
       offset,
       defaultMenu(props.superstate.ui, menuOptions),
-      windowFromDocument(e.view.document)
+      windowFromDocument(e.view.document),
+      null,
+      () => {
+        optionsMenuRef.current = null;
+      }
     );
   };
+
+  useEffect(() => {
+    if (optionsMenuRef.current) {
+      showViewOptionsMenu(null, true);
+    }
+  }, [predicate]);
 
   const addSort = (_: string[], sort: string[]) => {
     const field = sort[0];

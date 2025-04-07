@@ -531,13 +531,13 @@ export const PropertyValueComponent = (props: {
         <span>{i18n.labels.propertyType}</span>
         <span>{fieldTypeForType(parsedValue.type)?.label}</span>
       </div>
-      {fieldTypeForType(parsedValue.type).type == "number" && (
+      {fieldTypeForType(parsedValue.type)?.type == "number" && (
         <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
           <span>{i18n.labels.numberFormat}</span>
           <span>{numberFormatToString(parsedValue.format)}</span>
         </div>
       )}
-      {fieldTypeForType(parsedValue.type).type == "date" && (
+      {fieldTypeForType(parsedValue.type)?.type == "date" && (
         <div className="mk-menu-option" onClick={(e) => selectDateFormat(e)}>
           <span>{i18n.labels.dateFormat}</span>
           <span>{parsedValue.format}</span>

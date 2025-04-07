@@ -282,7 +282,9 @@ export class ObsidianUI implements UIAdapter {
           return this.getUIPath(thumb);
         }
       }
-      return this.plugin.app.vault.getResourcePath(file);
+      return `${this.plugin.app.vault.getResourcePath(file)}?${Math.floor(
+        Math.random() * 1000
+      )}`;
     } else if (path?.match(urlRegex)) {
       return path;
     }
@@ -291,7 +293,7 @@ export class ObsidianUI implements UIAdapter {
         this.plugin.app.vault.getRoot() as any
       )
     );
-    return `${returnPath}${path}`;
+    return `${returnPath}${path}?${Math.floor(Math.random() * 1000)}`;
   };
   public viewsByPath = (path: string) => {
     const abstractFile = getAbstractFileAtPath(this.plugin.app, path);

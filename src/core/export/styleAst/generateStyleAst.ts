@@ -1,6 +1,6 @@
 import { isNumber, isString } from "lodash";
 
-import { StyleAst } from "./treeToStyleAst";
+import { StyleAst } from "shared/types/frameExec";
 
 
 type StyleDefTree = {
@@ -319,10 +319,10 @@ const sems : StyleDefTree[] = [
                             children: [],
                             styles: {
                                 'padding': 'var(--size-2-2) var(--size-4-2)',
-    'border': 'var(--table-border-width) solid var(--table-border-color)',
-    'max-width': 'var(--table-column-max-width)',
-    'min-width': 'var(--table-column-min-width)',
-    'vertical-align': 'var(--table-cell-vertical-alignment)'
+                                'border': 'var(--table-border-width) solid var(--table-border-color)',
+                                'max-width': 'var(--table-column-max-width)',
+                                'min-width': 'var(--table-column-min-width)',
+                                'vertical-align': 'var(--table-cell-vertical-alignment)'
                             }
                         }],
                         styles: {}
@@ -494,7 +494,7 @@ function isNumeric(str: any) {
            !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
   }
 
-export const generateStyleAst = (): StyleAst => {
+export const generateStyleAst = (thumbnail?: boolean): StyleAst => {
     const markdownRenderer = document.createElement('div')
     markdownRenderer.classList.add('markdown-rendered')
     const defaultEl = window.getComputedStyle(markdownRenderer);
@@ -561,7 +561,7 @@ export const generateStyleAst = (): StyleAst => {
     const res: Record<string, string> = getElementCSSVariables(getAllCSSVariableNames())
     const baseStyle = {
         margin: '0',
-        'background-color': 'var(--mk-ui-background)',
+        'background-color': thumbnail ? 'var(--mk-ui-background-contrast)' : 'var(--mk-ui-background)',
         'text-rendering': 'optimizeLegibility',
     'font-family': 'var(--font-interface)',
     'line-height': 'var(--line-height-tight)',
@@ -578,7 +578,7 @@ export const generateStyleAst = (): StyleAst => {
         type: 'style',
         selector: '',
         styles: {...res, ...baseStyle},
-        children: [{
+        children: !thumbnail ? [{
             sem: 'div',
             variant: '',
             type: 'style',
@@ -591,7 +591,7 @@ export const generateStyleAst = (): StyleAst => {
                 'flex': '1',
             },
             children: children
-        }]
+        }] : children
     }    
     document.body.removeChild(markdownRenderer);
     return root;

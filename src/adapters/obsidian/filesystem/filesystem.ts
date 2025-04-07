@@ -167,10 +167,9 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                     ctime: cache.ctime > 0 ? cache.ctime : file.ctime,
                     contentTypes: file.isFolder ? [] : ['md', 'canvas', 'folder'],
                     label: {name: file.name, 
-                         thumbnail: cache.label.thumbnail, 
+                         thumbnail: cache.label.thumbnail ?? '', 
                          sticker: cache.label.sticker ?? '', 
                          color: cache.label.color ?? '',
-                            preview: cache.label.preview ?? ''
                         } as PathLabel,
                     parent: file.parent,
                     type: file.isFolder ? "space" : 'file',

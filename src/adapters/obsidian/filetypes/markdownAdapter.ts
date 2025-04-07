@@ -1,6 +1,11 @@
+import { generateStyleAst } from "core/export/styleAst/generateStyleAst";
+import { HTMLExportOptions, noteToHtml, spaceToHtml } from "core/export/toHtml/spaceToHtml";
+import { hyphenate } from "core/export/treeToAst/treeToHast";
+import { hashCode } from "core/utils/hash";
 import MakeMDPlugin from "main";
 import { AFile, FileTypeAdapter, FilesystemMiddleware, PathLabel } from "makemd-core";
-import { App, CachedMetadata, TFile, TFolder } from "obsidian";
+import { App, CachedMetadata, Platform, TFile, TFolder } from "obsidian";
+import { StyleAst } from "shared/types/frameExec";
 import { IndexMap } from "shared/types/indexMap";
 import { uniq } from "shared/utils/array";
 import { parseMultiDisplayString, parseProperty } from "utils/parsers";
@@ -99,6 +104,8 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<CleanCac
     public supportedFileTypes = ['md'];
     private linksMap: IndexMap;
     public middleware: FilesystemMiddleware;
+    public styleAst : StyleAst;
+    public thumbnailFreshCache: Map<string, boolean>;
 public app: App;
     public constructor (public plugin: MakeMDPlugin) {
         this.app = plugin.app;
@@ -108,6 +115,7 @@ public app: App;
         this.middleware = middleware;
         this.cache = new Map();
         this.linksMap = new IndexMap();
+        this.thumbnailFreshCache = new Map();
         
     }
     public metadataChange (file: TFile) {
@@ -115,7 +123,143 @@ public app: App;
         this.parseCache(tFileToAFile(file), true);
         
     }
-    
+    public cacheDirectory = ".makemd/thumbnails";
+
+    public loadFile = async (file: AFile) => {
+        
+        if (this.plugin.superstate.settings.noteThumbnails) {
+            const thumbnailPath = `${this.cacheDirectory}/${hashCode(file.path)}.jpeg`;
+            if (!(await this.middleware.fileExists(thumbnailPath)) || !this.thumbnailFreshCache.get(file.path)) 
+            {
+                if (!Platform.isMobile) {
+                    const thumbnailResult = await this.generateThumbnail(file, thumbnailPath);
+                    if (thumbnailResult) {
+                        this.parseCache(file, true);
+                        this.thumbnailFreshCache.set(file.path, true);
+                    }
+                    
+                }
+            }
+        }
+
+            
+    }  
+
+    public generateThumbnail = async(file: AFile, thumbnail: string) => {
+
+
+        const htmlToDataURL = async (
+            html: string,
+            width: number,
+            height: number,
+            backgroundColor = '#fff',
+          ): Promise<ArrayBuffer> => {
+            
+            const xmlns = 'http://www.w3.org/2000/svg'
+            const svg = document.createElementNS(xmlns, 'svg')
+            const foreignObject = document.createElementNS(xmlns, 'foreignObject')
+          
+            svg.setAttribute('width', `${width}`)
+            svg.setAttribute('height', `${height}`)
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
+          
+            foreignObject.setAttribute('width', '100%')
+            foreignObject.setAttribute('height', '100%')
+            foreignObject.setAttribute('x', '0')
+            foreignObject.setAttribute('y', '0')
+            foreignObject.setAttribute('externalResourcesRequired', 'true')
+          
+            svg.appendChild(foreignObject)
+            const node = document.createElement('div')
+            node.innerHTML = html;
+            foreignObject.appendChild(node)
+            const dataURI = await Promise.resolve()
+            .then(() => new XMLSerializer().serializeToString(svg))
+            .then(encodeURIComponent)
+            .then((html) => `data:image/svg+xml;charset=utf-8,${html}`)
+            const img : HTMLImageElement = await new Promise((resolve, reject) => {
+                const img = new Image()
+                img.onload = () => {
+                  img.decode().then(() => {
+                    requestAnimationFrame(() => resolve(img))
+                  })
+                }
+                img.onerror = reject
+                img.crossOrigin = 'anonymous'
+                img.decoding = 'async'
+                img.src = dataURI
+              })
+
+            const canvas = document.createElement('canvas')
+            const context = canvas.getContext('2d')!
+            const ratio = 1;
+            const canvasWidth = width
+            const canvasHeight = height
+
+            canvas.width = canvasWidth * ratio
+            canvas.height = canvasHeight * ratio
+
+            canvas.style.width = `${canvasWidth}`
+            canvas.style.height = `${canvasHeight}`
+            context.fillStyle = backgroundColor;
+            context.fillRect(0, 0, canvas.width, canvas.height)
+            context.drawImage(img, 0, 0, canvas.width, canvas.height)
+            
+            const blob : Blob = await new Promise((resolve) => {
+                canvas.toBlob(
+                  resolve,
+                  'image/jpeg',
+                1,
+                )
+              })
+
+              const resizedBinary = await blob.arrayBuffer();
+              return resizedBinary;
+                
+          }
+          if (!this.styleAst) {
+            this.styleAst = await generateStyleAst(true);
+            
+          }
+          const baseStyle = (Object.entries(this.styleAst.styles).map(([key, value]) => `${hyphenate(key)}: ${(value.replace(/"/g, '&quot;').replace((/  |\r\n|\n|\r/gm),""))}${this.styleAst.type == 'slide' ? '!important' : ''};`).join(" "))
+          const exportOptions: HTMLExportOptions = {
+            header: {
+                enabled: true,
+                cover: false,
+            },
+            styleAst: this.styleAst,
+            images: {
+                embed: true,
+            },
+            nav: {
+              enabled: false,
+            },
+            head: {
+                enabled: false,
+            },
+            body: {
+                main: {
+                    enabled: true,
+                    styles: baseStyle,
+                },
+            }
+          }
+
+          let html : string;
+          if (file.isFolder) {
+          html = await spaceToHtml(this.plugin.superstate, file.path, exportOptions);
+          } else {
+            html = await noteToHtml(this.plugin.superstate, file.path, exportOptions); 
+          }
+
+          const binary = await htmlToDataURL(html, 512, 800, this.styleAst.styles['--mk-ui-background-contrast']);
+            if (!(await this.middleware.fileExists(this.cacheDirectory))) {
+                await this.middleware.createFolder(this.cacheDirectory);
+            }
+            await this.middleware.writeBinaryToFile(thumbnail, binary);
+            return true;
+            
+    }
     public async parseCache (file: AFile, refresh?: boolean) {
         if (!file) return;
         const fCache = this.app.metadataCache.getCache(file.path);
@@ -165,14 +309,29 @@ public app: App;
             tasks: [],
             label: {
             name: file.name,
+            cover: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyBanner],
             thumbnail: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyBanner],
             sticker: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeySticker],
             color: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyColor],
-        }}
+        },
+        }
         
+        
+        if (this.plugin.superstate.settings.noteThumbnails) {
+            const thumbnailPath = `${this.cacheDirectory}/${hashCode(file.path)}.jpeg`;
+            if ((await this.middleware.fileExists(thumbnailPath)))
+            {
+                this.thumbnailFreshCache.set(file.path, true);
+                updatedCache.label.thumbnail = thumbnailPath;   
+            }
+        }
         if (this.plugin.superstate.settings.notesPreview) {
             const contents = await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile)
-            updatedCache.label.preview = removeMarkdown(contents.slice(fCache.frontmatterPosition?.end.offset ?? 0, 1000))
+            const newContent = removeMarkdown(contents.slice(fCache.frontmatterPosition?.end.offset ?? 0, 1000));
+            if (currentCache?.label?.preview && newContent !== currentCache.label.preview) {
+                this.thumbnailFreshCache.set(file.path, false);
+            }
+            updatedCache.label.preview = newContent;
             const tasks = this.plugin.app.metadataCache.getFileCache(getAbstractFileAtPath(this.plugin.app, file.path) as TFile)?.listItems?.filter(f => f.task);
             if (tasks) {
                 updatedCache.tasks = tasks.map(f => ({

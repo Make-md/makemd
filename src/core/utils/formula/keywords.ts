@@ -1,4 +1,3 @@
-import { formulasInfos } from "./formulas";
 
 const keywords = {
     "functions": [
@@ -463,7 +462,7 @@ const units: any[] = (() => {
 
 const builtins: string[] = 'today|tomorrow|now|time|yesterday|sum|total|average|avg'.split('|');
 const operatorKeywords: string[] = 'in|to|last|off|of|mod|xor|or|ago'.split('|');
-const allKeywords = [...units, ...builtins, ...keywords.functions, ...operatorKeywords, ...Object.keys(formulasInfos)];
+const allKeywords = [...units, ...builtins, ...keywords.functions, ...operatorKeywords];
 const sortedKeywords: any[] = allKeywords.sort((a, b) => a.length - b.length).filter((item) => item.length > 0);
 
 const functions = keywords.functions;

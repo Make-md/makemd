@@ -281,6 +281,9 @@ public async contextInitiated (path: string) {
     
     return
   }
+  public async loadPath (path: string) {
+    return
+  }
   public async saveCommand (path: string, schemaId: string, saveCommand: (prev: Command) => Command) {
     
     return false

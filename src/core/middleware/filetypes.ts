@@ -22,6 +22,7 @@ export abstract class FileTypeAdapter<T extends FileTypeCache, C extends FileTyp
     public id: string;
     public initiate: (middleware: FilesystemMiddleware) => void;
     public middleware: FilesystemMiddleware;
+    public loadFile?: (file: AFile) => Promise<void>;
     public parseCache: (file: AFile, refresh: boolean) => Promise<void>;
     public cache: Map<string, T>;
     public cacheTypes: (file: AFile) => (keyof T)[];

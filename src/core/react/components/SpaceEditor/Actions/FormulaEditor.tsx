@@ -5,7 +5,7 @@ import ReactCodeMirror, {
   ReactCodeMirrorRef,
   ViewUpdate,
 } from "@uiw/react-codemirror";
-import { FormulaInfo, formulasInfos } from "core/utils/formula/formulas";
+import { FormulaInfo, formulasInfos } from "core/utils/formula/formulasInfos";
 import { mathjs } from "core/utils/formula/syntax";
 import { Superstate } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";

@@ -14,10 +14,12 @@ export type PathCache = {
   readOnly: boolean;
 };
 
+
 export type PathLabel = {
   name: string;
   sticker: string;
   color: string;
+  cover?: string;
   thumbnail?: string;
   preview?: string;
 };

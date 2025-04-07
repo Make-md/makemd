@@ -2,6 +2,7 @@ import { RootContent } from "hast";
 import { toHtml } from "hast-util-to-html";
 import { encode } from "he";
 import { Superstate } from "makemd-core";
+import { StyleAst } from "shared/types/frameExec";
 import { generateNav } from "../nav/generateNav";
 import { generateStyleAst } from "../styleAst/generateStyleAst";
 import { styleAstToCSS } from "../styleAst/styleAstToCSS";
@@ -10,23 +11,38 @@ import { getStickerHast, treeToHast } from "../treeToAst/treeToHast";
 import { markdownToHtml } from "./mdToHtml";
 
 export type HTMLExportOptions = {
-  header: boolean;
+  header: {
+    enabled: boolean;
+    cover?: boolean;
+  };
+  styleAst?: StyleAst
+  images?: {
+    embed: boolean;
+  },
   nav: {
     enabled: boolean;
     root?: string;
   };
   head: {
-    styles: {
+    enabled?: boolean;
+    styles?: {
       enabled?: boolean;
       themes?: boolean;
       payload?: string;
     }
   };
+  body: {
+    main: {
+      enabled?: boolean;
+      styles?: string;
+    }
+  }
 }
 
 
 const generateHead =async  (superstate: Superstate, path: string, options: HTMLExportOptions) => {
   let html = '';
+  if (options.head.styles?.enabled) {
     if (options.head.styles.payload) {
       html += `<style>${options.head.styles.payload}</style>`;
     } else {
@@ -34,6 +50,7 @@ const generateHead =async  (superstate: Superstate, path: string, options: HTMLE
       const css = styleAstToCSS(styleAst);
       html += `<style>${css}</style>`;
     }
+  }
     const title = superstate.pathsIndex.get(path)?.label.name;
     html += `<title>${title}</title>`;
     html += `<meta name="viewport" content="width=device-width, initial-scale=1.0">`;
@@ -46,21 +63,24 @@ const generateHead =async  (superstate: Superstate, path: string, options: HTMLE
     return `<head>${html}</head>`;
 }
 
-const generateHeader = (superstate: Superstate, path: string, options: HTMLExportOptions) => {
+const generateHeader = async (superstate: Superstate, path: string, options: HTMLExportOptions) => {
   const { header } = options;
   let html = ''
   const pathState = superstate.pathsIndex.get(path);
   let topMargin = 'var(--file-margins)';
-  if (header) {
+  if (header?.enabled && header?.cover) {
     const cover = pathState?.metadata.property?.[superstate.settings.fmKeyBanner];
     if (cover) {
       const coverPath = transformPath(superstate, cover, path);
+      // if (options.images?.embed) {
+      //   coverPath = await embedImage(superstate, cover);
+      // }
       topMargin = '180px';
       html += `<div style="background-image: url('${coverPath}'); background-size: cover; background-position: center; height: 200px; width: 100%; left: 0; top: 0; position: absolute;"></div>`;
     }
   }
   html += `<div style="margin: 0 auto; width: 100%; margin-top: ${topMargin}; max-width: var(--file-line-width);  display: flex; position: relative; flex-direction: column; padding: 0 var(--file-margins); margin-bottom: var(--file-margins);">`;
-  if (header) {
+  if (header?.enabled) {
     let headerHTML = ''
     if (pathState.metadata.label?.[superstate.settings.fmKeySticker]?.length) {
       const sticker = pathState.label.sticker;
@@ -77,16 +97,23 @@ export const noteToHtml = async (superstate: Superstate, path: string, options: 
   let html = '';
   if (!superstate.pathsIndex.has(path)) return html;
   
+  if (options.head.enabled) {
   html += await generateHead(superstate, path, options);
+  }
   html += `<body>`
   if (options.nav.enabled) {
     html += generateNav(superstate, options.nav.root, path);
   }
-  html += `<div class="main">`;
-  html += generateHeader(superstate, path, options);
+  if (options.body.main.enabled) {
+    html += `<div class="main" ${options.body.main.styles ? `style="${options.body.main.styles}"` : ''}>`;
+  }
+  html += await generateHeader(superstate, path, options);
   const markdown = await superstate.spaceManager.readPath(path);
-  html += await markdownToHtml(superstate, markdown, path)
-  html += `</div></div></div></body>`;
+  html += await markdownToHtml(superstate, markdown, path, options)
+  if (options.body.main.enabled) {
+    html += `</div>`;
+  }
+  html += `</div></div></body>`;
   return html;
 }
 
@@ -106,14 +133,16 @@ export const spaceToHtml = async (superstate: Superstate, path: string, options:
         _schema: "main",
       },
     }
-    html += await generateHead(superstate, path, options);
+    if (options.head.enabled) {
+      html += await generateHead(superstate, path, options);
+    }
     html += `<body>`;
     if (options.nav.enabled) {
       html += generateNav(superstate, options.nav.root, path);
     }
     html += `<div class="main">`;
-    html += generateHeader(superstate, path, options);
-    html += await treeToHast(superstate, context, path, 'main').then(hast => {
+    html +=  await generateHeader(superstate, path, options);
+    html += await treeToHast(superstate, context, path, 'main', options).then(hast => {
       return toHtml({
       type: 'root',
       children: hast as RootContent[],

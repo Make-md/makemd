@@ -1,15 +1,8 @@
 import { Superstate } from "makemd-core";
-import { FrameRunInstance, FrameTreeNode } from "shared/types/frameExec";
+import { FrameRunInstance, FrameTreeNode, StyleAst } from "shared/types/frameExec";
 import { FrameTreeProp } from "shared/types/mframe";
 import { getFrameInstanceFromPath } from "../treeHelpers";
 
-export type StyleAst = {
-    sem: string;
-    type: string;
-    selector: string;
-    styles: FrameTreeProp,
-    children: StyleAst[];
-}
 export const treeNodetoStyleAst = (tree: FrameTreeNode, instance: FrameRunInstance): StyleAst => {
 
     const walk = (treeNode: FrameTreeNode, instance: FrameRunInstance): StyleAst => {

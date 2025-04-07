@@ -16,6 +16,7 @@ export interface SpaceManagerInterface {
   primarySpaceAdapter: SpaceAdapter;
   spaceAdapters: SpaceAdapter[];
   superstate: ISuperstate;
+  loadPath: (path: string) => Promise<PathCache | void>;
     readSystemCommands(): Promise<Library[]>;
     saveSystemCommand(lib: string, action: Command): Promise<void>;
     onSpaceUpdated(path: string, type: SpaceFragmentType): void;
@@ -107,6 +108,7 @@ export interface SpaceManagerInterface {
 export abstract class SpaceAdapter {
   //authorities that this cosmoform supports
   public schemes: string[];
+  public loadPath: (path: string) => Promise<PathCache | void>;
   public initiateAdapter: (manager: SpaceManagerInterface) => void;
   //basic space operations
   public spaceInfoForPath: (path: string) => SpaceInfo;
