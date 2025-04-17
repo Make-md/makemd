@@ -99,7 +99,6 @@ export const listIncludes: FilterFunction = (
   value: string,
   filterValue: string
 ): boolean => {
-  
   const valueList = value ? parseMultiString(value) : [];
   const strings = filterValue ? parseMultiString(filterValue) : [];
   if (valueList.length == 0) return false;

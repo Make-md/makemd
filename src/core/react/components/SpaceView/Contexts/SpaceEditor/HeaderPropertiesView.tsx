@@ -240,11 +240,7 @@ export const HeaderPropertiesView = (props: {
     const relationContexts = cols
       .filter((f) => f.property.type.startsWith("context"))
       .map((f) => {
-        const value = parseFieldValue(
-          f.property.value,
-          f.property.type,
-          props.superstate
-        );
+        const value = parseFieldValue(f.property.value, f.property.type);
         return value.space;
       })
       .filter((f) => f);

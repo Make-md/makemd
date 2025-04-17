@@ -62,10 +62,9 @@ export const ContextListView = (props: {
     if (!groupBy) return [""];
     const options: string[] = uniq([
       "",
-      ...(
-        parseFieldValue(groupBy.value, groupBy.type, props.superstate)
-          ?.options ?? []
-      ).map((f: SelectOption) => f.value),
+      ...(parseFieldValue(groupBy.value, groupBy.type)?.options ?? []).map(
+        (f: SelectOption) => f.value
+      ),
       ...data.reduce(
         (p, c) => [...p, c[groupBy.name + groupBy.table] ?? ""],
         []

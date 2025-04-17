@@ -268,6 +268,41 @@ export const showSpaceContextMenu = (
             updateSpaceSort(superstate, space.path, createdTimeSortOptionDesc);
           },
         });
+        sortOptions.push(menuSeparator);
+        const modifiedTimeSortOption: SpaceSort = {
+          field: "mtime",
+          asc: false,
+          group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
+        };
+        sortOptions.push({
+          name: i18n.menu.modifiedTimeSortAsc,
+          icon: "ui//arrow-up-down",
+          value:
+            space.metadata.sort.field == modifiedTimeSortOption.field &&
+            space.metadata.sort.asc == modifiedTimeSortOption.asc,
+          type: SelectOptionType.Radio,
+          onClick: (e) => {
+            updateSpaceSort(superstate, space.path, modifiedTimeSortOption);
+          },
+        });
+        const modifiedTimeSortOptionDesc: SpaceSort = {
+          field: "mtime",
+          asc: true,
+          group: space.metadata.sort.group,
+          recursive: space.metadata.sort.recursive,
+        };
+        sortOptions.push({
+          name: i18n.menu.modifiedTimeSortDesc,
+          icon: "ui//arrow-up-down",
+          value:
+            space.metadata.sort.field == modifiedTimeSortOptionDesc.field &&
+            space.metadata.sort.asc == modifiedTimeSortOptionDesc.asc,
+          type: SelectOptionType.Radio,
+          onClick: (e) => {
+            updateSpaceSort(superstate, space.path, modifiedTimeSortOptionDesc);
+          },
+        });
 
         sortOptions.push(menuSeparator);
         const sizeSortOption: SpaceSort = {

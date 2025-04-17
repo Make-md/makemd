@@ -28,7 +28,7 @@ export const ContextCell = (
   }
 ) => {
   const fieldValue = useMemo(
-    () => parseFieldValue(props.propertyValue, "context", props.superstate),
+    () => parseFieldValue(props.propertyValue, "context"),
     [props.propertyValue]
   );
   const spacePath = useMemo(

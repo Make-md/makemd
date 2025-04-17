@@ -214,8 +214,8 @@ export const ContextEditorProvider: React.FC<
           }
           for (const c of f.cols) {
             if (c.type.startsWith("context")) {
-              const value = parseFieldValue(c.value, c.type, props.superstate);
-              loadContextFields(value.space);
+              const value = parseFieldValue(c.value, c.type);
+              if (value.space) loadContextFields(value.space);
             }
           }
           updateTable(f);

@@ -93,7 +93,7 @@ export const PropertiesSubmenu = (
           return;
         if (compatibleTypes.includes(g.type)) {
           menuOptions.push({
-            name: nameForField(g, props.superstate),
+            name: nameForField(g),
             icon: stickerForField(g),
             description: defaultContextName(c),
             onClick: () => {
@@ -104,7 +104,7 @@ export const PropertiesSubmenu = (
         if (g.type == "link" || g.type == "image" || g.type == "file") {
           if (field.type == "icon")
             menuOptions.push({
-              name: `${nameForField(g, props.superstate)} Sticker`,
+              name: `${nameForField(g)} Sticker`,
               icon: stickerForField(g),
               description: defaultContextName(c),
               onClick: () => {
@@ -116,10 +116,7 @@ export const PropertiesSubmenu = (
             });
           if (field.type == "text")
             menuOptions.push({
-              name: i18n.editor.linkName.replace(
-                "${1}",
-                nameForField(g, props.superstate)
-              ),
+              name: i18n.editor.linkName.replace("${1}", nameForField(g)),
               icon: stickerForField(g),
               description: defaultContextName(c),
               onClick: () => {
@@ -131,10 +128,7 @@ export const PropertiesSubmenu = (
             });
           if (field.type == "image")
             menuOptions.push({
-              name: i18n.editor.linkThumbnail.replace(
-                "${1}",
-                nameForField(g, props.superstate)
-              ),
+              name: i18n.editor.linkThumbnail.replace("${1}", nameForField(g)),
               icon: stickerForField(g),
               description: defaultContextName(c),
               onClick: () => {
@@ -167,10 +161,7 @@ export const PropertiesSubmenu = (
         if (g.type == "link" || g.type == "image" || g.type == "file") {
           if (field.type == "icon")
             menuOptions.push({
-              name: i18n.editor.linkSticker.replace(
-                "${1}",
-                nameForField(g, props.superstate)
-              ),
+              name: i18n.editor.linkSticker.replace("${1}", nameForField(g)),
               icon: stickerForField(g),
               onClick: () => {
                 savePropValue(
@@ -193,10 +184,7 @@ export const PropertiesSubmenu = (
         }
         if (field.type == "text" && (g.type == "link" || g.type == "file"))
           menuOptions.push({
-            name: i18n.editor.linkName.replace(
-              "${1}",
-              nameForField(g, props.superstate)
-            ),
+            name: i18n.editor.linkName.replace("${1}", nameForField(g)),
             icon: stickerForField(g),
             onClick: () => {
               savePropValue(
@@ -228,22 +216,13 @@ export const PropertiesSubmenu = (
       return removeTrailingSemicolon(value);
     }
     if (field.type == "option") {
-      const parsedValue = parseFieldValue(
-        field.value,
-        field.type,
-        props.superstate,
-        pathState.path
-      );
+      const parsedValue = parseFieldValue(field.value, field.type);
 
       const options: SelectOption[] = parsedValue.options ?? [];
       return options.find((f) => f.value == removeQuotes(value))?.name ?? null;
     }
     if (field.type == "super") {
-      const parsedValue = parseFieldValue(
-        field.value,
-        field.type,
-        props.superstate
-      );
+      const parsedValue = parseFieldValue(field.value, field.type);
       const superPropertyName = parsedValue.dynamic
         ? removeQuotes(frameProps[parsedValue.field ?? ""])
         : parsedValue.field;

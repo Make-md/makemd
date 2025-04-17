@@ -1,4 +1,4 @@
-import { Superstate } from "makemd-core";
+import { SelectOption, Superstate } from "makemd-core";
 import { safelyParseJSON } from "shared/utils/json";
 import { parseMultiString } from "utils/parsers";
 import { fieldTypeForType } from "../../schemas/mdb";
@@ -46,11 +46,61 @@ export const parseFlexValue = (dataString: string) => {
     
 }
 
+export const parseSourceOptions = (superstate: Superstate, source: string, context: string, path: string, sourceProps: Record<string, any>) => {
+  const options: SelectOption[] = [];
+  if (source == "$commands") {
+    return superstate.cli.allCommands().map((f) => {
+      return {
+        name: f.schema.name,
+        value: f.path,
+        section: f.schema.type,
+      };
+    });
+  } else if (source == "$links") {
+    return superstate.spaceManager
+      .allPaths()
+      .map((f) => ({ name: f, value: f }));
+  } else if (source == "$super") {
+    return allActions(superstate, context);
+  } else if (source == "$properties") {
+    if (sourceProps?.type?.length > 0) {
+      options.push(
+        ...(superstate.contextsIndex
+          .get(path)
+          ?.contextTable?.cols?.filter((f) => {
+            if (f.type == sourceProps?.type) {
+              if (sourceProps?.type == "object") {
+                if (sourceProps?.typeName) {
+                  return (
+                    parseFieldValue(f.value, f.type)?.typeName ==
+                    sourceProps?.typeName
+                  );
+                }
+              }
+              return true;
+            }
+            return false;
+          })
+          .map((f) => ({ name: f.name, value: f.name })) ?? [])
+      );
+    } else {
+      options.push(
+        ...(superstate.contextsIndex
+          .get(path)
+          ?.contextTable?.cols?.map((f) => ({
+            name: f.name,
+            value: f.name,
+          })) ?? [])
+      );
+    }
+    options.unshift({ name: "None", value: "" });
+  }
+  return options
+}
+
 export const parseFieldValue = (
   value: string,
   type: string,
-  superstate?: Superstate,
-  path?: string,
 ): Record<string, any> => {
   let valueProp = safelyParseJSON(value);
   if (valueProp) {
@@ -58,35 +108,7 @@ export const parseFieldValue = (
       if (valueProp.field)
       return convertFileProp(valueProp);
     }
-    if (type == 'option' && valueProp.source?.length > 0) {
-      if (valueProp.source == '$commands') {
-        valueProp.options =  superstate.cli.allCommands()
-    } else if (valueProp.source == '$links') {
-        valueProp.options = superstate.spaceManager.allPaths().map(f =>({name: f, value: f}))
-    } else if (valueProp.source == '$super') {
-      valueProp.options = allActions(superstate,path)
-    } else if (valueProp.source == '$properties') {
-      if (valueProp.sourceProps?.type?.length > 0)
-      {
-        valueProp.options = (superstate.contextsIndex.get(path)?.contextTable?.cols?.filter(f => {
-          if (f.type == valueProp.sourceProps?.type) {
-          if (valueProp.sourceProps?.type == 'object') {
-            if (valueProp.sourceProps?.typeName) {
-              return parseFieldValue(f.value, f.type)?.typeName == valueProp.sourceProps?.typeName
-            }
-          }
-            return true;
-        }
-        return false;
-          
-        }).map(f => ({name: f.name, value: f.name}))) ?? [];
-        
-      } else {
-        valueProp.options = (superstate.contextsIndex.get(path)?.contextTable?.cols?.map(f => ({name: f.name, value: f.name}))) ?? []
-      }
-      valueProp.options.unshift({name: "None", value: ''})
-    }
-  }
+    
     return [...(fieldTypeForType(type).configKeys ?? []), 'alias', 'default', 'required'].reduce((p, c) => ({ ...p, [c]: valueProp[c] }), {});
   }
   if (!type) return {};

@@ -1,5 +1,8 @@
 import { ObjectCell } from "core/react/components/SpaceView/Contexts/DataTypeView/ObjectCell";
-import { parseFieldValue } from "core/schemas/parseFieldValue";
+import {
+  parseFieldValue,
+  parseSourceOptions,
+} from "core/schemas/parseFieldValue";
 import { RepeatTemplate } from "core/utils/contexts/fields/presets";
 import { Superstate } from "makemd-core";
 import React from "react";
@@ -39,14 +42,17 @@ export const showSetValueMenu = (
       DatePickerTimeMode.None
     );
   } else if (property.type == "option") {
-    const propertyValue = parseFieldValue(
-      property.value,
-      property.type,
-      superstate,
-      path
-    );
-    const options = propertyValue?.options ?? [];
-
+    const propertyValue = parseFieldValue(property.value, property.type);
+    const options =
+      propertyValue?.source?.length > 0
+        ? parseSourceOptions(
+            superstate,
+            propertyValue?.source,
+            path,
+            path,
+            propertyValue?.sourceProps
+          )
+        : propertyValue?.options ?? [];
     if (
       propertyValue.source == "$properties" &&
       propertyValue.sourceProps?.type

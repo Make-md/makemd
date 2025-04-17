@@ -22,7 +22,7 @@ export const FormulaCell = (
 ) => {
   const initialValue = ensureString(props.initialValue);
   const parsedValue = useMemo(
-    () => parseFieldValue(props.propertyValue, "fileprop", props.superstate),
+    () => parseFieldValue(props.propertyValue, "fileprop"),
     [props.propertyValue]
   );
   const saveParsedValue = (field: string, value: any) => {

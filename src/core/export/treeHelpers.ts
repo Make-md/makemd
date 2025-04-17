@@ -93,7 +93,7 @@ export const contextNodeToInstances = async (superstate: Superstate, node: Frame
     const source = schema.def?.context ?? uri.basePath;
     const dbTable = await superstate.spaceManager.readTable(source, db);
     const predicate = {...defaultPredicate, ...(safelyParseJSON(schema.predicate) ?? {})} as Predicate;
-    const data = filterContextData(superstate, dbTable.rows.map((f, i) => ({...f, _index: i.toString()})), dbTable.cols, predicate);
+    const data = filterContextData(dbTable.rows.map((f, i) => ({...f, _index: i.toString()})), dbTable.cols, predicate);
     const groupBy = dbTable.cols.find((f) => f.name == predicate.groupBy?.[0]);
     const cols = dbTable.cols;
     if (predicate.view == 'table') {
@@ -208,7 +208,7 @@ const getFrameInstance = async (superstate: Superstate, framePath: string, props
         return await getFrameInstanceFromPath(superstate, uri.basePath, uri.ref, props, context, styleAst);
 
 }
-const filterContextData = (superstate: Superstate, data: DBRows, cols: SpaceProperty[], predicate: Predicate) => {
+const filterContextData = (data: DBRows, cols: SpaceProperty[], predicate: Predicate) => {
   const filteredData = data
           .filter((f) => {
             return (predicate?.filters ?? []).reduce((p, c) => {
@@ -242,7 +242,7 @@ const filterContextData = (superstate: Superstate, data: DBRows, cols: SpaceProp
         const options: string[] = uniq([
           "",
           ...(
-            parseFieldValue(groupBy?.value, groupBy?.type, superstate)
+            parseFieldValue(groupBy?.value, groupBy?.type)
               ?.options ?? []
           ).map((f: SelectOption) => f.value),
           ...filteredData.reduce(

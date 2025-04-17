@@ -365,11 +365,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         category: 'performance',
         type: 'boolean',
       },
-      {
-        name: 'searchWorker',
-        category: 'performance',
-        type: 'boolean',
-      },
+      
       {
         name: 'cacheIndex',
         category: 'performance',

@@ -13,7 +13,6 @@ import {
   defaultSpace,
   newPathInSpace,
 } from "core/superstate/utils/spaces";
-import { fastSearch, searchPath } from "core/superstate/workers/search/impl";
 import { BlinkMode } from "../../../../shared/types/blink";
 import { PathView } from "../PathView/PathView";
 import { SpaceQuery } from "../SpaceEditor/SpaceQuery";
@@ -131,22 +130,6 @@ export const BlinkComponent = (props: {
         label: "New Space",
       });
       if (filters.length == 0) {
-        if (!props.superstate.settings.searchWorker) {
-          const g = fastSearch({
-            query,
-            pathsIndex: props.superstate.pathsIndex,
-            count: 10,
-          });
-          setFilteredPaths([
-            {
-              type: "section",
-              label: "Results",
-            },
-            ...g.map((f) => pathToBlinkItem(f)),
-            ...defaultSpaces,
-          ]);
-          return;
-        }
         props.superstate.search(path, query).then((g) =>
           setFilteredPaths([
             {
@@ -160,22 +143,6 @@ export const BlinkComponent = (props: {
         return;
       }
 
-      if (!props.superstate.settings.searchWorker) {
-        const results = searchPath({
-          queries: _queries,
-          count: 10,
-          pathsIndex: props.superstate.pathsIndex,
-        });
-        setFilteredPaths([
-          {
-            type: "section",
-            label: "Results",
-          },
-          ...results.map((f) => pathToBlinkItem(f)),
-          ...defaultSpaces,
-        ]);
-        return;
-      }
       props.superstate
         .search(path, null, _queries)
         .then((g) => setFilteredPaths(g.map((f) => pathToBlinkItem(f))));

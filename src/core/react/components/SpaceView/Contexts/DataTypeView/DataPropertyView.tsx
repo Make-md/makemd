@@ -24,11 +24,7 @@ export const DataPropertyView = (props: DataPropertyViewProps) => {
     [props.column]
   );
 
-  const parsedValue = parseFieldValue(
-    props.column.value,
-    props.column.type,
-    props.superstate
-  );
+  const parsedValue = parseFieldValue(props.column.value, props.column.type);
   const saveType = (newType: ObjectType, _value: Record<string, string>) => {
     const value = parseObject(
       props.initialValue ?? "",

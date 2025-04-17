@@ -78,7 +78,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   selectedKit: "default",
   actionMaxSteps: 100,
   contextPagination: 25,
-  searchWorker: false,
   skipFolderNames: [],
   skipFolders: [],
   enhancedLogs: false,

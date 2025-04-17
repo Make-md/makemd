@@ -1,4 +1,5 @@
 import { saveSpaceCache } from "core/superstate/utils/spaces";
+import { isString } from "lodash";
 import { Superstate } from "makemd-core";
 import React, { useEffect, useMemo, useState } from "react";
 import { SpaceState } from "shared/types/PathState";
@@ -57,11 +58,13 @@ export const SpaceItemProperty = (props: {
       windowFromDocument(e.view.document),
       props.superstate,
       (path) => {
-        const newLinks = [...metadata.links, path];
-        saveMetadata({
-          ...metadata,
-          links: newLinks,
-        });
+        if (isString(path)) {
+          const newLinks = [...metadata.links, path];
+          saveMetadata({
+            ...metadata,
+            links: newLinks,
+          });
+        }
       }
     );
   };

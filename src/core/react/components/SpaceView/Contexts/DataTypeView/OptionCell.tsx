@@ -3,7 +3,10 @@ import {
   menuInput,
   menuSeparator,
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
-import { parseFieldValue } from "core/schemas/parseFieldValue";
+import {
+  parseFieldValue,
+  parseSourceOptions,
+} from "core/schemas/parseFieldValue";
 import { serializeOptionValue } from "core/utils/serializer";
 import { uniq } from "lodash";
 import { SelectMenuProps, SelectOption, Superstate } from "makemd-core";
@@ -32,13 +35,7 @@ export const OptionCell = (
   }
 ) => {
   const parsedValue = useMemo(
-    () =>
-      parseFieldValue(
-        props.propertyValue,
-        "option",
-        props.superstate,
-        props.source
-      ),
+    () => parseFieldValue(props.propertyValue, "option"),
     [props.propertyValue, props.source]
   );
 
@@ -48,6 +45,15 @@ export const OptionCell = (
     editMode: CellEditMode,
     editable: boolean
   ): SelectOption[] => {
+    if (parsedValue.source?.length > 0) {
+      parseSourceOptions(
+        props.superstate,
+        parsedValue.source,
+        props.source,
+        props.path,
+        parsedValue.sourceProps
+      );
+    }
     return [
       ...(((_options as SelectOption[]) ?? [])
         .filter((f) => f.value)

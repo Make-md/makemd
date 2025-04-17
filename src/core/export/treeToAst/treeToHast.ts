@@ -337,27 +337,27 @@ const contextNodeToHast = async (superstate: Superstate, node: FrameNode, instan
     return listView
 }
 
-// export const embedImage = async (superstate: Superstate, path: string) => {
-//   const imageUrlToBase64 = async (url: string) : Promise<string> => {
-//     const xhr = new XMLHttpRequest();
-//     return new Promise((resolve, reject) => {
-//     xhr.onload = async () => {
+export const embedImage = async (superstate: Superstate, path: string) => {
+  const imageUrlToBase64 = async (url: string) : Promise<string> => {
+    const xhr = new XMLHttpRequest();
+    return new Promise((resolve, reject) => {
+    xhr.onload = async () => {
       
-//         const reader = new FileReader();
-//         reader.onloadend = () => {
-//           const base64data = reader.result;
-//           resolve(base64data as string);
-//         };
-//         reader.onerror = reject;
-//       };
-//       xhr.open('GET', url);
-//       xhr.responseType = 'blob';
-//       xhr.send();
-//     })
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result;
+          resolve(base64data as string);
+        };
+        reader.onerror = reject;
+      };
+      xhr.open('GET', url);
+      xhr.responseType = 'blob';
+      xhr.send();
+    })
     
-//   };
-//   return imageUrlToBase64(path.startsWith('http') ? path : superstate.ui.getUIPath(path));
-// }
+  };
+  return imageUrlToBase64(path.startsWith('http') ? path : superstate.ui.getUIPath(path));
+}
 
 
 export const treeNodeToHast =  async (superstate: Superstate, treeNode: FrameTreeNode, instance: FrameRunInstance, content: Node[], path: string, options?: HTMLExportOptions) :Promise<Node[]> => {

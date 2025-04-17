@@ -7,7 +7,7 @@ export const showLinkMenu = (
   offset: Rect,
   win: Window,
   superstate: Superstate,
-  saveLink: (link: string) => void,
+  saveLink: (link: string | string[]) => void,
   options?: Partial<SelectMenuProps>
 ) => {
   const suggestions = [...superstate.pathsIndex.values()]
@@ -31,12 +31,12 @@ export const showLinkMenu = (
     offset,
     {
       ui: superstate.ui,
-      multi: false,
+      multi: options?.multi,
       editable: true,
-      value: [],
+      value: options?.value ?? [],
       options: suggestions,
       saveOptions: (_: string[], value: string[]) => {
-        saveLink(value[0]);
+        options?.multi ? saveLink(value) : saveLink(value[0]);
       },
       placeholder: i18n.labels.linkItemSelectPlaceholder,
       detail: true,

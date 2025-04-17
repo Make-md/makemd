@@ -15,6 +15,7 @@ import {
   spaceRowHeight,
 } from "core/superstate/utils/spaces";
 import { isTouchScreen } from "core/utils/ui/screen";
+import { isString } from "lodash";
 import { Superstate } from "makemd-core";
 import React, {
   CSSProperties,
@@ -231,7 +232,9 @@ export const TreeItem = (props: TreeItemProps) => {
         windowFromDocument(e.view.document),
         superstate,
         (link) => {
-          pinPathToSpaceAtIndex(superstate, space, link);
+          if (isString(link)) {
+            pinPathToSpaceAtIndex(superstate, space, link);
+          }
         },
         { placeholder: i18n.labels.pinNotePlaceholder }
       );

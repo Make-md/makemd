@@ -208,9 +208,7 @@ export const showPropertyMenu = (
 
   if (!flex) {
     menuOptions.push(
-      menuInput(nameForField(field, props.superstate) ?? "", (value) =>
-        saveName(value)
-      )
+      menuInput(nameForField(field) ?? "", (value) => saveName(value))
     );
   }
   menuOptions.push(menuSeparator);

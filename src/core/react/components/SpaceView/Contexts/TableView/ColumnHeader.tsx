@@ -186,7 +186,7 @@ export const ColumnHeader = (props: {
               }}
             ></div>
             <div className="mk-path-context-field-key">
-              {nameForField(field, props.superstate)}
+              {nameForField(field)}
             </div>
           </>
         ) : (

@@ -24,11 +24,7 @@ export const AggregateCell = (
 ) => {
   const initialValue = ensureString(props.initialValue);
   const type = useMemo(() => {
-    const fieldValue = parseFieldValue(
-      props.propertyValue,
-      "aggregate",
-      props.superstate
-    );
+    const fieldValue = parseFieldValue(props.propertyValue, "aggregate");
     if (fieldValue.fn == "values") {
       const ref = fieldValue?.ref;
       if (ref == "$items") {
@@ -40,11 +36,7 @@ export const AggregateCell = (
       }
       const refField = props.columns.find((f) => f.name == fieldValue?.ref);
       if (refField) {
-        const refFieldValue = parseFieldValue(
-          refField.value,
-          refField.type,
-          props.superstate
-        );
+        const refFieldValue = parseFieldValue(refField.value, refField.type);
         const spacePath = refFieldValue?.space;
         const column = fieldValue?.field;
         const col = props.superstate.contextsIndex

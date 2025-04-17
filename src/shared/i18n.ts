@@ -708,10 +708,7 @@ class T {
           folderNote: "Folder Note",
           notes: "Notes",
         },
-        searchWorker: {
-          name: "Background Search",
-          desc: "Search in background to improve reponsiveness while searching",
-        },
+        
         cacheIndex: {
           name: "Cache Search Index",
           desc: "Cache the index for faster search results",

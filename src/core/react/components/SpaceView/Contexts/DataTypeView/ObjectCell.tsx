@@ -189,11 +189,7 @@ export const ObjectCell = (
     row: DBRow;
   }
 ) => {
-  const parsedValue = parseFieldValue(
-    props.propertyValue,
-    "object",
-    props.superstate
-  );
+  const parsedValue = parseFieldValue(props.propertyValue, "object");
   const type = parsedValue.type as ObjectType;
   const { initialValue, superstate } = props;
   const value = useMemo(

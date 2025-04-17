@@ -512,11 +512,7 @@ export const TableView = (props: { superstate: Superstate }) => {
     col: SpaceProperty
   ) => {
     if (agType == "number") {
-      const parsedValue = parseFieldValue(
-        col.value,
-        col.type,
-        props.superstate
-      );
+      const parsedValue = parseFieldValue(col.value, col.type);
       if (parsedValue?.format?.length > 0) {
         return format(parsedValue.format, parseInt(value));
       }

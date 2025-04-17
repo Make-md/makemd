@@ -1,6 +1,6 @@
 import { formulas } from "core/utils/formula/formulas";
 import * as math from 'mathjs';
-import { parseAllContexts, parseAllPaths, parseContext, parsePath } from "./impl";
+import { indexAllPaths, parseAllContexts, parseAllPaths, parseContext, parsePath } from "./impl";
 const ctx: Worker = self as any;
 
 const all = {
@@ -33,6 +33,8 @@ ctx.onmessage = async evt => {
             result = parseAllContexts(payload, runContext)
         } else if (job.type == 'paths') {
             result = parseAllPaths(payload)
+        } else if (job.type == 'index') {
+            result = indexAllPaths(payload);
         }
     try {
         (postMessage as any)({ job, result });

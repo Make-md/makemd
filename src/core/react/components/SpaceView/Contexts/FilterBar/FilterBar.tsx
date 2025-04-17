@@ -31,6 +31,7 @@ import { sortFnTypes } from "core/utils/contexts/predicate/sort";
 import { formatDate } from "core/utils/date";
 import { nameForField } from "core/utils/frames/frames";
 import { isPhone } from "core/utils/ui/screen";
+import { isString } from "lodash";
 import { SelectOption, SelectOptionType, Superstate, i18n } from "makemd-core";
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { fieldTypeForField, stickerForField } from "schemas/mdb";
@@ -593,7 +594,7 @@ export const FilterBar = (props: {
     };
     listViewOptions.forEach((f) => {
       menuOptions.push({
-        name: nameForField(f, props.superstate),
+        name: nameForField(f),
         icon: stickerForField(f),
         type: SelectOptionType.Disclosure,
         value: predicate.listViewProps?.[f.name],
@@ -618,7 +619,7 @@ export const FilterBar = (props: {
     });
     listGroupOptions.forEach((f) => {
       menuOptions.push({
-        name: nameForField(f, props.superstate),
+        name: nameForField(f),
         icon: stickerForField(f),
         type: SelectOptionType.Disclosure,
         value: predicate.listGroupProps?.[f.name],
@@ -644,7 +645,7 @@ export const FilterBar = (props: {
     });
     listItemOptions.forEach((f) => {
       menuOptions.push({
-        name: nameForField(f, props.superstate),
+        name: nameForField(f),
         icon: stickerForField(f),
         type: SelectOptionType.Disclosure,
         value: predicate.listItemProps?.[f.name],
@@ -1155,7 +1156,9 @@ export const FilterBar = (props: {
             windowFromDocument(e.view.document),
             props.superstate,
             (link) => {
-              saveValue(link);
+              if (isString(link)) {
+                saveValue(link);
+              }
             },
             { multi: true }
           );
@@ -1225,10 +1228,10 @@ export const FilterBar = (props: {
               offset,
               windowFromDocument(e.view.document),
               props.superstate,
-              (link) => {
-                saveOptions([link], [link]);
+              (link: string[]) => {
+                saveOptions(link, link);
               },
-              { multi: true }
+              { multi: true, value: parseMultiString(filter.value) }
             );
             e.stopPropagation();
           } else if (col.type.startsWith("tags")) {
@@ -1262,17 +1265,17 @@ export const FilterBar = (props: {
     () => [
       ...listGroupOptions.filter(
         (f) =>
-          parseFieldValue(f.value, f.type, props.superstate).required &&
+          parseFieldValue(f.value, f.type).required &&
           !(predicate.listGroupProps?.[f.name]?.length > 0)
       ),
       ...listViewOptions.filter(
         (f) =>
-          parseFieldValue(f.value, f.type, props.superstate).required &&
+          parseFieldValue(f.value, f.type).required &&
           !(predicate.listViewProps?.[f.name]?.length > 0)
       ),
       ...listItemOptions.filter(
         (f) =>
-          parseFieldValue(f.value, f.type, props.superstate).required &&
+          parseFieldValue(f.value, f.type).required &&
           !(predicate.listItemProps?.[f.name]?.length > 0)
       ),
     ],
@@ -1408,7 +1411,7 @@ export const FilterBar = (props: {
       {missingOptions.length > 0 && (
         <div className="mk-view-config-warning">
           {missingOptions.map((f) => (
-            <div key={f.name}>{nameForField(f, props.superstate)}</div>
+            <div key={f.name}>{nameForField(f)}</div>
           ))}
           {"are required for this layout"}
         </div>
@@ -1605,6 +1608,7 @@ export const FilterValueSpan = (props: {
                   superstate={props.superstate}
                   key={i}
                   path={f}
+                  onClick={() => {}}
                 ></PathCrumb>
               )
             )}

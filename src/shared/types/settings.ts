@@ -79,7 +79,6 @@ export interface MakeMDSettings {
   selectedKit: string;
   actionMaxSteps: number;
   contextPagination: number;
-  searchWorker: boolean;
   newNotePlaceholder: string;
   cacheIndex: boolean;
   enhancedLogs: boolean;

@@ -1,6 +1,5 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { Superstate } from "makemd-core";
 import { DBRow, SpaceProperty } from "shared/types/mdb";
 import { FrameNode, FrameRoot, FrameTreeProp, MFrame } from "shared/types/mframe";
 import { SpaceInfo } from "shared/types/spaceInfo";
@@ -15,9 +14,9 @@ export const propFieldFromString = (str: string, schemaProps: SpaceProperty[]) =
   return schemaProps.find((f) => str == `${f.schemaId}.props.${f.name}`);
 }
 
-export const nameForField = (field: SpaceProperty, superstate: Superstate) => {
+export const nameForField = (field: SpaceProperty) => {
   if (!field) return null;
-  const parsedValue = parseFieldValue(field.value, field.type, superstate);
+  const parsedValue = parseFieldValue(field.value, field.type);
   
   return parsedValue.alias ?? field.name
 }

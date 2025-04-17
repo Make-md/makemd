@@ -156,6 +156,17 @@ export class Indexer {
             this.busy[workerId] = true;
             return;
         }
+        if (job.type == 'index') {
+            const pathsIndex = this.cache.pathsIndex;
+            this.message(workerId, {
+                job,
+                payload: {
+                    pathsIndex,
+                }
+            })
+            this.busy[workerId] = true;
+            return;
+        }
         if (job.type == 'context')
         {
             const space = this.cache.spacesIndex.get(job.path)?.space

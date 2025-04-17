@@ -3,6 +3,7 @@ import {
   saveSpaceCache,
   saveSpaceTemplate,
 } from "core/superstate/utils/spaces";
+import { isString } from "lodash";
 import { i18n, SelectOptionType, Superstate } from "makemd-core";
 import React, { useContext, useMemo } from "react";
 import { defaultTableFields } from "shared/schemas/fields";
@@ -76,7 +77,8 @@ export const SpaceHeaderBar = (props: {
   };
   const newTemplate = (offset: Rect, win: Window) => {
     return showLinkMenu(offset, win, props.superstate, (space) => {
-      saveSpaceTemplate(props.superstate, spaceState.path, space);
+      if (isString(space))
+        saveSpaceTemplate(props.superstate, spaceState.path, space);
     });
   };
   const addNew = (e: React.MouseEvent) => {

@@ -10,6 +10,7 @@ import {
   setTemplateInSpace,
   setTemplateNameInSpace,
 } from "core/superstate/utils/spaces";
+import { isString } from "lodash";
 import { Superstate, i18n } from "makemd-core";
 import React, { useContext } from "react";
 import { windowFromDocument } from "shared/utils/dom";
@@ -28,7 +29,8 @@ export const SpaceTemplateProperty = (props: {
       windowFromDocument(e.view.document),
       props.superstate,
       (space) => {
-        saveSpaceTemplate(props.superstate, pathState.path, space);
+        if (isString(space))
+          saveSpaceTemplate(props.superstate, pathState.path, space);
       }
     );
     e.stopPropagation();

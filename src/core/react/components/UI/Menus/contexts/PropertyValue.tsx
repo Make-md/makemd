@@ -81,7 +81,7 @@ export const PropertyValueComponent = (props: {
     );
   };
   const parsedValue = useMemo(
-    () => parseFieldValue(props.value, props.fieldType, props.superstate),
+    () => parseFieldValue(props.value, props.fieldType),
     [props.value, props.fieldType]
   );
   const saveParsedValue = (field: string, value: any) => {
@@ -158,11 +158,7 @@ export const PropertyValueComponent = (props: {
     } else {
       const field = props.fields.find((f) => f.name == fieldRef);
       if (field) {
-        fieldSpace = parseFieldValue(
-          field.value,
-          field.type,
-          props.superstate
-        )?.space;
+        fieldSpace = parseFieldValue(field.value, field.type)?.space;
       }
     }
     if (fieldSpace) {
@@ -197,11 +193,7 @@ export const PropertyValueComponent = (props: {
     } else {
       const refField = props.fields?.find((f) => f.name == parsedValue.ref);
       if (refField) {
-        fieldSpace = parseFieldValue(
-          refField.value,
-          refField.type,
-          props.superstate
-        )?.space;
+        fieldSpace = parseFieldValue(refField.value, refField.type)?.space;
       }
     }
     let field: SpaceProperty = null;
@@ -236,8 +228,7 @@ export const PropertyValueComponent = (props: {
         .get(parsedValue.space)
         ?.contextTable?.cols.filter((f) => {
           return f.type?.startsWith("context") &&
-            parseFieldValue(f.value, f.type, props.superstate)["space"] ==
-              props.contextPath
+            parseFieldValue(f.value, f.type)["space"] == props.contextPath
             ? true
             : false;
         })
@@ -312,12 +303,7 @@ export const PropertyValueComponent = (props: {
     showOptions(e, null, formats, "format", null, "Date Format");
   };
   const selectEditOptions = (e: React.MouseEvent) => {
-    const parsedValue = parseFieldValue(
-      props.value,
-      "option",
-      props.superstate,
-      props.contextPath
-    );
+    const parsedValue = parseFieldValue(props.value, "option");
 
     const parseOptions = (_options: SelectOption[]): SelectOption[] => {
       return [

@@ -93,7 +93,7 @@ const NewPropertyMenuComponent = (
     const specialMenu = (rect: Rect, onHide: () => void) => {
       const specialTypes = [RepeatTemplate];
       const options: SelectOption[] = specialTypes.map((f, i) => ({
-        name: nameForField(f, props.superstate),
+        name: nameForField(f),
         value: f.name,
         icon: stickerForField(f),
         onClick: () => {

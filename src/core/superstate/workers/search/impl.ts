@@ -1,12 +1,11 @@
 
 
 import { pathByDef } from "core/utils/spaces/query";
-import Fuse from "fuse.js";
+import Fuse, { FuseIndex } from "fuse.js";
 import { PathState } from "shared/types/PathState";
 import { FilterGroupDef } from "shared/types/spaceDef";
 
-export function fastSearch (payload: { query: string, pathsIndex: Map<string, PathState>, count: number}) {
-    const { query, pathsIndex, count } = payload;
+export function fastSearch (query: string, pathsIndex: Map<string, PathState>, count: number, index: FuseIndex<PathState>) {
 
     const paths = [];
 
@@ -26,7 +25,7 @@ export function fastSearch (payload: { query: string, pathsIndex: Map<string, Pa
       // fieldNormWeight: 1,
       keys: [{ name: 'name', weight: 2 }, "path", 'label.preview', { name: 'spaceNames', weight: 0.5 }],
     };
-    const fuse = new Fuse([...pathsIndex.values()].filter(f => f.hidden == false), fuseOptions);
+    const fuse = new Fuse([...pathsIndex.values()].filter(f => f.hidden == false), fuseOptions, index);
     return fuse.search(query).map((result) => result.item).slice(0, count);
 
 }

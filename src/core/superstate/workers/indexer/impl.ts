@@ -1,6 +1,7 @@
 
 
 import { parseAllMetadata, parseContextTableToCache, parseMetadata } from "core/superstate/cacheParsers";
+import Fuse from "fuse.js";
 import { PathCache } from "shared/types/caches";
 import { IndexMap } from "shared/types/indexMap";
 import { SpaceTables } from "shared/types/mdb";
@@ -8,6 +9,7 @@ import { ContextState, PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 import { SpaceInfo } from "shared/types/spaceInfo";
 
+export type SearchIndexPayload = {pathsIndex: Map<string, PathState>};
 export type PathWorkerPayload = {path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, pathMetadata: PathCache, name: string, type: string, subtype: string, parent: string, oldMetadata: PathState};
 export type BatchPathWorkerPayload = {pathCache: Map<string, PathCache>, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>,  oldMetadata: Map<string, PathState>};
 export type BatchContextWorkerPayload = {map: Map<string, ContextWorkerPayload>, contextsIndex: Map<string, ContextState>, pathsIndex: Map<string, PathState>, spacesMap: IndexMap, settings: MakeMDSettings};
@@ -35,6 +37,15 @@ export function parseAllContexts (payload: BatchContextWorkerPayload, runContext
         result.set(key, parseContext({...value, pathsIndex, spacesMap, settings, contextsIndex}, runContext, ));
     }
     return result;
+}
+
+export function indexAllPaths (payload: SearchIndexPayload) {
+    const options = {
+        
+        keys: [{ name: 'name', weight: 2 }, "path", 'label.preview', { name: 'spaceNames', weight: 0.5 }],
+      };
+    const items = [...payload.pathsIndex.values()].filter(f => f.hidden == false)
+    return Fuse.createIndex(options.keys, items).toJSON();
 }
 
 export function parseAllPaths (payload: BatchPathWorkerPayload) {

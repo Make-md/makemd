@@ -19,11 +19,7 @@ export const SuperCell = (
   }
 ) => {
   const command = useMemo(() => {
-    const parsedValue = parseFieldValue(
-      props.propertyValue,
-      "super",
-      props.superstate
-    );
+    const parsedValue = parseFieldValue(props.propertyValue, "super");
     const superPropertyName = parsedValue.dynamic
       ? props.row?.[parsedValue.field]
       : parsedValue.field;

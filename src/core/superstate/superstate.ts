@@ -10,7 +10,7 @@ import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
 import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
-import _ from "lodash";
+import _, { debounce } from "lodash";
 import * as math from 'mathjs';
 import { rootToFrame } from "schemas/frames";
 import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
@@ -47,11 +47,12 @@ import { allMetadata } from "core/utils/metadata";
 import { Metadata } from "shared/types/metadata";
 import { Indexer } from "./workers/indexer/indexer";
 
+import Fuse, { FuseIndex } from "fuse.js";
 import { SuperstateEvent } from "shared/types/PathState";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
 import { getParentPathFromString } from "utils/path";
 import { parseMDBStringValue } from "utils/properties";
-import { Searcher } from "./workers/search/search";
+import { fastSearch, searchPath } from "./workers/search/impl";
 export type SuperProperty = {
     id: string,
     name: string,
@@ -138,23 +139,18 @@ public api: API;
     private contextStateQueue: Promise<void>;
     private indexer: Indexer;
 
-    private searcher: Searcher;
     public focuses: Focus[];
-    public search (path: string, query?: string, queries?: FilterGroupDef[]) {
+    public searchIndex: FuseIndex<PathState>;
+    public async search (path: string, query?: string, queries?: FilterGroupDef[]) {
         if (query) {
-            return this.searcher
-            .run<PathState[]>({
-              type: "fastSearch",
-              path: path,
-              payload: { query: query, count: 10 },
-            })
+            return fastSearch(query, this.pathsIndex, 10, this.searchIndex)
         }
-        return this.searcher
-        .run<PathState[]>({
-          type: "search",
-          path: path,
-          payload: { queries: queries, count: 10 },
-        })
+        return searchPath({ queries: queries, pathsIndex: this.pathsIndex, count: 10 })
+    }
+    public reindexSearch () {
+        this.indexer.reload<Record<string, any>>({ type: 'index', path: ''}).then(r => {
+            this.searchIndex = Fuse.parseIndex(r);
+        });
     }
     private constructor(public indexVersion: string, public onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CLIManager) {
         this.eventsDispatcher= new EventDispatcher<SuperstateEvent>();
@@ -216,9 +212,15 @@ public api: API;
 
         //Intiate Workers
         this.indexer = new Indexer(2, this)
-
-        this.searcher = new Searcher(1, this);
         
+        this.eventsDispatcher.addListener('pathStateUpdated', () => {
+            debounce(() => this.reindexSearch(), 300)();
+            
+        })
+        this.eventsDispatcher.addListener('superstateReindex', () => {
+            debounce(() => this.reindexSearch(), 300)();
+            
+        })
         // window['make'] = this;
     }
 

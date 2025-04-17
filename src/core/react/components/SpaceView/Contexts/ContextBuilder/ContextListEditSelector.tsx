@@ -350,7 +350,7 @@ export const PropertyField = (props: {
               }}
             ></div>
             <div className="mk-path-context-field-key">
-              {nameForField(props.property, props.superstate)}
+              {nameForField(props.property)}
             </div>
           </div>
         );
@@ -387,7 +387,7 @@ export const PropertyField = (props: {
         ></div>
       )}
       <div className="mk-path-context-field-key">
-        {nameForField(props.property, props.superstate)}
+        {nameForField(props.property)}
       </div>
     </div>
   );
