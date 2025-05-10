@@ -163,7 +163,7 @@ export const parseMetadata = (
   };
 
     const tags : string[] = [];
-    const fileTags : string[] = pathCache?.tags?.map(f => f.toLowerCase()) ?? [];
+    const fileTags : string[] = pathCache?.tags?.filter(f => f).map(f => f.toLowerCase()) ?? [];
     let hidden = excludePathPredicate(settings, path);
     if (path.startsWith(builtinSpacePathPrefix)) {
         const builtin = path.replace(builtinSpacePathPrefix, '');

@@ -304,7 +304,7 @@ public app: App;
         const updatedCache : CleanCachedMetadata = {
             resolvedLinks: links ?? [],
             inlinks: Array.from(incoming),
-            tags: rt,
+            tags: rt.filter(f => f),
             property: fCache.frontmatter,
             tasks: [],
             label: {
