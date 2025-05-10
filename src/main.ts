@@ -543,7 +543,11 @@ loadViews () {
       });
       
       this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
+      try {
       this.registerExtensions(["html", "htm"], HTML_FILE_VIEWER_TYPE);
+      } catch (e) {
+        console.log(e);
+      }
       this.app.workspace.onLayoutReady(async () => {
 
         if (this.superstate.settings.autoOpenFileContext) {
