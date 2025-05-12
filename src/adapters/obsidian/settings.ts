@@ -167,6 +167,16 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         }
       },
       {
+        name: 'mobileSpaceRowHeight',
+        category: 'navigator',
+        subCategory: 'appearance',
+        type: 'number',
+        props: {
+          control: 'slider',
+          limits: [30, 50, 1]
+        }
+      },
+      {
         name: 'folderIndentationLines',
         category: 'navigator',
         subCategory: 'appearance',
@@ -422,7 +432,8 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
             slider
               .setValue(this.plugin.superstate.settings[setting.name] as number)
               .setDynamicTooltip()
-              .setLimits(20, 40, 1)
+
+              .setLimits(setting.props.limits[0], setting.props.limits[1], setting.props.limits[2])
               .onChange((value: number) => {
                 Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
                 this.plugin.saveSettings();

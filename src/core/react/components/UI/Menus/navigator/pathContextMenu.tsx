@@ -219,7 +219,7 @@ export const showPathContextMenu = (
     const spaceCache = superstate.spacesIndex.get(space);
     if (spaceCache) {
       menuOptions.push({
-        name: i18n.menu.removeFromSpace,
+        name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
         icon: "ui//pin-off",
         onClick: (e) => {
           removePathsFromSpace(superstate, spaceCache.path, [path]);

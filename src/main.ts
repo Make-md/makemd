@@ -2,9 +2,6 @@
 import { SPACE_VIEW_TYPE, SpaceViewContainer } from "adapters/obsidian/SpaceViewContainer";
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
 import {
-  eventTypes
-} from "core/types/types";
-import {
   App, MarkdownView,
   Platform,
   Plugin,
@@ -82,19 +79,15 @@ import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
 import { openPathFixer } from "adapters/obsidian/fileSystemPathFixer";
-import { moveSpaceFiles } from "adapters/obsidian/filesystem/spaceFileOps";
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
 import { SPACE_FRAGMENT_VIEW_TYPE, SpaceFragmentView } from "adapters/obsidian/ui/editors/SpaceFragmentViewComponent";
-import { installKitModal } from "adapters/obsidian/ui/kit/InstallKitModal";
 import { EVER_VIEW_TYPE, EverLeafView } from "adapters/obsidian/ui/navigator/EverLeafView";
 import MakeBasicsPlugin from "basics/basics";
-import { showWarningsModal } from "core/react/components/Navigator/SyncWarnings";
-import { newSpaceModal } from "core/react/components/UI/Menus/navigator/showSpaceAddMenu";
-import { openInputModal } from "core/react/components/UI/Modals/InputModal";
+import { attachCommands } from "commands";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
 import { Superstate } from "core/superstate/superstate";
 import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
-import { isPhone, isTouchScreen } from "core/utils/ui/screen";
+import { isTouchScreen } from "core/utils/ui/screen";
 import "css/DefaultVibe.css";
 import "css/Editor/Actions/Actions.css";
 import "css/Editor/Context/ContextList.css";
@@ -132,7 +125,6 @@ import "css/SpaceViewer/SpaceView.css";
 import "css/SpaceViewer/TableView.css";
 import "css/SpaceViewer/Text.css";
 import "css/UI/Buttons.css";
-import { BlinkMode } from "shared/types/blink";
 import { IMakeMDPlugin } from "shared/types/makemd";
 import { ISuperstate } from "shared/types/superstate";
 import { windowFromDocument } from "shared/utils/dom";
@@ -376,156 +368,7 @@ loadViews () {
           })
   }
   loadCommands() {
-    this.registerObsidianProtocolHandler("make", async (e) => {
-      const parameters = e as unknown as { [key: string]: string };
-      if (parameters.kit) {
-        installKitModal(this, this.superstate, parameters.kit, window);
-      }
-      if (parameters.open) {
-        this.superstate.ui.openPath(parameters.open);
-      }
-
-  });
-  if (!isPhone(this.superstate.ui))
-  this.addCommand({
-    id: "open-ever-view",
-    name: "Open Overview",
-    callback: () => {
-      this.openEverView();
-    
-    },
-  })
-  this.addCommand({
-    id: "show-warnings",
-    name: "Show Sync Warnings",
-    callback: () => {
-      showWarningsModal(this.superstate, window);
-    },
-  })
-  this.addCommand({
-    id: "logs",
-    name: "Toggle Enhanced Logs",
-    callback: () => {
-      this.superstate.settings.enhancedLogs = !this.superstate.settings.enhancedLogs;
-      this.saveSettings();
-    },
-  })
-  this.addCommand({
-    id: "path-fixer",
-    name: "Fix Unsupported Characters in Paths",
-    callback: () => {
-      openPathFixer(this);
-    },
-  })
-  this.addCommand({
-    id: "move-space-folder",
-    name: "Move Space Data Folder",
-    callback: () => {
-      const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument)
-      openInputModal(this.superstate, "Move Space Data Folder", this.superstate.settings.spaceSubFolder, (path) => {moveSpaceFiles(this, this.superstate.settings.spaceSubFolder, path)}, "Move", win);
-    },
-  })
-    if (this.superstate.settings.spacesEnabled) {
-      
-      this.addCommand({
-        id: 'mk-new-space',
-        name: "New Folder",
-        callback: () => {
-          newSpaceModal(this.superstate)
-        }
-      })
-
-      this.addCommand({
-        id: 'mk-debug-close-tabs',
-        name: "Close Extra File Tabs",
-        callback: () => {
-          this.closeExtraFileTabs();
-        }
-      })
-
-      this.addCommand({
-        id: "mk-collapse-folders",
-        name: i18n.commandPalette.collapseAllFolders,
-        callback: () => {
-          this.superstate.settings.expandedSpaces = [];
-          this.saveSettings();
-        },
-      });
-      this.addCommand({
-        id: "mk-release-notes",
-        name: i18n.commandPalette.releaseNotes,
-        callback: () => {
-          this.releaseTheNotes();
-        },
-      });
-      this.addCommand({
-        id: "mk-get-started",
-        name: i18n.commandPalette.getStarted,
-        callback: () => {
-          this.getStarted();
-        },
-      });
-      this.addCommand({
-        id: "mk-reveal-file",
-        name: i18n.commandPalette.revealFile,
-        callback: () => {
-          const file = this.superstate.ui.activePath;
-          if (!file) return;
-          const evt = new CustomEvent(eventTypes.revealPath, {
-            detail: { path: file },
-          });
-          window.dispatchEvent(evt);
-        },
-      });
-      
-      this.addCommand({
-        id: "mk-spaces",
-        name: i18n.commandPalette.openSpaces,
-        callback: () => this.openFileTreeLeaf(true),
-      });
-    }
-    if (this.superstate.settings.enableFolderNote) {
-      this.addCommand({
-        id: "mk-convert-folder-note",
-        name: i18n.commandPalette.convertPathToSpace,
-        callback: () => this.convertPathToSpace(),
-      });
-    }
-    if (this.superstate.settings.contextEnabled) {
-
-      this.addCommand({
-        id: "mk-open-file-context",
-        name: i18n.commandPalette.openFileContext,
-        callback: () => this.openFileContextLeaf(FILE_CONTEXT_VIEW_TYPE, true),
-      });
-    }
-    if (this.superstate.settings.inlineBacklinks) {
-      this.addCommand({
-        id: "mk-toggle-backlinks",
-        name: i18n.commandPalette.toggleBacklinks,
-        callback: () => {
-          const evt = new CustomEvent(eventTypes.toggleBacklinks);
-          window.dispatchEvent(evt);
-        },
-      });
-    }
-    
-    if (this.superstate.settings.blinkEnabled) {
-      this.addCommand({
-        id: "mk-blink",
-        name: i18n.commandPalette.blink,
-        callback: () => this.quickOpen(this.superstate, BlinkMode.Blink),
-        hotkeys: [
-          {
-            modifiers: ["Mod"],
-            key: "o",
-          },
-        ],
-      });
-    }
-    
-    
-    
+    attachCommands(this)
   }
   loadContext() {
     

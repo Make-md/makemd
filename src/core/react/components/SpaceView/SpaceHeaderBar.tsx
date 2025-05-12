@@ -1,11 +1,17 @@
+import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
+import { savePathBanner } from "core/superstate/utils/label";
 import {
+  metadataPathForSpace,
   saveSpaceCache,
   saveSpaceTemplate,
 } from "core/superstate/utils/spaces";
+import { removePathIcon, savePathIcon } from "core/utils/emoji";
+import { isTouchScreen } from "core/utils/ui/screen";
 import { isString } from "lodash";
-import { i18n, SelectOptionType, Superstate } from "makemd-core";
+import { i18n, SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React, { useContext, useMemo } from "react";
+import StickerModal from "shared/components/StickerModal";
 import { defaultTableFields } from "shared/schemas/fields";
 import { SpaceTableSchema } from "shared/types/mdb";
 import { Rect } from "shared/types/Pos";
@@ -15,6 +21,7 @@ import { sanitizeTableName } from "shared/utils/sanitizers";
 import { defaultMenu, menuSeparator } from "../UI/Menus/menu/SelectionMenu";
 import { showApplyItemsMenu } from "../UI/Menus/navigator/showApplyItemsMenu";
 import { showLinkMenu } from "../UI/Menus/properties/linkMenu";
+import ImageModal from "../UI/Modals/ImageModal";
 import { InputModal } from "../UI/Modals/InputModal";
 import {
   DefaultFolderNoteMDBTables,
@@ -24,19 +31,17 @@ import {
 export const SpaceHeaderBar = (props: {
   superstate: Superstate;
   path: string;
-  expandedSection: number;
-  setExpandedSection: (section: number) => void;
-  tables: SpaceTableSchema[];
-  templates: string[];
+  expandedSection?: number;
+  setExpandedSection?: (section: number) => void;
+  tables?: SpaceTableSchema[];
+  templates?: string[];
 }) => {
-  const { tables, templates } = props;
   const { expandedSection, setExpandedSection } = props;
   const { spaceState } = useContext(SpaceContext);
-  const linkCaches = useMemo(
-    () => spaceState.metadata?.links ?? [],
-    [spaceState]
-  );
+  const { pathState } = useContext(PathContext);
+
   const allItems = useMemo(() => {
+    if (!spaceState) return 0;
     return [...props.superstate.spacesMap.getInverse(spaceState.path)].length;
   }, [spaceState]);
 
@@ -84,27 +89,157 @@ export const SpaceHeaderBar = (props: {
   const addNew = (e: React.MouseEvent) => {
     const offset = (e.target as HTMLElement).getBoundingClientRect();
     const win = windowFromDocument(e.view.document);
-    props.superstate.ui.openMenu(
-      offset,
-      defaultMenu(props.superstate.ui, [
-        {
-          name: i18n.labels.newTable,
+    const hasSticker =
+      pathState?.metadata.label?.[props.superstate.settings.fmKeySticker]
+        ?.length > 0;
+    const hasBanner =
+      pathState?.metadata.property?.[props.superstate.settings.fmKeyBanner];
+    const menuOptions: SelectOption[] = [];
+    if (isTouchScreen(props.superstate.ui)) {
+      if (hasSticker) {
+        menuOptions.push({
+          name: i18n.buttons.changeIcon,
+          icon: "ui//sticker",
+          onClick: (e: React.MouseEvent) =>
+            props.superstate.ui.openPalette(
+              <StickerModal
+                ui={props.superstate.ui}
+                selectedSticker={(emoji) =>
+                  savePathIcon(props.superstate, pathState.path, emoji)
+                }
+              />,
+              windowFromDocument(e.view.document)
+            ),
+        });
+        menuOptions.push({
+          name: i18n.buttons.removeIcon,
+          icon: "ui//sticker",
+          onClick: (e: React.MouseEvent) => {
+            removePathIcon(props.superstate, pathState.path);
+          },
+        });
+      } else {
+        menuOptions.push({
+          name: i18n.buttons.addIcon,
+          icon: "ui//sticker",
+          onClick: (e: React.MouseEvent) =>
+            props.superstate.ui.openPalette(
+              <StickerModal
+                ui={props.superstate.ui}
+                selectedSticker={(emoji) =>
+                  savePathIcon(props.superstate, pathState.path, emoji)
+                }
+              />,
+              windowFromDocument(e.view.document)
+            ),
+        });
+      }
+
+      menuOptions.push(menuSeparator);
+      if (hasBanner) {
+        menuOptions.push({
+          name: i18n.buttons.changeBanner,
+          icon: "ui//mk-make-image",
+          onClick: (e: React.MouseEvent) =>
+            props.superstate.ui.openPalette(
+              <ImageModal
+                superstate={props.superstate}
+                selectedPath={(image) =>
+                  savePathBanner(props.superstate, pathState.path, image)
+                }
+              ></ImageModal>,
+              windowFromDocument(e.view.document)
+            ),
+        });
+
+        menuOptions.push({
+          name: i18n.buttons.removeBanner,
+          icon: "ui//file-minus",
+          onClick: (ev: React.MouseEvent) => {
+            if (props.superstate.spacesIndex.has(pathState.path)) {
+              props.superstate.spaceManager.deleteProperty(
+                metadataPathForSpace(
+                  props.superstate,
+                  props.superstate.spacesIndex.get(pathState.path).space
+                ),
+                props.superstate.settings.fmKeyBanner
+              );
+            }
+            props.superstate.spaceManager.deleteProperty(
+              pathState.path,
+              props.superstate.settings.fmKeyBanner
+            );
+          },
+        });
+      } else {
+        menuOptions.push({
+          name: i18n.buttons.addCover,
+          icon: "ui//mk-make-image",
+          onClick: (e: React.MouseEvent) =>
+            props.superstate.ui.openPalette(
+              <ImageModal
+                superstate={props.superstate}
+                selectedPath={(image) =>
+                  savePathBanner(props.superstate, pathState.path, image)
+                }
+              ></ImageModal>,
+              windowFromDocument(e.view.document)
+            ),
+        });
+      }
+    }
+    if (spaceState) {
+      if (isMobile) {
+        menuOptions.push(menuSeparator);
+        menuOptions.push({
+          name: "Edit Pins",
+          description: i18n.descriptions.smartSearch,
+          icon: "ui//pin",
+          onClick: (e) => {
+            setExpandedSection(expandedSection == 0 ? null : 0);
+          },
+        });
+        menuOptions.push({
+          name: "Edit Joins",
+          description: i18n.descriptions.smartSearch,
+          icon: "ui//merge",
+          onClick: (e) => {
+            setExpandedSection(expandedSection == 1 ? null : 1);
+          },
+        });
+        menuOptions.push({
+          name: "Edit Tables",
           description: i18n.descriptions.spaceLists,
           icon: "ui//table",
-          onClick: (e) => newTable(e),
-        },
-        {
-          name: i18n.labels.template,
+          onClick: (e) => {
+            setExpandedSection(expandedSection == 2 ? null : 2);
+          },
+        });
+        menuOptions.push({
+          name: "Edit Templates",
           description: i18n.descriptions.spaceTemplates,
           icon: "ui//clipboard-pen",
-          onClick: (e) => newTemplate(offset, win),
-        },
-        // {
-        //   name: i18n.labels.newAction,
-        //   description: i18n.descriptions.spaceActions,
-        //   icon: "ui//mouse-pointer-click",
-        //   onClick: (e) => newAction(e),
-        // },
+          onClick: (e) => {
+            setExpandedSection(expandedSection == 3 ? null : 3);
+          },
+        });
+      } else {
+        menuOptions.push(
+          {
+            name: i18n.labels.newTable,
+            description: i18n.descriptions.spaceLists,
+            icon: "ui//table",
+            onClick: (e) => newTable(e),
+          },
+          {
+            name: i18n.labels.template,
+            description: i18n.descriptions.spaceTemplates,
+            icon: "ui//clipboard-pen",
+            onClick: (e) => newTemplate(offset, win),
+          }
+        );
+      }
+      menuOptions.push(
         menuSeparator,
         {
           name: "Export to HTML",
@@ -154,77 +289,93 @@ export const SpaceHeaderBar = (props: {
                 : DefaultMDBTables.main
             );
           },
-        },
-      ]),
+        }
+      );
+    }
+    props.superstate.ui.openMenu(
+      offset,
+      defaultMenu(props.superstate.ui, menuOptions),
       win
     );
   };
-
+  const isMobile = isTouchScreen(props.superstate.ui);
   return (
     <div className="mk-space-context-bar">
-      <div className="mk-space-context-bar-section">
-        <div>{allItems} Items</div>
-        <button
-          aria-label="Pins"
-          className={`mk-toolbar-button ${
-            expandedSection == 0 ? "mk-active" : ""
-          }`}
-          onClick={() => setExpandedSection(expandedSection == 0 ? null : 0)}
-        >
-          <div
-            className="mk-icon-xsmall"
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//pin"),
-            }}
-          ></div>
-        </button>
-        <button
-          aria-label="Joins"
-          className={`mk-toolbar-button ${
-            expandedSection == 1 ? "mk-active" : ""
-          }`}
-          onClick={() => setExpandedSection(expandedSection == 1 ? null : 1)}
-        >
-          <div
-            className="mk-icon-xsmall"
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//merge"),
-            }}
-          ></div>
-        </button>
-      </div>
-      <div className="mk-space-context-bar-section">
-        {props.tables.length > 0 && (
-          <button
-            className={`mk-toolbar-button ${
-              expandedSection == 2 ? "mk-active" : ""
-            }`}
-            onClick={() => setExpandedSection(expandedSection == 2 ? null : 2)}
-          >
-            <div
-              className="mk-icon-xsmall"
-              dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//table"),
-              }}
-            ></div>
-          </button>
-        )}
-        {props.templates.length > 0 && (
-          <button
-            className={`mk-toolbar-button ${
-              expandedSection == 3 ? "mk-active" : ""
-            }`}
-            onClick={() => setExpandedSection(expandedSection == 3 ? null : 3)}
-          >
-            <div
-              className="mk-icon-xsmall"
-              dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//clipboard-pen"),
-              }}
-            ></div>
-          </button>
-        )}
-      </div>
+      {spaceState && !isMobile && (
+        <>
+          <div className="mk-space-context-bar-section">
+            <div>{allItems} Items</div>
+            <button
+              aria-label="Pins"
+              className={`mk-toolbar-button ${
+                expandedSection == 0 ? "mk-active" : ""
+              }`}
+              onClick={() =>
+                setExpandedSection(expandedSection == 0 ? null : 0)
+              }
+            >
+              <div
+                className="mk-icon-xsmall"
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//pin"),
+                }}
+              ></div>
+            </button>
+            <button
+              aria-label="Joins"
+              className={`mk-toolbar-button ${
+                expandedSection == 1 ? "mk-active" : ""
+              }`}
+              onClick={() =>
+                setExpandedSection(expandedSection == 1 ? null : 1)
+              }
+            >
+              <div
+                className="mk-icon-xsmall"
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//merge"),
+                }}
+              ></div>
+            </button>
+          </div>
+          <div className="mk-space-context-bar-section">
+            {props.tables.length > 0 && (
+              <button
+                className={`mk-toolbar-button ${
+                  expandedSection == 2 ? "mk-active" : ""
+                }`}
+                onClick={() =>
+                  setExpandedSection(expandedSection == 2 ? null : 2)
+                }
+              >
+                <div
+                  className="mk-icon-xsmall"
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker("ui//table"),
+                  }}
+                ></div>
+              </button>
+            )}
+            {props.templates.length > 0 && (
+              <button
+                className={`mk-toolbar-button ${
+                  expandedSection == 3 ? "mk-active" : ""
+                }`}
+                onClick={() =>
+                  setExpandedSection(expandedSection == 3 ? null : 3)
+                }
+              >
+                <div
+                  className="mk-icon-xsmall"
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker("ui//clipboard-pen"),
+                  }}
+                ></div>
+              </button>
+            )}
+          </div>
+        </>
+      )}
       <div className="mk-space-context-bar-section">
         <button className="mk-toolbar-button" onClick={(e) => addNew(e)}>
           <div

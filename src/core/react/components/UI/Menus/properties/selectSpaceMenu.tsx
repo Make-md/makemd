@@ -6,7 +6,7 @@ export const showSpacesMenu = (
   offset: Rect,
   win: Window,
   superstate: Superstate,
-  saveLink: (link: string, isNew?: boolean) => void,
+  saveLink: (link: string, isNew?: boolean, type?: string) => void,
   includeDefaults?: boolean,
   canAdd?: boolean,
   onlyTags?: boolean
@@ -41,8 +41,13 @@ export const showSpacesMenu = (
             { name: i18n.buttons.tag, value: "tag" },
             { name: i18n.menu.folder, value: "folder" },
           ],
-      saveOptions: (_: string[], value: string[]) => {
-        saveLink(value[0], !options.some((f) => f.value == value[0]));
+      saveOptions: (
+        _: string[],
+        value: string[],
+        isNew?: boolean,
+        section?: string
+      ) => {
+        saveLink(value[0], isNew, section);
       },
       placeholder: i18n.labels.spaceSelectPlaceholder,
       detail: true,

@@ -6,8 +6,7 @@ import {
   updatePrimaryAlias,
 } from "core/superstate/utils/label";
 import { renamePathByName } from "core/superstate/utils/path";
-import { metadataPathForSpace } from "core/superstate/utils/spaces";
-import { removePathIcon, savePathIcon } from "core/utils/emoji";
+import { savePathIcon } from "core/utils/emoji";
 import { isPhone } from "core/utils/ui/screen";
 import { i18n, Superstate } from "makemd-core";
 import React, {
@@ -24,7 +23,6 @@ import { windowFromDocument } from "shared/utils/dom";
 import { sanitizeFileName } from "shared/utils/sanitizers";
 import { stringFromTag } from "utils/tags";
 import StickerModal from "../../../../shared/components/StickerModal";
-import { defaultMenu, menuSeparator } from "../UI/Menus/menu/SelectionMenu";
 import ImageModal from "../UI/Modals/ImageModal";
 
 export const TitleComponent = (
@@ -142,125 +140,7 @@ export const TitleComponent = (
   const hasBanner =
     pathState?.metadata.property?.[props.superstate.settings.fmKeyBanner];
   const isMobile = isPhone(props.superstate.ui);
-  const showContextMenu = (e: React.MouseEvent) => {
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const menuOptions = [];
-    if (hasSticker) {
-      menuOptions.push({
-        name: i18n.buttons.changeIcon,
-        icon: "ui//sticker",
-        onClick: (e: React.MouseEvent) =>
-          props.superstate.ui.openPalette(
-            <StickerModal
-              ui={props.superstate.ui}
-              selectedSticker={(emoji) =>
-                savePathIcon(props.superstate, pathState.path, emoji)
-              }
-            />,
-            windowFromDocument(e.view.document)
-          ),
-      });
-      menuOptions.push({
-        name: i18n.buttons.removeIcon,
-        icon: "ui//sticker",
-        onClick: (e: React.MouseEvent) => {
-          removePathIcon(props.superstate, pathState.path);
-        },
-      });
-    } else {
-      menuOptions.push({
-        name: i18n.buttons.addIcon,
-        icon: "ui//sticker",
-        onClick: (e: React.MouseEvent) =>
-          props.superstate.ui.openPalette(
-            <StickerModal
-              ui={props.superstate.ui}
-              selectedSticker={(emoji) =>
-                savePathIcon(props.superstate, pathState.path, emoji)
-              }
-            />,
-            windowFromDocument(e.view.document)
-          ),
-      });
-    }
 
-    menuOptions.push(menuSeparator);
-    if (hasBanner) {
-      menuOptions.push({
-        name: i18n.buttons.changeBanner,
-        icon: "ui//mk-make-image",
-        onClick: (e: React.MouseEvent) =>
-          props.superstate.ui.openPalette(
-            <ImageModal
-              superstate={props.superstate}
-              selectedPath={(image) =>
-                savePathBanner(props.superstate, pathState.path, image)
-              }
-            ></ImageModal>,
-            windowFromDocument(e.view.document)
-          ),
-      });
-      menuOptions.push({
-        name: i18n.labels.reposition,
-        icon: "ui//move",
-        onClick: (e: React.MouseEvent) => props.setReposition((p) => !p),
-      });
-      menuOptions.push({
-        name: i18n.buttons.removeBanner,
-        icon: "ui//file-minus",
-        onClick: (ev: React.MouseEvent) => {
-          if (props.superstate.spacesIndex.has(pathState.path)) {
-            props.superstate.spaceManager.deleteProperty(
-              metadataPathForSpace(
-                props.superstate,
-                props.superstate.spacesIndex.get(pathState.path).space
-              ),
-              props.superstate.settings.fmKeyBanner
-            );
-          }
-          props.superstate.spaceManager.deleteProperty(
-            pathState.path,
-            props.superstate.settings.fmKeyBanner
-          );
-        },
-      });
-    } else {
-      menuOptions.push({
-        name: i18n.buttons.addCover,
-        icon: "ui//mk-make-image",
-        onClick: (e: React.MouseEvent) =>
-          props.superstate.ui.openPalette(
-            <ImageModal
-              superstate={props.superstate}
-              selectedPath={(image) =>
-                savePathBanner(props.superstate, pathState.path, image)
-              }
-            ></ImageModal>,
-            windowFromDocument(e.view.document)
-          ),
-      });
-    }
-    menuOptions.push(menuSeparator);
-    if (!aliasMode) {
-      menuOptions.push({
-        name: "Edit Display Name",
-        icon: "ui//alias",
-        onClick: () => setAliasMode(true),
-      });
-    } else {
-      menuOptions.push({
-        name: "Edit File Name",
-        icon: "ui//alias",
-        onClick: () => setAliasMode(false),
-      });
-    }
-
-    props.superstate.ui.openMenu(
-      rect,
-      defaultMenu(props.superstate.ui, menuOptions),
-      windowFromDocument(e.view.document)
-    );
-  };
   return (
     pathState && (
       <>
@@ -311,13 +191,7 @@ export const TitleComponent = (
             data-ph={aliasMode ? i18n.hintText.alias : i18n.hintText.fileName}
           ></div>
           {isMobile ? (
-            <div
-              className="mk-toolbar-button"
-              dangerouslySetInnerHTML={{
-                __html: props.superstate.ui.getSticker("ui//edit"),
-              }}
-              onClick={(e) => showContextMenu(e)}
-            ></div>
+            <></>
           ) : (
             <button
               className={classNames("mk-title-alias", aliasMode && "mk-active")}

@@ -17,6 +17,7 @@ import { SpaceProperty } from "shared/types/mdb";
 import { windowFromDocument } from "shared/utils/dom";
 import { defaultValueForType } from "utils/properties";
 import { HeaderPropertiesView } from "../SpaceView/Contexts/SpaceEditor/HeaderPropertiesView";
+import { SpaceHeaderBar } from "../SpaceView/SpaceHeaderBar";
 import { TitleComponent } from "../SpaceView/TitleComponent";
 import { showSpaceContextMenu } from "../UI/Menus/navigator/spaceContextMenu";
 import { BannerView } from "./BannerView";
@@ -55,7 +56,14 @@ export const MarkdownHeaderView = (props: {
               superstate={props.superstate}
               readOnly={!props.editable}
               setReposition={setRepositionMode}
-            ></TitleComponent>
+            >
+              {isTouchScreen(props.superstate.ui) && (
+                <SpaceHeaderBar
+                  superstate={props.superstate}
+                  path={pathState.path}
+                />
+              )}
+            </TitleComponent>
           </div>
           {props.editable &&
             props.superstate.settings.inlineContextProperties && (

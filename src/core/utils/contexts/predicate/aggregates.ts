@@ -68,14 +68,14 @@ export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
     sum: {
         label: "Sum",
         type: "number",
-        fn: (v) => v.map(f => parseInt(f)).filter(f => !isNaN(f)).reduce((a, b) => b ? a + b : a, 0),
+        fn: (v) => v.map(f => parseFloat(f)).filter(f => !isNaN(f)).reduce((a, b) => b ? a + b : a, 0),
         valueType: "number",
     },
     avg: {
         label: "Average",
         type: "number",
         fn: (v) => {
-            const filtered = v.map(f => parseInt(f)).filter((f) => !isNaN(f));
+            const filtered = v.map(f => parseFloat(f)).filter((f) => !isNaN(f));
             return filtered.reduce((a, b) => a + b, 0) / filtered.length
         },
         valueType: "number",
@@ -84,7 +84,7 @@ export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
         label: "Median",
         type: "number",
         fn: (v) => {
-            const filtered = v.map(f => parseInt(f)).filter((f) => !isNaN(f));
+            const filtered = v.map(f => parseFloat(f)).filter((f) => !isNaN(f));
             return median(filtered)
         },
         valueType: "number",
@@ -126,19 +126,19 @@ export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
     min: {
         label: "Min",
         type: "number",
-        fn: (v) => Math.min(...v.map(f => parseInt(f)).filter(f => !isNaN(f))),
+        fn: (v) => Math.min(...v.map(f => parseFloat(f)).filter(f => !isNaN(f))),
         valueType: "number",
     },
     max: {
         label: "Max",
         type: "number",
-        fn: (v, f) => Math.max(...v.map(f => parseInt(f)).filter(f => !isNaN(f))),
+        fn: (v, f) => Math.max(...v.map(f => parseFloat(f)).filter(f => !isNaN(f))),
         valueType: "number",
     },
     range: {
         label: "Range",
         type: "number",
-        fn: (v) => Math.max(...v.map(f => parseInt(f)).filter(f => !isNaN(f))) - Math.min(...v.filter(f => !isNaN(f))),
+        fn: (v) => Math.max(...v.map(f => parseFloat(f)).filter(f => !isNaN(f))) - Math.min(...v.filter(f => !isNaN(f))),
         valueType: "number",
     },
     empty: {

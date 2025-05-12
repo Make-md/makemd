@@ -91,7 +91,7 @@ export const HeaderPropertiesView = (props: {
 
     if (removeFromSpace && !spaceIsInherited)
       menuOptions.push({
-        name: i18n.menu.removeFromSpace,
+        name: i18n.menu.removeFromSpace.replace("${1}", space.name),
         icon: "ui//trash",
         onClick: (e) => {
           removeFromSpace(space.path);
@@ -163,9 +163,9 @@ export const HeaderPropertiesView = (props: {
       offset,
       windowFromDocument(e.view.document),
       props.superstate,
-      (link: string, isNew: boolean) => {
+      (link: string, isNew: boolean, type: string) => {
         if (isNew) {
-          if (link.charAt(0) == "#") {
+          if (link.charAt(0) == "#" || type == "tag") {
             addTagToPath(props.superstate, pathState.path, link);
           } else {
             createSpace(props.superstate, link, { links: [pathState.path] });

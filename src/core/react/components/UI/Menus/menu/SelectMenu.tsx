@@ -5,6 +5,14 @@ import SelectMenuComponent from "./SelectMenuComponent";
 
 const SelectMenu = React.forwardRef(
   (props: SelectMenuProps & { hide?: () => void }, ref: any) => {
+    const [selectedSection, setSelectedSection] = useState<string | null>(null);
+    const onSelectSection = useCallback(
+      (section: string) => {
+        setSelectedSection(section);
+        if (props.onSelectSection) props.onSelectSection(section);
+      },
+      [props]
+    );
     const initialOptions: SelectOption[] = props.options.map((o, i) => {
       return {
         ...o,
@@ -81,17 +89,20 @@ const SelectMenu = React.forwardRef(
           newTags = [tag];
           setTags(newTags);
         }
-        if (props.saveOptions)
+        if (props.saveOptions) {
+          console.log("saveOptions", newTags, selectedSection);
           props.saveOptions(
             newSuggestions.map((f) => f.value),
             newTags.map((f) => f.value),
-            true
+            true,
+            selectedSection
           );
+        }
         if (!props.multi && newTag.type != SelectOptionType.Disclosure) {
           props.hide();
         }
       },
-      [tags, suggestions]
+      [tags, suggestions, selectedSection]
     );
     const onValidation = useCallback(
       (newTag: SelectOption) => {
@@ -122,7 +133,7 @@ const SelectMenu = React.forwardRef(
         onDeleteOption={onDeleteOption}
         onAddition={onAddition}
         onValidate={onValidation}
-        onSelectSection={props.onSelectSection}
+        onSelectSection={onSelectSection}
         defaultSuggestions={props.defaultOptions}
         placeholderText={props.placeholder ?? ""}
         minQueryLength={0}

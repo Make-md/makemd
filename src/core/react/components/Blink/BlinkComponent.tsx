@@ -95,6 +95,11 @@ export const BlinkComponent = (props: {
       .navigationHistory()
       .map((f) => props.superstate.pathsIndex.get(f))
       .filter((f) => f && !f.hidden)
+      .filter(
+        (f) =>
+          props.mode != BlinkMode.OpenSpaces ||
+          props.superstate.spacesIndex.has(f.path)
+      )
       .map((f) => pathToBlinkItem(f)),
   ];
 

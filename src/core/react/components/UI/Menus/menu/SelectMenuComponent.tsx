@@ -508,6 +508,9 @@ const SelectMenuComponent = React.forwardRef(
                 onClick={(e) => {
                   e.stopPropagation();
                   setSection(f.value);
+                  if (props.onSelectSection) {
+                    props.onSelectSection(f.value);
+                  }
                 }}
                 className={`${
                   section == f.value ? "is-active" : ""

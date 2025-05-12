@@ -9,7 +9,7 @@ export type SelectMenuProps = {
   options: SelectOption[];
   addKeyword?: string;
   defaultOptions?: SelectOption[];
-  saveOptions?: (options: string[], value: string[], isNew?: boolean) => void;
+  saveOptions?: (options: string[], value: string[], isNew?: boolean, section?: string) => void;
   removeOption?: (option: string) => void;
   placeholder?: string;
   detail?: boolean;

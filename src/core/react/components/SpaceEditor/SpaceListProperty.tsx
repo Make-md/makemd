@@ -3,6 +3,7 @@ import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
+import { isPhone } from "core/utils/ui/screen";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import React, { useContext, useState } from "react";
 import { defaultTableFields } from "shared/schemas/fields";
@@ -61,6 +62,16 @@ export const SpaceListProperty = (props: {
   };
   const viewContextMenu = (e: React.MouseEvent, _schema: SpaceTableSchema) => {
     const menuOptions: SelectOption[] = [];
+    menuOptions.push({
+      name: "Open Table",
+      icon: "ui//table",
+      onClick: (e) => {
+        props.superstate.ui.openPath(
+          contextPathForSpace(spaceState, _schema.id),
+          e.metaKey
+        );
+      },
+    });
     menuOptions.push({
       name: i18n.menu.copyEmbedLink,
       icon: "ui//link",
@@ -201,10 +212,14 @@ export const SpaceListProperty = (props: {
             superstate={props.superstate}
             schema={f}
             onClick={(e) => {
-              props.superstate.ui.openPath(
-                contextPathForSpace(spaceState, f.id),
-                e.metaKey
-              );
+              if (isPhone(props.superstate.ui)) {
+                viewContextMenu(e, f);
+              } else {
+                props.superstate.ui.openPath(
+                  contextPathForSpace(spaceState, f.id),
+                  e.metaKey
+                );
+              }
             }}
             onContextMenu={(e) => {
               viewContextMenu(e, f);

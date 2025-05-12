@@ -974,6 +974,11 @@ class T {
           desc: "The height for each row in navigator (in pixels), default is 29",
         },
 
+        mobileSpaceRowHeight: {
+          name: "Row Height - Mobile",
+          desc: "The height for each row in navigator for mobile (in pixels), default is 40",
+        },
+
         contextPagination: {
           name: "Table View Pagination",
           desc: "Number of items per page in table view",

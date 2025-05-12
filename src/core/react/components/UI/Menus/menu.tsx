@@ -186,7 +186,22 @@ export const showMenu = (props: {
     if (isDrawer) {
       root.render(
         <MobileDrawer
-          fc={props.fc}
+          fc={cloneElement(props.fc, {
+            onSubmenu: (
+              openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
+            ) => {
+              const menu = openSubmenu(props.rect, () => {
+                if (props.onHide) {
+                  props.onHide();
+                }
+                hide(true);
+              });
+              if (submenu) {
+                submenu.hide(true);
+              }
+              submenu = menu;
+            },
+          })}
           hide={(supress?: boolean) => hide(supress)}
           newProps={newProps}
           className={classNames("mk-drawer-menu", props.className)}

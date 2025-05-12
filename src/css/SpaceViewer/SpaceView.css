@@ -38,8 +38,11 @@ body:not(.mk-readable-line) {
   margin-bottom: 0;
 }
 
-.mk-title-container .inline-title {
+body:not(.is-mobile) .mk-title-container .inline-title {
   width: 100%;
+}
+.is-mobile .mk-title-container .inline-title {
+  flex: 1;
 }
 .mk-title-container
 {

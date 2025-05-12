@@ -70,7 +70,7 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
       allStickers
         .filter(
           (f) =>
-            f.name.includes(query) &&
+            f.name.includes(query.toLowerCase()) &&
             (selectedCategory == null || f.type == selectedCategory)
         )
         .slice(0, page * 250)
