@@ -788,7 +788,7 @@ export const TableView = (props: { superstate: Superstate }) => {
                     setSelectedColumn(null);
                     setLastSelectedIndex(null);
                   }}
-                  onKeyPress={(e) => {
+                  onKeyDown={(e) => {
                     if (e.key == "Enter") {
                       newRow(e.currentTarget.innerText);
                       e.currentTarget.innerText = "";

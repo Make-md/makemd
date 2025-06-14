@@ -96,7 +96,7 @@ export const DateCell = (props: TableCellProp) => {
   );
   const isEmpty = !(value?.length > 0);
   return (
-    <div className="mk-cell-date" onClick={(e) => !value && showPicker(e)}>
+    <div className="mk-cell-date" onClick={(e) => showPicker(e)}>
       <div
         className={classNames(
           "mk-cell-date-item",
@@ -118,7 +118,6 @@ export const DateCell = (props: TableCellProp) => {
             type="text"
             value={value as string}
             onChange={(e) => setValue(e.target.value)}
-            onMouseDown={() => showPicker()}
             onKeyDown={onKeyDown}
             // onBlur={onBlur}
           />

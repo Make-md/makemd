@@ -71,6 +71,7 @@ export const ImageNodeView = (props: FrameNodeViewProps) => {
     }
     return true;
   }, [props.treeNode, selectionMode, frameSelected, selected]);
+
   return props.state?.props.value?.length > 0 ? (
     <img
       className="mk-node-image"

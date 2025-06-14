@@ -78,6 +78,7 @@ public loadFile: (file: AFile) => Promise<void>;
             sticker: label?.sticker.length > 0 ? label.sticker : "ui//mk-make-image",
             color: label?.color,
             thumbnail: thumbnail,
+            cover: thumbnail,
         },
         preview: {
             thumbnail: thumbnail,

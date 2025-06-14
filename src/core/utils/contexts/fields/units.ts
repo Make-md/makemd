@@ -118,6 +118,10 @@ export const unitTypes = [{
     value: `0.00"₮"`,
 },
 {
+    label: 'Rupiah',
+    value: `"Rp"0.00`,
+},
+{
     label: "Pounds",
     value: `0"lb"`,
 },

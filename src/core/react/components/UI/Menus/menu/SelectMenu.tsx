@@ -90,7 +90,6 @@ const SelectMenu = React.forwardRef(
           setTags(newTags);
         }
         if (props.saveOptions) {
-          console.log("saveOptions", newTags, selectedSection);
           props.saveOptions(
             newSuggestions.map((f) => f.value),
             newTags.map((f) => f.value),
