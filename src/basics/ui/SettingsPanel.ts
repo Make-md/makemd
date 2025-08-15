@@ -1,6 +1,6 @@
 import MakeBasicsPlugin from "basics/basics";
 import { App, DropdownComponent, Setting } from "obsidian";
-import t from "shared/i18n";
+import { i18n } from "makemd-core";
 
 export class MakeBasicsSettingsTab {
     plugin: MakeBasicsPlugin;
@@ -30,10 +30,10 @@ export class MakeBasicsSettingsTab {
       
         
         
-        containerEl.createEl("h3", { text: t.settings.sectionFlow });  
+        containerEl.createEl("h3", { text: i18n.settings.sectionFlow || "Flow" });  
         new Setting(containerEl)
-        .setName(t.settings.editorFlowReplace.name)
-        .setDesc(t.settings.editorFlowReplace.desc)
+        .setName(i18n.settings.editorFlowReplace?.name || "Flow Block")
+        .setDesc(i18n.settings.editorFlowReplace?.desc || "Open your internal links or toggle your embeds in the flow block.")
         .addToggle((toggle) =>
           toggle.setValue(this.plugin.settings.editorFlow).onChange((value) => {
             this.plugin.settings.editorFlow = value;
@@ -42,8 +42,8 @@ export class MakeBasicsSettingsTab {
           })
         );
       new Setting(containerEl)
-        .setName(t.settings.internalLinkFlowEditor.name)
-        .setDesc(t.settings.internalLinkFlowEditor.desc)
+        .setName(i18n.settings.internalLinkFlowEditor?.name || "Open Links in Flow")
+        .setDesc(i18n.settings.internalLinkFlowEditor?.desc || "Open internal links in flow block")
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.internalLinkClickFlow)
@@ -55,8 +55,8 @@ export class MakeBasicsSettingsTab {
         );
      
         new Setting(containerEl)
-        .setName(t.settings.internalLinkSticker.name)
-        .setDesc(t.settings.internalLinkSticker.desc)
+        .setName(i18n.settings.internalLinkSticker?.name || "Internal Link Sticker")
+        .setDesc(i18n.settings.internalLinkSticker?.desc || "Show stickers for internal links")
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.internalLinkSticker)
@@ -68,11 +68,11 @@ export class MakeBasicsSettingsTab {
         );
      
       new Setting(containerEl)
-        .setName(t.settings.editorFlowStyle.name)
-        .setDesc(t.settings.editorFlowStyle.desc)
+        .setName(i18n.settings.editorFlowStyle?.name || "Flow Block Style")
+        .setDesc(i18n.settings.editorFlowStyle?.desc || "Select a theme for your flow block")
         .addDropdown((dropdown: DropdownComponent) => {
-          dropdown.addOption("seamless", t.settings.editorFlowStyle.seamless);
-          dropdown.addOption("minimal", t.settings.editorFlowStyle.minimal);
+          dropdown.addOption("seamless", i18n.settings.editorFlowStyle?.seamless || "Seamless");
+          dropdown.addOption("minimal", i18n.settings.editorFlowStyle?.minimal || "Minimal");
           dropdown
             .setValue(this.plugin.settings.editorFlowStyle)
             .onChange(async (value) => {
@@ -93,10 +93,10 @@ export class MakeBasicsSettingsTab {
   
   
       
-        containerEl.createEl("h3", { text: t.settings.sectionFlowMenu });
+        containerEl.createEl("h3", { text: i18n.settings.sectionFlowMenu || "Flow Menu" });
         new Setting(containerEl)
-        .setName(t.settings.editorMakeMenu.name)
-        .setDesc(t.settings.editorMakeMenu.desc)
+        .setName(i18n.settings.editorMakeMenu?.name || "Flow Menu")
+        .setDesc(i18n.settings.editorMakeMenu?.desc || "Open the Flow menu to quickly add content")
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.flowMenuEnabled)
@@ -107,8 +107,8 @@ export class MakeBasicsSettingsTab {
             })
         );
         new Setting(containerEl)
-        .setName(t.settings.makeChar.name)
-        .setDesc(t.settings.makeChar.desc)
+        .setName(i18n.settings.makeChar?.name || "Menu Trigger Character")
+        .setDesc(i18n.settings.makeChar?.desc || "Character to trigger the flow menu")
         .addText((text) => {
           text
             .setValue(this.plugin.settings.menuTriggerChar)
@@ -133,8 +133,8 @@ export class MakeBasicsSettingsTab {
         });
         
       new Setting(containerEl)
-        .setName(t.settings.editorMakePlacholder.name)
-        .setDesc(t.settings.editorMakePlacholder.desc)
+        .setName(i18n.settings.editorMakePlacholder?.name || "Menu Placeholder")
+        .setDesc(i18n.settings.editorMakePlacholder?.desc || "Show placeholder text for menu")
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.makeMenuPlaceholder)
@@ -144,12 +144,12 @@ export class MakeBasicsSettingsTab {
               this.plugin.reloadExtensions(false);
             })
         );
-        containerEl.createEl("h3", { text: t.settings.sectionFlowStyler });
+        containerEl.createEl("h3", { text: i18n.settings.sectionFlowStyler || "Flow Styler" });
       
   
       new Setting(containerEl)
-        .setName(t.settings.inlineStyler.name)
-        .setDesc(t.settings.inlineStyler.desc)
+        .setName(i18n.settings.inlineStyler?.name || "Inline Styler")
+        .setDesc(i18n.settings.inlineStyler?.desc || "Enable inline styling options")
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.inlineStyler)
@@ -160,8 +160,8 @@ export class MakeBasicsSettingsTab {
             })
         );
         new Setting(containerEl)
-        .setName(t.settings.inlineStickerMenu.name)
-        .setDesc(t.settings.inlineStickerMenu.desc)
+        .setName(i18n.settings.inlineStickerMenu?.name || "Inline Sticker Menu")
+        .setDesc(i18n.settings.inlineStickerMenu?.desc || "Show sticker menu for inline content")
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.inlineStickerMenu)
@@ -172,8 +172,8 @@ export class MakeBasicsSettingsTab {
             })
         );
         new Setting(containerEl)
-        .setName(t.settings.inlineStylerColor.name)
-        .setDesc(t.settings.inlineStylerColor.desc)
+        .setName(i18n.settings.inlineStylerColor?.name || "Inline Styler Colors")
+        .setDesc(i18n.settings.inlineStylerColor?.desc || "Enable color options in inline styler")
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.inlineStylerColors)
@@ -184,8 +184,8 @@ export class MakeBasicsSettingsTab {
             })
         );
         new Setting(containerEl)
-        .setName(t.settings.mobileMakeBar.name)
-        .setDesc(t.settings.mobileMakeBar.desc)
+        .setName(i18n.settings.mobileMakeBar?.name || "Mobile Make Bar")
+        .setDesc(i18n.settings.mobileMakeBar?.desc || "Show make bar on mobile devices")
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.mobileMakeBar)

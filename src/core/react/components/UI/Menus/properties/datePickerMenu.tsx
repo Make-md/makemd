@@ -3,6 +3,7 @@ import { Anchors, Rect } from "shared/types/Pos";
 
 import { formatDate } from "core/utils/date";
 import { addMonths, startOfDay } from "date-fns";
+import { i18n } from "makemd-core";
 import React, { useEffect, useState } from "react";
 import { CaptionProps, DayPicker, useNavigation } from "react-day-picker";
 
@@ -280,7 +281,7 @@ export const DatePicker = (props: {
           ></button>
         </div>
       ) : props.time == DatePickerTimeMode.Toggle ? (
-        <button onClick={() => setMode(true)}>Add Time</button>
+        <button onClick={() => setMode(true)}>{i18n.menu.addTime}</button>
       ) : null}
     </div>
   );

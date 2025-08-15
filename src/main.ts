@@ -37,7 +37,7 @@ import { FileLinkView, LINK_VIEW_TYPE } from "adapters/obsidian/ui/editors/markd
 import { ContextExplorerLeafView, FILE_CONTEXT_VIEW_TYPE } from "adapters/obsidian/ui/explorer/ContextExplorerLeafView";
 
 
-import { i18n } from "makemd-core";
+import { i18n, i18nLoader } from "makemd-core";
 
 import {
   defaultConfigFile,
@@ -59,6 +59,7 @@ import { safelyParseJSON } from "shared/utils/json";
 import { modifyFlowDom } from "./adapters/obsidian/inlineContextLoader";
 
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
+import { ObsidianAssetManager } from "adapters/obsidian/assets/ObsidianAssetManager";
 import { ObsidianFileSystem } from "adapters/obsidian/filesystem/filesystem";
 
 import { ObsidianCanvasFiletypeAdapter } from "adapters/obsidian/filetypes/canvasAdapter";
@@ -124,6 +125,8 @@ import "css/SpaceViewer/Nodes.css";
 import "css/SpaceViewer/SpaceView.css";
 import "css/SpaceViewer/TableView.css";
 import "css/SpaceViewer/Text.css";
+import "css/System/GlobalTemplateEditor.css";
+import "css/System/Settings.css";
 import "css/UI/Buttons.css";
 import { IMakeMDPlugin } from "shared/types/makemd";
 import { ISuperstate } from "shared/types/superstate";
@@ -493,7 +496,7 @@ public basics: MakeBasicsPlugin;
     }
     }
     
-    if (uri.scheme == 'spaces') {
+    if (uri.scheme == 'spaces' || uri.scheme == 'mk-core') {
       openTagContext(leaf, uri.basePath, this.app)
       return;
     }
@@ -573,6 +576,18 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     this.superstate.spaceManager.addSpaceAdapter(filesystemCosmoform, true);
     this.superstate.spaceManager.addSpaceAdapter(webSpaceAdapter);
 
+    // Load language customizations from .space/lang.json
+    try {
+      const langPath = ".space/lang.json";
+      const content = await (this.obsidianAdapter).readTextFromFile(langPath);
+      if (content) {
+        const langData = JSON.parse(content);
+        i18nLoader.setOverridesFromFile(langData);
+      }
+    } catch (e) {
+      // File doesn't exist yet, that's ok
+    }
+
     addIcon("mk-logo", mkLogo);
     
     
@@ -590,6 +605,16 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     await cachePersister.initialize()
     }
     this.superstate.persister = cachePersister;
+    
+    // Replace AssetManager with ObsidianAssetManager for direct filesystem access
+    this.superstate.assets = new ObsidianAssetManager(
+      this.superstate.spaceManager, 
+      this.superstate.ui, 
+      cachePersister,
+      this
+    );
+    // Don't initialize here as it will be called during superstate.initialize()
+    
     this.loadSuperState();
     this.addSettingTab(new MakeMDPluginSettingsTab(this.app, this));
     await this.loadSpaces();

@@ -87,4 +87,5 @@ export interface MakeMDSettings {
   notesPreview: boolean;
   editStickerInSidebar: boolean;
   overrideNativeMenu: boolean;
+  onboardingCompleted: boolean;
 }

@@ -18,9 +18,9 @@ export const fieldsView : FrameRoot = {
     id: 'fieldsView',
     type: 'group',
   },
-  children: [frameRootWithProps({...listNode, children: [
-    frameRootWithProps({...listItemNode, children: [
-      kitWithProps(fieldNode, {
+  children: [frameRootWithProps({...listNode(), children: [
+    frameRootWithProps({...listItemNode(), children: [
+      kitWithProps(fieldNode(), {
         sticker: `$api.properties.sticker(listItem.props.value)`,
         type: 'listItem.props.value.type',
         value: '$contexts[listItem.props.value.table?.length > 0 ? listItem.props.value.table : $contexts.$context._path]?.[listItem.props.value.name]',
@@ -312,7 +312,7 @@ export const flowListItem: FrameRoot = {
           imageNode,
           {
             
-            value: `$api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.cover`,
+            value: `$api.path.label($contexts.$context['_path']?.[$root.props.coverProperty])?.thumbnail ?? $contexts.$context['_values']?.[$root.props.coverProperty]`,
           },
           {
             width: `'100%'`,
@@ -345,7 +345,7 @@ export const flowListItem: FrameRoot = {
             borderRadius: `'4px'`,
             overflow: `'hidden'`,
               background: `$api.path.label($contexts.$context['_keyValue'])?.color`,
-
+            
           }
         ),
         
@@ -355,7 +355,7 @@ export const flowListItem: FrameRoot = {
         {
           width: `'32px'`,
             height: `'32px'`,
-          
+          hidden: `!$contexts.$context['_isContext']`,
           marginTop: `'-16px'`,
           marginLeft: `'4px'`,
           borderRadius: `'4px'`,
@@ -579,7 +579,7 @@ export const flowListItem: FrameRoot = {
           value: `'_selected'`,
         }
       ),
-      kitWithProps(previewNode, {
+      kitWithProps(previewNode(), {
         path: `$contexts.$context['_keyValue']`,
         width: `'32px'`,
         height: `'32px'`,
@@ -635,7 +635,7 @@ export const flowListItem: FrameRoot = {
             "flex": `'1'`,
             height: `'auto'`,
           }),
-          kitWithProps(fieldNode, {
+          kitWithProps(fieldNode(), {
             type: `$contexts.$context._properties?.find(f => f.name == $root.props['previewField'])?.type`,
             value: `$contexts[$contexts.$context['_path']]?.[$root.props.previewField]`,
           }, {
@@ -861,7 +861,7 @@ export const flowListItem: FrameRoot = {
           value: `'_selected'`,
         }
       ),
-      kitWithProps(previewNode, {
+      kitWithProps(previewNode(), {
         path: `$contexts.$context['_keyValue']`,
         radius: `'4px'`,
         width: `'50px'`,
@@ -991,7 +991,7 @@ export const flowListItem: FrameRoot = {
     },
     id: "$root",
     children: [
-      kitWithProps(fieldNode, {
+      kitWithProps(fieldNode(), {
         type: `$root.props['_groupType']`,
         value: `$root.props['_groupValue']`,
       }),
@@ -1055,7 +1055,7 @@ export const flowListItem: FrameRoot = {
     },
     id: "$root",
     children: [
-      kitWithProps(fieldNode, {
+      kitWithProps(fieldNode(), {
         type: `$root.props['_groupType']`,
         value: `$root.props['_groupValue']`,
       }),
@@ -1123,7 +1123,7 @@ export const flowListItem: FrameRoot = {
     },
     id: "$root",
     children: [
-      kitWithProps(fieldNode, {
+      kitWithProps(fieldNode(), {
         type: `$root.props['_groupType']`,
         value: `$root.props['_groupValue']`,
       }),
@@ -1174,7 +1174,7 @@ export const flowListItem: FrameRoot = {
     },
     id: "$root",
     children: [
-      kitWithProps(fieldNode, {
+      kitWithProps(fieldNode(), {
         type: `$root.props['_groupType']`,
         value: `$root.props['_groupValue']`,
       }),
@@ -1214,7 +1214,7 @@ export const flowListItem: FrameRoot = {
     },
     id: "$root",
     children: [
-      kitWithProps(fieldNode, {
+      kitWithProps(fieldNode(), {
         type: `$root.props['_groupType']`,
         value: `$root.props['_groupValue']`,
       }),

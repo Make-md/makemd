@@ -73,7 +73,7 @@ export const SpaceJoins = (props: {
                 __html: props.superstate.ui.getSticker("ui//merge"),
               }}
             ></div>
-            <span>Join items from</span>
+            <span>{i18n.labels.joinItemsFrom}</span>
             <PathCrumb
               superstate={props.superstate}
               path={f.path}
@@ -104,8 +104,8 @@ export const SpaceJoins = (props: {
             <Dropdown
               superstate={props.superstate}
               options={[
-                { name: "Not including subfolders", value: "false" },
-                { name: "Including subfolders", value: "true" },
+                { name: i18n.labels.notIncludingSubfolders, value: "false" },
+                { name: i18n.labels.includingSubfolders, value: "true" },
               ]}
               value={f.recursive ? "true" : "false"}
               selectValue={(v) =>

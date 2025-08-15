@@ -72,15 +72,16 @@ export const ImageNodeView = (props: FrameNodeViewProps) => {
     return true;
   }, [props.treeNode, selectionMode, frameSelected, selected]);
 
+  const styles = { ...props.state?.styles?.theme, ...props.state?.styles };
   return props.state?.props.value?.length > 0 ? (
     <img
       className="mk-node-image"
-      width={props.state?.styles.width}
-      height={props.state?.styles.height}
+      width={styles.width}
+      height={styles.height}
       style={
         {
-          borderRadius: props.state?.styles.borderRadius,
-          maxHeight: props.state?.styles.maxHeight,
+          borderRadius: styles.borderRadius,
+          maxHeight: styles.maxHeight,
         } as React.CSSProperties
       }
       src={sourcePath}
@@ -93,8 +94,8 @@ export const ImageNodeView = (props: FrameNodeViewProps) => {
       }}
       style={
         {
-          borderRadius: props.state?.styles.borderRadius,
-          maxHeight: props.state?.styles.maxHeight,
+          borderRadius: styles.borderRadius,
+          maxHeight: styles.maxHeight,
         } as React.CSSProperties
       }
       onClick={(e) => showModal(e)}

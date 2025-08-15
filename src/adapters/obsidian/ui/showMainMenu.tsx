@@ -3,7 +3,6 @@ import {
   defaultMenu,
   menuSeparator,
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
-import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { isPhone, isTouchScreen } from "core/utils/ui/screen";
 import MakeMDPlugin from "main";
@@ -54,7 +53,7 @@ export const showMainMenu = (
 
   if (superstate.ui.getWarnings().length > 0) {
     menuOptions.push({
-      name: "Show Warnings",
+      name: i18n.menu.showWarnings,
       icon: "ui//warning",
       onClick: (e) => {
         showWarningsModal(superstate, windowFromDocument(e.view.document));
@@ -64,7 +63,7 @@ export const showMainMenu = (
   }
   if (!isPhone(superstate.ui)) {
     menuOptions.push({
-      name: "Open Overview",
+      name: i18n.buttons.openOverview,
       icon: "ui//columns",
       onClick: () => {
         plugin.openEverView();
@@ -92,34 +91,10 @@ export const showMainMenu = (
   menuOptions.push(menuSeparator);
 
   menuOptions.push({
-    name: "Rename System",
-    icon: "ui//edit",
+    name: i18n.menu.settings,
+    icon: "ui//settings",
     onClick: (e) => {
-      superstate.ui.openModal(
-        "Rename System",
-        <InputModal
-          value=""
-          saveLabel={"Rename System"}
-          saveValue={(value) => {
-            superstate.settings.systemName = value;
-            superstate.saveSettings();
-            superstate.reloadPath("/", true);
-          }}
-        ></InputModal>,
-        windowFromDocument(e.view.document)
-      );
-    },
-  });
-
-  menuOptions.push({
-    name: i18n.menu.manageHiddenFiles,
-    icon: "ui//eye-off",
-    onClick: (e) => {
-      superstate.ui.openModal(
-        i18n.labels.hiddenFiles,
-        <HiddenPaths superstate={superstate}></HiddenPaths>,
-        windowFromDocument(e.view.document)
-      );
+      superstate.ui.openPath("mk-core://settings", false);
     },
   });
 

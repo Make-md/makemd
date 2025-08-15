@@ -10,7 +10,7 @@ import i18n from "shared/i18n";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { SpaceProperty, SpaceTableColumn } from "shared/types/mdb";
 import { onlyUniqueProp, uniq } from "shared/utils/array";
-import { colors } from "shared/utils/color";
+import { getColors } from "core/utils/colorPalette";
 import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 import { InputModal } from "../../Modals/InputModal";
@@ -360,7 +360,7 @@ export const PropertyValueComponent = (props: {
         },
       });
 
-      colors.forEach((f) => {
+      getColors(props.superstate).forEach((f) => {
         menuOptions.push({
           name: f[0],
           value: f[1],

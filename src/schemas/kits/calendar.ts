@@ -108,17 +108,17 @@ export const calendarView: FrameRoot = {
                         "sem": `'h1'`
                     }),
                     frameRootWithProps({...groupNode, children: [
-                    kitWithProps(buttonNode, {
+                    kitWithProps(buttonNode(), {
                         icon: `'ui//chevron-left'`,
                     }, {}, {
                         onClick: `$saveState({$root: {props: {offset: $root.props.offset - 1}}})`,
                     }),
-                    kitWithProps(buttonNode, {
+                    kitWithProps(buttonNode(), {
                         label: `'Today'`,
                     }, {}, {
                         onClick: `$saveState({$root: {props: {offset: 0}}})`,
                     }),
-                    kitWithProps(buttonNode, {
+                    kitWithProps(buttonNode(), {
                         icon: `'ui//chevron-right'`,
                     }, {}, {
                         onClick: `$saveState({$root: {props: {offset: $root.props.offset + 1}}})`,

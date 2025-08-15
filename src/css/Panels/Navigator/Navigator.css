@@ -1,3 +1,75 @@
+/* Onboarding Banner Styles */
+.mk-onboarding-banner {
+  margin: 6px 12px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, var(--text-accent), var(--text-accent-hover));
+  border-radius: 6px;
+  color: var(--text-on-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mk-onboarding-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+}
+
+.mk-onboarding-banner-icon {
+  flex-shrink: 0;
+  opacity: 0.9;
+  display: flex;
+  align-items: center;
+}
+
+.mk-onboarding-banner-text {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mk-onboarding-banner-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--text-on-accent);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.mk-onboarding-banner-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.mk-onboarding-banner-close {
+  background: none;
+  border: none;
+  color: var(--text-on-accent);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.mk-onboarding-banner-close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .workspace .mod-root .workspace-tab-header[data-type="markdown"] .workspace-tab-header-inner-icon {
 display: flex;
 }

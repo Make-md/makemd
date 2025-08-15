@@ -8,13 +8,68 @@
 }
 
 .mk-sticker-menu .suggestion {
-  width: 240px;
-  height: 240px;
+  min-width: 300px;
+  width: 300px;
+  height: 280px;
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
   flex-direction: row;
-  
+  gap: 4px;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.mk-sticker-suggestion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 50px;
+  height: 60px;
+  padding: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mk-sticker-suggestion:hover {
+  background: var(--mk-ui-background-hover);
+}
+
+.mk-sticker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  gap: 2px;
+}
+
+.mk-sticker-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-family: emoji;
+}
+
+.mk-sticker-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.mk-sticker-label {
+  font-size: 8px;
+  text-align: center;
+  color: var(--mk-ui-text-secondary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.1;
 }
 .mk-sticker-modal {
   display: flex;

@@ -8,6 +8,7 @@ import {
   getParentFolderPaths,
   pathDisplayName,
 } from "utils/path";
+import { Settings } from "../../core/react/components/System/Settings";
 import { SpaceInner } from "../../core/react/components/SpaceView/SpaceInner";
 import { ObsidianUI } from "./ui/ui";
 
@@ -84,7 +85,14 @@ export class SpaceViewContainer extends ItemView {
     if (!this.path) return;
     this.constructNote(this.path);
 
-    const displayName = pathDisplayName(this.path, this.superstate);
+    // Handle special mk-core:// paths
+    let displayName: string;
+    if (this.path === "mk-core://settings") {
+      displayName = "Settings";
+    } else {
+      displayName = pathDisplayName(this.path, this.superstate);
+    }
+    
     const spaceCache = this.superstate.spacesIndex.get(this.path);
     await super.setState(state, result);
 
@@ -92,7 +100,9 @@ export class SpaceViewContainer extends ItemView {
     //@ts-ignore
     this.leaf.view.titleEl = displayName;
     const headerEl = this.leaf.view.headerEl;
-    if (headerEl && spaceCache) {
+    
+    // Only handle breadcrumbs for regular paths, not special mk-core:// paths
+    if (headerEl && spaceCache && !this.path.startsWith("mk-core://")) {
       //@ts-ignore
       headerEl.querySelector(".view-header-title").innerText = displayName;
       if (spaceCache.type == "folder") {
@@ -113,7 +123,19 @@ export class SpaceViewContainer extends ItemView {
           });
         }
       }
+    } else if (headerEl && this.path.startsWith("mk-core://")) {
+      // Clear breadcrumbs for special paths
+      //@ts-ignore
+      const titleElement = headerEl.querySelector(".view-header-title") as HTMLElement;
+      if (titleElement) {
+        titleElement.innerText = displayName;
+      }
+      const titleParent = headerEl.querySelector(".view-header-title-parent");
+      if (titleParent) {
+        titleParent.innerHTML = "";
+      }
     }
+    
     //@ts-ignore
     result.history = true;
     return;
@@ -142,27 +164,37 @@ export class SpaceViewContainer extends ItemView {
     );
     this.root = this.ui.createRoot(this.contentEl);
     if (this.root) {
-      this.root.render(
-        <div className="mk-space-view" data-path={path}>
-          <SpaceView
-            path={path}
-            superstate={this.superstate}
-            key={path}
-            readOnly={false}
-          >
-            <div
-              className={classNames(
-                "mk-space-scroller markdown-source-view mod-cm6"
-              )}
+      // Handle special mk-core:// paths
+      if (path === "mk-core://settings") {
+        this.root.render(
+          <div className="mk-space-view mk-settings-view" data-path={path}>
+            <Settings superstate={this.superstate} />
+          </div>
+        );
+      } else {
+        // Default space view
+        this.root.render(
+          <div className="mk-space-view" data-path={path}>
+            <SpaceView
+              path={path}
+              superstate={this.superstate}
+              key={path}
+              readOnly={false}
             >
-              <SpaceInner
-                superstate={this.superstate}
-                header={true}
-              ></SpaceInner>
-            </div>
-          </SpaceView>
-        </div>
-      );
+              <div
+                className={classNames(
+                  "mk-space-scroller markdown-source-view mod-cm6"
+                )}
+              >
+                <SpaceInner
+                  superstate={this.superstate}
+                  header={true}
+                ></SpaceInner>
+              </div>
+            </SpaceView>
+          </div>
+        );
+      }
     } else {
       this.ui.manager.eventsDispatch.addOnceListener("windowReady", () => {
         this.constructNote(path);

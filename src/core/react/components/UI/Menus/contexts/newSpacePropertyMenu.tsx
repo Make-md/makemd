@@ -291,7 +291,7 @@ const NewPropertyMenuComponent = (
           <input
             type="text"
             ref={input}
-            placeholder="Name"
+            placeholder={i18n.labels.namePlaceholder}
             onKeyDown={onKeyDown}
             onChange={(e) => setFieldName(sanitizeColumnName(e.target.value))}
             onMouseDown={(e) => e.stopPropagation()}

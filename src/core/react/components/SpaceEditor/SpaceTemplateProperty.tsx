@@ -39,12 +39,12 @@ export const SpaceTemplateProperty = (props: {
     const offset = (e.target as HTMLElement).getBoundingClientRect();
     const menuOptions = [];
     menuOptions.push({
-      name: "Set as Default",
+      name: i18n.labels.setAsDefault,
       icon: "ui//clipboard-pen",
       onClick: () => setTemplateInSpace(props.superstate, pathState.path, f),
     });
     menuOptions.push({
-      name: "Delete",
+      name: i18n.menu.delete,
       icon: "ui//trash",
       onClick: () =>
         props.superstate.spaceManager.deleteTemplate(f, spaceState.path),
@@ -65,7 +65,7 @@ export const SpaceTemplateProperty = (props: {
       formula: spaceState.metadata.templateName,
       value: {},
       fields: [],
-      description: "Automatically set a template name using a formula",
+      description: i18n.descriptions.templateNameFormula,
       path: pathState.path,
     };
     props.superstate.ui.openCustomMenu(
@@ -85,8 +85,8 @@ export const SpaceTemplateProperty = (props: {
             __html: props.superstate.ui.getSticker("ui//clipboard-pen"),
           }}
         ></div>
-        <span>Create new items using</span>
-        <span>with name</span>
+        <span>{i18n.labels.createNewItemsUsing}</span>
+        <span>{i18n.labels.withName}</span>
         <button
           className="mk-toolbar-button"
           aria-label={i18n.labels.editFormula}
@@ -98,7 +98,7 @@ export const SpaceTemplateProperty = (props: {
               __html: props.superstate.ui.getSticker("ui//formula"),
             }}
           ></div>
-          Formula
+          {i18n.properties.fileProperty.label}
         </button>
       </div>
 
@@ -119,7 +119,7 @@ export const SpaceTemplateProperty = (props: {
             {spaceState.metadata.template == f && (
               <div
                 className="mk-path-icon"
-                aria-label="Default"
+                aria-label={i18n.labels.default}
                 dangerouslySetInnerHTML={{
                   __html: props.superstate.ui.getSticker("ui//check"),
                 }}

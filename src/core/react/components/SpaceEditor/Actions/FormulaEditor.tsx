@@ -7,7 +7,7 @@ import ReactCodeMirror, {
 } from "@uiw/react-codemirror";
 import { FormulaInfo, formulasInfos } from "core/utils/formula/formulasInfos";
 import { mathjs } from "core/utils/formula/syntax";
-import { Superstate } from "makemd-core";
+import { Superstate, i18n } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
 import { fieldTypeForField } from "schemas/mdb";
 import { SpaceProperty } from "shared/types/mdb";
@@ -208,15 +208,15 @@ export const FormulaEditor = (props: FormulaEditorProps) => {
           onUpdate={onUpdate}
           onChange={saveFormula}
         />
-        <button aria-label="Save Formula" onClick={() => save()}>
-          Done
+        <button aria-label={i18n.labels.saveFormula} onClick={() => save()}>
+          {i18n.labels.done}
         </button>
       </div>
 
       <div className="mk-formula-helper">
         <div className="mk-formula-list">
           {filteredProperties.length > 0 && (
-            <div className="mk-formula-list-section">Properties</div>
+            <div className="mk-formula-list-section">{i18n.labels.properties}</div>
           )}
           {filteredProperties.map((f, i) => (
             <div
@@ -291,7 +291,7 @@ export const FormulaEditor = (props: FormulaEditorProps) => {
               <span></span>
               <button
                 className="mk-toolbar-button"
-                aria-label="Replace"
+                aria-label={i18n.labels.replace}
                 onClick={() => saveFormula(f.value)}
                 dangerouslySetInnerHTML={{
                   __html: props.superstate.ui.getSticker("ui//replace"),
@@ -299,7 +299,7 @@ export const FormulaEditor = (props: FormulaEditorProps) => {
               ></button>
               <button
                 className="mk-toolbar-button"
-                aria-label="Insert"
+                aria-label={i18n.labels.insert}
                 onClick={() => insertText(f.value, 0)}
                 dangerouslySetInnerHTML={{
                   __html: props.superstate.ui.getSticker("ui//plus"),

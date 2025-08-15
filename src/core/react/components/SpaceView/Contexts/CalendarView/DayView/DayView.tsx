@@ -64,7 +64,7 @@ export const DayView = (props: {
     isValidDate(props.date) ? startOfDay(props.date) : startOfDay(new Date())
   );
 
-  const { source } = useContext(ContextEditorContext);
+  const { source, dbSchema } = useContext(ContextEditorContext);
   const [placeholderEvent, setPlaceholderEvent] = useState<EventLayout | null>(
     null
   );
@@ -602,7 +602,8 @@ export const DayView = (props: {
                               ...props.data[event.index],
                               [props.fieldRepeat]: value,
                             }),
-                          source
+                          source,
+                          dbSchema?.id
                         )
                     : null
                 }

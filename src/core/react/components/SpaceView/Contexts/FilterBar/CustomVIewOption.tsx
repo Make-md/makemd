@@ -1,5 +1,5 @@
 import { Sticker } from "core/react/components/UI/Stickers/Sticker";
-import { UIManager } from "makemd-core";
+import { UIManager, i18n } from "makemd-core";
 import React from "react";
 export const CustomViewOption = (props: {
   ui: UIManager;
@@ -35,7 +35,7 @@ export const CustomViewOption = (props: {
           props.hide();
           props.onCustomize();
         }}
-        aria-label="Customize"
+        aria-label={i18n.labels.customize}
         className="mk-icon-small mk-inline-button"
         dangerouslySetInnerHTML={{
           __html: props.ui.getSticker("ui//brush"),

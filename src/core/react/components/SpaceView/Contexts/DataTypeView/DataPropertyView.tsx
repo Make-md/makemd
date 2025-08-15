@@ -105,7 +105,9 @@ export const DataPropertyView = (props: DataPropertyViewProps) => {
               style={{ height: "24px", fill: props.linkedColor }}
               onClick={(e) => props.linkProp(e)}
               dangerouslySetInnerHTML={{
-                __html: props.linkedProp ? "ui//circle-solid" : "ui//circle",
+                __html: props.superstate.ui.getSticker(
+                  props.linkedProp ? "ui//circle-solid" : "ui//circle"
+                ),
               }}
             ></div>
           )}

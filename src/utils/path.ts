@@ -7,6 +7,12 @@ import { Superstate } from "makemd-core";
 
     export const pathDisplayName = (path: string, superstate: Superstate) => {
   if (!path) return "";
+  
+  // Handle special mk-core:// paths
+  if (path === "mk-core://settings") {
+    return "Settings";
+  }
+  
   const uri = superstate.spaceManager.uriByString(path);
   if (uri.refType) {
   if (uri.refType == "context") {

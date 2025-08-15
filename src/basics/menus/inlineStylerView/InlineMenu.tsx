@@ -7,9 +7,9 @@ import i18n from "shared/i18n";
 
 import MakeBasicsPlugin from "basics/basics";
 import { editorInfoField } from "obsidian";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { uiIconSet } from "shared/assets/icons";
-import { colors } from "shared/utils/color";
+import { getColors, getColorPalettes } from "core/utils/colorPalette";
 import { sanitizeFileName } from "shared/utils/sanitizers";
 import { Mark } from "./Mark";
 import { InlineStyle, resolveStyles } from "./styles";
@@ -28,6 +28,66 @@ export const loadStylerIntoContainer = (
   );
 };
 
+// ColorPalettePanel component
+const ColorPalettePanel: React.FC<{
+  plugin: MakeBasicsPlugin;
+  colorMode: { prefix: string; suffix: string; closeTag: string } | null;
+  onPaletteSelect: (paletteId: string) => void;
+  onClose: () => void;
+}> = ({ plugin, colorMode, onPaletteSelect, onClose }) => {
+  const [palettes, setPalettes] = useState<any[]>([]);
+
+  useEffect(() => {
+    const colorPalettes = getColorPalettes(plugin.plugin.superstate);
+    setPalettes(colorPalettes);
+  }, [plugin]);
+
+  return (
+    <div 
+      className="mk-color-palette-panel"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={(e) => e.preventDefault()}
+    >
+      <div className="mk-color-palette-panel-header">
+        <span className="mk-color-palette-panel-title">
+          Select Palette
+        </span>
+        <div
+          className="mk-color-palette-panel-close"
+          onClick={onClose}
+          dangerouslySetInnerHTML={{
+            __html: uiIconSet["close"],
+          }}
+        />
+      </div>
+      <div className="mk-color-palette-panel-content">
+        {palettes.map((palette) => (
+          <div 
+            key={palette.id} 
+            className="mk-palette-item"
+            onClick={() => onPaletteSelect(palette.id)}
+          >
+            <div className="mk-palette-preview">
+              {palette.colors.slice(0, 5).map((color: any, index: number) => (
+                <div
+                  key={`${palette.id}-${index}`}
+                  className="mk-palette-preview-circle"
+                  style={{
+                    backgroundColor: color.value,
+                    marginLeft: index > 0 ? '-6px' : '0',
+                    zIndex: palette.colors.length - index,
+                  }}
+                />
+              ))}
+            </div>
+            <div className="mk-palette-name">{palette.name}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const InlineMenuComponent: React.FC<{
   cm?: EditorView;
   activeMarks: string[];
@@ -40,6 +100,90 @@ export const InlineMenuComponent: React.FC<{
     suffix: string;
     closeTag: string;
   } | null>(null);
+  const [showPalettePanel, setShowPalettePanel] = useState(false);
+  const [selectedPaletteId, setSelectedPaletteId] = useState<string>(() => {
+    return props.plugin.settings?.inlineStylerSelectedPalette || "";
+  });
+  const [hasColorSpan, setHasColorSpan] = useState(false);
+
+  const handlePaletteSelect = (paletteId: string) => {
+    setSelectedPaletteId(paletteId);
+    if (props.plugin.settings) {
+      props.plugin.settings.inlineStylerSelectedPalette = paletteId;
+      props.plugin.enactor.saveSettings();
+    }
+    setShowPalettePanel(false);
+  };
+
+  const isGradient = (color: string): boolean => {
+    return color.includes('linear-gradient') || color.includes('radial-gradient') || color.includes('conic-gradient');
+  };
+
+  const getColorMarkup = (color: string, selectedText: string, isTextColor: boolean): string => {
+    if (isTextColor && isGradient(color)) {
+      return `<span style='background-image: ${color}; color: transparent; background-clip: text; -webkit-background-clip: text;'>${selectedText}</span>`;
+    } else if (isTextColor) {
+      return `<span style='color: ${color}'>${selectedText}</span>`;
+    } else {
+      return `<mark style='background: ${color}'>${selectedText}</mark>`;
+    }
+  };
+
+  const detectColorSpanInSelection = useCallback(() => {
+    const cm = props.cm ?? getActiveCM(props.plugin);
+    if (!cm) return false;
+    
+    const selection = cm.state.selection.main;
+    const selectedText = cm.state.sliceDoc(selection.from, selection.to);
+    
+    // Check for span tags with color styling (both regular color and gradient)
+    const colorSpanRegex = /<span[^>]*style=['"]*[^'"]*(?:color:|background-image:)[^'"]*['"]*[^>]*>.*?<\/span>/gi;
+    const markRegex = /<mark[^>]*style=['"]*[^'"]*background:[^'"]*['"]*[^>]*>.*?<\/mark>/gi;
+    
+    return colorSpanRegex.test(selectedText) || markRegex.test(selectedText);
+  }, [props.cm, props.plugin]);
+
+  const clearColorFromSelection = () => {
+    const cm = props.cm ?? getActiveCM(props.plugin);
+    if (!cm) return;
+    
+    const selection = cm.state.selection.main;
+    const selectedText = cm.state.sliceDoc(selection.from, selection.to);
+    
+    // Remove span tags with color styling and mark tags
+    const cleanedText = selectedText
+      .replace(/<span[^>]*style=['"]*[^'"]*(?:color:|background-image:)[^'"]*['"]*[^>]*>(.*?)<\/span>/gi, '$1')
+      .replace(/<mark[^>]*style=['"]*[^'"]*background:[^'"]*['"]*[^>]*>(.*?)<\/mark>/gi, '$1');
+    
+    cm.dispatch({
+      changes: {
+        from: selection.from,
+        to: selection.to,
+        insert: cleanedText,
+      },
+    });
+    
+    setHasColorSpan(false);
+  };
+
+  const getSelectedPaletteColors = () => {
+    if (!selectedPaletteId) {
+      return getColors(props.plugin.plugin.superstate);
+    }
+    
+    const palettes = getColorPalettes(props.plugin.plugin.superstate);
+    const selectedPalette = palettes.find(p => p.id === selectedPaletteId);
+    
+    if (selectedPalette) {
+      return selectedPalette.colors.map((color: any) => [color.name, color.value]);
+    }
+    
+    return getColors(props.plugin.plugin.superstate);
+  };
+
+  useEffect(() => {
+    setHasColorSpan(detectColorSpanInSelection());
+  }, [detectColorSpanInSelection, props.activeMarks]);
 
   const makeMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -62,6 +206,7 @@ export const InlineMenuComponent: React.FC<{
       },
     });
   };
+
   const toggleMarkAction = (e: React.MouseEvent, s: InlineStyle) => {
     e.preventDefault();
     const cm = props.cm ?? getActiveCM(props.plugin);
@@ -215,7 +360,7 @@ export const InlineMenuComponent: React.FC<{
           __html: uiIconSet["close"],
         }}
       ></div>
-      {colors.map((c, i) => (
+      {getSelectedPaletteColors().map((c, i) => (
         <div
           key={i}
           onMouseDown={() => {
@@ -228,16 +373,15 @@ export const InlineMenuComponent: React.FC<{
               selection.from,
               selection.to
             );
+            
+            const isTextColor = colorMode?.prefix.includes('color:') ?? false;
+            const markup = getColorMarkup(c[1], selectedText, isTextColor);
+            
             cm.dispatch({
               changes: {
                 from: selection.from,
                 to: selection.to,
-                insert:
-                  colorMode.prefix +
-                  c[1] +
-                  colorMode.suffix +
-                  selectedText +
-                  colorMode.closeTag,
+                insert: markup,
               },
             });
           }}
@@ -245,6 +389,22 @@ export const InlineMenuComponent: React.FC<{
           style={{ background: c[1] }}
         ></div>
       ))}
+      <div
+        aria-label="Color Palette"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setShowPalettePanel(!showPalettePanel);
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        className={`mk-mark ${showPalettePanel ? 'mk-mark-active' : ''}`}
+        dangerouslySetInnerHTML={{
+          __html: uiIconSet["palette"],
+        }}
+      ></div>
     </>
   );
 
@@ -454,6 +614,27 @@ export const InlineMenuComponent: React.FC<{
       {props.plugin.settings.inlineStylerColors ? (
         <>
           <div className="mk-divider"></div>
+          {hasColorSpan && (
+            <div
+              aria-label="Clear Color"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                clearColorFromSelection();
+              }}
+              className="mk-color mk-mark"
+              style={{ 
+                background: 'var(--background-secondary)',
+                border: '1px solid var(--background-modifier-border)',
+                position: 'relative'
+              }}
+            >
+              <div className="mk-color-none-icon">
+                <svg width="100%" height="100%" viewBox="0 0 20 20">
+                  <line x1="2" y1="2" x2="18" y2="18" stroke="#ef4444" strokeWidth="2" />
+                </svg>
+              </div>
+            </div>
+          )}
           <div
             aria-label={
               !props.plugin.isTouchScreen() ? i18n.styles.textColor : undefined
@@ -496,17 +677,27 @@ export const InlineMenuComponent: React.FC<{
   );
 
   return (
-    <div
-      className={classNames(
-        props.mobile ? "mk-style-toolbar" : "mk-style-menu"
+    <>
+      <div
+        className={classNames(
+          props.mobile ? "mk-style-toolbar" : "mk-style-menu"
+        )}
+        onMouseDown={(e) => e.preventDefault()}
+      >
+        {mode == 0 && props.mobile
+          ? makeMode()
+          : mode == 2
+          ? colorsMode()
+          : marksMode()}
+      </div>
+      {showPalettePanel && (
+        <ColorPalettePanel
+          plugin={props.plugin}
+          colorMode={colorMode}
+          onPaletteSelect={handlePaletteSelect}
+          onClose={() => setShowPalettePanel(false)}
+        />
       )}
-      onMouseDown={(e) => e.preventDefault()}
-    >
-      {mode == 0 && props.mobile
-        ? makeMode()
-        : mode == 2
-        ? colorsMode()
-        : marksMode()}
-    </div>
+    </>
   );
 };

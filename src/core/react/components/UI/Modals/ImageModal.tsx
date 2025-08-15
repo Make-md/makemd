@@ -21,6 +21,20 @@ const ImageModal: React.FC<ImageModalProps> = (props) => {
 
   useEffect(() => {
     const _allImages: ImagePreview[] = [];
+    
+    // Add asset manager cover images first (to display at top)
+    const assetManager = (props.superstate as any).assets;
+    if (assetManager && assetManager.getAllCoverImages) {
+      const coverImages = assetManager.getAllCoverImages();
+      _allImages.push(
+        ...coverImages.map((coverImage: any) => ({
+          path: coverImage.url,
+          thumnail: coverImage.url,
+        }))
+      );
+    }
+    
+    // Add existing images from pathsIndex
     _allImages.push(
       ...[...props.superstate.pathsIndex.values()]
         .filter((f) => f.subtype == "image")

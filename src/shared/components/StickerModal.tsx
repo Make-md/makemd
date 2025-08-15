@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { Sticker } from "shared/types/ui";
 import { emojiFromString } from "shared/utils/stickers";
-import i18n from "../i18n";
+import { default as i18n } from "shared/i18n";
 import { IUIManager as UIManager } from "../types/uiManager";
 
 interface StickerModalProps {
@@ -130,7 +130,7 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
             selectedCategory == null ? "is-active" : ""
           } mk-menu-section`}
         >
-          All
+          {i18n.labels.all}
         </div>
 
         {[...categories].map((f) => (

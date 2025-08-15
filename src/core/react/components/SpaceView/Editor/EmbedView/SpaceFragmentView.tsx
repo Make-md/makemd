@@ -13,6 +13,7 @@ import {
 } from "schemas/mdb";
 import { URI } from "shared/types/path";
 import { SpaceFragmentType } from "shared/types/spaceFragment";
+import { Visualization } from "../../../Visualization/Visualization";
 import { ContextListContainer } from "../../Contexts/ContextListContainer";
 import { FrameInstanceView } from "../../Frames/ViewNodes/FrameInstance";
 
@@ -72,6 +73,12 @@ export const SpaceFragmentViewComponent = (
           if (schema?.type == "view") {
             setSpaceFragment({
               type: "context",
+              path: path.basePath,
+              frameSchema: path.ref,
+            });
+          } else if (schema?.type == "vis") {
+            setSpaceFragment({
+              type: "vis",
               path: path.basePath,
               frameSchema: path.ref,
             });
@@ -142,6 +149,17 @@ export const SpaceFragmentViewComponent = (
               ></FrameInstanceView>
             </FrameInstanceProvider>
           </FrameRootProvider>
+        ) : spaceFragment?.type == "vis" ? (
+          <Visualization
+            mdbFrameId={spaceFragment.frameSchema}
+            sourcePath={spaceFragment.path}
+            superstate={props.superstate}
+            style={{
+              width: "100%",
+              height: "100%",
+              minHeight: "400px",
+            }}
+          />
         ) : spaceFragment?.type == "action" ? (
           <SpaceCommand
             superstate={props.superstate}

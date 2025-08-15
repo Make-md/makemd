@@ -1,4 +1,9 @@
-import { SpaceProperty, SpaceTableSchema } from "./mdb";
+import { FrameState } from "./frameExec";
+import { IAPI } from "./api";
+import { SpaceProperty as Property, SpaceTableSchema } from "./mdb";
+
+// Interaction type for event handlers
+export type Interaction = any;
 
 export type MFrame = {
     id: string;
@@ -8,6 +13,7 @@ export type MFrame = {
     parentId?: string;
     props?: string;
     actions?: string;
+    interactions?: string;
     ref?: string;
     rank: string;
     styles?: string;
@@ -15,6 +21,7 @@ export type MFrame = {
 }
 
 export type FrameTreeProp = Record<string, any>;
+export type ActionProp = Record<string, (e: Interaction, value: any, state: FrameState, saveState: (state: FrameState) => void, api: IAPI ) => void>;
   export type FrameSchema = {
     id: string;
   name: string;
@@ -40,7 +47,7 @@ export type FrameTreeProp = Record<string, any>;
 
   export type FrameNode = {
     styles?: FrameTreeProp;
-    name: string;
+    name?: string;
     //key value for a context and a path
     contexts?: FrameTreeProp;
     props?: FrameTreeProp;
@@ -48,22 +55,20 @@ export type FrameTreeProp = Record<string, any>;
     propsValue?: FrameTreeProp;
     propsAttrs?: FrameTreeProp;
     actions?: FrameTreeProp;
-    
+    interactions?: FrameTreeProp;
     parentId?: string;
     ref?: string;
     type: string;
-    rank: number;
-    schemaId: string;
+    rank?: number;
+    schemaId?: string;
     icon?: string;
     id: string;
   };
 
   export type MDBFrame = {
     schema: SpaceTableSchema;
-    cols: SpaceProperty[];
+    cols: Property[];
     rows: MFrame[];
   };
 
   export type MDBFrames = { [key: string] : MDBFrame}
-
- 

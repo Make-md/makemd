@@ -49,32 +49,74 @@ export const stringIsConst = (str: string): boolean => {
 export const kitWithProps = (root: FrameRoot,
   props: DBRow,
   styles?: FrameTreeProp,
-  actions?: FrameTreeProp) => {
-    return frameRootWithProps({...root, node: {...root.node, type:"frame", ref: "spaces://$kit/#*"+root.id}, children: []}, props, styles, actions);
+  actions?: FrameTreeProp,
+  interactions?: FrameTreeProp) => {
+    if (!root) {
+      return {} as FrameRoot;
+    }
+    
+    const safeRoot = {
+      ...root,
+      node: {
+        ...(root.node || { id: '', schemaId: '', parentId: '', name: '', rank: 0, type: 'frame' }),
+        type: "frame",
+        ref: "spaces://$kit/#*" + (root.id || ''),
+        id: root.node?.id || '',
+        schemaId: root.node?.schemaId || '',
+        parentId: root.node?.parentId || '',
+        name: root.node?.name || '',
+        rank: root.node?.rank || 0
+      },
+      children: [] as FrameRoot[]
+    };
+    
+    return frameRootWithProps(safeRoot, props, styles, actions, interactions);
   }
 
 export const frameRootWithProps = (
   root: FrameRoot,
-  props: DBRow,
+  props: FrameTreeProp,
   styles?: FrameTreeProp,
-  actions?: FrameTreeProp
-) => {
+  actions?: FrameTreeProp,
+  interactions?: FrameTreeProp
+) : FrameRoot => {
+  if (!root || !root.node) {
+    return {
+      id: root?.id || 'unknown',
+      def: root?.def || { id: 'unknown' },
+      node: {
+        type: 'frame',
+        ref: 'spaces://$kit/#*unknown',
+        id: root?.id || '',
+        schemaId: '',
+        parentId: '',
+        name: 'Unknown',
+        rank: root?.node?.rank || 0
+      },
+      children: [] as FrameRoot[]
+    };
+  }
+  
   return {
     ...root,
     node: {
       ...root.node,
       props: {
-        ...root.node.props,
-        ...props,
+        ...(root.node.props || {}),
+        ...(props || {}),
       },
       styles: {
-        ...root.node.styles,
-        ...styles,
+        ...(root.node.styles || {}),
+        ...(styles || {}),
       },
       actions: {
-        ...root.node.actions,
-        ...actions,
+        ...(root.node.actions || {}),
+        ...(actions || {}),
       },
+      interactions: {
+        ...(root.node.interactions || {}),
+        ...(interactions || {})
+      }
     },
   };
 };

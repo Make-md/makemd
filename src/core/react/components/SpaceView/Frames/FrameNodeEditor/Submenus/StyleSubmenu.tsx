@@ -26,12 +26,22 @@ export const StyleSubmenu = (props: HoverSubmenuProps) => {
   return (
     <>
       <div
+        style={{
+          fontSize: "11px",
+          color: "var(--mk-ui-text-tertiary)",
+          marginRight: "4px",
+        }}
+      >
+        {i18n.editor.fill}
+      </div>
+      <div
         className="mk-color"
         onClick={(e) => showColorMenu(e, "background")}
         style={{
           background: removeQuotes(props.selectedNode.styles?.["background"]),
         }}
       ></div>
+
       <BorderSubmenu {...props}></BorderSubmenu>
 
       {/* <div

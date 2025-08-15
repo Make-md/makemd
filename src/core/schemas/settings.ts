@@ -1,4 +1,5 @@
 import { MakeMDSettings } from "../../shared/types/settings";
+import { BasicDefaultSettings } from "../../basics/schemas/settings";
 
 
 
@@ -82,9 +83,10 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   skipFolders: [],
   enhancedLogs: false,
   basics: true,
-  basicsSettings: null,
+  basicsSettings: BasicDefaultSettings,
   firstLaunch: false,
   notesPreview: false,
   editStickerInSidebar: true,
   overrideNativeMenu: false,
+  onboardingCompleted: false,
 };

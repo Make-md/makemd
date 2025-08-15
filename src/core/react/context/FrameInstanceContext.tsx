@@ -21,6 +21,7 @@ import React, {
 import { FrameRunInstance, FrameState, StyleAst } from "shared/types/frameExec";
 import { FrameTreeProp } from "shared/types/mframe";
 import { Edges } from "shared/types/Pos";
+import { defaultStyleAst } from "schemas/kits/defaultStyleAst";
 import { FramesEditorRootContext } from "./FrameEditorRootContext";
 import { FrameRootContext } from "./FrameRootContext";
 
@@ -108,13 +109,19 @@ export const FrameInstanceProvider: React.FC<
   const saveState = (newState: FrameState, instance: FrameRunInstance) => {
     const { root: _root, exec: _exec, id: runID, state } = instance;
     renameKey(newState, "$root", _exec.id);
-    if (activeRunID.current != runID) return;
+    
+    if (activeRunID.current != runID) {
+      return;
+    }
+    
     const { $api, ...prevState } = state;
+    const appliedState = applyPropsToState(newState, rootProps, _exec.id);
+    
     executeTreeNode(
       _exec,
       {
         state,
-        newState: applyPropsToState(newState, rootProps, _exec.id),
+        newState: appliedState,
         prevState: _.cloneDeep(prevState),
         slides: {},
       },
@@ -166,99 +173,6 @@ export const FrameInstanceProvider: React.FC<
       const newRoot = _.cloneDeep(root);
       const runID = uniqueId();
       activeRunID.current = runID;
-      const defaultStyleAst: StyleAst = {
-        sem: "root",
-        type: "style",
-        selector: "",
-        styles: {},
-        children: [
-          {
-            sem: "h1",
-            type: "style",
-            selector: "",
-            styles: {
-              "--font-text-size": "var(--h1-size)",
-              "--text-normal": "var(--h1-color)",
-              "--font-weight": "var(--h1-weight)",
-            },
-            children: [],
-          },
-          {
-            sem: "h2",
-            type: "style",
-            selector: "",
-            styles: {
-              "--font-text-size": "var(--h2-size)",
-              "--text-normal": "var(--h2-color)",
-              "--font-weight": "var(--h2-weight)",
-            },
-            children: [],
-          },
-          {
-            sem: "h3",
-            type: "style",
-            selector: "",
-            styles: {
-              "--font-text-size": "var(--h3-size)",
-              "--text-normal": "var(--h3-color)",
-              "--font-weight": "var(--h3-weight)",
-            },
-            children: [],
-          },
-          {
-            sem: "h4",
-            type: "style",
-            selector: "",
-            styles: {
-              "--font-text-size": "var(--h4-size)",
-              "--text-normal": "var(--h4-color)",
-              "--font-weight": "var(--h4-weight)",
-            },
-            children: [],
-          },
-          {
-            sem: "h5",
-            type: "style",
-            selector: "",
-            styles: {
-              "--font-text-size": "var(--h5-size)",
-              "--text-normal": "var(--h5-color)",
-              "--font-weight": "var(--h5-weight)",
-            },
-            children: [],
-          },
-          {
-            sem: "h6",
-            type: "style",
-            selector: "",
-            styles: {
-              "--font-text-size": "var(--h6-size)",
-              "--text-normal": "var(--h6-color)",
-              "--font-weight": "var(--h6-weight)",
-            },
-            children: [],
-          },
-          {
-            sem: "button",
-            type: "style",
-            selector: "",
-            styles: {
-              color: "var(--text-color)",
-              backgroundColor: "var(--interactive-normal)",
-              boxShadow: "var(--input-shadow)",
-              fontSize: "var(--font-ui-small)",
-              borderRadius: "var(--button-radius)",
-              padding: "var(--size-4-1) var(--size-4-3)",
-              height: "var(--input-height)",
-              fontWeight: "var(--input-font-weight)",
-              cursor: "var(--cursor)",
-              display: "flex",
-              alignItems: "center",
-            },
-            children: [],
-          },
-        ],
-      };
       executeTreeNode(
         newRoot,
         {

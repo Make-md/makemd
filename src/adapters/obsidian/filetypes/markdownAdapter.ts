@@ -458,6 +458,8 @@ public app: App;
                         frontmatter[this.plugin.superstate.settings.fmKeyColor] = content(frontmatter);
                     } else if (fragmentId == 'name') {
                         frontmatter[this.plugin.superstate.settings.fmKeyAlias] = [content(frontmatter)];
+                    }else if (fragmentId == 'cover') {
+                        frontmatter[this.plugin.superstate.settings.fmKeyBanner] = content(frontmatter);
                     }
                     
                     

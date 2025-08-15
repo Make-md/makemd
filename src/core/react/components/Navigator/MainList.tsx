@@ -1,6 +1,6 @@
 import { SpaceTreeComponent } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 import { isTouchScreen } from "core/utils/ui/screen";
-import { Superstate } from "makemd-core";
+import { Superstate, i18n } from "makemd-core";
 import React, { useEffect } from "react";
 import { ErrorBoundary, useErrorBoundary } from "react-error-boundary";
 import { FocusSelector } from "./Focuses/FocusSelector";
@@ -59,10 +59,10 @@ export function ErrorFallback({ error }: { error: Error }) {
   };
   return (
     <div role="alert">
-      <p>Something went wrong:</p>
+      <p>{i18n.notice.somethingWentWrong}</p>
       <p style={{ color: "red" }}>{error.message}</p>
-      <button onClick={copyError}>Copy Error</button>
-      <button onClick={resetBoundary}>Reload</button>
+      <button onClick={copyError}>{i18n.notice.copyError}</button>
+      <button onClick={resetBoundary}>{i18n.notice.reload}</button>
     </div>
   );
 }

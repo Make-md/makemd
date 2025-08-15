@@ -78,7 +78,7 @@ export const BlinkComponent = (props: {
     ? [
         {
           type: "section",
-          label: "Items",
+          label: (i18n.labels as any).blink?.items || "Items",
         },
         ...[...props.superstate.spacesMap.getInverse(props.parentSpace)]
           .map((f) => props.superstate.pathsIndex.get(f))
@@ -89,7 +89,7 @@ export const BlinkComponent = (props: {
   const recentPaths = [
     {
       type: "section",
-      label: "Recent",
+      label: (i18n.labels as any).blink?.recent || "Recent",
     },
     ...props.superstate.ui
       .navigationHistory()
@@ -117,7 +117,7 @@ export const BlinkComponent = (props: {
       const defaultSpaces: BlinkItem[] = [
         {
           type: "section",
-          label: "Create New",
+          label: (i18n.labels as any).blink?.createNew || "Create New",
         },
       ];
       if (props.mode != BlinkMode.OpenSpaces) {
@@ -125,21 +125,21 @@ export const BlinkComponent = (props: {
           type: "new-note",
           sticker: "ui//edit",
           value: query,
-          label: "New Note",
+          label: (i18n.labels as any).blink?.newNote || "New Note",
         });
       }
       defaultSpaces.push({
         type: "new-space",
         sticker: "ui//folder-plus",
         value: query,
-        label: "New Space",
+        label: (i18n.labels as any).blink?.newSpace || "New Space",
       });
       if (filters.length == 0) {
         props.superstate.search(path, query).then((g) =>
           setFilteredPaths([
             {
               type: "section",
-              label: "Results",
+              label: (i18n.labels as any).blink?.results || "Results",
             },
             ...g.map((f) => pathToBlinkItem(f)),
             ...defaultSpaces,

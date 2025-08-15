@@ -118,6 +118,7 @@ export const TextNodeView = (props: FrameNodeViewProps) => {
     return false;
   }, [props.treeNode, selectionMode, frameSelected, selected, linkedProps]);
 
+
   return (
     props.state && (
       <div

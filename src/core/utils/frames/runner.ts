@@ -3,32 +3,73 @@ import { ensureArray } from 'core/utils/strings';
 import { API } from 'makemd-core';
 import { FrameContexts, FrameExecProp, FrameExecutable, FrameExecutableContext, FrameNodeState, FrameRunInstance, FrameState, StyleAst } from "shared/types/frameExec";
 import { FrameNode, FrameTreeProp } from 'shared/types/mframe';
+import { uniq } from 'shared/utils/array';
 import { buildExecutable } from './executable';
 import { linkTreeNodes } from './linker';
 
 export type ResultStore = { state: FrameState, newState: FrameState, slides: FrameState, prevState: FrameState, styleAsts?: StyleAst[] };
 
-const styleAstsForNode = (style: FrameTreeProp, styleAsts?: StyleAst[]) : [FrameTreeProp, StyleAst[]] => {
-    if (!styleAsts) return null;
-    const newStyleAsts = [];
-    newStyleAsts.push(...styleAsts);
-        const matchedStyleAsts = styleAsts.filter(f => f.sem == style.sem);
-        
-        matchedStyleAsts.forEach(f => {
-            f.children.forEach((c) => {
-                newStyleAsts.push(c)
-            });
-        })
-        const styles = {
-            ...matchedStyleAsts.reduce((acc, curr) => {
-                return {
-                    ...acc,
-                    ...curr.styles
-                };
-            }
-            , {}),
-        }
-    return [{...style, ...styles}, newStyleAsts]
+const styleAstsForNode = (
+  style: FrameTreeProp,
+  styleAsts?: StyleAst[]
+) : [FrameTreeProp, StyleAst[]] => {
+  if (!styleAsts) {
+    return null;
+  }
+
+  const newStyleAsts = [];
+  newStyleAsts.push(...styleAsts);
+  const matchedStyleAsts = styleAsts.filter(f => f.sem == style.sem);
+
+  matchedStyleAsts.forEach(f => {
+      f.children.forEach((c) => {
+          newStyleAsts.push(c)
+      });
+  })
+  
+
+  // Collect base styles from matched StyleAsts
+  const kitStyles: Record<string, any> = {
+      ...matchedStyleAsts.reduce((acc, curr) => {
+          return {
+              ...acc,
+              ...curr.styles
+          };
+      }
+      , {}),
+  }
+
+  // When sem changes, we want the new StyleAst styles to replace the old ones
+  // So we filter out style properties that exist in the kit from the node styles
+  const kitStyleKeys = Object.keys(kitStyles);
+  const nodeOnlyStyles = Object.entries(style).reduce((acc, [key, value]) => {
+    // Keep the property only if it's not defined in the kit styles
+    if (!kitStyleKeys.includes(key)) {
+      acc[key] = value;
+    }
+    return acc;
+  }, {} as FrameTreeProp);
+  
+  // Fix background/backgroundColor conflicts
+  // If node has 'background' or 'backgroundImage' (gradient) and kit has 'backgroundColor', remove backgroundColor from kit
+  if ((nodeOnlyStyles.background || nodeOnlyStyles.backgroundImage) && 'backgroundColor' in kitStyles) {
+    delete kitStyles.backgroundColor;
+  }
+  // Also check for hover states
+  Object.keys(kitStyles).forEach(key => {
+    if (key.startsWith('hover:backgroundColor') && (nodeOnlyStyles.background || nodeOnlyStyles.backgroundImage)) {
+      // Convert hover:backgroundColor to hover:background to prevent conflicts
+      kitStyles['hover:background'] = kitStyles[key];
+      delete kitStyles[key];
+    }
+  });
+
+  // Merge kit styles with filtered node styles
+  // This ensures kit styles take precedence for properties they define
+  const mergedStyles = {...kitStyles, ...nodeOnlyStyles};
+  
+
+  return [mergedStyles, newStyleAsts]
 }
 
 
@@ -62,20 +103,23 @@ export const executeTreeNode = async (
         }
         
         if (skipped)
-        return {id: executionContext.runID, root: executionContext.root, exec: treeNode, state: store.state, slides: store.slides, newState: store.newState, prevState: store.prevState, contexts: executionContext.contexts}
+        return {id: executionContext.runID, root: executionContext.root, exec: treeNode, state: store.state, slides: store.slides, newState: store.newState, prevState: store.prevState, contexts: executionContext.contexts, styleAst: executionContext.styleAst}
         
     }
     let execState = await executeNode(treeNode, store, executionContext.contexts, executionContext.api);
+    
     if (executionContext.styleAst) {
-        let style = execState.state[treeNode.id].styles
+        const style = execState.state[treeNode.id].styles
         if (!store.styleAsts) {
             store.styleAsts = executionContext.styleAst.children;
         }
+        
+        
         const computedStyles = styleAstsForNode(style, store.styleAsts);
         if (computedStyles) {
             const [newStyle, styleAsts] = computedStyles ?? [null, null];
             if (newStyle) {
-                style = newStyle;
+                style.theme = newStyle;
             }
             store.styleAsts = styleAsts;
         }
@@ -147,7 +191,7 @@ export const executeTreeNode = async (
         }
     }
     
-    return {id: executionContext.runID, root: executionContext.root, exec: treeNode, state: execState.state, slides: execState.slides, newState: execState.newState, prevState: execState.prevState, contexts: executionContext.contexts}
+    return {id: executionContext.runID, root: executionContext.root, exec: treeNode, state: execState.state, slides: execState.slides, newState: execState.newState, prevState: execState.prevState, contexts: executionContext.contexts, styleAst: executionContext.styleAst}
 }
 
 
@@ -226,25 +270,27 @@ function executeCodeBlocks(node: FrameNode, type: 'actions' | 'styles', codeBloc
     // results.state[node.id][type] = codeBlockStore
     // Prepare an environment for executing code blocks.
 const { id } = node
-    for (const key of Object.keys(codeBlockStore)) {
+    for (const key of uniq([...Object.keys(codeBlockStore), ...Object.keys(results.newState?.[id]?.[type] ?? {})])) {
         let result;
         // Execute the code block.
         try {
-            if (key in (results.newState?.[id]?.[type] || {})) {
-                result = results.newState[id][type][key]
+            if (key in (results.newState?.[id]?.[type] || {}) && results.newState[id][type][key] !== undefined) {
+                result = results.newState[id][type][key];
             } else {
-                result = codeBlockStore[key]?.call(results.state);
+                try {
+                    result = codeBlockStore[key]?.call(results.state);
+                } catch (execError) {
+                    throw execError;
+                }
             }
-        // Store the result.
+            // Store the result.
 
-        if (result !== null) {
-            results.state[node.id][type][key] = result;
-        } else {
-            delete results.state[node.id][type][key]
-        }
-        
+            if (result !== null) {
+                results.state[node.id][type][key] = result;
+            } else {
+                delete results.state[node.id][type][key];
+            }
         } catch (error) {
-            console.log(error, key)
         }
     }
 

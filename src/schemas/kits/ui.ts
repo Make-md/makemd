@@ -1,463 +1,608 @@
 import { frameRootWithProps } from "core/utils/frames/frames";
-import i18n from "shared/i18n";
+import { i18n } from "makemd-core";
 
 import { FrameRoot } from "shared/types/mframe";
-import { contentNode, flowNode, groupNode, iconNode, imageNode, textNode } from "./base";
-import { deltaNode, slideNode, slidesNode } from "./slides";
+import {
+  contentNode,
+  flowNode,
+  groupNode,
+  iconNode,
+  imageNode,
+  textNode,
+} from './base';
+import { deltaNode, slideNode, slidesNode } from './slides';
 
-export const groupableTypes = ["content", "group", "container", 'column', 'list', 'slides', 'slide'];
+export const groupableTypes = [
+  'content',
+  'group',
+  'container',
+  'column',
+  'list',
+  'slides',
+  'slide',
+];
 
-export const listNode: FrameRoot = {
+export const listNode = () : FrameRoot => ({
   def: {
     id: 'list',
-    icon: "ui//list"
-  }, node: {
     icon: 'ui//list',
-    schemaId: "list",
-    parentId: "",
+  },
+  node: {
+    icon: 'ui//list',
+    schemaId: 'list',
+    parentId: '',
     name: 'List',
     rank: 0,
-    id: "list",
+    id: 'list',
     styles: {},
-    type: "list",
+    type: 'list',
 
     props: {
-      value: "",
+      value: '',
     },
     types: {
-      value: "multi",
+      value: 'multi',
     },
-  }
-};
+  },
+});
 
-export const listItemNode: FrameRoot = {
+export const listItemNode = () : FrameRoot => ({
   def: {
     id: 'listItem',
-    icon: "ui//list"
-  }, node: {
     icon: 'ui//list',
-    schemaId: "listItem",
-    parentId: "",
+  },
+  node: {
+    icon: 'ui//list',
+    schemaId: 'listItem',
+    parentId: '',
     name: 'List Item',
     rank: 0,
-    id: "listItem",
+    id: 'listItem',
     styles: {},
-    type: "listItem",
+    type: 'listItem',
 
     props: {
-      value: "",
+      value: '',
     },
     types: {
-      value: "object",
+      value: 'object',
     },
-  }
-};
-export const dividerNode: FrameRoot = {
+  },
+});
+export const dividerNode : FrameRoot = {
   def: {
     id: 'divider',
-    icon: "ui//minus",
+    icon: 'ui//minus',
     description: i18n.frames.divider.description,
   },
   node: {
-    icon: "ui//minus",
-    schemaId: "divider",
-    parentId: "",
+    icon: 'ui//minus',
+    schemaId: 'divider',
+    parentId: '',
     name: i18n.frames.divider.label,
     rank: 0,
-    id: "divider",
-    type: "group",
+    id: 'divider',
+    type: 'group',
     styles: {
       width: `'100%'`,
       height: `'16px'`,
       borderBottom: `'1px solid var(--mk-ui-divider)'`,
-    }
-  }
+    },
+  },
 };
 
-
-
-
-export const buttonNode: FrameRoot = {
-  id: "button",
+export const countdownNode = () : FrameRoot => ({
   def: {
-    id: 'button',
-    icon: "ui//mouse-pointer-click",
-    description: i18n.frames.button.description
+    id: 'countdown',
+    icon: 'ui//clock',
   },
   node: {
-    icon: "ui//mouse-pointer-click",
-    schemaId: "button",
-    parentId: "",
+    icon: 'ui//clock',
+    schemaId: 'countdown',
+    parentId: '',
+    name: 'Countdown',
+    rank: 0,
+    id: 'countdown',
+    type: 'group',
+    props: {
+      date: '',
+    },
+    types: {
+      date: 'date',
+    },
+  },
+  children: [
+    {
+      ...textNode,
+      node: {
+        ...textNode.node,
+        props: {
+          date: '',
+          value: `var _second = 1000;
+            var _minute = _second * 60;
+            var _hour = _minute * 60;
+            var _day = _hour * 24;
+            var timer;
+            var distance = new Date($root.props['date'])-$api.utils.date.now();
+            var days = Math.floor(distance / _day);
+            var hours = Math.floor((distance % _day) / _hour);
+            var minutes = Math.floor((distance % _hour) / _minute);
+            var seconds = Math.floor((distance % _minute) / _second);
+            return days + ":" + hours + ":" + minutes + ':' + seconds;`,
+        },
+        types: {
+          date: 'date',
+          value: 'string',
+        },
+        actions: {
+          onRun: `setTimeout(() => $saveState({}), 1000)`,
+        },
+      },
+    },
+  ],
+});
+
+export const buttonNode = () : FrameRoot => ({
+  id: 'button',
+  def: {
+    id: 'button',
+    icon: 'ui//mouse-pointer-click',
+    description: i18n.frames.button.description,
+  },
+  node: {
+    icon: 'ui//mouse-pointer-click',
+    schemaId: 'button',
+    parentId: '',
     name: i18n.frames.button.label,
     rank: 0,
-    id: "button",
-    type: "group",
+    id: 'button',
+    type: 'group',
     props: {
-      icon: "",
-      label: "",
-      iconSize: "18",
+      icon: '',
+      label: '',
+      iconSize: '18',
       action: '',
-      actionValue: ''
+      actionValue: '',
     },
     types: {
       icon: 'icon',
       iconSize: 'number',
-      label: "text",
+      label: 'text',
       action: 'option',
-      actionValue: 'super'
+      actionValue: 'super',
     },
     propsAttrs: {
-      action: JSON.stringify({
+      action: ({
         name: i18n.properties.super.whenClicked,
-        icon: "ui//mouse-pointer-click",
+        icon: 'ui//mouse-pointer-click',
       }),
-      actionValue: JSON.stringify({
+      actionValue: ({
         name: i18n.properties.super.performAction,
-      })
+      }),
     },
     propsValue: {
-      icon: JSON.stringify({
-        alias: "Icon",
+      icon: ({
+        alias: 'Icon',
       }),
-      label: JSON.stringify({
-        alias: "Label",
+      label: ({
+        alias: 'Label',
       }),
-      iconSize: JSON.stringify({
-        alias: "Icon Size",
+      iconSize: ({
+        alias: 'Icon Size',
       }),
-      action: JSON.stringify({
-        alias: "Action",
+      action: ({
+        alias: 'Action',
         options: [],
-        source: "$super"
+        source: '$super',
       }),
-      actionValue: JSON.stringify({
-        alias: "Action Properties",
+      actionValue: ({
+        alias: 'Action Properties',
         dynamic: true,
-        field: 'action'
-      })
+        field: 'action',
+      }),
     },
     actions: {
-      onClick: `$api.commands.run(button.props.action, button.props.actionValue, $contexts, $saveState)`
+      onClick: `$api.commands.runByPath(button.props.action, button.props.actionValue, $contexts, $saveState)`,
+    },
+    interactions: {
+      onClick: 'onClick',
     },
     styles: {
       sem: `'button'`,
-      gap: `'4px'`
-    }
-  }, children: [
+    },
+  },
+  children: [
     {
-      ...iconNode, node: {
-        ...iconNode.node, props: {
-          value: `button.props.icon`
-        }, styles: {
+      ...iconNode,
+      node: {
+        ...iconNode.node,
+        props: {
+          value: `button.props.icon`,
+        },
+        styles: {
           '--icon-size': 'button.props.iconSize+"px"',
           // width: `'18px'`,
           // height: `'18px'`,
-        }
-      }
-    }, { ...textNode, node: { ...textNode.node, props: { value: `button.props.label` } } }
-  ]
-};
+        },
+      },
+    },
+    {
+      ...textNode,
+      node: { ...textNode.node, props: { value: `button.props.label` } },
+    },
+  ],
+});
 
-export const tabsNode: FrameRoot = {
-  id: "tabs",
+export const tabsNode = (): FrameRoot => ({
+  id: 'tabs',
   def: {
     id: 'tabs',
-    icon: "ui//tabs"
+    icon: 'ui//tabs',
   },
   node: {
-    icon: "ui//tabs",
-    schemaId: "tabs",
-    parentId: "",
+    icon: 'ui//tabs',
+    schemaId: 'tabs',
+    parentId: '',
     name: i18n.commands.tabs,
     rank: 0,
-    id: "tabs",
-    type: "group",
+    id: 'tabs',
+    type: 'group',
     props: {
-      currentTab: "0",
-      tabs: "[{'name': 'Tab 1', 'view': ''}, {'name': 'Tab 2', 'view': ''}]"
+      currentTab: '0',
+      tabs: "[{'name': 'Tab 1', 'view': ''}, {'name': 'Tab 2', 'view': ''}]",
     },
     propsValue: {
-      tabs: JSON.stringify({
-        alias: "Tabs",
-        typeName: "Tab",
+      tabs: ({
+        alias: 'Tabs',
+        typeName: 'Tab',
         type: {
           name: {
-            type: "text",
-            value: JSON.stringify({alias: "Label"})
+            type: 'text',
+            value: ({ alias: 'Label' }),
           },
           view: {
-            type: "link",
-            value: JSON.stringify({alias: "Page"})
+            type: 'link',
+            value: ({ alias: 'Page' }),
           },
         },
       }),
-      currentTab: JSON.stringify({
-        alias: "Selected Tab",
+      currentTab: ({
+        alias: 'Selected Tab',
       }),
     },
     types: {
       tabs: 'object-multi',
-      currentTab: 'number'
+      currentTab: 'number',
     },
     styles: {
-      layout: `'row'`,
+      layout: `'column'`,
       width: `'100%'`,
       gap: `'8px'`,
-    }
+    },
   },
   children: [
-    frameRootWithProps({...listNode, children: [
-      frameRootWithProps({...listItemNode, children: [
-        frameRootWithProps(
-                textNode,
-                {
-                  value: `listItem.props.value.name`,
-                },
-                {
-                  padding: `'4px 8px'`,
-                  color: `$root.props.currentTab == listItem.props._index ? 'var(--mk-ui-text-primary)' : 'var(--mk-ui-text-tertiary)'`,
-                  borderBottom: `$root.props.currentTab == listItem.props._index ? '2px solid var(--mk-ui-active)' : 'none'`
-                 },
-                 {
-                  onClick: `$saveState({$root: {props: {currentTab: listItem.props._index}}})`
-                }
-              ),
-          ]},  {})]},
-        {value: `$root.props.tabs`}, 
-        {layout: `'row'`, columnGap: `'8px'`,
-          flexWrap: `'wrap'`,
-          rowGap: `'4px'`}
-        
-      ),
-      frameRootWithProps(
-        flowNode,
-        {
-          value: `$root.props.tabs[$root.props.currentTab].view`,
-        },
-        {
-          padding: `'0px'`,
-          "--mk-expanded": `true`,
-          "--mk-min-mode": `true`
-        },
-       {}),
-      ]
-};
+    frameRootWithProps(
+      {
+        ...listNode(),
+        children: [
+          frameRootWithProps(
+            {
+              ...listItemNode(),
+              children: [
+                frameRootWithProps(
+                  textNode,
+                  {
+                    value: `listItem.props.value.name`,
+                  },
+                  {
+                    sem: `$root.props.currentTab == listItem.props._index ? 'tab-active' : 'tab'`,
+                  },
+                  {
+                    onClick: `$saveState({$root: {props: {currentTab: listItem.props._index}}})`,
+                  },
+                  {
+                    onClick: 'onClick'
+                  }
+                ),
+              ],
+            },
+            {},
+          ),
+        ],
+      },
+      { value: `$root.props.tabs` },
+      {
+        layout: `'row'`,
+        columnGap: `'8px'`,
+        flexWrap: `'wrap'`,
+        rowGap: `'4px'`,
+      },
+    ),
+    frameRootWithProps(
+      flowNode,
+      {
+        value: `$root.props.tabs[$root.props.currentTab].view`,
+      },
+      {
+        padding: `'0px'`,
+        '--mk-expanded': `true`,
+        '--mk-min-mode': `true`,
+      },
+      {},
+    ),
+  ],
+});
 
-export const fieldNode: FrameRoot = {
-  id: "field",
+export const fieldNode = (): FrameRoot => ({
+  id: 'field',
   def: {
     id: 'field',
     description: i18n.frames.field.description,
   },
   node: {
-    schemaId: "field",
-    parentId: "",
+    schemaId: 'field',
+    parentId: '',
     name: i18n.frames.field.label,
     rank: 0,
-    id: "field",
-    type: "group",
+    id: 'field',
+    type: 'group',
     props: {
-      type: "",
-      value: "",
-      sticker: "",
-      property: ""
+      type: '',
+      value: '',
+      sticker: '',
+      property: '',
     },
     types: {
-      value: "text",
-      type: "text",
-      sticker: "text",
-      property: 'object'
+      value: 'text',
+      type: 'text',
+      sticker: 'text',
+      property: 'object',
     },
     styles: {
-      "--font-text-size": `'14px'`,
+      '--font-text-size': `'14px'`,
       fontSize: `'14px'`,
-      hidden: `$root.props.value?.length == 0`
-    }
-    
+      hidden: `$root.props.value?.length == 0`,
+    },
   },
-  children: [frameRootWithProps({...groupNode, children:[ 
+  children: [
     frameRootWithProps(
-          iconNode,
-          {
-            value: `$api.properties.sticker($root.props.property, $root.props.value)`,
-          },
       {
-        "width": `'16px'`,
-        "height": `'16px'`,
-        "color": `'var(--mk-ui-text-secondary)'`,
-        "marginTop": `'4px'`,
-      }
-    ),
-    frameRootWithProps({...groupNode, children:[ 
-    
-    
-        frameRootWithProps(
-          textNode,
-          {
-            value: `$root.props.value`,
-          },
-      {
-        padding: `'4px 8px'`,
-    borderRadius: `'4px'`,
-       background: `$api.properties.color($root.props.property, $root.props.value)`, 
-        hidden: `$root.props.type != 'option'`,
-      }
-    ),
-    frameRootWithProps(
-      textNode,
-      {
-        value: `$root.props.value`,
+        ...groupNode,
+        children: [
+          frameRootWithProps(
+            textNode,
+            {
+              value: `$root.props.value`,
+            },
+            {
+              padding: `'4px 8px'`,
+              borderRadius: `'4px'`,
+              background: `$api.properties.color($root.props.property, $root.props.value)`,
+              hidden: `$root.props.type != 'option'`,
+            },
+          ),
+          frameRootWithProps(
+            textNode,
+            {
+              value: `$root.props.value`,
+            },
+            {
+              sem: `$root.props.property?.value?.format`,
+              hidden: `$root.props.type != 'text' && $root.props.type != 'number' && $root.props.type != 'fileprop'`,
+            },
+          ),
+          frameRootWithProps(
+            {
+              ...groupNode,
+              children: [
+                frameRootWithProps(
+                  iconNode,
+                  { value: `'ui//check'` },
+                  {
+                    background: `'var(--mk-ui-active)'`,
+                    width: `'16px'`,
+                    height: `'16px'`,
+                  },
+                ),
+                frameRootWithProps(textNode, {
+                  value: `$root.props.property?.name`,
+                }),
+              ],
+            },
+            {},
+            {
+              layout: `'row'`,
+              gap: `'4px'`,
+              layoutAlign: `'w'`,
+              height: `'auto'`,
+              hidden: `$root.props.type != 'boolean'`,
+            },
+          ),
+          frameRootWithProps(
+            imageNode,
+            {
+              value: `$root.props.value`,
+            },
+            {
+              width: `'50px'`,
+              height: `'50px'`,
+              hidden: `$root.props.type != 'image'`,
+            },
+          ),
+          frameRootWithProps(
+            iconNode,
+            {
+              value: `$root.props.value`,
+            },
+            {
+              hidden: `$root.props.type != 'icon'`,
+            },
+          ),
+          frameRootWithProps(
+            flowNode,
+            {
+              value: `$root.props.value`,
+            },
+            {
+              hidden: `$root.props.type != 'link' && $root.props.type != 'file' && $root.props.type != 'context'`,
+              padding: `'0px'`,
+            },
+          ),
+        ],
       },
-      {
-        hidden: `$root.props.type != 'text' && $root.props.type != 'number' && $root.props.type != 'fileprop'`,
-      }
-    ),
-    frameRootWithProps(
-      textNode,
-      {
-        value: `$api.date.format($api.date.parse($root.props.value))`,
-      },
-      {
-        hidden: `$root.props.type != 'date'`,
-      }
-    ),
-    frameRootWithProps(
-      {...groupNode, children: [
-        frameRootWithProps(iconNode, {value: `'ui//check'`}, { background: `'var(--mk-ui-active)'`, "width": `'16px'`, height: `'16px'`, borderRadius: `'2px'`, padding: `'2px'`}),
-        frameRootWithProps(textNode, {value: `$root.props.property?.name`})
-      ]},
       {},
       {
         layout: `'row'`,
-        gap: `'4px'`,
         layoutAlign: `'w'`,
         height: `'auto'`,
-        hidden: `$root.props.type != 'boolean'`,
-      }
+        gap: `'8px'`,
+        minHeight: `'24px'`,
+        hidden: `!($root.props.value?.length > 0) || $root.props.type?.includes('multi')`,
+      },
     ),
     frameRootWithProps(
-      imageNode,
       {
-        value: `$root.props.value`,
+        ...listNode(),
+        children: [
+          frameRootWithProps(
+            {
+              ...listItemNode(),
+              children: [
+                frameRootWithProps(
+                  textNode,
+                  {
+                    value: `listItem.props.value`,
+                  },
+                  {
+                    padding: `'4px 8px'`,
+                    borderRadius: `'4px'`,
+                    background: `$api.properties.color($root.props.property, listItem.props.value)`,
+                    hidden: `$root.props.type != 'option-multi' && $root.props.type != 'tags'`,
+                  },
+                ),
+                frameRootWithProps(
+                  flowNode,
+                  {
+                    value: `listItem.props.value`,
+                  },
+                  {
+                    hidden: `$root.props.type != 'link-multi' && $root.props.type != 'context-multi'`,
+                    padding: `'0px'`,
+                  },
+                ),
+              ],
+            },
+            {},
+          ),
+        ],
       },
+      { value: `$api.properties.value($root.props.type, $root.props.value)` },
       {
-        width: `'50px'`,
-        height: `'50px'`,
-        hidden: `$root.props.type != 'image'`,
-      }
+        layout: `'row'`,
+        columnGap: `'8px'`,
+        flexWrap: `'wrap'`,
+        rowGap: `'4px'`,
+        hidden: `!$root.props.type?.includes('multi')`,
+      },
     ),
+  ],
+});
+
+export const checkboxNode = (): FrameRoot => ({
+  id: 'checkbox',
+  def: {
+    id: 'checkbox',
+    icon: 'ui//check',
+  },
+  node: {
+    icon: 'ui//check',
+    schemaId: 'checkbox',
+    parentId: '',
+    name: 'Checkbox',
+    rank: 0,
+    id: 'checkbox',
+    type: 'group',
+    props: {
+      value: 'false',
+    },
+    types: {
+      value: 'boolean',
+    },
+    styles: {
+      layout: `'row'`,
+      width: `'18px'`,
+      height: `'18px'`,
+      backgroundColor: `'var(--background-secondary)'`,
+      padding: `'2px'`,
+      border: `'thin solid var(--mk-ui-border)'`,
+      borderRadius: `'4px'`,
+      cursor: `'pointer'`,
+      transition: `'all 0.15s ease'`,
+      'hover:backgroundColor': `'var(--mk-ui-background-hover)'`,
+      'hover:borderColor': `'var(--mk-ui-border-hover)'`,
+      'hover:transform': `'scale(1.05)'`,
+      'press:backgroundColor': `'var(--mk-ui-background-active)'`,
+      'press:transform': `'scale(0.95)'`,
+      'focus:borderColor': `'var(--mk-ui-accent)'`,
+      'focus:outline': `'2px solid var(--mk-ui-accent)'`,
+      'focus:outlineOffset': `'2px'`,
+    },
+    actions: {
+      onClick: `$saveState({ $root: {props: { value: !$root.props.value }} })`,
+    },
+    interactions: {
+      onClick: 'onClick',
+    },
+  },
+  children: [
     frameRootWithProps(
       iconNode,
       {
-        value: `$root.props.value`,
+        value: `$root.props.value ? 'ui//check' : ''`,
       },
       {
-        hidden: `$root.props.type != 'icon'`,
-      }
-    ),
-    frameRootWithProps(
-      flowNode,
-      {
-        value: `$root.props.value`,
+        width: `'12px'`,
+        height: `'12px'`,
       },
-      {
-        hidden: `$root.props.type != 'link' && $root.props.type != 'file' && $root.props.type != 'context'`,
-        padding: `'0px'`,
-        "--mk-link": `true`
-      }
     ),
-  ]}, {}, {
-    layout: `'row'`,
-    layoutAlign: `'w'`,
-    height: `'auto'`,
-    gap: `'8px'`,
-    minHeight: `'24px'`,
-    hidden: `!($root.props.value?.length > 0) || $root.props.type?.contains('multi')`
-  }), 
-  frameRootWithProps({...listNode, children: [
-    frameRootWithProps({...listItemNode, children: [
-      frameRootWithProps(
-              textNode,
-              {
-                value: `listItem.props.value`,
-              },
-              {
-                padding: `'4px 8px'`,
-                borderRadius: `'4px'`,
-                background: `$api.properties.color($root.props.property, listItem.props.value)`, 
-                 hidden: `$root.props.type != 'option-multi' && $root.props.type != 'tags'`,
-               }
-            ),
-        frameRootWithProps(
-          flowNode,
-          {
-            value: `listItem.props.value`,
-          },
-          {
-            hidden: `$root.props.type != 'link-multi' && $root.props.type != 'context-multi'`,
-            padding: `'0px'`,
-            "--mk-link": `true`
-          }
-        )]}, {}),
-      ]}, 
-      {value: `$api.properties.value($root.props.type, $root.props.value)`}, 
-      {layout: `'row'`, columnGap: `'8px'`,
-      flexWrap: `'wrap'`,
-      rowGap: `'4px'`, hidden: `!$root.props.type?.includes('multi')`})
-    ]}, {}, {
-      layout: `'row'`,
-      layoutAlign: `'nw'`,
-      gap: `'8px'`,
-      height: `'auto'`,
-    })]
-}
+  ],
+});
 
-export const previewNode: FrameRoot = {
-  id: "preview",
+export const previewNode = (): FrameRoot => ({
+  id: 'preview',
   def: {
     id: 'preview',
   },
   node: {
-    schemaId: "preview",
-    parentId: "",
-    name: "Preview",
+    schemaId: 'preview',
+    parentId: '',
+    name: 'Preview',
     rank: 0,
-    id: "preview",
-    type: "group",
+    id: 'preview',
+    type: 'group',
     props: {
-      path: "",
+      path: '',
       width: `"50px"`,
       height: `'50px'`,
       radius: `'8px'`,
       padding: `'16px'`,
     },
     types: {
-      path: "link",
+      path: 'link',
       width: 'text',
       height: 'text',
       radius: 'text',
       padding: 'text',
     },
     styles: {
-        background: `'var(--background-secondary)'`,
-        height: `$root.props.height`,
-        borderRadius: `$root.props.radius`,
-        overflow: `'hidden'`
-    }
+      background: `'var(--background-secondary)'`,
+      height: `$root.props.height`,
+      borderRadius: `$root.props.radius`,
+      overflow: `'hidden'`,
+    },
   },
   children: [
-    frameRootWithProps(
-      imageNode,
-      {
-        value: `$api.path.label(preview.props.path)?.cover`,
-      },
-      {
-        width: `$root.props.width`,
-        height: `$root.props.height`,
-        hidden: `$api.path.label(preview.props.path)?.cover?.length == 0`,
-        borderRadius: `$root.props.radius`,
-      }
-    ),
+
     frameRootWithProps(
       iconNode,
       {
@@ -466,108 +611,123 @@ export const previewNode: FrameRoot = {
       {
         width: `$root.props.width`,
         height: `$root.props.height`,
-        hidden: `$api.path.label(preview.props.path)?.cover?.length > 0`,
+        hidden: `$api.path.label(preview.props.path)?.thumbnail?.length > 0`,
         borderRadius: `$root.props.radius`,
-          background: `$api.path.label(preview.props.path)?.color`,
-          padding: `$root.props.padding`,
-          overflow: `'hidden'`
-      }
+        background: `$api.path.label(preview.props.path)?.color`,
+        padding: `$root.props.padding`,
+        overflow: `'hidden'`,
+      },
     ),
-  ]
-}
+  ],
+});
 
-
-export const ratingNode: FrameRoot = {
-  id: "rating",
+export const ratingNode = (): FrameRoot => ({
+  id: 'rating',
   def: {
     id: 'rating',
-    icon: "ui//star"
+    icon: 'ui//star',
   },
   node: {
-    icon: "ui//star",
-    schemaId: "rating",
-    parentId: "",
+    icon: 'ui//star',
+    schemaId: 'rating',
+    parentId: '',
     name: i18n.commands.rating,
     rank: 0,
-    id: "rating",
-    type: "group",
+    id: 'rating',
+    type: 'group',
     props: {
-      value: "5",
-      icon: `'ui//star'`
+      value: '5',
+      icon: `'ui//star'`,
     },
     types: {
       value: 'number',
-      icon: 'icon'
+      icon: 'icon',
     },
     styles: {
       layout: `'row'`,
-      height: `'16px'`
-    }
-    
-  }, children: [
-    frameRootWithProps(iconNode, {
-      value: `$root.props.icon`
-    }, {
-      width: `$root.styles.height`,
-      height: `$root.styles.height`,
-      hidden: `$root.props.value < 1`
-    }),
-    frameRootWithProps(iconNode, {
-      
-      value: `$root.props.icon`
-    }, {
-      width: `$root.styles.height`,
-      height: `$root.styles.height`,
-      hidden: `$root.props.value < 2`
-    }),
-    frameRootWithProps(iconNode, {
-      
-      value: `$root.props.icon`
-    }, {
-      width: `$root.styles.height`,
-      height: `$root.styles.height`,
-      hidden: `$root.props.value < 3`
-    }),
-    frameRootWithProps(iconNode, {
-      
-      value: `$root.props.icon`
-    }, {
-      width: `$root.styles.height`,
-      height: `$root.styles.height`,
-      hidden: `$root.props.value < 4`
-    }),
-    frameRootWithProps(iconNode, {
-      
-      value: `$root.props.icon`
-    }, {
-      width: `$root.styles.height`,
-      height: `$root.styles.height`,
-      hidden: `$root.props.value < 5`
-    })
-  ]
-};
+      height: `'16px'`,
+    },
+  },
+  children: [
+    frameRootWithProps(
+      iconNode,
+      {
+        value: `$root.props.icon`,
+      },
+      {
+        width: `$root.styles.height`,
+        height: `$root.styles.height`,
+        hidden: `$root.props.value < 1`,
+      },
+    ),
+    frameRootWithProps(
+      iconNode,
+      {
+        value: `$root.props.icon`,
+      },
+      {
+        width: `$root.styles.height`,
+        height: `$root.styles.height`,
+        hidden: `$root.props.value < 2`,
+      },
+    ),
+    frameRootWithProps(
+      iconNode,
+      {
+        value: `$root.props.icon`,
+      },
+      {
+        width: `$root.styles.height`,
+        height: `$root.styles.height`,
+        hidden: `$root.props.value < 3`,
+      },
+    ),
+    frameRootWithProps(
+      iconNode,
+      {
+        value: `$root.props.icon`,
+      },
+      {
+        width: `$root.styles.height`,
+        height: `$root.styles.height`,
+        hidden: `$root.props.value < 4`,
+      },
+    ),
+    frameRootWithProps(
+      iconNode,
+      {
+        value: `$root.props.icon`,
+      },
+      {
+        width: `$root.styles.height`,
+        height: `$root.styles.height`,
+        hidden: `$root.props.value < 5`,
+      },
+    ),
+  ],
+});
 
-export const callout: FrameRoot = {
-  id: "callout",
+export const callout = (): FrameRoot => ({
+  id: 'callout',
   def: {
     id: 'callout',
-    icon: "ui//callout"
+    icon: 'ui//callout',
   },
   node: {
-    icon: "ui//callout",
-    schemaId: "callout",
-    parentId: "",
+    icon: 'ui//callout',
+    schemaId: 'callout',
+    parentId: '',
     name: i18n.commands.callout,
     rank: 0,
-    id: "callout",
-    type: "group",
+    id: 'callout',
+    type: 'group',
     props: {
-      icon: "",
-      note: ""
+      icon: '',
+      note: '',
     },
     types: {
       icon: 'icon',
-      note: "link"
+      note: 'link',
     },
     styles: {
       borderRadius: `'8px'`,
@@ -576,57 +736,75 @@ export const callout: FrameRoot = {
       layout: `'row'`,
       gap: `'8px'`,
       padding: `'16px'`,
-    }
-  }, children: [
-    frameRootWithProps(iconNode, {
-      value: `callout.props.icon`
-    }, {
-      width: `'18px'`,
-      height: `'18px'`,
-    }), frameRootWithProps({ ...contentNode, children: [
-      frameRootWithProps(flowNode, {
-        value: `callout.props.note`
-      }, {
-        width: `'100%'`,
-        "--mk-expanded": `true`,
-        "--mk-min-mode": `true`
-      })]
-    }, {}, {
-      width: `'auto'`,
-      flex: `'1'`,
-    })
-  ]
-}
+    },
+  },
+  children: [
+    frameRootWithProps(
+      iconNode,
+      {
+        value: `callout.props.icon`,
+      },
+      {
+        width: `'18px'`,
+        height: `'18px'`,
+      },
+    ),
+    frameRootWithProps(
+      {
+        ...contentNode,
+        children: [
+          frameRootWithProps(
+            flowNode,
+            {
+              value: `callout.props.note`,
+            },
+            {
+              width: `'100%'`,
+              '--mk-expanded': `true`,
+              '--mk-min-mode': `true`,
+            },
+          ),
+        ],
+      },
+      {},
+      {
+        width: `'auto'`,
+        flex: `'1'`,
+      },
+    ),
+  ],
+});
 
-export const toggleNode: FrameRoot = {
-  id: "toggle",
+export const toggleNode = (): FrameRoot => ({
+  id: 'toggle',
   def: {
     id: 'toggle',
-    icon: "ui//collapse-solid",
-    description: i18n.frames.toggle.description
+    icon: 'ui//collapse-solid',
+    description: i18n.frames.toggle.description,
   },
   node: {
-    icon: "ui//collapse-solid",
-    schemaId: "toggle",
-    parentId: "",
+    icon: 'ui//collapse-solid',
+    schemaId: 'toggle',
+    parentId: '',
     name: i18n.commands.toggle,
     rank: 0,
-    id: "toggle",
-    type: "group",
+    id: 'toggle',
+    type: 'group',
     props: {
-      value: "false",
-      label: "",
-      note: "",
+      value: 'false',
+      label: '',
+      note: '',
     },
     types: {
       value: 'boolean',
-      label: "text",
-      note: "link"
+      label: 'text',
+      note: 'link',
     },
     styles: {
       width: `'100%'`,
-    }
-  }, children: [
+    },
+  },
+  children: [
     frameRootWithProps(
       {
         ...slidesNode,
@@ -636,253 +814,266 @@ export const toggleNode: FrameRoot = {
               ...slideNode,
               children: [
                 frameRootWithProps(
-                  { ...deltaNode, node: { ...deltaNode.node, ref: "icon" } },
+                  { ...deltaNode, node: { ...deltaNode.node, ref: 'icon' } },
                   {},
                   {
                     transform: `'rotate(90deg)'`,
-                  }
+                  },
                 ),
-                
               ],
             },
-            { value: "true" }
+            { value: 'true' },
           ),
           frameRootWithProps(
             {
               ...slideNode,
               children: [
                 frameRootWithProps(
-                  { ...deltaNode, node: { ...deltaNode.node, ref: "icon" } },
+                  { ...deltaNode, node: { ...deltaNode.node, ref: 'icon' } },
                   {},
                   {
                     transform: `'rotate(0deg)'`,
-                  }
+                  },
                 ),
-                
               ],
             },
-            { value: "false" }
+            { value: 'false' },
           ),
         ],
       },
       {
         value: `'value'`,
-      }
+      },
     ),
-    frameRootWithProps({
-      ...groupNode, children: [
-    {
-      ...iconNode, node: {
-        ...iconNode.node, props: {
-          value: `'ui//collapse-solid'`
-        },
-        styles: {
-          width: `'16px'`,
-          height: `'16px'`,
-          transform: `'rotate(90deg)'`,
-        },
-        actions: {
-          onClick: `$saveState({ toggle: {props: { value: !toggle.props.value }} })`
-        },
-      }
-    }, { ...textNode, node: { ...textNode.node, props: { value: `toggle.props.label` } } }]}, {}, {
-      height: `'auto'`,
-      layoutAlign: `'w'`,
-      gap: `'8px'`,
-layout: `'row'`
-    }),
-    frameRootWithProps({ ...contentNode, children: [
-    frameRootWithProps(flowNode, {
-      value: `toggle.props.note`
-    }, {
-      width: `'auto'`,
-      flex: `'1'`,
-      "--mk-expanded": `true`,
-        "--mk-min-mode": `true`,
-    })]
-  }, {}, {paddingLeft: `'24px'`, hidden: `!toggle.props.value`})
-  ]
-}
+    frameRootWithProps(
+      {
+        ...groupNode,
+        children: [
+          {
+            ...iconNode,
+            node: {
+              ...iconNode.node,
+              props: {
+                value: `'ui//collapse-solid'`,
+              },
+              styles: {
+                width: `'16px'`,
+                height: `'16px'`,
+                transform: `'rotate(90deg)'`,
+                cursor: `'pointer'`,
+                transition: `'all 0.15s ease'`,
+                borderRadius: `'2px'`,
+                'hover:backgroundColor': `'var(--mk-ui-background-hover)'`,
+                'hover:transform': `'rotate(90deg) scale(1.1)'`,
+                'press:backgroundColor': `'var(--mk-ui-background-active)'`,
+                'press:transform': `'rotate(90deg) scale(0.95)'`,
+                'focus:outline': `'2px solid var(--mk-ui-accent)'`,
+                'focus:outlineOffset': `'2px'`,
+              },
+              actions: {
+                onClick: `$saveState({ toggle: {props: { value: !toggle.props.value }} })`,
+              },
+              interactions: {
+                onClick: 'onClick',
+              },
+            },
+          },
+          {
+            ...textNode,
+            node: { ...textNode.node, props: { value: `toggle.props.label` } },
+          },
+        ],
+      },
+      {},
+      {
+        height: `'auto'`,
+        layoutAlign: `'w'`,
+        gap: `'8px'`,
+        layout: `'row'`,
+      },
+    ),
+    frameRootWithProps(
+      {
+        ...contentNode,
+        children: [
+          frameRootWithProps(
+            flowNode,
+            {
+              value: `toggle.props.note`,
+            },
+            {
+              width: `'auto'`,
+              flex: `'1'`,
+              '--mk-expanded': `true`,
+              '--mk-min-mode': `true`,
+            },
+          ),
+        ],
+      },
+      {},
+      { paddingLeft: `'24px'`, hidden: `!toggle.props.value` },
+    ),
+  ],
+});
 
-
-
-export const progressNode: FrameRoot = {
-  id: "progress",
+export const progressNode = (): FrameRoot => ({
+  id: 'progress',
   def: {
     id: 'progress',
-    icon: "ui//pie-chart"
+    icon: 'ui//pie-chart',
   },
   node: {
-    icon: "ui//pie-chart",
-    schemaId: "progress",
-    parentId: "",
+    icon: 'ui//pie-chart',
+    schemaId: 'progress',
+    parentId: '',
     name: i18n.commands.progress,
     rank: 0,
-    id: "progress",
-    type: "group",
+    id: 'progress',
+    type: 'group',
     props: {
-      value: "50",
-      max: "100",
-      color: "'var(--background-modifier-form-field)'",
-      backgroundColor: `'var(--color-orange)'`
+      value: '50',
+      max: '100',
+      color: "'var(--mk-ui-background)'",
+      backgroundColor: `'var(--mk-color-orange)'`,
     },
     types: {
       value: 'number',
-      max: "number",
+      max: 'number',
       color: 'color',
-      backgroundColor: 'color'
+      backgroundColor: 'color',
     },
     styles: {
       background: `$root.props.color`,
       height: `'10px'`,
       width: `'100px'`,
       borderRadius: `'5px'`,
-    }
-  }, children: [
+    },
+  },
+  children: [
     {
-      ...groupNode, node: {
-        ...groupNode.node, styles: {
+      ...groupNode,
+      node: {
+        ...groupNode.node,
+        styles: {
           width: `$root.props.value/$root.props.max*100+'%'`,
           height: `'100%'`,
           borderRadius: `'5px'`,
           background: `$root.props.backgroundColor`,
-          display: `'block'`
-        }
-      }
-    }
-  ]
-};
-
-export const circularProgressNode: FrameRoot = {
-  id: "circularProgress",
-  def: {
-    id: 'circularProgress',
-    icon: "ui//pie-chart"
-  },
-  node: {
-    icon: "ui//pie-chart",
-    schemaId: "circularProgress",
-    parentId: "",
-    name: i18n.commands.circularProgress,
-    rank: 0,
-    id: "circularProgress",
-    type: "group",
-    props: {
-      value: "50",
-      max: "100",
-      color: `'var(--color-orange)'`,
-      backgroundColor: "'var(--background-modifier-form-field)'",
-      ringWidth: "5" 
+          display: `'block'`,
+        },
+      },
     },
-    types: {
-      value: "number",
-      color: 'color',
-      max: 'number',
-      backgroundColor: 'color',
-      ringWidth: 'number'
-    },
-    styles: {
-      height: `'100px'`,
-      width: `'100px'`,
-    }
-  }, 
-  children: [
-    frameRootWithProps(groupNode,
-      {
+  ],
+});
 
-      }, 
-      {
-        background: 
-    "`conic-gradient(${$root.props.color} ${$root.props.value/$root.props.max*100}%, ${$root.props.backgroundColor} 0)`",
-    "maskImage": "`radial-gradient(circle calc(calc(${$root.styles.width} - ${$root.props.ringWidth}px) / 2) at calc(50%) calc(50%),transparent 100%,black 0%)`",
-      height: `'100%'`,
-      width: `'100%'`,
-      borderRadius: `'50%'`,
-      })
-  ]
-};
 
-export const cardNode: FrameRoot = {
-  id: "card",
+
+export const cardNode = (): FrameRoot => ({
+  id: 'card',
   def: {
     id: 'card',
-    icon: "ui//mouse-pointer-click"
+    icon: 'ui//mouse-pointer-click',
   },
   node: {
-    icon: "ui//mouse-pointer-click",
-    schemaId: "card",
-    parentId: "",
+    icon: 'ui//mouse-pointer-click',
+    schemaId: 'card',
+    parentId: '',
     name: i18n.commands.card,
     rank: 0,
-    id: "card",
-    type: "group",
+    id: 'card',
+    type: 'group',
     props: {
-      icon: "",
-      label: "",
+      icon: '',
+      label: '',
     },
     types: {
       icon: 'icon',
-      label: "text",
+      label: 'text',
     },
     actions: {},
     styles: {
-      borderRadius: `'10px'`,
-      background: `'var(--background-primary-alt)'`,
-      width: `'160px'`,
-      height: `'80px'`,
-      padding: `'16px'`,
-      border: `'thin solid var(--mk-ui-divider)'`
-    }
-  }, children: [
+      sem: `'card'`,
+    },
+  },
+  children: [
+    frameRootWithProps(
+      {
+        ...contentNode,
+        children: [
+          {
+      ...iconNode,
+      node: {
+        ...iconNode.node,
+        props: {
+          value: `card.props.icon`,
+        },
+      },
+    },
     {
-      ...iconNode, node: {
-        ...iconNode.node, props: {
-          value: `card.props.icon`
-        }
-      }
-    }, { ...textNode, node: { ...textNode.node, props: { value: `card.props.label` } } }
-  ]
-};
+      ...textNode,
+      node: { ...textNode.node, props: { value: `card.props.label` } },
+    },
+        ],
+      },
+      {},
+      {
+        width: `'auto'`,
+        flex: `'1'`,
+      },
+    ),
+  ],
 
+});
 
-
-export const linkNode: FrameRoot = {
-  id: "link",
+export const linkNode = (): FrameRoot => ({
+  id: 'link',
   def: {
     id: 'link',
-    icon: "ui//link"
+    icon: 'ui//link',
   },
   node: {
-    icon: "ui//link",
-    schemaId: "link",
-    parentId: "",
+    icon: 'ui//link',
+    schemaId: 'link',
+    parentId: '',
     name: i18n.commands.link,
     rank: 0,
-    id: "link",
-    type: "group",
+    id: 'link',
+    type: 'group',
     props: {
       link: '',
       label: `$api.path.label(link.props.link)?.name`,
       sticker: `$api.path.label(link.props.link)?.sticker`,
-      
     },
     styles: {
       sem: `'a'`,
-      layout: '"row"',
     },
     actions: {
-      onClick: '$api.path.open(link.props.link, false)'
+      onClick: '$api.path.open(link.props.link, false)',
+    },
+    interactions: {
+      onClick: 'onClick',
     },
     types: {
       link: 'link',
-      label: "text",
-      sticker: 'sticker'
-    }
-  }, children: [
-    { ...iconNode, node: { ...iconNode.node, props: { value: `link.props.sticker` }, styles: {
-      width: `'18px'`,
-      height: `'18px'`,
-    } } },
-    { ...textNode, node: { ...textNode.node, props: { value: `link.props.label` } } }
-  ]
-};
+      label: 'text',
+      sticker: 'sticker',
+    },
+  },
+  children: [
+    {
+      ...iconNode,
+      node: {
+        ...iconNode.node,
+        props: { value: `link.props.sticker` },
+        styles: {
+          width: `'18px'`,
+          height: `'18px'`,
+        },
+      },
+    },
+    {
+      ...textNode,
+      node: { ...textNode.node, props: { value: `link.props.label` } },
+    },
+  ],
+});

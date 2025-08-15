@@ -1,5 +1,5 @@
 //i18n
-export { default as i18n } from "shared/i18n";
+export { default as i18n, i18nLoader } from "shared/i18n";
 
 //Superstate
 export { SpaceManager } from "core/spaceManager/spaceManager";

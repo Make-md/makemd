@@ -1,0 +1,696 @@
+/* Settings Container */
+.mk-settings-container {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  background: var(--mk-ui-background);
+  overflow: hidden;
+}
+
+/* Settings Sidebar */
+.mk-settings-sidebar {
+  width: 280px;
+  background: var(--mk-ui-background-secondary);
+  border-right: 1px solid var(--mk-ui-divider);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.mk-settings-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--mk-ui-divider);
+}
+
+.mk-settings-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--mk-ui-text-primary);
+}
+
+.mk-settings-nav {
+  flex: 1;
+  padding: 16px 0;
+  overflow-y: auto;
+  gap: 8px; display: flex; flex-direction: column;
+}
+
+.mk-settings-nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 24px;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--mk-ui-text-secondary);
+  transition: all 0.2s ease;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.mk-settings-nav-item:hover {
+  background: var(--mk-ui-background-hover);
+  color: var(--mk-ui-text-primary);
+}
+
+.mk-settings-nav-item.mk-active {
+  background: var(--mk-ui-background-active);
+  color: var(--mk-ui-text-accent);
+  border-right: 2px solid var(--mk-ui-text-accent);
+}
+
+.mk-settings-nav-item .mk-icon-small {
+  margin-right: 12px;
+  opacity: 0.9;
+  padding: 6px;
+  border-radius: var(--mk-ui-radius-small);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mk-settings-nav-item.mk-active .mk-icon-small {
+  opacity: 1;
+}
+
+/* Category Headers */
+.mk-settings-category-header {
+  padding: 12px 24px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--mk-ui-text-muted);
+  opacity: 0.7;
+  margin-top: 16px;
+}
+
+.mk-settings-category-header:first-child {
+  margin-top: 0;
+}
+
+/* Different color backgrounds for each nav item based on category */
+.mk-settings-nav-item[data-category="core"] .mk-icon-small {
+  background: var(--mk-color-blue) !important;
+}
+
+.mk-settings-nav-item[data-category="appearance"] .mk-icon-small {
+  background: var(--mk-color-purple) !important;
+}
+
+.mk-settings-nav-item[data-category="system"] .mk-icon-small {
+  background: var(--mk-color-orange) !important;
+}
+
+/* Active state with category colors */
+.mk-settings-nav-item.mk-active[data-category="core"] {
+  color: var(--mk-color-blue);
+  border-right-color: var(--mk-color-blue);
+}
+
+.mk-settings-nav-item.mk-active[data-category="appearance"] {
+  color: var(--mk-color-purple);
+  border-right-color: var(--mk-color-purple);
+}
+
+.mk-settings-nav-item.mk-active[data-category="system"] {
+  color: var(--mk-color-orange);
+  border-right-color: var(--mk-color-orange);
+}
+
+/* Settings Content */
+.mk-settings-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mk-settings-content-inner {
+  flex: 1;
+  padding: 32px 40px;
+  overflow-y: auto;
+  max-width: 800px;
+}
+
+/* Setting Sections */
+.mk-setting-section h2 {
+  margin: 0 0 24px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--mk-ui-text-primary);
+  border-bottom: 1px solid var(--mk-ui-divider);
+  padding-bottom: 12px;
+}
+
+.mk-setting-group {
+  margin-bottom: 32px;
+}
+
+.mk-setting-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Setting Items */
+.mk-setting-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-direction: row !important;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--mk-ui-divider-light);
+  gap: 24px;
+}
+
+.mk-setting-item:last-child {
+  border-bottom: none;
+}
+
+.mk-setting-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mk-setting-item-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--mk-ui-text-primary);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.mk-setting-item-description {
+  font-size: 13px;
+  color: var(--mk-ui-text-secondary);
+  line-height: 1.5;
+}
+
+.mk-setting-item-control {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Form Controls */
+.mk-setting-item-control input[type="text"],
+.mk-setting-item-control input[type="number"] {
+  width: 200px;
+  padding: 8px 12px;
+  border: 1px solid var(--mk-ui-border);
+  border-radius: var(--mk-ui-radius-small);
+  background: var(--mk-ui-background);
+  color: var(--mk-ui-text-primary);
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.mk-setting-item-control input[type="text"]:focus,
+.mk-setting-item-control input[type="number"]:focus {
+  outline: none;
+  border-color: var(--mk-ui-text-accent);
+  box-shadow: 0 0 0 2px var(--mk-ui-text-accent-alpha);
+}
+
+.mk-setting-item-control input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--mk-ui-text-accent);
+}
+
+.mk-setting-item-control select {
+  width: 200px;
+  padding: 8px 12px;
+  border: 1px solid var(--mk-ui-border);
+  border-radius: var(--mk-ui-radius-small);
+  background: var(--mk-ui-background);
+  color: var(--mk-ui-text-primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mk-setting-item-control button {
+  padding: 8px 16px;
+  background: var(--mk-ui-background-active);
+  border: 1px solid var(--mk-ui-border);
+  border-radius: var(--mk-ui-radius-small);
+  color: var(--mk-ui-text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mk-setting-item-control button:hover {
+  background: var(--mk-ui-background-hover);
+  border-color: var(--mk-ui-text-accent);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .mk-settings-container {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .mk-settings-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--mk-ui-divider);
+    max-height: 200px;
+  }
+  
+  .mk-settings-nav {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 8px 16px;
+  }
+  
+  .mk-settings-nav-item {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: var(--mk-ui-radius-small);
+    border-right: none;
+    margin-right: 8px;
+  }
+  
+  .mk-settings-nav-item.mk-active {
+    border-right: none;
+    border-bottom: 2px solid var(--mk-ui-text-accent);
+  }
+  
+  .mk-settings-content-inner {
+    padding: 20px 16px;
+  }
+  
+  .mk-setting-item {
+    flex-direction: column !important;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .mk-setting-item-control input[type="text"],
+  .mk-setting-item-control input[type="number"],
+  .mk-setting-item-control select {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+/* Custom scrollbar for settings content */
+.mk-settings-content-inner::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mk-settings-content-inner::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mk-settings-content-inner::-webkit-scrollbar-thumb {
+  background: var(--mk-ui-divider);
+  border-radius: 3px;
+}
+
+.mk-settings-content-inner::-webkit-scrollbar-thumb:hover {
+  background: var(--mk-ui-text-secondary);
+}
+
+/* Full-width content for embedded components */
+.mk-setting-content-full {
+  width: 100%;
+  margin-top: 16px;
+  background: var(--mk-ui-background-secondary);
+}
+
+/* Adjustments for embedded Global Template Editor */
+.mk-setting-content-full .mk-global-template-editor {
+  height: 500px;
+  border: none;
+}
+
+.mk-setting-content-full .mk-template-sidebar {
+  background: var(--mk-ui-background);
+}
+
+.mk-setting-content-full .mk-template-editor {
+  background: var(--mk-ui-background);
+}
+
+/* Adjustments for embedded Hidden Files component */
+.mk-setting-content-full .mk-hidden-files-container {
+  background: transparent;
+}
+
+/* Mobile adjustments for full-width content */
+@media (max-width: 768px) {
+  .mk-setting-content-full .mk-global-template-editor {
+    height: 400px;
+    flex-direction: column;
+  }
+  
+  .mk-setting-content-full .mk-template-sidebar {
+    width: 100%;
+    max-height: 150px;
+    border-right: none;
+    border-bottom: 1px solid var(--mk-ui-divider);
+  }
+  
+  .mk-setting-content-full .mk-template-editor {
+    min-height: 250px;
+  }
+}
+
+/* Icon Set Manager Styles */
+.mk-icon-set-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.mk-icon-sets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.mk-icon-set-item {
+  border: 1px solid var(--mk-ui-divider);
+  border-radius: var(--mk-ui-radius-medium);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--mk-ui-background);
+}
+
+.mk-icon-set-item:hover {
+  background: var(--mk-ui-background-hover);
+  border-color: var(--mk-ui-text-accent);
+}
+
+.mk-icon-set-item.mk-active {
+  background: var(--mk-ui-background-active);
+  border-color: var(--mk-ui-text-accent);
+  box-shadow: 0 0 0 2px var(--mk-ui-text-accent-alpha);
+}
+
+.mk-icon-set-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.mk-icon-set-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mk-icon-set-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--mk-ui-text-primary);
+}
+
+.mk-icon-set-meta {
+  font-size: 13px;
+  color: var(--mk-ui-text-secondary);
+}
+
+.mk-icon-set-description {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--mk-ui-text-secondary);
+  line-height: 1.5;
+}
+
+.mk-icon-set-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mk-icon-set-delete {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: var(--mk-ui-background-hover);
+  border: 1px solid var(--mk-ui-divider);
+  border-radius: var(--mk-ui-radius-small);
+  color: var(--mk-ui-text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mk-icon-set-delete:hover {
+  background: var(--mk-ui-error-background);
+  border-color: var(--mk-ui-text-error);
+  color: var(--mk-ui-text-error);
+}
+
+.mk-icon-preview {
+  margin-top: 24px;
+  padding: 16px;
+  background: var(--mk-ui-background-secondary);
+  border-radius: var(--mk-ui-radius-medium);
+}
+
+.mk-icon-preview h4 {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mk-ui-text-primary);
+}
+
+.mk-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 12px;
+}
+
+.mk-icon-preview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  background: var(--mk-ui-background);
+  border: 1px solid var(--mk-ui-divider);
+  border-radius: var(--mk-ui-radius-small);
+  transition: all 0.2s ease;
+}
+
+.mk-icon-preview-item:hover {
+  background: var(--mk-ui-background-hover);
+  border-color: var(--mk-ui-text-accent);
+}
+
+.mk-icon-preview-item .mk-icon-small {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mk-ui-text-primary);
+}
+
+.mk-icon-label {
+  font-size: 11px;
+  color: var(--mk-ui-text-secondary);
+  text-align: center;
+  word-break: break-all;
+}
+
+/* Settings View Override for Space Container */
+.mk-settings-view {
+  overflow: hidden;
+}
+
+.mk-settings-view .mk-settings-container {
+  height: 100%;
+}
+
+/* Icon Sets Grid Layout */
+.mk-icon-sets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.mk-icon-set-card {
+  background: var(--mk-ui-background-secondary);
+  border: 1px solid var(--mk-ui-divider);
+  border-radius: var(--mk-ui-radius-medium);
+  padding: 16px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.mk-icon-set-card:hover {
+  border-color: var(--mk-ui-text-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mk-icon-set-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.mk-icon-set-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mk-ui-text-primary);
+}
+
+.mk-icon-set-preview {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mk-icon-set-preview .mk-icon-preview-item {
+  background: var(--mk-ui-background);
+  border: 1px solid var(--mk-ui-divider-light);
+  border-radius: var(--mk-ui-radius-small);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mk-icon-medium {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mk-ui-text-primary);
+}
+
+.mk-icon-set-meta {
+  font-size: 12px;
+  color: var(--mk-ui-text-secondary);
+}
+
+/* Add new icon set card */
+.mk-icon-set-card.mk-icon-set-add {
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+}
+
+.mk-icon-set-card.mk-icon-set-add:hover {
+  border-color: var(--mk-ui-text-accent);
+  background: var(--mk-ui-background-hover);
+}
+
+.mk-icon-set-add-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--mk-ui-text-secondary);
+}
+
+.mk-icon-set-add:hover .mk-icon-set-add-content {
+  color: var(--mk-ui-text-accent);
+}
+
+.mk-icon-large {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Emoji icon styling */
+.mk-emoji-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* Selected icon set card */
+.mk-icon-set-card.mk-selected {
+  border-color: var(--mk-ui-text-accent);
+  box-shadow: 0 0 0 2px var(--mk-ui-text-accent-alpha);
+  background: var(--mk-ui-background-active);
+}
+
+/* Icon browser */
+.mk-icon-browser {
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--mk-ui-background-secondary);
+  border-radius: var(--mk-ui-radius-medium);
+  border: 1px solid var(--mk-ui-divider);
+}
+
+.mk-icon-browser h4 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--mk-ui-text-primary);
+}
+
+.mk-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 12px;
+}
+
+.mk-icon-grid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  background: var(--mk-ui-background);
+  border: 1px solid var(--mk-ui-divider);
+  border-radius: var(--mk-ui-radius-small);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.mk-icon-grid-item:hover {
+  background: var(--mk-ui-background-hover);
+  border-color: var(--mk-ui-text-accent);
+}
+
+.mk-icon-grid-item .mk-icon-small {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mk-ui-text-primary);
+}
+
+.mk-icon-grid-item .mk-emoji-icon {
+  font-size: 20px;
+}
+
+.mk-icon-browser-note {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--mk-ui-text-secondary);
+  text-align: center;
+}

@@ -122,10 +122,10 @@ export const SpaceListProperty = (props: {
       icon: "ui//copy",
       onClick: (e) => {
         props.superstate.ui.openModal(
-          "Duplicate Table",
+          i18n.labels.duplicateTable,
           <InputModal
             value=""
-            saveLabel="Save"
+            saveLabel={i18n.buttons.save}
             saveValue={async (value) => {
               const table = await props.superstate.spaceManager.readTable(
                 spaceState.path,

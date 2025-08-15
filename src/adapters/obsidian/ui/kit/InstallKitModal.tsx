@@ -1,6 +1,6 @@
 import { installSpaceKit } from "adapters/obsidian/ui/kit/kits";
 import MakeMDPlugin from "main";
-import { Superstate } from "makemd-core";
+import { Superstate, i18n } from "makemd-core";
 import React, { useState } from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { safelyParseJSON } from "shared/utils/json";
@@ -14,7 +14,7 @@ export const installKitModal = (
   win: Window
 ) => {
   superstate.ui.openModal(
-    "Add Kit",
+    i18n.labels.addKit,
     <InstallKit plugin={plugin} superstate={superstate} kit={kit}></InstallKit>,
     win
   );
@@ -30,17 +30,17 @@ export const InstallKit = (props: {
   const [space, setSpace] = useState<string>("/");
   const installKit = () => {
     if (!kit.startsWith("https://www.make.md/static/kits/")) {
-      props.superstate.ui.notify("Invalid Kit URL");
+      props.superstate.ui.notify(i18n.notice.invalidKitURL);
       return;
     }
     fetch(kit)
       .then((f) => f.text())
       .then((f) => {
         if (!f) {
-          props.superstate.ui.notify("Kit doesn't exist");
+          props.superstate.ui.notify(i18n.notice.kitDoesntExist);
           return;
         }
-        console.log("Adding Kit");
+        console.log(i18n.labels.addingKit);
         return installSpaceKit(
           props.plugin,
           props.superstate,
@@ -49,14 +49,14 @@ export const InstallKit = (props: {
         );
       })
       .then((f) => {
-        props.superstate.ui.notify("Kit added");
+        props.superstate.ui.notify(i18n.notice.kitAdded);
         props.hide();
       });
   };
   return (
     <div>
       <div className="setting-item">
-        <div className="setting-item-heading">Kit Location</div>
+        <div className="setting-item-heading">{i18n.labels.kitLocation}</div>
         <span></span>
         <input
           type="text"
@@ -65,7 +65,7 @@ export const InstallKit = (props: {
         ></input>
       </div>
       <div className="setting-item">
-        <div className="setting-item-heading">Add Kit to Space</div>
+        <div className="setting-item-heading">{i18n.labels.addKitToSpace}</div>
         <span></span>
         <Dropdown
           superstate={props.superstate}
@@ -87,8 +87,8 @@ export const InstallKit = (props: {
         ></Dropdown>
       </div>
       <div className="setting-item">
-        <button onClick={() => installKit()}>Add</button>
-        <button onClick={props.hide}>Cancel</button>
+        <button onClick={() => installKit()}>{i18n.buttons.add}</button>
+        <button onClick={props.hide}>{i18n.buttons.cancel}</button>
       </div>
     </div>
   );

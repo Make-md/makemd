@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 
 export const showWarningsModal = (superstate: Superstate, win: Window) => {
   superstate.ui.openModal(
-    "Sync Warnings",
+    i18n.labels.syncWarnings,
     <SyncWarnings superstate={superstate} />,
     win
   );
@@ -41,8 +41,7 @@ export const SyncWarnings = (props: {
   return (
     <div className="mk-modal-contents">
       <div className='mk-modal-message'>
-          The following issues may affect the synchronization of your files.
-          Please review and resolve them.
+          {i18n.labels.syncWarnings}
       </div>
       <div className="mk-button-group">
         <button
@@ -65,7 +64,7 @@ export const SyncWarnings = (props: {
       </div>
       {warnings.length == 0 && (
         <div>
-          <div className="mk-modal-heading">No warnings</div>
+          <div className="mk-modal-heading">{i18n.labels.noWarnings}</div>
         </div>
       )}
       {warnings.map((f, i) => (
@@ -83,7 +82,7 @@ export const SyncWarnings = (props: {
                   });
                 }}
               >
-                Resolve
+                {i18n.labels.resolve}
               </button>
             )}
             <button
@@ -95,7 +94,7 @@ export const SyncWarnings = (props: {
                 superstate.saveSettings();
               }}
             >
-              Ignore
+              {i18n.labels.ignore}
             </button>
           </div>
         </div>

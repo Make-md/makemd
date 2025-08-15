@@ -1,19 +1,25 @@
-import moment from "moment";
+class I18nLoader {
+  private strings: Record<string, any>;
+  private overrides: Record<string, any> = {};
 
-class T {
-  lang: 'en' | 'zh-cn' = 'en';
+  constructor() {
+    this.strings = this.loadDefaultStrings();
+  }
 
-  all = {
+  private loadDefaultStrings() {
+    return {
     en: {
       hintText: {
         fileName: "Enter File Name",
         alias: "Enter Display Name",
-        dragDropModifierKeys: "Hold ${1} to Pin and ${2} to Copy",
-        createListItem: "Select/Create List Item Frame",
-        dragDropProperties: "Drag and drop properties to link them into the list",
         newItem: "+ New",
         selectNote: "Select Note...",
         newFrame: "New",
+        createListItem: "Create List Item",
+        dragDropProperties: "Drag and drop to reorder properties",
+        dragDropModifierKeys: "Hold Shift to select multiple items",
+        hiddenExtensionsPlaceholder: "e.g., .mdb, _assets, _blocks",
+        workspaceName: "Your workspace name",
       },
       defaults: {
         spaceNote: "Current Note",
@@ -35,6 +41,7 @@ class T {
         group: "Group",
         paragraph: "Text",
         card: "Card",
+        cardDesc: "Card container with styled background",
         progress: "Progress",
         rating: "Rating",
         circularProgress: "Circular Progress",
@@ -44,7 +51,7 @@ class T {
         quote: "Quote",
         internal: "Link to Note",
         context: "Embed Existing Context",
-        flow: "Embed Note or Space",
+        flowEmbed: "Embed Note or Space",
         board: "New Board",
         divider: "Divider",
         note: "Note Block",
@@ -57,6 +64,7 @@ class T {
         toggle: "Toggle",
         emoji: "Emoji",
         image: "Image",
+        chart: "Chart",
         
         newNote: "Note",
         tag: "Tag",
@@ -65,6 +73,10 @@ class T {
         toggleKeyboard: "Toggle Keyboard",
         rows: "Rows",
         masonry: "Gallery",
+        toggleEnhancedLogs: "Toggle Enhanced Logs",
+        fixPathCharacters: "Fix Path Characters",
+        moveSpaceDataFolder: "Move Space Data Folder",
+        flow: "Flow",
       },
       styles: {
         bold: "Bold",
@@ -88,15 +100,14 @@ class T {
         toggleItalics: "Toggle Italics",
         openSpaces: "Open Navigator",
         blink: "Blink",
-        openFileContext: "Open Explorer",
-        convertPathToSpace: "Convert to Space",
         revealFile: "Reveal File in Navigator",
         releaseNotes: "Release Notes",
         getStarted: "Get Started",
         toggleBacklinks: "Toggle Backlinks",
-        collapseAllFolders: "Collapse All Folders",
-        addFileSpace: "Add File to Space",
-        removeFileSpace: "Remove File from Space",
+        pinActiveFileToSpace: "Pin Active File to Space",
+        closeExtraFileTabs: "Close Extra File Tabs",
+        convertPathToSpace: "Convert Path to Space",
+        openFileContext: "Open File Context",
       },
       frames: {
         sections: {
@@ -109,7 +120,7 @@ class T {
         },
         note: {
           label: "Note",
-          description: "Link to a note",
+          description: "Link to a Note",
         },
         table: {
           label: "Table",
@@ -147,30 +158,23 @@ class T {
         }
       },
       menu: {
-        openNativeMenu: "Obsidian options",
         layout: "Layout",
-        enterFlowState: "Enter Flow State",
-        exitFlowState: "Exit Flow State",
-        newView: "New View",
+        newView: "New",
         calendarView: "Calendar View",
         dayView: "Day View",
-        closeSpace: "Remove from focus",
+        closeSpace: "Remove from Focus",
         customView: "Custom View",
         detailsView: "Details View",
         catalogView: "Catalog View",
         galleryView: "Gallery View",
         deleteContext: "Delete Context",
         openSpace: 'Open',
-        revealInDefault: 'Reveal in Finder',
-        revealInExplorer: 'Reveal in Explorer',
         setNone: 'None',
-        fileMetadataDescription: 'This note only',
-        openFilePane: "Open in a new pane",
-        applyItems: "Apply to items in folder",
+        applyItems: "Apply to Items in Folder",
         rename: "Rename",
-        changeToFolderNote: "Transform into Folder",
-        moveFile: "Move file to...",
-        moveFolder: "Move folder to...",
+        changeToFolderNote: "Convert to Folder Note",
+        moveFile: "Move File to...",
+        moveFolder: "Move Folder to...",
         duplicate: "Make a copy",
         edit: "Edit",
         delete: "Delete",
@@ -184,6 +188,7 @@ class T {
         collapseAllSections: "Collapse All Spaces",
         expandAllSections: "Expand All Spaces",
         collapseAllFolders: "Collapse All Folders",
+        settings: "Settings",
         expandAllFolders: "Expand All Folders",
         spaceTitle: "Add/Remove in Space",
         home: "Home",
@@ -199,7 +204,8 @@ class T {
         newFilter: "New Filter",
         clearFilters: "Clear Filters",
         hide: "Hide",
-        unhideFields: "Unhide All Properties",
+        unhideProperties: "Unhide All Properties",
+        unhideFields: "Unhide All Fields",
         importDataview: "Import All Dataview Properties",
         saveAllProperties: "Save All Properties to Files",
         mergeProperties: "Merge Properties",
@@ -218,7 +224,7 @@ class T {
         collapseAll: "Collapse All",
         customSort: "Custom Sort",
         groupSpaces: "Group Spaces",
-        recurisveSort: "Apply to Subfolders",
+        recursiveSort: "Apply to Subfolders",
         fileNameSortAlphaAsc: "File Name (A to Z)",
         fileNameSortAlphaDesc: "File Name (Z to A)",
         fileNameSortNumericalAsc: "File Name (1 to 9)",
@@ -241,7 +247,7 @@ class T {
         createFolderSpace: "Create Space from Folder",
         folder: "Folder",
         syncToContext: "Add Property to Context",
-        setIcon: "Set Icon",
+        setIcon: "Set Sticker",
         copyEmbedLink: "Copy Embed Link",
         moveUp: "Move Up",
         moveDown: "Move Down",
@@ -252,16 +258,25 @@ class T {
         deleteFrame: "Delete Frame",
         insertAbove: "Insert Above",
         insertBelow: "Insert Below",
+        toggleReadMode: "Toggle Read Mode",
+        showWarnings: "Show Warnings",
+        renameSystem: "Rename System",
+        openFilePane: "Open File Pane",
+        openNativeMenu: "More Options",
+        revealInDefault: "Reveal in Finder",
+        revealInExplorer: "Reveal in Explorer",
       },
       editor: {
         rows: "Rows",
         columns: "Columns",
+        scaleToFit: "Scale to Fit",
+        scaleToFill: "Scale to Fill",
         catalog: "Catalog",
         gallery: "Gallery",
         grid: "Grid",
-        scaleToFit: "Change to Fit",
-        scaleToFill: "Change to Fill",
         fit: "Fit",
+        fill: "Fill",
+        stroke: "Stroke",
         strokeNone: "None",
         strokeSolid: "Solid",
         strokeDotted: "Dotted",
@@ -334,8 +349,8 @@ class T {
         createFolder: "New Folder",
         createNote: "New Note",
         createCanvas: "New Canvas",
-        addIntoSpace: "New Pin",
-        addSmartSearch: "New Join",
+        addIntoSpace: "Pin Item",
+        addSmartSearch: "Add Join",
         subFolders: "Sub Folders",
         addItem: "Add Item",
         addProperty: "Add Property",
@@ -348,7 +363,7 @@ class T {
         openFlow: "Open Flow",
         hideFlow: "Hide Flow",
         openLink: "Open Link",
-        addToSpace: "Pin file to...",
+        addToSpace: "Pin File to...",
         addToSpaceShort: 'Pin',
         addTag: "Add Tag",
         saveTemplate: "Make into template",
@@ -358,7 +373,7 @@ class T {
         cutTable: "Cut Table",
         deleteTable: "Delete From Note",
         blink: "Blink",
-        addFile: "Add Item",
+        addFile: "Add File",
         merge: "Merge",
         saveView: "Save View",
         saveTable: "Save Table",
@@ -371,7 +386,19 @@ class T {
         sync: "Sync",
         pasteCSS: "Paste CSS",
         save: "Save",
-        run: "Run"
+        run: "Run",
+        export: "Export",
+        move: "Move",
+        addView: "Add View",
+        editPins: "Edit Pins",
+        editJoins: "Edit Joins",
+        editTables: "Edit Tables",
+        editTemplates: "Edit Templates",
+        runAction: "Run Action",
+        openOverview: "Open Overview",
+        editFormula: "Edit Formula",
+        making: "Making...",
+        addTime: "Add Time",
       },
       metadataTypes: {
         fileName: "File Name",
@@ -404,12 +431,8 @@ class T {
         checked: "is checked",
         unchecked: "is unchecked",
         isEmpty: "is empty",
-        isNotEmpty: 'is not empty',
-        isSameDate: "is same date",
-        isSameDateAsToday: "today",
       },
       aggregateTypes: {
-
       },
       sortTypes: {
         alphaAsc: "A to Z",
@@ -427,6 +450,9 @@ class T {
           label: "Aggregate",
           description: "Aggregate functions to calculate values",
         },
+        propertyType: "Property Type",
+        selectProperty: "Select Property",
+        selectOrAddProperty: "Select or Add Property",
         flex: {
           label: "Flex",
           description: "Flexible field to display any type of data",
@@ -471,8 +497,8 @@ class T {
           description: "Store any complex objects"
         },
         context: {
-          label: "Relation",
-          description: "Connect to another context property and create a relation"
+          label: "Context",
+          description: "Context property type"
         },
         image: {
           label: "Image",
@@ -523,7 +549,7 @@ class T {
       },
       
       labels: {
-        filesAndFolders: "Files and Folders",
+        all: "All",
         duplicateTable: "Duplicate Table",
         aggregateBy: "Aggregate By",
         pinned: "Pinned",
@@ -539,8 +565,8 @@ class T {
         rename: "Rename",
         createNew: "New",
         default: "Default",
+        style: "Style",
         done: "Done",
-        changeCoverShort: "Change",
         reposition: "Reposition",
         tables: "Tables",
         selectDateFormat: "Select/Type Date Format",
@@ -550,18 +576,43 @@ class T {
         contextMaker: "Context Maker",
         select: "Select",
         pinnedItems: "Pinned Items",
+        allDay: "all day",
+        makeAStaticWebVersion: "Make a static web version of",
+        withNavigator: "With Navigator",
+        withoutNavigator: "Without Navigator",
+        thisSpace: "This Space",
+        creating: "Creating...",
+        making: "Making...",
         collapse: "Collapse",
         expand: "Expand",
-        all: "All",
-        none: "None",
         view: "View",
         findStickers: "Find Sticker",
         mergeProperties: "Merge Properties",
         placeholder: "Type '${1}' for commands",
+        tagSpaces: "Tag Spaces",
+        vault: "Vault",
+        files: "Files",
+        tags: "Tags",
+        joinItemsFrom: "Join items from",
+        notIncludingSubfolders: "Not including subfolders",
+        includingSubfolders: "Including subfolders",
+        createNewItemsUsing: "Create new items using",
+        withName: "with name",
+        createTemplate: "Create Template",
+        editTemplate: "Edit Template",
+        templateName: "Template Name",
+        noTemplatesFound: "No templates found",
+        createFirstTemplate: "Create your first global template",
+        syncWarnings: "The following issues may affect the synchronization of your files. Please review and resolve them.",
+        noWarnings: "No warnings",
+        resolve: "Resolve",
+        ignore: "Ignore",
+        editParameters: "Edit Parameters",
+        loadingTemplates: "Loading templates...",
         notePlaceholder: 'New Note for ${1}',
         itemsSelected: "${1} Selected",
         selectNote: "Select Note",
-        selectIcon: "Select Icon",
+        selectIcon: "Select Sticker",
         selectImage: "Select Image",
         selectSpace: "Select Space",
         styleSmall: "Small",
@@ -570,7 +621,7 @@ class T {
         hiddenFilePattern: 'Name, Suffixes and Extension',
         hiddenFileSpecific: 'Exclude specific files and folders',
         textPlaceholder: "Enter Text",
-        noFile: "is not created yet. Click to create.",
+        noFile: "File does not exist yet. Click to create.",
         navigatorSearchPlaceholder: 'Search by Text or Filters',
         blinkPlaceholder:
           "Search for notes, spaces...",
@@ -591,7 +642,7 @@ class T {
         newProperty: "New Property",
         newPropertyShort: "New Property",
         propertyType: "Type",
-        propertyDynamic: "Dyanmic",
+        propertyDynamic: "Dynamic",
         propertyValueSpace: "Space",
         propertyValueReference: "Related Property",
         propertyValueAggregate: "Aggregate Property",
@@ -607,6 +658,24 @@ class T {
         multiple: "Multiple",
         filesCount: "{$1} Files",
         hiddenFiles: "Hidden Files",
+        colors: "Colors",
+        stickers: "Stickers",
+        globalTemplates: "Global Templates",
+        onboarding: "Onboarding",
+        loadingPalettes: "Loading palettes...",
+        loadingStickerSets: "Loading sticker sets...",
+        manageHiddenFiles: "Manage Hidden Files",
+        stickerSets: "Sticker Sets",
+        addStickerSet: "Add Sticker Set",
+        iconLibrary: "Icon library",
+        emojiLibrary: "Emoji library",
+        iconCount: "${1} icons",
+        builtin: "Built-in",
+        custom: "Custom",
+        manageStickerSets: "Manage sticker sets available in your vault. Add custom sticker sets from folders containing SVG or image files.",
+        showingFirst: "Showing first ${1} of ${2} icons",
+        iconsIn: "Icons in ${1}",
+        systemName: "System Name",
         addExtension: "Add Rule",
         saveView: "Save View",
         saveTable: "Save Table",
@@ -654,15 +723,115 @@ class T {
         styles: "Styles",
         events: "Events",
         code: "Code",
-        selectedLayers: "${1} Layers"
+        selectedLayers: "${1} Layers",
+        actions: "Actions",
+        script: "Script",
+        formula: "Formula",
+        namePlaceholder: "Name",
+        replace: "Replace",
+        insert: "Insert",
+        saveFormula: "Save Formula",
+        selectSticker: "Select Sticker",
+        customize: "Customize",
+        items: "Items",
+        pins: "Pins",
+        joins: "Joins",
+        textStyle: "Text Style",
+        ungroup: "Ungroup",
+        duplicate: "Duplicate",
+        delete: "Delete",
+        auto: "auto",
+        addKit: "Add Kit",
+        kitLocation: "Kit Location",
+        addKitToSpace: "Add Kit to Space",
+        addingKit: "Adding Kit",
+        editPins: "Edit Pins",
+        editJoins: "Edit Joins",
+        editTables: "Edit Tables",
+        editTemplates: "Edit Templates",
+        exportToHTML: "Export to HTML",
+        applyToItems: "Apply to Items",
+        resetView: "Reset View",
+        resetViewDesc: "Reset the view to the default settings",
+        openASpace: "Open a Space",
+        openASpaceDesc: "Open existing folders and tags as a Space or create a new one",
+        addStep: "Add Step",
+        addView: "Add View",
+        applyTags: "Apply Tags",
+        setDefaultSticker: "Set Default Sticker",
+        editFocus: "Edit Focus",
+        close: "Close",
+        runAction: "Run Action",
+        deleteAction: "Delete Action",
+        createVisualization: "Create Visualization",
+        newVisualization: "New Visualization",
+        deleteSpaceFiles: "Delete Space Files",
+        noNotesInside: "No Notes Inside",
+        noOptionsFound: "No options found",
+        openTable: "Open Table",
+        selectProperty: "Select Property",
+        selectOrAddProperty: "Select or Add Property",
+        newEvent: "New Event",
+        toggle: "Toggle",
+        newNote: "New Note",
+        newSpace: "New Space",
+        newTag: "New Tag",
+        new: "New",
+        setAsDefault: "Set as Default",
+        thisSpaceAndAllSubfolders: "This Space and All Subfolders",
+        yes: "Yes",
+        manageTemplates: "Manage Templates",
+        changeCoverShort: "Change Cover",
+        visualization: {
+          editText: "Edit Text",
+          alignment: "Alignment",
+          left: "Left",
+          center: "Center",
+          right: "Right",
+          tickColor: "Tick Color",
+          editLabel: "Edit Label",
+          position: "Position",
+          top: "Top",
+          bottom: "Bottom",
+          gridColor: "Grid Color",
+          none: "None",
+          barChart: "Bar Chart",
+          lineChart: "Line Chart",
+          scatterPlot: "Scatter Plot",
+          pieChart: "Pie Chart",
+          areaChart: "Area Chart",
+          radarChart: "Radar Chart",
+          selectDataSourceFirst: "Select a data source first",
+          default: "Default",
+          loadingVisualization: "Loading visualization...",
+          loadingData: "Loading data...",
+          failedToLoad: "Failed to load visualization configuration",
+          frameId: "Frame ID",
+          path: "Path",
+          configurationNotLoaded: "Configuration not loaded",
+          configureYourVisualization: "Setup Chart",
+          selectData: "Select Data",
+          selectChart: "Select Chart",
+        },
+        blink: {
+          items: "Items",
+          recent: "Recent",
+          createNew: "Create New",
+          newNote: "New Note",
+          newSpace: "New Space",
+          results: "Results",
+        },
+        menu: {
+          applyTags: "Apply Tags",
+          setDefaultSticker: "Set Default Sticker",
+        },
       },
       descriptions: {
-        spaceActions: "Create actions that runs when you press a button",
+        spaceActions: "Create actions that run when you press a button",
         spaceLists: "Create lists to track data and organize them in your space",
         spaceItems: "Add new items to the space or pin items to the space",
         spaceTemplates: "Create templates to quickly add items to your space",
         smartSearch: "Automatically pin notes to this space based on a set of searches",
-        hiddenFileOptions: 'Exclude any files and folders by name, suffix or extension.',
         deleteSpace: "Deleting the space will also delete the folder and its contents.",
         deleteFiles: "Delete ${1} files/folders and their contents?",
         addContext: "Contexts lets you connect properties from your tags",
@@ -673,6 +842,9 @@ class T {
           "Contexts defines and syncs the same fields across your notes depending on their folder or tag.",
         selectContext:
           "Select which folder or tag context you want to sync the fields.",
+        templateNameFormula: "Template Name Formula",
+        hiddenFileOptions: "Hidden File Options",
+        toggleReadMode: "Toggle Read Mode",
       },
       flowView: {
         emptyDoc: "Empty Document",
@@ -681,23 +853,97 @@ class T {
       },
       notice: {
         duplicateFile: "Folder already contains note with same name",
-        addedToSection: "Added to Space",
         fileExists: "File Already Exists",
         folderExists: "Folder Already Exists",
-        noPropertyName: "Property Name is Required",
-        noPropertiesFound: "No Properties Found",
-        duplicatePropertyName: "Duplicate Property Name",
-        newSpaceName: "Enter a name for your space",
-        duplicateSpaceName: "Space name already exists",
-        cantConvertNoteToSpace: "The view is not a note",
         templateSaved: "Template saved to space: ",
-        tableDeleted: "Table removed from note, you can find the table in the folder space"
+        tableDeleted: "Table removed from Note. You can find the table in the folder Space",
+        copyError: "Copy Error",
+        reload: "Reload",
+        kitDoesntExist: "Kit doesn't exist",
+        kitAdded: "Kit added",
+        exportedToHTML: "Successfully exported to HTML",
+        noOptionsFound: "No options found",
+        alreadyInKit: "Already in Kit",
+        error: "Error: ",
+        invalidKitURL: "Invalid Kit URL",
+        cantConvertNoteToSpace: "Can't Convert Note to Space",
+        newSpaceName: "New Space Name",
+        duplicateSpaceName: "Duplicate Space Name",
+        noPropertyName: "No Property Name",
+        duplicatePropertyName: "Duplicate Property Name",
+        noPropertiesFound: "No Properties Found",
+        somethingWentWrong: "Something Went Wrong"
       },
       settings: {
+        title: "Settings",
+        tooltips: {
+          deletePalette: "Delete palette",
+          resetToDefault: "Reset to default",
+          removeColor: "Remove color",
+          addColor: "Add color",
+          deleteStickerSet: "Delete sticker set",
+          addGradientStop: "Add gradient stop",
+          stopPosition: "Stop position (%)",
+          removeGradientStop: "Remove selected gradient stop",
+        },
+        ariaLabels: {
+          closeOnboarding: "Close onboarding",
+          dataSource: "Data Source",
+          chartType: "Chart Type",
+          legendConfiguration: "Legend Configuration",
+          colorConfiguration: "Color Configuration",
+          close: "Close",
+          toggleXAxis: "Toggle X Axis",
+          toggleXAxisLabel: "Toggle X Axis Label",
+          toggleXGridlines: "Toggle X Gridlines",
+          toggleXAxisLine: "Toggle X Axis Line",
+          toggleStackedMode: "Toggle Stacked Mode",
+          toggleYAxis: "Toggle Y Axis",
+          toggleYAxisLabel: "Toggle Y Axis Label",
+          toggleDataLabels: "Toggle Data Labels",
+          toggleYGridlines: "Toggle Y Gridlines",
+          toggleYAxisLine: "Toggle Y Axis Line",
+          toggleLegend: "Toggle Legend",
+          legendPosition: "Legend Position",
+          legendAlignment: "Legend Alignment",
+          toggleLineSmoothing: "Toggle Line Smoothing",
+          toggleStroke: "Toggle Stroke",
+          toggleDataPoints: "Toggle Data Points",
+          toggleDonutChart: "Toggle Donut Chart",
+        },
+        onboarding: {
+          welcome: "Welcome to Make.md",
+          welcomeDesc: "Welcome to Make.md! Let's configure your essential settings to get you started.",
+          walkthrough: "We'll walk through the most important options to customize your experience.",
+          coreFeatures: "Core Features",
+          enableNavigator: "Enable Navigator (sidebar file browser)",
+          enableNavigatorDesc: "Show the enhanced file navigator in the sidebar",
+          enableSpaceViews: "Enable Space Views",
+          enableSpaceViewsDesc: "Create custom views and organize content in spaces",
+          enableContexts: "Enable Contexts & Properties",
+          enableContextsDesc: "Add structured data and metadata to your notes",
+          interfacePreferences: "Interface Preferences",
+          showBanners: "Show Note Banners",
+          showBannersDesc: "Display banner images at the top of notes",
+          showFileIcons: "Show File Icons",
+          showFileIconsDesc: "Display custom icons next to files and folders",
+          systemName: "System Name",
+          systemNameDesc: "Customize the name of your workspace",
+          previous: "Previous",
+          next: "Next",
+          skipTour: "Skip Tour",
+          getStarted: "Get Started",
+        },
+        categories: {
+          core: "Core",
+          appearance: "Appearance",
+          system: "System",
+        },
         sections: {
           general: "General",
           navigator: "Navigator",
           appearance: "Appearance",
+          coverImage: "Cover Image",
           interaction: 'Preferences',
           context: "Context",
           label: "Labels",
@@ -707,6 +953,8 @@ class T {
           advanced: "Advanced",
           folderNote: "Folder Note",
           notes: "Notes",
+          assets: "Assets",
+          language: "Language",
         },
         
         cacheIndex: {
@@ -742,6 +990,10 @@ class T {
         imageThumbnails: {
           name: "Image Thumbnails",
           desc: "Create thumbnails for images to speed up performance"
+        },
+        hiddenExtensions: {
+          name: "Hidden Extensions",
+          desc: "File extensions and names to hide from the navigator"
         },
         minimalThemeFix: {
           name: "Minimal Theme Fix",
@@ -817,11 +1069,11 @@ class T {
         },
         saveAllContextToFrontmatter: {
           name: "Sync Context Fields to Frontmatter",
-          desc: "Turn on to automatically save all context fields to frontmatter fields, not just existing frontmatter fields.",
+          desc: "Turn on to automatically save all context fields to Frontmatter fields, not just existing Frontmatter fields.",
         },
         syncFormulaToFrontmatter: {
           name: "Sync Formula Fields to Frontmatter",
-          desc: "Turn on to save calculated formula values to frontmatter fields.",
+          desc: "Turn on to save calculated formula values to Frontmatter fields.",
         },
         spaceSubFolder: {
           name: "Space Folder Name",
@@ -912,7 +1164,7 @@ class T {
           desc: "Select how you want files to be deleted",
         },
         spacesDeleteOptions: {
-          permanant: "Delete Permanently",
+          permanent: "Delete Permanently",
           trash: "Move to Obsidian Trash",
           "system-trash": "Move to System Trash",
         },
@@ -934,7 +1186,7 @@ class T {
         },
         defaultSpaces: {
           name: "Default Spaces",
-          desc: `Recommended spaces for quickly organizing your vault`,
+          desc: `Recommended Spaces for quickly organizing your vault`,
         },
         homeSpace: {
           name: "Home Space",
@@ -959,6 +1211,24 @@ class T {
         indexSVG: {
           name: "Use SVGs as Stickers",
           desc: `Use any svg file in your vault as a sticker`,
+        },
+        language: {
+          name: "Customize Interface Language",
+          desc: "Modify any text in the interface. Changes require a reload to take effect.",
+          loadingSettings: "Loading language settings...",
+          exportJSON: "Export JSON",
+          importJSON: "Import JSON",
+          importJSONDesc: "Paste your language JSON here. Only modified values will be imported.",
+          pasteJSONPlaceholder: "Paste your JSON here...",
+          import: "Import",
+          cancel: "Cancel",
+          copied: "Copied!",
+          resetAll: "Reset All",
+          search: "Search",
+          searchDesc: "Search by key or text value",
+          showingCount: "Showing {{filtered}} of {{total}} strings",
+          original: "Original",
+          invalidJSON: "Invalid JSON format. Please check your input.",
         },
         inlineStyler: {
           name: "Flow Styler",
@@ -1001,7 +1271,7 @@ class T {
           desc: `Use the editor without Markdown.`,
         },
         
-        editorMakePlacholder: {
+        editorMakePlaceholder: {
           name: "Flow Menu Hint Text",
           desc: `Show a hint text on how to open the Flow Menu Shortcut`,
         },
@@ -1028,22 +1298,97 @@ class T {
           minimal: "Minimal",
         },
       },
-    },
-    
-  };
-
-  constructor() {
-    this.lang = "en"
-    const lang = moment.locale();
-
-    if ([ "en" ].includes(lang)) {
-      this.lang = lang as "en";
     }
+    };
   }
 
-  get texts(): typeof this.all.en {
-    return this.all.en;
+  public getStrings() {
+    // Apply overrides on top of default strings
+    const applyOverrides = (base: any, overrides: Record<string, any>): any => {
+      const result = { ...base };
+      
+      for (const [key, value] of Object.entries(overrides)) {
+        const keys = key.split('.');
+        let current = result;
+        
+        for (let i = 0; i < keys.length - 1; i++) {
+          if (!current[keys[i]]) {
+            current[keys[i]] = {};
+          }
+          current = current[keys[i]];
+        }
+        
+        current[keys[keys.length - 1]] = value;
+      }
+      
+      return result;
+    };
+    
+    return applyOverrides(this.strings.en, this.overrides);
+  }
+
+  public loadCustomStrings(customStrings: Record<string, any>): void {
+    this.overrides = customStrings;
+  }
+
+  public setOverridesFromFile(overrides: Record<string, any>): void {
+    this.overrides = overrides || {};
   }
 }
 
-export default new T().texts;
+const i18nLoader = new I18nLoader();
+
+export { i18nLoader };
+
+// Create a proxy that always returns the current strings
+const i18nProxy = new Proxy({}, {
+  get(_target, prop, receiver) {
+    return Reflect.get(i18nLoader.getStrings(), prop, receiver);
+  },
+  ownKeys(_target) {
+    return Reflect.ownKeys(i18nLoader.getStrings());
+  },
+  getOwnPropertyDescriptor(_target, prop) {
+    return Reflect.getOwnPropertyDescriptor(i18nLoader.getStrings(), prop);
+  }
+});
+
+// Type definition for i18n strings
+type I18nStrings = {
+  hintText: Record<string, string>;
+  defaults: Record<string, string>;
+  commands: Record<string, string>;
+  styles: Record<string, string>;
+  commandsSuggest: Record<string, string>;
+  commandPalette: Record<string, string>;
+  frames: {
+    sections: Record<string, string>;
+    label: Record<string, string>;
+    note: Record<string, string>;
+    table: Record<string, string>;
+    context: Record<string, string>;
+    calendar: Record<string, string>;
+    field: Record<string, string>;
+    event: Record<string, string>;
+    divider: Record<string, string>;
+    button: Record<string, string>;
+    callout: Record<string, string>;
+    toggle: Record<string, string>;
+  };
+  menu: Record<string, string>;
+  editor: Record<string, string>;
+  buttons: Record<string, string>;
+  metadataTypes: Record<string, string>;
+  filterTypes: Record<string, string>;
+  aggregateTypes: Record<string, string>;
+  sortTypes: Record<string, string>;
+  properties: Record<string, any>;
+  views: Record<string, string>;
+  labels: Record<string, string>;
+  descriptions: Record<string, string>;
+  flowView: Record<string, string>;
+  notice: Record<string, string>;
+  settings: Record<string, any>;
+};
+
+export default i18nProxy as I18nStrings;

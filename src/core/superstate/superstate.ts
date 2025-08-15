@@ -12,10 +12,12 @@ import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _, { debounce } from "lodash";
 import * as math from 'mathjs';
+import { formulas } from "core/utils/formula/formulas";
 import { rootToFrame } from "schemas/frames";
 import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
 import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemNode, overviewItem, rowGroup } from "schemas/kits/list";
-import { buttonNode, callout, circularProgressNode, dividerNode, fieldNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
+import { buttonNode, callout, dividerNode, fieldNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
+import { headerKit, visualizationNode } from "schemas/kits";
 import { fieldTypeForField, mainFrameID } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
 import { Command } from "shared/types/commands";
@@ -42,10 +44,10 @@ import { API } from "./api";
 import { SpacesCommandsAdapter } from "./commands";
 
 import { linkContextRow } from "core/utils/contexts/linkContextRow";
-import { formulas } from "core/utils/formula/formulas";
 import { allMetadata } from "core/utils/metadata";
 import { Metadata } from "shared/types/metadata";
 import { Indexer } from "./workers/indexer/indexer";
+import { IAssetManager } from "shared/types/assets";
 
 import Fuse, { FuseIndex } from "fuse.js";
 import { SuperstateEvent } from "shared/types/PathState";
@@ -74,6 +76,7 @@ public api: API;
 
     public ui: UIManager
     public cli: CLIManager
+    public assets: IAssetManager | null
     //Index
     public pathsIndex: Map<string, PathState>
     public spacesIndex: Map<string, SpaceState>
@@ -87,15 +90,15 @@ public api: API;
 
 
     public kit : FrameRoot[] = [
-        buttonNode, 
+        headerKit,
+        buttonNode(), 
         dividerNode, 
-        progressNode,
-        callout,
-        toggleNode,
+        progressNode(),
+        callout(),
+        toggleNode(),
         eventItem,
-        circularProgressNode,
-        previewNode,
-         linkNode, 
+        previewNode(),
+         linkNode(), 
          imageListItem,
         detailItem,
         overviewItem, 
@@ -109,15 +112,16 @@ public api: API;
         listView,
         calendarView,
         dateGroup,
-        tabsNode,
-        fieldNode,
+        tabsNode(),
+        fieldNode(),
         gridGroup,
         newItemNode,
-        ratingNode,
+        ratingNode(),
         fieldsView,
         rowGroup,
         coverListItem,
-    columnView]
+        columnView,
+        visualizationNode]
     
     //Persistant Cache
     public iconsCache: Map<string, string>
@@ -136,7 +140,7 @@ public api: API;
         name: string,
         properties: Metadata[]
     }>
-    private contextStateQueue: Promise<void>;
+    private contextStateQueue: Promise<unknown>;
     private indexer: Indexer;
 
     public focuses: Focus[];
@@ -148,7 +152,7 @@ public api: API;
         return searchPath({ queries: queries, pathsIndex: this.pathsIndex, count: 10 })
     }
     public reindexSearch () {
-        this.indexer.reload<Record<string, any>>({ type: 'index', path: ''}).then(r => {
+        this.indexer.reload<Record<string, unknown>>({ type: 'index', path: ''}).then(r => {
             this.searchIndex = Fuse.parseIndex(r);
         });
     }
@@ -157,13 +161,15 @@ public api: API;
 
         const all = {
             ...math.all,
-            createAdd: math.factory('add', [], () => function add (a: any, b: any) {
+            createAdd: math.factory('add', [], () => function add (a: number, b: number) {
                 return a + b
               }),
-            createEqual: math.factory('equal', [], () => function equal (a: any, b: any) {
+            createEqual: math.factory('equal', [], () => function equal (a: unknown, b: unknown) {
+                // eslint-disable-next-line eqeqeq
                 return a == b
               }),
-              createUnequal: math.factory('unequal', [], () => function unequal (a: any, b: any) {
+              createUnequal: math.factory('unequal', [], () => function unequal (a: unknown, b: unknown) {
+                // eslint-disable-next-line eqeqeq
                 return a != b
               })
             
@@ -188,6 +194,10 @@ public api: API;
         
         this.allMetadata = {};
         this.api = new API(this);
+        
+        //Initialize Asset Manager - will be replaced by platform-specific implementation
+        this.assets = null; // Defer creation until persister is available
+        
         //Initiate Indexes
         this.pathsIndex = new Map();
         this.spacesIndex = new Map();
@@ -232,7 +242,7 @@ public api: API;
         await this.loadFromCache()   
     }
 
-    public addToContextStateQueue(operation: () => Promise<any>) {
+    public addToContextStateQueue(operation: () => Promise<unknown>) {
         //Simple queue (FIFO) for processing context changes
         this.contextStateQueue = this.contextStateQueue.then(operation).catch(() => {
             //do nuth'ing
@@ -255,6 +265,14 @@ public api: API;
             
         await this.initializeBuiltins();
         await this.initializeTags();
+        
+        // Initialize AssetManager to load iconset mappings before path loading
+        if (this.assets) {
+            await this.assets.initialize();
+        } else {
+            console.warn('[Superstate] No AssetManager implementation provided');
+        }
+        
         await this.initializePaths();
         await this.initializeContexts();
         await this.initializeFrames();
@@ -363,14 +381,16 @@ public api: API;
 
     public async loadFromCache() {
         this.dispatchEvent("superstateReindex", null)
-        if (this.settings.indexSVG) {
-            const allIcons = await this.persister.loadAll('icon')
-            this.spaceManager.allPaths(['svg']).forEach(s => {
-                const row = allIcons.find(f => f.path == s);
-                if (row?.cache.length > 0)
-                    this.iconsCache.set(s, row.cache);
-            });
-        }
+        const allIcons = await this.persister.loadAll('icon')
+        
+        // Load SVG files - Let AssetManager handle icon caching
+        this.spaceManager.allPaths(['svg']).forEach(s => {
+            const row = allIcons.find(f => f.path == s);
+            if (row?.cache.length > 0 && this.assets) {
+                // AssetManager will handle all icon caching
+                this.assets.cacheIconFromPath(s, row.cache);
+            }
+        });
         const allPaths = await this.persister.loadAll('path')
         const allSpaces = await this.persister.loadAll('space');
         const allContexts = await this.persister.loadAll('context')
@@ -407,7 +427,7 @@ public api: API;
         this.dispatchEvent("superstateUpdated", null)
     }
 
-    public dispatchEvent(event: keyof SuperstateEvent, payload: any) {
+    public dispatchEvent<K extends keyof SuperstateEvent>(event: K, payload: SuperstateEvent[K]) {
         this.eventsDispatcher.dispatchEvent(event, payload);
     }
 
@@ -993,12 +1013,15 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
                 
             }
             
-            if (cache.metadata?.file?.extension == 'svg' && this.settings.indexSVG) {
+            // Only load SVG files - Let AssetManager handle caching
+            const isSvgFile = cache.metadata?.file?.extension === 'svg';
+            
+            if (isSvgFile && this.assets && (this.assets.iconPathMapping.has(path) || this.settings.indexSVG)) {
                 this.spaceManager.readPath(path).then(f => {
-                    this.iconsCache.set(path, f)
-                    this.persister.store(path,  f, 'icon')
-
-                })
+                    // Let AssetManager handle all icon caching
+                    this.assets.cacheIconFromPath(path, f);
+                    this.persister.store(path, f, 'icon');
+                });
             }
             
             

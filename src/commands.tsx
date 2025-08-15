@@ -18,14 +18,14 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
   if (!isPhone(plugin.superstate.ui))
     plugin.addCommand({
       id: "open-ever-view",
-      name: "Open Overview",
+      name: i18n.buttons.openOverview,
       callback: () => {
         plugin.openEverView();
       },
     });
   plugin.addCommand({
     id: "open-hidden",
-    name: "Manage Hidden Files",
+    name: i18n.labels.manageHiddenFiles,
     callback: () => {
       plugin.superstate.ui.openModal(
         i18n.labels.hiddenFiles,
@@ -38,14 +38,14 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
   });
   plugin.addCommand({
     id: "show-warnings",
-    name: "Show Sync Warnings",
+    name: i18n.menu.showWarnings,
     callback: () => {
       showWarningsModal(plugin.superstate, window);
     },
   });
   plugin.addCommand({
     id: "logs",
-    name: "Toggle Enhanced Logs",
+    name: i18n.commands.toggleEnhancedLogs,
     callback: () => {
       plugin.superstate.settings.enhancedLogs =
         !plugin.superstate.settings.enhancedLogs;
@@ -54,21 +54,21 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
   });
   plugin.addCommand({
     id: "path-fixer",
-    name: "Fix Unsupported Characters in Paths",
+    name: i18n.commands.fixPathCharacters,
     callback: () => {
       openPathFixer(plugin);
     },
   });
   plugin.addCommand({
     id: "move-space-folder",
-    name: "Move Space Data Folder",
+    name: i18n.commands.moveSpaceDataFolder,
     callback: () => {
       const win = windowFromDocument(
         plugin.app.workspace.getLeaf()?.containerEl.ownerDocument
       );
       openInputModal(
         plugin.superstate,
-        "Move Space Data Folder",
+        i18n.commands.moveSpaceDataFolder,
         plugin.superstate.settings.spaceSubFolder,
         (path) => {
           moveSpaceFiles(
@@ -77,7 +77,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
             path
           );
         },
-        "Move",
+        i18n.buttons.move,
         win
       );
     },
@@ -85,7 +85,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
   if (plugin.superstate.settings.spacesEnabled) {
     plugin.addCommand({
       id: "mk-new-space",
-      name: "New Folder",
+      name: i18n.buttons.newFolder,
       callback: () => {
         newSpaceModal(plugin.superstate);
       },
@@ -93,7 +93,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
 
     plugin.addCommand({
       id: "mk-debug-close-tabs",
-      name: "Close Extra File Tabs",
+      name: i18n.commands.closeExtraFileTabs,
       callback: () => {
         plugin.closeExtraFileTabs();
       },
@@ -149,7 +149,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
 
     plugin.addCommand({
       id: "mk-pin-active",
-      name: "Pin Active File to Space",
+      name: i18n.commands.pinActiveFileToSpace,
       callback: () => {
         const file = plugin.superstate.ui.activePath;
         if (!file) return;

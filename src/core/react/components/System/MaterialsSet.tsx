@@ -1,12 +1,12 @@
 import { Superstate } from "makemd-core";
 import React from "react";
-import { colors, colorsBase } from "shared/utils/color";
+import { getColors, getColorsBase } from "core/utils/colorPalette";
 export const MaterialsSet = (props: { superstate: Superstate }) => {
   const [materials, setMaterials] = React.useState<any[]>([]);
   return (
     <div>
       <div>
-        {colors.map((c, i) => (
+        {getColors(props.superstate).map((c, i) => (
           <div
             key={i}
             aria-label={c[0]}
@@ -18,7 +18,7 @@ export const MaterialsSet = (props: { superstate: Superstate }) => {
         <div>Add</div>
       </div>
       <div>
-        {colorsBase.map((c, i) => (
+        {getColorsBase(props.superstate).map((c, i) => (
           <div
             key={i}
             aria-label={c[0]}

@@ -5,11 +5,11 @@ import {
   iconNode,
   imageNode,
   textNode,
+  visualizationNode,
 } from "schemas/kits/base";
 import {
   buttonNode,
   callout,
-  circularProgressNode,
   dividerNode,
   progressNode,
   ratingNode,
@@ -32,6 +32,9 @@ import { uniqueNameFromString } from "shared/utils/array";
 import { createInlineTable } from "shared/utils/makemd/inlineTable";
 import { frameSchemaToTableSchema } from "shared/utils/makemd/schema";
 import { defaultMenu } from "../menu/SelectionMenu";
+import { visualizationConfigFields } from "schemas/kits/visualization";
+import { MDBFrame } from "shared/types/mframe";
+import { createVisualizationRows, createNewVisualizationFrame } from "core/utils/visualization/visualizationUtils";
 
 export const linkRoot = (
   parent: string,
@@ -240,26 +243,131 @@ export const showNewFrameMenu = (
     };
   });
 
+  const createVisualizationWithType = async (chartType: string): Promise<string> => {
+    try {
+      const schemaTable = await superstate.spaceManager.framesForSpace(space.path);
+      const configId = uniqueNameFromString(
+        'vis',
+        schemaTable.map((f) => f.id)
+      );
+
+      // First create the frame schema
+      const newSchema: FrameSchema = {
+        id: configId,
+        name: 'vis',
+        type: 'vis',
+        def: {
+          db: '' // Initialize with empty data source
+        }
+      };
+
+      // Save the frame schema first
+      await superstate.spaceManager.saveFrameSchema(
+        space.path, 
+        configId, 
+        () => frameSchemaToTableSchema(newSchema)
+      );
+
+      // Create a new visualization frame with the specified chart type
+      const visualizationFrame = createNewVisualizationFrame(configId);
+      
+      // Update the chart type in the main row
+      const mainRow = visualizationFrame.rows.find(row => row.name === 'main');
+      if (mainRow) {
+        const props = JSON.parse(mainRow.props);
+        props.chartType = chartType;
+        mainRow.props = JSON.stringify(props);
+      }
+
+      // Save the frame data
+      await superstate.spaceManager.saveFrame(space.path, visualizationFrame);
+      return configId;
+    } catch (error) {
+      console.error('Error creating visualization:', error);
+      return '';
+    }
+  };
+
+  const cardNode: FrameRoot = {
+    def: {
+      id: 'cardNode',
+      icon: "lucide//credit-card",
+      description: "Card container with styled background",
+    },
+    node: {
+      id: "card",
+      schemaId: "card",
+      name: "Card",
+      rank: 0,
+      parentId: "",
+      styles: {
+        layout: `"column"`,
+        width: `'100%'`,
+        height: `'100px'`,
+        sem: `'card'`,
+      },
+      type: "group",
+    }
+  };
+
   const defaultElements: FrameRoot[] = [
     textNode,
     imageNode,
     dividerNode,
     iconNode,
     groupNode,
+    cardNode,
     // contentNode,
   ];
   const defaultFrames: FrameRoot[] = [
-    buttonNode,
-    ratingNode,
-    toggleNode,
-    callout,
-    progressNode,
-    circularProgressNode,
-    tabsNode,
+    buttonNode(),
+    ratingNode(),
+    toggleNode(),
+    callout(),
+    progressNode(),
+    tabsNode(),
   ];
+
+  // Chart types for chart submenu
+  const chartTypes = [
+    { type: "bar", name: "Bar Chart", icon: "lucide//bar-chart" },
+    { type: "line", name: "Line Chart", icon: "lucide//activity" },
+    { type: "scatter", name: "Scatter Plot", icon: "lucide//scatter-chart" },
+    { type: "pie", name: "Pie Chart", icon: "lucide//pie-chart" },
+    { type: "area", name: "Area Chart", icon: "lucide//area-chart" },
+    { type: "radar", name: "Radar Chart", icon: "lucide//radar" },
+  ];
+
+  const visualizationOptions = chartTypes.map((chart) => ({
+    name: chart.name,
+    value: chart.type,
+    icon: chart.icon,
+    onClick: async () => {
+      const configId = await createVisualizationWithType(chart.type);
+      addNode({
+        ...visualizationNode.node,
+        props: {
+          value: wrapQuotes(configId),
+        },
+      });
+    },
+  }));
 
   const selectOptions: SelectOption[] = [
     ...presets,
+    {
+      name: i18n.commands.chart,
+      value: "chart",
+      type: SelectOptionType.Submenu,
+      onSubmenu: (offset: Rect) => {
+        return superstate.ui.openMenu(
+          offset,
+          defaultMenu(superstate.ui, visualizationOptions),
+          win
+        );
+      },
+      icon: "lucide//bar-chart-3",
+    },
     {
       name: "List View",
       value: "frame",

@@ -21,3 +21,319 @@ border-bottom: thin solid var(--mk-ui-divider);
     flex-direction: row;
     gap: 4px;
   }
+
+/* Enhanced Color Picker Styles */
+.mk-ui-color-picker-enhanced {
+    width: 300px;
+    padding: 12px;
+}
+
+.mk-color-mode-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.mk-color-mode-button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    background-color: var(--background-primary);
+}
+
+.mk-color-mode-button:hover {
+    transform: scale(1.05);
+}
+
+.mk-color-mode-button.active {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mk-color-none-icon {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.mk-color-canvas-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.mk-color-canvas-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+.mk-color-current {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mk-color-hex-input {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: monospace;
+}
+
+.mk-color-swatches {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mk-color-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mk-color-section-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.mk-color-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* Gradient Editor */
+.mk-gradient-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mk-gradient-preview {
+    position: relative;
+    height: 40px;
+    border-radius: 6px;
+    border: 1px solid var(--background-modifier-border);
+    cursor: pointer;
+}
+
+.mk-gradient-stop {
+    position: absolute;
+    top: -4px;
+    width: 12px;
+    height: 48px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transform: translateX(-50%);
+    transition: all 0.2s ease;
+}
+
+.mk-gradient-stop:hover {
+    transform: translateX(-50%) scale(1.1);
+}
+
+.mk-gradient-stop.active {
+    border-color: var(--interactive-accent);
+}
+
+.mk-gradient-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.mk-gradient-controls button {
+    flex: 1;
+    padding: 6px 12px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    background: var(--background-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mk-gradient-controls button:hover:not(:disabled) {
+    background: var(--background-modifier-hover);
+}
+
+.mk-gradient-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Color Palette Selector */
+.mk-color-palette-selector {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.mk-palette-section {
+    margin-bottom: 16px;
+    padding: 0;
+    border: none;
+}
+
+.mk-palette-name {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    padding: 0;
+    color: var(--text-normal);
+}
+
+.mk-palette-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.mk-palette-empty {
+    text-align: center;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+/* None Mode Display */
+.mk-color-none-display {
+    display: none !important;
+}
+
+.mk-color-none-text {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.mk-color-none-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Enhanced Color Swatch */
+.mk-color-swatch {
+    position: relative;
+    display: inline-block;
+}
+
+.mk-color-swatch-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.mk-color-swatch:hover .mk-color-swatch-inner {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mk-color-swatch-small {
+    width: 20px;
+    height: 20px;
+}
+
+.mk-color-swatch-medium {
+    width: 32px;
+    height: 32px;
+}
+
+.mk-color-swatch-large {
+    width: 40px;
+    height: 40px;
+}
+
+.mk-color-swatch-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 4px;
+    pointer-events: none;
+}
+
+.mk-color-swatch-name {
+    color: white;
+    font-size: 9px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: left;
+    word-break: break-word;
+}
+
+.mk-color-swatch-value {
+    color: white;
+    font-size: 8px;
+    font-family: monospace;
+    line-height: 1.2;
+    opacity: 0.8;
+}
+
+/* Gradient Swatch Styles */
+.mk-gradient-swatch .mk-color-swatch-inner {
+    background-size: cover !important;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 1px solid var(--background-modifier-border);
+}
+
+.mk-gradient-swatch:hover .mk-color-swatch-inner {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.mk-gradient-swatch .mk-color-swatch-overlay {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.mk-gradient-swatch .mk-color-swatch-overlay .mk-color-swatch-value {
+    color: white;
+    font-weight: 500;
+}
+
+/* Circular Angle Selector */
+.mk-circular-angle-selector {
+    position: relative;
+    user-select: none;
+}
+
+.mk-circular-angle-selector:active {
+    cursor: grabbing !important;
+}
+
+/* Gradient Controls Row */
+.mk-gradient-controls-row {
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mk-gradient-controls-row button {
+    transition: all 0.15s ease;
+}
+
+.mk-gradient-controls-row button:hover:not(:disabled) {
+    background-color: var(--mk-ui-background-hover);
+    border-color: var(--mk-ui-border-hover);
+    transform: scale(1.05);
+}
+
+.mk-gradient-controls-row button:active:not(:disabled) {
+    transform: scale(0.95);
+}

@@ -1,11 +1,10 @@
 import { PathView } from "core/react/components/PathView/PathView";
-
+import { SpaceFragmentViewComponent } from "core/react/components/SpaceView/Editor/EmbedView/SpaceFragmentView";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
 import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
-import { SpaceContext } from "core/react/context/SpaceContext";
 import { wrapQuotes } from "core/utils/strings";
 import { i18n } from "makemd-core";
 import React, { useContext, useMemo, useState } from "react";
@@ -30,26 +29,45 @@ function parseContent(input: string): string {
   return match1 ? match1[1] : match2 ? match2[1] : input;
 }
 
+// FlowNodeView supports both regular paths and space fragment views
+// Space fragment views are paths like "./#*frameId" or "spacePath#*frameId"
+// When a fragment view is detected, it renders using SpaceFragmentViewComponent
+// Otherwise it renders using PathView
 export const FlowNodeView = (
   props: FrameNodeViewProps & {
     source?: string;
     containerRef?: React.RefObject<HTMLDivElement>;
   }
 ) => {
-  const { spaceState } = useContext(SpaceContext);
-  const pathState: PathState = useMemo(() => {
-    const fullPath = props.state?.props?.value;
-    const path = fullPath
-      ? props.superstate.spaceManager.resolvePath(
-          parseContent(fullPath),
-          props.source
-        )
-      : null;
+  const fullPath = props.state?.props?.value;
+  const parsedPath = fullPath ? parseContent(fullPath) : null;
 
-    const uri = props.superstate.spaceManager.uriByString(fullPath);
+  // Check if this is a space fragment view (e.g., ./#*frameId or path#*frameId)
+  const isSpaceFragment = useMemo(() => {
+    if (!parsedPath) return false;
+    const uri = props.superstate.spaceManager.uriByString(
+      parsedPath,
+      props.source
+    );
+    return (
+      uri?.refType === "frame" ||
+      uri?.refType === "context" ||
+      uri?.refType === "action"
+    );
+  }, [parsedPath, props.source]);
+
+  const pathState: PathState = useMemo(() => {
+    if (!parsedPath || isSpaceFragment) return null;
+
+    const path = props.superstate.spaceManager.resolvePath(
+      parsedPath,
+      props.source
+    );
+
+    const uri = props.superstate.spaceManager.uriByString(parsedPath);
     if (uri?.scheme == "https" || uri?.scheme == "http") {
       return {
-        path: fullPath,
+        path: parsedPath,
         label: {
           sticker: uri.scheme,
           name: uri.path,
@@ -67,7 +85,7 @@ export const FlowNodeView = (
     //   );
     // }
     return props.superstate.pathsIndex.get(path);
-  }, [props.state, props.source]);
+  }, [parsedPath, props.source, isSpaceFragment]);
   const { updateNode, nodes } = useContext(FramesEditorRootContext);
   const { selectionMode } = useContext(FrameSelectionContext);
   const [expanded, setExpanded] = useState<boolean>(
@@ -94,7 +112,6 @@ export const FlowNodeView = (
   };
   const hideToggle = props.state?.styles?.["--mk-link"];
   const { id } = useContext(FrameInstanceContext);
-  const [pathString, setPathString] = useState<string>("");
 
   const toggleCollapse = () => {
     setExpanded((p) => !p);
@@ -109,9 +126,12 @@ export const FlowNodeView = (
   return (
     <div className="mk-node-flow">
       {!props.state?.styles?.["--mk-min-mode"] &&
-        (pathState ? (
+        (pathState || isSpaceFragment ? (
           <div className="mk-node-link">
-            <PathCrumb superstate={props.superstate} path={pathState.path}>
+            <PathCrumb
+              superstate={props.superstate}
+              path={pathState?.path ?? parsedPath}
+            >
               {!hideToggle && (
                 <CollapseToggle
                   superstate={props.superstate}
@@ -132,14 +152,26 @@ export const FlowNodeView = (
       {props.state &&
         expanded &&
         (props.state?.props?.value?.length > 0 ? (
-          <PathView
-            id={id}
-            superstate={props.superstate}
-            path={pathState?.path ?? props.state?.props?.value}
-            containerRef={props.containerRef}
-            styles={{}}
-            readOnly={true}
-          ></PathView>
+          isSpaceFragment ? (
+            <SpaceFragmentViewComponent
+              id={id}
+              source={props.source}
+              showTitle={false}
+              superstate={props.superstate}
+              path={parsedPath}
+              minMode={props.state?.styles?.["--mk-min-mode"]}
+              containerRef={props.containerRef}
+            />
+          ) : (
+            <PathView
+              id={id}
+              superstate={props.superstate}
+              path={pathState?.path ?? props.state?.props?.value}
+              containerRef={props.containerRef}
+              styles={{}}
+              readOnly={true}
+            ></PathView>
+          )
         ) : (
           selectionMode > FrameEditorMode.Read && (
             <div

@@ -1,0 +1,14 @@
+/* Visualization Formatter Styles */
+.mk-visualization-formatter-palette-preview {
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+  align-items: center;
+}
+
+.mk-visualization-formatter-palette-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--mk-ui-border);
+}

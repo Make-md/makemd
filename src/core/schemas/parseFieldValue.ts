@@ -46,7 +46,7 @@ export const parseFlexValue = (dataString: string) => {
     
 }
 
-export const parseSourceOptions = (superstate: Superstate, source: string, context: string, path: string, sourceProps: Record<string, any>) => {
+export const parseSourceOptions = (superstate: Superstate, source: string, context: string, path: string, schemaId: string, sourceProps: Record<string, any>) => {
   const options: SelectOption[] = [];
   if (source == "$commands") {
     return superstate.cli.allCommands().map((f) => {
@@ -67,7 +67,7 @@ export const parseSourceOptions = (superstate: Superstate, source: string, conte
       options.push(
         ...(superstate.contextsIndex
           .get(path)
-          ?.contextTable?.cols?.filter((f) => {
+          ?.mdb?.[schemaId]?.cols?.filter((f) => {
             if (f.type == sourceProps?.type) {
               if (sourceProps?.type == "object") {
                 if (sourceProps?.typeName) {
@@ -87,7 +87,7 @@ export const parseSourceOptions = (superstate: Superstate, source: string, conte
       options.push(
         ...(superstate.contextsIndex
           .get(path)
-          ?.contextTable?.cols?.map((f) => ({
+          ?.mdb?.[schemaId]?.cols?.map((f) => ({
             name: f.name,
             value: f.name,
           })) ?? [])
@@ -109,7 +109,8 @@ export const parseFieldValue = (
       return convertFileProp(valueProp);
     }
     
-    return [...(fieldTypeForType(type).configKeys ?? []), 'alias', 'default', 'required'].reduce((p, c) => ({ ...p, [c]: valueProp[c] }), {});
+    const fieldType = fieldTypeForType(type);
+    return [...(fieldType?.configKeys ?? []), 'alias', 'default', 'required'].reduce((p, c) => ({ ...p, [c]: valueProp[c] }), {});
   }
   if (!type) return {};
   if (!valueProp) {

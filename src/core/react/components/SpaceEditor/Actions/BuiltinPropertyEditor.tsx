@@ -1,4 +1,4 @@
-import { Superstate } from "makemd-core";
+import { Superstate, i18n } from "makemd-core";
 import React, { useMemo } from "react";
 import { ActionTree } from "shared/types/actions";
 import { Command } from "shared/types/commands";
@@ -55,7 +55,7 @@ export const BuiltinPropertyEditor = (props: {
     );
   };
   return props.command.schema.id == "formula" ? (
-    <button onClick={(e) => editFormula(e)}>Edit Formula</button>
+    <button onClick={(e) => editFormula(e)}>{i18n.menu.editFormula}</button>
   ) : props.command.schema.id == "filter" ? (
     <SpaceQuery
       superstate={props.superstate}

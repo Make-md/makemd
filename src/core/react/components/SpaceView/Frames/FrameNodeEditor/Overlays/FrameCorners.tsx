@@ -10,11 +10,21 @@ export const FrameCorners = (props: {
   saveStyles: (size: FrameTreeProp) => void;
   listeners?: DraggableSyntheticListeners;
 }) => {
-  const match = props.styles.borderRadius
-    ? props.styles.borderRadius.match(/^(\d+(?:\.\d+)?)\s?([a-zA-Z%]+)$/)
-    : null;
-  const numericValue = match ? parseInt(match[1]) : 0;
-  const unit = match && match[2] ? match[2] : "px";
+  const borderRadiusValue = props.styles.borderRadius;
+  let match = null;
+  let numericValue = 0;
+  let unit = "px";
+  
+  if (borderRadiusValue != null) {
+    if (typeof borderRadiusValue === 'string') {
+      match = borderRadiusValue.match(/^(\d+(?:\.\d+)?)\s?([a-zA-Z%]+)$/);
+      numericValue = match ? parseInt(match[1]) : 0;
+      unit = match && match[2] ? match[2] : "px";
+    } else if (typeof borderRadiusValue === 'number') {
+      numericValue = borderRadiusValue;
+      unit = "px";
+    }
+  }
   const [offset, setOffset] = React.useState(Math.max(8, numericValue));
   useEffect(() => {
     setOffset(numericValue);

@@ -8,6 +8,7 @@ export const BasicDefaultSettings: MakeBasicsSettings = {
     mobileSidepanel: false,
     inlineStyler: true,
     inlineStylerColors: false,
+    inlineStylerSelectedPalette: "",
     editorFlow: true,
     internalLinkClickFlow: false,
     internalLinkSticker: false,

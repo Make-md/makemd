@@ -1,5 +1,5 @@
 import { PathLabel } from "./caches";
-import { SpaceProperty, SpaceTable, SpaceTableSchema } from "./mdb";
+import { SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "./mdb";
 import { MDBFrames } from "./mframe";
 import { SpaceDefinition, SpaceType } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
@@ -55,6 +55,7 @@ export type ContextState = {
     paths: string[];
     spaceMap: { [key: string]: { [key: string]: string[]; }; };
     dbExists: boolean;
+    mdb: SpaceTables
 
 };
 

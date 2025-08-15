@@ -95,8 +95,6 @@ body:not(.is-mobile) .mk-style-menu {
   width: 24px;
   height: 24px;
   border-radius: 12px;
-  margin: 8px;
-  border: thin solid var(--mk-ui-border);
 }
 .mk-color:hover {
   opacity: 0.8;
@@ -107,4 +105,133 @@ mark {
   border-radius: 2px;
   margin: 0px 2px;
   padding: 0px 2px;
+}
+
+/* Color Palette Panel Styles */
+.mk-color-palette-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+  padding: 12px;
+  min-width: 320px;
+  max-width: 400px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: var(--layer-menu);
+}
+
+.mk-color-palette-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.mk-color-palette-panel-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.mk-color-palette-panel-close {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.mk-color-palette-panel-close:hover {
+  background: var(--background-modifier-hover);
+}
+
+.mk-color-palette-panel-close svg {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+}
+
+.mk-color-palette-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mk-color-palette-panel .mk-palette-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  border: none;
+}
+
+.mk-color-palette-panel .mk-palette-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 0;
+}
+
+.mk-color-palette-panel .mk-palette-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mk-color-palette-panel .mk-color {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  border: 1px solid var(--background-modifier-border);
+  margin: 0;
+}
+
+.mk-color-palette-panel .mk-color:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border-color: var(--interactive-accent);
+}
+
+/* Palette Item Styles */
+.mk-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.mk-palette-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.mk-palette-preview {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.mk-palette-preview-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  position: relative;
+}
+
+.mk-palette-item .mk-palette-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+  margin: 0;
 }

@@ -192,7 +192,7 @@ export const SpaceHeaderBar = (props: {
       if (isMobile) {
         menuOptions.push(menuSeparator);
         menuOptions.push({
-          name: "Edit Pins",
+          name: i18n.labels.editPins,
           description: i18n.descriptions.smartSearch,
           icon: "ui//pin",
           onClick: (e) => {
@@ -200,7 +200,7 @@ export const SpaceHeaderBar = (props: {
           },
         });
         menuOptions.push({
-          name: "Edit Joins",
+          name: i18n.labels.editJoins,
           description: i18n.descriptions.smartSearch,
           icon: "ui//merge",
           onClick: (e) => {
@@ -208,7 +208,7 @@ export const SpaceHeaderBar = (props: {
           },
         });
         menuOptions.push({
-          name: "Edit Tables",
+          name: i18n.labels.editTables,
           description: i18n.descriptions.spaceLists,
           icon: "ui//table",
           onClick: (e) => {
@@ -216,7 +216,7 @@ export const SpaceHeaderBar = (props: {
           },
         });
         menuOptions.push({
-          name: "Edit Templates",
+          name: i18n.labels.editTemplates,
           description: i18n.descriptions.spaceTemplates,
           icon: "ui//clipboard-pen",
           onClick: (e) => {
@@ -242,7 +242,7 @@ export const SpaceHeaderBar = (props: {
       menuOptions.push(
         menuSeparator,
         {
-          name: "Export to HTML",
+          name: i18n.labels.exportToHTML,
           description: i18n.descriptions.spaceActions,
           icon: "ui//mouse-pointer-click",
           onClick: (e) => {
@@ -251,8 +251,8 @@ export const SpaceHeaderBar = (props: {
         },
         menuSeparator,
         {
-          name: "Toggle Read Mode",
-          description: "Toggle read mode for the space",
+          name: i18n.menu.toggleReadMode,
+          description: i18n.descriptions.toggleReadMode,
           icon: "ui//eye",
           onClick: (e) => {
             saveSpaceCache(props.superstate, spaceState.space, {
@@ -263,7 +263,7 @@ export const SpaceHeaderBar = (props: {
         },
         menuSeparator,
         {
-          name: "Apply to Items",
+          name: i18n.labels.applyToItems,
           description: i18n.descriptions.spaceProperties,
           icon: "ui//list",
           type: SelectOptionType.Submenu,
@@ -278,8 +278,8 @@ export const SpaceHeaderBar = (props: {
         },
         menuSeparator,
         {
-          name: "Reset View",
-          description: "Reset the view to the default settings",
+          name: i18n.labels.resetView,
+          description: i18n.labels.resetViewDesc,
           icon: "ui//table",
           onClick: (e) => {
             props.superstate.spaceManager.saveFrame(
@@ -304,9 +304,9 @@ export const SpaceHeaderBar = (props: {
       {spaceState && !isMobile && (
         <>
           <div className="mk-space-context-bar-section">
-            <div>{allItems} Items</div>
+            <div>{allItems} {i18n.labels.items}</div>
             <button
-              aria-label="Pins"
+              aria-label={i18n.labels.pins}
               className={`mk-toolbar-button ${
                 expandedSection == 0 ? "mk-active" : ""
               }`}
@@ -322,7 +322,7 @@ export const SpaceHeaderBar = (props: {
               ></div>
             </button>
             <button
-              aria-label="Joins"
+              aria-label={i18n.labels.joins}
               className={`mk-toolbar-button ${
                 expandedSection == 1 ? "mk-active" : ""
               }`}

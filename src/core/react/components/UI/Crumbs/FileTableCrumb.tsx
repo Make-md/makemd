@@ -1,5 +1,5 @@
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate } from "makemd-core";
+import { Superstate, i18n } from "makemd-core";
 import React, { useContext, useRef } from "react";
 
 import { useDndMonitor, useDraggable } from "@dnd-kit/core";
@@ -59,7 +59,7 @@ export const FileTableCrumb = (props: {
         dangerouslySetInnerHTML={{
           __html: props.superstate.ui.getSticker("ui//file-stack"),
         }}
-        aria-label="Items"
+        aria-label={i18n.labels.items}
       ></div>
       {props.paths.length > 0 ? (
         <>

@@ -2,7 +2,7 @@ import { generateStyleAst } from "core/export/styleAst/generateStyleAst";
 import { styleAstToCSS } from "core/export/styleAst/styleAstToCSS";
 import { noteToHtml, spaceToHtml } from "core/export/toHtml/spaceToHtml";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate } from "makemd-core";
+import { Superstate, i18n } from "makemd-core";
 import React, { useContext } from "react";
 import { Dropdown } from "../UI/Dropdown";
 
@@ -178,14 +178,14 @@ export const SpaceExport = (props: {
       </div>
       {generating ? (
         <div className="mk-button-group">
-          <button disabled>Making...</button>
+          <button disabled>{i18n.labels.making}</button>
         </div>
       ) : (
         <div className="mk-button-group">
           <button onClick={() => exportWithOptions(spaceState.path, true)}>
             Export
           </button>
-          <button onClick={() => props.close()}>Cancel</button>
+          <button onClick={() => props.close()}>{i18n.menu.cancel}</button>
         </div>
       )}
     </div>

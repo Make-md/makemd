@@ -12,6 +12,7 @@ export interface MakeBasicsSettings {
   mobileMakeBar: boolean;
   mobileSidepanel: boolean;
   inlineStylerColors: boolean;
+  inlineStylerSelectedPalette: string;
   editorFlow: boolean;
   internalLinkClickFlow: boolean;
   internalLinkSticker: boolean;

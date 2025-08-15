@@ -82,7 +82,7 @@ export const ActionTester = (props: {
     <div className="mk-editor-tester">
       {error?.length > 0 ? (
         <>
-          Error:{" "}
+          {i18n.notice.error}
           <span style={{ color: "var(--mk-ui-text-error)" }}>{error}</span>
         </>
       ) : (

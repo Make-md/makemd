@@ -68,9 +68,9 @@ export const FocusEditor = (props: {
       </div>
     ) : (
       <div className="mk-path-tree-empty">
-        <div className="mk-empty-state-title">Open a Space</div>
+        <div className="mk-empty-state-title">{i18n.labels.openASpace}</div>
         <div className="mk-empty-state-description">
-          Open an existing folders and tags as a space or create a new one
+          {i18n.labels.openASpaceDesc}
         </div>
         <button
           onClick={(e) => {
@@ -93,7 +93,7 @@ export const FocusEditor = (props: {
             );
           }}
         >
-          Open a Space
+          {i18n.labels.openASpace}
         </button>
       </div>
     )

@@ -21,15 +21,43 @@ export const stickerFromString = (sticker: string, plugin: MakeMDPlugin, options
   } else if (type == 'lucide') {
     return lucideIcon(value);
   } else {
-    let icon = plugin.superstate.iconsCache.get(value);
-      if (!icon) {
-        
-        const alias = plugin.superstate.imagesCache.get(value);
-        if (alias) {
-          icon = plugin.superstate.iconsCache.get(alias)
-        }
+    // For custom iconsets, the type is the iconset ID and value is the icon name
+    // Format: iconsetId//iconName where type=iconsetId and value=iconName
+    const iconsetId = type;
+    const iconName = value;
+    
+    // Use AssetManager if available
+    if (plugin.superstate.assets) {
+      const assetManager = plugin.superstate.assets;
+      
+      // Try to get icon from AssetManager (uses cache and can load if needed)
+      const iconKey = `${iconsetId}//${iconName}`;
+      const icon = assetManager.getIconSync(iconKey) || 
+                   assetManager.getIconSync(iconName) ||
+                   assetManager.getIconSync(sticker);
+      
+      if (icon) {
+        return icon;
       }
-    return icon
+      
+      // If not found, schedule async load for next time
+      assetManager.getIcon(iconKey).then(loadedIcon => {
+        if (loadedIcon) {
+          // Icon is now cached for future use
+        }
+      }).catch(() => {
+        // Try loading just the icon name as fallback
+        assetManager.getIcon(iconName).then(fallbackIcon => {
+          if (fallbackIcon) {
+            // Fallback icon loaded
+          }
+        }).catch(() => {
+          // Ignore errors - icon not found
+        });
+      });
+    }
+    
+    return '';
   }
 
 };

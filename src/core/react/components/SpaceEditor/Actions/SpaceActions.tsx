@@ -102,9 +102,9 @@ export const SpaceCommand = (props: {
     );
   };
   const menuItems = [
-    { name: "Actions", value: "actions" },
-    { name: "Script", value: "script" },
-    { name: "Formula", value: "formula" },
+    { name: i18n.labels.actions, value: "actions" },
+    { name: i18n.labels.script, value: "script" },
+    { name: i18n.labels.formula, value: "formula" },
   ];
 
   const defaultValueForField = (field: SpaceProperty) => {
@@ -157,7 +157,7 @@ export const SpaceCommand = (props: {
               </div>
             </div>
             <div className="mk-path-context-row">
-              <div className="mk-path-context-field">Properties</div>
+              <div className="mk-path-context-field">{i18n.labels.properties}</div>
             </div>
             <div className="mk-cell-object">
               {command.fields.map((f) => {

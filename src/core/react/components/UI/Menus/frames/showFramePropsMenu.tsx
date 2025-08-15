@@ -7,7 +7,7 @@ import { fieldTypeForType } from "schemas/mdb";
 import { SpaceProperty } from "shared/types/mdb";
 import { FrameNode, FrameTreeProp } from "shared/types/mframe";
 import { Rect } from "shared/types/Pos";
-import { colors } from "shared/utils/color";
+import { getColors } from "core/utils/colorPalette";
 import { windowFromDocument } from "shared/utils/dom";
 import StickerModal from "../../../../../../shared/components/StickerModal";
 import ImageModal from "../../Modals/ImageModal";
@@ -274,7 +274,7 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             value: [],
             options: [
               { name: i18n.labels.default, value: "" },
-              ...colors.map((f) => ({ name: f[0], value: f[1] })),
+              ...getColors(props.superstate).map((f) => ({ name: f[0], value: f[1] })),
             ],
             saveOptions: (_, values) => {
               saveStyleValue("color", wrapQuotes(values[0]));
@@ -300,7 +300,7 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
             value: [],
             options: [
               { name: i18n.labels.default, value: "" },
-              ...colors.map((f) => ({ name: f[0], value: f[1] })),
+              ...getColors(props.superstate).map((f) => ({ name: f[0], value: f[1] })),
             ],
             saveOptions: (_, values) => {
               saveStyleValue("background", wrapQuotes(values[0]));

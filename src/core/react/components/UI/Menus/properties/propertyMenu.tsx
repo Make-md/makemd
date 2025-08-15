@@ -50,6 +50,7 @@ export const showSetValueMenu = (
             propertyValue?.source,
             path,
             path,
+            schema,
             propertyValue?.sourceProps
           )
         : propertyValue?.options ?? [];

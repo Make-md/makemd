@@ -108,7 +108,7 @@ export const linkNodes = (
   uniqueID: number
 ): [FrameNode[], number] => {
   //assign IDs and relink props
-  
+
   const assignIDs = (parent: FrameNode, nodes: FrameNode[]) => {
     const [newNodes, newID] = nodes.reduce<[FrameNode[], number]>((p, c, i) => {
       const [oldNodes, id] = p;
@@ -124,7 +124,24 @@ export const linkNodes = (
     return [newNodes, newID] as [FrameNode[], number];
   };
 
-  const newParent = schemaId != parent.id ? relinkProps(schemaId, parent.id, parent, parent.id) : parent;
+  // Find the root node in the flattened tree (node with no parentId or empty parentId)
+  const flattenedRoot = flattenedTree.find(node => !node.parentId || node.parentId === '');
+
+  // Create newParent with merged styles from the flattened tree's root
+  let newParent = schemaId != parent.id ? relinkProps(schemaId, parent.id, parent, parent.id) : parent;
+
+  // Merge styles from the flattened tree's root node
+  if (flattenedRoot && flattenedRoot.styles) {
+    newParent = {
+      ...newParent,
+      styles: {
+        ...flattenedRoot.styles,
+        ...newParent.styles,
+
+      }
+    };
+  }
+
   return assignIDs(newParent, flattenedTree);
 };
 

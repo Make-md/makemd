@@ -11,6 +11,7 @@ import { SpaceContext } from "core/react/context/SpaceContext";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { SelectOption } from "makemd-core";
+import { defaultContextSchemaID } from "shared/schemas/context";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { DBRow } from "shared/types/mdb";
 import { FrameTreeProp } from "shared/types/mframe";
@@ -134,6 +135,7 @@ export const ContextListView = (props: {
   const context = {
     _path: source,
     _schema: dbSchema?.id,
+    _isContext: dbSchema?.id == defaultContextSchemaID,
     _key: primaryKey,
     _properties: visibleCols,
   };
@@ -150,6 +152,7 @@ export const ContextListView = (props: {
                 _keyValue: c[primaryKey],
                 _schema: dbSchema.id,
                 _name: props.superstate.pathsIndex.get(c[primaryKey])?.name,
+                _values: c,
                 ...context,
               },
               $properties: cols,
@@ -186,6 +189,7 @@ export const ContextListView = (props: {
                 _keyValue: c[primaryKey],
                 _schema: dbSchema.id,
                 _name: c[primaryKey],
+                _values: c,
                 ...context,
               },
 

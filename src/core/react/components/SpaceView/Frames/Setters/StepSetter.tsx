@@ -2,7 +2,7 @@ import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { stringIsConst } from "core/utils/frames/frames";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
 import { debounce } from "lodash";
-import { SelectOption, Superstate } from "makemd-core";
+import { SelectOption, Superstate, i18n } from "makemd-core";
 import type { CSSProperties } from "react";
 import React, {
   useCallback,
@@ -202,7 +202,7 @@ export default function InputDrag({
 
   return (
     <input
-      placeholder="auto"
+      placeholder={i18n.labels.auto}
       type="number"
       {...props}
       value={value}

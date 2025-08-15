@@ -36,7 +36,23 @@ import { FrameNode, MDBFrames } from "shared/types/mframe";
       layout: `"column"`,
     },
   },
-  
+  {
+    id: 'headerKit',
+    type: 'frame',
+    schemaId: 'header',
+    parentId: 'main',
+    name: 'Header',
+    rank: 0,
+    icon: 'ui//layout-header',
+    props: {},
+    styles: {
+      layout: `'column'`,
+      width: `'100%'`,
+      gap: `'8px'`,
+      marginBottom: `'16px'`
+    },
+    ref: 'spaces://$kit/#*pageHeader',
+  },
   {
     ...contextNode.node,
     id: "context",
@@ -79,8 +95,25 @@ const folderNoteMainFrame : FrameNode[] = [
       },
     },
     {
-      ...flowNode.node,
+      id: 'headerKit',
+      type: 'frame',
+      schemaId: 'header',
+      parentId: 'main',
+      name: 'Header',
       rank: 0,
+      icon: 'ui//layout-header',
+      props: {},
+      styles: {
+        layout: `'column'`,
+        width: `'100%'`,
+        gap: `'8px'`,
+        marginBottom: `'16px'`
+      },
+      ref: 'spaces://$kit/#*pageHeader',
+    },
+    {
+      ...flowNode.node,
+      rank: 1,
       props: {
         value: `$contexts.$space.note`,
         
@@ -92,7 +125,7 @@ const folderNoteMainFrame : FrameNode[] = [
     {
       ...contextNode.node,
       id: "context",
-      rank: 1,
+      rank: 2,
       props: {
         value: `$contexts.$space.space`,
       },

@@ -1,5 +1,5 @@
 body:not(.is-mobile) .mk-frame-props-editor {
-
+    display: block;
   }
   
   .mk-frame-slides-editor {
@@ -16,6 +16,7 @@ body:not(.is-mobile) .mk-frame-props-editor {
     display: flex;
     flex-direction: column;
     --icon-container-size: 16px;
+    overflow: scroll;
     --icon-size: 14px;
     align-items: flex-start;
     height: 100%;
@@ -271,4 +272,19 @@ border: 0;
   width: 5px;
   height: 5px;;
   cursor: pointer;
+}
+
+.mk-visualization-formatter-no-border {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.mk-frame-editor-tab-name-input {
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  padding: 4px 8px;
+  font-size: 13px;
+  width: 50%;
 }

@@ -8,6 +8,11 @@ import {
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { propertiesForNode } from "core/utils/frames/ast";
 import { parseStylesToClass } from "core/utils/frames/renderer";
+import {
+  hasStatePrefixes,
+  InteractionState,
+  parseStylesForState,
+} from "core/utils/frames/stateStyles";
 import { Superstate } from "makemd-core";
 import React, {
   memo,
@@ -54,6 +59,7 @@ import { ImageNodeView } from "./ImageNodeView";
 import { InputNodeView } from "./InputNodeView";
 import { NewNodeView } from "./NewNodeView";
 import { TextNodeView } from "./TextNodeView";
+import { VisualizationNodeView } from "./VisualizationNodeView";
 
 export const defaultFrameStyles = {
   position: "relative",
@@ -67,13 +73,15 @@ const FrameEditorInner = memo(function FrameEditorInner(props: {
   instance: FrameRunInstance;
   editMode: FrameEditorMode;
 }) {
+  const { pathState } = useContext(PathContext);
   const nodeProps = {
     superstate: props.superstate,
     treeNode: props.treeNode,
     state: props.state,
+    source: pathState.path,
   };
   const { treeNode } = props;
-  const { pathState } = useContext(PathContext);
+
   const { instance } = useContext(FrameInstanceContext);
   return (
     <>
@@ -87,6 +95,8 @@ const FrameEditorInner = memo(function FrameEditorInner(props: {
         <IconNodeView {...nodeProps}></IconNodeView>
       ) : treeNode.node.type == "audio" ? (
         <AudioNodeView {...nodeProps}></AudioNodeView>
+      ) : treeNode.node.type == "visualization" ? (
+        <VisualizationNodeView {...nodeProps}></VisualizationNodeView>
       ) : treeNode.node.type == "image" ? (
         <ImageNodeView {...nodeProps}></ImageNodeView>
       ) : treeNode.node.type == "space" ? (
@@ -189,8 +199,15 @@ export const FrameEditorNodeView = (props: {
     selectedSlide,
   } = useContext(FramesEditorRootContext);
   const { setDragNode } = useContext(WindowContext);
-  const { saveState, selectableNodeBounds, id } =
-    useContext(FrameInstanceContext);
+  const {
+    saveState: originalSaveState,
+    selectableNodeBounds,
+    id,
+  } = useContext(FrameInstanceContext);
+
+  const saveState = (state: FrameState, instance: FrameRunInstance) => {
+    return originalSaveState(state, instance);
+  };
   const { dragActive } = useContext(WindowContext);
   const editMode = props.treeNode.isRef
     ? FrameEditorMode.Read
@@ -200,6 +217,8 @@ export const FrameEditorNodeView = (props: {
   const selected = selection.some((f) => f == props.treeNode.id);
   const isSelectable = selectable && !props.treeNode.isRef && !selected;
   const state = props.instance.state[props.treeNode.id];
+
+  // Log state changes for tabs-related nodes - removed to reduce clutter
 
   const deltas: FrameNode = useMemo(
     () =>
@@ -240,6 +259,22 @@ export const FrameEditorNodeView = (props: {
   const [hover, setHover] = useState(false);
   const [isMouseOverElement, setIsMouseOverElement] = React.useState(false);
   const [isMouseOverPortal, setIsMouseOverPortal] = React.useState(false);
+
+  // Interaction state management for hover, press, focus, etc.
+  const [interactionState, setInteractionState] = useState<InteractionState>(
+    {}
+  );
+
+  // Check if this node has any state-prefixed styles to determine if we need interaction tracking
+  const hasStateStyles = useMemo(() => {
+    const styles = props.instance.state[props.treeNode.id]?.styles || {};
+    // Check for direct state prefixes in node styles
+    const hasDirectStateStyles = hasStatePrefixes(styles);
+    // Also enable for nodes with semantic elements (they might have hover styles in StyleAst)
+    const hasSemanticElement = styles.sem;
+    return hasDirectStateStyles || hasSemanticElement;
+  }, [props.instance.state[props.treeNode.id]?.styles]);
+
   const draggable =
     props.treeNode.editorProps.dragMode == FrameDragMode.DragHandle ||
     (((isSelectable && !isParentToSelection) || selected) &&
@@ -288,52 +323,57 @@ export const FrameEditorNodeView = (props: {
     });
   };
 
-  const onClick = (e: React.MouseEvent) => {
-    if (
-      isSelectable &&
-      (selectionMode != FrameEditorMode.Page ||
-        (isParentToSelection && props.treeNode.id != props.instance.exec.id))
-    ) {
-      if (e.shiftKey) {
-        select(treeNode.node.id, true);
-      } else {
-        select(treeNode.node.id);
-      }
-      e.stopPropagation();
-      return;
-    } else if (props.treeNode.id == props.instance.exec.id) {
-      select(null);
-    }
-    if (!selected) {
-      if (e.detail === 2 || isTouchScreen(props.superstate.ui)) {
-        if (typeof state.actions?.onDoubleClick == "function") {
-          state.actions?.onDoubleClick(
+  type Interaction = any;
+  const clickable = true; // You may want to adjust this based on your logic
+
+  // Log the conditions for onClick assignment - removed to reduce clutter
+
+  const onClick =
+    isSelectable &&
+    selectionMode != FrameEditorMode.Page &&
+    props.treeNode.id != props.instance.exec.id
+      ? (e: Interaction) => {
+          select(treeNode.node.id);
+        }
+      : props.treeNode.id == props.instance.exec.id && selection.length > 0
+      ? undefined
+      : !selected && clickable && props.treeNode.node.interactions?.onClick
+      ? (e: Interaction) => {
+          if (
+            typeof state.actions?.[
+              props.treeNode.node?.interactions?.onClick
+            ] == "function"
+          ) {
+            state.actions?.[props.treeNode.node?.interactions?.onClick](
+              e,
+              null,
+              props.instance.state,
+              (s: FrameState) => {
+                return saveState(s, props.instance);
+              },
+              props.superstate.api
+            );
+          }
+        }
+      : undefined;
+  const doubleClick = props.treeNode.node.interactions?.onDoubleClick
+    ? (e: Interaction) => {
+        if (
+          typeof state.actions?.[
+            props.treeNode.node.interactions?.onDoubleClick
+          ] == "function"
+        ) {
+          state.actions?.[props.treeNode.node.interactions?.onDoubleClick](
             e,
             null,
             props.instance.state,
             (s: FrameState) => saveState(s, props.instance),
             props.superstate.api
           );
-          e.stopPropagation();
           return;
         }
       }
-      if (e.detail === 1) {
-        if (typeof state.actions?.onClick == "function") {
-          state.actions?.onClick(
-            e,
-            null,
-            props.instance.state,
-            (s: FrameState) => saveState(s, props.instance),
-            props.superstate.api
-          );
-          e.stopPropagation();
-        }
-      }
-    } else {
-      e.stopPropagation();
-    }
-  };
+    : undefined;
   // useLongPress(ref, onLongPress);
   useEffect(() => {
     selection.some((f) => f != props.treeNode.id) && setHover(false);
@@ -422,11 +462,25 @@ export const FrameEditorNodeView = (props: {
   }, [state]);
   const nodeRect = ref.current?.getBoundingClientRect();
   const containerRect = props.containerRef?.current?.getBoundingClientRect();
+  // Compute styles with interaction state
+  const baseStyles = useMemo(
+    () => (state?.styles ? { ...state.styles.theme, ...state.styles } : {}),
+    [state]
+  );
+  const processedStyles = useMemo(() => {
+    // Apply state-based styles if we have interaction states
+    if (hasStateStyles) {
+      return parseStylesForState(baseStyles, interactionState);
+    }
+
+    return baseStyles;
+  }, [baseStyles, interactionState, hasStateStyles]);
+
   const styles = {
     ...defaultFrameStyles,
     ...(props.treeNode.node.type != "flow" &&
     props.treeNode.node.type != "space"
-      ? state?.styles
+      ? processedStyles
       : {
           width: state?.styles?.width,
           height: state?.styles?.height,
@@ -482,17 +536,38 @@ export const FrameEditorNodeView = (props: {
           onMouseEnter={() => {
             setHover(true);
             setIsMouseOverElement(true);
+            // Also update interaction state for hover
+            if (hasStateStyles && !isTouchScreen(props.superstate.ui)) {
+              setInteractionState((prev) => ({ ...prev, hover: true }));
+            }
           }}
           onMouseLeave={() => {
             if (!isMouseOverPortal) {
               setHover(false);
             }
             setIsMouseOverElement(false);
+            // Also update interaction state for hover
+            if (hasStateStyles && !isTouchScreen(props.superstate.ui)) {
+              setInteractionState((prev) => ({ ...prev, hover: false }));
+            }
           }}
-          {...{ onClick }}
+          {...{
+            onClick: onClick ? (e: Interaction) => onClick(e) : undefined,
+            onDoubleClick: doubleClick,
+          }}
           {...(selectionMode > FrameEditorMode.Page
             ? { ...listeners, ...attributes }
             : {})}
+          onMouseDown={() => {
+            if (hasStateStyles && !isTouchScreen(props.superstate.ui)) {
+              setInteractionState((prev) => ({ ...prev, press: true }));
+            }
+          }}
+          onMouseUp={() => {
+            if (hasStateStyles && !isTouchScreen(props.superstate.ui)) {
+              setInteractionState((prev) => ({ ...prev, press: false }));
+            }
+          }}
           style={styles}
         >
           <FrameEditorInner
@@ -596,7 +671,7 @@ export const FrameEditorNodeView = (props: {
                     }}
                   ></FrameResizer>
                   <FrameCorners
-                    styles={state?.styles}
+                    styles={baseStyles}
                     saveStyles={saveStyles}
                     clientSize={{
                       width: clientWidth,
@@ -605,8 +680,8 @@ export const FrameEditorNodeView = (props: {
                   ></FrameCorners>
                   {(treeNode.node.type == "group" ||
                     treeNode.node.type == "content") &&
-                    (state.styles?.layout == "row" ||
-                      state.styles?.layout == "column") && (
+                    (baseStyles.layout == "row" ||
+                      baseStyles.layout == "column") && (
                       <>
                         <FrameGapHandle
                           childSizes={childNodeSizes}

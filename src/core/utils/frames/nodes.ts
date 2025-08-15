@@ -12,17 +12,24 @@ export const frameToNode = (frame: MFrame): FrameNode => {
     props: safelyParseJSON(frame.props),
     types: nodeToTypes(frame.type),
     propsValue: nodeToPropValue(frame.type),
-  };
+    interactions: safelyParseJSON(frame.interactions),
+  } as FrameNode;
 };
 export const nodeToFrame = (node: FrameNode): MFrame => {
-  const { contexts, styles, props, actions, ...otherProps } = node;
+  const { contexts, styles, props, actions, interactions, ...otherProps } = node;
   return {
-    ...otherProps,
+    id: node.id,
+    schemaId: node.schemaId || node.id,
+    name: node.name || "",
+    type: node.type,
+    parentId: node.parentId,
     rank: node.rank?.toString() ?? "0",
+    ref: node.ref,
     contexts: JSON.stringify(contexts),
     styles: JSON.stringify(styles),
     actions: JSON.stringify(actions),
     props: JSON.stringify(props),
+    interactions: JSON.stringify(interactions),
   };
 };
 

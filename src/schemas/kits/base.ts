@@ -282,3 +282,35 @@ export const contentNode: FrameRoot = {
   }
 };
 
+export const visualizationNode: FrameRoot = {
+  def: {
+    id: 'visualization',
+    icon: 'lucide//bar-chart-3',
+  },
+  node: {
+    icon: 'lucide//bar-chart-3',
+    schemaId: 'visualization',
+    parentId: '',
+    name: 'Data Visualization',
+    rank: 0,
+    id: 'visualization',
+    type: 'visualization',
+    props: {
+      value: '', // References visualization MDBFrame ID
+    },
+    styles: {
+      width: `'600px'`,
+      height: `'400px'`,
+    },
+    types: {
+      value: 'option',
+    },
+    propsValue: {
+      value: {
+        alias: 'Visualization Configuration',
+        source: 'visualization',
+      },
+    },
+  },
+};
+

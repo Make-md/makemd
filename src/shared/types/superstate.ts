@@ -8,6 +8,7 @@ import { MakeMDSettings } from "shared/types/settings";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { ICLIManager } from "./actions";
 import { IAPI } from "./api";
+import { IAssetManager } from "./assets";
 import { Command } from "./commands";
 import { Focus } from "./focus";
 import { IndexMap } from "./indexMap";
@@ -31,6 +32,7 @@ export abstract class ISuperstate {
     api: IAPI;
     ui: IUIManager;
     cli: ICLIManager;
+    assets: IAssetManager;
     pathsIndex: Map<string, PathState>;
     spacesIndex: Map<string, SpaceState>;
     contextsIndex: Map<string, ContextState>;

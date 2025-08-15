@@ -7,6 +7,7 @@ import {
   parseFieldValue,
   parseSourceOptions,
 } from "core/schemas/parseFieldValue";
+import { getColors } from "core/utils/colorPalette";
 import { serializeOptionValue } from "core/utils/serializer";
 import { uniq } from "lodash";
 import { SelectMenuProps, SelectOption, Superstate } from "makemd-core";
@@ -19,7 +20,6 @@ import React, {
 } from "react";
 import i18n from "shared/i18n";
 import { onlyUniqueProp } from "shared/utils/array";
-import { colors } from "shared/utils/color";
 import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 import {
@@ -51,6 +51,7 @@ export const OptionCell = (
         parsedValue.source,
         props.source,
         props.path,
+        props.property.schemaId,
         parsedValue.sourceProps
       );
     }
@@ -202,7 +203,7 @@ export const OptionCell = (
       },
     });
 
-    colors.forEach((f) => {
+    getColors(props.superstate).forEach((f) => {
       menuOptions.push({
         name: f[0],
         value: f[1],

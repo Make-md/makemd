@@ -1,6 +1,7 @@
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { wrapQuotes } from "core/utils/strings";
+import { i18n } from "makemd-core";
 import React, { useContext, useMemo } from "react";
 import StickerModal from "shared/components/StickerModal";
 import { FrameEditorMode } from "shared/types/frameExec";
@@ -79,7 +80,7 @@ export const IconNodeView = (props: FrameNodeViewProps) => {
     ) : editable ? (
       <div
         onClick={(e) => selectIcon(e)}
-        aria-label="Select Sticker"
+        aria-label={i18n.labels.selectSticker}
         className="mk-node-icon-placeholder"
         dangerouslySetInnerHTML={{
           __html: props.superstate.ui.getSticker("ui//smile"),

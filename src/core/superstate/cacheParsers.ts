@@ -37,7 +37,8 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
             paths: [],
             contextTable: null,
             spaceMap,
-            dbExists: false
+            dbExists: false,
+            mdb: {}
         }}
     }
     const schemas = Object.values(mdb).map(f => f.schema);
@@ -83,7 +84,8 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
         paths: newPaths,
         schemas,
         spaceMap,
-        dbExists
+        dbExists,
+        mdb
     }
     let changed = false;
     if (!_.isEqual(contextTable, mdb[defaultContextSchemaID])) {
