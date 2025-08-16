@@ -117,7 +117,8 @@ export const imageListItem: FrameRoot = {
     rank: 0,
     props: {
         coverProperty: `'File'`,
-        _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
+        _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
+        
     },
     types: {
       // hideCover: "boolean",
@@ -140,10 +141,10 @@ export const imageListItem: FrameRoot = {
       hidden: `($api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.thumbnail ?? '').length == 0`
       
     },
-    actions: {
-      onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} });`,
-      onDoubleClick: `$api.table.open($contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'], false)`,
-      onContextMenu: `$api.table.contextMenu($event, $contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'])`,
+    interactions: {
+      onClick: 'select',
+      onDoubleClick: 'open',
+      onContextMenu: 'contextMenu',
     },
   },
   id: "$root",
@@ -174,7 +175,7 @@ export const flowListItem: FrameRoot = {
       name: "Flow Item",
       rank: 0,
       props: {
-        _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
+        _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
         expanded: 'true',
         seamless: 'false'
       },
@@ -232,7 +233,7 @@ export const flowListItem: FrameRoot = {
       name: "Cards Item",
       rank: 0,
       props: {
-        _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
+        _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
         // hideCover: `false`,
         coverProperty: `'File'`
       },
@@ -258,11 +259,11 @@ export const flowListItem: FrameRoot = {
         boxShadow: `'var(--mk-shadow-card)'`,
         sem: `'contextItem'`
       },
-      actions: {
-        onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} });`,
-        onDoubleClick: `$api.table.open($contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'], false)`,
-        onContextMenu: `$api.table.contextMenu($event, $contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'])`,
-      },
+      interactions: {
+      onClick: 'select',
+      onDoubleClick: 'open',
+      onContextMenu: 'contextMenu',
+    },
     },
     id: "$root",
     children: [
@@ -403,7 +404,7 @@ export const flowListItem: FrameRoot = {
       name: "Card Item",
       rank: 0,
       props: {
-        _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
+        _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
       },
       styles: {
         layout: `"column"`,
@@ -413,11 +414,12 @@ export const flowListItem: FrameRoot = {
         border: `'1px solid var(--mk-ui-border)'`,
         sem: `'contextItem'`
       },
-      actions: {
-        onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} });`,
-        onDoubleClick: `$api.path.open($contexts.$context['_keyValue'], false)`,
-        onContextMenu: `$api.table.contextMenu($event, $contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'])`,
-      },
+      
+      interactions: {
+      onClick: 'select',
+      onDoubleClick: 'open',
+      onContextMenu: 'contextMenu',
+    },
     },
     id: "$root",
     children: [
@@ -510,8 +512,9 @@ export const flowListItem: FrameRoot = {
       name: "List View",
       rank: 0,
       props: {
-        _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
+        _selected: `$root.props._selectedIndexes?.some(f => f == $contexts.$context['_index'])`,
         previewField: `'Created'`,
+        _selectedIndexes: '[]',
       },
       styles: {
         layout: `"row"`,
@@ -520,13 +523,12 @@ export const flowListItem: FrameRoot = {
         overflow: `'hidden'`,
         width: `'100%'`,
         layoutAlign: `'n'`,
-        sem: `'contextItem'`
       },
-      actions: {
-        onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} });`,
-        onDoubleClick: `$api.table.open($contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'], false)`,
-        onContextMenu: `$api.table.contextMenu($event, $contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'])`,
-      },
+      interactions: {
+      onClick: 'select',
+      onDoubleClick: 'open',
+      onContextMenu: 'contextMenu',
+    },
       types: {
         previewField: "option",
       },
@@ -659,7 +661,7 @@ export const flowListItem: FrameRoot = {
       name: "Overview Item",
       rank: 0,
       props: {
-        _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
+        _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
       },
       styles: {
         layout: `"row"`,
@@ -670,10 +672,11 @@ export const flowListItem: FrameRoot = {
         borderBottom: `'thin solid var(--mk-ui-border)'`,
         sem: `'contextItem'`
       },
-      actions: {
-        onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} }); $api.table.open($contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'], false)`,
-        onContextMenu: `$api.table.contextMenu($event, $contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'])`,
-      },
+      interactions: {
+      onClick: 'select',
+      onDoubleClick: 'open',
+      onContextMenu: 'contextMenu',
+    },
     },
     id: "$root",
     children: [
@@ -803,7 +806,7 @@ export const flowListItem: FrameRoot = {
       name: "Detail View",
       rank: 0,
       props: {
-        _selected: `$root.props['_selectedIndex'] == $contexts.$context['_index']`,
+        _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
       },
       styles: {
         layout: `"row"`,
@@ -813,11 +816,11 @@ export const flowListItem: FrameRoot = {
         width: `'100%'`,
         sem: `'contextItem'`
       },
-      actions: {
-        onClick: `$saveState({ $root: {props: {_selectedIndex: $contexts.$context['_index']}} });`,
-        onDoubleClick: `$api.table.open($contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'], false)`,
-        onContextMenu: `$api.table.contextMenu($event, $contexts.$context['_path'], $contexts.$context['_schema'], $contexts.$context['_index'])`,
-      },
+      interactions: {
+      onClick: 'select',
+      onDoubleClick: 'open',
+      onContextMenu: 'contextMenu',
+    },
     },
     id: "$root",
     children: [

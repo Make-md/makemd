@@ -43,7 +43,7 @@ export const stringIsConst = (str: string): boolean => {
   const fixedStr = str?.replace(/;+$/, "");
   // Check for number by trying to parse string into a number and checking if it's NaN
   const isNumber = !isNaN(parseFloat(fixedStr)) && !isNaN(fixedStr as any);
-  return hasQuotesAtStartEndOnly || isNumber || fixedStr == 'false' || fixedStr == 'true' || str == null || str == "";
+  return hasQuotesAtStartEndOnly || isNumber || fixedStr.startsWith('[') && fixedStr.endsWith(']') || fixedStr == 'false' || fixedStr == 'true' || str == null || str == "";
 }
 
 export const kitWithProps = (root: FrameRoot,

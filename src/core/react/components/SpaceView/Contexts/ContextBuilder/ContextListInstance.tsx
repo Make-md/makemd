@@ -17,8 +17,9 @@ import React, { useContext, useEffect, useState } from "react";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { FrameContexts, FrameEditorMode } from "shared/types/frameExec";
 import { DBRow, SpaceProperty } from "shared/types/mdb";
-import { FrameTreeProp } from "shared/types/mframe";
+import { ActionProp, FrameTreeProp } from "shared/types/mframe";
 import { URI } from "shared/types/path";
+import { Rect } from "shared/types/Pos";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { FrameEditorInstance } from "../../Frames/ViewNodes/FrameEditorInstance";
 import { FrameInstanceView } from "../../Frames/ViewNodes/FrameInstance";
@@ -35,8 +36,10 @@ export const ContextListInstance = (
       [key: string]: (value: any) => void;
     };
     editMode: FrameEditorMode;
+    actions?: ActionProp;
     containerRef: React.RefObject<HTMLDivElement>;
     path?: string;
+    onLayout?: (rect: Rect) => void;
   }>
 ) => {
   const [contexts, setContexts] = useState(props.contexts);
@@ -49,6 +52,28 @@ export const ContextListInstance = (
   const { dbSchema } = useContext(ContextEditorContext);
   const { setDragNode } = useContext(WindowContext);
   const ref = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ref.current || !props.onLayout) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        props.onLayout({
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+        });
+      }
+    });
+
+    resizeObserver.observe(ref.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [props.onLayout]);
 
   const {
     attributes,
@@ -117,6 +142,7 @@ export const ContextListInstance = (
         props={props.props}
         propSetters={props.propSetters}
         contexts={contexts}
+        actions={props.actions}
         editable={true}
       >
         <FrameEditorInstance
@@ -169,6 +195,7 @@ export const ContextListInstance = (
             props={props.props}
             propSetters={props.propSetters}
             contexts={contexts}
+            actions={props.actions}
             editable={false}
           >
             <FrameInstanceView

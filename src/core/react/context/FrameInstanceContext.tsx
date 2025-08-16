@@ -18,10 +18,10 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { FrameRunInstance, FrameState, StyleAst } from "shared/types/frameExec";
-import { FrameTreeProp } from "shared/types/mframe";
-import { Edges } from "shared/types/Pos";
 import { defaultStyleAst } from "schemas/kits/defaultStyleAst";
+import { FrameRunInstance, FrameState } from "shared/types/frameExec";
+import { ActionProp, FrameTreeProp } from "shared/types/mframe";
+import { Edges } from "shared/types/Pos";
 import { FramesEditorRootContext } from "./FrameEditorRootContext";
 import { FrameRootContext } from "./FrameRootContext";
 
@@ -61,6 +61,7 @@ export const FrameInstanceProvider: React.FC<
     propSetters?: {
       [key: string]: (value: any) => void;
     };
+    actions?: ActionProp;
     editable: boolean;
   }>
 > = (
@@ -72,6 +73,7 @@ export const FrameInstanceProvider: React.FC<
     propSetters?: {
       [key: string]: (value: any) => void;
     };
+    actions?: ActionProp;
     editable: boolean;
   }>
 ) => {
@@ -109,14 +111,15 @@ export const FrameInstanceProvider: React.FC<
   const saveState = (newState: FrameState, instance: FrameRunInstance) => {
     const { root: _root, exec: _exec, id: runID, state } = instance;
     renameKey(newState, "$root", _exec.id);
-    
+
     if (activeRunID.current != runID) {
       return;
     }
-    
+
     const { $api, ...prevState } = state;
+    if (props.actions) newState[_exec.id].actions = props.actions;
     const appliedState = applyPropsToState(newState, rootProps, _exec.id);
-    
+
     executeTreeNode(
       _exec,
       {
@@ -178,7 +181,11 @@ export const FrameInstanceProvider: React.FC<
         {
           prevState: {},
           state: {},
-          newState: applyPropsToState({}, rootProps, newRoot.id),
+          newState: applyPropsToState(
+            props.actions ? { [newRoot.id]: { actions: props.actions } } : {},
+            rootProps,
+            newRoot.id
+          ),
           slides: {},
         },
         {
@@ -210,22 +217,24 @@ export const FrameInstanceProvider: React.FC<
     } else {
       runRoot();
     }
-  }, [rootProps, root, props.contexts]);
+  }, [rootProps, root, props.contexts, props.actions]);
+
+  const contextValue = useMemo(() => {
+    return {
+      id: props.id,
+      linkedProps,
+      hoverNode,
+      setHoverNode,
+      selectableNodeBounds,
+      runRoot,
+      instance,
+      saveState,
+      fastSaveState,
+    };
+  }, [props.id, linkedProps, hoverNode, instance, saveState, fastSaveState]);
 
   return (
-    <FrameInstanceContext.Provider
-      value={{
-        id: props.id,
-        linkedProps,
-        hoverNode,
-        setHoverNode,
-        selectableNodeBounds,
-        runRoot,
-        instance,
-        saveState,
-        fastSaveState,
-      }}
-    >
+    <FrameInstanceContext.Provider value={contextValue}>
       {props.children}
     </FrameInstanceContext.Provider>
   );

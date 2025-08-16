@@ -7,10 +7,11 @@ import { Superstate } from "makemd-core";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
 import { parseDate } from "core/utils/date";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { DBRow } from "shared/types/mdb";
 import { URI } from "shared/types/path";
+import { Pos } from "shared/types/Pos";
 import { DayView } from "./CalendarView/DayView/DayView";
 import { MonthView } from "./CalendarView/MonthView/MonthView";
 import { WeekView } from "./CalendarView/WeekView/WeekView";
@@ -31,6 +32,7 @@ export const ContextListContainer = (props: {
   setView?: (view: string) => void;
   viewType?: string;
 }) => {
+  const flattenedItems = useRef<Record<string, [string, DBRow, Pos]>>({});
   const { pathState } = useContext(PathContext);
   const {
     predicate,
@@ -43,7 +45,7 @@ export const ContextListContainer = (props: {
   } = useContext(ContextEditorContext);
   const { frameSchema } = useContext(FramesMDBContext);
   const [editSection, setEditSection] = useState<ContextListSections>(null);
-  const [selectedIndex, setSelectedIndex] = useState<string>(null);
+  const [selectedIndexes, setSelectedIndexes] = useState<string[]>([]);
   const [uris, setURIs] = useState<{
     listView: URI;
     listGroup: URI;
@@ -86,33 +88,80 @@ export const ContextListContainer = (props: {
   }, [predicate, pathState]);
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key == "Escape") {
-      setSelectedIndex(null);
+      setSelectedIndexes([]);
     }
     if (e.key == "Enter") {
       return;
     }
-    if (e.key == "ArrowDown") {
-      setSelectedIndex((p) => {
-        if (p == null) {
-          return "0";
-        } else {
-          return (parseInt(p) + 1).toString();
+    const findNextIndex = (
+      flattenedItems: Record<string, [string, DBRow, Pos]>,
+      current: string,
+      direction: string
+    ): string => {
+      const currentPos = flattenedItems?.[current]?.[2] ?? { x: 0, y: 0 };
+      const nextIndex = Object.values(flattenedItems).reduce((p, f) => {
+        const pos = f[2];
+        if (direction == "right") {
+          if (pos.x > currentPos.x) {
+            return p == null
+              ? f
+              : pos.x <= p?.[2].x &&
+                Math.abs(pos.y - currentPos.y) <=
+                  Math.abs(currentPos.y - p?.[2].y)
+              ? f
+              : p;
+          }
         }
-      });
-
-      e.preventDefault();
+        if (direction == "left") {
+          if (pos.x < currentPos.x && pos.y == currentPos.y) {
+            return p == null
+              ? f
+              : pos.x >= p?.[2].x &&
+                Math.abs(pos.y - currentPos.y) <=
+                  Math.abs(currentPos.y - p?.[2].y)
+              ? f
+              : p;
+          }
+        }
+        if (direction == "down") {
+          if (pos.y > currentPos.y) {
+            return p == null
+              ? f
+              : pos.y <= p?.[2].y &&
+                Math.abs(pos.x - currentPos.x) <=
+                  Math.abs(currentPos.x - p?.[2].x)
+              ? f
+              : p;
+          }
+        }
+        if (direction == "up") {
+          if (pos.y < currentPos.y) {
+            return p == null
+              ? f
+              : pos.y >= p?.[2].y &&
+                Math.abs(pos.x - currentPos.x) <=
+                  Math.abs(currentPos.x - p?.[2].x)
+              ? f
+              : p;
+          }
+        }
+        return p;
+      }, null as [string, DBRow, Pos] | null);
+      return nextIndex ? nextIndex[0] : null;
+    };
+    if (e.key == "ArrowDown") {
+      const lastIndex = selectedIndexes[selectedIndexes.length - 1];
+      if (lastIndex) {
+        const index = findNextIndex(flattenedItems.current, lastIndex, "down");
+        if (index) setSelectedIndexes([index]);
+      }
     }
     if (e.key == "ArrowUp") {
-      setSelectedIndex((p) => {
-        if (p == null) {
-          return null;
-        } else if (p == "0") {
-          return null;
-        } else {
-          return (parseInt(p) - 1).toString();
-        }
-      });
-      e.preventDefault();
+      const lastIndex = selectedIndexes[0];
+      if (lastIndex) {
+        const index = findNextIndex(flattenedItems.current, lastIndex, "up");
+        if (index) setSelectedIndexes([index]);
+      }
     }
     if (e.key == "ArrowLeft") {
     }
@@ -232,10 +281,10 @@ export const ContextListContainer = (props: {
                   type="listView"
                   uri={uris.listView}
                   props={{
-                    _selectedIndex: selectedIndex,
+                    _selectedIndexes: selectedIndexes,
                     ...predicate.listViewProps,
                   }}
-                  propSetters={{ _selectedIndex: setSelectedIndex }}
+                  propSetters={{}}
                   containerRef={props.containerRef}
                   editMode={
                     editSection == "listView" ? editMode : FrameEditorMode.Read
@@ -247,10 +296,11 @@ export const ContextListContainer = (props: {
                     superstate={props.superstate}
                     containerRef={props.containerRef}
                     editSection={editSection}
-                    selectedIndex={selectedIndex}
-                    setSelectedIndex={setSelectedIndex}
+                    selectedIndexes={selectedIndexes}
+                    setSelectedIndexes={setSelectedIndexes}
                     groupURI={uris.listGroup}
                     itemURI={uris.listItem}
+                    flattenedItems={flattenedItems}
                   ></ContextListView>
                 </ContextListInstance>
               </FrameContainerView>

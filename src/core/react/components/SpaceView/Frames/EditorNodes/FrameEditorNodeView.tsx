@@ -462,10 +462,9 @@ export const FrameEditorNodeView = (props: {
   const nodeRect = ref.current?.getBoundingClientRect();
   const containerRect = props.containerRef?.current?.getBoundingClientRect();
   // Compute styles with interaction state
-  const baseStyles = useMemo(
-    () => (state?.styles ? { ...state.styles.theme, ...state.styles } : {}),
-    [state]
-  );
+  const baseStyles = useMemo(() => {
+    return state?.styles ? { ...state.styles.theme, ...state.styles } : {};
+  }, [props.instance]);
   const processedStyles = useMemo(() => {
     // Apply state-based styles if we have interaction states
     if (hasStateStyles) {

@@ -41,16 +41,12 @@ export const FrameView = (props: {
     treeNode: props.treeNode,
     state: props.instance.state[props.treeNode.id],
   };
-  const styles = useMemo(
-    () =>
-      props.instance.state[props.treeNode.id].styles
-        ? {
-            ...props.instance.state[props.treeNode.id]?.styles?.theme,
-            ...props.instance.state[props.treeNode.id]?.styles,
-          }
-        : {},
-    [props.instance.state, props.treeNode.id]
-  );
+  const styles = props.instance.state[props.treeNode.id].styles
+    ? {
+        ...props.instance.state[props.treeNode.id]?.styles?.theme,
+        ...props.instance.state[props.treeNode.id]?.styles,
+      }
+    : {};
   const innerComponents =
     props.treeNode.node.type == "input" ? (
       <InputNodeView {...nodeProps}></InputNodeView>
@@ -115,11 +111,17 @@ export const FrameView = (props: {
 
   // Check if this node has any state-prefixed styles to determine if we need interaction tracking
   const hasStateStyles = useMemo(() => {
+    const styles = props.instance.state[props.treeNode.id].styles
+      ? {
+          ...props.instance.state[props.treeNode.id]?.styles?.theme,
+          ...props.instance.state[props.treeNode.id]?.styles,
+        }
+      : {};
     // Check for direct state prefixes in node styles
     const hasDirectStateStyles = hasStatePrefixes(styles);
     // Also enable for nodes with semantic elements (they might have hover styles in StyleAst)
     return hasDirectStateStyles;
-  }, [styles]);
+  }, [props.instance]);
 
   const canClick =
     props.treeNode.node.interactions?.onClick &&
@@ -151,12 +153,18 @@ export const FrameView = (props: {
   // Compute styles with interaction state
   const processedStyles = useMemo(() => {
     // Apply state-based styles if we have interaction states
+    const styles = props.instance.state[props.treeNode.id].styles
+      ? {
+          ...props.instance.state[props.treeNode.id]?.styles?.theme,
+          ...props.instance.state[props.treeNode.id]?.styles,
+        }
+      : {};
     if (hasStateStyles) {
       return parseStylesForState(styles, interactionState);
     }
 
     return styles;
-  }, [styles, interactionState, hasStateStyles]);
+  }, [props.instance, interactionState, hasStateStyles]);
 
   return (
     props.instance.state[props.treeNode.id] &&

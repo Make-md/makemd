@@ -14,8 +14,9 @@ import { SelectOption } from "makemd-core";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { DBRow } from "shared/types/mdb";
-import { FrameTreeProp } from "shared/types/mframe";
+import { ActionProp, FrameTreeProp } from "shared/types/mframe";
 import { URI } from "shared/types/path";
+import { Pos, Rect } from "shared/types/Pos";
 import { uniq } from "shared/utils/array";
 import { ContextInfiniteScroll } from "./ContextInfiniteScroll";
 import { ContextListInstance } from "./ContextListInstance";
@@ -27,13 +28,20 @@ export const ContextListView = (props: {
   superstate: Superstate;
   containerRef: React.RefObject<HTMLDivElement>;
   editSection: ContextListSections;
-  selectedIndex: string;
-  setSelectedIndex: (index: string) => void;
+  selectedIndexes: string[];
+  setSelectedIndexes: (index: string[]) => void;
   groupURI: URI;
   itemURI: URI;
+  flattenedItems: React.MutableRefObject<Record<string, [string, DBRow, Pos]>>;
 }) => {
-  const { editSection, selectedIndex, setSelectedIndex, groupURI, itemURI } =
-    props;
+  const {
+    editSection,
+    selectedIndexes,
+    setSelectedIndexes,
+    groupURI,
+    itemURI,
+    flattenedItems,
+  } = props;
   const { readMode } = useContext(PathContext);
   const { spaceInfo, spaceState } = useContext(SpaceContext);
   const {
@@ -140,6 +148,29 @@ export const ContextListView = (props: {
     _properties: visibleCols,
   };
 
+  const listItemActions: ActionProp = {
+    select: (e, value, state, saveState, api) => {
+      setSelectedIndexes([state.$contexts?.$context["_index"]]);
+    },
+    open: (e, value, state, saveState, api) => {
+      api.table.open(
+        state.$contexts?.$context["_path"],
+        state.$contexts?.$context["_schema"],
+        state.$contexts?.$context["_index"],
+        false
+      );
+    },
+    contextMenu: (e, value, state, saveState, api) => {
+      e.preventDefault?.();
+      api.table.contextMenu(
+        e,
+        state.$contexts?.$context["_path"],
+        state.$contexts?.$context["_schema"],
+        state.$contexts?.$context["_index"]
+      );
+    },
+  };
+
   const contextMap: { [key: string]: FrameTreeProp } = useMemo(() => {
     if (!dbSchema) return {};
     return dbSchema?.primary == "true"
@@ -228,7 +259,7 @@ export const ContextListView = (props: {
               superstate={props.superstate}
               uri={groupURI}
               props={{
-                _selectedIndex: selectedIndex,
+                _selectedIndexes: selectedIndexes,
                 _groupValue: c,
                 _groupField: groupBy?.name,
                 _groupType: groupBy?.type,
@@ -269,25 +300,34 @@ export const ContextListView = (props: {
                             onScroll={() => setPageId((p) => p + 1)}
                           ></ContextInfiniteScroll>
                         );
+                      const id =
+                        spaceInfo.path + "listGroup" + i + "_listItem" + j;
                       return (
                         <ContextListInstance
                           key={"listGroup" + i + "_listItem" + j}
-                          id={
-                            spaceInfo.path + "listGroup" + i + "_listItem" + j
-                          }
+                          id={id}
                           type="listItem"
                           uri={itemURI}
                           superstate={props.superstate}
+                          propSetters={{}}
                           cols={[]}
                           props={{
-                            _selectedIndex: selectedIndex,
+                            _selectedIndexes: selectedIndexes,
                             _groupValue: c,
                             _groupField: groupBy?.name,
                             _readMode: readMode,
                             ...predicate.listItemProps,
                           }}
-                          propSetters={{
-                            _selectedIndex: setSelectedIndex,
+                          actions={listItemActions}
+                          onLayout={(rect: Rect) => {
+                            flattenedItems.current[f["_index"]] = [
+                              f["_index"],
+                              f,
+                              {
+                                x: rect.x,
+                                y: rect.y,
+                              },
+                            ];
                           }}
                           containerRef={props.containerRef}
                           editMode={

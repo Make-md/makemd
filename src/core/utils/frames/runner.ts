@@ -119,6 +119,7 @@ export const executeTreeNode = async (
         if (computedStyles) {
             const [newStyle, styleAsts] = computedStyles ?? [null, null];
             if (newStyle) {
+                delete newStyle.theme
                 style.theme = newStyle;
             }
             store.styleAsts = styleAsts;
@@ -153,13 +154,13 @@ export const executeTreeNode = async (
         ...treeNode.children.filter((b) => b.node.type == 'slides'),
         ...treeNode.children.filter((b) => b.node.type != 'slides')
     ];
+
       
     for (let i = 0; i < treeNode.children.length; i++) {
         const [newState, newNode] : [ResultStore, FrameExecutable] = await executeTreeNode(treeNode.children[i], execState, executionContext).then(f => [{state: f.state, newState: f.newState, slides: f.slides, prevState: f.prevState}, f.exec])
         execState = newState;
         treeNode.children[i] = newNode;
         if (newNode.node.type == 'slides') {
-            
             const prop = newState.state[newNode.id].props.value;
             const state = newState.state[newNode.node.parentId]?.props[prop];
             
@@ -172,11 +173,14 @@ export const executeTreeNode = async (
             }
 
             if (currentSlide) {
+                
                 currentSlide.children.forEach(f => {
+                    
                     if (!execState.newState[f.node.ref]) {
                         execState.newState[f.node.ref] = {props: {}, styles: {}, actions: {}}
                     }
                     if (f.node.ref == treeNode.id) {
+                        
                         execState.state[f.node.ref].props = {...execState.state[f.node.ref].props, ...execState.state[f.node.id].props}
                         execState.state[f.node.ref].styles = {...execState.state[f.node.ref].styles, ...execState.state[f.node.id].styles}
                         execState.state[f.node.ref].actions = {...execState.state[f.node.ref].actions, ...execState.state[f.node.id].actions}    
@@ -233,6 +237,7 @@ const executePropsCodeBlocks = async (executable: FrameExecutable, results: Resu
     environment.$api = api
     for (const {name: key, isConst} of executable.execPropsOptions.props) {
         // Execute the code block.
+        
         try {
             let result;
             if (key in (results.newState?.[id]?.['props'] || {}) && isConst) {
