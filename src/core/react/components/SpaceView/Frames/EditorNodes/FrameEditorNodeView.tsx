@@ -323,7 +323,6 @@ export const FrameEditorNodeView = (props: {
     });
   };
 
-  type Interaction = any;
   const clickable = true; // You may want to adjust this based on your logic
 
   // Log the conditions for onClick assignment - removed to reduce clutter
@@ -332,13 +331,13 @@ export const FrameEditorNodeView = (props: {
     isSelectable &&
     selectionMode != FrameEditorMode.Page &&
     props.treeNode.id != props.instance.exec.id
-      ? (e: Interaction) => {
+      ? (e: React.MouseEvent) => {
           select(treeNode.node.id);
         }
       : props.treeNode.id == props.instance.exec.id && selection.length > 0
       ? undefined
       : !selected && clickable && props.treeNode.node.interactions?.onClick
-      ? (e: Interaction) => {
+      ? (e: React.MouseEvent) => {
           if (
             typeof state.actions?.[
               props.treeNode.node?.interactions?.onClick
@@ -357,7 +356,7 @@ export const FrameEditorNodeView = (props: {
         }
       : undefined;
   const doubleClick = props.treeNode.node.interactions?.onDoubleClick
-    ? (e: Interaction) => {
+    ? (e: React.MouseEvent) => {
         if (
           typeof state.actions?.[
             props.treeNode.node.interactions?.onDoubleClick
@@ -552,7 +551,11 @@ export const FrameEditorNodeView = (props: {
             }
           }}
           {...{
-            onClick: onClick ? (e: Interaction) => onClick(e) : undefined,
+            onClick: isTouchScreen(props.superstate.ui)
+              ? doubleClick
+              : onClick
+              ? (e: React.MouseEvent) => onClick(e)
+              : undefined,
             onDoubleClick: doubleClick,
           }}
           {...(selectionMode > FrameEditorMode.Page

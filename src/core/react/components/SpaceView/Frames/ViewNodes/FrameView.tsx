@@ -204,7 +204,9 @@ export const FrameView = (props: {
         }}
         onDoubleClick={canDoubleClick}
         onClick={
-          canClick
+          isTouchScreen(props.superstate.ui)
+            ? canDoubleClick
+            : canClick
             ? (e) => {
                 if (
                   typeof props.instance.state[props.treeNode.id].actions?.[

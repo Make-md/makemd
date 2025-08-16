@@ -312,7 +312,7 @@ export const flowListItem: FrameRoot = {
           imageNode,
           {
             
-            value: `$api.path.label($contexts.$context['_path']?.[$root.props.coverProperty])?.thumbnail ?? $contexts.$context['_values']?.[$root.props.coverProperty]`,
+            value: `$api.path.label($contexts[$contexts.$context['_path']]?.[$root.props.coverProperty])?.cover ?? $contexts.$context['_values']?.[$root.props.coverProperty]`,
           },
           {
             width: `'100%'`,
