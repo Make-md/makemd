@@ -118,6 +118,7 @@ export const imageListItem: FrameRoot = {
     props: {
         coverProperty: `'File'`,
         _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
+        _selectedIndexes: '[]',
         
     },
     types: {
@@ -176,6 +177,7 @@ export const flowListItem: FrameRoot = {
       rank: 0,
       props: {
         _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
+        _selectedIndexes: '[]',
         expanded: 'true',
         seamless: 'false'
       },
@@ -234,6 +236,7 @@ export const flowListItem: FrameRoot = {
       rank: 0,
       props: {
         _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
+        _selectedIndexes: '[]',
         // hideCover: `false`,
         coverProperty: `'File'`
       },
@@ -405,6 +408,7 @@ export const flowListItem: FrameRoot = {
       rank: 0,
       props: {
         _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
+        _selectedIndexes: '[]',
       },
       styles: {
         layout: `"column"`,
@@ -662,6 +666,7 @@ export const flowListItem: FrameRoot = {
       rank: 0,
       props: {
         _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
+        _selectedIndexes: '[]',
       },
       styles: {
         layout: `"row"`,
@@ -807,6 +812,7 @@ export const flowListItem: FrameRoot = {
       rank: 0,
       props: {
         _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
+        _selectedIndexes: '[]',
       },
       styles: {
         layout: `"row"`,
