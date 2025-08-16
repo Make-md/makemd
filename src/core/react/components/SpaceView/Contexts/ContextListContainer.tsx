@@ -164,8 +164,18 @@ export const ContextListContainer = (props: {
       }
     }
     if (e.key == "ArrowLeft") {
+      const lastIndex = selectedIndexes[0];
+      if (lastIndex) {
+        const index = findNextIndex(flattenedItems.current, lastIndex, "left");
+        if (index) setSelectedIndexes([index]);
+      }
     }
     if (e.key == "ArrowRight") {
+    }
+    const lastIndex = selectedIndexes[0];
+    if (lastIndex) {
+      const index = findNextIndex(flattenedItems.current, lastIndex, "right");
+      if (index) setSelectedIndexes([index]);
     }
   };
 
