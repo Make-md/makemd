@@ -15,7 +15,6 @@ const generateCodeForProp = (value: any, isClosure: boolean, type?: string) => {
     : new Function(`with(this) { return ${codeBlock}; }`);
     
     } catch (e) {
-        console.log(e, codeBlock, value)
     }
     return func;
   }

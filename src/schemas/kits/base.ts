@@ -314,3 +314,36 @@ export const visualizationNode: FrameRoot = {
   },
 };
 
+export const dataNode: FrameRoot = {
+  def: {
+    id: 'data',
+    icon: 'ui//database',
+    description: 'Display data with custom field types',
+  },
+  node: {
+    icon: 'ui//database',
+    schemaId: 'data',
+    parentId: '',
+    name: 'Data Field',
+    rank: 0,
+    id: 'data',
+    type: 'data',
+    props: {
+      field: '',
+      value: '',
+    },
+    types: {
+      field: 'object',
+      value: 'text',
+    },
+    propsValue: {
+      field: {
+        alias: 'Field Configuration',
+      },
+      value: {
+        alias: 'Value',
+      },
+    },
+  },
+};
+

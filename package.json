@@ -1,6 +1,6 @@
 {
   "name": "make-md",
-  "version": "1.2.0",
+  "version": "1.2.3",
   "description": "make.md",
   "main": "main.js",
   "scripts": {
@@ -37,8 +37,8 @@
     "@types/react-window": "^1.8.5",
     "@types/rrule": "^2.2.9",
     "@types/sql.js": "^1.4.4",
-    "@typescript-eslint/eslint-plugin": "^5.57.1",
-    "@typescript-eslint/parser": "^5.57.1",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "builtin-modules": "3.3.0",
     "cross-env": "^7",
     "d3": "^7.9.0",
@@ -58,7 +58,7 @@
     "terser": "^5.20.0",
     "ts-jest": "^29.1.1",
     "tslib": "^2.2.0",
-    "typescript": "^4.2.4"
+    "typescript": "^5.9.2"
   },
   "dependencies": {
     "@air/react-drag-to-select": "^5.0.8",

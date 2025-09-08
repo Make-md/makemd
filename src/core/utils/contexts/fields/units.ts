@@ -6,6 +6,10 @@ export const unitTypes = [{
     value: "0%",
 }, 
 {
+    label: 'Sticker',
+    value: 'sticker',
+},
+{
     label: "Celsius",
     value: `0"°C"`,
 },
@@ -168,5 +172,6 @@ export const unitTypes = [{
 {
     label: 'Scientific',
     value: `0.00E+00`,
-}
+},
+
 ]

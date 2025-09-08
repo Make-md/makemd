@@ -84,7 +84,6 @@ export const getZippedDBFile = async (plugin: MDBFileTypeAdapter,
   try {
     buffer = await zip.loadAsync(file).then(f => zip.file("data.mdb").async("arraybuffer"))
   } catch (e) {
-    console.log(e)
   }
   return buffer;
 };
@@ -209,7 +208,6 @@ export const insertIntoDB = (
   try {
     db.exec(`${sqlstr}`);
   } catch (e) {
-    console.log(e);
   }
 };
 
@@ -236,7 +234,6 @@ export const updateDB = (
   try {
     db.exec(sqlstr);
   } catch (e) {
-    console.log(e);
   }
 };
 
@@ -246,7 +243,6 @@ export const execQuery = (db: Database, sqlstr: string) => {
   try {
     db.exec(sqlstr);
   } catch (e) {
-    console.log(e);
   }
 };
 
@@ -261,7 +257,6 @@ export const deleteFromDB = (
   try {
     db.exec(sqlstr);
   } catch (e) {
-    console.log(e);
   }
 };
 
@@ -271,7 +266,6 @@ export const dropTable = (db: Database, table: string) => {
   try {
     db.exec(sqlstr);
   } catch (e) {
-    console.log(e);
   }
 };
 
@@ -317,8 +311,6 @@ export const replaceDB = (db: Database, tables: DBTables) => {
       db.exec(s)
     }
   } catch (e) {
-    
-    console.log(e);
     return false
   }
   return true;
@@ -339,7 +331,7 @@ export const saveZippedDBToPath = async (
   }
   replaceDB(db, tables);
 
-  await saveZippedDBFile(plugin, path, db.export().buffer);
+  await saveZippedDBFile(plugin, path, db.export().buffer as ArrayBuffer);
   db.close();
 
     
@@ -366,29 +358,25 @@ export const saveDBToPath = async (
     try {
       mdbStruct = dbResultsToDBTables(db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='m_schema' OR name='m_fields';`))[0]?.rows ?? []
     } catch (e) {
-      console.log(e);
     }
     if (!mdbStruct.some(f => f.name == "m_schema")) {
       const createSchemaTable = `CREATE TABLE m_schema ("id" char, "name" char, "type" char, "def" char, "predicate" char, "primary" char)`
       try {
       db.exec(createSchemaTable);
       } catch(e) {
-        console.log(e);
-      
       }
     }
     if (!mdbStruct.some(f => f.name == "m_fields")) {
       const createFieldsTable = `CREATE TABLE m_fields ("name" char, "schemaId" char, "type" char, "value" char, "hidden" char, "attrs" char, "unique" char, "primary" char)`
       try {db.exec(createFieldsTable);
       } catch(e) { 
-        console.log(e);
       }
     }
 
   }
   const result = replaceDB(db, tables);
 if (result) {
-  await saveDBFile(plugin, path, db.export().buffer);
+  await saveDBFile(plugin, path, db.export().buffer as ArrayBuffer);
 }
   
   db.close();

@@ -40,7 +40,6 @@ export const InstallKit = (props: {
           props.superstate.ui.notify(i18n.notice.kitDoesntExist);
           return;
         }
-        console.log(i18n.labels.addingKit);
         return installSpaceKit(
           props.plugin,
           props.superstate,

@@ -17,7 +17,7 @@ import {
   SpaceTableSchema,
   SpaceTables,
 } from "shared/types/mdb";
-import { FrameSchema, MDBFrame } from "shared/types/mframe";
+import { FrameSchema, MDBFrame, MDBFrames } from "shared/types/mframe";
 import { uniqueNameFromString } from "shared/utils/array";
 import {
   frameSchemaToTableSchema,
@@ -28,7 +28,7 @@ import { SpaceContext } from "./SpaceContext";
 type FramesMDBContextProps = {
   frameSchemas: FrameSchema[];
   frames: FrameSchema[];
-  tableData: SpaceTable | null;
+  tableData: MDBFrame | null;
   saveFrame: (newFrame: MDBFrame) => Promise<void>;
   frameSchema: FrameSchema;
   setFrameSchema: (schema: FrameSchema) => void;
@@ -37,7 +37,7 @@ type FramesMDBContextProps = {
   saveProperty: (column: SpaceProperty, oldColumn?: SpaceProperty) => boolean;
   newProperty: (column: SpaceProperty) => boolean;
   delProperty: (column: SpaceProperty) => void;
-  getMDBData: () => Promise<SpaceTables>;
+  getMDBData: () => Promise<MDBFrames>;
   undoLastAction?: () => void;
   redoAction?: () => void;
 };
@@ -78,7 +78,7 @@ export const FramesMDBProvider: React.FC<
     [schemaTable]
   );
   const frames = schemas.filter((f) => f.type == "frame");
-  const [frameData, setFrameData] = useState<SpaceTables | null>(null);
+  const [frameData, setFrameData] = useState<MDBFrames | null>(null);
   const [frameSchema, setFrameSchema] = useState<FrameSchema>(null);
 
   const tableData = useMemo(() => {
@@ -236,7 +236,7 @@ export const FramesMDBProvider: React.FC<
       );
     };
   }, [refreshSpace]);
-  const getMDBData = async (): Promise<SpaceTables> => {
+  const getMDBData = async (): Promise<MDBFrames> => {
     const tables = await props.superstate.spaceManager.readAllFrames(
       spaceInfo.path
     );

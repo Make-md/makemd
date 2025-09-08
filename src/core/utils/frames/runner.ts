@@ -263,8 +263,7 @@ const executePropsCodeBlocks = async (executable: FrameExecutable, results: Resu
         }
             
         } catch (error) {
-            console.log(key, error)
-        }
+                    }
     }
 
     return results;

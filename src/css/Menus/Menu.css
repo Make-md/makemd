@@ -348,6 +348,10 @@ max-height: var(--mk-menu-max-height)
   justify-content: space-between;
 }
 
+.mk-menu-sticker {
+  width: 16px;
+  height: 16px;
+}
 .mk-menu-option .mk-inline-button {
   border: thin solid var(--mk-ui-border);
     padding: 4px !important;

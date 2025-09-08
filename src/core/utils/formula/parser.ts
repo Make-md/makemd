@@ -326,7 +326,6 @@ export const runFormulaWithContext = (runContext: math.MathJsInstance, paths: Ma
 	} catch (e) {
 		value = ""
 		if (emitError) throw(e)
-		// console.log(formula, e);
 	}
 	return  value
 }
@@ -368,7 +367,6 @@ export const runFormula = (paths: Map<string, PathState>, spaceMap: IndexMap, fo
 		value = runContext.evaluate(formula, scope)
 		value = parseProperty("", value)
 	} catch (e) {
-		// console.log(formula, e);
 	}
 	return  value
 }

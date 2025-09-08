@@ -2,6 +2,8 @@ import { group, select, line as d3Line, curveMonotoneX, curveLinear } from 'core
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 import { getPaletteColors } from '../utils';
 import { displayTextForType } from 'core/utils/displayTextForType';
+import { sortByEncodingType } from '../sortingUtils';
+import { LineChartData } from '../../transformers';
 
 export class LineChartUtility {
   static render(context: RenderContext): void {
@@ -16,7 +18,13 @@ export class LineChartUtility {
   private static renderSVG(context: RenderContext): void {
     if (!isSVGContext(context)) return;
 
-    const { g, svg, processedData, scales, config, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor, graphArea } = context;
+    const { g, svg, processedData, transformedData, scales, config, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor, graphArea } = context;
+    
+    // Use transformed data if available
+    if (transformedData?.type === 'line' && transformedData.data) {
+      this.renderWithTransformedData(context, transformedData.data as LineChartData);
+      return;
+    }
     
     
     const xScale = scales.get('x');
@@ -51,7 +59,9 @@ export class LineChartUtility {
       
       if (xEncoding.type === 'quantitative' || xEncoding.type === 'temporal') {
         // Linear or time scale
-        const scaledValue = xEncoding.type === 'temporal' ? new Date(String(value)) : Number(value);
+        const scaledValue = xEncoding.type === 'temporal' 
+          ? (value instanceof Date ? value : new Date(String(value)))
+          : Number(value);
         // Check for invalid dates or numbers
         if (xEncoding.type === 'temporal' && scaledValue instanceof Date && isNaN(scaledValue.getTime())) {
           return NaN;
@@ -146,7 +156,7 @@ export class LineChartUtility {
           .curve((config.mark?.interpolate || 'linear') === 'monotone' ? curveMonotoneX : curveLinear);
 
         // Filter and sort data
-        const lineData = groupData
+        let lineData = groupData
           .filter((d) => {
             const xVal = d[xEncoding.field];
             const yVal = d[yEncoding.field];
@@ -155,19 +165,38 @@ export class LineChartUtility {
             }
             return isValid;
           })
-          .sort((a, b) => {
-            const aVal = a[xEncoding.field];
-            const bVal = b[xEncoding.field];
-            if (xEncoding.type === 'temporal') {
-              return new Date(String(aVal)).getTime() - new Date(String(bVal)).getTime();
-            }
-            if (xEncoding.type === 'quantitative') {
-              return Number(aVal) - Number(bVal);
-            }
-            // For nominal/ordinal data, preserve the original order
-            return 0;
-          });
+          .sort((a, b) => sortByEncodingType(a, b, xEncoding.type, xEncoding.field, xScale));
 
+        // For categorical (ordinal/nominal) x-axis, add zero points for missing categories
+        if ((xEncoding.type === 'ordinal' || xEncoding.type === 'nominal') && (xScale as any).domain) {
+          const allCategories = (xScale as any).domain();
+          const existingCategories = new Set(lineData.map(d => String(d[xEncoding.field])));
+          const missingCategories = allCategories.filter((cat: string) => !existingCategories.has(cat));
+          
+          // Add zero points for missing categories
+          if (missingCategories.length > 0) {
+            const zeroPoints = missingCategories.map((cat: string) => {
+              const zeroPoint: any = {};
+              zeroPoint[xEncoding.field] = cat;
+              zeroPoint[yEncoding.field] = 0;
+              // Include color field if it exists
+              if (colorField && groupKey !== 'single' && groupKey !== 'all') {
+                zeroPoint[colorField] = groupKey;
+              }
+              return zeroPoint;
+            });
+            
+            // Combine existing data with zero points
+            lineData = [...lineData, ...zeroPoints];
+            
+            // Re-sort to maintain category order
+            lineData.sort((a, b) => {
+              const aIndex = allCategories.indexOf(String(a[xEncoding.field]));
+              const bIndex = allCategories.indexOf(String(b[xEncoding.field]));
+              return aIndex - bIndex;
+            });
+          }
+        }
 
         // Skip if no valid data
         if (lineData.length === 0) {
@@ -387,7 +416,9 @@ export class LineChartUtility {
       if (value == null) return NaN;
       
       if (xEncoding.type === 'quantitative' || xEncoding.type === 'temporal') {
-        const scaledValue = xEncoding.type === 'temporal' ? new Date(String(value)) : Number(value);
+        const scaledValue = xEncoding.type === 'temporal' 
+          ? (value instanceof Date ? value : new Date(String(value)))
+          : Number(value);
         // Check for invalid dates or numbers
         if (xEncoding.type === 'temporal' && scaledValue instanceof Date && isNaN(scaledValue.getTime())) return NaN;
         if (xEncoding.type === 'quantitative' && typeof scaledValue === 'number' && isNaN(scaledValue)) return NaN;
@@ -428,24 +459,44 @@ export class LineChartUtility {
         if (!xEncoding?.field || !yEncoding?.field) return;
 
         // Filter and sort data
-        const lineData = groupData
+        let lineData = groupData
           .filter((d) => {
             const xVal = d[xEncoding.field];
             const yVal = d[yEncoding.field];
             return xVal != null && yVal != null && !isNaN(Number(yVal));
           })
-          .sort((a, b) => {
-            const aVal = a[xEncoding.field];
-            const bVal = b[xEncoding.field];
-            if (xEncoding.type === 'temporal') {
-              return new Date(String(aVal)).getTime() - new Date(String(bVal)).getTime();
-            }
-            if (xEncoding.type === 'quantitative') {
-              return Number(aVal) - Number(bVal);
-            }
-            // For nominal/ordinal data, preserve the original order
-            return 0;
-          });
+          .sort((a, b) => sortByEncodingType(a, b, xEncoding.type, xEncoding.field, xScale));
+
+        // For categorical (ordinal/nominal) x-axis, add zero points for missing categories
+        if ((xEncoding.type === 'ordinal' || xEncoding.type === 'nominal') && (xScale as any).domain) {
+          const allCategories = (xScale as any).domain();
+          const existingCategories = new Set(lineData.map(d => String(d[xEncoding.field])));
+          const missingCategories = allCategories.filter((cat: string) => !existingCategories.has(cat));
+          
+          // Add zero points for missing categories
+          if (missingCategories.length > 0) {
+            const zeroPoints = missingCategories.map((cat: string) => {
+              const zeroPoint: any = {};
+              zeroPoint[xEncoding.field] = cat;
+              zeroPoint[yEncoding.field] = 0;
+              // Include color field if it exists
+              if (colorField && groupKey !== 'single' && groupKey !== 'all') {
+                zeroPoint[colorField] = groupKey;
+              }
+              return zeroPoint;
+            });
+            
+            // Combine existing data with zero points
+            lineData = [...lineData, ...zeroPoints];
+            
+            // Re-sort to maintain category order
+            lineData.sort((a, b) => {
+              const aIndex = allCategories.indexOf(String(a[xEncoding.field]));
+              const bIndex = allCategories.indexOf(String(b[xEncoding.field]));
+              return aIndex - bIndex;
+            });
+          }
+        }
 
         if (lineData.length === 0) return;
 
@@ -590,6 +641,135 @@ export class LineChartUtility {
 
         seriesIndex++;
       });
+    });
+  }
+
+  private static renderWithTransformedData(context: RenderContext, lineData: LineChartData): void {
+    if (!isSVGContext(context)) return;
+    
+    const { g, svg, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels } = context;
+    
+    const xScale = scales.get('x');
+    const yScale = scales.get('y');
+    
+    if (!xScale || !yScale || !lineData.data || lineData.data.length === 0) return;
+    
+    const themeColors = getPaletteColors(context.colorPaletteId, context.superstate);
+    const colorScale = scales.get('color');
+    
+    // Create line generator
+    const lineGenerator = d3Line<any>()
+      .defined(d => {
+        const xValue = xScale(d.x);
+        const yValue = yScale(d.y);
+        return xValue != null && !isNaN(xValue) && yValue != null && !isNaN(yValue);
+      })
+      .x(d => {
+        // Handle band scales for categorical x-axis
+        const scale = xScale as any;
+        if (scale.bandwidth) {
+          return scale(d.x) + scale.bandwidth() / 2;
+        }
+        return scale(d.x);
+      })
+      .y(d => yScale(d.y))
+      .curve(config.mark?.interpolate === 'monotone' ? curveMonotoneX : curveLinear);
+    
+    // Group data by series
+    const seriesGroups = new Map<string, typeof lineData.data>();
+    lineData.data.forEach(point => {
+      const series = point.series || 'default';
+      if (!seriesGroups.has(series)) {
+        seriesGroups.set(series, []);
+      }
+      seriesGroups.get(series)!.push(point);
+    });
+    
+    // Draw lines for each series
+    let seriesIndex = 0;
+    seriesGroups.forEach((points, series) => {
+      // Sort points by x value for proper line drawing
+      // For ordinal scales, use the domain order
+      const sortedPoints = [...points].sort((a, b) => {
+        const scale = xScale as any;
+        if (scale.domain && typeof scale.domain === 'function') {
+          const domain = scale.domain();
+          const aIndex = domain.indexOf(a.x);
+          const bIndex = domain.indexOf(b.x);
+          if (aIndex !== -1 && bIndex !== -1) {
+            return aIndex - bIndex;
+          }
+        }
+        // Fallback to regular comparison
+        if (a.x < b.x) return -1;
+        if (a.x > b.x) return 1;
+        return 0;
+      });
+      
+      // Determine color
+      let color: string;
+      if (colorScale && config.encoding?.color?.field) {
+        color = colorScale(series) || themeColors[seriesIndex % themeColors.length];
+      } else {
+        color = themeColors[seriesIndex % themeColors.length];
+      }
+      
+      // Draw the line
+      const linePath = g.append('path')
+        .datum(sortedPoints)
+        .attr('class', 'line')
+        .attr('d', lineGenerator)
+        .attr('fill', 'none')
+        .attr('stroke', color)
+        .attr('stroke-width', config.mark?.strokeWidth || 2)
+        .attr('opacity', config.mark?.opacity || 1)
+        .style('cursor', 'pointer');
+      
+      // Add points if configured
+      if (config.mark?.point && (typeof config.mark.point === 'boolean' ? config.mark.point : config.mark.point?.show !== false)) {
+        const pointSize = config.mark?.size || 4;
+        
+        g.selectAll(`.point-${series}`)
+          .data(sortedPoints)
+          .enter()
+          .append('circle')
+          .attr('class', `point-${series}`)
+          .attr('cx', d => {
+            const scale = xScale as any;
+            if (scale.bandwidth) {
+              return scale(d.x) + scale.bandwidth() / 2;
+            }
+            return scale(d.x);
+          })
+          .attr('cy', d => yScale(d.y))
+          .attr('r', pointSize)
+          .attr('fill', color)
+          .attr('opacity', config.mark?.opacity || 1)
+          .style('cursor', 'pointer');
+      }
+      
+      // Add data labels if configured
+      if (showDataLabels) {
+        g.selectAll(`.label-${series}`)
+          .data(sortedPoints)
+          .enter()
+          .append('text')
+          .attr('class', `label-${series}`)
+          .attr('x', d => {
+            const scale = xScale as any;
+            if (scale.bandwidth) {
+              return scale(d.x) + scale.bandwidth() / 2;
+            }
+            return scale(d.x);
+          })
+          .attr('y', d => yScale(d.y) - 5)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', '10px')
+          .attr('fill', color)
+          .text(d => d.y.toFixed(1));
+      }
+      
+      seriesIndex++;
     });
   }
 }

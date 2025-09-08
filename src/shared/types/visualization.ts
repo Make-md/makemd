@@ -11,6 +11,7 @@ export type MarkType = 'rect' | 'line' | 'circle' | 'arc' | 'area' | 'point';
 export interface Encoding {
   field: string;
   type: FieldType;
+  aggregate?: 'count' | 'sum' | 'average' | 'min' | 'max' | 'distinct';
   scale?: {
     type?: 'linear' | 'log' | 'sqrt' | 'pow' | 'time';
     domain?: [number, number] | string[];
@@ -46,6 +47,9 @@ export interface Mark {
     format?: 'value' | 'percentage';
   };
   innerRadius?: number; // For donut charts
+  stack?: boolean; // For stacked bar/area charts
+  text?: string; // For text marks in scatter plots
+  jitter?: number | boolean; // For jittering points in scatter plots
 }
 
 // Layout configuration
@@ -121,12 +125,17 @@ export interface Aggregate {
 
 // Transform operations
 export interface Transform {
-  type: 'filter' | 'aggregate' | 'calculate';
+  type: 'filter' | 'aggregate' | 'calculate' | 'sort' | 'limit';
   filter?: string;
   groupby?: string[];
   aggregate?: Aggregate[];
   calculate?: string;
   as?: string;
+  options?: {
+    order?: 'ascending' | 'descending';
+    count?: number;
+    field?: string;
+  };
 }
 
 // Main visualization configuration
@@ -136,11 +145,6 @@ export interface VisualizationConfig {
   description?: string;
   chartType: ChartType;
   colorPalette?: string;
-
-  // Data specification
-  data: {
-    listId: string; // Reference to the list/table to visualize
-  };
 
   // Visual encoding
   mark: Mark;

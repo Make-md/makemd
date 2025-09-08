@@ -16,7 +16,8 @@ import { formulas } from "core/utils/formula/formulas";
 import { rootToFrame } from "schemas/frames";
 import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
 import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemNode, overviewItem, rowGroup } from "schemas/kits/list";
-import { buttonNode, callout, dividerNode, fieldNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
+import { buttonNode, callout, dividerNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
+import { dataNode } from "schemas/kits/base";
 import { headerKit, visualizationNode } from "schemas/kits";
 import { fieldTypeForField, mainFrameID } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
@@ -113,7 +114,7 @@ public api: API;
         calendarView,
         dateGroup,
         tabsNode(),
-        fieldNode(),
+        dataNode,
         gridGroup,
         newItemNode,
         ratingNode(),
@@ -251,7 +252,6 @@ public api: API;
     public persister: LocalCachePersister;
     public async initialize () {
         if (!this.persister) {
-            console.log('Cache Persister Not Found');
             return 
         }
         const start = Date.now();
@@ -270,7 +270,6 @@ public api: API;
         if (this.assets) {
             await this.assets.initialize();
         } else {
-            console.warn('[Superstate] No AssetManager implementation provided');
         }
         
         await this.initializePaths();
@@ -422,8 +421,9 @@ public api: API;
             this.linksMap.set(f.path, new Set(cache.outlinks))
             }
         });
-        if (this.settings.enhancedLogs)
-        console.log('Initial Cache Loaded')
+        if (this.settings.enhancedLogs) {
+            // Initial Cache Loaded
+        }
         this.dispatchEvent("superstateUpdated", null)
     }
 
@@ -577,8 +577,9 @@ public api: API;
 
     
     public onMetadataChange(path: string) {
-        if (this.settings.enhancedLogs)
-        console.log('Metadata Changed', path)
+        if (this.settings.enhancedLogs) {
+            // Metadata Changed
+        }
         if (!this.pathsIndex.has(path)) {return}
         this.reloadPath(path).then(f => 
             {
@@ -771,8 +772,9 @@ public api: API;
 
     public async contextReloaded(path: string, cache: ContextState, changed: boolean, force?: boolean) {
         if (!cache) return false;
-        if (this.settings.enhancedLogs)
-        {console.log('Context Reloaded')}
+        if (this.settings.enhancedLogs) {
+            // Context Reloaded
+        }
         if (!changed && !force) { return false }
             
             this.contextsIndex.set(path, cache);
@@ -866,8 +868,9 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
     public async reloadSpace (space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized=true) {
         
         if (!space) return;
-        if (this.settings.enhancedLogs)
-        {console.log('Reloading Space')}
+        if (this.settings.enhancedLogs) {
+            // Reloading Space
+        }
         const metadata = spaceMetadata ?? await this.spaceManager.spaceDefForSpace(space.path);
 
         let pathState = this.pathsIndex.get(space.path);
@@ -971,8 +974,9 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
     }
     private async pathReloaded (path: string, cache: PathState, changed: boolean, force: boolean) {
         if (!cache) return false;
-        if (this.settings.enhancedLogs)
-        {console.log('Path Reloaded')}
+        if (this.settings.enhancedLogs) {
+            // Path Reloaded
+        }
             this.pathsIndex.set(path, cache);
             await this.onPathReloaded(path);
             if (cache.subtype == 'image' || cache.metadata?.file?.extension == 'svg') {

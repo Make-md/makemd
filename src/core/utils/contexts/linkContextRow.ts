@@ -10,6 +10,7 @@ import { serializeMultiString } from "utils/serializers";
 import { parseMultiString, parseProperty } from "../../../utils/parsers";
 import { runFormulaWithContext } from "../formula/parser";
 import { calculateAggregate } from "./predicate/aggregates";
+import { resolvePath } from "core/superstate/utils/path";
 
 
 
@@ -35,7 +36,6 @@ export const propertyDependencies = (fields: SpaceProperty[]) => {
     localDependencies.push(...deps)
   }
   catch (e) {
-    // console.log(e)
   }
     
 
@@ -88,16 +88,18 @@ export const linkContextRow = (
   dependencies?: string[]
 ) => {
   if (!_row) return {}
+  const resolvedPath = resolvePath(_row[PathPropertyName], path.path, (spacePath) => paths.get(spacePath)?.type == 'space');
   
   const result = dependencies ?? propertyDependencies(fields)
-  const frontmatter = (paths.get(_row[PathPropertyName])?.metadata?.property ?? {});
+  const frontmatter = (paths.get(resolvedPath)?.metadata?.property ?? {});
+  
   const filteredFrontmatter = Object.keys(frontmatter).filter(f => fields.some(g => g.name == f) && f != PathPropertyName).reduce((p, c) => ({ ...p, [c]: parseProperty(c, frontmatter[c]) }), {})
   const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {});
   
   const tagData : Record<string, string> = {};
   const tagField = fields.find(f => f.name.toLowerCase() == 'tags');
   if (tagField) {
-    tagData[tagField.name] = serializeMultiString([...(paths.get(_row[PathPropertyName])?.tags ?? [])]) 
+    tagData[tagField.name] = serializeMultiString([...(paths.get(resolvedPath)?.tags ?? [])]) 
   }
   
   const formulaFields = result.map(f => fields.find(g => g.name == f) as SpaceProperty).filter((f) => f && (f.type == "fileprop")).reduce((p, c) => {
@@ -116,7 +118,7 @@ export const linkContextRow = (
         }
         const items = contextsMap.get(fieldValue.space)?.contextTable?.rows ?? []
         const values = items.reduce((p, c) => {
-            if (fieldValue.field, parseMultiString(c[fieldValue.field]).includes(_row[PathPropertyName])) {
+            if (fieldValue.field, parseMultiString(c[fieldValue.field]).includes(resolvedPath)) {
               return [...p, c[PathPropertyName]];
             }
             return p;
@@ -133,7 +135,7 @@ export const linkContextRow = (
   }, {} as DBRow);
   const aggregateFields = fields.filter((f) => f && (f.type == "aggregate")).reduce((p, c) => {
     const fieldValue = parseFieldValue(c.value, c.type);
-    const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields)
+    const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields, path)
     if (!values) return p;
         const value = calculateAggregate(
           settings,
@@ -141,6 +143,7 @@ export const linkContextRow = (
           fieldValue.fn,
           fieldValue.field
         );
+        
     return {
       ...p, [c.name]: value
     };
@@ -157,7 +160,7 @@ export const linkContextRow = (
     }
     if (type == 'aggregate') {
       const fieldValue = config;
-      const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields)
+      const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields, path)
       if (!values) return p;
       value = calculateAggregate(
         settings,
@@ -187,10 +190,12 @@ export const linkContextRow = (
   };
 };
 
-const rowsForAggregate = (fieldValue: Record<string, any>, fields: SpaceProperty[], spaceMap: IndexMap, _row: Record<string, string>, contextsMap: Map<string, ContextState>, relationFields: Record<string, string>) => {
+const rowsForAggregate = (fieldValue: Record<string, any>, fields: SpaceProperty[], spaceMap: IndexMap, _row: Record<string, string>, contextsMap: Map<string, ContextState>, relationFields: Record<string, string>, pathState: PathState) => {
   let rows = [];
     const column = fieldValue?.field;
-    if (fieldValue?.ref == '$items') {
+    if (fieldValue.schema) {
+        rows = (contextsMap.get(pathState.path)?.mdb[fieldValue.schema]?.rows ?? []);
+    } else if (fieldValue?.ref == '$items') {
       rows = (contextsMap.get(_row[PathPropertyName])?.contextTable?.rows ?? []);
     } else {
       const refField = fields.find(f => f.name == fieldValue?.ref);
@@ -209,5 +214,5 @@ const rowsForAggregate = (fieldValue: Record<string, any>, fields: SpaceProperty
       rows = propValues
       .map((f) => (contextsMap.get(spacePath)?.contextTable?.rows ?? []).find(g => g[PathPropertyName] == f))
     }
-    return rows.map((f) => f?.[column]).filter((f) => f)
+    return rows.map((f) => f?.[column] ?? '')
 }

@@ -925,7 +925,9 @@ const defaultSpaceTemplate = this.defaultFrame(path);
         [spaceTemplateKey] : metadata.template,
         [spaceTemplateNameKey] : metadata.templateName,
         defaultSticker: metadata.defaultSticker,
+        defaultColor: metadata.defaultColor,
         readMode: metadata.readMode,
+        fullWidth: metadata.fullWidth,
       }))
     // await this.spaceManager.onPathPropertyChanged(file.path);
       // await this.spaceManager.onSpaceCreated(path);

@@ -123,8 +123,7 @@ export const contextNodeToInstances = async (superstate: Superstate, node: Frame
     };
     const listGroupInstances = await Promise.all(Object.keys(data).map((c) => getFrameInstance(superstate, listGroupFrame, {
       _groupValue: c,
-                _groupField: groupBy?.name,
-                _groupType: groupBy?.type,
+                _groupField: groupBy,
                 _readMode: true,
                 _selectedIndex: -1,
                 ...predicate.listGroupProps,
@@ -136,8 +135,7 @@ export const contextNodeToInstances = async (superstate: Superstate, node: Frame
 
     const listItemInstaces = await Promise.all(Object.keys(data).map((c) => Promise.all(data[c].map((r) => getFrameInstance(superstate, listItemFrame, {
       _groupValue: c,
-      _groupField: groupBy?.name,
-      _groupType: groupBy?.type,
+      _groupField: groupBy,
       _readMode: true,
       ...predicate.listItemProps,
     },

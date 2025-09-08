@@ -113,14 +113,14 @@ export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
         label: "Percentage Empty",
         shortLabel: "Empty",
         type: 'any',
-        fn: (v) => v.filter((f) => empty(f, '')).length / v.length * 100 + "%",
+        fn: (v) => Math.round(v.filter((f) => empty(f, '')).length / v.length * 100) + "%",
         valueType: "string",
     },
     percentageNotEmpty: {
         label: "Percentage Not Empty",
         shortLabel: "Not Empty",
         type: 'any',
-        fn: (v) => v.filter((f) => !empty(f, '')).length / v.length * 100 + "%",
+        fn: (v) => Math.round(v.filter((f) => !empty(f, '')).length / v.length * 100) + "%",
         valueType: "string",
     },
     min: {
@@ -181,7 +181,7 @@ export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
         label: "Percentage Complete",
         shortLabel: "Complete",
         type: 'boolean',
-        fn: (v) => v.filter((f) => f == 'true').length / v.length * 100 + "%",
+        fn: (v) => Math.round(v.filter((f) => f == 'true').length / v.length * 100) + "%",
         valueType: "string",
     },
     dateRange: {

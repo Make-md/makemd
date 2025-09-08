@@ -57,8 +57,7 @@ export const preprocessCode = (code: unknown, oldName: string, newName: string):
 
     string = generate(ast).trimEnd();
   } catch (e){
-    console.log(e, code, name)
-    string = `"error"`
+        string = `"error"`
   }
 
   if (isMultiLine && hasReturn) {

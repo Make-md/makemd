@@ -498,7 +498,8 @@ export const FilterBar = (props: {
     if (!readMode) {
       menuOptions.push(
         menuInput(frameSchema.name ?? "", (value) =>
-          saveSchema({ ...frameSchema, name: value })
+          saveSchema({ ...frameSchema, name: value }),
+          ""
         )
       );
       menuOptions.push(menuSeparator);
@@ -1457,7 +1458,7 @@ export const FilterBar = (props: {
               ></div>
             </div>
           ))}
-          {(predicate?.filters ?? [] ?? []).map((f, i) => (
+          {(predicate?.filters ?? []).map((f, i) => (
             <div key={i} className="mk-filter">
               <span>{f.field}</span>
               <span onClick={(e) => changeFilterMenu(e, f, i)}>

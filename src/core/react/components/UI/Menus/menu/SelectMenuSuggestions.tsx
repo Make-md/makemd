@@ -117,6 +117,7 @@ const SelectMenuSuggestionsComponent = (props: {
 const SelectMenuInput = (props: {
   value: string;
   setValue: (value: string) => void;
+  placeholder: string
 }) => {
   const [value, setValue] = useState(props.value);
   return (
@@ -128,6 +129,7 @@ const SelectMenuInput = (props: {
           props.setValue(value);
         }
       }}
+      placeholder={props.placeholder}
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       onFocus={(e) => {
@@ -239,6 +241,7 @@ const SelectMenuSuggestions = (props: {
           <SelectMenuInput
             value={item.value}
             setValue={item.onValueChange}
+            placeholder={item.description}
           ></SelectMenuInput>
         ) : item.type == SelectOptionType.Custom ? (
           <item.fragment

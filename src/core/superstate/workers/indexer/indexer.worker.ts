@@ -39,7 +39,6 @@ ctx.onmessage = async evt => {
     try {
         (postMessage as any)({ job, result });
     } catch (error) {
-        console.log(error);
         (postMessage as any)({
             job,
             result: {

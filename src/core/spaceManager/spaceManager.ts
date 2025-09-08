@@ -1,4 +1,5 @@
 
+import { resolvePath } from "core/superstate/utils/path";
 import { serializeOptionValue } from "core/utils/serializer";
 import { ensureString } from "core/utils/strings";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
@@ -100,25 +101,8 @@ export class SpaceManager implements SpaceManagerInterface {
     }
 
     public resolvePath(path: string, source?: string) {
-      if (!source || !path) return path;
-      if (path.indexOf('http') == 0) return path;
-      if (path.indexOf('|') != -1) {
-        path = path.split('|')[0];
-      }
-      if (path.indexOf('./') == 0 && source) {
-        if (this.superstate.spacesIndex.has(source))
-          return source + path.slice(1);
-        return source.slice(0, source.lastIndexOf('/')) + path.slice(1);
-      } else if (path.indexOf('../') == 0 && source) {
-        const sourceParts = source.split('/');
-    const pathParts = path.split('/');
-    sourceParts.pop();
-    while (pathParts[0] === '..') {
-      sourceParts.pop();
-      pathParts.shift();
-    }
-    return [...sourceParts, ...pathParts].join('/');
-      }
+      const resolvedPath = resolvePath(path, source, (p) => this.superstate.spacesIndex.has(p));
+      if (resolvedPath !== path) return resolvedPath;
       if (this.superstate.pathsIndex.has(path)) return path;
       return this.primarySpaceAdapter.resolvePath(path, source) ?? path;
     }
@@ -325,11 +309,14 @@ export class SpaceManager implements SpaceManagerInterface {
 
        public async readPathCache (path: string) {
         const pathCache = await this.adapterForPath(path).readPathCache(path);
-        if (pathCache && pathCache.type == 'space' && !this.superstate.settings.enableFolderNote) {
+        if (pathCache && pathCache.type == 'space') {
+          const hasFolderNote =  await this.adapterForPath(path).pathExists(this.spaceInfoForPath(path).notePath)
+          if (!this.superstate.settings.enableFolderNote || !hasFolderNote) {
           const defPath = this.spaceInfoForPath(path).defPath
           
           pathCache.label = {...pathCache.label, ...(await this.readLabel(defPath))};
           pathCache.property = await this.readProperties(defPath)
+          }
         }
          return pathCache;
        }
@@ -438,7 +425,7 @@ export class SpaceManager implements SpaceManagerInterface {
     public saveTemplate (path: string, space: string) {
         return this.adapterForPath(path).saveTemplate(path, space).then(f => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true)).then(f => f.path);
     }
-    public deleteTemplate (template: string, space: string) {
-        return this.primarySpaceAdapter.deleteTemplate(template, space).then(f => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true)).then(f => null);
+    public deleteTemplate (template: string, space: string): Promise<void> {
+        return this.primarySpaceAdapter.deleteTemplate(template, space).then((f: any) => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true)).then((f: any) => {});
     }
 }

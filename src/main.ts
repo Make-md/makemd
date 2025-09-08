@@ -392,8 +392,7 @@ loadViews () {
       try {
       this.registerExtensions(["html", "htm"], HTML_FILE_VIEWER_TYPE);
       } catch (e) {
-        console.log(e);
-      }
+              }
       this.app.workspace.onLayoutReady(async () => {
 
         if (this.superstate.settings.autoOpenFileContext) {
@@ -759,7 +758,6 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
   }
 
   onunload() {
-    console.log("Unloading Make.md");
     this.superstate.persister.unload();
     
     this.detachFileTreeLeafs();

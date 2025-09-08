@@ -1,4 +1,4 @@
-import { axisBottom, axisLeft, type Selection } from 'core/utils/d3-imports';
+import { axisBottom, axisLeft, type Selection, timeFormat } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 import { displayTextForType } from 'core/utils/displayTextForType';
 
@@ -22,10 +22,23 @@ export class AxisUtility {
 
     // X axis
     if (showXAxis && xScale) {
+      // Position x-axis at zero line if there are negative values, otherwise at bottom
+      let xAxisYPosition = graphArea.bottom;
+      if (yScale && yScale.domain) {
+        const [yMin, yMax] = yScale.domain();
+        if (yMin < 0 && yMax > 0) {
+          // There are both positive and negative values - position at y=0
+          xAxisYPosition = yScale(0);
+        } else if (yMax <= 0) {
+          // All values are negative - position at top
+          xAxisYPosition = graphArea.top;
+        }
+      }
+      
       const xAxis = g
         .append('g')
         .attr('class', 'x-axis')
-        .attr('transform', `translate(0,${graphArea.bottom})`);
+        .attr('transform', `translate(0,${xAxisYPosition})`);
 
       // Get x-axis property for formatting
       let xProperty: any = null;
@@ -36,15 +49,103 @@ export class AxisUtility {
 
       const xAxisGenerator = axisBottom(xScale);
       
-      // Apply custom tick format if we have property info
-      if (xProperty && context.superstate) {
+      // Check if this is a temporal scale
+      const xEncoding = config.encoding.x && !Array.isArray(config.encoding.x) ? config.encoding.x : null;
+      const isTemporalX = xEncoding?.type === 'temporal';
+      const isCategoricalX = xEncoding?.type === 'nominal' || xEncoding?.type === 'ordinal';
+      
+      // Apply custom tick format
+      if (isCategoricalX && !xProperty) {
+        // For categorical scales without property info, handle empty labels
         xAxisGenerator.tickFormat((d: any) => {
-          return displayTextForType(xProperty, d, context.superstate);
+          const label = String(d);
+          return (!label || label.trim() === '') ? 'None' : label;
+        });
+      } else if (isTemporalX) {
+        // For temporal scales, use custom formatting
+        const formatMonth = timeFormat('%b'); // e.g., "Jan"
+        const formatDay = timeFormat('%d'); // e.g., "15"
+        const formatYear = timeFormat('%Y');
+        const formatMonthYear = timeFormat('%b %Y');
+        const formatTime = timeFormat('%I:%M %p');
+        
+        // Track which months we've already labeled
+        const labeledMonths = new Set<string>();
+        
+        xAxisGenerator.tickFormat((d: any, i: number) => {
+          const date = d instanceof Date ? d : new Date(d);
+          if (isNaN(date.getTime())) return String(d);
+          
+          // Determine the best format based on the scale's domain
+          const domain = xScale.domain();
+          const domainSpan = domain[1] - domain[0];
+          const msPerDay = 24 * 60 * 60 * 1000;
+          const msPerMonth = 30 * msPerDay;
+          const msPerYear = 365 * msPerDay;
+          
+          if (domainSpan > msPerYear * 2) {
+            // Show years for very large ranges
+            return formatYear(date);
+          } else if (domainSpan > msPerMonth * 6) {
+            // Show month and year for large ranges
+            return formatMonthYear(date);
+          } else if (domainSpan > msPerDay) {
+            // For day-level data, show month at boundaries and day numbers otherwise
+            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+            const dayOfMonth = date.getDate();
+            
+            // Check if this is the first tick of the month or the first tick overall
+            if (dayOfMonth === 1 || i === 0) {
+              // Show month label at month boundary or start
+              if (!labeledMonths.has(monthKey)) {
+                labeledMonths.add(monthKey);
+                return formatMonth(date);
+              }
+            }
+            
+            // For all other ticks, just show the day number
+            return formatDay(date);
+          } else {
+            // Show time for intraday ranges
+            return formatTime(date);
+          }
+        });
+        
+        // For temporal scales with day-level data, use more ticks to show individual days
+        const domain = xScale.domain();
+        const domainSpan = domain[1] - domain[0];
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const daysInRange = Math.ceil(domainSpan / msPerDay);
+        
+        if (daysInRange <= 31) {
+          // Show all days if less than a month
+          xAxisGenerator.ticks(daysInRange);
+        } else if (daysInRange <= 90) {
+          // Show every few days for up to 3 months
+          xAxisGenerator.ticks(15);
+        } else {
+          // Default to fewer ticks for larger ranges
+          xAxisGenerator.ticks(8);
+        }
+      } else if (xProperty && context.superstate) {
+        // Use property-based formatting for non-temporal scales
+        xAxisGenerator.tickFormat((d: any) => {
+          if (d === null || d === undefined || d === '') {
+            return 'None';
+          }
+          const formatted = displayTextForType(xProperty, d, context.superstate);
+          return (!formatted || formatted.trim() === '') ? 'None' : formatted;
+        });
+      } else {
+        // Default formatter that handles empty values
+        xAxisGenerator.tickFormat((d: any) => {
+          const label = String(d);
+          return (!label || label.trim() === '') ? 'None' : label;
         });
       }
       
-      if (!xScale.bandwidth) {
-        // For numerical scales, limit the number of ticks
+      if (!xScale.bandwidth && !isTemporalX) {
+        // For numerical scales (non-temporal), limit the number of ticks
         xAxisGenerator.ticks(5);
       }
       
@@ -52,6 +153,7 @@ export class AxisUtility {
 
       this.styleAxis(xAxis, 'x', {
         layout: config.layout,
+        config: config,
         resolveColor,
         editMode,
         selectedElement,
@@ -62,10 +164,23 @@ export class AxisUtility {
 
     // Y axis
     if (showYAxis && yScale) {
+      // Position y-axis at zero line if there are negative values, otherwise at left
+      let yAxisXPosition = graphArea.left;
+      if (xScale && xScale.domain && !xScale.bandwidth) {
+        const [xMin, xMax] = xScale.domain();
+        if (xMin < 0 && xMax > 0) {
+          // There are both positive and negative values - position at x=0
+          yAxisXPosition = xScale(0);
+        } else if (xMax <= 0) {
+          // All values are negative - position at right
+          yAxisXPosition = graphArea.right;
+        }
+      }
+      
       const yAxis = g
         .append('g')
         .attr('class', 'y-axis')
-        .attr('transform', `translate(${graphArea.left},0)`);
+        .attr('transform', `translate(${yAxisXPosition},0)`);
 
       // Get y-axis property for formatting
       let yProperty: any = null;
@@ -76,15 +191,63 @@ export class AxisUtility {
 
       const yAxisGenerator = axisLeft(yScale);
       
-      // Apply custom tick format if we have property info
-      if (yProperty && context.superstate) {
+      // Check if this is a temporal scale
+      const yEncoding = config.encoding.y && !Array.isArray(config.encoding.y) ? config.encoding.y : null;
+      const isTemporalY = yEncoding?.type === 'temporal';
+      const isCategoricalY = yEncoding?.type === 'nominal' || yEncoding?.type === 'ordinal';
+      
+      // Apply custom tick format
+      if (isCategoricalY && !yProperty) {
+        // For categorical scales without property info, handle empty labels
         yAxisGenerator.tickFormat((d: any) => {
-          return displayTextForType(yProperty, d, context.superstate);
+          const label = String(d);
+          return (!label || label.trim() === '') ? 'None' : label;
+        });
+      } else if (isTemporalY) {
+        // For temporal scales on Y axis, use appropriate date formatting
+        const formatDate = timeFormat('%b %d');
+        const formatYear = timeFormat('%Y');
+        const formatMonth = timeFormat('%b %Y');
+        
+        yAxisGenerator.tickFormat((d: any) => {
+          const date = d instanceof Date ? d : new Date(d);
+          if (isNaN(date.getTime())) return String(d);
+          
+          // Use simpler format for Y axis
+          const domain = yScale.domain();
+          const domainSpan = domain[1] - domain[0];
+          const msPerMonth = 30 * 24 * 60 * 60 * 1000;
+          const msPerYear = 365 * 24 * 60 * 60 * 1000;
+          
+          if (domainSpan > msPerYear * 2) {
+            return formatYear(date);
+          } else if (domainSpan > msPerMonth * 3) {
+            return formatMonth(date);
+          } else {
+            return formatDate(date);
+          }
+        });
+        
+        yAxisGenerator.ticks(5);
+      } else if (yProperty && context.superstate) {
+        // Use property-based formatting for non-temporal scales
+        yAxisGenerator.tickFormat((d: any) => {
+          if (d === null || d === undefined || d === '') {
+            return 'None';
+          }
+          const formatted = displayTextForType(yProperty, d, context.superstate);
+          return (!formatted || formatted.trim() === '') ? 'None' : formatted;
+        });
+      } else if (isCategoricalY) {
+        // Default formatter for categorical Y axis that handles empty values
+        yAxisGenerator.tickFormat((d: any) => {
+          const label = String(d);
+          return (!label || label.trim() === '') ? 'None' : label;
         });
       }
       
-      if (!yScale.bandwidth) {
-        // For numerical scales, limit the number of ticks
+      if (!yScale.bandwidth && !isTemporalY) {
+        // For numerical scales (non-temporal), limit the number of ticks
         yAxisGenerator.ticks(5);
       }
       
@@ -115,6 +278,19 @@ export class AxisUtility {
 
     // X axis
     if (showXAxis && xScale) {
+      // Position x-axis at zero line if there are negative values, otherwise at bottom
+      let xAxisYPosition = graphArea.bottom;
+      if (yScale && yScale.domain) {
+        const [yMin, yMax] = yScale.domain();
+        if (yMin < 0 && yMax > 0) {
+          // There are both positive and negative values - position at y=0
+          xAxisYPosition = yScale(0);
+        } else if (yMax <= 0) {
+          // All values are negative - position at top
+          xAxisYPosition = graphArea.top;
+        }
+      }
+      
       // Get x-axis property for formatting
       let xProperty: any = null;
       if (context.tableProperties && context.config.encoding.x && !Array.isArray(context.config.encoding.x)) {
@@ -129,8 +305,8 @@ export class AxisUtility {
         // Draw x-axis line
         ctx.strokeStyle = resolveColor(context.config.layout.xAxis?.color || 'var(--mk-ui-border)');
         ctx.beginPath();
-        ctx.moveTo(graphArea.left, graphArea.bottom);
-        ctx.lineTo(graphArea.right, graphArea.bottom);
+        ctx.moveTo(graphArea.left, xAxisYPosition);
+        ctx.lineTo(graphArea.right, xAxisYPosition);
         ctx.stroke();
 
         // Draw tick marks only when axis line is shown
@@ -147,8 +323,8 @@ export class AxisUtility {
           // Tick mark
           ctx.strokeStyle = resolveColor(context.config.layout.xAxis?.tickColor || 'var(--mk-ui-text-primary)');
           ctx.beginPath();
-          ctx.moveTo(x, graphArea.bottom);
-          ctx.lineTo(x, graphArea.bottom + 5);
+          ctx.moveTo(x, xAxisYPosition);
+          ctx.lineTo(x, xAxisYPosition + 5);
           ctx.stroke();
         });
       }
@@ -188,18 +364,31 @@ export class AxisUtility {
               truncatedLabel = tickLabel.substring(0, i);
             }
             
-            ctx.fillText(truncatedLabel + '...', x, graphArea.bottom + 7);
+            ctx.fillText(truncatedLabel + '...', x, xAxisYPosition + 7);
           } else {
-            ctx.fillText(tickLabel, x, graphArea.bottom + 7);
+            ctx.fillText(tickLabel, x, xAxisYPosition + 7);
           }
         } else {
-          ctx.fillText(tickLabel, x, graphArea.bottom + 7);
+          ctx.fillText(tickLabel, x, xAxisYPosition + 7);
         }
       });
     }
 
     // Y axis
     if (showYAxis && yScale) {
+      // Position y-axis at zero line if there are negative values, otherwise at left
+      let yAxisXPosition = graphArea.left;
+      if (xScale && xScale.domain && !xScale.bandwidth) {
+        const [xMin, xMax] = xScale.domain();
+        if (xMin < 0 && xMax > 0) {
+          // There are both positive and negative values - position at x=0
+          yAxisXPosition = xScale(0);
+        } else if (xMax <= 0) {
+          // All values are negative - position at right
+          yAxisXPosition = graphArea.right;
+        }
+      }
+      
       // Get y-axis property for formatting
       let yProperty: any = null;
       if (context.tableProperties && context.config.encoding.y && !Array.isArray(context.config.encoding.y)) {
@@ -214,8 +403,8 @@ export class AxisUtility {
         // Draw y-axis line
         ctx.strokeStyle = resolveColor(context.config.layout.yAxis?.color || 'var(--mk-ui-border)');
         ctx.beginPath();
-        ctx.moveTo(graphArea.left, graphArea.top);
-        ctx.lineTo(graphArea.left, graphArea.bottom);
+        ctx.moveTo(yAxisXPosition, graphArea.top);
+        ctx.lineTo(yAxisXPosition, graphArea.bottom);
         ctx.stroke();
 
         // Draw tick marks only when axis line is shown
@@ -227,8 +416,8 @@ export class AxisUtility {
           // Tick mark
           ctx.strokeStyle = resolveColor(context.config.layout.yAxis?.tickColor || 'var(--mk-ui-text-primary)');
           ctx.beginPath();
-          ctx.moveTo(graphArea.left - 5, y);
-          ctx.lineTo(graphArea.left, y);
+          ctx.moveTo(yAxisXPosition - 5, y);
+          ctx.lineTo(yAxisXPosition, y);
           ctx.stroke();
         });
       }
@@ -247,7 +436,7 @@ export class AxisUtility {
         const tickLabel = yProperty && context.superstate 
           ? displayTextForType(yProperty, tick, context.superstate)
           : String(tick);
-        ctx.fillText(tickLabel, graphArea.left - 7, y);
+        ctx.fillText(tickLabel, yAxisXPosition - 7, y);
       });
     }
 
@@ -271,18 +460,41 @@ export class AxisUtility {
       .style('fill', resolveColor(tickColor))
       .style('font-size', '11px');
     
-    // Add text clipping for x-axis labels to prevent overlap
-    if (axisType === 'x' && xScale && xScale.bandwidth) {
-      const bandwidth = xScale.bandwidth();
-      const maxWidth = bandwidth - 4; // Leave some padding
+    // Add tooltips and text clipping for axis labels
+    if (axisType === 'x') {
+      const bandwidth = xScale && xScale.bandwidth ? xScale.bandwidth() : null;
+      const maxWidth = bandwidth ? bandwidth - 4 : null; // Leave some padding for band scales
       
-      axis.selectAll('text').each(function(this: SVGTextElement) {
+      // Check if this is a temporal axis to apply special styling
+      const xEncoding = layout && config.config && config.config.encoding && config.config.encoding.x && 
+                        !Array.isArray(config.config.encoding.x) ? config.config.encoding.x : null;
+      const isTemporalX = xEncoding?.type === 'temporal';
+      
+      axis.selectAll('text').each(function(this: SVGTextElement, d: any, i: number) {
         const text = this;
         const originalText = text.textContent || '';
+        
+        // Apply special styling for month labels in temporal axes
+        if (isTemporalX && originalText) {
+          // Check if this is a month label (3 letters, like "Jan", "Feb", etc.)
+          const isMonthLabel = /^[A-Z][a-z]{2}$/.test(originalText);
+          
+          if (isMonthLabel) {
+            // Style month labels differently
+            text.style.fontWeight = '600';
+            text.style.fontSize = '12px';
+            text.style.fill = resolveColor(layout.xAxis?.tickColor || 'var(--mk-ui-text-primary)');
+          } else {
+            // Style day numbers with lighter weight
+            text.style.fontWeight = '400';
+            text.style.fontSize = '10px';
+            text.style.fill = resolveColor(layout.xAxis?.tickColor || 'var(--mk-ui-text-secondary)');
+          }
+        }
         let truncatedText = originalText;
         
-        // Measure text width and truncate if needed
-        if (text.getBBox().width > maxWidth) {
+        // Measure text width and truncate if needed (only for band scales)
+        if (maxWidth && text.getBBox().width > maxWidth) {
           // Binary search for the right length
           let low = 0;
           let high = originalText.length;
@@ -299,14 +511,40 @@ export class AxisUtility {
           }
           
           truncatedText = originalText.substring(0, low) + '...';
+          text.textContent = truncatedText;
         }
         
-        text.textContent = truncatedText;
+        // Always add tooltips for x-axis labels
+        text.setAttribute('aria-label', originalText);
+        text.setAttribute('title', originalText);
         
-        // Add title attribute for full text on hover
-        if (truncatedText !== originalText) {
-          text.setAttribute('title', originalText);
-          // Add a title element for SVG hover
+        // Add a title element for SVG hover (works better in some browsers)
+        const existingTitle = text.querySelector('title');
+        if (existingTitle) {
+          existingTitle.textContent = originalText;
+        } else {
+          const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+          title.textContent = originalText;
+          text.appendChild(title);
+        }
+      });
+    }
+    
+    // Add tooltips for y-axis labels
+    if (axisType === 'y') {
+      axis.selectAll('text').each(function(this: SVGTextElement) {
+        const text = this;
+        const originalText = text.textContent || '';
+        
+        // Always add tooltips for y-axis labels
+        text.setAttribute('aria-label', originalText);
+        text.setAttribute('title', originalText);
+        
+        // Add a title element for SVG hover
+        const existingTitle = text.querySelector('title');
+        if (existingTitle) {
+          existingTitle.textContent = originalText;
+        } else {
           const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
           title.textContent = originalText;
           text.appendChild(title);

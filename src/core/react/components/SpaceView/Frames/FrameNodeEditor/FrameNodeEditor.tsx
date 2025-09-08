@@ -29,7 +29,6 @@ import { MenuObject } from "shared/types/menu";
 import { FrameNode, MDBFrame } from "shared/types/mframe";
 import { windowFromDocument } from "shared/utils/dom";
 import { mdbSchemaToFrameSchema } from "shared/utils/makemd/schema";
-import { VisualizationFormatter } from "../../../Visualization/VisualizationFormatter";
 import { ColorSetter } from "../Setters/ColorSetter";
 import { ToggleSetter } from "../Setters/ToggleSetter";
 import { ContentSubmenu } from "./Submenus/ContentSubmenu";
@@ -71,8 +70,14 @@ export const FrameNodeEditor = (props: {
   const { pathState } = useContext(PathContext);
   const { deleteFrame, duplicateFrame } = props;
   const { spaceInfo } = useContext(SpaceContext);
-  const { addNode, ungroupNode, updateNode, saveNodes, frameProperties } =
-    useContext(FramesEditorRootContext);
+  const {
+    addNode,
+    ungroupNode,
+    updateNode,
+    saveNodes,
+    frameProperties,
+    nodes,
+  } = useContext(FramesEditorRootContext);
   const { selectionMode } = useContext(FrameSelectionContext);
   const { instance } = useContext(FrameInstanceContext);
   const [visualizationConfig, setVisualizationConfig] = useState<any>(null);
@@ -140,7 +145,7 @@ export const FrameNodeEditor = (props: {
               setNeedsNewVisualization(false);
 
               // Parse visualization data using utility function
-              const { config } = parseVisualizationData(frame);
+              const config = parseVisualizationData(frame);
               setVisualizationConfig(config);
             } else {
               // Frame doesn't exist - need to create new visualization
@@ -273,7 +278,7 @@ export const FrameNodeEditor = (props: {
 
       // Create new visualization frame using utility function
       const newFrame = createNewVisFrame(frameId);
-      const { config: defaultConfig } = parseVisualizationData(newFrame);
+      const defaultConfig = parseVisualizationData(newFrame);
 
       // First save the frame schema
       await props.superstate.spaceManager.saveFrameSchema(
@@ -359,6 +364,7 @@ export const FrameNodeEditor = (props: {
                   type: "view",
                   id: "main",
                   db: newConfig.data?.listId || "",
+                  chartType: newConfig.chartType || "bar",
                 }),
               })
             );
@@ -616,197 +622,8 @@ export const FrameNodeEditor = (props: {
                   <span>Create New</span>
                 </div>
               </div>
-            ) : visualizationConfig ? (
-              <VisualizationFormatter
-                config={visualizationConfig}
-                data={[]}
-                superstate={props.superstate}
-                listId={(() => {
-                  const frameSchema = visualizationFrame
-                    ? mdbSchemaToFrameSchema(visualizationFrame.schema)
-                    : null;
-                  return (
-                    visualizationConfig.data?.listId ||
-                    frameSchema?.def?.db ||
-                    ""
-                  );
-                })()}
-                availableTables={availableTables}
-                onTableChange={(tableId) => {
-                  const newConfig = {
-                    ...visualizationConfig,
-                    data: {
-                      ...visualizationConfig.data,
-                      listId: tableId,
-                    },
-                  };
-                  saveVisualizationConfig(newConfig);
-                }}
-                selectedTableColumns={selectedTableColumns}
-                showTitle={!!visualizationConfig.layout?.title}
-                showXAxis={visualizationConfig.layout?.xAxis?.show !== false}
-                showYAxis={visualizationConfig.layout?.yAxis?.show !== false}
-                showLegend={visualizationConfig.layout?.legend?.show === true}
-                showXAxisLabel={!!visualizationConfig.layout?.xAxis?.label}
-                showYAxisLabel={!!visualizationConfig.layout?.yAxis?.label}
-                showDataLabels={
-                  visualizationConfig.mark?.dataLabels?.show === true
-                }
-                selectedElement={null}
-                onConfigChange={saveVisualizationConfig}
-                onShowTitleChange={(show) => {
-                  const updatedConfig = {
-                    ...visualizationConfig,
-                    layout: {
-                      ...visualizationConfig.layout,
-                      title: show
-                        ? {
-                            text:
-                              visualizationConfig.layout?.title?.text ||
-                              "Chart Title",
-                            fontSize:
-                              visualizationConfig.layout?.title?.fontSize || 16,
-                            color:
-                              visualizationConfig.layout?.title?.color ||
-                              "var(--mk-ui-text-primary)",
-                            anchor:
-                              visualizationConfig.layout?.title?.anchor ||
-                              "middle",
-                          }
-                        : undefined,
-                    },
-                  };
-                  saveVisualizationConfig(updatedConfig);
-                }}
-                onShowXAxisChange={(show) => {
-                  const updatedConfig = {
-                    ...visualizationConfig,
-                    layout: {
-                      ...visualizationConfig.layout,
-                      xAxis: {
-                        ...visualizationConfig.layout?.xAxis,
-                        show: show,
-                        label: visualizationConfig.layout?.xAxis?.label || "",
-                        tickAngle:
-                          visualizationConfig.layout?.xAxis?.tickAngle ?? 0,
-                        tickColor:
-                          visualizationConfig.layout?.xAxis?.tickColor ||
-                          "var(--mk-ui-text-secondary)",
-                        labelColor:
-                          visualizationConfig.layout?.xAxis?.labelColor ||
-                          "var(--mk-ui-text-primary)",
-                        labelFontSize:
-                          visualizationConfig.layout?.xAxis?.labelFontSize ||
-                          12,
-                      },
-                    },
-                  };
-                  saveVisualizationConfig(updatedConfig);
-                }}
-                onShowYAxisChange={(show) => {
-                  const updatedConfig = {
-                    ...visualizationConfig,
-                    layout: {
-                      ...visualizationConfig.layout,
-                      yAxis: {
-                        ...visualizationConfig.layout?.yAxis,
-                        show: show,
-                        label: visualizationConfig.layout?.yAxis?.label || "",
-                        tickColor:
-                          visualizationConfig.layout?.yAxis?.tickColor ||
-                          "var(--mk-ui-text-secondary)",
-                        labelColor:
-                          visualizationConfig.layout?.yAxis?.labelColor ||
-                          "var(--mk-ui-text-primary)",
-                        labelFontSize:
-                          visualizationConfig.layout?.yAxis?.labelFontSize ||
-                          12,
-                        format: visualizationConfig.layout?.yAxis?.format || "",
-                      },
-                    },
-                  };
-                  saveVisualizationConfig(updatedConfig);
-                }}
-                onShowLegendChange={(show) => {
-                  const updatedConfig = {
-                    ...visualizationConfig,
-                    layout: {
-                      ...visualizationConfig.layout,
-                      legend: {
-                        ...visualizationConfig.layout?.legend,
-                        show: show,
-                      },
-                    },
-                  };
-                  saveVisualizationConfig(updatedConfig);
-                }}
-                onShowXAxisLabelChange={(show) => {
-                  const updatedConfig = {
-                    ...visualizationConfig,
-                    layout: {
-                      ...visualizationConfig.layout,
-                      xAxis: {
-                        ...visualizationConfig.layout?.xAxis,
-                        label: show
-                          ? visualizationConfig.layout?.xAxis?.label || "X Axis"
-                          : "",
-                      },
-                    },
-                  };
-                  saveVisualizationConfig(updatedConfig);
-                }}
-                onShowYAxisLabelChange={(show) => {
-                  const updatedConfig = {
-                    ...visualizationConfig,
-                    layout: {
-                      ...visualizationConfig.layout,
-                      yAxis: {
-                        ...visualizationConfig.layout?.yAxis,
-                        label: show
-                          ? visualizationConfig.layout?.yAxis?.label || "Y Axis"
-                          : "",
-                      },
-                    },
-                  };
-                  saveVisualizationConfig(updatedConfig);
-                }}
-                onShowDataLabelsChange={(show) => {
-                  const updatedConfig = {
-                    ...visualizationConfig,
-                    mark: {
-                      ...visualizationConfig.mark,
-                      dataLabels: {
-                        ...visualizationConfig.mark?.dataLabels,
-                        show: show,
-                      },
-                    },
-                  };
-                  saveVisualizationConfig(updatedConfig);
-                }}
-                onElementSelect={() => {
-                  /* Not implemented */
-                }}
-                onEditTitle={() => {
-                  /* Not implemented */
-                }}
-                onEditXLabel={() => {
-                  /* Not implemented */
-                }}
-                onEditYLabel={() => {
-                  /* Not implemented */
-                }}
-                resolveColor={(color: string) => color}
-                colorPaletteId={visualizationConfig.colorPaletteId || ""}
-                onColorPaletteChange={(paletteId) => {
-                  saveVisualizationConfig({
-                    ...visualizationConfig,
-                    colorPaletteId: paletteId,
-                  });
-                }}
-                onViewChange={setVisualizationInSubmenu}
-              />
             ) : (
-              <div style={{ padding: "0 8px" }}>Loading...</div>
+              <></>
             )
           ) : (
             fields.length > 0 &&
@@ -924,7 +741,9 @@ export const FrameNodeEditor = (props: {
                   __html: props.superstate.ui.getSticker("ui//paintbrush"),
                 }}
               ></div>
-              {(props.node.type == "flow" || props.node.type == "space") && (
+              {(props.node.type == "flow" ||
+                props.node.type == "space" ||
+                props.node.type == "vis") && (
                 <ModeSubmenu {...submenuProps}></ModeSubmenu>
               )}
 
@@ -950,11 +769,51 @@ export const FrameNodeEditor = (props: {
                     superstate={props.superstate}
                     name={"Page Width"}
                     setValue={(value: string) => {
+                      // Check if parent is a column type node
+                      const parentNode = nodes?.find(
+                        (n) => n.id === props.node.parentId
+                      );
+
+                      if (parentNode && parentNode.type === "column") {
+                        // Find the container parent of the column
+                        const containerNode = nodes?.find(
+                          (n) =>
+                            n.id === parentNode.parentId &&
+                            n.type === "container"
+                        );
+
+                        if (containerNode) {
+                          // Apply style to the container node instead
+                          updateNode(containerNode, {
+                            styles: {
+                              ["--max-width"]: value,
+                            },
+                          });
+                          return;
+                        }
+                      }
+                      // Default behavior - apply to current node
                       saveStyleValue("--max-width", value);
                     }}
                     defaultValue={""}
                     onValue={wrapQuotes("100%")}
-                    value={props.node.styles?.["--max-width"]}
+                    value={(() => {
+                      // Check if we should show the container's value instead
+                      const parentNode = nodes?.find(
+                        (n) => n.id === props.node.parentId
+                      );
+                      if (parentNode && parentNode.type === "column") {
+                        const containerNode = nodes?.find(
+                          (n) =>
+                            n.id === parentNode.parentId &&
+                            n.type === "container"
+                        );
+                        if (containerNode) {
+                          return containerNode.styles?.["--max-width"];
+                        }
+                      }
+                      return props.node.styles?.["--max-width"];
+                    })()}
                     icon={"ui//full-width"}
                   ></ToggleSetter>
                 </>

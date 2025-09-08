@@ -391,8 +391,8 @@ export class ObsidianUI implements UIAdapter {
             openPath: (path: string) => {
               f.openFile(abstractFile as TFile);
             },
-            parent: null,
-            children: [],
+            parent: null as any,
+            children: [] as any[],
           };
         });
     } else {
@@ -410,8 +410,8 @@ export class ObsidianUI implements UIAdapter {
                 state: { path: path },
               });
             },
-            parent: null,
-            children: [],
+            parent: null as any,
+            children: [] as any[],
           };
         });
     }

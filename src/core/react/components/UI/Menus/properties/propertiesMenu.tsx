@@ -18,7 +18,8 @@ export const showPropertiesMenu = (
   const menuOptions: SelectOption[] = [];
   menuOptions.push(
     menuInput(property?.name ?? "", (value) =>
-      renameProperty(property.name, value)
+      renameProperty(property.name, value),
+      ""
     )
   );
   menuOptions.push(menuSeparator);

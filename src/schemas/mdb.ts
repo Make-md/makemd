@@ -73,7 +73,7 @@ export const fieldTypes: FieldType[] = [
     label: i18n.properties.number.label,
     metadata: true,
     icon: 'ui//binary',
-    configKeys: ['format'],
+    configKeys: ['format', 'sticker'],
     primative: true,
     flex: true,
     description: i18n.properties.number.description
@@ -83,6 +83,7 @@ export const fieldTypes: FieldType[] = [
     label: i18n.properties.boolean.label,
     metadata: true,
     icon: 'ui//check-square',
+    configKeys: ['checked', 'unchecked', 'indeterminate'],
     primative: true,
     flex: true,
     description: i18n.properties.boolean.description
@@ -104,7 +105,7 @@ export const fieldTypes: FieldType[] = [
     multiType: "option-multi",
     icon: 'ui//list',
     primative: true,
-    configKeys: ['options', 'source', 'sourceProps'],
+    configKeys: ['options', 'source', 'sourceProps', 'colorScheme'],
     description: i18n.properties.option.description
   },
   {
@@ -160,7 +161,7 @@ export const fieldTypes: FieldType[] = [
     label: i18n.properties.aggregate.label,
     icon: 'ui//aggregate',
     multi: false,
-    configKeys: ['ref', 'field', 'fn', 'format'],
+    configKeys: ['ref', 'schema', 'field', 'fn', 'format'],
     flex: true,
     description: i18n.properties.aggregate.description
   },

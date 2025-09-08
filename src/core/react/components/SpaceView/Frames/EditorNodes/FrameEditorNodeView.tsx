@@ -54,6 +54,7 @@ import { FrameResizer } from "../FrameNodeEditor/Overlays/FrameResizer";
 import { FrameView } from "../ViewNodes/FrameView";
 import { AudioNodeView } from "./AudioNodeView";
 import { ContextNodeView } from "./ContextNodeView";
+import { DataNodeView } from "./DataNodeView";
 import { IconNodeView } from "./IconNodeView";
 import { ImageNodeView } from "./ImageNodeView";
 import { InputNodeView } from "./InputNodeView";
@@ -93,6 +94,8 @@ const FrameEditorInner = memo(function FrameEditorInner(props: {
         <TextNodeView {...nodeProps}></TextNodeView>
       ) : treeNode.node.type == "icon" ? (
         <IconNodeView {...nodeProps}></IconNodeView>
+      ) : treeNode.node.type == "data" ? (
+        <DataNodeView {...nodeProps}></DataNodeView>
       ) : treeNode.node.type == "audio" ? (
         <AudioNodeView {...nodeProps}></AudioNodeView>
       ) : treeNode.node.type == "visualization" ? (

@@ -11,6 +11,7 @@ import { SpaceContext } from "core/react/context/SpaceContext";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { SelectOption } from "makemd-core";
+import { parseMultiString } from "utils/parsers";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { DBRow } from "shared/types/mdb";
@@ -69,17 +70,34 @@ export const ContextListView = (props: {
       instance?.state[instance?.root?.id].props?.groupOptions;
     if (groupByOptions) return ensureArray(groupByOptions);
     if (!groupBy) return [""];
+    
+    // Check if it's a multi-value field
+    const isMultiField = groupBy.type?.endsWith('-multi') || groupBy.type === 'tags';
+    
     const options: string[] = uniq([
       "",
       ...(parseFieldValue(groupBy.value, groupBy.type)?.options ?? []).map(
         (f: SelectOption) => f.value
       ),
       ...data.reduce(
-        (p, c) => [...p, c[groupBy.name + groupBy.table] ?? ""],
+        (p, c) => {
+          const value = c[groupBy.name + groupBy.table];
+          if (isMultiField && value) {
+            // Parse multi-string values and add each option individually
+            return [...p, ...parseMultiString(value)];
+          }
+          return [...p, value ?? ""];
+        },
         []
       ),
     ]) as string[];
-    return options;
+    
+    // Sort to ensure empty string (None category) appears last
+    return options.sort((a, b) => {
+      if (a === "" && b !== "") return 1;  // Move empty string to end
+      if (a !== "" && b === "") return -1; // Keep non-empty before empty
+      return 0; // Maintain relative order for other items
+    });
   }, [groupBy, data, instance]);
 
   const groupByFilter = useMemo(() => {
@@ -105,14 +123,21 @@ export const ContextListView = (props: {
             count + data.length,
           ];
         }
+        
+        // Check if it's a multi-value field
+        const isMultiField = groupBy.type?.endsWith('-multi') || groupBy.type === 'tags';
+        
         const newItems = data.filter((r) => {
-          // if (groupBy.type == "file") {
-          //   return groupByFilter.fn(
-          //     pathToString(r[groupBy.name + groupBy.table]),
-          //     c
-          //   );
-          // }
-          return groupByFilter.fn(r[groupBy.name + groupBy.table], c);
+          const value = r[groupBy.name + groupBy.table];
+          
+          if (isMultiField && value) {
+            // For multi-value fields, check if the current option is in the parsed values
+            const values = parseMultiString(value);
+            return c === "" ? values.length === 0 : values.includes(c);
+          }
+          
+          // For single-value fields, use the existing filter
+          return groupByFilter.fn(value, c);
         });
         return [
           newItems.length > 0
@@ -261,8 +286,7 @@ export const ContextListView = (props: {
               props={{
                 _selectedIndexes: selectedIndexes,
                 _groupValue: c,
-                _groupField: groupBy?.name,
-                _groupType: groupBy?.type,
+                _groupField: groupBy,
                 _readMode: readMode,
                 ...predicate.listGroupProps,
               }}
@@ -314,7 +338,7 @@ export const ContextListView = (props: {
                           props={{
                             _selectedIndexes: selectedIndexes,
                             _groupValue: c,
-                            _groupField: groupBy?.name,
+                            _groupField: groupBy,
                             _readMode: readMode,
                             ...predicate.listItemProps,
                           }}

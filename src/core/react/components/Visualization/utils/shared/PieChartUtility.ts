@@ -32,7 +32,8 @@ export class PieChartUtility {
     const radius = Math.min(graphArea.width, graphArea.height) / 2 * 0.8;
     const innerRadiusRatio = (config.mark as any)?.innerRadius || 0;
 
-    // Pre-process data to handle non-numerical values by counting occurrences
+    // Data should already be properly aggregated by the transformer
+    // Just use it directly
     let pieData = processedData;
     
     // Check if the value field contains non-numerical data
@@ -50,28 +51,6 @@ export class PieChartUtility {
         _originalItems: items // Keep reference to original items for tooltip
       }));
     }
-
-    // Combine only items with identical category AND value
-    const categoryValueGroups = d3.group(pieData, d => `${String(d[categoryField])}_${Number(d[valueField]) || 0}`);
-    
-    pieData = Array.from(categoryValueGroups, ([key, items]) => {
-      if (items.length === 1) {
-        // Single item with this category-value combination, keep as is
-        return items[0];
-      } else {
-        // Multiple items with identical category AND value, combine them
-        const category = String(items[0][categoryField]);
-        const value = Number(items[0][valueField]) || 0;
-        const combinedItem = {
-          ...items[0], // Keep other properties from the first item
-          [categoryField]: category, // Keep the same category since they're identical
-          [valueField]: value * items.length, // Sum the values since they represent duplicate entries
-          _combinedCount: items.length,
-          _originalItems: items.flatMap(item => item._originalItems || [item])
-        };
-        return combinedItem;
-      }
-    });
 
     // Create pie generator
     const pie = d3.pie<any>()
@@ -230,11 +209,6 @@ export class PieChartUtility {
         
         tooltipContent += ` • ${percentage}%`;
         
-        // Add note if this is a combined entry
-        if (d.data._combinedCount && d.data._combinedCount > 1) {
-          tooltipContent += `<br/><span style="color: ${resolveColor('var(--mk-ui-text-secondary)')}; font-size: 11px;">Combined ${d.data._combinedCount} identical entries</span>`;
-        }
-        
         tooltipContent += `</div>`;
         tooltipContent += `</div>`;
         
@@ -324,7 +298,8 @@ export class PieChartUtility {
     const radius = Math.min(graphArea.width, graphArea.height) / 2 * 0.8;
     const innerRadius = ((config.mark as any)?.innerRadius || 0) * radius;
 
-    // Pre-process data to handle non-numerical values
+    // Data should already be properly aggregated by the transformer
+    // Just use it directly
     let pieData = processedData;
     
     // Check if the value field contains non-numerical data
@@ -342,27 +317,6 @@ export class PieChartUtility {
         _originalItems: items
       }));
     }
-
-    // Combine only items with identical category AND value
-    const categoryValueGroups = d3.group(pieData, d => `${String(d[categoryField])}_${Number(d[valueField]) || 0}`);
-    pieData = Array.from(categoryValueGroups, ([key, items]) => {
-      if (items.length === 1) {
-        // Single item with this category-value combination, keep as is
-        return items[0];
-      } else {
-        // Multiple items with identical category AND value, combine them
-        const category = String(items[0][categoryField]);
-        const value = Number(items[0][valueField]) || 0;
-        const combinedItem = {
-          ...items[0], // Keep other properties from the first item
-          [categoryField]: category, // Keep the same category since they're identical
-          [valueField]: value * items.length, // Sum the values since they represent duplicate entries
-          _combinedCount: items.length,
-          _originalItems: items.flatMap(item => item._originalItems || [item])
-        };
-        return combinedItem;
-      }
-    });
 
     // Get color scale
     const colorScale = scales.get('color');

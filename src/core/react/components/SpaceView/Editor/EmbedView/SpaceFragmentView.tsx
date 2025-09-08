@@ -150,16 +150,29 @@ export const SpaceFragmentViewComponent = (
             </FrameInstanceProvider>
           </FrameRootProvider>
         ) : spaceFragment?.type == "vis" ? (
-          <Visualization
-            mdbFrameId={spaceFragment.frameSchema}
-            sourcePath={spaceFragment.path}
+          <PathProvider
             superstate={props.superstate}
-            style={{
-              width: "100%",
-              height: "100%",
-              minHeight: "400px",
-            }}
-          />
+            path={spaceFragment.path}
+            readMode={false}
+          >
+            <SpaceProvider superstate={props.superstate}>
+              <FramesMDBProvider
+                superstate={props.superstate}
+                schema={spaceFragment.frameSchema}
+              >
+                <Visualization
+                  mdbFrameId={spaceFragment.frameSchema}
+                  sourcePath={spaceFragment.path}
+                  superstate={props.superstate}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    minHeight: "400px",
+                  }}
+                />
+              </FramesMDBProvider>
+            </SpaceProvider>
+          </PathProvider>
         ) : spaceFragment?.type == "action" ? (
           <SpaceCommand
             superstate={props.superstate}

@@ -36,4 +36,5 @@ export type SpaceDefinition = {
   defaultSticker?: string;
   defaultColor?: string;
   readMode?: boolean;
+  fullWidth?: boolean;
 };

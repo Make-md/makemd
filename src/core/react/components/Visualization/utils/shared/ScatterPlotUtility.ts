@@ -3,6 +3,7 @@ import type { ScaleBand } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 import { displayTextForType } from 'core/utils/displayTextForType';
 import { getPaletteColors } from '../utils';
+import { ScatterPlotData } from '../../transformers';
 
 export class ScatterPlotUtility {
   static render(context: RenderContext): void {
@@ -16,7 +17,13 @@ export class ScatterPlotUtility {
   private static renderSVG(context: RenderContext): void {
     if (!isSVGContext(context)) return;
 
-    const { g, svg, processedData, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor } = context;
+    const { g, svg, processedData, transformedData, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor } = context;
+    
+    // Use transformed data if available
+    if (transformedData?.type === 'scatter' && transformedData.data) {
+      this.renderWithTransformedData(context, transformedData.data as ScatterPlotData);
+      return;
+    }
     
     const xScale = scales.get('x');
     const yScale = scales.get('y');
@@ -46,7 +53,9 @@ export class ScatterPlotUtility {
       if (xEncoding.type === 'quantitative') {
         return xScale(Number(value));
       } else if (xEncoding.type === 'temporal') {
-        return xScale(new Date(String(value)));
+        // Handle values that are already Date objects or date strings
+        const dateValue = value instanceof Date ? value : new Date(String(value));
+        return xScale(dateValue);
       } else {
         // For band scales, use the center of the band
         const bandScale = xScale as ScaleBand<string>;
@@ -62,7 +71,9 @@ export class ScatterPlotUtility {
       if (yEncoding.type === 'quantitative') {
         return yScale(Number(value));
       } else if (yEncoding.type === 'temporal') {
-        return yScale(new Date(String(value)));
+        // Handle values that are already Date objects or date strings
+        const dateValue = value instanceof Date ? value : new Date(String(value));
+        return yScale(dateValue);
       } else {
         // For band scales, use the center of the band
         const bandScale = yScale as ScaleBand<string>;
@@ -385,7 +396,9 @@ export class ScatterPlotUtility {
       if (xEncoding.type === 'quantitative') {
         return xScale(Number(value));
       } else if (xEncoding.type === 'temporal') {
-        return xScale(new Date(String(value)));
+        // Handle values that are already Date objects or date strings
+        const dateValue = value instanceof Date ? value : new Date(String(value));
+        return xScale(dateValue);
       } else {
         // For band scales, use the center of the band
         const bandScale = xScale as ScaleBand<string>;
@@ -401,7 +414,9 @@ export class ScatterPlotUtility {
       if (yEncoding.type === 'quantitative') {
         return yScale(Number(value));
       } else if (yEncoding.type === 'temporal') {
-        return yScale(new Date(String(value)));
+        // Handle values that are already Date objects or date strings
+        const dateValue = value instanceof Date ? value : new Date(String(value));
+        return yScale(dateValue);
       } else {
         // For band scales, use the center of the band
         const bandScale = yScale as ScaleBand<string>;
@@ -518,5 +533,200 @@ export class ScatterPlotUtility {
       });
       ctx.restore();
     }
+  }
+
+  private static renderWithTransformedData(context: RenderContext, scatterData: ScatterPlotData): void {
+    if (!isSVGContext(context)) return;
+    
+    const { g, svg, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels } = context;
+    
+    
+    const xScale = scales.get('x');
+    const yScale = scales.get('y');
+    const colorScale = scales.get('color');
+    const sizeScale = scales.get('size');
+    
+    
+    if (!xScale || !yScale) {
+      return;
+    }
+    
+    if (!scatterData.data || scatterData.data.length === 0) {
+      // Draw a message indicating no data
+      g.append('text')
+        .attr('x', graphArea.left + graphArea.width / 2)
+        .attr('y', graphArea.top + graphArea.height / 2)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'var(--mk-ui-text-secondary)')
+        .style('font-size', '14px')
+        .text('No data points to display');
+      return;
+    }
+    
+    const themeColors = getPaletteColors(context.colorPaletteId, context.superstate);
+    const defaultSize = config.mark?.size || 4;
+    
+    // Create tooltip
+    const tooltip = select('body').append('div')
+      .attr('class', 'scatter-tooltip')
+      .style('position', 'absolute')
+      .style('padding', '8px 12px')
+      .style('background', 'var(--mk-ui-background-contrast)')
+      .style('color', 'var(--mk-ui-text-primary)')
+      .style('border', '1px solid var(--mk-ui-border)')
+      .style('border-radius', '4px')
+      .style('font-size', '12px')
+      .style('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.15)')
+      .style('pointer-events', 'none')
+      .style('opacity', 0)
+      .style('z-index', 10000);
+    
+    // Check if we need to use categorical mapping for X axis
+    const hasXCategoricalMap = (scatterData as any).xCategoricalMap && (scatterData as any).xCategoricalMap.size > 0;
+    const hasYCategoricalMap = (scatterData as any).yCategoricalMap && (scatterData as any).yCategoricalMap.size > 0;
+    
+    // Helper function to get X position
+    const getXPosition = (d: any) => {
+      if (hasXCategoricalMap && d.metadata) {
+        // For categorical X, use the original string value with the scale
+        const xField = Array.isArray(config.encoding.x) ? config.encoding.x[0]?.field : config.encoding.x?.field;
+        const originalValue = d.metadata[xField || 'x'];
+        if (originalValue !== undefined) {
+          const scaledValue = xScale(originalValue);
+          // For band scales, get the center of the band
+          if ((xScale as any).bandwidth) {
+            return scaledValue + (xScale as any).bandwidth() / 2;
+          }
+          return scaledValue;
+        }
+      }
+      // For numeric X, use the numeric value directly
+      return xScale(d.x);
+    };
+    
+    // Helper function to get Y position
+    const getYPosition = (d: any) => {
+      if (hasYCategoricalMap && d.metadata) {
+        // For categorical Y, use the original string value with the scale
+        const yField = Array.isArray(config.encoding.y) ? config.encoding.y[0]?.field : config.encoding.y?.field;
+        const originalValue = d.metadata[yField || 'y'];
+        if (originalValue !== undefined) {
+          const scaledValue = yScale(originalValue);
+          // For band scales, get the center of the band
+          if ((yScale as any).bandwidth) {
+            return scaledValue + (yScale as any).bandwidth() / 2;
+          }
+          return scaledValue;
+        }
+      }
+      // For numeric Y, use the numeric value directly
+      return yScale(d.y);
+    };
+    
+    // Draw points
+    
+    const points = g.selectAll('.scatter-point')
+      .data(scatterData.data)
+      .enter()
+      .append('circle')
+      .attr('class', 'scatter-point')
+      .attr('cx', d => {
+        const x = getXPosition(d);
+        if (x == null || isNaN(x)) {
+          return 0;
+        }
+        return x;
+      })
+      .attr('cy', d => {
+        const y = getYPosition(d);
+        if (y == null || isNaN(y)) {
+          return 0;
+        }
+        return y;
+      })
+      .attr('r', d => {
+        if (d.size !== undefined && sizeScale) {
+          return Math.max(2, Math.sqrt(sizeScale(d.size) * 10));
+        }
+        return defaultSize;
+      })
+      .attr('fill', (d, i) => {
+        if (colorScale && d.series) {
+          return colorScale(d.series);
+        }
+        const seriesIndex = scatterData.series?.indexOf(d.series || 'default') || 0;
+        return themeColors[seriesIndex % themeColors.length];
+      })
+      .attr('opacity', config.mark?.opacity || 0.7)
+      .style('cursor', 'pointer');
+    
+    // Add interactivity
+    points
+      .on('mouseover', function(event, d) {
+        select(this)
+          .transition()
+          .duration(150)
+          .attr('opacity', 1)
+          .attr('r', function() {
+            const currentR = Number(select(this).attr('r'));
+            return currentR * 1.2;
+          });
+        
+        // Show tooltip
+        tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.9);
+        
+        const tooltipContent = `
+          <div><strong>X:</strong> ${d.x}</div>
+          <div><strong>Y:</strong> ${d.y}</div>
+          ${d.series && d.series !== 'default' ? `<div><strong>Series:</strong> ${d.series}</div>` : ''}
+          ${d.size !== undefined ? `<div><strong>Size:</strong> ${d.size}</div>` : ''}
+          ${d.label ? `<div><strong>Label:</strong> ${d.label}</div>` : ''}
+        `;
+        
+        tooltip.html(tooltipContent)
+          .style('left', (event.pageX + 10) + 'px')
+          .style('top', (event.pageY - 28) + 'px');
+      })
+      .on('mousemove', function(event) {
+        tooltip
+          .style('left', (event.pageX + 10) + 'px')
+          .style('top', (event.pageY - 28) + 'px');
+      })
+      .on('mouseout', function(event, d) {
+        select(this)
+          .transition()
+          .duration(150)
+          .attr('opacity', config.mark?.opacity || 0.7)
+          .attr('r', (d: any) => {
+            if (d.size !== undefined && sizeScale) {
+              return Math.max(2, Math.sqrt(sizeScale(d.size) * 10));
+            }
+            return defaultSize;
+          });
+        
+        tooltip.transition()
+          .duration(500)
+          .style('opacity', 0);
+      });
+    
+    // Add data labels if configured
+    if (showDataLabels) {
+      g.selectAll('.scatter-label')
+        .data(scatterData.data)
+        .enter()
+        .append('text')
+        .attr('class', 'scatter-label')
+        .attr('x', d => xScale(d.x))
+        .attr('y', d => yScale(d.y) - 8)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '10px')
+        .attr('fill', 'var(--mk-ui-text-primary)')
+        .text(d => d.label || `(${d.x.toFixed(1)}, ${d.y.toFixed(1)})`);
+    }
+    
+    // Store tooltip reference for cleanup
+    (svg.node() as any).__scatterTooltip = tooltip;
   }
 }

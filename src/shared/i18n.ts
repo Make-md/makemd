@@ -158,6 +158,59 @@ class I18nLoader {
         }
       },
       menu: {
+        // Chart types
+        barChart: "Bar Chart",
+        lineChart: "Line Chart",
+        scatterPlot: "Scatter Plot",
+        pieChart: "Pie Chart",
+        areaChart: "Area Chart",
+        radarChart: "Radar Chart",
+        
+        // Data configuration
+        space: "Space",
+        list: "List",
+        category: "Category",
+        values: "Values",
+        xAxisField: "X-Axis Field",
+        yAxisFields: "Y-Axis Fields",
+        selectDataSource: "Select a data source",
+        selectSpace: "Select a space",
+        selectCategoryField: "Select category field",
+        selectXAxisField: "Select X-axis field",
+        selectValueFields: "Select value fields",
+        selectYAxisFields: "Select Y-axis fields",
+        
+        // Legend
+        legend: "Legend",
+        hidden: "Hidden",
+        hideLegend: "Hide Legend",
+        showLegend: "Show Legend",
+        legendPosition: "Position",
+        orientation: "Orientation",
+        horizontal: "Horizontal",
+        vertical: "Vertical",
+        legendTop: "Top",
+        legendBottom: "Bottom",
+        legendLeft: "Left",
+        legendRight: "Right",
+        
+        // Color
+        colorPalette: "Color Palette",
+        defaultPalette: "Default",
+        
+        // Labels
+        axisLabels: "Labels",
+        
+        // Aggregation
+        groupBy: "Group By",
+        aggregate: "Aggregate",
+        count: "Count",
+        sum: "Sum",
+        average: "Average",
+        min: "Min",
+        max: "Max",
+        distinct: "Distinct",
+        
         layout: "Layout",
         newView: "New",
         calendarView: "Calendar View",
@@ -198,7 +251,7 @@ class I18nLoader {
         boardView: "Board View",
         listView: "List View",
         flowView: "Flow View",
-        groupBy: "Group",
+        group: "Group",
         sortBy: "Sort",
         filters: "Filters",
         newFilter: "New Filter",
@@ -259,6 +312,7 @@ class I18nLoader {
         insertAbove: "Insert Above",
         insertBelow: "Insert Below",
         toggleReadMode: "Toggle Read Mode",
+        toggleFullWidth: "Toggle Full Width",
         showWarnings: "Show Warnings",
         renameSystem: "Rename System",
         openFilePane: "Open File Pane",
@@ -654,6 +708,9 @@ class I18nLoader {
         dateFormat: "Date Format",
         numberFormat: "Number Format",
         editOptions: "Edit Options",
+        checkedSticker: "Checked",
+        uncheckedSticker: "Unchecked",
+        indeterminateSticker: "Unset",
         propertyFileProp: "Property",
         multiple: "Multiple",
         filesCount: "{$1} Files",
@@ -845,6 +902,7 @@ class I18nLoader {
         templateNameFormula: "Template Name Formula",
         hiddenFileOptions: "Hidden File Options",
         toggleReadMode: "Toggle Read Mode",
+        toggleFullWidth: "Toggle Full Width",
       },
       flowView: {
         emptyDoc: "Empty Document",
@@ -1375,7 +1433,63 @@ type I18nStrings = {
     callout: Record<string, string>;
     toggle: Record<string, string>;
   };
-  menu: Record<string, string>;
+  menu: {
+    // Chart types
+    barChart: string;
+    lineChart: string;
+    scatterPlot: string;
+    pieChart: string;
+    areaChart: string;
+    radarChart: string;
+    
+    // Data configuration
+    space: string;
+    list: string;
+    category: string;
+    values: string;
+    xAxisField: string;
+    yAxisFields: string;
+    selectDataSource: string;
+    selectSpace: string;
+    selectCategoryField: string;
+    selectXAxisField: string;
+    selectValueFields: string;
+    selectYAxisFields: string;
+    
+    // Legend
+    legend: string;
+    hidden: string;
+    hideLegend: string;
+    showLegend: string;
+    legendPosition: string;
+    orientation: string;
+    horizontal: string;
+    vertical: string;
+    legendTop: string;
+    legendBottom: string;
+    legendLeft: string;
+    legendRight: string;
+    
+    // Color
+    colorPalette: string;
+    defaultPalette: string;
+    
+    // Labels
+    axisLabels: string;
+    
+    // Aggregation
+    groupBy: string;
+    aggregate: string;
+    count: string;
+    sum: string;
+    average: string;
+    min: string;
+    max: string;
+    distinct: string;
+    
+    // Other existing properties
+    [key: string]: string;
+  };
   editor: Record<string, string>;
   buttons: Record<string, string>;
   metadataTypes: Record<string, string>;
@@ -1384,7 +1498,20 @@ type I18nStrings = {
   sortTypes: Record<string, string>;
   properties: Record<string, any>;
   views: Record<string, string>;
-  labels: Record<string, string>;
+  labels: {
+    visualization?: {
+      loadingVisualization: string;
+      failedToLoad: string;
+      frameId: string;
+      none: string;
+      path: string;
+      loadingData: string;
+      configurationNotLoaded: string;
+      configureYourVisualization: string;
+      selectDataSource: string;
+    };
+    [key: string]: any;
+  };
   descriptions: Record<string, string>;
   flowView: Record<string, string>;
   notice: Record<string, string>;

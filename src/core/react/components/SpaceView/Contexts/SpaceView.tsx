@@ -46,7 +46,7 @@ export const SpaceRoot = (
   props: React.PropsWithChildren<{ superstate: Superstate }>
 ) => {
   const { pathState } = useContext(PathContext);
-  const { spaceInfo } = useContext(SpaceContext);
+  const { spaceInfo, spaceState } = useContext(SpaceContext);
   const { tableData } = useContext(FramesMDBContext);
   const cols: SpaceTableColumn[] = [
     ...[...(props.superstate.spacesMap.get(pathState.path) ?? [])].flatMap(
@@ -57,7 +57,13 @@ export const SpaceRoot = (
     ),
     ...(tableData?.cols.map((f) => ({ ...f, table: "" })) ?? []),
   ];
+    const fullWidth = spaceState?.metadata?.fullWidth;
   return (
+    <div 
+                className="mk-space-view" 
+                data-path={pathState.path}
+                style={fullWidth ? { '--page-width': '100%' } as React.CSSProperties : undefined}
+              >
     <FrameContainerView
       uri={props.superstate.spaceManager.uriByString(`${spaceInfo.path}#*main`)}
       superstate={props.superstate}
@@ -67,6 +73,6 @@ export const SpaceRoot = (
       cols={cols}
     >
       {props.children}
-    </FrameContainerView>
+    </FrameContainerView></div>
   );
 };

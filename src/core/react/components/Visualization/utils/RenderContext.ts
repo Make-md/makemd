@@ -2,6 +2,7 @@ import type { Selection } from 'core/utils/d3-imports';
 import { VisualizationConfig } from 'shared/types/visualization';
 import { Superstate } from 'makemd-core';
 import { SpaceProperty } from 'shared/types/mdb';
+import type { TransformedData } from '../DataTransformationPipeline';
 
 export interface GraphArea {
   left: number;
@@ -14,6 +15,7 @@ export interface GraphArea {
 
 export interface BaseRenderContext {
   processedData: Record<string, unknown>[];
+  transformedData?: TransformedData;
   scales: Map<string, any>;
   config: VisualizationConfig;
   graphArea: GraphArea;

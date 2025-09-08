@@ -188,7 +188,7 @@ export const FrameSlideGroup = (props: {
         className="mk-frame-slide-add"
         onClick={async (e) => {
           const menuOptions: SelectOption[] = [];
-          menuOptions.push(menuInput("", (value) => saveSlide(value)));
+          menuOptions.push(menuInput("", (value) => saveSlide(value), ""));
 
           const offset = (e.target as HTMLElement).getBoundingClientRect();
           props.superstate.ui.openMenu(

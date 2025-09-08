@@ -57,7 +57,7 @@ export interface SpaceManagerInterface {
     readAllTables(path: string): Promise<SpaceTables>;
     framesForSpace(path: string): Promise<SpaceTableSchema[]>;
     readFrame(path: string, schema: string): Promise<MDBFrame>;
-    readAllFrames(path: string): Promise<SpaceTables>;
+    readAllFrames(path: string): Promise<MDBFrames>;
     createFrame(path: string, schema: SpaceTableSchema): Promise<void>;
     deleteFrame(path: string, name: string): Promise<void>;
     saveFrameSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema): Promise<void>;
@@ -139,7 +139,7 @@ export abstract class SpaceAdapter {
   //Frames
   public framesForSpace: (path: string) => Promise<SpaceTableSchema[]>;
   public readFrame: (path: string, name: string) => Promise<MDBFrame>;
-  public readAllFrames: (path: string) => Promise<SpaceTables>;
+  public readAllFrames: (path: string) => Promise<MDBFrames>;
   public createFrame: (path: string, schema: SpaceTableSchema) => Promise<void>;
   public deleteFrame: (path: string, name: string) => Promise<void>;
   public saveFrameSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>;

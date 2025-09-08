@@ -34,7 +34,7 @@ export class MobileCachePersister implements LocalCachePersister {
             }
         if (tables.length == 0) {
             replaceDB(db, this.types.reduce((acc, type) => ({...acc, [type]: CacheDBSchema}), {}));
-            await saveZippedDBFile(this.mdbAdapter, this.storageDBPath, db.export().buffer)
+            await saveZippedDBFile(this.mdbAdapter, this.storageDBPath, db.export().buffer as ArrayBuffer)
         }
         this.maps = this.types.reduce((p, type) => ({...p, [type]: new Map((selectDB(db, type)?.rows ?? []).map(f => [f.path, f]))}), {});
         db.close();
@@ -51,7 +51,7 @@ public async reset() {
     if (!this.initialized) return;
     const db = await this.getDB();
     replaceDB(db, this.types.reduce((acc, type) => ({...acc, [type]: CacheDBSchema}), {}));
-            await saveZippedDBFile(this.mdbAdapter, this.storageDBPath, db.export().buffer)
+            await saveZippedDBFile(this.mdbAdapter, this.storageDBPath, db.export().buffer as ArrayBuffer)
             this.maps = this.types.reduce((acc, type) => ({...acc, [type]: new Map((selectDB(db, type)?.rows ?? []).map(f => [f.path, f]))}), {});
             db.close();
 }
@@ -95,7 +95,7 @@ public async reset() {
     /** Obtain a list of all persisted files. */
     public async loadAll(type: string): Promise<DBRow[]> {
         if (!this.initialized) return [];
-        return [...this.maps[type].values()] ?? []
+        return [...this.maps[type].values()]
     }
 
 }

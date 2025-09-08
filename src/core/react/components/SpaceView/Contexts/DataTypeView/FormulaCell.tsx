@@ -11,6 +11,7 @@ import { ImageCell } from "./ImageCell";
 import { LinkCell } from "./LinkCell";
 import { NumberCell } from "./NumberCell";
 import { OptionCell } from "./OptionCell";
+import { TextCell } from "./TextCell";
 
 export const FormulaCell = (
   props: TableCellProp & {
@@ -84,12 +85,10 @@ export const FormulaCell = (
           editMode={CellEditMode.EditModeReadOnly}
         ></NumberCell>
       ) : (
-        <OptionCell
+        <TextCell
           {...props}
           initialValue={initialValue}
           editMode={CellEditMode.EditModeReadOnly}
-          multi={true}
-          source={props.source}
         />
       )}
     </div>

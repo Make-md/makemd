@@ -28,9 +28,9 @@ export const tableViewFilterFn = (
     return () => true;
   };
 
-  export const tableViewSortFn = (sortFn: SortFunction): SortingFn<any> => {
+  export const tableViewSortFn = (sortFn: SortFunction, col?: SpaceTableColumn): SortingFn<any> => {
     return (row, row2, columnId) => {
-      return sortFn(row.getValue(columnId), row2.getValue(columnId));
+      return sortFn(row.getValue(columnId), row2.getValue(columnId), col);
     };
   };
   
@@ -45,7 +45,7 @@ export const tableViewFilterFn = (
     }
     const sortType = sortFnTypes[sortField.fn];
     if (sortType) {
-      return tableViewSortFn(sortType.fn);
+      return tableViewSortFn(sortType.fn, col);
     }
     return null;
   };

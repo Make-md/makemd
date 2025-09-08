@@ -56,6 +56,7 @@ export class SpaceViewContainer extends ItemView {
       "spaceDeleted",
       this.closePath
     );
+
     this.root?.unmount();
   }
 
@@ -77,6 +78,13 @@ export class SpaceViewContainer extends ItemView {
       this.leaf.setViewState({
         type: null,
       });
+    }
+  }
+
+  refreshSpace = (payload: { path: string }) => {
+    if (this.path == payload.path) {
+      // Re-render the component when space state updates
+      this.constructNote(this.path);
     }
   }
 
@@ -162,6 +170,7 @@ export class SpaceViewContainer extends ItemView {
       0,
       this
     );
+   
     this.root = this.ui.createRoot(this.contentEl);
     if (this.root) {
       // Handle special mk-core:// paths
@@ -173,8 +182,11 @@ export class SpaceViewContainer extends ItemView {
         );
       } else {
         // Default space view
+        
+      
+        
         this.root.render(
-          <div className="mk-space-view" data-path={path}>
+          
             <SpaceView
               path={path}
               superstate={this.superstate}
@@ -192,7 +204,7 @@ export class SpaceViewContainer extends ItemView {
                 ></SpaceInner>
               </div>
             </SpaceView>
-          </div>
+          
         );
       }
     } else {

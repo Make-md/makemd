@@ -16,6 +16,7 @@ import {
 import { AudioNodeView } from "../EditorNodes/AudioNodeView";
 import { ContentNodeView } from "../EditorNodes/ContentNodeView";
 import { ContextNodeView } from "../EditorNodes/ContextNodeView";
+import { DataNodeView } from "../EditorNodes/DataNodeView";
 import { FlowNodeView } from "../EditorNodes/FlowNodeView";
 import { defaultFrameStyles } from "../EditorNodes/FrameEditorNodeView";
 import { IconNodeView } from "../EditorNodes/IconNodeView";
@@ -54,6 +55,8 @@ export const FrameView = (props: {
       <TextNodeView {...nodeProps}></TextNodeView>
     ) : props.treeNode.node.type == "icon" ? (
       <IconNodeView {...nodeProps}></IconNodeView>
+    ) : props.treeNode.node.type == "data" ? (
+      <DataNodeView {...nodeProps}></DataNodeView>
     ) : props.treeNode.node.type == "audio" ? (
       <AudioNodeView {...nodeProps}></AudioNodeView>
     ) : props.treeNode.node.type == "image" ? (

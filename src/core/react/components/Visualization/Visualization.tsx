@@ -1,18 +1,28 @@
 import {
+  AggregationType,
+  createVisualizationRows,
   parseVisualizationData,
+  processDataAggregation,
   updateVisualizationSchema,
 } from "core/utils/visualization/visualizationUtils";
-import { SelectOption, Superstate, i18n } from "makemd-core";
+import { SelectOption, SelectOptionType, Superstate, i18n } from "makemd-core";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { SpaceProperty } from "shared/types/mdb";
+import { SpaceProperty, SpaceTableSchema } from "shared/types/mdb";
 import { MDBFrame } from "shared/types/mframe";
-import { VisualizationConfig } from "shared/types/visualization";
+import {
+  ChartType,
+  MarkType,
+  VisualizationConfig,
+} from "shared/types/visualization";
 import { mdbSchemaToFrameSchema } from "shared/utils/makemd/schema";
+import { parseMultiString } from "utils/parsers";
 import { parseMDBStringValue } from "utils/properties";
 import { defaultMenu, menuInput } from "../UI/Menus/menu/SelectionMenu";
 import { showColorPickerMenu } from "../UI/Menus/properties/colorPickerMenu";
 import { D3VisualizationEngine } from "./D3VisualizationEngine";
-import { EditableLabel } from "./EditableLabel";
+
+import { VisualizationSetup } from "./VisualizationSetup";
+import { VisualizationToolbar } from "./VisualizationToolbar";
 
 // Type for visualization data - more flexible than DBRows which requires strings
 type VisualizationDataRow = Record<string, unknown>;
@@ -28,6 +38,7 @@ export interface VisualizationProps {
   showFormatter?: boolean;
   onConfigUpdate?: (config: VisualizationConfig) => void;
   isSelected?: boolean;
+  minMode?: boolean;
 }
 
 export const Visualization = ({
@@ -41,6 +52,7 @@ export const Visualization = ({
   showFormatter = false,
   onConfigUpdate,
   isSelected = false,
+  minMode = false,
 }: VisualizationProps) => {
   // Use default width if initialWidth is a string percentage
   const defaultWidth =
@@ -56,10 +68,13 @@ export const Visualization = ({
     width: defaultWidth,
     height: defaultHeight,
   });
+  const [filterBarHeight, setFilterBarHeight] = useState(0);
+  const filterBarRef = useRef<HTMLDivElement>(null);
   const [configData, setConfigData] = useState<{
     visualizationConfig: VisualizationConfig;
     listId: string;
     availableFields: string[];
+    dataSourcePath?: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [listData, setListData] = useState<VisualizationDataRow[]>([]);
@@ -75,9 +90,9 @@ export const Visualization = ({
   const [showYAxisLabel, setShowYAxisLabel] = useState(true);
   const [showDataLabels, setShowDataLabels] = useState(false);
   const [colorPaletteId, setColorPaletteId] = useState<string>("");
-  const [availableTables, setAvailableTables] = useState<
-    Array<{ id: string; name: string }>
-  >([]);
+  const [availableTables, setAvailableTables] = useState<SpaceTableSchema[]>(
+    []
+  );
   const [selectedElement, setSelectedElement] = useState<{
     type:
       | "title"
@@ -90,19 +105,58 @@ export const Visualization = ({
       | "yAxisLabel";
     id?: string;
   } | null>(null);
-  const [isEditable, setIsEditable] = useState(false);
-  const [editingElement, setEditingElement] = useState<{
-    type: string;
-    id?: string;
-    value: string;
-    position: { x: number; y: number; width: number; height: number };
-  } | null>(null);
-  const [editableElements, setEditableElements] = useState<
-    Array<{ type: string; value: string; position: DOMRect; rotation?: number }>
-  >([]);
   const [isSaving, setIsSaving] = useState(false);
 
   const ref = useRef<HTMLDivElement>(null);
+  const loadingDataRef = useRef(false);
+
+  // Helper function to determine field type for visualization encoding
+  const getFieldEncodingType = (
+    fieldName: string
+  ): "temporal" | "quantitative" | "nominal" => {
+    // Check if we have table properties to determine the field type
+    const fieldProperty = tableProperties?.find(
+      (col) => col.name === fieldName
+    );
+    if (fieldProperty) {
+      const fieldType = fieldProperty.type?.toLowerCase();
+      // Check for date/time types
+      if (
+        fieldType === "date" ||
+        fieldType === "datetime" ||
+        fieldType === "date-end"
+      ) {
+        return "temporal";
+      }
+      // Check for numeric types
+      if (fieldType === "number" || fieldType === "currency") {
+        return "quantitative";
+      }
+    }
+
+    // If no property info, try to detect from data
+    if (listData && listData.length > 0) {
+      const sampleValue = listData[0][fieldName];
+      if (sampleValue !== null && sampleValue !== undefined) {
+        // Check if it's a date string or Date object
+        const dateTest = new Date(sampleValue as string | number);
+        if (
+          !isNaN(dateTest.getTime()) &&
+          typeof sampleValue === "string" &&
+          (sampleValue.includes("-") || sampleValue.includes("/"))
+        ) {
+          return "temporal";
+        }
+        // Check if it's numeric
+        if (typeof sampleValue === "number" || !isNaN(Number(sampleValue))) {
+          return "quantitative";
+        }
+      }
+    }
+
+    // Default to nominal for categorical data
+    return "nominal";
+  };
 
   // Load MDBFrame configuration
   const loadConfiguration = useCallback(async () => {
@@ -112,10 +166,7 @@ export const Visualization = ({
       return;
     }
 
-    // If sourcePath is empty, try to get it from the active path
-    const effectiveSourcePath = sourcePath || superstate.ui?.activePath || "";
-
-    if (!effectiveSourcePath) {
+    if (!sourcePath) {
       setConfigData(null);
       setLoading(false);
       return;
@@ -125,7 +176,7 @@ export const Visualization = ({
     try {
       // Read MDBFrame via space manager
       const configMDBFrame: MDBFrame = await superstate.spaceManager.readFrame(
-        effectiveSourcePath,
+        sourcePath,
         mdbFrameId
       );
 
@@ -139,10 +190,10 @@ export const Visualization = ({
 
       // Convert schema to FrameSchema to access def.db
       const frameSchema = mdbSchemaToFrameSchema(configMDBFrame.schema);
-      const dataSourceFromSchema = frameSchema?.def?.db || "";
-
+      const dataSource = frameSchema?.def?.db || "";
+      const dataSourcePath = frameSchema?.def?.context || sourcePath;
       // Parse visualization data using utility function
-      const { config, dataSource } = parseVisualizationData(configMDBFrame);
+      const config = parseVisualizationData(configMDBFrame);
 
       // Get available fields from the frame rows
       const fields: string[] = [];
@@ -171,6 +222,7 @@ export const Visualization = ({
         visualizationConfig: config,
         listId: dataSource,
         availableFields: fields,
+        dataSourcePath: dataSourcePath || sourcePath,
       });
 
       // Update formatter states based on loaded config
@@ -183,7 +235,7 @@ export const Visualization = ({
       // Show legend based on configuration, defaulting to true for certain chart types if not explicitly set
       const hasLegendConfig = config.layout?.legend !== undefined;
       const legendShowValue = config.layout?.legend?.show;
-      
+
       if (hasLegendConfig && legendShowValue !== undefined) {
         // If legend.show is explicitly set, use that value
         setShowLegend(legendShowValue);
@@ -200,7 +252,7 @@ export const Visualization = ({
       setShowYAxisLabel(!!config.layout?.yAxis?.label);
       setShowDataLabels(config.mark?.dataLabels?.show === true);
       // @ts-ignore - colorPaletteId might not be in type
-      setColorPaletteId((config as any).colorPaletteId || "");
+      setColorPaletteId(config.colorPalette || "");
     } catch (error) {
       // Don't use fallback - let the error surface
       setConfigData(null);
@@ -210,181 +262,597 @@ export const Visualization = ({
   }, [mdbFrameId, sourcePath, superstate]);
 
   // Function to load list data
-  const loadListData = useCallback(async () => {
-    // The listId should come from the visualizationConfig data property
-    const listId =
-      configData?.visualizationConfig?.data?.listId || configData?.listId;
-
-    if (!listId || !superstate) {
-      // Set sample data if no list is specified
-      setListData([
-        { category: "A", value: 10, x: 1, y: 10 },
-        { category: "B", value: 20, x: 2, y: 20 },
-        { category: "C", value: 15, x: 3, y: 15 },
-        { category: "D", value: 25, x: 4, y: 25 },
-        { category: "E", value: 30, x: 5, y: 30 },
-      ]);
-      return;
-    }
-
-    setLoadingData(true);
-    try {
-      let tableData: VisualizationDataRow[] | null = null;
-      let tableFields: string[] = [];
-
-      // Use the space manager to read the table
-      if (superstate.spaceManager) {
-        const spaceData = await superstate.spaceManager.readTable(
-          sourcePath,
-          listId
-        );
-        if (spaceData && spaceData.rows && Array.isArray(spaceData.rows)) {
-          // Parse the data values using parseMDBStringValue
-          tableData = spaceData.rows.map((row) => {
-            const parsedRow: VisualizationDataRow = {};
-            Object.entries(row).forEach(([key, value]) => {
-              const column = spaceData.cols?.find((col) => col.name === key);
-              if (column) {
-                // Parse the value based on the column type
-                parsedRow[key] = parseMDBStringValue(
-                  column.type,
-                  String(value)
-                );
-              } else {
-                // Keep original value if no column info
-                parsedRow[key] = value;
-              }
-            });
-            return parsedRow;
-          });
-          tableFields = spaceData.cols?.map((c) => c.name) || [];
-          // Store the table properties for axis label formatting
-          if (spaceData.cols) {
-            setTableProperties(spaceData.cols);
-          }
-        }
-      }
-
-      // If still not found, try pathsIndex
-      if (!tableData) {
-        const pathsIndex = superstate.pathsIndex;
-        if (pathsIndex) {
-          const listPath = pathsIndex.get(listId);
-          if (listPath && listPath.metadata?.table) {
-            tableData = listPath.metadata.table;
-            // Extract fields from first row if available
-            if (tableData.length > 0) {
-              tableFields = Object.keys(tableData[0]);
-            }
-          }
-        }
-      }
-
-      if (tableData && Array.isArray(tableData)) {
-        setListData(tableData);
-
-        // Update available fields
-        if (tableFields.length > 0) {
-          setConfigData((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  availableFields: tableFields,
-                }
-              : null
-          );
-        }
+  const loadListData = useCallback(
+    async (overrideConfig?: typeof configData) => {
+      // Prevent multiple simultaneous loads
+      if (loadingDataRef.current) {
         return;
       }
 
-      // Set sample data if data cannot be loaded
-      setListData([
-        { category: "A", value: 10, x: 1, y: 10 },
-        { category: "B", value: 20, x: 2, y: 20 },
-        { category: "C", value: 15, x: 3, y: 15 },
-        { category: "D", value: 25, x: 4, y: 25 },
-        { category: "E", value: 30, x: 5, y: 30 },
-      ]);
-    } catch (error) {
-      console.error("[Visualization] DEBUG: Error loading list data:", error);
-      // Set sample data on error
-      setListData([
-        { category: "A", value: 10, x: 1, y: 10 },
-        { category: "B", value: 20, x: 2, y: 20 },
-        { category: "C", value: 15, x: 3, y: 15 },
-      ]);
-    } finally {
-      setLoadingData(false);
-    }
-  }, [configData, sourcePath, superstate]);
+      // Use override config if provided, otherwise use state
+      const config = overrideConfig || configData;
+
+      // The listId should come from config
+      const listId = config?.listId;
+
+      if (!listId || !superstate) {
+        // Set sample data if no list is specified
+        setListData([
+          { category: "A", value: 10, x: 1, y: 10 },
+          { category: "B", value: 20, x: 2, y: 20 },
+          { category: "C", value: 15, x: 3, y: 15 },
+          { category: "D", value: 25, x: 4, y: 25 },
+          { category: "E", value: 30, x: 5, y: 30 },
+        ]);
+        return;
+      }
+
+      loadingDataRef.current = true;
+      setLoadingData(true);
+      try {
+        let tableData: VisualizationDataRow[] | null = null;
+        let tableFields: string[] = [];
+
+        // Use the dataSourcePath, then fallback to sourcePath
+        const tableSourcePath = config?.dataSourcePath || sourcePath || "";
+        const tableId = listId;
+
+        // Use the space manager to read the table
+        if (superstate.spaceManager) {
+          const spaceData = await superstate.spaceManager.readTable(
+            tableSourcePath,
+            tableId
+          );
+          if (spaceData && spaceData.rows && Array.isArray(spaceData.rows)) {
+            // Process rows and expand multi-value fields
+            const processedRows: VisualizationDataRow[] = [];
+
+            spaceData.rows.forEach((row, rowIndex) => {
+              if (rowIndex === 0) {
+              }
+
+              // Check if this row has any multi-value fields
+              let hasMultiField = false;
+              const multiFields: { [key: string]: string[] } = {};
+
+              // First pass: identify multi-value fields
+              Object.entries(row).forEach(([key, value]) => {
+                const column = spaceData.cols?.find((col) => col.name === key);
+                if (
+                  column &&
+                  (column.type?.endsWith("-multi") || column.type === "tags")
+                ) {
+                  // Parse the multi-value string
+                  const valueStr = String(value || "");
+                  if (valueStr && valueStr !== "" && valueStr !== "[]") {
+                    const parsedValues = parseMultiString(valueStr);
+                    // Only mark as multi-field if we have actual values
+                    if (
+                      parsedValues &&
+                      parsedValues.length > 0 &&
+                      parsedValues.some((v) => v && v.trim() !== "")
+                    ) {
+                      hasMultiField = true;
+                      multiFields[key] = parsedValues.filter(
+                        (v) => v && v.trim() !== ""
+                      );
+                      if (rowIndex === 0) {
+                      }
+                    }
+                  }
+                }
+              });
+
+              if (hasMultiField && Object.keys(multiFields).length > 0) {
+                // Process multi-value fields - create a row for each combination
+                // For visualization, we typically want to expand on ONE multi-field at a time
+                // Let's find the first multi-field that's being used in the visualization
+                const xField = Array.isArray(
+                  config?.visualizationConfig?.encoding?.x
+                )
+                  ? config?.visualizationConfig?.encoding?.x?.[0]?.field
+                  : config?.visualizationConfig?.encoding?.x?.field;
+                const yField = Array.isArray(
+                  config?.visualizationConfig?.encoding?.y
+                )
+                  ? config?.visualizationConfig?.encoding?.y?.[0]?.field
+                  : config?.visualizationConfig?.encoding?.y?.field;
+
+                // Determine which multi-field to expand on (prefer x-axis field, then y-axis field)
+                let expandField: string = null;
+                if (xField && multiFields[xField]) {
+                  expandField = xField;
+                } else if (yField && multiFields[yField]) {
+                  expandField = yField;
+                } else {
+                  // If neither axis uses a multi-field, use the first multi-field
+                  expandField = Object.keys(multiFields)[0];
+                }
+
+                if (rowIndex === 0) {
+                }
+
+                // Expand rows based on the selected multi-field
+                if (expandField && multiFields[expandField]) {
+                  multiFields[expandField].forEach((multiValue) => {
+                    const expandedRow: VisualizationDataRow = {};
+
+                    Object.entries(row).forEach(([key, value]) => {
+                      const column = spaceData.cols?.find(
+                        (col) => col.name === key
+                      );
+
+                      if (key === expandField) {
+                        // Use the expanded value for this field
+                        expandedRow[key] = multiValue;
+                      } else if (column) {
+                        // Parse other fields normally
+                        expandedRow[key] = parseMDBStringValue(
+                          column.type,
+                          String(value || "")
+                        );
+                      } else {
+                        expandedRow[key] = value;
+                      }
+                    });
+
+                    processedRows.push(expandedRow);
+                  });
+                }
+              } else {
+                // No multi-value fields, process normally
+                const parsedRow: VisualizationDataRow = {};
+                Object.entries(row).forEach(([key, value]) => {
+                  const column = spaceData.cols?.find(
+                    (col) => col.name === key
+                  );
+                  if (column) {
+                    parsedRow[key] = parseMDBStringValue(
+                      column.type,
+                      String(value || "")
+                    );
+                  } else {
+                    parsedRow[key] = value;
+                  }
+                });
+
+                if (rowIndex === 0) {
+                }
+
+                processedRows.push(parsedRow);
+              }
+            });
+
+            // Aggregate data if needed based on chart type and field types
+            if (config?.visualizationConfig?.encoding) {
+              const xField = Array.isArray(
+                config?.visualizationConfig?.encoding?.x
+              )
+                ? config?.visualizationConfig?.encoding?.x?.[0]?.field
+                : config?.visualizationConfig?.encoding?.x?.field;
+              const yField = Array.isArray(
+                config?.visualizationConfig?.encoding?.y
+              )
+                ? config?.visualizationConfig?.encoding?.y?.[0]?.field
+                : config?.visualizationConfig?.encoding?.y?.field;
+              const xType = Array.isArray(
+                config?.visualizationConfig?.encoding?.x
+              )
+                ? config?.visualizationConfig?.encoding?.x?.[0]?.type
+                : config?.visualizationConfig?.encoding?.x?.type;
+              const yType = Array.isArray(
+                config?.visualizationConfig?.encoding?.y
+              )
+                ? config?.visualizationConfig?.encoding?.y?.[0]?.type
+                : config?.visualizationConfig?.encoding?.y?.type;
+
+              const chartType = config?.visualizationConfig?.chartType;
+
+              // Check if yField exists in the data
+              const hasYFieldInData =
+                processedRows.length > 0 && yField in processedRows[0];
+
+              // Check if we have a group by field
+              const groupByField =
+                config.visualizationConfig?.encoding?.color?.field;
+              const groupByAggregation = (config.visualizationConfig?.encoding
+                ?.color?.aggregate || "count") as AggregationType;
+
+              // Use utility function to process all aggregation logic
+              const aggregatedData = processDataAggregation(processedRows, {
+                xField,
+                yField,
+                groupByField,
+                groupByAggregation,
+                chartType,
+                hasYFieldInData,
+                spaceData,
+                xType,
+                yType,
+              });
+
+              tableData = aggregatedData;
+            } else {
+              tableData = processedRows;
+            }
+
+            // Sort data by x-axis if it's temporal (date)
+            if (
+              tableData &&
+              tableData.length > 0 &&
+              config?.visualizationConfig?.encoding?.x
+            ) {
+              const xField = Array.isArray(
+                config?.visualizationConfig?.encoding?.x
+              )
+                ? config?.visualizationConfig?.encoding?.x?.[0]?.field
+                : config?.visualizationConfig?.encoding?.x?.field;
+              const xType = Array.isArray(
+                config?.visualizationConfig?.encoding?.x
+              )
+                ? config?.visualizationConfig?.encoding?.x?.[0]?.type
+                : config?.visualizationConfig?.encoding?.x?.type;
+
+              // Check if we should sort by date or option order
+              let shouldSortByDate = false;
+              let shouldSortByOption = false;
+              let optionOrder: string[] = [];
+
+              if (xField && xType === "temporal") {
+                shouldSortByDate = true;
+              } else if (xField && !xType) {
+                // Auto-detect field type
+                const xFieldColumn = spaceData.cols?.find(
+                  (col) => col.name === xField
+                );
+                const xFieldType = xFieldColumn?.type?.toLowerCase();
+
+                if (
+                  xFieldType &&
+                  (xFieldType === "date" ||
+                    xFieldType === "datetime" ||
+                    xFieldType === "date-end")
+                ) {
+                  shouldSortByDate = true;
+                } else if (
+                  xFieldType === "option" ||
+                  xFieldType === "option-multi"
+                ) {
+                  // For option fields, get the order from the field configuration
+                  shouldSortByOption = true;
+                  // Parse the options from the value field which contains the options configuration
+                  if (xFieldColumn?.value) {
+                    try {
+                      const optionsConfig = JSON.parse(xFieldColumn.value);
+                      if (
+                        optionsConfig &&
+                        optionsConfig.options &&
+                        Array.isArray(optionsConfig.options)
+                      ) {
+                        // Extract the order of option values
+                        optionOrder = optionsConfig.options.map(
+                          (opt: any) => opt.value || opt.name || opt
+                        );
+                      }
+                    } catch (e) {
+                      // If parsing fails, we'll fall back to alphabetical sorting
+                      console.debug(
+                        "Could not parse options configuration:",
+                        e
+                      );
+                    }
+                  }
+                } else if (tableData.length > 0) {
+                  // Check if the first value looks like a date
+                  const sampleValue = tableData[0][xField];
+                  if (sampleValue) {
+                    const dateTest = new Date(sampleValue as string | number);
+                    if (
+                      !isNaN(dateTest.getTime()) &&
+                      typeof sampleValue === "string" &&
+                      (sampleValue.includes("-") || sampleValue.includes("/"))
+                    ) {
+                      shouldSortByDate = true;
+                    }
+                  }
+                }
+              }
+
+              if (shouldSortByDate) {
+                // Enhanced date sorting with better date parsing
+                tableData.sort((a, b) => {
+                  const valA = String(a[xField] || "");
+                  const valB = String(b[xField] || "");
+
+                  // Try multiple date parsing approaches
+                  let dateA = new Date(valA);
+                  let dateB = new Date(valB);
+
+                  // If direct parsing fails, try some common formats
+                  if (isNaN(dateA.getTime())) {
+                    // Try parsing formats like "2023-12-01", "12/01/2023", etc.
+                    const reformattedA = valA.replace(
+                      /(\d{2})\/(\d{2})\/(\d{4})/,
+                      "$3-$1-$2"
+                    ); // MM/DD/YYYY -> YYYY-MM-DD
+                    dateA = new Date(reformattedA);
+                  }
+
+                  if (isNaN(dateB.getTime())) {
+                    const reformattedB = valB.replace(
+                      /(\d{2})\/(\d{2})\/(\d{4})/,
+                      "$3-$1-$2"
+                    ); // MM/DD/YYYY -> YYYY-MM-DD
+                    dateB = new Date(reformattedB);
+                  }
+
+                  // Handle invalid dates by putting them at the end
+                  if (isNaN(dateA.getTime()) && isNaN(dateB.getTime()))
+                    return 0;
+                  if (isNaN(dateA.getTime())) return 1;
+                  if (isNaN(dateB.getTime())) return -1;
+
+                  return dateA.getTime() - dateB.getTime();
+                });
+              } else if (shouldSortByOption && optionOrder.length > 0) {
+                // Sort by the defined option order
+                tableData.sort((a, b) => {
+                  const valA = String(a[xField] || "");
+                  const valB = String(b[xField] || "");
+
+                  // Get the index of each value in the option order
+                  const indexA = optionOrder.indexOf(valA);
+                  const indexB = optionOrder.indexOf(valB);
+
+                  // If both values are in the option order, sort by their position
+                  if (indexA !== -1 && indexB !== -1) {
+                    return indexA - indexB;
+                  }
+
+                  // If one value is not in the option order, put it at the end
+                  if (indexA === -1 && indexB !== -1) return 1;
+                  if (indexA !== -1 && indexB === -1) return -1;
+
+                  // If neither value is in the option order, sort alphabetically
+                  return valA.localeCompare(valB, undefined, {
+                    numeric: true,
+                    sensitivity: "base",
+                  });
+                });
+              } else if (
+                xField &&
+                config?.visualizationConfig?.chartType === "line"
+              ) {
+                // For line charts, always ensure some kind of logical ordering even for non-dates
+                tableData.sort((a, b) => {
+                  const valA = String(a[xField] || "");
+                  const valB = String(b[xField] || "");
+
+                  // Try numeric sorting first
+                  const numA = parseFloat(valA);
+                  const numB = parseFloat(valB);
+
+                  if (!isNaN(numA) && !isNaN(numB)) {
+                    return numA - numB;
+                  }
+
+                  // Fallback to string sorting with numeric comparison
+                  return valA.localeCompare(valB, undefined, {
+                    numeric: true,
+                    sensitivity: "base",
+                  });
+                });
+              }
+            }
+
+            tableFields = spaceData.cols?.map((c) => c.name) || [];
+            // Store the table properties for axis label formatting
+            if (spaceData.cols) {
+              setTableProperties((prev) => {
+                // Only update if actually different to prevent re-renders
+                if (JSON.stringify(prev) !== JSON.stringify(spaceData.cols)) {
+                  return spaceData.cols;
+                }
+                return prev;
+              });
+            } else {
+            }
+          } else {
+          }
+        } else {
+        }
+
+        // If still not found, try pathsIndex
+        if (!tableData) {
+          const pathsIndex = superstate.pathsIndex;
+          if (pathsIndex) {
+            const listPath = pathsIndex.get(listId);
+            if (listPath && listPath.metadata?.table) {
+              tableData = listPath.metadata.table;
+              // Extract fields from first row if available
+              if (tableData.length > 0) {
+                tableFields = Object.keys(tableData[0]);
+              }
+            }
+          }
+        }
+
+        if (tableData && Array.isArray(tableData)) {
+          setListData(tableData);
+
+          // Update available fields
+          if (tableFields.length > 0) {
+            setConfigData((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    availableFields: tableFields,
+                  }
+                : null
+            );
+          }
+          return;
+        }
+
+        // Set sample data if data cannot be loaded
+        setListData([
+          { category: "A", value: 10, x: 1, y: 10 },
+          { category: "B", value: 20, x: 2, y: 20 },
+          { category: "C", value: 15, x: 3, y: 15 },
+          { category: "D", value: 25, x: 4, y: 25 },
+          { category: "E", value: 30, x: 5, y: 30 },
+        ]);
+      } catch (error) {
+        console.error("[Visualization] DEBUG: Error loading list data:", error);
+        // Set sample data on error
+        setListData([
+          { category: "A", value: 10, x: 1, y: 10 },
+          { category: "B", value: 20, x: 2, y: 20 },
+          { category: "C", value: 15, x: 3, y: 15 },
+        ]);
+      } finally {
+        loadingDataRef.current = false;
+        setLoadingData(false);
+      }
+    },
+    [sourcePath, superstate]
+  );
 
   // Load available tables
   const loadAvailableTables = useCallback(async () => {
     if (!superstate || !superstate.spaceManager) return;
 
     try {
-      // Get tables for the current space using the proper API
-      const schemas = await superstate.spaceManager.tablesForSpace(sourcePath);
+      // Use the dataSourcePath, then fallback to sourcePath
+      const tablesSourcePath = configData?.dataSourcePath || sourcePath;
+
+      // Get tables for the space using the proper API
+      const schemas = await superstate.spaceManager.tablesForSpace(
+        tablesSourcePath
+      );
 
       if (schemas && Array.isArray(schemas)) {
-        const tables = schemas
-          .filter((schema) => schema?.id && schema?.name)
-          .map((schema) => ({
-            id: schema.id,
-            name: schema.name,
-          }));
-
-        setAvailableTables(tables);
+        // Filter valid schemas and set directly (already SpaceTableSchema[])
+        const validSchemas = schemas.filter(
+          (schema) => schema?.id && schema?.name
+        );
+        setAvailableTables(validSchemas);
       } else {
         setAvailableTables([]);
       }
     } catch (error) {
       setAvailableTables([]);
     }
-  }, [superstate, sourcePath]);
+  }, [superstate, sourcePath, configData?.dataSourcePath, configData]);
+
+  // Save schema (listId and dataSourcePath)
+  const saveVisualizationSchema = async (
+    listId?: string,
+    dataSourcePath?: string
+  ) => {
+    // Update local state
+    setConfigData((prev) => {
+      if (!prev) return null;
+
+      const updated = { ...prev };
+
+      // Update listId if provided
+      if (listId !== undefined) {
+        updated.listId = listId;
+      }
+
+      // Update dataSourcePath if provided
+      if (dataSourcePath !== undefined) {
+        updated.dataSourcePath = dataSourcePath;
+      }
+
+      return updated;
+    });
+
+    // Update schema if we have the necessary context
+    if (mdbFrameId && sourcePath && superstate?.spaceManager) {
+      if (listId !== undefined || dataSourcePath !== undefined) {
+        await updateVisualizationSchema(
+          superstate,
+          sourcePath,
+          mdbFrameId,
+          listId !== undefined ? listId : configData?.listId || "",
+          dataSourcePath !== undefined
+            ? dataSourcePath
+            : configData?.dataSourcePath || sourcePath
+        );
+      }
+    }
+  };
 
   // Handle configuration changes from formatter
-  const handleConfigChange = (newConfig: VisualizationConfig) => {
-    setConfigData((prev) =>
-      prev
-        ? {
-            ...prev,
-            visualizationConfig: newConfig,
-          }
-        : null
-    );
+  const handleConfigChange = async (newConfig: VisualizationConfig) => {
+    // Stage 1: Update local state immediately to trigger re-render
+    setConfigData((prev) => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        visualizationConfig: newConfig,
+      };
+    });
 
-    // Call parent update handler if provided
+    // Stage 2: Save to persistent storage
+    if (mdbFrameId && sourcePath && superstate?.spaceManager) {
+      try {
+        setIsSaving(true);
+        const frame = await superstate.spaceManager.readFrame(
+          sourcePath,
+          mdbFrameId
+        );
+        if (frame) {
+          const updatedRows = createVisualizationRows(
+            newConfig,
+            mdbFrameId,
+            frame.rows
+          );
+          frame.rows = updatedRows;
+          await superstate.spaceManager.saveFrame(sourcePath, frame);
+          superstate.eventsDispatcher.dispatchEvent("frameStateUpdated", {
+            path: sourcePath,
+            schemaId: mdbFrameId,
+          });
+        }
+      } catch (error) {
+        console.error("Error saving visualization config:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    }
+
+    // Stage 3: Reload data if needed for aggregations/transformations
+    if (configData) {
+      const updatedConfigData = {
+        ...configData,
+        visualizationConfig: newConfig,
+      };
+      await loadListData(updatedConfigData);
+    }
+
+    // Stage 4: Force color palette update
+    if (
+      newConfig.colorPalette !== configData?.visualizationConfig?.colorPalette
+    ) {
+      setColorPaletteId(newConfig.colorPalette || "");
+    }
+
+    // Call parent handler if provided
     if (onConfigUpdate) {
-      setIsSaving(true);
       onConfigUpdate(newConfig);
-      // Reset the saving flag after save completes
-      setTimeout(() => setIsSaving(false), 1000);
-    } else {
     }
   };
 
   // Handle table change from formatter
   const handleTableChange = async (tableId: string) => {
-    // Update local state immediately for responsive UI
-    setConfigData((prev) =>
-      prev
-        ? {
-            ...prev,
-            listId: tableId,
-            visualizationConfig: {
-              ...prev.visualizationConfig,
-              data: { listId: tableId },
-            },
-          }
-        : null
-    );
-
     // Load the table columns for the selected data source
     if (tableId && superstate?.spaceManager) {
       try {
         const spaceData = await superstate.spaceManager.readTable(
-          sourcePath || superstate.ui?.activePath || "",
+          sourcePath || "",
           tableId
         );
         if (spaceData && spaceData.cols) {
@@ -413,74 +881,8 @@ export const Visualization = ({
       );
     }
 
-    // Update the frame schema to store data source in def.db
-    if (mdbFrameId && superstate && (sourcePath || superstate.ui?.activePath)) {
-      await updateVisualizationSchema(
-        superstate,
-        sourcePath || superstate.ui.activePath,
-        mdbFrameId,
-        tableId
-      );
-    }
-
-    // Use handleConfigChange to ensure proper persistence
-    if (configData) {
-      const updatedConfig = {
-        ...configData.visualizationConfig,
-        data: { listId: tableId },
-      };
-
-      // If onConfigUpdate is not provided, save directly
-      if (!onConfigUpdate && superstate?.spaceManager && mdbFrameId) {
-        try {
-          const { createVisualizationRows } = await import(
-            "core/utils/visualization/visualizationUtils"
-          );
-          const frame = await superstate.spaceManager.readFrame(
-            sourcePath,
-            mdbFrameId
-          );
-
-          if (frame) {
-            // Use the createVisualizationRows utility to properly format the rows
-            const updatedRows = createVisualizationRows(
-              updatedConfig,
-              mdbFrameId,
-              frame.rows
-            );
-
-            frame.rows = updatedRows;
-
-            // Schema def.db is already updated by updateVisualizationSchema above
-
-            await superstate.spaceManager.saveFrame(sourcePath, frame);
-
-            // Update local state to reflect the saved configuration
-            // This ensures the UI updates immediately without waiting for the reload
-            setConfigData((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    visualizationConfig: updatedConfig,
-                    listId: tableId,
-                  }
-                : null
-            );
-
-            // Manually dispatch the event to trigger reload
-            superstate.eventsDispatcher.dispatchEvent("frameStateUpdated", {
-              path: sourcePath,
-              schemaId: mdbFrameId,
-            });
-          }
-        } catch (error) {
-          console.error("Error saving visualization config:", error);
-        }
-      } else {
-        // Use the normal flow when onConfigUpdate is available
-        handleConfigChange(updatedConfig);
-      }
-    }
+    // Save the schema update
+    await saveVisualizationSchema(tableId, undefined);
   };
 
   // Callback to receive element positions from D3VisualizationEngine
@@ -492,18 +894,13 @@ export const Visualization = ({
         position: DOMRect;
         rotation?: number;
       }>
-    ) => {
-      if (isSelected) {
-        setEditableElements(elements);
-      }
-    },
+    ) => {},
     [isSelected]
   );
 
   // Clear editable elements when node is deselected
   useEffect(() => {
     if (!isSelected) {
-      setEditableElements([]);
       // Update show states when deselected
       if (configData) {
         // Title is always hidden
@@ -551,18 +948,6 @@ export const Visualization = ({
   ) => {
     setSelectedElement(element);
 
-    // Set editable state when a visualization node is selected and the node itself is selected
-    if (
-      isSelected &&
-      element &&
-      ["title", "xAxisLabel", "yAxisLabel"].includes(element.type)
-    ) {
-      setIsEditable(true);
-    } else {
-      setIsEditable(false);
-      setEditingElement(null);
-    }
-
     // Show element-specific property menu when an element is selected
     if (
       element &&
@@ -574,77 +959,6 @@ export const Visualization = ({
         showElementPropertiesMenu(element);
       }, 100);
     }
-  };
-
-  // Handle double-click on editable elements to start editing
-  const onElementDoubleClick = (
-    element: { type: string; id?: string },
-    rect: DOMRect,
-    currentValue: string
-  ) => {
-    if (
-      isSelected &&
-      ["title", "xAxisLabel", "yAxisLabel"].includes(element.type)
-    ) {
-      setEditingElement({
-        type: element.type,
-        id: element.id,
-        value: currentValue,
-        position: {
-          x: rect.x,
-          y: rect.y,
-          width: rect.width,
-          height: rect.height,
-        },
-      });
-    }
-  };
-
-  // Handle saving edited text
-  const onEditComplete = (type: string, newValue: string) => {
-    if (configData) {
-      const updatedConfig = { ...configData.visualizationConfig };
-
-      switch (type) {
-        case "title":
-          updatedConfig.layout = {
-            ...updatedConfig.layout,
-            title: {
-              ...updatedConfig.layout.title,
-              text: newValue,
-            },
-          };
-          break;
-        case "xAxisLabel":
-          updatedConfig.layout = {
-            ...updatedConfig.layout,
-            xAxis: {
-              ...updatedConfig.layout.xAxis,
-              label: newValue,
-            },
-          };
-          break;
-        case "yAxisLabel":
-          updatedConfig.layout = {
-            ...updatedConfig.layout,
-            yAxis: {
-              ...updatedConfig.layout.yAxis,
-              label: newValue,
-            },
-          };
-          break;
-      }
-
-      handleConfigChange(updatedConfig);
-    } else {
-    }
-
-    setEditingElement(null);
-  };
-
-  // Cancel editing
-  const onEditCancel = () => {
-    setEditingElement(null);
   };
 
   // Show properties menu for selected element
@@ -669,8 +983,10 @@ export const Visualization = ({
         // Title alignment
         menuOptions.push({
           name: "Alignment",
+          value: configData.visualizationConfig.layout.title?.align || "center",
           icon: "lucide//align-center",
-          onClick: (e) => {
+          type: SelectOptionType.Disclosure,
+          onSubmenu: (offset, onHide) => {
             const alignOptions: SelectOption[] = [
               {
                 name: "Left",
@@ -725,8 +1041,7 @@ export const Visualization = ({
               },
             ];
 
-            const offset = (e.target as HTMLElement).getBoundingClientRect();
-            superstate.ui.openMenu(
+            return superstate.ui.openMenu(
               offset,
               defaultMenu(superstate.ui, alignOptions),
               window
@@ -739,20 +1054,24 @@ export const Visualization = ({
           const currentFontSize =
             configData.visualizationConfig.layout.title?.fontSize || 16;
           menuOptions.push(
-            menuInput(currentFontSize.toString(), (value) => {
-              const fontSize = parseInt(value) || 16;
-              const updatedConfig = {
-                ...configData.visualizationConfig,
-                layout: {
-                  ...configData.visualizationConfig.layout,
-                  title: {
-                    ...configData.visualizationConfig.layout.title!,
-                    fontSize,
+            menuInput(
+              currentFontSize.toString(),
+              (value: string) => {
+                const fontSize = parseInt(value) || 16;
+                const updatedConfig = {
+                  ...configData.visualizationConfig,
+                  layout: {
+                    ...configData.visualizationConfig.layout,
+                    title: {
+                      ...configData.visualizationConfig.layout.title!,
+                      fontSize,
+                    },
                   },
-                },
-              };
-              handleConfigChange(updatedConfig);
-            })
+                };
+                handleConfigChange(updatedConfig);
+              },
+              "Font Size"
+            )
           );
         }
         break;
@@ -766,30 +1085,35 @@ export const Visualization = ({
           const currentAngle =
             configData.visualizationConfig.layout[axisKey]?.tickAngle || 0;
           menuOptions.push(
-            menuInput(currentAngle.toString(), (value) => {
-              const tickAngle = parseInt(value) || 0;
-              const updatedConfig = {
-                ...configData.visualizationConfig,
-                layout: {
-                  ...configData.visualizationConfig.layout,
-                  [axisKey]: {
-                    ...configData.visualizationConfig.layout[axisKey],
-                    tickAngle,
+            menuInput(
+              currentAngle.toString(),
+              (value: string) => {
+                const tickAngle = parseInt(value) || 0;
+                const updatedConfig = {
+                  ...configData.visualizationConfig,
+                  layout: {
+                    ...configData.visualizationConfig.layout,
+                    [axisKey]: {
+                      ...configData.visualizationConfig.layout[axisKey],
+                      tickAngle,
+                    },
                   },
-                },
-              };
-              handleConfigChange(updatedConfig);
-            })
+                };
+                handleConfigChange(updatedConfig);
+              },
+              "Angle"
+            )
           );
         }
 
         // Tick color
         menuOptions.push({
           name: "Tick Color",
+          value: "Set",
           icon: "lucide//palette",
-          onClick: (e) => {
-            const offset = (e.target as HTMLElement).getBoundingClientRect();
-            showColorPickerMenu(
+          type: SelectOptionType.Disclosure,
+          onSubmenu: (offset, onHide) => {
+            return showColorPickerMenu(
               superstate,
               offset,
               window,
@@ -834,8 +1158,11 @@ export const Visualization = ({
         // Legend position
         menuOptions.push({
           name: "Position",
+          value:
+            configData.visualizationConfig.layout.legend?.position || "right",
           icon: "lucide//move",
-          onClick: (e) => {
+          type: SelectOptionType.Disclosure,
+          onSubmenu: (offset, onHide) => {
             const positionOptions: SelectOption[] = [
               {
                 name: "Top",
@@ -859,8 +1186,7 @@ export const Visualization = ({
               },
             ];
 
-            const offset = (e.target as HTMLElement).getBoundingClientRect();
-            superstate.ui.openMenu(
+            return superstate.ui.openMenu(
               offset,
               defaultMenu(superstate.ui, positionOptions),
               window
@@ -873,10 +1199,11 @@ export const Visualization = ({
         // Grid color
         menuOptions.push({
           name: "Grid Color",
+          value: "Set",
           icon: "lucide//palette",
-          onClick: (e) => {
-            const offset = (e.target as HTMLElement).getBoundingClientRect();
-            showColorPickerMenu(
+          type: SelectOptionType.Disclosure,
+          onSubmenu: (offset, onHide) => {
+            return showColorPickerMenu(
               superstate,
               offset,
               window,
@@ -937,19 +1264,23 @@ export const Visualization = ({
     const rect = { x: 100, y: 100, width: 200, height: 100 };
 
     const menuOptions: SelectOption[] = [
-      menuInput(currentTitle, (value) => {
-        const updatedConfig = {
-          ...configData.visualizationConfig,
-          layout: {
-            ...configData.visualizationConfig.layout,
-            title: {
-              ...configData.visualizationConfig.layout.title,
-              text: value,
+      menuInput(
+        currentTitle,
+        (value: string) => {
+          const updatedConfig = {
+            ...configData.visualizationConfig,
+            layout: {
+              ...configData.visualizationConfig.layout,
+              title: {
+                ...configData.visualizationConfig.layout.title,
+                text: value,
+              },
             },
-          },
-        };
-        handleConfigChange(updatedConfig);
-      }),
+          };
+          handleConfigChange(updatedConfig);
+        },
+        "Title"
+      ),
     ];
 
     superstate.ui.openMenu(
@@ -967,19 +1298,23 @@ export const Visualization = ({
     const rect = { x: 100, y: 100, width: 200, height: 100 };
 
     const menuOptions: SelectOption[] = [
-      menuInput(currentLabel, (value) => {
-        const updatedConfig = {
-          ...configData.visualizationConfig,
-          layout: {
-            ...configData.visualizationConfig.layout,
-            xAxis: {
-              ...configData.visualizationConfig.layout.xAxis,
-              label: value,
+      menuInput(
+        currentLabel,
+        (value: string) => {
+          const updatedConfig = {
+            ...configData.visualizationConfig,
+            layout: {
+              ...configData.visualizationConfig.layout,
+              xAxis: {
+                ...configData.visualizationConfig.layout.xAxis,
+                label: value,
+              },
             },
-          },
-        };
-        handleConfigChange(updatedConfig);
-      }),
+          };
+          handleConfigChange(updatedConfig);
+        },
+        "X-Axis Label"
+      ),
     ];
 
     superstate.ui.openMenu(
@@ -997,19 +1332,23 @@ export const Visualization = ({
     const rect = { x: 100, y: 100, width: 200, height: 100 };
 
     const menuOptions: SelectOption[] = [
-      menuInput(currentLabel, (value) => {
-        const updatedConfig = {
-          ...configData.visualizationConfig,
-          layout: {
-            ...configData.visualizationConfig.layout,
-            yAxis: {
-              ...configData.visualizationConfig.layout.yAxis,
-              label: value,
+      menuInput(
+        currentLabel,
+        (value: string) => {
+          const updatedConfig = {
+            ...configData.visualizationConfig,
+            layout: {
+              ...configData.visualizationConfig.layout,
+              yAxis: {
+                ...configData.visualizationConfig.layout.yAxis,
+                label: value,
+              },
             },
-          },
-        };
-        handleConfigChange(updatedConfig);
-      }),
+          };
+          handleConfigChange(updatedConfig);
+        },
+        "Y-Axis Label"
+      ),
     ];
 
     superstate.ui.openMenu(
@@ -1036,12 +1375,10 @@ export const Visualization = ({
       schemaId: string;
     }) => {
       // Check if this update is for our visualization frame
-      const effectiveSourcePath = sourcePath || superstate.ui?.activePath || "";
-      if (evt.path === effectiveSourcePath && evt.schemaId === mdbFrameId) {
+      if (evt.path === sourcePath && evt.schemaId === mdbFrameId) {
         // Don't reload if we're in the middle of saving (we triggered this update)
         if (!isSaving) {
           loadConfiguration();
-        } else {
         }
       }
     };
@@ -1061,15 +1398,15 @@ export const Visualization = ({
 
   // Load data from the list when config changes
   useEffect(() => {
-    if (configData) {
-      loadListData();
+    if (configData && configData.listId) {
+      loadListData(configData);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configData?.listId, configData?.visualizationConfig?.data?.listId]);
+    // Only reload when listId or dataSourcePath changes, not the entire configData
+  }, [configData?.listId, configData?.dataSourcePath, loadListData]);
 
   // Load available tables when we have superstate and sourcePath
   useEffect(() => {
-    if (superstate && (sourcePath || superstate.ui?.activePath)) {
+    if (superstate && sourcePath) {
       loadAvailableTables();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1093,6 +1430,32 @@ export const Visualization = ({
     };
   }, []);
 
+  // Measure filter bar height
+  useEffect(() => {
+    if (!filterBarRef.current) {
+      setFilterBarHeight(0);
+      return;
+    }
+
+    const measureFilterBar = () => {
+      if (filterBarRef.current) {
+        const rect = filterBarRef.current.getBoundingClientRect();
+        setFilterBarHeight(rect.height);
+      }
+    };
+
+    // Measure immediately
+    measureFilterBar();
+
+    // Also measure on resize in case content changes
+    const resizeObserver = new ResizeObserver(measureFilterBar);
+    resizeObserver.observe(filterBarRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [!minMode && configData]); // Remeasure when filter bar visibility changes
+
   return (
     <div
       ref={ref}
@@ -1100,10 +1463,36 @@ export const Visualization = ({
       style={{
         width: initialWidth,
         height: initialHeight,
+        display: "flex",
+        flexDirection: "column",
         position: "relative",
         ...style,
       }}
     >
+      {/* Visualization Toolbar */}
+      {!minMode && configData && superstate && (
+        <div ref={filterBarRef}>
+          <VisualizationToolbar
+            superstate={superstate}
+            configData={configData.visualizationConfig}
+            listId={configData.listId}
+            fields={tableProperties}
+            sourcePath={configData.dataSourcePath || sourcePath}
+            availableTables={availableTables}
+            onConfigChange={handleConfigChange}
+            onDataSourceChange={handleTableChange}
+            onSpaceChange={async (spacePath: string) => {
+              // When changing space, clear the listId since lists are space-specific
+              await saveVisualizationSchema("", spacePath);
+              // Reload with new space
+              await loadConfiguration();
+            }}
+            getFieldEncodingType={getFieldEncodingType}
+            window={window}
+          />
+        </div>
+      )}
+
       {loading ? (
         <div
           style={{
@@ -1116,7 +1505,7 @@ export const Visualization = ({
             fontSize: "14px",
           }}
         >
-          {(i18n.labels as any).visualization?.loadingVisualization ||
+          {i18n.labels.visualization?.loadingVisualization ||
             "Loading visualization..."}
         </div>
       ) : !configData ? (
@@ -1135,7 +1524,7 @@ export const Visualization = ({
           }}
         >
           <div>
-            {(i18n.labels as any).visualization?.failedToLoad ||
+            {i18n.labels.visualization?.failedToLoad ||
               "Failed to load visualization"}
           </div>
           <div
@@ -1145,17 +1534,17 @@ export const Visualization = ({
               color: "var(--mk-ui-text-secondary)",
             }}
           >
-            {(i18n.labels as any).visualization?.frameId || "Frame ID"}:{" "}
-            {mdbFrameId || (i18n.labels as any).visualization?.none || "None"}
+            {i18n.labels.visualization?.frameId || "Frame ID"}:{" "}
+            {mdbFrameId || i18n.labels.visualization?.none || "None"}
           </div>
           <div
             style={{ fontSize: "12px", color: "var(--mk-ui-text-secondary)" }}
           >
-            {(i18n.labels as any).visualization?.path || "Path"}:{" "}
-            {sourcePath || (i18n.labels as any).visualization?.none || "None"}
+            {i18n.labels.visualization?.path || "Path"}:{" "}
+            {sourcePath || i18n.labels.visualization?.none || "None"}
           </div>
         </div>
-      ) : loadingData ? (
+      ) : loadingData && (!listData || listData.length === 0) ? (
         <div
           style={{
             width: "100%",
@@ -1167,41 +1556,62 @@ export const Visualization = ({
             fontSize: "14px",
           }}
         >
-          {(i18n.labels as any).visualization?.loadingData || "Loading data..."}
+          {i18n.labels.visualization?.loadingData || "Loading data..."}
         </div>
-      ) : configData &&
-        listData.length > 0 &&
-        (() => {
-          // Check if we have all required fields
-          const xField = Array.isArray(
-            configData.visualizationConfig.encoding.x
-          )
-            ? configData.visualizationConfig.encoding.x[0]?.field
-            : configData.visualizationConfig.encoding.x?.field;
+      ) : null}
 
-          const yFields = Array.isArray(
-            configData.visualizationConfig.encoding.y
-          )
-            ? configData.visualizationConfig.encoding.y
-            : configData.visualizationConfig.encoding.y?.field
-            ? [configData.visualizationConfig.encoding.y]
+      {/* Chart content area */}
+      {(() => {
+        // If configData exists and has visualizationConfig, check if we have all required fields
+        if (configData && configData.visualizationConfig) {
+          const xField = configData.visualizationConfig?.encoding?.x
+            ? Array.isArray(configData.visualizationConfig.encoding.x)
+              ? configData.visualizationConfig.encoding.x[0]?.field
+              : configData.visualizationConfig.encoding.x?.field
+            : undefined;
+
+          const yFields = configData.visualizationConfig?.encoding?.y
+            ? Array.isArray(configData.visualizationConfig.encoding.y)
+              ? configData.visualizationConfig.encoding.y
+              : configData.visualizationConfig.encoding.y?.field
+              ? [configData.visualizationConfig.encoding.y]
+              : []
             : [];
 
           const hasDataSource = !!configData.listId;
           const hasXField = !!xField;
           const hasYField =
-            yFields.length > 0 && yFields.some((y) => !!y.field);
+            yFields.length > 0 && yFields.some((y) => !!y?.field);
 
           return hasDataSource && hasXField && hasYField;
-        })() ? (
-        <>
+        }
+        return false;
+      })() ? (
+        <div
+          className="visualization-engine"
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            pointerEvents: "auto",
+          }}
+        >
           <D3VisualizationEngine
+            key={`${configData.visualizationConfig.chartType}-${
+              configData.visualizationConfig.colorPalette
+            }-${configData.visualizationConfig.encoding?.color?.field}-${
+              configData.visualizationConfig.encoding?.color?.aggregate
+            }-${
+              Array.isArray(configData.visualizationConfig.encoding?.y)
+                ? configData.visualizationConfig.encoding.y[0]?.aggregate
+                : configData.visualizationConfig.encoding?.y?.aggregate
+            }`}
             config={configData.visualizationConfig}
             data={listData}
             tableProperties={tableProperties}
             width={bounds.width}
-            height={bounds.height}
-            className="visualization-engine"
+            height={Math.max(200, bounds.height - filterBarHeight)}
+            className="visualization-engine-inner"
             superstate={superstate}
             showTitle={showTitle}
             showXAxis={showXAxis}
@@ -1212,276 +1622,114 @@ export const Visualization = ({
             editMode={isSelected}
             selectedElement={selectedElement}
             onElementSelect={onElementSelect}
-            onElementDoubleClick={onElementDoubleClick}
             onElementsRendered={onElementsRendered}
             colorPaletteId={colorPaletteId}
             showDebug={false}
           />
-          {isSelected &&
-            editableElements.map((element, index) => (
-              <EditableLabel
-                key={`${element.type}-${index}`}
-                initialValue={element.value}
-                position={{
-                  x: element.position.x,
-                  y: element.position.y,
-                  width: element.position.width,
-                  height: element.position.height,
-                }}
-                rotation={element.rotation}
-                type={element.type}
-                onSave={(newValue) => onEditComplete(element.type, newValue)}
-                onCancel={() => {}}
-              />
-            ))}
-        </>
+        </div>
+      ) : !loading ? (
+        <VisualizationSetup
+          superstate={superstate}
+          mdbFrameId={mdbFrameId}
+          sourcePath={sourcePath}
+          fields={tableProperties}
+          availableSchemas={availableTables}
+          currentSpace={configData?.dataSourcePath || sourcePath}
+          currentList={configData?.listId}
+          currentXField={
+            Array.isArray(configData?.visualizationConfig?.encoding?.x)
+              ? configData?.visualizationConfig?.encoding?.x[0]?.field
+              : configData?.visualizationConfig?.encoding?.x?.field
+          }
+          currentYField={
+            Array.isArray(configData?.visualizationConfig?.encoding?.y)
+              ? configData?.visualizationConfig?.encoding?.y[0]?.field
+              : configData?.visualizationConfig?.encoding?.y?.field
+          }
+          onSaveSpace={async (spacePath: string) => {
+            // When changing space, clear the listId since lists are space-specific
+            await saveVisualizationSchema("", spacePath);
+            // Reload available tables for the new space
+            await loadAvailableTables();
+          }}
+          onSaveList={async (newListId: string) => {
+            // Save the schema update
+            await saveVisualizationSchema(newListId, undefined);
+            // Create updated config with new listId
+            const updatedConfig = configData
+              ? {
+                  ...configData,
+                  listId: newListId,
+                }
+              : null;
+            // Reload data with new list
+            await loadListData(updatedConfig);
+          }}
+          onSaveXField={async (field: string) => {
+            const fieldType = getFieldEncodingType(field);
+            const newConfig = configData?.visualizationConfig
+              ? {
+                  ...configData.visualizationConfig,
+                  encoding: {
+                    ...configData.visualizationConfig.encoding,
+                    x: { field, type: fieldType },
+                  },
+                }
+              : ({
+                  id: configData?.visualizationConfig?.id || "",
+                  name:
+                    configData?.visualizationConfig?.name || "Visualization",
+                  chartType: "bar" as ChartType,
+                  mark: { type: "rect" as MarkType },
+                  layout: {
+                    width: 400,
+                    height: 300,
+                    padding: { top: 20, right: 20, bottom: 40, left: 40 },
+                  },
+                  encoding: {
+                    x: { field, type: fieldType },
+                    y: configData?.visualizationConfig?.encoding?.y || {
+                      field: "",
+                      type: "quantitative",
+                    },
+                  },
+                } as VisualizationConfig);
+            await handleConfigChange(newConfig);
+          }}
+          onSaveYField={async (field: string) => {
+            const fieldType = getFieldEncodingType(field);
+            const newConfig = configData?.visualizationConfig
+              ? {
+                  ...configData.visualizationConfig,
+                  encoding: {
+                    ...configData.visualizationConfig.encoding,
+                    y: { field, type: fieldType },
+                  },
+                }
+              : ({
+                  id: configData?.visualizationConfig?.id || "",
+                  name:
+                    configData?.visualizationConfig?.name || "Visualization",
+                  chartType: "bar" as ChartType,
+                  mark: { type: "rect" as MarkType },
+                  layout: {
+                    width: 400,
+                    height: 300,
+                    padding: { top: 20, right: 20, bottom: 40, left: 40 },
+                  },
+                  encoding: {
+                    x: configData?.visualizationConfig?.encoding?.x || {
+                      field: "",
+                      type: "nominal",
+                    },
+                    y: { field, type: fieldType },
+                  },
+                } as VisualizationConfig);
+            await handleConfigChange(newConfig);
+          }}
+        />
       ) : (
-        <>
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "16px",
-              color: "var(--mk-ui-text-secondary)",
-              fontSize: "14px",
-              padding: "32px",
-            }}
-          >
-            <div style={{ marginBottom: "8px" }}>
-              {!configData
-                ? (i18n.labels as any).visualization?.configurationNotLoaded ||
-                  "Configuration not loaded"
-                : (i18n.labels as any).visualization
-                    ?.configureYourVisualization ||
-                  "Configure your visualization"}
-            </div>
-            {configData && (
-              <>
-                {/* Show formatter for data source, x-axis, and y-axis selection */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                    background: "var(--mk-ui-background)",
-                    padding: "16px",
-                    borderRadius: "8px",
-                    border: "1px solid var(--mk-ui-border)",
-                    minWidth: "280px",
-                  }}
-                >
-                  {/* Data Source Selector */}
-                  <div
-                    className="mk-editor-frame-node-button"
-                    onClick={(e) => {
-                      if (!superstate || !availableTables) return;
-
-                      const menuOptions: SelectOption[] = [
-                        {
-                          name:
-                            (i18n.labels as any).visualization?.none || "None",
-                          value: "",
-                          onClick: () => handleTableChange(""),
-                        },
-                        ...availableTables.map((table) => ({
-                          name: table.name,
-                          value: table.id,
-                          onClick: () => handleTableChange(table.id),
-                        })),
-                      ];
-
-                      const offset = (
-                        e.currentTarget as HTMLElement
-                      ).getBoundingClientRect();
-                      superstate.ui.openMenu(
-                        offset,
-                        defaultMenu(superstate.ui, menuOptions),
-                        window
-                      );
-                    }}
-                    aria-label={i18n.settings.ariaLabels.dataSource}
-                  >
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html:
-                          superstate?.ui?.getSticker("lucide//database") || "",
-                      }}
-                    />
-                    <span>
-                      {availableTables?.find((t) => t.id === configData.listId)
-                        ?.name ||
-                        (i18n.labels as any).visualization?.selectData ||
-                        "Select Data"}
-                    </span>
-                  </div>
-
-                  {/* Only show field selectors when data source is selected */}
-                  {configData.listId && (
-                    <>
-                      {/* X Axis Selector */}
-                      {(() => {
-                        const xField = Array.isArray(
-                          configData.visualizationConfig.encoding.x
-                        )
-                          ? configData.visualizationConfig.encoding.x[0]?.field
-                          : configData.visualizationConfig.encoding.x?.field;
-
-                        return (
-                          <div
-                            className="mk-editor-frame-node-button"
-                            onClick={(e) => {
-                              if (!superstate) return;
-
-                              const menuOptions: SelectOption[] = [
-                                {
-                                  name: "None",
-                                  value: "",
-                                  onClick: () => {
-                                    handleConfigChange({
-                                      ...configData.visualizationConfig,
-                                      encoding: {
-                                        ...configData.visualizationConfig
-                                          .encoding,
-                                        x: {
-                                          field: "",
-                                          type: "nominal" as const,
-                                        },
-                                      },
-                                    });
-                                  },
-                                },
-                                ...configData.availableFields.map((col) => ({
-                                  name: col,
-                                  value: col,
-                                  onClick: () => {
-                                    handleConfigChange({
-                                      ...configData.visualizationConfig,
-                                      encoding: {
-                                        ...configData.visualizationConfig
-                                          .encoding,
-                                        x: {
-                                          field: col,
-                                          type: "nominal" as const,
-                                        },
-                                      },
-                                    });
-                                  },
-                                })),
-                              ];
-
-                              const offset = (
-                                e.currentTarget as HTMLElement
-                              ).getBoundingClientRect();
-                              superstate.ui.openMenu(
-                                offset,
-                                defaultMenu(superstate.ui, menuOptions),
-                                window
-                              );
-                            }}
-                          >
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html:
-                                  superstate?.ui?.getSticker(
-                                    "lucide//move-horizontal"
-                                  ) || "",
-                              }}
-                            />
-                            {!xField && <span>Select X Field</span>}
-                            {xField && <span>{xField}</span>}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Y Axis Selector */}
-                      {(() => {
-                        const yFields = Array.isArray(
-                          configData.visualizationConfig.encoding.y
-                        )
-                          ? configData.visualizationConfig.encoding.y
-                          : configData.visualizationConfig.encoding.y?.field
-                          ? [configData.visualizationConfig.encoding.y]
-                          : [];
-                        const selectedValues = yFields
-                          .map((y) => y.field)
-                          .filter(Boolean);
-
-                        return (
-                          <div
-                            className="mk-editor-frame-node-button"
-                            onClick={(e) => {
-                              if (!superstate) return;
-
-                              const menuOptions: SelectOption[] =
-                                configData.availableFields.map((col) => ({
-                                  name: col,
-                                  value: col,
-                                }));
-
-                              const offset = (
-                                e.currentTarget as HTMLElement
-                              ).getBoundingClientRect();
-
-                              const menuProps = {
-                                ...defaultMenu(superstate.ui, menuOptions),
-                                multi: true,
-                                editable: true,
-                                value: selectedValues,
-                                saveOptions: (
-                                  options: string[],
-                                  values: string[]
-                                ) => {
-                                  const newYFields = values.map((field) => ({
-                                    field,
-                                    type: "quantitative" as const,
-                                  }));
-
-                                  handleConfigChange({
-                                    ...configData.visualizationConfig,
-                                    encoding: {
-                                      ...configData.visualizationConfig
-                                        .encoding,
-                                      y: newYFields,
-                                    },
-                                  });
-                                },
-                              };
-
-                              superstate.ui.openMenu(offset, menuProps, window);
-                            }}
-                          >
-                            <div
-                              dangerouslySetInnerHTML={{
-                                __html:
-                                  superstate?.ui?.getSticker(
-                                    "lucide//move-vertical"
-                                  ) || "",
-                              }}
-                            />
-                            {selectedValues.length === 0 && (
-                              <span>Select Y Fields</span>
-                            )}
-                            {selectedValues.length > 0 && (
-                              <span>
-                                {selectedValues.length === 1
-                                  ? selectedValues[0]
-                                  : `${selectedValues.length} fields`}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </>
+        <></>
       )}
     </div>
   );

@@ -7,7 +7,7 @@ import {
   parseFieldValue,
   parseSourceOptions,
 } from "core/schemas/parseFieldValue";
-import { getColors } from "core/utils/colorPalette";
+import { getColors, getColorPaletteById, getThemeColors } from "core/utils/colorPalette";
 import { serializeOptionValue } from "core/utils/serializer";
 import { uniq } from "lodash";
 import { SelectMenuProps, SelectOption, Superstate } from "makemd-core";
@@ -55,26 +55,37 @@ export const OptionCell = (
         parsedValue.sourceProps
       );
     }
-    return [
-      ...(((_options as SelectOption[]) ?? [])
-        .filter((f) => f.value)
-        .map((t) => ({
-          ...t,
-          color: editable
-            ? t.color?.length > 0
-              ? t.color
-              : "var(--mk-color-none)"
-            : undefined,
-          removeable: editable ? editMode >= CellEditMode.EditModeView : false,
-        })) ?? []),
-      ...values.map((f) => {
+    
+    // Get colors from the color scheme if available
+    const palette = parsedValue.colorScheme ? getColorPaletteById(props.superstate, parsedValue.colorScheme) : null;
+    const schemeColors = palette ? palette.colors : null;
+    
+    const existingOptions = ((_options as SelectOption[]) ?? [])
+      .filter((f) => f.value)
+      .map((t, index) => ({
+        ...t,
+        color: editable
+          ? schemeColors ? schemeColors[index % schemeColors.length]?.value || "var(--mk-color-none)" : t.color?.length > 0
+            ? t.color
+          : undefined : undefined,
+        removeable: editable ? editMode >= CellEditMode.EditModeView : false,
+      })) ?? [];
+    
+    const newValueOptions = values
+      .filter(v => !existingOptions.find(o => o.value === v))
+      .map((f, index) => {
+        
         return {
           name: f,
           value: f,
-          color: editable ? "var(--mk-color-none)" : undefined,
+          color: editable && schemeColors ? schemeColors[(existingOptions.length + index) % schemeColors.length]?.value || "var(--mk-color-none)" : undefined,
           removeable: editable ? editMode >= CellEditMode.EditModeView : false,
         };
-      }),
+      });
+    
+    return [
+      ...existingOptions,
+      ...newValueOptions,
     ]
       .filter(onlyUniqueProp("value"))
       .filter((f) => f.value.length > 0);
@@ -156,15 +167,25 @@ export const OptionCell = (
     }
   };
   const saveOptions = (_options: string[], _value: string[]) => {
+    // Get colors from the color scheme if available
+    const palette = parsedValue.colorScheme ? getColorPaletteById(props.superstate, parsedValue.colorScheme) : null;
+    const schemeColors = palette ? palette.colors : null;
+    
     const newOptions = uniq([..._options, ..._value])
       .filter((f) => f.length > 0)
-      .map(
-        (t) =>
-          options.find((f) => f.value == t) ?? {
-            name: t,
-            value: t,
-          }
-      );
+      .map((t, index) => {
+        const existingOption = options.find((f) => f.value == t);
+        if (existingOption) {
+          return existingOption;
+        }
+        // For new options, assign color from scheme based on index
+
+        return {
+          name: t,
+          value: t,
+          color:  schemeColors ? schemeColors[(options.length + index) % schemeColors.length]?.value : "var(--mk-color-none)",
+        };
+      });
     if (!props.multi) {
       if (props.editMode >= CellEditMode.EditModeView) {
         setOptions(newOptions);
@@ -191,7 +212,8 @@ export const OptionCell = (
     const menuOptions: SelectOption[] = [];
     menuOptions.push(
       menuInput(option.value, (value) =>
-        saveOption(option.value, { ...option, value: value })
+        saveOption(option.value, { ...option, value: value }),
+        ""
       )
     );
     menuOptions.push(menuSeparator);
@@ -203,7 +225,11 @@ export const OptionCell = (
       },
     });
 
-    getColors(props.superstate).forEach((f) => {
+    // Use colors from the color scheme if available
+    const palette = parsedValue.colorScheme ? getColorPaletteById(props.superstate, parsedValue.colorScheme) : null;
+    const colors = palette ? palette.colors.map(c => [c.name, c.value] as [string, string]) : getColors(props.superstate);
+    
+    colors.forEach((f) => {
       menuOptions.push({
         name: f[0],
         value: f[1],

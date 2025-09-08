@@ -350,6 +350,7 @@ const NewPropertyMenuComponent = (
             table={fieldSource}
             fields={props.fields}
             fieldType={fieldType}
+            isSpace={props.isSpace}
             value={fieldValue}
             contextPath={props.contextPath}
             saveValue={selectedValue}

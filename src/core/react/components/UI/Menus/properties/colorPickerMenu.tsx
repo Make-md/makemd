@@ -184,8 +184,6 @@ const ColorSwatch: React.FC<{
   className?: string;
   isGradient?: boolean;
 }> = ({ color, name, size = 'medium', onClick, className = '', isGradient = false }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  
   const sizeClasses = {
     small: 'mk-color-swatch-small',
     medium: 'mk-color-swatch-medium',
@@ -199,8 +197,6 @@ const ColorSwatch: React.FC<{
   return (
     <div
       className={`mk-color-swatch ${sizeClasses[size]} ${className} ${isGradient ? 'mk-gradient-swatch' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <div
         className="mk-color-swatch-inner"
@@ -208,12 +204,6 @@ const ColorSwatch: React.FC<{
         onClick={onClick}
         title={name ? `${name}: ${color}` : color}
       >
-        {isHovered && name && (
-          <div className="mk-color-swatch-overlay">
-            <div className="mk-color-swatch-name">{name}</div>
-            <div className="mk-color-swatch-value">{isGradient ? 'Gradient' : color}</div>
-          </div>
-        )}
       </div>
     </div>
   );

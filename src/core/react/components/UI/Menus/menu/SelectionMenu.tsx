@@ -33,12 +33,14 @@ export const showDisclosureMenu = (
 
 export const menuInput = (
   value: string,
-  setValue: (value: string) => void
+  setValue: (value: string) => void,
+    placeholder: string
 ): SelectOption => ({
   name: "",
   type: SelectOptionType.Input,
   value,
   onValueChange: setValue,
+  description: placeholder
 });
 
 export const menuSection = (name: string): SelectOption => ({

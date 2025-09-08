@@ -313,6 +313,7 @@ public app: App;
             thumbnail: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyBanner],
             sticker: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeySticker],
             color: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyColor],
+
         },
         }
         

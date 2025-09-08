@@ -57,7 +57,7 @@ export const mdbFramesToDBTables = (tables: SpaceTables) : DBTables => {
 export const mdbToDBTables = (tables: SpaceTables) : DBTables => {
     const schemas = Object.values(tables).map((t) => t.schema);
     const fields = Object.values(tables).flatMap((t) => t.cols);
-    const dbTables = Object.keys(tables).reduce((p, c) => {
+    const dbTables = Object.keys(tables).reduce((p, c): any => {
       return {
         ...p,
         [c]: {

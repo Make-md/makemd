@@ -3,6 +3,7 @@ import { RenderContext, isCanvasContext, isSVGContext } from '../RenderContext';
 import { getPaletteColors } from '../utils';
 import { displayTextForType } from 'core/utils/displayTextForType';
 import { GradientUtility, GradientConfig } from './GradientUtility';
+import { BarChartData } from '../../transformers';
 
 export class BarChartUtility {
   static render(context: RenderContext): void {
@@ -18,6 +19,162 @@ export class BarChartUtility {
   private static renderSVG(context: RenderContext): void {
     if (!isSVGContext(context)) return;
 
+    const { g, svg, processedData, transformedData, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor } = context;
+    
+    // Use transformed data if available
+    if (transformedData?.type === 'bar' && transformedData.data) {
+      this.renderWithTransformedData(context, transformedData.data as BarChartData);
+      return;
+    }
+    
+    // Fall back to legacy rendering
+    this.renderLegacy(context);
+  }
+
+  private static renderWithTransformedData(context: RenderContext, barData: BarChartData): void {
+    if (!isSVGContext(context)) return;
+    
+    const { g, svg, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, resolveColor } = context;
+    
+    const xScale = scales.get('x');
+    const yScale = scales.get('y');
+    
+    if (!xScale || !yScale || !barData.data || barData.data.length === 0) return;
+    
+    const themeColors = getPaletteColors(context.colorPaletteId, context.superstate);
+    
+    // Create tooltip
+    const tooltip = select('body').append('div')
+      .attr('class', 'bar-tooltip')
+      .style('position', 'absolute')
+      .style('padding', '8px 12px')
+      .style('background', resolveColor('var(--mk-ui-background)'))
+      .style('color', resolveColor('var(--mk-ui-text-primary)'))
+      .style('border', `1px solid ${resolveColor('var(--mk-ui-border)')}`)
+      .style('border-radius', '4px')
+      .style('font-size', '12px')
+      .style('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.15)')
+      .style('pointer-events', 'none')
+      .style('opacity', 0)
+      .style('z-index', 10000);
+    
+    // Calculate bar dimensions
+    const bandwidth = xScale.bandwidth ? xScale.bandwidth() : 40;
+    const barPadding = bandwidth * 0.1;
+    
+    // Group bars by category for grouped/stacked rendering
+    const categoryGroups = new Map<string, BarChartData['data']>();
+    barData.data.forEach(d => {
+      const key = String(d.category);
+      if (!categoryGroups.has(key)) {
+        categoryGroups.set(key, []);
+      }
+      categoryGroups.get(key)!.push(d);
+    });
+    
+    // Determine bar width based on grouping
+    const hasMultipleSeries = barData.series && barData.series.length > 1;
+    const barWidth = hasMultipleSeries && !barData.stacks
+      ? (bandwidth - barPadding * 2) / (barData.series?.length || 1)
+      : bandwidth - barPadding * 2;
+    
+    // Render bars
+    const bars = g.selectAll('.bar')
+      .data(barData.data)
+      .enter()
+      .append('rect')
+      .attr('class', d => `bar ${d.series ? `series-${d.series}` : ''}`)
+      .attr('x', d => {
+        const baseX = xScale(String(d.category));
+        if (!hasMultipleSeries || barData.stacks) {
+          return baseX + barPadding;
+        }
+        // For grouped bars, offset by series index
+        const seriesIndex = barData.series?.indexOf(d.series || '') || 0;
+        return baseX + barPadding + seriesIndex * barWidth;
+      })
+      .attr('y', d => {
+        if ((d as any).y1 !== undefined) {
+          // Stacked bar
+          return yScale((d as any).y1);
+        }
+        return yScale(Math.max(0, d.value));
+      })
+      .attr('width', barWidth)
+      .attr('height', d => {
+        if ((d as any).y0 !== undefined && (d as any).y1 !== undefined) {
+          // Stacked bar
+          return Math.abs(yScale((d as any).y0) - yScale((d as any).y1));
+        }
+        const zeroY = yScale(0);
+        const valueY = yScale(d.value);
+        return Math.abs(valueY - zeroY);
+      })
+      .attr('fill', (d, i) => {
+        if (d.color) return d.color;
+        
+        // Use color scale if available (for grouped bars with color encoding)
+        const colorScale = scales.get('color');
+        if (d.series && colorScale) {
+          return colorScale(d.series);
+        }
+        
+        // Fall back to theme colors indexed by series
+        if (d.series && barData.series) {
+          const seriesIndex = barData.series.indexOf(d.series);
+          return themeColors[seriesIndex % themeColors.length];
+        }
+        return themeColors[0];
+      })
+      .attr('opacity', config.mark?.opacity || 0.8)
+      .style('cursor', 'pointer');
+    
+    // Add interactivity
+    bars
+      .on('mouseover', function(event, d) {
+        select(this)
+          .transition()
+          .duration(150)
+          .attr('opacity', 1);
+        
+        // Show tooltip
+        tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.9);
+        
+        const tooltipContent = `
+          <div><strong>${d.category}</strong></div>
+          ${d.series ? `<div>${d.series}</div>` : ''}
+          <div>Value: ${d.value.toFixed(2)}</div>
+        `;
+        
+        tooltip.html(tooltipContent)
+          .style('left', (event.pageX + 10) + 'px')
+          .style('top', (event.pageY - 28) + 'px');
+      })
+      .on('mousemove', function(event) {
+        tooltip
+          .style('left', (event.pageX + 10) + 'px')
+          .style('top', (event.pageY - 28) + 'px');
+      })
+      .on('mouseout', function() {
+        select(this)
+          .transition()
+          .duration(150)
+          .attr('opacity', config.mark?.opacity || 0.8);
+        
+        tooltip.transition()
+          .duration(500)
+          .style('opacity', 0);
+      });
+    
+    // Store tooltip reference for cleanup
+    (svg.node() as any).__barTooltip = tooltip;
+  }
+
+  private static renderLegacy(context: RenderContext): void {
+    if (!isSVGContext(context)) return;
+    
     const { g, svg, processedData, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor } = context;
 
     const xScale = scales.get('x');
@@ -43,21 +200,25 @@ export class BarChartUtility {
       xScale.domain(uniqueCompositeValues);
     }
 
-    // Check if we have multiple Y fields
+    // Check if we have multiple Y fields or color grouping
     const yEncodings = Array.isArray(config.encoding.y) ? config.encoding.y : (config.encoding.y ? [config.encoding.y] : []);
     const hasMultipleYFields = yEncodings.length > 1;
+    const hasColorGrouping = !!config.encoding.color?.field;
     
+    // Default to stacked when there are multiple Y fields or color grouping
+    const shouldStack = hasMultipleYFields || hasColorGrouping ? (config.stacked !== false) : false;
 
-    if (hasMultipleYFields && config.stacked) {
+    if (shouldStack && (hasMultipleYFields || hasColorGrouping)) {
       this.renderStackedBars(context, xScale, yScale, yEncodings, getXValue);
-    } else if (hasMultipleYFields) {
+    } else if (hasMultipleYFields || hasColorGrouping) {
+      // Render grouped bars when not stacked
       this.renderGroupedBars(context, xScale, yScale, yEncodings, getXValue);
     } else {
-      this.renderSingleBars(context, xScale, yScale, yEncodings, getXValue);
+      this.renderSingleBarsLegacy(context, xScale, yScale, yEncodings, getXValue);
     }
   }
 
-  private static renderSingleBars(context: RenderContext, xScale: any, yScale: any, yEncodings: any[], getXValue: (d: any) => string): void {
+  private static renderSingleBarsLegacy(context: RenderContext, xScale: any, yScale: any, yEncodings: any[], getXValue: (d: any) => string): void {
     if (!isSVGContext(context)) return;
 
     const { g, svg, processedData, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor } = context;
@@ -69,9 +230,24 @@ export class BarChartUtility {
 
     if (!yField) return;
 
-    const bandwidth = xScale.bandwidth ? xScale.bandwidth() : 20;
-    const barPadding = bandwidth * 0.1;
-    const barWidth = bandwidth - barPadding * 2;
+    // Calculate bar width based on scale type
+    let bandwidth: number;
+    let barWidth: number;
+    let barPadding: number;
+    
+    if (xScale.bandwidth) {
+      // Band scale (categorical)
+      bandwidth = xScale.bandwidth();
+      barPadding = bandwidth * 0.1;
+      barWidth = bandwidth - barPadding * 2;
+    } else {
+      // Time or linear scale - calculate width based on data points
+      const dataCount = processedData.length;
+      const availableWidth = graphArea.right - graphArea.left;
+      bandwidth = availableWidth / (dataCount + 1);
+      barWidth = Math.min(bandwidth * 0.8, 40); // Max width of 40px for time series bars
+      barPadding = (bandwidth - barWidth) / 2;
+    }
 
     const bars = g
       .selectAll('.bar')
@@ -81,12 +257,40 @@ export class BarChartUtility {
       .attr('class', 'bar')
       .attr('x', (d: any) => {
         const xValue = getXValue(d);
-        const xPos = xScale(xValue);
-        return xPos !== undefined ? xPos + barPadding : 0;
+        let xPos: number;
+        
+        // Handle different scale types
+        if (xScale.bandwidth) {
+          // Band scale
+          xPos = xScale(xValue);
+        } else if (config.encoding.x && !Array.isArray(config.encoding.x) && config.encoding.x.type === 'temporal') {
+          // Time scale
+          const fieldValue = d[config.encoding.x.field];
+          const dateValue = fieldValue instanceof Date ? fieldValue : new Date(fieldValue);
+          xPos = xScale(dateValue);
+        } else {
+          // Linear scale
+          xPos = xScale(Number(xValue));
+        }
+        
+        // Center the bar for non-band scales
+        if (!xScale.bandwidth && xPos !== undefined) {
+          xPos = xPos - barWidth / 2;
+        }
+        
+        return xPos !== undefined ? xPos + (xScale.bandwidth ? barPadding : 0) : 0;
       })
-      .attr('y', (d: any) => yScale(Number(d[yField]) || 0))
+      .attr('y', (d: any) => {
+        const value = Number(d[yField]) || 0;
+        // For negative values, y should be at zero line
+        return value >= 0 ? yScale(value) : yScale(0);
+      })
       .attr('width', barWidth)
-      .attr('height', (d: any) => yScale(0) - yScale(Number(d[yField]) || 0))
+      .attr('height', (d: any) => {
+        const value = Number(d[yField]) || 0;
+        // For negative values, height is from zero down to the value
+        return Math.abs(yScale(0) - yScale(value));
+      })
       .attr('fill', (d: any, i: number) => {
         // Check if gradient is configured
         const markConfig = config.mark as any;
@@ -333,23 +537,46 @@ export class BarChartUtility {
     const { g, svg, processedData, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor } = context;
     const themeColors = getPaletteColors(context.colorPaletteId, context.superstate);
 
-    // Create a sub-scale for positioning bars within each group
-    const x1Scale = scaleBand()
-      .domain(yEncodings.map((_, i) => String(i)))
-      .range([0, xScale.bandwidth()])
-      .padding(0.05);
+    const hasMultipleYFields = yEncodings.length > 1;
+    const colorField = config.encoding.color?.field;
+    const hasColorGrouping = !!colorField;
 
-    // Create groups for each X value
-    const barGroups = g.selectAll('.bar-group')
-      .data(processedData)
-      .enter()
-      .append('g')
-      .attr('class', 'bar-group')
-      .attr('transform', (d: any) => {
-        const xValue = getXValue(d);
-        const xPos = xScale(xValue);
-        return `translate(${xPos !== undefined ? xPos : 0}, 0)`;
-      });
+    // Calculate group width based on scale type
+    let groupWidth: number;
+    if (xScale.bandwidth) {
+      groupWidth = xScale.bandwidth();
+    } else {
+      // For time/linear scales, calculate appropriate group width
+      const dataCount = processedData.length;
+      const availableWidth = graphArea.right - graphArea.left;
+      groupWidth = Math.min(availableWidth / (dataCount + 1), 100); // Max group width of 100px
+    }
+
+    let x1Scale: any;
+    let groupCategories: string[];
+
+    if (hasMultipleYFields) {
+      // Multiple Y fields - group by Y field
+      groupCategories = yEncodings.map((_, i) => String(i));
+      x1Scale = scaleBand()
+        .domain(groupCategories)
+        .range([0, groupWidth])
+        .padding(0.05);
+    } else if (hasColorGrouping) {
+      // Single Y field with color grouping - group by color values
+      groupCategories = Array.from(new Set(processedData.map(d => String(d[colorField] || 'Unknown'))));
+      x1Scale = scaleBand()
+        .domain(groupCategories)
+        .range([0, groupWidth])
+        .padding(0.05);
+    } else {
+      // Fallback - shouldn't happen with current logic
+      groupCategories = ['0'];
+      x1Scale = scaleBand()
+        .domain(groupCategories)
+        .range([0, groupWidth])
+        .padding(0.05);
+    }
 
     // Create tooltip
     const tooltip = select('body').append('div')
@@ -363,156 +590,128 @@ export class BarChartUtility {
       .style('pointer-events', 'none')
       .style('opacity', 0);
 
-    // Create bars for each Y field
-    yEncodings.forEach((yEncoding, i) => {
-      barGroups.append('rect')
-        .attr('class', `bar bar-${i}`)
-        .attr('x', x1Scale(String(i)) || 0)
-        .attr('y', (d: any) => {
-          const value = d[yEncoding.field];
-          if (value === undefined || value === null) return yScale(0);
-          return yScale(Number(value));
-        })
-        .attr('width', x1Scale.bandwidth())
-        .attr('height', (d: any) => {
-          const value = d[yEncoding.field];
-          if (value === undefined || value === null) return 0;
-          return yScale(0) - yScale(Number(value));
-        })
-        .attr('fill', (d: any) => {
-          // Check if color palette has gradients to use
-          const palettes = context.superstate?.assets?.getColorPalettes();
-          const palette = palettes?.find((p: any) => p.id === context.colorPaletteId);
+    if (hasMultipleYFields) {
+      // Handle multiple Y fields - group by X value, then create bars for each Y field
+      const xValues = Array.from(new Set(processedData.map(d => getXValue(d))));
+      
+      xValues.forEach(xValue => {
+        const dataForX = processedData.filter(d => getXValue(d) === xValue);
+        if (dataForX.length === 0) return;
+        
+        const xPos = xScale.bandwidth ? xScale(xValue) : 
+          (config.encoding.x && !Array.isArray(config.encoding.x) && config.encoding.x.type === 'temporal' 
+            ? xScale(new Date(dataForX[0][config.encoding.x.field] as string | number)) - groupWidth / 2
+            : xScale(Number(xValue)) - groupWidth / 2);
+        
+        yEncodings.forEach((yEncoding, i) => {
+          const value = Number(dataForX[0][yEncoding.field]);
+          if (isNaN(value)) return;
           
-          // Look for CSS gradients in the colors array first
-          if (palette?.colors) {
-            const gradientColors = palette.colors.filter(c => c.value && (
-              c.value.includes('linear-gradient') || 
-              c.value.includes('radial-gradient') || 
-              c.value.includes('conic-gradient')
-            )) || [];
-            
-            if (gradientColors.length > 0) {
-              // Parse CSS gradient and create SVG gradient
-              const gradientColor = gradientColors[i % gradientColors.length];
+          g.append('rect')
+            .attr('class', `bar bar-${i}`)
+            .attr('x', (xPos || 0) + (x1Scale(String(i)) || 0))
+            .attr('y', value >= 0 ? yScale(value) : yScale(0))
+            .attr('width', x1Scale.bandwidth())
+            .attr('height', Math.abs(yScale(0) - yScale(value)))
+            .attr('fill', themeColors[i % themeColors.length] || '#3b82f6')
+            .attr('opacity', config.mark?.opacity || 1)
+            .attr('cursor', editMode ? 'pointer' : 'default')
+            .attr('rx', 4)
+            .attr('ry', 4)
+            .on('mouseover', function(event) {
+              const barColor = select(this).attr('fill');
+              tooltip.transition().duration(200).style('opacity', 0.9);
               
-              const parsedGradient = GradientUtility.parseCSSGradient(gradientColor.value);
-              if (parsedGradient) {
-                // Override angle to vertical (180 degrees = top to bottom)
-                parsedGradient.angle = 180;
-                parsedGradient.direction = 'vertical';
-                const svgGradientId = GradientUtility.createSVGGradient(svg, parsedGradient);
-                return svgGradientId;
-              }
-            }
-          }
-          
-          // Default to theme colors
-          return themeColors[i % themeColors.length] || '#3b82f6';
-        })
-        .attr('opacity', config.mark?.opacity || 1)
-        .attr('cursor', editMode ? 'pointer' : 'default')
-        .attr('rx', 4)
-        .attr('ry', 4)
-        .on('mouseover', function(event, d: any) {
-          // Get the bar color
-          const barElement = select(this);
-          const barColor = barElement.attr('fill');
-          
-          // Show tooltip
-          tooltip.transition()
-            .duration(200)
-            .style('opacity', 0.9);
-
-          // Build tooltip content
-          let tooltipContent = '';
-          
-          // X value (not indented)
-          if (Array.isArray(config.encoding.x)) {
-            config.encoding.x.forEach((enc) => {
-              if (enc.field) {
-                const xValue = d[enc.field];
-                const xProp = context.tableProperties?.find(p => p.name === enc.field);
-                const formattedX = xProp ? displayTextForType(xProp, xValue, context.superstate) : xValue;
-                tooltipContent += `<div>${formattedX}</div>`;
-              }
+              let tooltipContent = `<div>${xValue}</div>`;
+              tooltipContent += `<div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">`;
+              tooltipContent += `<div style="width: 12px; height: 12px; background-color: ${barColor}; border-radius: 2px;"></div>`;
+              tooltipContent += `<div>${value} • ${yEncoding.field}</div></div>`;
+              
+              tooltip.html(tooltipContent)
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+              
+              select(this).transition().duration(100).attr('opacity', (config.mark?.opacity || 1) * 0.8);
+            })
+            .on('mousemove', function(event: any) {
+              tooltip.style('left', (event.pageX + 10) + 'px').style('top', (event.pageY - 28) + 'px');
+            })
+            .on('mouseout', function() {
+              tooltip.transition().duration(500).style('opacity', 0);
+              select(this).transition().duration(100).attr('opacity', config.mark?.opacity || 1);
             });
-          } else if (config.encoding.x && !Array.isArray(config.encoding.x) && config.encoding.x.field) {
-            const xEncoding = config.encoding.x as { field: string };
-            const xValue = d[xEncoding.field];
-            const xProp = context.tableProperties?.find(p => p.name === xEncoding.field);
-            const formattedX = xProp ? displayTextForType(xProp, xValue, context.superstate) : xValue;
-            tooltipContent += `<div>${formattedX}</div>`;
-          }
-          
-          // Y value with color square
-          tooltipContent += `<div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">`;
-          tooltipContent += `<div style="width: 12px; height: 12px; background-color: ${barColor}; border-radius: 2px; flex-shrink: 0;"></div>`;
-          
-          tooltipContent += `<div>`;
-          const yValue = d[yEncoding.field];
-          if (yValue !== undefined && yValue !== null) {
-            const yProp = context.tableProperties?.find(p => p.name === yEncoding.field);
-            const formattedY = yProp ? displayTextForType(yProp, yValue, context.superstate) : yValue;
-            tooltipContent += `${formattedY}`;
-          }
-          
-          // Add series name when multiple Y fields
-          if (yEncodings.length > 1) {
-            tooltipContent += ` • ${yEncoding.field}`;
-          }
-          
-          tooltipContent += `</div>`;
-          tooltipContent += `</div>`;
-
-          tooltip.html(tooltipContent)
-            .style('left', (event.pageX + 10) + 'px')
-            .style('top', (event.pageY - 28) + 'px');
-
-          // Highlight the bar
-          select(this)
-            .transition()
-            .duration(100)
-            .attr('opacity', (config.mark?.opacity || 1) * 0.8);
-        })
-        .on('mousemove', function(event) {
-          tooltip
-            .style('left', (event.pageX + 10) + 'px')
-            .style('top', (event.pageY - 28) + 'px');
-        })
-        .on('mouseout', function() {
-          tooltip.transition()
-            .duration(500)
-            .style('opacity', 0);
-
-          select(this)
-            .transition()
-            .duration(100)
-            .attr('opacity', config.mark?.opacity || 1);
         });
+      });
+    } else if (hasColorGrouping) {
+      // Handle single Y field with color grouping - group by X value, then create bars for each color category
+      const yField = yEncodings[0]?.field;
+      if (!yField) return;
+      
+      const xValues = Array.from(new Set(processedData.map(d => getXValue(d))));
+      
+      xValues.forEach(xValue => {
+        const dataForX = processedData.filter(d => getXValue(d) === xValue);
+        if (dataForX.length === 0) return;
+        
+        const xPos = xScale.bandwidth ? xScale(xValue) : 
+          (config.encoding.x && !Array.isArray(config.encoding.x) && config.encoding.x.type === 'temporal' 
+            ? xScale(new Date(dataForX[0][config.encoding.x.field] as string | number)) - groupWidth / 2
+            : xScale(Number(xValue)) - groupWidth / 2);
+        
+        // Group data by color value
+        const colorGroups = new Map<string, any[]>();
+        dataForX.forEach(d => {
+          const colorValue = String(d[colorField] || 'Unknown');
+          if (!colorGroups.has(colorValue)) {
+            colorGroups.set(colorValue, []);
+          }
+          colorGroups.get(colorValue)!.push(d);
+        });
+        
+        groupCategories.forEach((colorValue, i) => {
+          const dataForColor = colorGroups.get(colorValue) || [];
+          if (dataForColor.length === 0) return;
+          
+          // Sum values for this color group
+          const totalValue = dataForColor.reduce((sum, d) => sum + (Number(d[yField]) || 0), 0);
+          
+          g.append('rect')
+            .attr('class', `bar bar-color-${i}`)
+            .attr('x', (xPos || 0) + (x1Scale(colorValue) || 0))
+            .attr('y', totalValue >= 0 ? yScale(totalValue) : yScale(0))
+            .attr('width', x1Scale.bandwidth())
+            .attr('height', Math.abs(yScale(0) - yScale(totalValue)))
+            .attr('fill', themeColors[i % themeColors.length] || '#3b82f6')
+            .attr('opacity', config.mark?.opacity || 1)
+            .attr('cursor', editMode ? 'pointer' : 'default')
+            .attr('rx', 4)
+            .attr('ry', 4)
+            .on('mouseover', function(event) {
+              const barColor = select(this).attr('fill');
+              tooltip.transition().duration(200).style('opacity', 0.9);
+              
+              let tooltipContent = `<div>${xValue}</div>`;
+              tooltipContent += `<div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">`;
+              tooltipContent += `<div style="width: 12px; height: 12px; background-color: ${barColor}; border-radius: 2px;"></div>`;
+              tooltipContent += `<div>${totalValue} • ${colorValue}</div></div>`;
+              
+              tooltip.html(tooltipContent)
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY - 28) + 'px');
+              
+              select(this).transition().duration(100).attr('opacity', (config.mark?.opacity || 1) * 0.8);
+            })
+            .on('mousemove', function(event: any) {
+              tooltip.style('left', (event.pageX + 10) + 'px').style('top', (event.pageY - 28) + 'px');
+            })
+            .on('mouseout', function() {
+              tooltip.transition().duration(500).style('opacity', 0);
+              select(this).transition().duration(100).attr('opacity', config.mark?.opacity || 1);
+            });
+        });
+      });
+    }
 
-      // Add data labels on top of bars
-      if (showDataLabels || config.mark?.dataLabels?.show) {
-        barGroups.append('text')
-          .attr('class', `bar-label bar-label-${i}`)
-          .attr('x', (x1Scale(String(i)) || 0) + x1Scale.bandwidth() / 2)
-          .attr('y', (d: any) => {
-            const value = d[yEncoding.field];
-            if (value === undefined || value === null) return yScale(0) - 5;
-            return yScale(Number(value)) - 5;
-          })
-          .attr('text-anchor', 'middle')
-          .style('font-size', `${config.mark?.dataLabels?.fontSize || 11}px`)
-          .style('fill', config.mark?.dataLabels?.color || '#374151')
-          .style('font-weight', '500')
-          .text((d: any) => {
-            const value = d[yEncoding.field];
-            if (value === undefined || value === null) return '';
-            const numValue = Number(value);
-            return Number.isInteger(numValue) ? numValue.toString() : numValue.toFixed(1);
-          });
-      }
-    });
 
     // Add click handler in edit mode
     if (editMode) {
@@ -554,14 +753,57 @@ export class BarChartUtility {
 
     const { g, svg, processedData, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor } = context;
     const themeColors = getPaletteColors(context.colorPaletteId, context.superstate);
+    
+    const colorField = config.encoding.color?.field;
+    const hasMultipleYFields = yEncodings.length > 1;
+    const hasColorGrouping = !!colorField;
+    
+    let stackedData: any[];
+    let stackKeys: string[];
 
-    // Stacked bar chart implementation
-    const stackedData = stack()
-      .keys(yEncodings.map(enc => enc.field))
-      .value((d: any, key) => Number(d[key]) || 0)(processedData as any);
+    if (hasMultipleYFields) {
+      // Multiple Y fields - stack by Y field
+      stackKeys = yEncodings.map(enc => enc.field);
+      stackedData = stack()
+        .keys(stackKeys)
+        .value((d: any, key) => Number(d[key]) || 0)(processedData as any);
+    } else if (hasColorGrouping) {
+      // Single Y field with color grouping - reshape data and stack by color groups
+      const yField = yEncodings[0]?.field;
+      if (!yField) return;
+      
+      // Get unique color values and x values
+      const colorValues = Array.from(new Set(processedData.map(d => String(d[colorField] || 'Unknown'))));
+      const xValues = Array.from(new Set(processedData.map(d => getXValue(d))));
+      
+      // Reshape data - create one object per x value with properties for each color group
+      const reshapedData: any[] = xValues.map(xVal => {
+        const xFieldName = Array.isArray(config.encoding.x) ? config.encoding.x[0]?.field : config.encoding.x?.field;
+        const baseObj: any = { [xFieldName || 'x']: xVal };
+        
+        colorValues.forEach(colorVal => {
+          const matchingRows = processedData.filter(d => 
+            getXValue(d) === xVal && String(d[colorField] || 'Unknown') === colorVal
+          );
+          
+          // Sum all values for this x,color combination
+          const sum = matchingRows.reduce((acc, row) => acc + (Number(row[yField]) || 0), 0);
+          baseObj[colorVal] = sum;
+        });
+        
+        return baseObj;
+      });
+      
+      stackKeys = colorValues;
+      stackedData = stack()
+        .keys(stackKeys)
+        .value((d: any, key) => Number(d[key]) || 0)(reshapedData as any);
+    } else {
+      return; // No stacking scenario
+    }
 
     // Update y scale domain to account for stacked values
-    const maxStackValue = max(stackedData[stackedData.length - 1], d => d[1]) || 0;
+    const maxStackValue = max(stackedData[stackedData.length - 1], (d: any) => d[1]) || 0;
     yScale.domain([0, maxStackValue]);
 
     // Create tooltip
@@ -616,7 +858,7 @@ export class BarChartUtility {
 
     // Create bars for each series
     series.selectAll('rect')
-      .data(d => d.map((v: any) => ({ ...v, key: d.key })))
+      .data((d, i) => d.map((v: any) => ({ ...v, key: d.key, seriesIndex: i, totalSeries: stackedData.length })))
       .enter()
       .append('rect')
       .attr('class', 'stacked-bar')
@@ -630,8 +872,61 @@ export class BarChartUtility {
       .attr('width', xScale.bandwidth())
       .attr('opacity', config.mark?.opacity || 1)
       .attr('cursor', editMode ? 'pointer' : 'default')
-      .attr('rx', 4)
-      .attr('ry', 4)
+      // Only apply rounded corners to top of top segment and bottom of bottom segment
+      .each(function(d: any) {
+        const rect = select(this);
+        const isBottomSegment = d.seriesIndex === 0;
+        const isTopSegment = d.seriesIndex === d.totalSeries - 1;
+        
+        if (isBottomSegment && isTopSegment) {
+          // Single segment - round all corners
+          rect.attr('rx', 4).attr('ry', 4);
+        } else if (isBottomSegment) {
+          // Bottom segment - only round bottom corners
+          // We'll use a clipPath for this since SVG doesn't support individual corner rounding
+          const clipId = `bottom-clip-${Math.random().toString(36).substring(2, 9)}`;
+          const clipPath = svg.append('defs').append('clipPath').attr('id', clipId);
+          const x = parseFloat(rect.attr('x'));
+          const y = parseFloat(rect.attr('y'));
+          const width = parseFloat(rect.attr('width'));
+          const height = parseFloat(rect.attr('height'));
+          
+          // Create a path that rounds only bottom corners
+          clipPath.append('path')
+            .attr('d', `
+              M ${x} ${y}
+              L ${x + width} ${y}
+              L ${x + width} ${y + height - 4}
+              Q ${x + width} ${y + height} ${x + width - 4} ${y + height}
+              L ${x + 4} ${y + height}
+              Q ${x} ${y + height} ${x} ${y + height - 4}
+              Z
+            `);
+          rect.attr('clip-path', `url(#${clipId})`);
+        } else if (isTopSegment) {
+          // Top segment - only round top corners
+          const clipId = `top-clip-${Math.random().toString(36).substring(2, 9)}`;
+          const clipPath = svg.append('defs').append('clipPath').attr('id', clipId);
+          const x = parseFloat(rect.attr('x'));
+          const y = parseFloat(rect.attr('y'));
+          const width = parseFloat(rect.attr('width'));
+          const height = parseFloat(rect.attr('height'));
+          
+          // Create a path that rounds only top corners
+          clipPath.append('path')
+            .attr('d', `
+              M ${x} ${y + 4}
+              Q ${x} ${y} ${x + 4} ${y}
+              L ${x + width - 4} ${y}
+              Q ${x + width} ${y} ${x + width} ${y + 4}
+              L ${x + width} ${y + height}
+              L ${x} ${y + height}
+              Z
+            `);
+          rect.attr('clip-path', `url(#${clipId})`);
+        }
+        // Middle segments - no rounding
+      })
       .on('mouseover', function(event, d: any) {
         // Get the bar color
         const barElement = select(this);
@@ -776,14 +1071,18 @@ export class BarChartUtility {
       return '';
     };
 
-    // Check if we have multiple Y fields
+    // Check if we have multiple Y fields or color grouping
     const yEncodings = Array.isArray(config.encoding.y) ? config.encoding.y : (config.encoding.y ? [config.encoding.y] : []);
     const hasMultipleYFields = yEncodings.length > 1;
+    const hasColorGrouping = !!config.encoding.color?.field;
     
+    // Default to stacked when there are multiple Y fields or color grouping
+    const shouldStack = hasMultipleYFields || hasColorGrouping ? (config.stacked !== false) : false;
 
-    if (hasMultipleYFields && config.stacked) {
+    if (shouldStack && (hasMultipleYFields || hasColorGrouping)) {
       this.renderStackedBarsCanvas(context, xScale, yScale, yEncodings, getXValue);
-    } else if (hasMultipleYFields) {
+    } else if (hasMultipleYFields || hasColorGrouping) {
+      // Render grouped bars when not stacked
       this.renderGroupedBarsCanvas(context, xScale, yScale, yEncodings, getXValue);
     } else {
       this.renderSingleBarsCanvas(context, xScale, yScale, yEncodings, getXValue);
@@ -1021,7 +1320,7 @@ export class BarChartUtility {
       .value((d: any, key) => Number(d[key]) || 0)(processedData as any);
 
     // Update y scale domain
-    const maxStackValue = max(stackedData[stackedData.length - 1], d => d[1]) || 0;
+    const maxStackValue = max(stackedData[stackedData.length - 1], (d: any) => d[1]) || 0;
     yScale.domain([0, maxStackValue]);
 
     // Draw stacked bars

@@ -18,12 +18,22 @@ import {
   VisualizationLayoutUtility,
 } from "./utils/shared";
 import type { LegendItem } from "./utils/shared/LegendUtility";
+import { sortUniqueValues } from "./utils/sortingUtils";
 import { getPaletteColors, resolveColor } from "./utils/utils";
 import * as d3Selection from "d3-selection";
 import * as d3Scale from "d3-scale";
 import * as d3Array from "d3-array";
 import { SpaceProperty } from "shared/types/mdb";
 import { displayTextForType } from "core/utils/displayTextForType";
+import { DataTransformationPipeline, TransformedData } from "./DataTransformationPipeline";
+import { 
+  BarChartData, 
+  PieChartData, 
+  LineChartData, 
+  AreaChartData, 
+  ScatterPlotData,
+  RadarChartData
+} from "./transformers";
 
 // Type definitions for D3 scales
 type D3LinearScale = d3Scale.ScaleLinear<number, number>;
@@ -83,6 +93,13 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Transform data using the pipeline
+  const transformedData = useMemo(() => {
+    const transformed = DataTransformationPipeline.transform(data, config, tableProperties);
+    // Apply rendering transformations
+    return DataTransformationPipeline.applyRenderingTransformations(transformed);
+  }, [data, config, tableProperties]);
+
   // Calculate layout dimensions using VisualizationLayoutUtility
   const layoutDimensions = useMemo(() => {
     return VisualizationLayoutUtility.calculateLayout(
@@ -112,6 +129,33 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
   // Create scales from encoding
   const scales = useMemo(() => {
     const scales = new Map<string, D3ScaleType>();
+    
+    // Use transformed data extents if available for quantitative scales
+    const getYExtentFromTransformedData = (): [number, number] | null => {
+      if (!transformedData?.data) return null;
+      
+      switch (transformedData.type) {
+        case 'bar':
+          const barData = transformedData.data as BarChartData;
+          // Use pre-calculated yExtent from transformer which includes aggregation
+          return barData.yExtent || null;
+          
+        case 'line':
+          const lineData = transformedData.data as LineChartData;
+          return lineData.yExtent || null;
+          
+        case 'area':
+          const areaData = transformedData.data as AreaChartData;
+          return areaData.yExtent || null;
+          
+        case 'scatter':
+          const scatterData = transformedData.data as ScatterPlotData;
+          return scatterData.yExtent || null;
+          
+        default:
+          return null;
+      }
+    };
 
     // X scale
     if (config.encoding.x) {
@@ -130,10 +174,14 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
 
       switch (primaryEncoding.type) {
         case "quantitative": {
-          const extentValues = d3Array.extent(values, (d) => Number(d)) as [
-            number,
-            number
-          ];
+          // For scatter plots with transformed data, use the x extent from transformed data
+          let extentValues: [number, number];
+          if (config.chartType === 'scatter' && transformedData?.type === 'scatter' && transformedData.data) {
+            const scatterData = transformedData.data as ScatterPlotData;
+            extentValues = scatterData.xExtent || d3Array.extent(values, (d) => Number(d)) as [number, number];
+          } else {
+            extentValues = d3Array.extent(values, (d) => Number(d)) as [number, number];
+          }
           scales.set(
             "x",
             d3Scale.scaleLinear().domain(extentValues).range([0, 0])
@@ -142,7 +190,15 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
         }
         case "ordinal":
         case "nominal": {
-          const uniqueValues = Array.from(new Set(values.map(String))).sort();
+          // Find the field definition for proper sorting
+          const fieldDef = tableProperties?.find(p => p.name === field);
+          
+          // Always use sorted unique values for consistent ordering
+          const uniqueValues = sortUniqueValues(
+            Array.from(new Set(values.map(String))),
+            fieldDef
+          );
+          
           scales.set(
             "x",
             d3Scale
@@ -157,9 +213,26 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
         case "temporal": {
           const timeExtent = d3Array.extent(
             values,
-            (d) => new Date(String(d))
-          ) as [Date, Date];
-          scales.set("x", d3Scale.scaleTime().domain(timeExtent).range([0, 0])); // Will be set in render
+            (d) => {
+              // Handle values that are already Date objects or date strings
+              if (d instanceof Date) return d;
+              if (d === null || d === undefined || d === '') return null;
+              const date = new Date(String(d));
+              return isNaN(date.getTime()) ? null : date;
+            }
+          ).filter(d => d !== null) as [Date, Date];
+          
+          // Only create scale if we have valid dates
+          if (timeExtent && timeExtent[0] && timeExtent[1]) {
+            scales.set("x", d3Scale.scaleTime().domain(timeExtent).range([0, 0])); // Will be set in render
+          } else {
+            // Fallback to linear scale if dates are invalid
+            const numericValues = values.map(v => Number(v)).filter(v => !isNaN(v));
+            if (numericValues.length > 0) {
+              const extent = d3Array.extent(numericValues) as [number, number];
+              scales.set("x", d3Scale.scaleLinear().domain(extent).range([0, 0]));
+            }
+          }
           break;
         }
       }
@@ -188,21 +261,36 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
 
       switch (primaryEncoding.type) {
         case "quantitative": {
-          const extentValues = d3Array.extent(allValues) as [
-            number,
-            number
-          ];
+          // Try to get extent from transformed data first (which includes aggregation)
+          const transformedExtent = getYExtentFromTransformedData();
+          
+          let extentValues: [number, number];
+          if (transformedExtent) {
+            // Use aggregated values from transformed data
+            extentValues = transformedExtent;
+          } else {
+            // Fallback to raw data extent
+            extentValues = d3Array.extent(allValues) as [number, number];
+          }
+          
           let domain: [number, number];
 
-          // Ensure y-axis starts at 0 for most chart types
+          // Handle both positive and negative values properly
+          const [minValue, maxValue] = extentValues;
+          const hasNegativeValues = minValue < 0;
+          
           if (config.chartType === "scatter") {
-            // For scatter plots, start at 0 but add padding on top to prevent clipping
-            const maxValue = Math.max(0, extentValues[1]);
-            const padding = maxValue * 0.1; // 10% padding on top
-            domain = [0, maxValue + padding];
+            // For scatter plots, use full extent with padding
+            const range = maxValue - minValue;
+            const padding = range * 0.1; // 10% padding
+            domain = [minValue - padding, maxValue + padding];
+          } else if (hasNegativeValues) {
+            // For charts with negative values, use full extent with padding
+            const range = maxValue - minValue;
+            const padding = range * 0.1; // 10% padding
+            domain = [minValue - padding, maxValue + padding];
           } else {
-            // For bar, line, area charts, start at 0 and add 10% padding on top
-            const maxValue = Math.max(0, extentValues[1]);
+            // For charts with only positive values, start at 0 and add padding on top
             const padding = maxValue * 0.1; // 10% padding
             domain = [0, maxValue + padding];
           }
@@ -213,7 +301,14 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
         }
         case "ordinal":
         case "nominal": {
-          const uniqueValues = Array.from(new Set(allValues.map(v => String(v))));
+          // Find the field definition for proper sorting
+          const yField = primaryEncoding.field;
+          const fieldDef = tableProperties?.find(p => p.name === yField);
+          
+          const uniqueValues = sortUniqueValues(
+            Array.from(new Set(allValues.map(v => String(v)))),
+            fieldDef
+          );
           scales.set(
             "y",
             d3Scale
@@ -239,8 +334,21 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
     // Color scale
     if (config.encoding.color && config.encoding.color.field) {
       const field = config.encoding.color.field;
-      const values = data.map((d) => String(d[field]));
-      const uniqueValues = Array.from(new Set(values));
+      
+      // For bar charts with transformed data, use the series from transformed data
+      let uniqueValues: string[];
+      if (transformedData?.type === 'bar' && transformedData.data) {
+        const barData = transformedData.data as BarChartData;
+        if (barData.series) {
+          uniqueValues = barData.series;
+        } else {
+          const values = data.map((d) => String(d[field]));
+          uniqueValues = Array.from(new Set(values));
+        }
+      } else {
+        const values = data.map((d) => String(d[field]));
+        uniqueValues = Array.from(new Set(values));
+      }
 
       scales.set(
         "color",
@@ -265,7 +373,7 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
 
     
     return scales;
-  }, [data, config, colorPaletteId]);
+  }, [data, config, colorPaletteId, transformedData, tableProperties]);
 
   // Get legend items
   const legendItems = useMemo((): LegendItem[] => {
@@ -537,6 +645,7 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
       g,
       gridGroup,
       processedData: data,
+      transformedData,
       scales,
       config,
       graphArea,
@@ -599,7 +708,7 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
         RadarChartUtility.render(sharedContext);
         break;
       default:
-        console.warn(`Chart type ${config.chartType} is not supported`);
+        // Chart type not supported
         break;
     }
 
@@ -678,6 +787,7 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
     };
   }, [
     data,
+    transformedData,
     scales,
     config,
     config.mark?.interpolate, // Add specific dependency for interpolate
@@ -816,8 +926,9 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
       ref={containerRef}
       className={className}
       style={{
+        flex: 1,
         width: "100%",
-        height: "100%",
+        minHeight: 0,
         overflow: "hidden",
         position: "relative",
       }}

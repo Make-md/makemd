@@ -80,19 +80,19 @@ export class VisualizationLayoutUtility {
     // Default options
     const {
       showTitle = true,
-      showXAxis = true,
-      showYAxis = true,
-      showLegend = true,
-      showXAxisLabel = true,
-      showYAxisLabel = true,
+      showXAxis = config.layout.xAxis.show,
+      showYAxis = config.layout.yAxis.show,
+      showLegend = config.layout.legend.show,
+      showXAxisLabel = config.layout.xAxis.show,
+      showYAxisLabel = config.layout.yAxis.show,
     } = options;
 
-    // Base padding values
+    // Base padding values - reduced for more chart space
     const defaultPadding = {
-      top: 20,
-      right: 20,
-      bottom: 20,
-      left: 20,
+      top: 10,
+      right: 10,
+      bottom: 10,
+      left: 10,
     };
 
     // Merge with any custom padding
@@ -129,11 +129,17 @@ export class VisualizationLayoutUtility {
       const legendFontSize = config.layout?.legend?.itemFontSize || 12;
       
       if (legendPosition === 'top' || legendPosition === 'bottom') {
-        // Calculate dynamic height based on potential wrapping
-        // Base height for one row
+        // Calculate dynamic height based on orientation
+        const legendOrientation = config.layout?.legend?.orient || 'horizontal';
         const baseHeight = legendFontSize + 28; // Font size + item height + spacing
-        // Allow for multiple rows - this will be adjusted dynamically during rendering
-        legendHeight = baseHeight * 2; // Allow space for up to 2 rows initially
+        
+        if (legendOrientation === 'horizontal') {
+          // Horizontal orientation - single row height
+          legendHeight = baseHeight;
+        } else {
+          // Vertical orientation or multi-row - allow for multiple rows
+          legendHeight = baseHeight * 2; // Allow space for up to 2 rows initially
+        }
       } else {
         legendWidth = 120; // Fixed width for side legends
       }
@@ -154,15 +160,15 @@ export class VisualizationLayoutUtility {
 
     // Adjust padding based on what's shown
     if (!showTitle) {
-      padding.top = 20;
+      padding.top = 10;
       titleHeight = 0;
     }
     if (!showXAxis && !showXAxisLabel) {
-      padding.bottom = 20;
+      padding.bottom = 10;
       xAxisLabelHeight = 0;
     }
     if (!showYAxis && !showYAxisLabel) {
-      padding.left = 20;
+      padding.left = 10;
       yAxisLabelWidth = 0;
     }
 
@@ -179,8 +185,8 @@ export class VisualizationLayoutUtility {
       }
     } else {
       // For pie charts, reduce padding and no axes
-      padding.left = 20;
-      padding.bottom = 20;
+      padding.left = 10;
+      padding.bottom = 10;
       xAxisLabelHeight = 0;
       yAxisLabelWidth = 0;
       xAxisHeight = 0;

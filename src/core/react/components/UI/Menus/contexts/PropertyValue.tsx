@@ -14,17 +14,20 @@ import { getColors } from "core/utils/colorPalette";
 import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 import { InputModal } from "../../Modals/InputModal";
+import { EditOptionsModal } from "../../Modals/EditOptionsModal";
 import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
+import StickerModal from "shared/components/StickerModal";
 
 export const PropertyValueComponent = (props: {
   superstate: Superstate;
   name?: string;
-  table: string;
+  table?: string;
   fieldType: string;
   value: string;
   fields: SpaceTableColumn[];
   contextPath?: string;
   rowPath?: string;
+  isSpace?: boolean;
   saveValue: (value: string) => void;
 }) => {
   const showOptions = (
@@ -131,6 +134,20 @@ export const PropertyValueComponent = (props: {
     );
   };
 
+  const selectAggregateSchema = async (e: React.MouseEvent) => {
+    const schemas = props.superstate.contextsIndex.get(props.contextPath).schemas
+    const properties: SelectOption[] = [];
+   
+    properties.push(
+      ...(schemas
+        .map((f) => ({
+          name: f.name,
+          value: f.id,
+        })) ?? [])
+    );
+    showOptions(e, null, properties, "schema");
+  };
+
   const selectAggregateRef = (e: React.MouseEvent) => {
     const properties: SelectOption[] = [];
     const childrenProperty = {
@@ -150,26 +167,38 @@ export const PropertyValueComponent = (props: {
   };
 
   const selectAggregateProperty = (e: React.MouseEvent) => {
-    const fieldRef = parsedValue.ref;
-    let options: SelectOption[] = [];
-    let fieldSpace = null;
-    if (fieldRef == "$items") {
-      fieldSpace = props.rowPath;
+     let options: SelectOption[] = [];
+    if (props.isSpace) {
+    
+      options = props.superstate.contextsIndex
+              .get(props.contextPath)
+              ?.mdb[parsedValue.schema]?.cols.map((m) => ({
+                name: m.name,
+                value: m.name,
+              })) ?? []
+              
     } else {
-      const field = props.fields.find((f) => f.name == fieldRef);
-      if (field) {
-        fieldSpace = parseFieldValue(field.value, field.type)?.space;
+      const fieldRef = parsedValue.ref;
+    
+      let fieldSpace = null;
+      if (fieldRef == "$items") {
+        fieldSpace = props.rowPath;
+      } else {
+        const field = props.fields.find((f) => f.name == fieldRef);
+        if (field) {
+          fieldSpace = parseFieldValue(field.value, field.type)?.space;
+        }
       }
-    }
-    if (fieldSpace) {
-      options = fieldSpace
-        ? props.superstate.contextsIndex
-            .get(fieldSpace)
-            ?.contextTable?.cols.map((m) => ({
-              name: m.name,
-              value: m.name,
-            })) ?? []
-        : [];
+      if (fieldSpace) {
+        options = fieldSpace
+          ? props.superstate.contextsIndex
+              .get(fieldSpace)
+              ?.contextTable?.cols.map((m) => ({
+                name: m.name,
+                value: m.name,
+              })) ?? []
+          : [];
+      }
     }
     if (options.length > 0) {
       showOptions(
@@ -185,6 +214,13 @@ export const PropertyValueComponent = (props: {
   };
 
   const selectAggregateFn = (e: React.MouseEvent) => {
+    const options: SelectOption[] = [];
+    let field: SpaceProperty = null;
+    if (props.isSpace) {
+      field = props.superstate.contextsIndex
+        .get(props.contextPath)
+        ?.mdb[parsedValue.schema]?.cols?.find((f) => f.name == parsedValue.field);
+    } else {
     const fieldRef = parsedValue.ref;
 
     let fieldSpace = null;
@@ -196,17 +232,18 @@ export const PropertyValueComponent = (props: {
         fieldSpace = parseFieldValue(refField.value, refField.type)?.space;
       }
     }
-    let field: SpaceProperty = null;
+    
     if (fieldSpace) {
       field = props.superstate.contextsIndex
         .get(fieldSpace)
         ?.contextTable?.cols?.find((f) => f.name == parsedValue.field);
     }
-    const options: SelectOption[] = [];
+  }
     options.push({
       name: "None",
       value: "",
     });
+    
     Object.keys(aggregateFnTypes).forEach((f) => {
       if (
         aggregateFnTypes[f].type == fieldTypeForField(field) ||
@@ -319,122 +356,24 @@ export const PropertyValueComponent = (props: {
 
     const options = parseOptions(parsedValue.options ?? []);
 
-    const removeOption = (option: string) => {
-      const newOptions = options.filter((f) => f.value != option);
+    const saveOptionsHandler = (newOptions: SelectOption[], colorScheme?: string) => {
       saveParsedValue("options", newOptions);
-    };
-    const savePropValue = (options: SelectOption[], value: string[]) => {
-      saveParsedValue("options", options);
-    };
-    const saveOptions = (_options: string[], _value: string[]) => {
-      const newOptions = [..._options]
-        .filter((f) => f?.length > 0)
-        .map(
-          (t) =>
-            options.find((f) => f.value == t) ?? {
-              name: t,
-              value: t,
-            }
-        );
-      savePropValue(newOptions, _value);
-    };
-    const saveOption = (option: string, newValue: SelectOption) => {
-      const newOptions = options.map((t) => (t.value == option ? newValue : t));
-      saveParsedValue("options", newOptions);
+      if (colorScheme !== undefined) {
+        saveParsedValue("colorScheme", colorScheme);
+      }
     };
 
-    const showOptionMenu = (e: React.MouseEvent, optionValue: string) => {
-      const option = options.find((f) => f.value == optionValue);
-      const menuOptions: SelectOption[] = [];
-      menuOptions.push(
-        menuInput(option.value, (value) =>
-          saveOption(option.value, { ...option, value: value })
-        )
-      );
-      menuOptions.push(menuSeparator);
-      menuOptions.push({
-        name: "None",
-        color: "var(--mk-color-none)",
-        onClick: () => {
-          saveOption(option.value, { ...option, color: "" });
-        },
-      });
-
-      getColors(props.superstate).forEach((f) => {
-        menuOptions.push({
-          name: f[0],
-          value: f[1],
-          color: `${f[1]}`,
-          onClick: () => {
-            saveOption(option.value, { ...option, color: f[1] });
-          },
-        });
-      });
-
-      props.superstate.ui.openMenu(
-        (e.target as HTMLElement).getBoundingClientRect(),
-        defaultMenu(props.superstate.ui, menuOptions),
-        windowFromDocument(e.view.document)
-      );
-    };
-
-    const allOptions = uniq(
-      [
-        ...(props.superstate.spacesMap.getInverse(props.contextPath) ?? []),
-      ].flatMap(
-        (f) =>
-          parseMultiString(
-            props.superstate.pathsIndex.get(f)?.metadata?.property?.[props.name]
-          ) ?? []
-      )
-    );
-
-    const menuProps = (): SelectMenuProps => {
-      const _options: SelectOption[] = [
-        {
-          name: "Add from Existing Values",
-          value: "$import",
-          onClick: () => {
-            savePropValue(
-              [
-                ...options,
-                ...allOptions.map((f) => ({
-                  name: f,
-                  value: f,
-                })),
-              ].filter(onlyUniqueProp("value")),
-              []
-            );
-          },
-        },
-        menuSeparator,
-      ];
-      _options.push(
-        ...options.map((f) => ({
-          ...f,
-          onRemove: () => removeOption(f.value),
-          onMoreOptions: (e: React.MouseEvent) => showOptionMenu(e, f.value),
-        }))
-      );
-
-      return {
-        multi: false,
-        editable: true,
-        ui: props.superstate.ui,
-        value: [],
-        options: _options,
-        saveOptions,
-        placeholder: i18n.labels.optionItemSelectPlaceholder,
-        searchable: true,
-        showAll: true,
-      };
-    };
-    const offset = (e.target as HTMLElement).getBoundingClientRect();
-    props.superstate.ui.openMenu(
-      offset,
-      menuProps(),
-      windowFromDocument(e.view.document),
-      "bottom"
+    props.superstate.ui.openModal(
+      i18n.labels.editOptions,
+      <EditOptionsModal
+        superstate={props.superstate}
+        options={options}
+        colorScheme={parsedValue.colorScheme}
+        contextPath={props.contextPath}
+        propertyName={props.name}
+        saveOptions={saveOptionsHandler}
+      />,
+      windowFromDocument(e.view.document)
     );
   };
   const numberFormatToString = (format: string) => {
@@ -442,15 +381,84 @@ export const PropertyValueComponent = (props: {
     return formatObj ? formatObj.label : format;
   };
 
-  return props.fieldType?.startsWith("option") ? (
+  const selectBooleanSticker = (e: React.MouseEvent, stickerType: string) => {
+    props.superstate.ui.openPalette(
+      <StickerModal
+        ui={props.superstate.ui}
+        selectedSticker={(sticker) => saveParsedValue(stickerType, sticker)}
+      />,
+      windowFromDocument(e.view.document)
+    );
+  };
+
+  return props.fieldType?.startsWith("boolean") ? (
+    <>
+      <div className="mk-menu-option" onClick={(e) => selectBooleanSticker(e, "checked")}>
+        <span>{i18n.labels.checkedSticker}</span>
+        {parsedValue.checked ? (
+          <span
+            className="mk-menu-sticker"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker(parsedValue.checked),
+            }}
+          />
+        ) : (
+          <span>{i18n.labels.select}</span>
+        )}
+      </div>
+      <div className="mk-menu-option" onClick={(e) => selectBooleanSticker(e, "unchecked")}>
+        <span>{i18n.labels.uncheckedSticker}</span>
+        {parsedValue.unchecked ? (
+          <span
+            className="mk-menu-sticker"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker(parsedValue.unchecked),
+            }}
+          />
+        ) : (
+          <span>{i18n.labels.select}</span>
+        )}
+      </div>
+      <div className="mk-menu-option" onClick={(e) => selectBooleanSticker(e, "indeterminate")}>
+        <span>{i18n.labels.indeterminateSticker}</span>
+        {parsedValue.indeterminate ? (
+          <span
+            className="mk-menu-sticker"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker(parsedValue.indeterminate),
+            }}
+          />
+        ) : (
+          <span>{i18n.labels.select}</span>
+        )}
+      </div>
+    </>
+  ) : props.fieldType?.startsWith("option") ? (
     <div className="mk-menu-option" onClick={(e) => selectEditOptions(e)}>
       <span>{i18n.labels.editOptions}</span>
     </div>
   ) : props.fieldType?.startsWith("number") ? (
-    <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
-      <span>{i18n.labels.numberFormat}</span>
-      <span>{numberFormatToString(parsedValue.format)}</span>
-    </div>
+    <>
+      <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
+        <span>{i18n.labels.numberFormat}</span>
+        <span>{numberFormatToString(parsedValue.format)}</span>
+      </div>
+      {parsedValue.format === "sticker" && (
+        <div className="mk-menu-option" onClick={(e) => selectBooleanSticker(e, "sticker")}>
+          <span>{i18n.labels.selectSticker}</span>
+          {parsedValue.sticker ? (
+            <span
+              className="mk-menu-sticker"
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker(parsedValue.sticker),
+              }}
+            />
+          ) : (
+            <span>{i18n.labels.select}</span>
+          )}
+        </div>
+      )}
+    </>
   ) : props.fieldType?.startsWith("date") ? (
     <div className="mk-menu-option" onClick={(e) => selectDateFormat(e)}>
       <span>{i18n.labels.dateFormat}</span>
@@ -476,11 +484,11 @@ export const PropertyValueComponent = (props: {
     </>
   ) : props.fieldType?.startsWith("aggregate") ? (
     <>
-      <div className="mk-menu-option" onClick={(e) => selectAggregateRef(e)}>
-        <span>{i18n.labels.propertyValueReference}</span>
-        <span>{parsedValue.ref == "$items" ? "Items" : parsedValue.ref}</span>
+      <div className="mk-menu-option" onClick={(e) => props.isSpace ? selectAggregateSchema(e) : selectAggregateRef(e)}>
+        <span>{props.isSpace ? "List" :  i18n.labels.propertyValueReference}</span>
+        <span>{props.isSpace ? parsedValue.schema : parsedValue.ref == "$items" ? "Items" : parsedValue.ref}</span>
       </div>
-      {parsedValue.ref?.length > 0 && (
+      {parsedValue.ref?.length > 0  || parsedValue.schema?.length > 0  && (
         <div
           className="mk-menu-option"
           onClick={(e) => selectAggregateProperty(e)}
@@ -518,10 +526,27 @@ export const PropertyValueComponent = (props: {
         <span>{fieldTypeForType(parsedValue.type)?.label}</span>
       </div>
       {fieldTypeForType(parsedValue.type)?.type == "number" && (
-        <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
-          <span>{i18n.labels.numberFormat}</span>
-          <span>{numberFormatToString(parsedValue.format)}</span>
-        </div>
+        <>
+          <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
+            <span>{i18n.labels.numberFormat}</span>
+            <span>{numberFormatToString(parsedValue.format)}</span>
+          </div>
+          {parsedValue.format === "sticker" && (
+            <div className="mk-menu-option" onClick={(e) => selectBooleanSticker(e, "sticker")}>
+              <span>{i18n.labels.selectSticker}</span>
+              {parsedValue.sticker ? (
+                <span
+                  className="mk-menu-sticker"
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker(parsedValue.sticker),
+                  }}
+                />
+              ) : (
+                <span>{i18n.labels.select}</span>
+              )}
+            </div>
+          )}
+        </>
       )}
       {fieldTypeForType(parsedValue.type)?.type == "date" && (
         <div className="mk-menu-option" onClick={(e) => selectDateFormat(e)}>
@@ -574,10 +599,27 @@ export const PropertyValueComponent = (props: {
         <span>{fieldTypeForType(parsedValue.type)?.label}</span>
       </div>
       {fieldTypeForType(parsedValue.type).type == "number" && (
-        <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
-          <span>{i18n.labels.numberFormat}</span>
-          <span>{numberFormatToString(parsedValue.format)}</span>
-        </div>
+        <>
+          <div className="mk-menu-option" onClick={(e) => selectNumberFormat(e)}>
+            <span>{i18n.labels.numberFormat}</span>
+            <span>{numberFormatToString(parsedValue.format)}</span>
+          </div>
+          {parsedValue.format === "sticker" && (
+            <div className="mk-menu-option" onClick={(e) => selectBooleanSticker(e, "sticker")}>
+              <span>{i18n.labels.selectSticker}</span>
+              {parsedValue.sticker ? (
+                <span
+                  className="mk-menu-sticker"
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker(parsedValue.sticker),
+                  }}
+                />
+              ) : (
+                <span>{i18n.labels.select}</span>
+              )}
+            </div>
+          )}
+        </>
       )}
       {fieldTypeForType(parsedValue.type).type == "date" && (
         <div className="mk-menu-option" onClick={(e) => selectDateFormat(e)}>

@@ -261,6 +261,17 @@ export const SpaceHeaderBar = (props: {
             });
           },
         },
+        {
+          name: i18n.menu.toggleFullWidth,
+          description: i18n.descriptions.toggleFullWidth,
+          icon: "ui//expand",
+          onClick: (e) => {
+            saveSpaceCache(props.superstate, spaceState.space, {
+              ...spaceState.metadata,
+              fullWidth: !spaceState.metadata.fullWidth,
+            });
+          },
+        },
         menuSeparator,
         {
           name: i18n.labels.applyToItems,

@@ -190,13 +190,11 @@ export class UIManager implements IUIManager {
   }
   public notify(content: string, destination?: string) {
     if (destination == "console") {
-      console.log(content);
       return;
     }
     this.mainFrame.openToast(content);
   }
   public error(error: any) {
-    console.log(error);
   }
   public openPalette(modal: JSX.Element, win: Window, className?: string) {
     return this.mainFrame.openPalette(modal, win, className);

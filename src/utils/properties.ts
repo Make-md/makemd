@@ -135,6 +135,12 @@ export const parseMDBStringValue = (type: string, value: string, frontmatter?: b
     return parseFloat(value);
   } else if (type == "boolean") {
     return value == "true";
+  } else if (type == "date" || type == "datetime" || type == "date-end") {
+    // Parse date strings to Date objects for proper temporal scaling
+    if (!value || value === '') return null;
+    const date = new Date(value);
+    // Return the date object if valid, otherwise return the original string
+    return !isNaN(date.getTime()) ? date : value;
   } else if (type.includes("-multi")) {
     return parseMultiString(value).map((f) => parseMDBStringValue(type.replace("-multi", ""), f, frontmatter)
     );

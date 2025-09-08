@@ -163,7 +163,8 @@ export const showFramePropsMenu = (props: FramePropertyMenuProps) => {
 
           menuOptions.push(
             menuInput(currentValue, (value) =>
-              savePropValue(field.name, wrapQuotes(value))
+              savePropValue(field.name, wrapQuotes(value)),
+              ""
             )
           );
 

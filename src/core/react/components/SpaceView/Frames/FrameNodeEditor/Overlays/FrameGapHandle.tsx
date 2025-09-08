@@ -71,7 +71,6 @@ const reduceFlexItems = (
         };
         currentRowWidth += f[axisValue] + axisGap;
       } else {
-        console.log("Warning: Flexbox found orphan row");
       }
     }
   });

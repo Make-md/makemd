@@ -1,5 +1,8 @@
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
+import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
+import { PathProvider } from "core/react/context/PathContext";
+import { SpaceProvider } from "core/react/context/SpaceContext";
 import { wrapQuotes } from "core/utils/strings";
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { FrameEditorMode } from "shared/types/frameExec";
@@ -114,84 +117,41 @@ export const VisualizationNodeView = (
 
   return (
     <div
-      onClick={(e) => {
-        if (selectionMode !== FrameEditorMode.Read && select) {
-          select(props.treeNode.node.id, e.shiftKey || e.metaKey);
-        }
-      }}
+     
       style={{
         width: "100%",
         height: "100%",
         position: "relative",
-        cursor: selectionMode !== FrameEditorMode.Read ? "pointer" : "default",
       }}
     >
       {/* Show visualization if mdbFrameId exists, otherwise show create button */}
       {mdbFrameId ? (
-        <>
-          <Visualization
-            mdbFrameId={mdbFrameId}
-            sourcePath={sourcePath}
-            superstate={props.superstate}
-            width={styles?.width || 400}
-            height={styles?.height || 300}
-            style={{
-              width: "100%",
-              height: "100%",
-            }}
-            showFormatter={selected}
-            isSelected={selected}
-            onConfigUpdate={async (newConfig) => {
-              // Save updated configuration back to MDBFrame
-              if (props.superstate?.spaceManager) {
-                try {
-                  const frame = await props.superstate.spaceManager.readFrame(
-                    sourcePath,
-                    mdbFrameId
-                  );
-
-                  if (frame) {
-                    // Use the createVisualizationRows utility to properly format the rows
-                    const updatedRows = createVisualizationRows(
-                      newConfig,
-                      mdbFrameId,
-                      frame.rows
-                    );
-                    
-                    frame.rows = updatedRows;
-
-                    // Update schema.def.db if data source changed
-                    if (frame.schema?.def) {
-                      const currentDef = JSON.parse(frame.schema.def || "{}");
-                      if (currentDef.db !== newConfig.data?.listId) {
-                        frame.schema.def = JSON.stringify({
-                          ...currentDef,
-                          db: newConfig.data?.listId || "",
-                        });
-                      }
-                    } else if (frame.schema) {
-                      frame.schema.def = JSON.stringify({
-                        db: newConfig.data?.listId || "",
-                      });
-                    }
-
-                    // Ensure schema type is preserved as 'vis'
-                    if (frame.schema && frame.schema.type !== "vis") {
-                      frame.schema.type = "vis";
-                    }
-
-                    await props.superstate.spaceManager.saveFrame(
-                      sourcePath,
-                      frame
-                    );
-                  }
-                } catch (error) {
-                  console.error("Error saving visualization config:", error);
-                }
-              }
-            }}
-          />
-        </>
+        <PathProvider
+          superstate={props.superstate}
+          path={sourcePath}
+          readMode={false}
+        >
+          <SpaceProvider superstate={props.superstate}>
+            <FramesMDBProvider
+              superstate={props.superstate}
+              schema={mdbFrameId}
+            >
+              <Visualization
+                mdbFrameId={mdbFrameId}
+                sourcePath={sourcePath}
+                superstate={props.superstate}
+                width={styles?.width || 400}
+                height={styles?.height || 300}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                isSelected={selected}
+                minMode={props.state?.styles?.["--mk-min-mode"]}
+              />
+            </FramesMDBProvider>
+          </SpaceProvider>
+        </PathProvider>
       ) : editable ? (
         <div
           style={{

@@ -2,6 +2,7 @@ import { max, min, scaleLinear, line as d3Line, curveLinearClosed, select, selec
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 import { getPaletteColors } from '../utils';
 import { displayTextForType } from 'core/utils/displayTextForType';
+import { RadarChartData } from '../../transformers';
 
 export class RadarChartUtility {
   static render(context: RenderContext): void {
@@ -15,7 +16,13 @@ export class RadarChartUtility {
   private static renderSVG(context: RenderContext): void {
     if (!isSVGContext(context)) return;
 
-    const { g, svg, processedData, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor, superstate, tableProperties } = context;
+    const { g, svg, processedData, transformedData, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, showLegend, resolveColor, superstate, tableProperties } = context;
+    
+    // Use transformed data if available
+    if (transformedData?.type === 'radar' && transformedData.data) {
+      this.renderWithTransformedData(context, transformedData.data as RadarChartData);
+      return;
+    }
 
     if (!processedData || processedData.length === 0) {
       return;
@@ -485,5 +492,207 @@ export class RadarChartUtility {
     });
 
     ctx.restore();
+  }
+
+  private static renderWithTransformedData(context: RenderContext, radarData: RadarChartData): void {
+    if (!isSVGContext(context)) return;
+    
+    const { g, svg, config, graphArea, showDataLabels, colorPaletteId, superstate } = context;
+    
+    if (!radarData.data || radarData.data.length === 0) return;
+    
+    
+    const centerX = graphArea.left + graphArea.width / 2;
+    const centerY = graphArea.top + graphArea.height / 2;
+    const maxRadius = Math.min(graphArea.width, graphArea.height) / 2 - 40; // Leave padding for labels
+    
+    const themeColors = getPaletteColors(colorPaletteId, superstate);
+    
+    // Create scales
+    const angleSlice = (Math.PI * 2) / radarData.axes.length;
+    const rScale = scaleLinear()
+      .domain([0, radarData.maxValue])
+      .range([0, maxRadius]);
+    
+    
+    // Create a line function for the radar areas
+    const radarLine = d3Line<any>()
+      .x((d, i) => {
+        const axisIndex = radarData.axes.indexOf(d.axis);
+        const angle = angleSlice * axisIndex - Math.PI / 2;
+        const x = rScale(d.value) * Math.cos(angle);
+        return x;
+      })
+      .y((d, i) => {
+        const axisIndex = radarData.axes.indexOf(d.axis);
+        const angle = angleSlice * axisIndex - Math.PI / 2;
+        const y = rScale(d.value) * Math.sin(angle);
+        return y;
+      })
+      .curve(curveLinearClosed);
+    
+    // Draw grid circles
+    const levels = 5;
+    for (let level = 1; level <= levels; level++) {
+      const levelRadius = (maxRadius / levels) * level;
+      g.append('circle')
+        .attr('cx', centerX)
+        .attr('cy', centerY)
+        .attr('r', levelRadius)
+        .attr('fill', 'none')
+        .attr('stroke', 'var(--mk-ui-border)')
+        .attr('stroke-width', 0.5)
+        .attr('opacity', 0.5);
+    }
+    
+    // Draw axes
+    radarData.axes.forEach((axis, i) => {
+      const angle = angleSlice * i - Math.PI / 2;
+      const x = centerX + maxRadius * Math.cos(angle);
+      const y = centerY + maxRadius * Math.sin(angle);
+      
+      // Draw axis line
+      g.append('line')
+        .attr('x1', centerX)
+        .attr('y1', centerY)
+        .attr('x2', x)
+        .attr('y2', y)
+        .attr('stroke', 'var(--mk-ui-border)')
+        .attr('stroke-width', 0.5)
+        .attr('opacity', 0.5);
+      
+      // Draw axis label
+      const labelX = centerX + (maxRadius + 20) * Math.cos(angle);
+      const labelY = centerY + (maxRadius + 20) * Math.sin(angle);
+      
+      g.append('text')
+        .attr('x', labelX)
+        .attr('y', labelY)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'middle')
+        .attr('font-size', '11px')
+        .attr('fill', 'var(--mk-ui-text-secondary)')
+        .text(axis);
+    });
+    
+    // Group data by series
+    const seriesGroups = new Map<string, typeof radarData.data>();
+    radarData.data.forEach(point => {
+      if (!seriesGroups.has(point.series)) {
+        seriesGroups.set(point.series, []);
+      }
+      seriesGroups.get(point.series)!.push(point);
+    });
+    
+    
+    // Create tooltip
+    const tooltip = select('body').append('div')
+      .attr('class', 'radar-tooltip')
+      .style('position', 'absolute')
+      .style('padding', '8px 12px')
+      .style('background', 'var(--mk-ui-background-contrast)')
+      .style('color', 'var(--mk-ui-text-primary)')
+      .style('border', '1px solid var(--mk-ui-border)')
+      .style('border-radius', '4px')
+      .style('font-size', '12px')
+      .style('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.15)')
+      .style('pointer-events', 'none')
+      .style('opacity', 0)
+      .style('z-index', 10000);
+    
+    // Draw areas for each series
+    let seriesIndex = 0;
+    seriesGroups.forEach((points, series) => {
+      // Sort points by axis order
+      const sortedPoints = radarData.axes.map(axis => {
+        const point = points.find(p => p.axis === axis);
+        return point || { axis, value: 0, series };
+      });
+      
+      
+      const color = themeColors[seriesIndex % themeColors.length];
+      
+      // Draw the area
+      const areaGroup = g.append('g')
+        .attr('transform', `translate(${centerX}, ${centerY})`);
+      
+      // Draw filled area
+      areaGroup.append('path')
+        .datum(sortedPoints)
+        .attr('d', radarLine)
+        .attr('fill', color)
+        .attr('fill-opacity', 0.3)
+        .attr('stroke', color)
+        .attr('stroke-width', 2)
+        .style('cursor', 'pointer')
+        .on('mouseover', function(event) {
+          select(this)
+            .transition()
+            .duration(150)
+            .attr('fill-opacity', 0.5);
+          
+          tooltip.transition()
+            .duration(200)
+            .style('opacity', 0.9);
+          
+          const tooltipContent = `
+            <div><strong>${series}</strong></div>
+            ${sortedPoints.map(p => `<div>${p.axis}: ${p.value.toFixed(1)}</div>`).join('')}
+          `;
+          
+          tooltip.html(tooltipContent)
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mousemove', function(event) {
+          tooltip
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', function() {
+          select(this)
+            .transition()
+            .duration(150)
+            .attr('fill-opacity', 0.3);
+          
+          tooltip.transition()
+            .duration(500)
+            .style('opacity', 0);
+        });
+      
+      // Draw points
+      sortedPoints.forEach((d, pointIndex) => {
+        const axisIndex = radarData.axes.indexOf(d.axis);
+        const angle = angleSlice * axisIndex - Math.PI / 2;
+        const x = rScale(d.value) * Math.cos(angle);
+        const y = rScale(d.value) * Math.sin(angle);
+        
+        
+        areaGroup.append('circle')
+          .attr('cx', x)
+          .attr('cy', y)
+          .attr('r', 4)
+          .attr('fill', color)
+          .attr('stroke', 'white')
+          .attr('stroke-width', 1)
+          .style('cursor', 'pointer');
+        
+        // Add data labels if configured
+        if (showDataLabels) {
+          areaGroup.append('text')
+            .attr('x', x)
+            .attr('y', y - 8)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '10px')
+            .attr('fill', 'var(--mk-ui-text-primary)')
+            .text(d.value.toFixed(1));
+        }
+      });
+      
+      seriesIndex++;
+    });
+    
+    // Store tooltip reference for cleanup
+    (svg.node() as any).__radarTooltip = tooltip;
   }
 }

@@ -46,7 +46,9 @@ export class AreaChartUtility {
       
       if (xEncoding.type === 'quantitative' || xEncoding.type === 'temporal') {
         // Linear or time scale
-        const scaledValue = xEncoding.type === 'temporal' ? new Date(String(value)) : Number(value);
+        const scaledValue = xEncoding.type === 'temporal' 
+          ? (value instanceof Date ? value : new Date(String(value)))
+          : Number(value);
         // Check for invalid dates or numbers
         if (xEncoding.type === 'temporal' && scaledValue instanceof Date && isNaN(scaledValue.getTime())) {
           return NaN;
@@ -101,8 +103,16 @@ export class AreaChartUtility {
       // Create area generator
       const area = d3Area<any>()
         .x((d) => getXPosition(d, xEncoding))
-        .y0(yScale.range()[0]) // Use the bottom of the scale range
-        .y1((d) => yScale(d[yEncoding.field]))
+        .y0((d) => {
+          // For negative values, use the zero line as baseline
+          const value = Number(d[yEncoding.field]);
+          return value >= 0 ? yScale(0) : yScale(value);
+        })
+        .y1((d) => {
+          // For positive values, extend from zero to value; for negative values, extend from value to zero  
+          const value = Number(d[yEncoding.field]);
+          return value >= 0 ? yScale(value) : yScale(0);
+        })
         .defined((d) => {
           const xPos = getXPosition(d, xEncoding);
           return d[yEncoding.field] != null && !isNaN(d[yEncoding.field]) && !isNaN(xPos);
@@ -432,7 +442,9 @@ export class AreaChartUtility {
       
       if (xEncoding.type === 'quantitative' || xEncoding.type === 'temporal') {
         // Linear or time scale
-        const scaledValue = xEncoding.type === 'temporal' ? new Date(String(value)) : Number(value);
+        const scaledValue = xEncoding.type === 'temporal' 
+          ? (value instanceof Date ? value : new Date(String(value)))
+          : Number(value);
         // Check for invalid dates or numbers
         if (xEncoding.type === 'temporal' && scaledValue instanceof Date && isNaN(scaledValue.getTime())) {
           return NaN;

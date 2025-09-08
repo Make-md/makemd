@@ -3,6 +3,30 @@ import { uniq } from "shared/utils/array";
 import { movePath, renamePathWithExtension, renamePathWithoutExtension } from "shared/utils/uri";
 import { renameTag } from "utils/tags";
 
+export const resolvePath = (path: string, source: string, isSpace?: (path: string) => boolean): string => {
+    if (!source || !path) return path;
+    if (path.indexOf('http') == 0) return path;
+    if (path.indexOf('|') != -1) {
+        path = path.split('|')[0];
+    }
+    if (path.indexOf('./') == 0 && source) {
+        if (isSpace?.(source)) {
+            return source + path.slice(1);
+        }
+        return source.slice(0, source.lastIndexOf('/')) + path.slice(1);
+    } else if (path.indexOf('../') == 0 && source) {
+        const sourceParts = source.split('/');
+        const pathParts = path.split('/');
+        sourceParts.pop();
+        while (pathParts[0] === '..') {
+            sourceParts.pop();
+            pathParts.shift();
+        }
+        return [...sourceParts, ...pathParts].join('/');
+    }
+    return path;
+};
+
 export const renamePathByName = async (superstate: Superstate, oldPath: string, newName: string) : Promise<string> => {
     if (superstate.spacesIndex.has(oldPath)) {
         const spaceState = superstate.spacesIndex.get(oldPath);

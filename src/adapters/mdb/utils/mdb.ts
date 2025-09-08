@@ -181,7 +181,7 @@ export const getMDBTables = async (plugin: MDBFileTypeAdapter, dbPath: string) =
         `CREATE TABLE IF NOT EXISTS m_schema ('id' char, 'name' char, 'type' char, 'def' char, 'predicate' char, 'primary' char)`
       );
       db.exec(schemas.map(f => `INSERT INTO m_schema ('id', 'name', 'type', 'primary') VALUES ('${f.id}', '${f.name}', '${f.type}', '${f.primary}')`).join(';'));
-      await saveDBFile(plugin, dbPath, db.export().buffer);
+      await saveDBFile(plugin, dbPath, db.export().buffer as ArrayBuffer);
     }
     const mdbTables = {} as SpaceTables;
     schemas.forEach(schema => {
@@ -237,7 +237,7 @@ export const deleteMDBTable = async (
   deleteFromDB(db, "m_schema", `def = '${sanitizeSQLStatement(table)}'`);
   deleteFromDB(db, "m_fields", `schemaId = '${sanitizeSQLStatement(table)}'`);
   dropTable(db, table);
-  await saveDBFile(plugin, dbPath, db.export().buffer);
+  await saveDBFile(plugin, dbPath, db.export().buffer as ArrayBuffer);
   db.close();
   return true;
 };
@@ -256,7 +256,6 @@ export const getMDBTableSchemas = async (
   try {
     schemas = db.exec(`SELECT * FROM m_schema`)
   } catch (e) {
-    console.log(e, path)
   }
   db.close();
   return (schemas[0]?.values ?? []).map((f) => {
@@ -292,7 +291,6 @@ export const getMDBTableProperties = async (
         `CREATE TABLE m_fields (name TEXT, schemaId TEXT, type TEXT, value TEXT, hidden TEXT, attrs TEXT, unique TEXT, primary TEXT)`
       );
     } catch (e) {
-      console.log(e);
     }
     
     db.close();

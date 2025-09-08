@@ -223,7 +223,6 @@ export class SpacesCommandsAdapter implements CLIAdapter {
           } catch (e) {
             error = e
           }
-          console.log(result, error)
         return result;
     }
 

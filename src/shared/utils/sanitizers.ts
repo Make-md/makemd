@@ -3,7 +3,6 @@ export const sanitizeSQLStatement = (name: string) => {
   try {
     return name?.replace(/'/g, `''`)
   } catch(e) {
-    console.log(e, name);
     return ''
   }
 };export const sanitizeColumnName = (name: string): string => {

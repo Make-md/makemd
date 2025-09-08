@@ -75,7 +75,7 @@ public reset() {
     }
     private debounceSaveSpaceDatabase = debounce(
         () => {
-             saveZippedDBFile(this.mdbAdapter, this.storageDBPath, this.db.export().buffer)
+             saveZippedDBFile(this.mdbAdapter, this.storageDBPath, this.db.export().buffer as ArrayBuffer)
     }, 5000,
     {
         leading: false,

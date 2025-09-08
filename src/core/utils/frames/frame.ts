@@ -92,8 +92,7 @@ export const parseContextNode = (pathString: string) : LinkedContext => {
       }
   });
 } catch  (e){
-  console.log(e)
-}
+  }
   if (path.length < 3) return null;
   return {
     context: path[1],
@@ -138,8 +137,7 @@ export const parseLinkedNode = (pathString: string) : LinkedNode => {
       }
   });
 } catch  (e){
-  console.log(e)
-}
+  }
   if (path.length < 3) return null;
   return {
     node: path[0],

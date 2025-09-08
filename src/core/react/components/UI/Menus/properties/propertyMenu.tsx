@@ -24,7 +24,7 @@ export const showSetValueMenu = (
   if (!property) return;
   if (property.type == "text") {
   } else if (property.type == "number") {
-    const input = menuInput("", (value) => onChangeValue(value));
+    const input = menuInput("", (value) => onChangeValue(value), "");
     superstate.ui.openMenu(
       rect,
       {

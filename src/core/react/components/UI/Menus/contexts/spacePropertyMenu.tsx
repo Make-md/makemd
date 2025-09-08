@@ -22,6 +22,7 @@ export const PropertyMenuComponent = (props: {
   fields: SpaceTableColumn[];
   contextPath: string;
   options: string[];
+  isSpace?: boolean;
   saveField: (field: SpaceTableColumn) => void;
   onSubmenu: (
     openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
@@ -139,6 +140,7 @@ export const PropertyMenuComponent = (props: {
         table={field.table}
         fields={props.fields}
         fieldType={fieldType.type}
+        isSpace={props.isSpace}
         value={field.value}
         contextPath={props.contextPath}
         saveValue={selectedValue}
@@ -165,6 +167,7 @@ type PropertyMenuProps = {
   anchor?: Anchors;
   flex?: boolean;
   rowPath?: string;
+  isSpace?: boolean;
 };
 export const showPropertyMenu = (
   props: PropertyMenuProps,
@@ -182,6 +185,7 @@ export const showPropertyMenu = (
     saveField,
     flex,
     rowPath,
+    isSpace,
     hide,
     deleteColumn,
     sortColumn,
@@ -208,7 +212,7 @@ export const showPropertyMenu = (
 
   if (!flex) {
     menuOptions.push(
-      menuInput(nameForField(field) ?? "", (value) => saveName(value))
+      menuInput(nameForField(field) ?? "", (value) => saveName(value), "")
     );
   }
   menuOptions.push(menuSeparator);
@@ -228,6 +232,7 @@ export const showPropertyMenu = (
           fields={fields}
           contextPath={contextPath}
           options={options}
+          isSpace={isSpace}
           saveField={saveField}
           onSubmenu={props.onSubmenu}
           flex={flex}

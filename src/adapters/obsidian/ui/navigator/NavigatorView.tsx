@@ -6,6 +6,7 @@ export const ICON = "layout-grid";
 
 import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
 
+import { getLeaf } from "adapters/obsidian/utils/file";
 import { eventTypes } from "core/types/types";
 import { Navigator, Superstate } from "makemd-core";
 import { Root } from "react-dom/client";
@@ -25,8 +26,10 @@ export class FileTreeView extends ItemView {
   }
 
   revealInFolder(file: TAbstractFile) {
+    console.log("reveal in fodler");
     if (file instanceof TFolder) {
-      this.leaf.view.app.workspace.activeLeaf.setViewState({
+      const leaf = getLeaf(this.leaf.view.app, false);
+      leaf.setViewState({
         type: SPACE_VIEW_TYPE,
         state: { path: file.path },
       });

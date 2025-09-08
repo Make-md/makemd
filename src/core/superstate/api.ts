@@ -70,6 +70,14 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
         label:  (path: string) => {
             return this.superstate.pathsIndex.get(path)?.label;
         },
+        thumbnail: (path: string) => {
+            // If path is a URL, return it directly
+            if (path && (path.startsWith('http://') || path.startsWith('https://'))) {
+                return path;
+            }
+            // Otherwise get thumbnail from path label
+            return this.superstate.pathsIndex.get(path)?.label?.thumbnail;
+        },
         open: (path: string, target?: TargetLocation) => {
             
             this.superstate.ui.openPath(path, target)

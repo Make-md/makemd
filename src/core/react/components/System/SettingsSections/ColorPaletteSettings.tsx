@@ -269,9 +269,19 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
       {palettes.map((palette) => (
         <div key={palette.id} className="mk-palette-item">
           <div className="mk-palette-left-column">
-            <div className="mk-palette-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+            <div
+              className="mk-palette-header"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "8px",
+              }}
+            >
               <div className="mk-palette-name">{palette.name}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "4px" }}
+              >
                 {![
                   "Default",
                   "Default Colors",
@@ -506,57 +516,27 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
 export const ColorPaletteSettings = ({ superstate }: SettingsProps) => {
   return (
     <>
-      <style>{`
-        .mk-community-callout {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 12px 16px;
-          margin-bottom: 16px;
-          background: var(--mk-ui-background-secondary);
-          border: 1px solid var(--mk-ui-border);
-          border-radius: 8px;
-          transition: all 0.2s ease;
-        }
-        
-        .mk-callout-icon {
-          font-size: 18px;
-          flex-shrink: 0;
-        }
-        
-        .mk-callout-content {
-          flex: 1;
-        }
-        
-        .mk-callout-text {
-          color: var(--mk-ui-text-primary);
-          font-size: 14px;
-        }
-        
-        .mk-callout-url {
-          color: var(--mk-ui-link-color, #0066cc);
-          font-family: monospace;
-          font-weight: 500;
-          user-select: text !important;
-          -webkit-user-select: text !important;
-          -moz-user-select: text !important;
-          -ms-user-select: text !important;
-        }
-      `}</style>
       <div className="mk-setting-section">
         <h2>{i18n.labels.colors}</h2>
-        
+
         <div className="mk-community-callout">
           <div className="mk-callout-icon">💡</div>
           <div className="mk-callout-content">
-            <div className="mk-callout-text">Find and share color palettes with the community at <span 
-              className="mk-callout-url"
-              onClick={() => window.open('https://make.md/community', '_blank')}
-              style={{ cursor: 'pointer' }}
-            >https://make.md/community</span></div>
+            <div className="mk-callout-text">
+              Find and share color palettes with the community at{" "}
+              <span
+                className="mk-callout-url"
+                onClick={() =>
+                  window.open("https://make.md/community", "_blank")
+                }
+                style={{ cursor: "pointer" }}
+              >
+                https://make.md/community
+              </span>
+            </div>
           </div>
         </div>
-        
+
         <div className="mk-setting-group">
           <div className="mk-setting-content-full">
             <ColorPaletteManager superstate={superstate} />

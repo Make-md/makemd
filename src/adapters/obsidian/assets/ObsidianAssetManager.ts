@@ -3,6 +3,8 @@ import { IUIManager } from 'shared/types/uiManager';
 import { SpaceManagerInterface } from 'shared/types/spaceManager';
 import MakeMDPlugin from 'main';
 import { normalizePath } from 'obsidian';
+import { lucideIcons } from '../ui/icons';
+import { emojis } from 'shared/assets/emoji';
 import {
   Asset,
   AssetCacheStats,
@@ -529,9 +531,7 @@ export class ObsidianAssetManager implements IAssetManager {
   // Ensure default iconsets exist
   private async ensureDefaultIconsets(): Promise<void> {
     try {
-      // Import lucide icons list
-      const { lucideIcons } = await import('../ui/icons');
-      const { emojis } = await import('shared/assets/emoji');
+      // Use imported lucide icons and emojis
       
       // Create lucide iconset if not exists
       if (!this.assets.has('lucide')) {

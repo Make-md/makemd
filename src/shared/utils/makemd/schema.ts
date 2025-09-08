@@ -13,6 +13,6 @@ export const mdbSchemaToFrameSchema = (schema: SpaceTableSchema): FrameSchema =>
   if (!schema) return null;
   return {
     ...schema,
-    def: safelyParseJSON(schema.def)
+    def: typeof schema.def === 'string' ? safelyParseJSON(schema.def) : schema.def
   };
 };

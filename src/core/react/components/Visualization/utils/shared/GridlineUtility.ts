@@ -26,7 +26,7 @@ export class GridlineUtility {
     
     const { gridGroup, graphArea, config, resolveColor, editMode, onElementSelect } = context;
     
-    if (!config.layout.grid) return;
+    if (!config?.layout?.grid) return;
     
     // Check if graphArea values are valid
     if (!graphArea || isNaN(graphArea.bottom) || isNaN(graphArea.height) || 
@@ -35,7 +35,7 @@ export class GridlineUtility {
       return;
     }
 
-    if (config.layout.grid.x && xScale) {
+    if (config?.layout?.grid?.x && xScale) {
       const xGridlines = gridGroup
         .append('g')
         .attr('class', 'grid-x')
@@ -63,18 +63,18 @@ export class GridlineUtility {
         .selectAll('line')
         .style(
           'stroke',
-          resolveColor(config.layout.grid.color || 'var(--mk-ui-border)')
+          resolveColor(config?.layout?.grid?.color || 'var(--mk-ui-border)')
         )
         .style(
           'stroke-dasharray',
-          config.layout.grid.strokeDasharray || '3,3'
+          config?.layout?.grid?.strokeDasharray || '3,3'
         )
         .style('opacity', 0.5);
 
       xGridlines.select('.domain').remove();
     }
 
-    if (config.layout.grid.y && yScale) {
+    if (config?.layout?.grid?.y && yScale) {
       const yGridlines = gridGroup
         .append('g')
         .attr('class', 'grid-y')
@@ -102,11 +102,11 @@ export class GridlineUtility {
         .selectAll('line')
         .style(
           'stroke',
-          resolveColor(config.layout.grid.color || 'var(--mk-ui-border)')
+          resolveColor(config?.layout?.grid?.color || 'var(--mk-ui-border)')
         )
         .style(
           'stroke-dasharray',
-          config.layout.grid.strokeDasharray || '3,3'
+          config?.layout?.grid?.strokeDasharray || '3,3'
         )
         .style('opacity', 0.5);
 
@@ -129,7 +129,7 @@ export class GridlineUtility {
     
     const { ctx, graphArea, config, resolveColor } = context;
     
-    if (!config.layout.grid) return;
+    if (!config?.layout?.grid) return;
     
     // Check if graphArea values are valid
     if (!graphArea || isNaN(graphArea.bottom) || isNaN(graphArea.height) || 
@@ -140,17 +140,17 @@ export class GridlineUtility {
     }
 
     ctx.save();
-    ctx.strokeStyle = resolveColor(config.layout.grid.color || 'var(--mk-ui-border)');
+    ctx.strokeStyle = resolveColor(config?.layout?.grid?.color || 'var(--mk-ui-border)');
     ctx.globalAlpha = 0.5;
     ctx.lineWidth = 1;
 
-    if (config.layout.grid.strokeDasharray) {
+    if (config?.layout?.grid?.strokeDasharray) {
       const dashArray = config.layout.grid.strokeDasharray.split(',').map(Number);
       ctx.setLineDash(dashArray);
     }
 
     // X gridlines
-    if (config.layout.grid.x && xScale) {
+    if (config?.layout?.grid?.x && xScale) {
       const ticks = xScale.ticks ? xScale.ticks(5) : xScale.domain();
       
       if (xScale.bandwidth) {
@@ -182,7 +182,7 @@ export class GridlineUtility {
     }
 
     // Y gridlines
-    if (config.layout.grid.y && yScale) {
+    if (config?.layout?.grid?.y && yScale) {
       const ticks = yScale.ticks ? yScale.ticks(5) : yScale.domain();
       
       ticks.forEach((tick: any) => {
