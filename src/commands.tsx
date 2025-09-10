@@ -2,7 +2,10 @@ import { moveSpaceFiles } from "adapters/obsidian/filesystem/spaceFileOps";
 import { openPathFixer } from "adapters/obsidian/fileSystemPathFixer";
 import { FILE_CONTEXT_VIEW_TYPE } from "adapters/obsidian/ui/explorer/ContextExplorerLeafView";
 import { showWarningsModal } from "core/react/components/Navigator/SyncWarnings";
-import { newSpaceModal } from "core/react/components/UI/Menus/navigator/showSpaceAddMenu";
+import {
+  defaultAddAction,
+  newSpaceModal,
+} from "core/react/components/UI/Menus/navigator/showSpaceAddMenu";
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
 import { openInputModal } from "core/react/components/UI/Modals/InputModal";
 import { addPathToSpaceAtIndex } from "core/superstate/utils/spaces";
@@ -34,6 +37,13 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
           plugin.app.workspace.getLeaf()?.containerEl.ownerDocument
         )
       );
+    },
+  });
+  plugin.addCommand({
+    id: "new-note",
+    name: i18n.buttons.newNote,
+    callback: () => {
+      defaultAddAction(plugin.superstate, null, window, false);
     },
   });
   plugin.addCommand({

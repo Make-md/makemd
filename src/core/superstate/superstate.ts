@@ -4,6 +4,7 @@ import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { defaultSpaceSort, saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
+import { formulas } from "core/utils/formula/formulas";
 import { buildRootFromMDBFrame } from "core/utils/frames/ast";
 import { pathByJoins } from "core/utils/spaces/query";
 import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
@@ -12,13 +13,12 @@ import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _, { debounce } from "lodash";
 import * as math from 'mathjs';
-import { formulas } from "core/utils/formula/formulas";
 import { rootToFrame } from "schemas/frames";
+import { visualizationNode } from "schemas/kits";
+import { dataNode } from "schemas/kits/base";
 import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
 import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemNode, overviewItem, rowGroup } from "schemas/kits/list";
 import { buttonNode, callout, dividerNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
-import { dataNode } from "schemas/kits/base";
-import { headerKit, visualizationNode } from "schemas/kits";
 import { fieldTypeForField, mainFrameID } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
 import { Command } from "shared/types/commands";
@@ -46,9 +46,9 @@ import { SpacesCommandsAdapter } from "./commands";
 
 import { linkContextRow } from "core/utils/contexts/linkContextRow";
 import { allMetadata } from "core/utils/metadata";
+import { IAssetManager } from "shared/types/assets";
 import { Metadata } from "shared/types/metadata";
 import { Indexer } from "./workers/indexer/indexer";
-import { IAssetManager } from "shared/types/assets";
 
 import Fuse, { FuseIndex } from "fuse.js";
 import { SuperstateEvent } from "shared/types/PathState";
@@ -91,7 +91,7 @@ public api: API;
 
 
     public kit : FrameRoot[] = [
-        headerKit,
+
         buttonNode(), 
         dividerNode, 
         progressNode(),

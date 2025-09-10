@@ -26,6 +26,7 @@ export const removeTrailingSemicolon = (str: string) => {
 }
 
 export const objectIsConst = (objString: string, type: string): boolean => {
+  if (objString) return false;
   const trimmed = removeTrailingSemicolon(objString.trim())
   if (type == 'object' && trimmed.startsWith("{") && trimmed.endsWith("}")) {
     return true
@@ -38,6 +39,7 @@ export const objectIsConst = (objString: string, type: string): boolean => {
 }
 
 export const stringIsConst = (str: string): boolean => {
+  if (!str) return false;
   // Check for quotes at the start and end without any quotes inside
   const hasQuotesAtStartEndOnly = /^["'](?:[^"\\]|\\.)*["'](?:;)?$/.test(str);
   const fixedStr = str?.replace(/;+$/, "");

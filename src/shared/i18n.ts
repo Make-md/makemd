@@ -1103,7 +1103,7 @@ class I18nLoader {
         },
         newNotePlaceholder: {
           name: "New Note Placeholder",
-          desc: "Default name for new notes",
+          desc: "Default name for new notes, applies to the Navigator buttons and the New Note command",
         },
         folderIndentationLines: {
           name: "Show Folder Indentation Lines",

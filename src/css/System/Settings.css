@@ -265,6 +265,10 @@
   justify-content: center;
 }
 
+.mk-settings-nav-item .mk-icon-small svg {
+  color: white;
+}
+
 .mk-settings-nav-item.mk-active .mk-icon-small {
   opacity: 1;
 }

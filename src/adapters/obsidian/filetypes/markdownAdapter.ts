@@ -436,9 +436,10 @@ public app: App;
             await this.middleware.createFolder(parent);
             parentFolder = getAbstractFileAtPath(this.app, parent);
         }
+        const fileName = name?.length > 0 ? name : this.plugin.superstate.settings.newNotePlaceholder
         return this.app.fileManager.createNewMarkdownFile(
         parentFolder ? (parentFolder instanceof TFolder) ? parentFolder : parentFolder.parent : this.app.vault.getRoot(),
-        name).then(async f => {
+        fileName).then(async f => {
             if (content) {
                 await this.app.vault.modify(f, content);
             }
