@@ -26,7 +26,7 @@ export const removeTrailingSemicolon = (str: string) => {
 }
 
 export const objectIsConst = (objString: string, type: string): boolean => {
-  if (objString) return false;
+  if (!objString) return false;
   const trimmed = removeTrailingSemicolon(objString.trim())
   if (type == 'object' && trimmed.startsWith("{") && trimmed.endsWith("}")) {
     return true
