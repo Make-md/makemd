@@ -2,7 +2,7 @@ import { FormulaEditor } from "core/react/components/SpaceEditor/Actions/Formula
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { unitTypes } from "core/utils/contexts/fields/units";
 import { aggregateFnTypes } from "core/utils/contexts/predicate/aggregates";
-import { spaceNameFromSpacePath } from "core/utils/strings";
+import { schemaNameFromSpacePath, spaceNameFromSpacePath } from "core/utils/strings";
 import { SelectMenuProps, SelectOption, Superstate } from "makemd-core";
 import React, { useMemo } from "react";
 import { fieldTypeForField, fieldTypeForType, fieldTypes } from "schemas/mdb";
@@ -17,6 +17,8 @@ import { InputModal } from "../../Modals/InputModal";
 import { EditOptionsModal } from "../../Modals/EditOptionsModal";
 import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
 import StickerModal from "shared/components/StickerModal";
+import { showFilterSelectorMenu } from "../properties/filterSelectorMenu";
+import { nameForField } from "core/utils/frames/frames";
 
 export const PropertyValueComponent = (props: {
   superstate: Superstate;
@@ -84,8 +86,15 @@ export const PropertyValueComponent = (props: {
     );
   };
   const parsedValue = useMemo(
-    () => parseFieldValue(props.value, props.fieldType),
-    [props.value, props.fieldType]
+    () => {
+      const parsed = parseFieldValue(props.value, props.fieldType);
+      // Resolve space path if it exists
+      if (parsed?.space && props.contextPath) {
+        parsed.space = props.superstate.spaceManager.resolvePath(parsed.space, props.contextPath);
+      }
+      return parsed;
+    },
+    [props.value, props.fieldType, props.contextPath]
   );
   const saveParsedValue = (field: string, value: any) => {
     props.saveValue(JSON.stringify({ ...parsedValue, [field]: value }));
@@ -135,7 +144,12 @@ export const PropertyValueComponent = (props: {
   };
 
   const selectAggregateSchema = async (e: React.MouseEvent) => {
-    const schemas = props.superstate.contextsIndex.get(props.contextPath).schemas
+    const contextInfo = props.superstate.contextsIndex.get(parsedValue.space || props.contextPath);
+    if (!contextInfo || !contextInfo.schemas) {
+      return;
+    }
+    
+    const schemas = contextInfo.schemas;
     const properties: SelectOption[] = [];
    
     properties.push(
@@ -146,6 +160,21 @@ export const PropertyValueComponent = (props: {
         })) ?? [])
     );
     showOptions(e, null, properties, "schema");
+  };
+
+   const selectAggregateContext = async (e: React.MouseEvent) => {
+    showOptions(
+      e,
+      parsedValue.space,
+      props.superstate
+        .allSpaces()
+        .filter((f) => f.type != "default")
+        .map((m) => ({ name: m.name, value: m.path, description: m.path })),
+      "space",
+      null,
+      null,
+      true
+    );
   };
 
   const selectAggregateRef = (e: React.MouseEvent) => {
@@ -171,7 +200,7 @@ export const PropertyValueComponent = (props: {
     if (props.isSpace) {
     
       options = props.superstate.contextsIndex
-              .get(props.contextPath)
+              .get(parsedValue.space || props.contextPath)
               ?.mdb[parsedValue.schema]?.cols.map((m) => ({
                 name: m.name,
                 value: m.name,
@@ -213,12 +242,71 @@ export const PropertyValueComponent = (props: {
     }
   };
 
+  const selectAggregateFilter = (e: React.MouseEvent) => {
+    let fields: any[] = [];
+    
+    if (props.isSpace) {
+      const contextData = props.superstate.contextsIndex.get(parsedValue.space || props.contextPath);
+      const tableData = contextData?.mdb?.[parsedValue.schema];
+      
+      if (tableData?.cols) {
+        fields = tableData.cols.map((col) => ({
+          label: nameForField(col),
+          field: col.name,
+          type: parsedValue.schema,
+          vType: col.type,
+          defaultFilter: "is"
+        }));
+      }
+    } else {
+      const fieldRef = parsedValue.ref;
+      let fieldSpace = null;
+      
+      if (fieldRef == "$items") {
+        fieldSpace = props.rowPath;
+      } else {
+        const refField = props.fields?.find((f) => f.name == fieldRef);
+        if (refField) {
+          fieldSpace = parseFieldValue(refField.value, refField.type)?.space;
+        }
+      }
+      
+      if (fieldSpace) {
+        const contextData = props.superstate.contextsIndex.get(fieldSpace);
+        if (contextData?.contextTable?.cols) {
+          fields = contextData.contextTable.cols.map((col) => ({
+            label: col.name,
+            field: col.name,
+            type: "context",
+            vType: col.type,
+            defaultFilter: "is"
+          }));
+        }
+      }
+    }
+    
+    showFilterSelectorMenu(
+      props.superstate.ui,
+      (e.target as HTMLElement).getBoundingClientRect(),
+      windowFromDocument(e.view.document),
+      props.superstate,
+      parsedValue.filters ?? [],
+      fields,
+      (filters) => saveParsedValue("filters", filters),
+      {
+        sections: [
+          { name: "Properties", value: "property" },
+          { name: "Metadata", value: "metadata" }
+        ]
+      }
+    );
+  }
   const selectAggregateFn = (e: React.MouseEvent) => {
     const options: SelectOption[] = [];
     let field: SpaceProperty = null;
     if (props.isSpace) {
       field = props.superstate.contextsIndex
-        .get(props.contextPath)
+        .get(parsedValue.space || props.contextPath)
         ?.mdb[parsedValue.schema]?.cols?.find((f) => f.name == parsedValue.field);
     } else {
     const fieldRef = parsedValue.ref;
@@ -484,11 +572,34 @@ export const PropertyValueComponent = (props: {
     </>
   ) : props.fieldType?.startsWith("aggregate") ? (
     <>
-      <div className="mk-menu-option" onClick={(e) => props.isSpace ? selectAggregateSchema(e) : selectAggregateRef(e)}>
-        <span>{props.isSpace ? "List" :  i18n.labels.propertyValueReference}</span>
-        <span>{props.isSpace ? parsedValue.schema : parsedValue.ref == "$items" ? "Items" : parsedValue.ref}</span>
+    {props.isSpace ? <>
+    <div className="mk-menu-option" onClick={(e) =>  selectAggregateContext(e)}>
+        <span>{"Space"}</span>
+        <span>{spaceNameFromSpacePath(parsedValue.space || props.contextPath, props.superstate)}</span>
       </div>
-      {parsedValue.ref?.length > 0  || parsedValue.schema?.length > 0  && (
+      <div className="mk-menu-option" onClick={(e) => selectAggregateSchema(e) }>
+        <span>{"List"}</span>
+        <span>{schemaNameFromSpacePath(parsedValue.space || props.contextPath,  parsedValue.schema, props.superstate)}</span>
+      </div>
+      <div className="mk-menu-option" onClick={(e) => selectAggregateFilter(e) }>
+        <span>{"Filter"}</span>
+        <span>{parsedValue.filters?.length > 0 ? `${parsedValue.filters.reduce((acc: number, g: any) => acc + (g.filters?.length || 0), 0)} filters` : "None"}</span>
+      </div>
+      </> :
+      <>
+        <div className="mk-menu-option" onClick={(e) => selectAggregateRef(e)}>
+        <span>{i18n.labels.propertyValueReference}</span>
+        <span>{parsedValue.ref == "$items" ? "Items" : parsedValue.ref}</span>
+      </div>
+      {parsedValue.ref?.length > 0 && (
+        <div className="mk-menu-option" onClick={(e) => selectAggregateFilter(e)}>
+          <span>{"Filter"}</span>
+          <span>{parsedValue.filters?.length > 0 ? `${parsedValue.filters.reduce((acc: number, g: any) => acc + (g.filters?.length || 0), 0)} filters` : "None"}</span>
+        </div>
+      )}
+      </>
+}
+      {(parsedValue.ref?.length > 0  || parsedValue.schema?.length > 0)  && (
         <div
           className="mk-menu-option"
           onClick={(e) => selectAggregateProperty(e)}

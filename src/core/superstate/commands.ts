@@ -1,14 +1,11 @@
-
 import { CLIManager } from "core/middleware/commands";
 import { runActionString } from "core/utils/commands/actions";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { executeCode } from "core/utils/frames/runner";
 import { Superstate } from "makemd-core";
-import { ActionInstance, CLIAdapter } from "shared/types/actions";
+import { ActionInstance, ActionTree, CLIAdapter } from "shared/types/actions";
 import { Command, CommandWithPath } from "shared/types/commands";
 import { parseURI } from "shared/utils/uri";
-
-
 
 export class SpacesCommandsAdapter implements CLIAdapter {
     manager: CLIManager;
@@ -18,16 +15,177 @@ export class SpacesCommandsAdapter implements CLIAdapter {
         this.manager = manager;   
     }
 
+    public async reloadCommands() {
+        // API commands are static, no need to reload
+    }
+
     public apiCommands : {[key: string]: {[key: string]: Command}} = {
-        
-        path:
-        {
-            
+        path: {
+            contents: {
+                schema: {
+                    id: 'path.contents',
+                    name: 'Get Contents of Path',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: '',
+                        templateString: 'Get contents of ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: 'Path'
+                    })
+                }],
+            },
+            properties: {
+                schema: {
+                    id: 'path.properties',
+                    name: 'Get Properties of Path',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: '',
+                        templateString: 'Get properties of ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: 'Path'
+                    })
+                }],
+            },
+            write: {
+                schema: {
+                    id: 'path.write',
+                    name: 'Write to Path',
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: '',
+                        templateString: '${append} ${text} to ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: 'Path'
+                    })
+                },
+                {
+                    name: 'text',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: 'Text'
+                    })
+                },
+                {
+                    name: 'append',
+                    type: 'option',
+                    value: JSON.stringify({
+                        alias: 'Mode',
+                        options: [
+                            { name: 'Append', value: 'true' },
+                            { name: 'Replace', value: 'false' },
+                        ],
+                    })
+                }],
+            },
+            items: {
+                schema: {
+                    id: 'path.items',
+                    name: 'Get Items Inside of Path',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: '',
+                        templateString: 'Get list of items in ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link'
+                }],
+            },
+            pin: {
+                schema: {
+                    id: 'path.pin',
+                    name: 'Add Path to Space',
+                    type: 'api',
+                    def: {
+                        type: 'add',
+                        description: '',
+                        templateString: 'Add path to ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: 'Path'
+                    })
+                },
+                {
+                    name: 'space',
+                    type: 'space',
+                    value: JSON.stringify({
+                        alias: 'Space'
+                    })
+                }]
+            },
+            move: {
+                schema: {
+                    id: 'path.move',
+                    name: 'Move Path',
+                    type: 'api',
+                    def: {
+                        type: 'path',
+                        description: ''
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link'
+                },
+                {
+                    name: 'space',
+                    type: 'space'
+                }]
+            },
+            copy: {
+                schema: {
+                    id: 'path.copy',
+                    name: 'Copy Path',
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: ''
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link'
+                },
+                {
+                    name: 'space',
+                    type: 'space'
+                }]
+            },
             open: {
                 schema: {
                     id: 'path.open',
                     name: 'Open Path',
-                    type: 'api'
+                    type: 'api',
+                    def: {
+                        type: 'open',
+                        description: '',
+                        templateString: 'Open ${path}'
+                    }
                 },
                 fields: [{
                     name: 'path',
@@ -37,201 +195,133 @@ export class SpacesCommandsAdapter implements CLIAdapter {
             create: {
                 schema: {
                     id: 'path.create',
-                    name: 'Create Item',
-                    type: 'api'
+                    name: 'Write to file',
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: '',
+                        templateString: 'Write new ${type} ${space} ${content} with name ${name}'
+                    }
                 },
                 fields: [{
                     name: 'name',
-                    type: 'text'
-                }, {
-                    name: 'space',
-                    type: 'space'
-                }, {
-                    name: 'content',
-                    type: 'text'
-                }],
-            },
-            setProperty: {
-                schema: {
-                    id: 'path.setProperty',
-                    name: 'Save Property',
-                    type: 'api'
-                },
-                fields: [
-                    {
-                        name: 'path',
-                        type: 'link'
-                    },
-                    {
-                    name: 'property',
-                    type: 'option',
+                    type: 'text',
                     value: JSON.stringify({
-                        source: "$properties"
+                        alias: 'Name'
                     })
-                }, {
-                    name: 'value',
-                    type: 'text'
-                }],
-            },
-            
-        },
-        table: {
-            select: {
-                schema: {
-                    id: 'table.select',
-                    name: 'Get All List Items from Table',
-                    type: 'api'
-                },
-                fields: [{
-                    name: 'path',
-                    type: 'link'
-                }, {
-                    name: 'table',
-                    type: 'text'
-                }],
-            },
-            update: {
-                schema: {
-                    id: 'table.update',
-                    name: 'Update List Item in Table',
-                    type: 'api'
-                },
-                fields: [
-                    {
-                        name: 'path',
-                        type: 'link'
-                    },
-                    {
-                    name: 'table',
-                    type: 'text'
-                }, {
-                    name: 'index',
-                    type: 'number'
-                }, {
-                    name: 'row',
-                    type: 'object'
-                }],
-            },
-            insert: {
-                schema: {
-                    id: 'table.insert',
-                    name: 'Insert List Item into Table',
-                    type: 'api'
-                },
-                fields: [{
-                    name: 'path',
-                    type: 'link'
-                }, {
-                    name: 'schema',
-                    type: 'text'
-                }, {
-                    name: 'row',
-                    type: 'object'
                 }],
             }
-        },
-        context: {
-            select: {
-                schema: {
-                    id: 'context.select',
-                    name: 'Select Items from Context',
-                    type: 'api'
-                },
-                fields: [{
-                    name: 'path',
-                    type: 'link'
-                }, {
-                    name: 'table',
-                    type: 'text'
-                }],
-            },
-            update: {
-                schema: {
-                    id: 'context.update',
-                    name: 'Update Item in Context',
-                    type: 'api'
-                },
-                fields: [{
-                    name: 'path',
-                    type: 'space'
-                }, {
-                    name: 'file',
-                    type: 'link'
-                }, {
-                    name: 'field',
-                    type: 'text'
-                }, {
-                    name: 'value',
-                    type: 'text'
-                }],
-            },
-            insert: {
-                schema: {
-                    id: 'context.insert',
-                    name: 'Insert Item into Context',
-                    type: 'api'
-                },
-                fields: [
-                    {
-                        name: 'path',
-                        type: 'link'
-                    },
-                    {
-                    name: 'schema',
-                    type: 'text'
-                }, {
-                    name: 'name',
-                    type: 'text'
-                }, {
-                    name: 'row',
-                    type: 'object'
-                }
-                ],
-            }
-        },    
-}
-
-    public commandForAction (action: string) {
-        if (!action) return null;
-        const uri = parseURI(action);
-        if (uri.authority == '$api') {
-            return this.apiCommands[uri.path]?.[uri.ref]
-        } else if (uri.authority == '$actions') {
-            return this.superstate.actions.get(uri.path)?.find(f => f.schema.id == uri.ref)
-        } else {
-            return this.superstate.actionsIndex.get(uri.path)?.find(f => f.schema.id == uri.ref)
         }
     }
 
-    public runCommand (action: string, instance: ActionInstance) {
+    public commandForAction(action: string): Command | null {
+        if (!action) return null;
+        const uri = parseURI(action);
+        
+        if (uri.authority === '$api') {
+            const apiCommand = this.apiCommands[uri.path]?.[uri.ref];
+            return apiCommand || null;
+        } else if (uri.authority === '$actions') {
+            return this.superstate.actions.get(uri.path)?.find(f => f.schema.id == uri.ref) || null;
+        } else {
+            return this.superstate.actionsIndex.get(uri.path)?.find(f => f.schema.id == uri.ref) || null;
+        }
+    }
+
+    public async runCommand(action: string, instance: ActionInstance): Promise<ActionInstance> {
+        const uri = parseURI(action);
+        
+        if (uri.authority !== '$api') {
+            const command = this.commandForAction(action);
+            if (!command) {
+                return {...instance, error: new Error(`Command not found for action: ${action}`)};
+            }
+
+            let newInstance = instance;
+            try {
+                if (command.schema.type === 'actions') {
+                    newInstance = await runActionString(this.superstate, command.code || "", instance);
+                } else if (command.schema.type === 'script') {
+                    newInstance.result = await executeCode(command.code, {...instance.instanceProps, $prev: instance.result});
+                } else if (command.schema.type === 'formula') {
+                    newInstance.result = runFormulaWithContext(
+                        this.superstate.formulaContext,
+                        this.superstate.pathsIndex,
+                        this.superstate.spacesMap,
+                        command.code,
+                        command.fields.reduce((p, c) => ({ ...p, [c.name]: c }), {$prev: instance.result}),
+                        instance.instanceProps
+                    );
+                }
+            } catch (e) {
+                newInstance.error = e;
+            }
+            return newInstance;
+        }
         
         const command = this.commandForAction(action);
-
+        
+        if (!command) {
+            return {...instance, error: new Error(`Command not found for action: ${action}`)};
+        }
+        
+        let newInstance = instance;
         let result;
-        let error
+        
         try {
-            if (command.schema.type == 'api') {
-                const [namespace, method] = command.schema.id.split('.')
-                result = (this.superstate.api as {[key: string]: any})[namespace]?.[method]?.(...command.fields.map(f => instance.instanceProps[f.name]));
+            if (command.schema.type === 'api') {
+                const [namespace, method] = command.schema.id.split('.');
+                const api = this.superstate.api as unknown as Record<string, any>;
+                const namespaceMethods = api[namespace];
+                
+                if (namespaceMethods && typeof namespaceMethods[method] === 'function') {
+                    result = await namespaceMethods[method](...command.fields.map(f => instance.instanceProps[f.name]));
+                }
             }
-            if (command.schema.type == 'actions')
-            result = runActionString(this.superstate, command.code, instance)
-            if (command.schema.type == 'script')
-            result = executeCode(command.code, instance.instanceProps)
-          if (command.schema.type == 'formula')
-            result = runFormulaWithContext(this.superstate.formulaContext,this.superstate.pathsIndex, this.superstate.spacesMap, command.code, command.fields.reduce((p, c) => ({ ...p, [c.name]: c }), {}), instance.instanceProps)
-          } catch (e) {
-            error = e
-          }
-        return result;
+        } catch (e) {
+            newInstance.error = e;
+        }
+        
+        if (command.schema.type === 'api' && result !== undefined) {
+            newInstance = {...newInstance, result};
+        }
+        
+        return newInstance;
     }
 
     allCommands(): CommandWithPath[] {
-        const apiCommands = Object.keys(this.apiCommands).flatMap(f => Object.keys(this.apiCommands[f]).map(g => ({ scheme: 'spaces',  path: `spaces://$api/${f}/#;${g}`, ...this.apiCommands[f][g]})))
-        const actionCommands = [...this.superstate.actions.entries()].flatMap(f => f[1].map( g => ({ scheme: 'spaces', path: `spaces://$api/${f[0]}/#;${g.schema.id}`, ...g})))
-        return [...apiCommands, ...actionCommands];
-        // Implement the logic to retrieve all available commands
-        // Return an array of all available commands
+        const apiCommands: CommandWithPath[] = [];
+        
+        Object.keys(this.apiCommands).forEach(namespace => {
+            Object.keys(this.apiCommands[namespace]).forEach(method => {
+                apiCommands.push({
+                    scheme: 'spaces',
+                    path: `spaces://$api/${namespace}/#;${method}`,
+                    ...this.apiCommands[namespace][method]
+                });
+            });
+        });
+        
+        for (const [path, commands] of this.superstate.actions) {
+            commands.forEach(command => {
+                apiCommands.push({
+                    scheme: 'spaces',
+                    path: `spaces://$actions/${path}/#;${command.schema.id}`,
+                    ...command
+                });
+            });
+        }
+        
+        for (const [path, commands] of this.superstate.actionsIndex) {
+            commands.forEach(command => {
+                apiCommands.push({
+                    scheme: 'spaces',
+                    path: `spaces://${path}/#;${command.schema.id}`,
+                    ...command
+                });
+            });
+        }
+        
+        return apiCommands;
     }
-
 }

@@ -4,6 +4,7 @@ import { getPaletteColors } from '../utils';
 import { displayTextForType } from 'core/utils/displayTextForType';
 import { sortByEncodingType } from '../sortingUtils';
 import { LineChartData } from '../../transformers';
+import { formatNumber } from '../formatNumber';
 
 export class LineChartUtility {
   static render(context: RenderContext): void {
@@ -376,7 +377,7 @@ export class LineChartUtility {
             .style('font-weight', '500')
             .text((d) => {
               const value = Number(d[yEncoding.field]) || 0;
-              return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+              return formatNumber(value);
             });
         }
 
@@ -633,7 +634,7 @@ export class LineChartUtility {
               return;
             }
             
-            const formattedValue = Number.isInteger(value) ? value.toString() : value.toFixed(1);
+            const formattedValue = formatNumber(value);
             ctx.fillText(formattedValue, x, y - 8);
           });
           ctx.restore();
@@ -766,7 +767,7 @@ export class LineChartUtility {
           .attr('text-anchor', 'middle')
           .attr('font-size', '10px')
           .attr('fill', color)
-          .text(d => d.y.toFixed(1));
+          .text(d => formatNumber(d.y));
       }
       
       seriesIndex++;

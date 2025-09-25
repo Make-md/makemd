@@ -37,7 +37,7 @@ export const SpacingSubmenu = (props: HoverSubmenuProps) => {
       ></StepSetter>
       <div
         dangerouslySetInnerHTML={{
-          __html: props.superstate.ui.getSticker("ui//plus"),
+          __html: props.superstate.ui.getSticker("ui//options"),
         }}
         onClick={(e) => {
           showMarginMenu(e);

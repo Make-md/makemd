@@ -9,6 +9,8 @@ import {
   menuSeparator,
 } from "../UI/Menus/menu/SelectionMenu";
 import { showSpacesMenu } from "../UI/Menus/properties/selectSpaceMenu";
+import { propertyIsObjectType } from "utils/properties";
+import { spaceNameFromSpacePath } from "core/utils/strings";
 
 export interface VisualizationToolbarProps {
   superstate: Superstate;
@@ -144,7 +146,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
     // Space selector submenu
     menuOptions.push({
       name: i18n.menu.space || "Space",
-      value: sourcePath,
+      value: spaceNameFromSpacePath(sourcePath, superstate),
       icon: "lucide//folder",
       type: SelectOptionType.Disclosure,
       onSubmenu: (offset, onHide) =>
@@ -774,7 +776,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
       value: (() => {
         // Get current aggregate setting
         if (configData?.encoding?.color?.field) {
-          return configData?.encoding?.color?.aggregate || "count";
+          return configData?.encoding?.color?.aggregate || "sum";
         }
         const yEncoding = Array.isArray(configData.encoding?.y)
           ? configData.encoding.y[0]

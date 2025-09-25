@@ -1,5 +1,6 @@
 import { showRowContextMenu } from "core/react/components/UI/Menus/contexts/rowContextMenu";
 import { showPathContextMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
+import { openContextCreateItemModal } from "core/react/components/UI/Modals/ContextCreateItemModal";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { addRowInTable, updateTableRow, updateValueInContext } from "core/utils/contexts/context";
 import { formatDate } from "core/utils/date";
@@ -78,9 +79,11 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             // Otherwise get thumbnail from path label
             return this.superstate.pathsIndex.get(path)?.label?.thumbnail;
         },
-        open: (path: string, target?: TargetLocation) => {
-            
-            this.superstate.ui.openPath(path, target)
+        open: (path: string, target?: TargetLocation, source?: string) => {
+            const resolvedPath = source 
+                ? this.superstate.spaceManager.resolvePath(path, source) 
+                : path;
+            this.superstate.ui.openPath(resolvedPath, target)
         },
         create: (name: string, space: string, type: string, content?: Promise<string> | string) => {
             if (content instanceof Promise) {
@@ -109,7 +112,24 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
     }
     public commands = {
         run : (action: string, parameters?: { [key: string]: any; }, contexts?: FrameContexts) => {
-            return this.superstate.cli.runCommand(action,  {instanceProps: {...parameters, $api: this, $contexts: contexts}, props: {}, iterations: 0})
+            // Get the command to check parameter types
+
+            const command = this.superstate.cli.commandForAction(action);
+            let resolvedParameters = {...parameters};
+            
+            if (command && contexts?.$space?.path) {
+                // Resolve link-type parameters using the context source
+                command.fields.forEach(field => {
+                    if (field.type === 'link' && parameters?.[field.name]) {
+                        resolvedParameters[field.name] = this.superstate.spaceManager.resolvePath(
+                            parameters[field.name], 
+                            contexts.$space.path
+                        );
+                    }
+                });
+            }
+            
+            return this.superstate.cli.runCommand(action,  {instanceProps: {...resolvedParameters, $api: this, $contexts: contexts}, props: {}, iterations: 0})
         },
         formula: (formula: string, parameters: { [key: string]: any; }, contexts?: FrameContexts) => {
             return runFormulaWithContext(this.superstate.formulaContext, this.superstate.pathsIndex, this.superstate.spacesMap, formula, contexts.$properties, parameters, contexts?.$contexts?.$space?.path)
@@ -163,7 +183,8 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
                 const path = this.superstate.spaceManager.resolvePath(context?.rows[index]?.[PathPropertyName], space)
                 this.superstate.ui.openPath(path, target)
             } else {
-
+                // For non-default schemas, open the edit modal instead of a path
+                this.table.editModal(space, table, index)
             }
         },
         contextMenu: async (e: React.MouseEvent, space: string, table: string, index: number) => {
@@ -174,6 +195,25 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             } else {
                 showRowContextMenu(e, this.superstate, space, table, index)
             }
+        },
+        editModal: async (space: string, table: string, index: number, properties?: DBRow, win?: Window) => {
+            const context = await this.superstate.spaceManager.readTable(space, table);
+            const rowData = {...(properties ?? {}), ...context?.rows[index]};
+            
+            // Open modal in edit mode when index >= 0, create mode when index = -1
+            openContextCreateItemModal(
+                this.superstate,
+                space,
+                table,
+                undefined, // frameSchema
+                win,
+                index, // Row index: -1 for new, >= 0 for edit
+                rowData // Initial data for editing
+            );
+        },
+        createModal: async (space: string, table: string, properties?:  DBRow, win?: Window) => {
+            // Open modal in create mode with index = -1
+            await this.table.editModal(space, table, -1, properties, win);
         }
     }
     public context = {

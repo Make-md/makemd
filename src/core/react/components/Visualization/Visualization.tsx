@@ -456,7 +456,7 @@ export const Visualization = ({
               const groupByField =
                 config.visualizationConfig?.encoding?.color?.field;
               const groupByAggregation = (config.visualizationConfig?.encoding
-                ?.color?.aggregate || "count") as AggregationType;
+                ?.color?.aggregate || "sum") as AggregationType;
 
               // Use utility function to process all aggregation logic
               const aggregatedData = processDataAggregation(processedRows, {

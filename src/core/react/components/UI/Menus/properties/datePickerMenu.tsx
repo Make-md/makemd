@@ -281,7 +281,7 @@ export const DatePicker = (props: {
           ></button>
         </div>
       ) : props.time == DatePickerTimeMode.Toggle ? (
-        <button onClick={() => setMode(true)}>{i18n.menu.addTime}</button>
+        <button onClick={() => setMode(true)}>{i18n.buttons.addTime}</button>
       ) : null}
     </div>
   );

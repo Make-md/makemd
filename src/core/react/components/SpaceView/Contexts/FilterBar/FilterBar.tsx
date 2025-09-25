@@ -15,6 +15,7 @@ import {
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
 import { showSetValueMenu } from "core/react/components/UI/Menus/properties/propertyMenu";
 import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
+import { openContextCreateItemModal } from "core/react/components/UI/Modals/ContextCreateItemModal";
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
@@ -551,6 +552,47 @@ export const FilterBar = (props: {
           rect,
           windowFromDocument(e.view.document),
           onHide
+        );
+      },
+    });
+
+    menuOptions.push({
+      name: "Limit",
+      icon: "ui//hash",
+      type: SelectOptionType.Disclosure,
+      value: predicate?.limit > 0 ? predicate.limit.toString() : "Show all",
+      onClick: (e) => {
+        const offset = (e.target as HTMLElement).getBoundingClientRect();
+        const limitOptions = [0, 10, 25, 50, 100, 200, 500];
+        const currentLimit = predicate?.limit?.toString() ?? "0";
+
+        // Include current limit in options if it's not already there
+        const allOptions = limitOptions.includes(predicate?.limit)
+          ? limitOptions
+          : [...limitOptions, predicate?.limit].sort((a, b) => a - b);
+
+        props.superstate.ui.openMenu(
+          offset,
+          {
+            ui: props.superstate.ui,
+            multi: false,
+            editable: true,
+            value: [currentLimit],
+            options: allOptions.map((limit) => ({
+              name: limit === 0 ? "Show all" : limit.toString(),
+              value: limit.toString(),
+            })),
+            saveOptions: (_: string[], value: string[]) => {
+              const limitValue = parseInt(value[0]) || 0;
+              savePredicate({
+                limit: limitValue >= 0 ? limitValue : 0,
+              });
+            },
+            placeholder: "Enter a number or select",
+            searchable: true,
+            showAll: true,
+          },
+          windowFromDocument(e.view.document)
         );
       },
     });
@@ -1332,15 +1374,25 @@ export const FilterBar = (props: {
                   <>
                     <button
                       className="mk-button-new"
-                      onClick={(e) =>
-                        showSpaceAddMenu(
-                          props.superstate,
-                          (e.target as HTMLElement).getBoundingClientRect(),
-                          windowFromDocument(e.view.document),
-                          spaceCache,
-                          true
-                        )
-                      }
+                      onClick={(e) => {
+                        if (props.superstate.settings.contextCreateUseModal) {
+                          openContextCreateItemModal(
+                            props.superstate,
+                            spaceCache.path,
+                            dbSchema?.id,
+                            frameSchema?.id,
+                            windowFromDocument(e.view.document)
+                          );
+                        } else {
+                          showSpaceAddMenu(
+                            props.superstate,
+                            (e.target as HTMLElement).getBoundingClientRect(),
+                            windowFromDocument(e.view.document),
+                            spaceCache,
+                            true
+                          );
+                        }
+                      }}
                       dangerouslySetInnerHTML={{
                         __html: props.superstate.ui.getSticker("ui//plus"),
                       }}

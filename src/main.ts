@@ -30,6 +30,10 @@ import {
   HTML_FILE_VIEWER_TYPE
 } from "adapters/obsidian/ui/editors/HTMLFileViewer";
 import {
+  MKitFileViewer,
+  MKIT_FILE_VIEWER_TYPE
+} from "adapters/obsidian/ui/editors/MKitFileViewer";
+import {
   MDBFileViewer,
   MDB_FILE_VIEWER_TYPE
 } from "adapters/obsidian/ui/editors/MDBFileViewer";
@@ -102,6 +106,7 @@ import "css/Editor/Frames/Overlay.css";
 import "css/Editor/Frames/Page.css";
 import "css/Editor/Frames/Slides.css";
 import "css/Editor/Properties/DatePicker.css";
+import "css/Editor/MKitViewer.css";
 import "css/Menus/ColorPicker.css";
 import "css/Menus/InlineMenu.css";
 import "css/Menus/MainMenu.css";
@@ -227,6 +232,9 @@ loadViews () {
     });
     this.registerView(HTML_FILE_VIEWER_TYPE, (leaf) => {
       return new HTMLFileViewer(leaf, this);
+    });
+    this.registerView(MKIT_FILE_VIEWER_TYPE, (leaf) => {
+      return new MKitFileViewer(leaf, this);
     });
   }
 }
@@ -391,6 +399,10 @@ loadViews () {
       this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
       try {
       this.registerExtensions(["html", "htm"], HTML_FILE_VIEWER_TYPE);
+      } catch (e) {
+              }
+      try {
+      this.registerExtensions(["mkit"], MKIT_FILE_VIEWER_TYPE);
       } catch (e) {
               }
       this.app.workspace.onLayoutReady(async () => {

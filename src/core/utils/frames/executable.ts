@@ -4,9 +4,11 @@ import { applyFunctionToObject } from "../objects";
 import { objectIsConst, stringIsConst } from "./frames";
 
 const generateCodeForProp = (value: any, isClosure: boolean, type?: string) => {
-    const codeBlock = isClosure ? `($event, $value, $state, $saveState, $api) => { ${value} }` : value;
-    const isMultiLine = (typeof codeBlock === 'string' || codeBlock instanceof String) ? codeBlock.includes('\n') : false;
-    const isObject = type?.startsWith('object') && objectIsConst(value, type)
+    let codeBlock : string = value;
+    if (value.startsWith('{') && value.endsWith('}')) codeBlock = `(${codeBlock})`
+    codeBlock = (isClosure && !codeBlock.startsWith('(')) ? `($event, $value, $state, $saveState, $api) => { ${codeBlock} }` : codeBlock;
+    const isMultiLine = (typeof codeBlock === 'string') ? codeBlock.includes('\n') : false;
+    const isObject = type?.startsWith('object') && objectIsConst(codeBlock, type)
     
     let func
     try {
@@ -15,6 +17,7 @@ const generateCodeForProp = (value: any, isClosure: boolean, type?: string) => {
     : new Function(`with(this) { return ${codeBlock}; }`);
     
     } catch (e) {
+        console.log(e, codeBlock)
     }
     return func;
   }

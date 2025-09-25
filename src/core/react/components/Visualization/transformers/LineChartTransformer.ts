@@ -2,6 +2,7 @@ import { VisualizationConfig } from "shared/types/visualization";
 import { LineChartData, LineChartDataPoint, AggregationType } from "../types/ChartDataSchemas";
 import { SpaceProperty } from "shared/types/mdb";
 import { sortUniqueValues } from "../utils/sortingUtils";
+import { ensureCorrectEncodingType } from "../utils/inferEncodingType";
 
 /**
  * Transforms raw data into the format expected by line chart renderer
@@ -19,9 +20,16 @@ export class LineChartTransformer {
       return { data: [], series: [], xDomain: [], yExtent: [0, 0] };
     }
 
-    const xEncodings = Array.isArray(config.encoding.x) ? config.encoding.x : [config.encoding.x];
+    let xEncodings = Array.isArray(config.encoding.x) ? config.encoding.x : [config.encoding.x];
     const yEncodings = Array.isArray(config.encoding.y) ? config.encoding.y : [config.encoding.y];
     const colorEncoding = config.encoding.color;
+    
+    // Ensure correct encoding types for x-axis
+    if (xEncodings[0] && tableProperties) {
+      const xProperty = tableProperties.find(p => p.name === xEncodings[0].field);
+      const xValues = rawData.map(d => d[xEncodings[0].field]);
+      xEncodings[0] = ensureCorrectEncodingType(xEncodings[0], xProperty, xValues);
+    }
     
     // Handle multiple Y fields or color-based series
     const hasMultipleYFields = yEncodings.length > 1;

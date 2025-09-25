@@ -352,6 +352,19 @@ max-height: var(--mk-menu-max-height)
   width: 16px;
   height: 16px;
 }
+
+.mk-emoji-icon-span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 22.1px;
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiOne Color', 'Twemoji Mozilla', sans-serif;
+}
+
+.mk-emoji-icon-span.fontless {
+  font-family: inherit;
+}
 .mk-menu-option .mk-inline-button {
   border: thin solid var(--mk-ui-border);
     padding: 4px !important;
@@ -382,6 +395,7 @@ max-height: var(--mk-menu-max-height)
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: normal;
 }
 .mk-menu-option mark {
   text-decoration: underline;

@@ -117,7 +117,7 @@ export class Indexer {
             let isFolderNote = false;
             if (spaceState) {
                 name = spaceState.space.name;
-                if ( this.cache.settings.enableFolderNote) {
+                if ( this.cache.settings.enableFolderNote && await this.cache.spaceManager.pathExists(cachePath = spaceState.space.notePath)) {
                     cachePath = spaceState.space.notePath;
                     isFolderNote = true;
                 } else {

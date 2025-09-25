@@ -1,0 +1,43 @@
+.mk-mkit-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mk-mkit-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.mk-mkit-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mk-mkit-frame-preview {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+.mk-frame-preview-container {
+  min-height: 100%;
+  width: var(--page-width, auto);
+  margin: 0 auto;
+}
+
+.mk-mkit-error {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.mk-mkit-preview-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}

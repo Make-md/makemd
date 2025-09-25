@@ -17,6 +17,7 @@ export type CommandSchema = {
       icon?: string
       type?: string
       description?: string
+      templateString?: string
     }
 }
 

@@ -18,12 +18,15 @@ import { newPathInSpace } from "core/superstate/utils/spaces";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
 import {
   createNewVisualizationFrame as createNewVisFrame,
-  createVisualizationRows,
   parseVisualizationData,
 } from "core/utils/visualization/visualizationUtils";
 import { SelectOption, Superstate, i18n } from "makemd-core";
 import { flowNode } from "schemas/kits/base";
-import { FrameEditorMode, FrameNodeState } from "shared/types/frameExec";
+import {
+  FrameEditorMode,
+  FrameNodeState,
+  FrameRunInstance,
+} from "shared/types/frameExec";
 import { SpaceProperty } from "shared/types/mdb";
 import { MenuObject } from "shared/types/menu";
 import { FrameNode, MDBFrame } from "shared/types/mframe";
@@ -31,11 +34,12 @@ import { windowFromDocument } from "shared/utils/dom";
 import { mdbSchemaToFrameSchema } from "shared/utils/makemd/schema";
 import { ColorSetter } from "../Setters/ColorSetter";
 import { ToggleSetter } from "../Setters/ToggleSetter";
-import { ContentSubmenu } from "./Submenus/ContentSubmenu";
 import { HoverSubmenuProps } from "./Submenus/HoverSubmenuProps";
+import { InteractionSubmenu } from "./Submenus/InteractionSubmenu";
 import { LayoutSubmenu } from "./Submenus/LayoutSubmenu";
 import { ModeSubmenu } from "./Submenus/ModeSubmenu";
 import { PropertiesSubmenu } from "./Submenus/PropertiesSubmenu";
+import { SizingSubmenu } from "./Submenus/SizingSubmenu";
 import { StyleSubmenu } from "./Submenus/StyleSubmenu";
 import { TabsSubmenu } from "./Submenus/TabsSubmenu";
 import { TextSubmenu } from "./Submenus/TextSubmenu";
@@ -47,6 +51,8 @@ export enum FrameNodeEditMode {
   EditModeText,
   EditModeLayout,
   EditModeStyle,
+  EditModeSizing,
+  EditModeInteraction,
   EditModeVisualization,
 }
 
@@ -63,6 +69,7 @@ export const FrameNodeEditor = (props: {
   state: FrameNodeState;
   fields: SpaceProperty[];
   node: FrameNode;
+  instance: FrameRunInstance;
   editLayout: (state: boolean) => void;
   deleteFrame?: () => void;
   duplicateFrame?: () => void;
@@ -78,7 +85,7 @@ export const FrameNodeEditor = (props: {
     frameProperties,
     nodes,
   } = useContext(FramesEditorRootContext);
-  const { selectionMode } = useContext(FrameSelectionContext);
+  const { selectionMode, select } = useContext(FrameSelectionContext);
   const { instance } = useContext(FrameInstanceContext);
   const [visualizationConfig, setVisualizationConfig] = useState<any>(null);
   const [visualizationFrame, setVisualizationFrame] = useState<MDBFrame | null>(
@@ -91,6 +98,19 @@ export const FrameNodeEditor = (props: {
   const [selectedTableColumns, setSelectedTableColumns] = useState<string[]>(
     []
   );
+  const node = useMemo(() => {
+    return nodes.find((f) => f.id == props.node.id);
+  }, [nodes, props.node]);
+  const fields = useMemo(() => {
+    if (!node || !node.types) return [];
+    return Object.keys(node.types).map((f) => ({
+      type: node.types[f],
+      name: f,
+      attrs: node.propsAttrs?.[f],
+      schemaId: node.schemaId,
+      value: node.propsValue?.[f],
+    }));
+  }, [node]);
   const saveNodeValue = useCallback(
     (values: { [key: string]: string }, node: FrameNode) => {
       updateNode(node, {
@@ -102,33 +122,25 @@ export const FrameNodeEditor = (props: {
     [updateNode]
   );
   const saveStyleValue = (prop: string, value: string) => {
-    updateNode(props.node, {
+    updateNode(node, {
       styles: {
         [prop]: value,
       },
     });
   };
   const [editMode, setEditMode] = useState(FrameNodeEditMode.EditModeNone);
-  const [frameProps, setFrameProps] = useState(props.node.props);
+  const [frameProps, setFrameProps] = useState(node?.props || {});
   const [visualizationInSubmenu, setVisualizationInSubmenu] = useState(false);
 
-  const fields = useMemo(() => {
-    return Object.keys(props.node.types).map((f) => ({
-      type: props.node.types[f],
-      name: f,
-      attrs: props.node.propsAttrs?.[f],
-      schemaId: props.node.schemaId,
-      value: props.node.propsValue?.[f],
-    }));
-  }, [props.node]);
-
   useEffect(() => {
-    setFrameProps(props.node.props);
-  }, [props.node]);
+    if (node) {
+      setFrameProps(node.props || {});
+    }
+  }, [node]);
 
   // Load visualization frame data
   const loadVisualizationData = useCallback(async () => {
-    if (props.node.type === "visualization" && props.state?.props?.value) {
+    if (node?.type === "visualization" && props.state?.props?.value) {
       try {
         const frameId = removeQuotes(props.state.props.value);
         const sourcePath = pathState?.path || spaceInfo?.path || "";
@@ -171,7 +183,7 @@ export const FrameNodeEditor = (props: {
       setNeedsNewVisualization(false);
     }
   }, [
-    props.node.type,
+    node?.type,
     props.state?.props?.value,
     pathState?.path,
     spaceInfo?.path,
@@ -210,10 +222,10 @@ export const FrameNodeEditor = (props: {
       }
     };
 
-    if (props.node.type === "visualization") {
+    if (node?.type === "visualization") {
       loadAvailableTables();
     }
-  }, [props.node.type, pathState?.path, spaceInfo?.path, props.superstate]);
+  }, [node?.type, pathState?.path, spaceInfo?.path, props.superstate]);
 
   // Load columns for the selected table
   useEffect(() => {
@@ -257,9 +269,9 @@ export const FrameNodeEditor = (props: {
   const savePropValue = useCallback(
     (prop: string, value: string) => {
       setFrameProps((p) => ({ ...p, [prop]: value }));
-      saveNodeValue({ [prop]: value }, props.node);
+      saveNodeValue({ [prop]: value }, node);
     },
-    [setFrameProps, saveNodeValue, props.node]
+    [setFrameProps, saveNodeValue, node]
   );
 
   // Create new visualization frame
@@ -301,7 +313,7 @@ export const FrameNodeEditor = (props: {
 
       // Update the node's value to reference the new frame
       const wrappedFrameId = wrapQuotes(frameId);
-      saveNodeValue({ value: wrappedFrameId }, props.node);
+      saveNodeValue({ value: wrappedFrameId }, node);
 
       // Update state
       setVisualizationFrame(newFrame);
@@ -319,84 +331,9 @@ export const FrameNodeEditor = (props: {
     spaceInfo?.path,
     props.superstate,
     saveNodeValue,
-    props.node,
+    node,
     loadVisualizationData,
   ]);
-
-  // Save visualization config back to frame
-  const saveVisualizationConfig = useCallback(
-    async (newConfig: any) => {
-      if (!visualizationFrame || !props.state?.props?.value) return;
-
-      try {
-        const frameId = removeQuotes(props.state.props.value);
-        const sourcePath = pathState?.path || spaceInfo?.path || "";
-
-        if (frameId && sourcePath && props.superstate.spaceManager) {
-          // Create updated rows using utility function
-          const rows = createVisualizationRows(
-            newConfig,
-            frameId,
-            visualizationFrame.rows
-          );
-
-          // Create updated frame
-          const updatedFrame = {
-            ...visualizationFrame,
-            rows: rows,
-          };
-
-          // Save the frame
-          await props.superstate.spaceManager.saveFrame(
-            sourcePath,
-            updatedFrame
-          );
-
-          // Also update the schema's db field if datasource changed
-          if (newConfig.data?.listId !== visualizationConfig?.data?.listId) {
-            await props.superstate.spaceManager.saveFrameSchema(
-              sourcePath,
-              frameId,
-              (p) => ({
-                ...p,
-                type: "vis",
-                def: JSON.stringify({
-                  type: "view",
-                  id: "main",
-                  db: newConfig.data?.listId || "",
-                  chartType: newConfig.chartType || "bar",
-                }),
-              })
-            );
-          }
-
-          // Update local state
-          setVisualizationConfig(newConfig);
-          setVisualizationFrame(updatedFrame);
-
-          // Emit frame state update event to trigger visualization reload
-          if (props.superstate.eventsDispatcher) {
-            props.superstate.eventsDispatcher.dispatchEvent(
-              "frameStateUpdated",
-              {
-                path: sourcePath,
-                schemaId: frameId,
-              }
-            );
-          } else {
-          }
-        }
-      } catch (error) {}
-    },
-    [
-      visualizationFrame,
-      props.state?.props?.value,
-      pathState?.path,
-      spaceInfo?.path,
-      props.superstate,
-      visualizationConfig,
-    ]
-  );
 
   const typographyOptions = [
     {
@@ -441,6 +378,18 @@ export const FrameNodeEditor = (props: {
       icon: "ui//type",
       sem: "p",
     },
+    {
+      type: "a",
+      name: i18n.labels.link,
+      icon: "ui//link",
+      sem: "a",
+    },
+    {
+      type: "caption",
+      name: i18n.labels.caption,
+      icon: "ui//subtitles",
+      sem: "caption",
+    },
   ];
   const showTypographyMenu = (e: React.MouseEvent) => {
     const menuOptions: SelectOption[] = [];
@@ -462,19 +411,59 @@ export const FrameNodeEditor = (props: {
     );
   };
 
+  const showGroupStyleMenu = (e: React.MouseEvent) => {
+    const styleOptions: SelectOption[] = [
+      {
+        name: "None",
+        icon: "lucide//square",
+        onClick: () => {
+          saveStyleValue("sem", "");
+        },
+      },
+      {
+        name: "Card",
+        icon: "lucide//credit-card",
+        onClick: () => {
+          saveStyleValue("sem", "'card'");
+        },
+      },
+      {
+        name: "Button",
+        icon: "ui//mouse-pointer-click",
+        onClick: () => {
+          saveStyleValue("sem", "'button'");
+        },
+      },
+    ];
+
+    const offset = (e.target as HTMLElement).getBoundingClientRect();
+    props.superstate.ui.openMenu(
+      offset,
+      defaultMenu(props.superstate.ui, styleOptions),
+      windowFromDocument(e.view.document)
+    );
+  };
+
   const propertiesRef = useRef<MenuObject>(null);
   const tabsRef = useRef<MenuObject>(null);
 
   const submenuProps: HoverSubmenuProps = {
     superstate: props.superstate,
-    exitMenu: () => setEditMode(0),
+    exitMenu: (e) => {
+      e.stopPropagation();
+      props.editLayout(false);
+      setEditMode(FrameNodeEditMode.EditModeNone);
+    },
     saveStyleValue: saveStyleValue,
     savePropValue: savePropValue,
     frameProps: frameProps,
-    selectedNode: props.node,
+    selectedNode: node,
     setHoverMenu: setEditMode,
     fields: fields,
     state: props.state,
+    updateNode: updateNode,
+    instance: instance,
+    pathState: pathState,
   };
 
   const propertiesProps = {
@@ -488,8 +477,13 @@ export const FrameNodeEditor = (props: {
     if (propertiesRef.current) {
       propertiesRef.current.update(propertiesProps);
     }
-  }, [instance, fields, props.state, props.node, frameProps]);
+  }, [instance, fields, props.state, node, frameProps]);
   const ref = useRef<HTMLDivElement>(null);
+
+  if (!node) {
+    return null;
+  }
+
   return (
     <div
       className="mk-editor-frame-node-selector"
@@ -499,10 +493,10 @@ export const FrameNodeEditor = (props: {
         e.preventDefault();
       }}
     >
-      {props.node.type == "new" && (
+      {node.type == "new" && (
         <>
           <div
-            className="mk-editor-frame-node-button-primary"
+            className="mk-editor-frame-node-button"
             dangerouslySetInnerHTML={{
               __html: props.superstate.ui.getSticker("ui//plus"),
             }}
@@ -516,13 +510,13 @@ export const FrameNodeEditor = (props: {
                   saveNodes([
                     {
                       ...newNode,
-                      id: props.node.id,
-                      parentId: props.node.parentId,
-                      schemaId: props.node.schemaId,
-                      rank: props.node.rank,
+                      id: node.id,
+                      parentId: node.parentId,
+                      schemaId: node.schemaId,
+                      rank: node.rank,
                       props: {
                         ...newNode.props,
-                        value: props.node.props?.value,
+                        value: node.props?.value,
                       },
                     },
                   ])
@@ -531,7 +525,7 @@ export const FrameNodeEditor = (props: {
             }}
           ></div>
           <div
-            className="mk-editor-frame-node-button-primary"
+            className="mk-editor-frame-node-button"
             dangerouslySetInnerHTML={{
               __html: props.superstate.ui.getSticker("ui//plus"),
             }}
@@ -548,10 +542,10 @@ export const FrameNodeEditor = (props: {
                 ).then((newPath) =>
                   saveNodes([
                     {
-                      ...props.node,
+                      ...node,
                       type: flowNode.node.type,
                       props: {
-                        ...props.node.props,
+                        ...node.props,
                         value: wrapQuotes(newPath),
                       },
                     },
@@ -565,9 +559,73 @@ export const FrameNodeEditor = (props: {
       )}
       {editMode == FrameNodeEditMode.EditModeNone ? (
         <>
-          {props.node.type == "group" || props.node.type == "content" ? (
-            <ContentSubmenu {...submenuProps}></ContentSubmenu>
-          ) : props.node.ref == "spaces://$kit/#*tabs" ? (
+          {node.type == "group" || node.type == "content" ? (
+            <>
+              <div
+                aria-label="Add Frame"
+                className="mk-editor-frame-node-button"
+                onClick={(e) => {
+                  showNewFrameMenu(
+                    (e.target as HTMLElement).getBoundingClientRect(),
+                    windowFromDocument(e.view.document),
+                    props.superstate,
+                    spaceInfo,
+                    (newNode: FrameNode) =>
+                      addNode(newNode, node, true).then((f) =>
+                        selectionMode == FrameEditorMode.Page
+                          ? {}
+                          : select(f.id)
+                      )
+                  );
+                  e.stopPropagation();
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//plus"),
+                }}
+              ></div>
+              <div
+                aria-label={i18n.labels.layout}
+                className="mk-editor-frame-node-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setEditMode(FrameNodeEditMode.EditModeLayout);
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: props.superstate.ui.getSticker("ui//layout"),
+                }}
+              ></div>
+              {node.type == "group" && (
+                <>
+                  <div className="mk-divider"></div>
+                  <div
+                    className="mk-editor-frame-node-button"
+                    aria-label="Group Style"
+                    onClick={(e) => showGroupStyleMenu(e)}
+                  >
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: props.superstate.ui.getSticker(
+                          removeQuotes(node.styles?.["sem"]) === "card"
+                            ? "lucide//credit-card"
+                            : removeQuotes(node.styles?.["sem"]) === "button"
+                            ? "ui//mouse-pointer-click"
+                            : "lucide//square"
+                        ),
+                      }}
+                    ></div>
+                    <span>
+                      {removeQuotes(node.styles?.["sem"]) === "card"
+                        ? "Card"
+                        : removeQuotes(node.styles?.["sem"]) === "button"
+                        ? "Button"
+                        : "None"}
+                    </span>
+                  </div>
+                </>
+              )}
+            </>
+          ) : node.ref == "spaces://$kit/#*tabs" ? (
             <div
               aria-label="Manage Tabs"
               className="mk-editor-frame-node-button"
@@ -582,14 +640,14 @@ export const FrameNodeEditor = (props: {
                   ref.current.getBoundingClientRect(),
                   <TabsSubmenu
                     superstate={props.superstate}
-                    node={props.node}
+                    node={node}
                     state={props.state}
                     path={pathState.path}
                     updateNode={updateNode}
                   ></TabsSubmenu>,
                   {
                     superstate: props.superstate,
-                    node: props.node,
+                    node: node,
                     state: props.state,
                     path: pathState.path,
                     updateNode,
@@ -602,8 +660,7 @@ export const FrameNodeEditor = (props: {
                 __html: props.superstate.ui.getSticker("ui//tabs"),
               }}
             ></div>
-          ) : props.node.type == "visualization" &&
-            props.state?.props?.value ? (
+          ) : node.type == "visualization" && props.state?.props?.value ? (
             needsNewVisualization ? (
               <div
                 style={{
@@ -627,7 +684,7 @@ export const FrameNodeEditor = (props: {
             )
           ) : (
             fields.length > 0 &&
-            props.node.type !== "visualization" && (
+            node.type !== "visualization" && (
               <div
                 aria-label={i18n.labels.properties}
                 className="mk-editor-frame-node-button"
@@ -656,7 +713,7 @@ export const FrameNodeEditor = (props: {
           )}
           {!visualizationInSubmenu && (
             <>
-              {props.node.type == "text" && (
+              {node.type == "text" && (
                 <>
                   <div
                     className="mk-editor-frame-node-button"
@@ -666,64 +723,34 @@ export const FrameNodeEditor = (props: {
                       dangerouslySetInnerHTML={{
                         __html: props.superstate.ui.getSticker(
                           typographyOptions.find(
-                            (f) =>
-                              f.sem == removeQuotes(props.node.styles?.["sem"])
+                            (f) => f.sem == removeQuotes(node.styles?.["sem"])
                           )?.icon ?? "ui//type"
                         ),
                       }}
                     ></div>
                     {typographyOptions.find(
-                      (f) => f.sem == removeQuotes(props.node.styles?.["sem"])
+                      (f) => f.sem == removeQuotes(node.styles?.["sem"])
                     )?.name ?? "Paragraph"}
                   </div>
                   <div className="mk-divider"></div>
                 </>
               )}
-              {props.node.type == "icon" && (
+              {node.type == "icon" && (
                 <ColorSetter
                   superstate={props.superstate}
-                  value={removeQuotes(props.node.styles?.["color"])}
+                  value={removeQuotes(node.styles?.["color"])}
                   setValue={(value) => saveStyleValue("color", `'${value}'`)}
                 ></ColorSetter>
               )}
-              {props.node.type == "group" && (
-                <>
-                  <div
-                    className="mk-editor-frame-node-button"
-                    aria-label={
-                      removeQuotes(props.node.styles?.["sem"]) === "card"
-                        ? "Card"
-                        : "Group"
-                    }
-                    onClick={() => {
-                      const currentSem = removeQuotes(
-                        props.node.styles?.["sem"]
-                      );
-                      if (currentSem === "card") {
-                        saveStyleValue("sem", "");
-                      } else {
-                        saveStyleValue("sem", "'card'");
-                      }
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: props.superstate.ui.getSticker(
-                        removeQuotes(props.node.styles?.["sem"]) === "card"
-                          ? "lucide//credit-card"
-                          : "lucide//square"
-                      ),
-                    }}
-                  ></div>
-                  <div className="mk-divider"></div>
-                </>
-              )}
+              <div className="mk-divider"></div>
               <div
-                aria-label={i18n.labels.layout}
+                aria-label="Sizing"
                 className="mk-editor-frame-node-button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   props.editLayout(true);
-                  setEditMode(FrameNodeEditMode.EditModeLayout);
+                  setEditMode(FrameNodeEditMode.EditModeSizing);
                 }}
                 dangerouslySetInnerHTML={{
                   __html: props.superstate.ui.getSticker("ui//scaling"),
@@ -741,13 +768,27 @@ export const FrameNodeEditor = (props: {
                   __html: props.superstate.ui.getSticker("ui//paintbrush"),
                 }}
               ></div>
-              {(props.node.type == "flow" ||
-                props.node.type == "space" ||
-                props.node.type == "vis") && (
+              {(node.type === "group" || node.type === "text") && (
+                <div
+                  aria-label="Interactions"
+                  className={`mk-editor-frame-node-button`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setEditMode(FrameNodeEditMode.EditModeInteraction);
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: props.superstate.ui.getSticker("ui//zap"),
+                  }}
+                ></div>
+              )}
+              {(node.type == "flow" ||
+                node.type == "space" ||
+                node.type == "vis") && (
                 <ModeSubmenu {...submenuProps}></ModeSubmenu>
               )}
 
-              {props.node.type !== "visualization" && (
+              {node.type !== "visualization" && (
                 <div
                   aria-label={i18n.labels.textStyle}
                   className={`mk-editor-frame-node-button`}
@@ -771,7 +812,7 @@ export const FrameNodeEditor = (props: {
                     setValue={(value: string) => {
                       // Check if parent is a column type node
                       const parentNode = nodes?.find(
-                        (n) => n.id === props.node.parentId
+                        (n) => n.id === node.parentId
                       );
 
                       if (parentNode && parentNode.type === "column") {
@@ -800,7 +841,7 @@ export const FrameNodeEditor = (props: {
                     value={(() => {
                       // Check if we should show the container's value instead
                       const parentNode = nodes?.find(
-                        (n) => n.id === props.node.parentId
+                        (n) => n.id === node.parentId
                       );
                       if (parentNode && parentNode.type === "column") {
                         const containerNode = nodes?.find(
@@ -812,7 +853,7 @@ export const FrameNodeEditor = (props: {
                           return containerNode.styles?.["--max-width"];
                         }
                       }
-                      return props.node.styles?.["--max-width"];
+                      return node.styles?.["--max-width"];
                     })()}
                     icon={"ui//full-width"}
                   ></ToggleSetter>
@@ -820,18 +861,6 @@ export const FrameNodeEditor = (props: {
               )}
 
               <div className="mk-divider"></div>
-              {props.node.type == "group" || props.node.type == "container" ? (
-                <div
-                  aria-label={i18n.labels.ungroup}
-                  className="mk-editor-frame-node-button"
-                  onClick={() => ungroupNode(props.node)}
-                  dangerouslySetInnerHTML={{
-                    __html: props.superstate.ui.getSticker("ui//copy-x"),
-                  }}
-                ></div>
-              ) : (
-                <></>
-              )}
 
               {/* {(
             props.duplicateFrame && (
@@ -859,24 +888,16 @@ export const FrameNodeEditor = (props: {
         </>
       ) : (
         <>
-          <div
-            className="mk-editor-frame-node-button"
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              props.editLayout(false);
-              setEditMode(FrameNodeEditMode.EditModeNone);
-            }}
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//close"),
-            }}
-          ></div>
-          <div className="mk-editor-frame-node-divider"></div>
           {editMode == FrameNodeEditMode.EditModeText ? (
-            <TextSubmenu {...submenuProps}></TextSubmenu>
+            <TextSubmenu {...submenuProps as any}></TextSubmenu>
           ) : editMode == FrameNodeEditMode.EditModeLayout ? (
             <LayoutSubmenu {...submenuProps}></LayoutSubmenu>
+          ) : editMode == FrameNodeEditMode.EditModeSizing ? (
+            <SizingSubmenu {...submenuProps}></SizingSubmenu>
           ) : editMode == FrameNodeEditMode.EditModeStyle ? (
             <StyleSubmenu {...submenuProps}></StyleSubmenu>
+          ) : editMode == FrameNodeEditMode.EditModeInteraction ? (
+            <InteractionSubmenu {...submenuProps}></InteractionSubmenu>
           ) : (
             <></>
           )}

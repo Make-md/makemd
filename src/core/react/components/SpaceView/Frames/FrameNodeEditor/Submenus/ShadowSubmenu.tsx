@@ -29,7 +29,7 @@ export const ShadowSubmenu = (props: HoverSubmenuProps) => {
       <div
         className="mk-editor-frame-node-button"
         onMouseDown={() => {
-          props.exitMenu();
+          props.exitMenu({} as React.MouseEvent);
         }}
         dangerouslySetInnerHTML={{
           __html: props.superstate.ui.getSticker("ui//close"),

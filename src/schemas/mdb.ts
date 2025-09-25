@@ -161,7 +161,7 @@ export const fieldTypes: FieldType[] = [
     label: i18n.properties.aggregate.label,
     icon: 'ui//aggregate',
     multi: false,
-    configKeys: ['ref', 'schema', 'field', 'fn', 'format'],
+    configKeys: ['ref', 'space', 'schema', 'filters', 'field', 'fn', 'format'],
     flex: true,
     description: i18n.properties.aggregate.description
   },

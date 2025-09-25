@@ -192,7 +192,7 @@ export const FrameGapHandle = (props: {
     >
       {props.direction === "row"
         ? items.map((f, i, array) => (
-            <>
+            <React.Fragment key={i}>
               <div style={{ width: f.width, height: f.height }}></div>
               {i == array.length - 1 ? (
                 <></>
@@ -230,10 +230,10 @@ export const FrameGapHandle = (props: {
                   ></FrameDraggableHandle>
                 </div>
               )}
-            </>
+            </React.Fragment>
           ))
         : items.map((f, i, array) => (
-            <>
+            <React.Fragment key={i}>
               <div style={{ width: f.width, height: f.height }}></div>
               {i == array.length - 1 ? (
                 <></>
@@ -272,7 +272,7 @@ export const FrameGapHandle = (props: {
                   ></FrameDraggableHandle>
                 </div>
               )}
-            </>
+            </React.Fragment>
           ))}
     </div>
   );

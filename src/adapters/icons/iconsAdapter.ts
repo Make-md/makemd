@@ -33,7 +33,25 @@ export class IconFileTypeAdapter implements FileTypeAdapter<IconTypeCache, IconT
     public cacheTypes (file: AFile) { return ['svg'] as Array<keyof IconTypeCache>}
     public contentTypes (file: AFile) { return ['svg'] as Array<keyof IconTypeContent>}
     
-    public newFile: (path: string, type: string, parent: string, content?: any) => Promise<AFile>;
+    public async newFile(parent: string, name: string, type: string, content?: any): Promise<AFile> {
+        // Ensure the file name has the correct extension
+        const fileName = name.includes('.') ? name : `${name}.${type}`;
+        const fullPath = parent ? `${parent}/${fileName}` : fileName;
+        
+        // Ensure parent directory exists
+        if (parent && !(await this.middleware.fileExists(parent))) {
+            await this.middleware.createFolder(parent);
+        }
+        
+        // SVG files should be saved as text
+        const textContent = typeof content === 'string' ? content : 
+                           content instanceof ArrayBuffer ? new TextDecoder().decode(content) :
+                           content?.toString() || '';
+        await this.middleware.writeTextToFile(fullPath, textContent);
+        
+        // Return the created file
+        return await this.middleware.getFile(fullPath);
+    }
 
     public getCacheTypeByRefString: (file: AFile, refString: string) => any;
     public getCache: (file: AFile, fragmentType: keyof IconTypeContent, query?: string) => any;

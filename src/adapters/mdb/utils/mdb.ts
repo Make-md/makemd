@@ -172,10 +172,11 @@ export const getMDBTables = async (plugin: MDBFileTypeAdapter, dbPath: string) =
     } catch (e) {
     }
     if (schemas.length == 0) {
-      const tables =  dbResultsToDBTables(
+      const tableResults = dbResultsToDBTables(
         db.exec(
             "SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
-            ))[0].rows.map(f => f.name) as string[];
+            ));
+      const tables = tableResults[0]?.rows?.map(f => f.name) as string[] ?? [];
       schemas = tables.filter(f => !f.startsWith('m_')).map(f => (f == defaultContextSchemaID ? defaultContextDBSchema : { id: f, name: f, type: 'db', primary: ''}));
       db.exec(
         `CREATE TABLE IF NOT EXISTS m_schema ('id' char, 'name' char, 'type' char, 'def' char, 'predicate' char, 'primary' char)`

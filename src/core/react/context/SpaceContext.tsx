@@ -24,11 +24,13 @@ export const SpaceContext = createContext<SpaceContextProps>({
 export const SpaceProvider: React.FC<
   React.PropsWithChildren<{
     superstate: Superstate;
+    spaceInfo?: SpaceInfo
   }>
 > = (props) => {
   const { pathState } = useContext(PathContext);
 
   const spaceInfo: SpaceInfo = useMemo(() => {
+    if (props.spaceInfo) return props.spaceInfo
     return props.superstate.spacesIndex.get(pathState.path)?.space;
   }, [pathState]);
 

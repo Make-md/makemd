@@ -71,7 +71,7 @@ export const DateCell = (props: TableCellProp) => {
       menuRef.current = showDatePickerMenu(
         props.superstate.ui,
         offset,
-        windowFromDocument(e.view.document),
+        e ? windowFromDocument(e.view.document) : window,
         defaultDate,
         saveValue,
         DatePickerTimeMode.Toggle,

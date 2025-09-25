@@ -22,10 +22,10 @@ align-items: center;
 }
 
 .mk-props-list .mk-path { 
-    width: 100px;
+    width: 150px;
 }
 .mk-props-contexts .mk-path-context-row {
-    width: 100%;
+    width: 150%;
 }
 
 .mk-props-contexts .mk-divider {

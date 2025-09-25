@@ -6,6 +6,7 @@ import {
   FrameExecutable,
 } from "shared/types/frameExec";
 import { SpaceProperty } from "shared/types/mdb";
+import { MDBFrame } from "shared/types/mframe";
 import { URI } from "shared/types/path";
 
 export type FrameRootContextType = {
@@ -22,11 +23,21 @@ export const FrameRootProvider = (
     superstate: Superstate;
     path: URI;
     cols: SpaceProperty[];
+    previewMode?: boolean;
+    frame?: MDBFrame;
   }>
 ) => {
   const [root, setRoot] = useState<FrameExecutable>(null);
 
-  const refreshFrame = (payload: { path: string }) => {
+  const refreshFrame = async (payload: { path: string }) => {
+    if (props.frame) {
+      
+      buildRootFromMDBFrame(props.superstate, props.frame, {
+          ...defaultFrameEditorProps,
+          screenType: props.superstate.ui.getScreenType(),
+        }) .then((f) => setRoot(f));
+        return;
+    }
     if (payload.path != props.path.basePath && props.path.authority != "$kit") {
       return;
     }
@@ -34,15 +45,14 @@ export const FrameRootProvider = (
       setRoot(props.superstate.kitFrames.get(props.path.ref));
       return;
     }
-    props.superstate.spaceManager
-      .readFrame(props.path.basePath, props.path.ref)
-      .then((f) =>
-        buildRootFromMDBFrame(props.superstate, f, {
+    
+    const frame = await props.superstate.spaceManager
+      .readFrame(props.path.basePath, props.path.ref);
+      
+        buildRootFromMDBFrame(props.superstate, frame, {
           ...defaultFrameEditorProps,
           screenType: props.superstate.ui.getScreenType(),
-        })
-      )
-      .then((f) => setRoot(f));
+        }) .then((f) => setRoot(f));
   };
   useEffect(() => {
     props.superstate.eventsDispatcher.addListener(
@@ -56,7 +66,7 @@ export const FrameRootProvider = (
         refreshFrame
       );
     };
-  }, [props.path]);
+  }, [props.path, props.frame]);
 
   return (
     <FrameRootContext.Provider

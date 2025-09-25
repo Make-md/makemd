@@ -183,6 +183,7 @@ const SpaceOuter = forwardRef<
         return false;
       },
     });
+    
     return (
       <div
         className="mk-space-body cm-line"

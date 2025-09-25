@@ -20,7 +20,7 @@
 }
 
 .mk-layout-scroll {
-    overflow: scroll;
+    overflow: auto;
 }
 
 .mk-f-shadow {

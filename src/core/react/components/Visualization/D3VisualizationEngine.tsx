@@ -26,6 +26,7 @@ import * as d3Array from "d3-array";
 import { SpaceProperty } from "shared/types/mdb";
 import { displayTextForType } from "core/utils/displayTextForType";
 import { DataTransformationPipeline, TransformedData } from "./DataTransformationPipeline";
+import { ensureCorrectEncodingType } from "./utils/inferEncodingType";
 import { 
   BarChartData, 
   PieChartData, 
@@ -162,7 +163,7 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
       const xEncodings = Array.isArray(config.encoding.x)
         ? config.encoding.x
         : [config.encoding.x];
-      const primaryEncoding = xEncodings[0];
+      let primaryEncoding = xEncodings[0];
 
       if (!primaryEncoding || !primaryEncoding.field) {
         return scales;
@@ -170,6 +171,12 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
 
       const field = primaryEncoding.field;
       const values = data.map((d) => d[field]);
+      
+      // For scatter plots and line charts, ensure numeric/date fields use appropriate encoding
+      if (config.chartType === 'scatter' || config.chartType === 'line') {
+        const fieldProperty = tableProperties?.find(p => p.name === field);
+        primaryEncoding = ensureCorrectEncodingType(primaryEncoding, fieldProperty, values);
+      }
       
 
       switch (primaryEncoding.type) {
@@ -243,10 +250,17 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
       const yEncodings = Array.isArray(config.encoding.y)
         ? config.encoding.y
         : [config.encoding.y];
-      const primaryEncoding = yEncodings[0];
+      let primaryEncoding = yEncodings[0];
 
       if (!primaryEncoding || !primaryEncoding.field) {
         return scales;
+      }
+
+      // For scatter plots, ensure numeric/date fields use appropriate encoding
+      if (config.chartType === 'scatter') {
+        const fieldProperty = tableProperties?.find(p => p.name === primaryEncoding.field);
+        const fieldValues = data.map((d) => d[primaryEncoding.field]);
+        primaryEncoding = ensureCorrectEncodingType(primaryEncoding, fieldProperty, fieldValues);
       }
 
       // For multiple Y fields, we need to consider all their values for the domain

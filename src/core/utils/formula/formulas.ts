@@ -332,14 +332,12 @@ export const formulas = {
 		return condition === true ? ifTrue : ifFalse;
 	},
 	"ifs": ifs,
-	"empty": (args: string[]) => {
-		if (args.length !== 1) {
-			return "";
+	"empty": (args: string[] | string) => {
+		if (!args) return true;
+		if (args.length == 0) {
+			return true;
 		}
-		if (Array.isArray(args[0])) {
-			return args[0].length === 0;
-		}
-		return args[0] === "" ? "true" : "false";
+		return false;
 	},
 	"length": (arg: string | any[]) => arg.length,
 	"values": (arg: any[]) => arg.flat().length,

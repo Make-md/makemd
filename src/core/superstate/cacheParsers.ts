@@ -53,8 +53,10 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
     const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
     const dependencies = propertyDependencies(cols);
     let rows = [...(mdb[defaultContextSchemaID]?.rows ?? []).filter(f => paths.includes(f[PathPropertyName])), ...missingPaths.map(f => ({[PathPropertyName]: f}))]
-    if (options?.calculate)
-      rows = rows.map(f => linkContextRow(runContext, pathsIndex, contextsIndex, spacesMap, f, cols, pathsIndex.get(space.path), settings, dependencies))
+    if (options?.calculate) {
+      const spacePath = pathsIndex.get(space.path);
+      rows = rows.map(f => linkContextRow(runContext, pathsIndex, contextsIndex, spacesMap, f, cols, spacePath, settings, dependencies))
+    }
 
     const contextTable : SpaceTable =  {
         schema,
@@ -76,6 +78,7 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
     })
     
     const outlinks = uniq(contextTable.rows.reduce((p, c) => uniq([...p, ...[...contextCols, ...linkCols].flatMap(f => parseMultiString(c[f.name]).map(f => parseLinkString(f)))]), []))
+    mdb[defaultContextSchemaID] = contextTable;
     const cache : ContextState = {
         contextTable,
         path: space.path,

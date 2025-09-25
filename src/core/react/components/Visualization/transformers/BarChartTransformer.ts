@@ -28,7 +28,10 @@ export class BarChartTransformer {
     }
 
     // Determine if we have grouped or stacked bars
-    const seriesField = colorEncoding?.field;
+    // If color field is same as x field, don't treat it as a series
+    const seriesField = (colorEncoding?.field && colorEncoding.field !== xEncoding.field) 
+      ? colorEncoding.field 
+      : undefined;
     const isStacked = config.mark?.stack === true;
     
     // Check if yField is an option type or other non-numeric field

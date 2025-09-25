@@ -372,20 +372,6 @@ export const PropertyField = (props: {
           ),
         }}
       ></div>
-      {props.contexts?.length > 0 && (
-        <div
-          className="mk-path-context-field-space"
-          dangerouslySetInnerHTML={{
-            __html:
-              props.contexts.length == 1
-                ? props.superstate.ui.getSticker(
-                    props.superstate.pathsIndex.get(props.contexts[0])?.label
-                      ?.sticker
-                  )
-                : props.contexts.length,
-          }}
-        ></div>
-      )}
       <div className="mk-path-context-field-key">
         {nameForField(props.property)}
       </div>

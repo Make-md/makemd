@@ -218,6 +218,12 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
       return this.fileSystem.fileExists(path)
     }
   public async createItemAtPath (parent: string, type: string, name: string, content?: any) {
+    // Handle folder creation
+    if (type === 'folder') {
+      const folderPath = parent ? `${parent}/${name}` : name;
+      await this.fileSystem.createFolder(folderPath);
+      return folderPath;
+    }
 
     const parentURI = await this.getPathInfo(parent);
     if (!parentURI) {

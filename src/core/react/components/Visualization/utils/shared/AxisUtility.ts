@@ -1,6 +1,7 @@
 import { axisBottom, axisLeft, type Selection, timeFormat } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 import { displayTextForType } from 'core/utils/displayTextForType';
+import { formatNumber } from '../formatNumber';
 
 export class AxisUtility {
   static renderAxes(context: RenderContext, xScale: any, yScale: any): void {
@@ -137,8 +138,21 @@ export class AxisUtility {
           return (!formatted || formatted.trim() === '') ? 'None' : formatted;
         });
       } else {
-        // Default formatter that handles empty values
+        // Default formatter that handles empty values and dates
         xAxisGenerator.tickFormat((d: any) => {
+          // Check if it's a date
+          if (d instanceof Date) {
+            const formatDay = timeFormat('%b %d');
+            return formatDay(d);
+          }
+          // Check if it's a date string
+          if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) {
+            const date = new Date(d);
+            if (!isNaN(date.getTime())) {
+              const formatDay = timeFormat('%b %d');
+              return formatDay(date);
+            }
+          }
           const label = String(d);
           return (!label || label.trim() === '') ? 'None' : label;
         });
@@ -244,6 +258,28 @@ export class AxisUtility {
           const label = String(d);
           return (!label || label.trim() === '') ? 'None' : label;
         });
+      } else {
+        // Default formatter that handles dates and other values
+        yAxisGenerator.tickFormat((d: any) => {
+          // Check if it's a date
+          if (d instanceof Date) {
+            const formatDay = timeFormat('%b %d');
+            return formatDay(d);
+          }
+          // Check if it's a date string
+          if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) {
+            const date = new Date(d);
+            if (!isNaN(date.getTime())) {
+              const formatDay = timeFormat('%b %d');
+              return formatDay(date);
+            }
+          }
+          // For numbers, use the formatNumber function
+          if (typeof d === 'number') {
+            return formatNumber(d);
+          }
+          return String(d);
+        });
       }
       
       if (!yScale.bandwidth && !isTemporalY) {
@@ -345,9 +381,23 @@ export class AxisUtility {
         }
         
         // Label
-        const tickLabel = xProperty && context.superstate 
-          ? displayTextForType(xProperty, tick, context.superstate)
-          : String(tick);
+        let tickLabel: string;
+        if (xProperty && context.superstate) {
+          tickLabel = displayTextForType(xProperty, tick, context.superstate);
+        } else if (tick instanceof Date) {
+          const formatDay = timeFormat('%b %d');
+          tickLabel = formatDay(tick);
+        } else if (typeof tick === 'string' && /^\d{4}-\d{2}-\d{2}/.test(tick)) {
+          const date = new Date(tick);
+          if (!isNaN(date.getTime())) {
+            const formatDay = timeFormat('%b %d');
+            tickLabel = formatDay(date);
+          } else {
+            tickLabel = tick;
+          }
+        } else {
+          tickLabel = String(tick);
+        }
         
         // Clip text for band scales to prevent overlap
         if (xScale.bandwidth) {
@@ -433,9 +483,25 @@ export class AxisUtility {
         const y = yScale(tick);
         
         // Label
-        const tickLabel = yProperty && context.superstate 
-          ? displayTextForType(yProperty, tick, context.superstate)
-          : String(tick);
+        let tickLabel: string;
+        if (yProperty && context.superstate) {
+          tickLabel = displayTextForType(yProperty, tick, context.superstate);
+        } else if (tick instanceof Date) {
+          const formatDay = timeFormat('%b %d');
+          tickLabel = formatDay(tick);
+        } else if (typeof tick === 'string' && /^\d{4}-\d{2}-\d{2}/.test(tick)) {
+          const date = new Date(tick);
+          if (!isNaN(date.getTime())) {
+            const formatDay = timeFormat('%b %d');
+            tickLabel = formatDay(date);
+          } else {
+            tickLabel = tick;
+          }
+        } else if (typeof tick === 'number') {
+          tickLabel = formatNumber(tick);
+        } else {
+          tickLabel = String(tick);
+        }
         ctx.fillText(tickLabel, yAxisXPosition - 7, y);
       });
     }
@@ -656,7 +722,7 @@ export class AxisUtility {
           .style('font-size', labelStyle.fontSize)
           .style('fill', labelStyle.fill)
           .style('font-weight', labelStyle.fontWeight)
-          .text(typeof xMin === 'number' ? xMin.toFixed(1) : xMin);
+          .text(typeof xMin === 'number' ? formatNumber(xMin) : xMin);
 
         boundsGroup
           .append('text')
@@ -666,7 +732,7 @@ export class AxisUtility {
           .style('font-size', labelStyle.fontSize)
           .style('fill', labelStyle.fill)
           .style('font-weight', labelStyle.fontWeight)
-          .text(typeof xMax === 'number' ? xMax.toFixed(1) : xMax);
+          .text(typeof xMax === 'number' ? formatNumber(xMax) : xMax);
       }
 
       // Y-axis bounds (for quantitative scales)
@@ -687,7 +753,7 @@ export class AxisUtility {
           .style('font-size', labelStyle.fontSize)
           .style('fill', labelStyle.fill)
           .style('font-weight', labelStyle.fontWeight)
-          .text(typeof yMin === 'number' ? yMin.toFixed(1) : yMin);
+          .text(typeof yMin === 'number' ? formatNumber(yMin) : yMin);
 
         boundsGroup
           .append('text')
@@ -698,7 +764,7 @@ export class AxisUtility {
           .style('font-size', labelStyle.fontSize)
           .style('fill', labelStyle.fill)
           .style('font-weight', labelStyle.fontWeight)
-          .text(typeof yMax === 'number' ? yMax.toFixed(1) : yMax);
+          .text(typeof yMax === 'number' ? formatNumber(yMax) : yMax);
       }
     } else if (isCanvasContext(context)) {
       const { ctx } = context;
@@ -713,10 +779,10 @@ export class AxisUtility {
         
         ctx.textAlign = 'start';
         ctx.textBaseline = 'top';
-        ctx.fillText(typeof xMin === 'number' ? xMin.toFixed(1) : String(xMin), graphArea.left, graphArea.bottom + 15);
+        ctx.fillText(typeof xMin === 'number' ? formatNumber(xMin) : String(xMin), graphArea.left, graphArea.bottom + 15);
         
         ctx.textAlign = 'end';
-        ctx.fillText(typeof xMax === 'number' ? xMax.toFixed(1) : String(xMax), graphArea.right, graphArea.bottom + 15);
+        ctx.fillText(typeof xMax === 'number' ? formatNumber(xMax) : String(xMax), graphArea.right, graphArea.bottom + 15);
       }
 
       // Y-axis bounds
@@ -730,8 +796,8 @@ export class AxisUtility {
         
         ctx.textAlign = 'end';
         ctx.textBaseline = 'middle';
-        ctx.fillText(typeof yMin === 'number' ? yMin.toFixed(1) : String(yMin), graphArea.left - 5, graphArea.bottom);
-        ctx.fillText(typeof yMax === 'number' ? yMax.toFixed(1) : String(yMax), graphArea.left - 5, graphArea.top);
+        ctx.fillText(typeof yMin === 'number' ? formatNumber(yMin) : String(yMin), graphArea.left - 5, graphArea.bottom);
+        ctx.fillText(typeof yMax === 'number' ? formatNumber(yMax) : String(yMax), graphArea.left - 5, graphArea.top);
       }
 
       ctx.restore();

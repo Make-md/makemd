@@ -254,7 +254,7 @@ export const StepSetter = (props: {
 
   return (
     <div className="mk-setter-step">
-      <span>{props.name}</span>
+      <div className="mk-frame-submenu-label">{props.name}</div>
       <InputDrag
         min={props.min}
         max={props.max}

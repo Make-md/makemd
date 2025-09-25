@@ -1,6 +1,6 @@
 import { saveSpaceCache } from "core/superstate/utils/spaces";
 import { isString } from "lodash";
-import { Superstate } from "makemd-core";
+import { i18n, Superstate } from "makemd-core";
 import React, { useEffect, useMemo, useState } from "react";
 import { SpaceState } from "shared/types/PathState";
 import { SpaceDefinition } from "shared/types/spaceDef";
@@ -84,7 +84,7 @@ export const SpaceItemProperty = (props: {
             __html: props.superstate.ui.getSticker("ui//pin"),
           }}
         ></div>
-        <span>Pinned Items</span>
+        <span>{i18n.labels.pinnedItems}</span>
       </div>
       <div className="mk-props-list">
         {linkCaches.map((f, i) => (
@@ -95,6 +95,7 @@ export const SpaceItemProperty = (props: {
             source={props.space.path}
           >
             <button
+            className="mk-toolbar-button"
               onClick={(e) => {
                 e.stopPropagation();
                 unpin(f.path);

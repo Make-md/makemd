@@ -81,8 +81,13 @@ export const TextNodeView = (props: FrameNodeViewProps) => {
   };
   const onMouseDown = (e: React.MouseEvent) => {
     if (editable) e.stopPropagation();
-    if (selectionMode == FrameEditorMode.Group && !props.treeNode.isRef) {
+    if (
+      selectionMode == FrameEditorMode.Group &&
+      !props.treeNode.isRef &&
+      selectable
+    ) {
       select(props.treeNode.id);
+      e.stopPropagation();
     }
   };
   const onLongPress = () => {
@@ -112,12 +117,12 @@ export const TextNodeView = (props: FrameNodeViewProps) => {
       )
     )
       return true;
+    if (!props.treeNode.node.props.value) return true;
     if (!stringIsConst(props.treeNode.node.props.value)) return false;
     if (selectionMode == FrameEditorMode.Page) return true;
     if (selectionMode == FrameEditorMode.Group && selected) return true;
     return false;
   }, [props.treeNode, selectionMode, frameSelected, selected, linkedProps]);
-
 
   return (
     props.state && (

@@ -128,6 +128,27 @@ export const NotesSettings = ({ superstate }: SettingsProps) => {
           </div>
         </div>
 
+        <div className="mk-setting-item">
+          <div className="mk-setting-item-info">
+            <div className="mk-setting-item-name">
+              {i18n.settings.contextCreateUseModal?.name || "Use Modal for Context Item Creation"}
+            </div>
+            <div className="mk-setting-item-description">
+              {i18n.settings.contextCreateUseModal?.desc || "Open a modal form when creating new context items instead of using the dropdown menu"}
+            </div>
+          </div>
+          <div className="mk-setting-item-control">
+            <input
+              type="checkbox"
+              checked={superstate.settings.contextCreateUseModal}
+              onChange={(e) => {
+                superstate.settings.contextCreateUseModal = e.target.checked;
+                immediateSave();
+              }}
+            />
+          </div>
+        </div>
+
         <h3>{i18n.settings.sections.appearance}</h3>
         <div className="mk-setting-item">
           <div className="mk-setting-item-info">

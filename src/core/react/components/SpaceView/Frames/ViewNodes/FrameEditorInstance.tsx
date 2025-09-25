@@ -41,7 +41,7 @@ export const FrameEditorInstance = (
   const { spaceInfo } = useContext(SpaceContext);
   const { undoLastAction, redoAction, frameSchema } =
     useContext(FramesMDBContext);
-  const { nodes, addNode, saveNodes, setLastCreatedId } = useContext(
+  const { nodes, root, saveNodes, setLastCreatedId } = useContext(
     FramesEditorRootContext
   );
 

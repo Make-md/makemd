@@ -7,6 +7,7 @@ import { defaultMenu } from "../menu/SelectionMenu";
 import { showPathContextMenu } from "../navigator/pathContextMenu";
 import { showSpaceContextMenu } from "../navigator/spaceContextMenu";
 import { EditPropertiesSubmenu } from "./EditPropertyMenu";
+import { openContextCreateItemModal } from "../../Modals/ContextCreateItemModal";
 
 export const showRowContextMenu = async (
   e: React.MouseEvent | React.TouchEvent,
@@ -50,12 +51,19 @@ export const showRowContextMenu = async (
   menuOptions.push({
     name: i18n.menu.editProperties,
     icon: "ui//list",
-    onClick: (e) => {
-      superstate.ui.openCustomMenu(
-        e.currentTarget.getBoundingClientRect(),
-        <EditPropertiesSubmenu {...propertiesProps}></EditPropertiesSubmenu>,
-        propertiesProps,
-        windowFromDocument(e.view.document)
+    onClick: async (e) => {
+      // Get the row data for editing
+      const rowData = rows[index];
+      
+      // Open the modal in edit mode with the row data
+      openContextCreateItemModal(
+        superstate,
+        contextPath,
+        schema,
+        undefined, // frameSchema
+        windowFromDocument(e.view.document),
+        index, // Pass the actual row index (>= 0 for edit mode)
+        rowData // Pass the initial data
       );
     },
   });

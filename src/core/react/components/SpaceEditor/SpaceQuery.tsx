@@ -55,7 +55,7 @@ export const SpaceQuery = (
           i == groupIndex
             ? {
                 ...f,
-                filters: f.filters.map((g, filterIndex) =>
+                filters: (f.filters || []).map((g, filterIndex) =>
                   k == filterIndex
                     ? {
                         ...g,
@@ -272,7 +272,7 @@ export const SpaceQuery = (
         i == groupIndex
           ? {
               ...f,
-              filters: f.filters.map((g, k) =>
+              filters: (f.filters || []).map((g, k) =>
                 k == filterIndex
                   ? {
                       ...g,
@@ -295,7 +295,7 @@ export const SpaceQuery = (
         i == groupIndex
           ? {
               ...f,
-              filters: f.filters.map((g, k) =>
+              filters: (f.filters || []).map((g, k) =>
                 k == filterIndex
                   ? {
                       ...g,
@@ -315,7 +315,7 @@ export const SpaceQuery = (
         i == groupIndex
           ? {
               ...f,
-              filters: f.filters.filter((g, k) =>
+              filters: (f.filters || []).filter((g, k) =>
                 k == filterIndex ? false : true
               ),
             }
@@ -452,7 +452,7 @@ export const SpaceQuery = (
             i={i}
             removeDefGroup={removeDefGroup}
           >
-            {f.filters.map((filter, k, arr) => (
+            {(f.filters || []).map((filter, k, arr) => (
               <React.Fragment key={k}>
                 <DefFilter
                   superstate={props.superstate}

@@ -14,6 +14,7 @@ export const defaultFrameSchema = {
         'rank',
         'icon',
         'props',
+        'interactions',
         'actions',
         'ref',
         'styles',

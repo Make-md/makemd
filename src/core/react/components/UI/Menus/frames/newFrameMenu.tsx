@@ -165,10 +165,17 @@ export const showNewFrameMenu = (
       ref: "spaces://$kit/#*" + id,
     });
   };
-  const insertElement = (item: FrameNode) => {
-    addNode({
-      ...item,
-    });
+  const insertElement = (item: FrameNode | FrameRoot) => {
+    // If it's a FrameRoot with children, we need to insert all nodes
+    if ('children' in item && item.children) {
+      const nodes = linkRoot("", item as FrameRoot, "", []);
+      nodes.forEach(node => addNode(node));
+    } else {
+      const node = 'node' in item ? item.node : item;
+      addNode({
+        ...node,
+      });
+    }
   };
   const presets = [
     {
@@ -310,6 +317,30 @@ export const showNewFrameMenu = (
     }
   };
 
+  const buttonGroupNode: FrameRoot = {
+    def: {
+      id: 'buttonNode',
+      icon: "ui//mouse-pointer-click",
+      description: "Button container with styled appearance",
+    },
+    node: {
+      id: "button",
+      schemaId: "button",
+      name: "Button",
+      rank: 0,
+      parentId: "",
+      styles: {
+        layout: `"row"`,
+
+        sem: `'button'`,
+      },
+      type: "group",
+    },
+    children: [
+     
+    ]
+  };
+
   const defaultElements: FrameRoot[] = [
     textNode,
     imageNode,
@@ -317,10 +348,10 @@ export const showNewFrameMenu = (
     iconNode,
     groupNode,
     cardNode,
+    buttonGroupNode,
     // contentNode,
   ];
   const defaultFrames: FrameRoot[] = [
-    buttonNode(),
     ratingNode(),
     toggleNode(),
     callout(),
@@ -385,7 +416,7 @@ export const showNewFrameMenu = (
     ...defaultElements.map((f) => ({
       name: f.node.name,
       onClick: () => {
-        insertElement(f.node);
+        insertElement(f);
       },
       value: f.node.name,
       icon: f.def?.icon,

@@ -26,7 +26,7 @@ export class FileTreeView extends ItemView {
   }
 
   revealInFolder(file: TAbstractFile) {
-    console.log("reveal in fodler");
+    
     if (file instanceof TFolder) {
       const leaf = getLeaf(this.leaf.view.app, false);
       leaf.setViewState({

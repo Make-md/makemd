@@ -51,13 +51,34 @@ export const LinkCell = (props: TableCellMultiProp & { source?: string }) => {
     }
   };
   const menuProps = () => {
+    const currentPath = props.source || "";
+    
     const options = [...props.superstate.pathsIndex.values()]
       .filter((f) => !f.hidden)
       .map((f) => ({
         name: f.name,
         value: f.path,
         description: f.path,
-      }));
+      }))
+      .sort((a, b) => {
+        // Check if paths are related to current path
+        const aIsChild = currentPath && a.value.startsWith(currentPath + "/");
+        const bIsChild = currentPath && b.value.startsWith(currentPath + "/");
+        const aIsCurrent = a.value === currentPath;
+        const bIsCurrent = b.value === currentPath;
+        
+        // Prioritize current path first
+        if (aIsCurrent && !bIsCurrent) return -1;
+        if (!aIsCurrent && bIsCurrent) return 1;
+        
+        // Then prioritize children of current path
+        if (aIsChild && !bIsChild) return -1;
+        if (!aIsChild && bIsChild) return 1;
+        
+        // For items with same priority, sort alphabetically by name
+        return a.name.localeCompare(b.name);
+      });
+      
     const _options = !props.multi
       ? [{ name: i18n.menu.none, value: "" }, ...options]
       : options;

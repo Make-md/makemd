@@ -201,7 +201,6 @@ export const groupNode: FrameRoot = {
     styles: {
       layout: `"column"`,
       width: `'100%'`,
-      height: `'100px'`,
     },
     type: "group",
   }

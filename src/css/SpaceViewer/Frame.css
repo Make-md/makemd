@@ -2,6 +2,31 @@
   
 
 
+.mk-frame-submenu-label {
+    font-size: 11px;
+    color: var(--mk-ui-text-tertiary);
+    margin-left: 4px;
+    margin-right: 4px;
+}
+
+.mk-frame-editor-button-submenu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mk-frame-editor-button-config {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mk-frame-editor-button-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 
 
 

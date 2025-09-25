@@ -89,4 +89,5 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   editStickerInSidebar: true,
   overrideNativeMenu: false,
   onboardingCompleted: false,
+  contextCreateUseModal: false,
 };

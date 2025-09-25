@@ -1,6 +1,8 @@
 import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
 import { Superstate, i18n } from "makemd-core";
-import React, { useState, useEffect } from "react";
+import JSZip from "jszip";
+import React, { useState, useEffect, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 import { IconsetAsset, IconMetadata } from "shared/types/assets";
 import { windowFromDocument } from "shared/utils/dom";
 import { useDebouncedSave } from "./hooks";
@@ -15,6 +17,7 @@ const IconSetManager = ({ superstate }: { superstate: Superstate }) => {
   const [loading, setLoading] = useState(true);
   const [selectedSet, setSelectedSet] = useState<string | null>(null);
   const [iconsList, setIconsList] = useState<IconMetadata[]>([]);
+  const [dropHighlighted, setDropHighlighted] = useState(false);
 
   React.useEffect(() => {
     loadIconSets();
@@ -145,6 +148,214 @@ const IconSetManager = ({ superstate }: { superstate: Superstate }) => {
     );
   };
 
+  const extractStickerPack = useCallback(async (file: File): Promise<IconMetadata[]> => {
+    try {
+      const zip = new JSZip();
+      const zipData = await zip.loadAsync(file);
+      const icons: IconMetadata[] = [];
+
+      for (const [fileName, zipFile] of Object.entries(zipData.files)) {
+        // Skip directories and hidden files
+        if (zipFile.dir || fileName.startsWith('.') || fileName.includes('__MACOSX')) {
+          continue;
+        }
+
+        // Only process image files
+        const isImageFile = /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(fileName);
+        if (!isImageFile) {
+          continue;
+        }
+
+        // Get the icon name (remove file extension and path)
+        const iconName = fileName.split('/').pop()?.replace(/\.[^/.]+$/, '') || fileName;
+        
+        // Get file data as blob for storage
+        const fileData = await zipFile.async('blob');
+        const fileExtension = fileName.split('.').pop()?.toLowerCase() || 'png';
+
+        icons.push({
+          id: iconName,
+          name: iconName,
+          path: `${iconName}.${fileExtension}`,
+          // Store the blob data for asset manager
+          data: fileData
+        } as IconMetadata & { data: Blob });
+      }
+
+      return icons;
+    } catch (error) {
+      console.error('Failed to extract sticker pack:', error);
+      throw new Error('Invalid sticker pack file');
+    }
+  }, []);
+
+  const handleFileDrop = useCallback(async (files: File[]) => {
+    try {
+      let allIcons: IconMetadata[] = [];
+      let iconsetName = '';
+
+      for (const file of files) {
+        if (file.name.endsWith('.zip')) {
+          // Handle sticker pack (zip file)
+          iconsetName = file.name.replace(/\.zip$/i, '');
+          const extractedIcons = await extractStickerPack(file);
+          allIcons = [...allIcons, ...extractedIcons];
+        } else if (file.type.startsWith('image/') || file.name.endsWith('.svg')) {
+          // Handle individual image files
+          const iconName = file.name.replace(/\.[^/.]+$/, '');
+          allIcons.push({
+            id: iconName,
+            name: iconName,
+            path: file.name,
+            data: file
+          } as IconMetadata & { data: File });
+        }
+      }
+
+      if (allIcons.length === 0) {
+        superstate.ui.notify('No valid icons found in dropped files', 'error');
+        return;
+      }
+
+      // Generate iconset name if not set
+      if (!iconsetName) {
+        iconsetName = `Icons-${Date.now()}`;
+      }
+
+      let iconsetId = iconsetName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+      const assetManager = superstate.assets;
+      if (!assetManager) {
+        superstate.ui.notify('Asset manager not available', 'error');
+        return;
+      }
+
+      // Check if iconset ID already exists and make it unique
+      const existingIconsets = assetManager.getIconsets?.() || [];
+      let counter = 1;
+      let uniqueId = iconsetId;
+
+      while (existingIconsets.some(set => set.id === uniqueId)) {
+        uniqueId = `${iconsetId}-${counter}`;
+        counter++;
+      }
+
+      iconsetId = uniqueId;
+
+      // Create the iconset asset
+      const iconsetAsset: IconsetAsset = {
+        id: iconsetId,
+        name: iconsetName,
+        path: `.space/assets/icons/${iconsetId}`,
+        type: 'iconset',
+        description: files.some(f => f.name.endsWith('.zip')) 
+          ? `Sticker pack extracted from ${files.find(f => f.name.endsWith('.zip'))?.name}`
+          : `Icon set created from dropped files`,
+        tags: ['custom', 'user'],
+        icons: allIcons.map(icon => ({
+          id: icon.id,
+          name: icon.name,
+          path: icon.path
+        })),
+        theme: 'auto',
+        format: 'mixed',
+        created: Date.now(),
+        modified: Date.now()
+      };
+
+      // Create the icon folder path
+      const iconFolderPath = `.space/assets/icons/${iconsetId}`;
+      
+      // Ensure the icon folder exists by creating the folder structure
+      const folderParts = iconFolderPath.split('/');
+      let currentPath = '';
+      for (const part of folderParts) {
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+        if (!(await superstate.spaceManager.pathExists(currentPath))) {
+          // Create folder using createItemAtPath with type 'folder'
+          await superstate.spaceManager.createItemAtPath(
+            currentPath.substring(0, currentPath.lastIndexOf('/')) || '/',
+            'folder',
+            part
+          );
+        }
+      }
+
+      // Save each icon file using spaceManager.createItemAtPath
+      for (const icon of allIcons) {
+        const iconData = (icon as any).data;
+        if (iconData) {
+          const fileExtension = icon.path.split('.').pop()?.toLowerCase() || 'svg';
+          
+          // Convert blob/file to appropriate content
+          let content: string | ArrayBuffer;
+          if (iconData instanceof Blob || iconData instanceof File) {
+            if (fileExtension === 'svg' || fileExtension === 'xml') {
+              // For SVG files, read as text
+              content = await iconData.text();
+            } else {
+              // For binary image files (PNG, JPG, etc.), read as ArrayBuffer
+              content = await iconData.arrayBuffer();
+            }
+          } else {
+            content = iconData;
+          }
+          
+          // Create the icon file at the proper path
+          await superstate.spaceManager.createItemAtPath(
+            iconFolderPath,
+            fileExtension,
+            icon.id,
+            content
+          );
+        }
+      }
+
+      // Save the iconset metadata with the asset manager
+      await assetManager.saveIconset(iconsetAsset);
+
+      // Reload iconsets to get the updated list
+      if (assetManager.reindexAssets) {
+        await assetManager.reindexAssets();
+      }
+
+      // Reload sticker sets in the UI
+      await loadIconSets();
+
+      const packType = files.some(f => f.name.endsWith('.zip')) ? 'sticker pack' : 'icon files';
+      superstate.ui.notify(`Added ${allIcons.length} icons from ${packType} to "${iconsetName}"`);
+    } catch (e) {
+      console.error('Failed to create icon set from dropped files:', e);
+      const errorMessage = e instanceof Error ? e.message : 'Failed to create icon set from dropped files';
+      superstate.ui.notify(errorMessage, 'error');
+    }
+  }, [superstate, loadIconSets, extractStickerPack]);
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    handleFileDrop(acceptedFiles);
+    setDropHighlighted(false);
+  }, [handleFileDrop]);
+
+  const onDragEnter = useCallback(() => {
+    setDropHighlighted(true);
+  }, []);
+
+  const onDragLeave = useCallback(() => {
+    setDropHighlighted(false);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    onDragEnter,
+    onDragLeave,
+    accept: {
+      'image/*': ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp'],
+      'application/zip': ['.zip'],
+      'application/x-zip-compressed': ['.zip']
+    },
+    noClick: true
+  });
+
   const createIconSetFromFolder = async (folderPath: string) => {
     try {
       const folderName = folderPath.split('/').pop() || 'icons';
@@ -246,7 +457,43 @@ const IconSetManager = ({ superstate }: { superstate: Superstate }) => {
   }
 
   return (
-    <div className="mk-icon-set-manager">
+    <div className="mk-icon-set-manager" {...getRootProps()} style={{ position: 'relative' }}>
+      <input {...getInputProps()} />
+      {/* Drop zone hint */}
+      {dropHighlighted && (
+        <div className="mk-drop-zone-overlay" style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'var(--background-modifier-hover)',
+          border: '2px dashed var(--interactive-accent)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          pointerEvents: 'none'
+        }}>
+          <div style={{
+            padding: '20px',
+            backgroundColor: 'var(--background-primary)',
+            borderRadius: '8px',
+            textAlign: 'center'
+          }}>
+            <div
+              className="mk-icon-large"
+              dangerouslySetInnerHTML={{
+                __html: superstate.ui.getSticker("lucide//download"),
+              }}
+              style={{ marginBottom: '10px' }}
+            />
+            <div style={{ fontWeight: 'bold' }}>{i18n.labels.dropIconsHere || 'Drop sticker pack (.zip) or icons here to create a new icon set'}</div>
+          </div>
+        </div>
+      )}
+
       <div className="mk-icon-sets-grid">
         {iconSets.map((set) => {
           const previewIcons = getPreviewIcons(set);
@@ -386,16 +633,242 @@ export const IconSettings = ({ superstate }: SettingsProps) => {
   const { debouncedSave, immediateSave } = useDebouncedSave(superstate);
   const [spacesStickers, setSpacesStickers] = useState(Boolean(superstate.settings.spacesStickers));
   const [indexSVG, setIndexSVG] = useState(Boolean(superstate.settings.indexSVG));
-  
+  const [dropHighlighted, setDropHighlighted] = useState(false);
+
   // Sync state with superstate.settings when component mounts or settings change
   useEffect(() => {
     setSpacesStickers(Boolean(superstate.settings.spacesStickers));
     setIndexSVG(Boolean(superstate.settings.indexSVG));
   }, [superstate.settings]);
 
+  const handleStickerPackDrop = useCallback(async (files: File[]) => {
+    try {
+      let allIcons: IconMetadata[] = [];
+      let iconsetName = '';
+
+      for (const file of files) {
+        if (file.name.endsWith('.zip')) {
+          // Handle sticker pack (zip file) - reuse the extractStickerPack function
+          iconsetName = file.name.replace(/\.zip$/i, '');
+          const zip = new JSZip();
+          const zipData = await zip.loadAsync(file);
+          
+          for (const [fileName, zipFile] of Object.entries(zipData.files)) {
+            if (zipFile.dir || fileName.startsWith('.') || fileName.includes('__MACOSX')) {
+              continue;
+            }
+
+            const isImageFile = /\.(svg|png|jpg|jpeg|gif|webp)$/i.test(fileName);
+            if (!isImageFile) {
+              continue;
+            }
+
+            const iconName = fileName.split('/').pop()?.replace(/\.[^/.]+$/, '') || fileName;
+            const fileData = await zipFile.async('blob');
+            const fileExtension = fileName.split('.').pop()?.toLowerCase() || 'png';
+
+            allIcons.push({
+              id: iconName,
+              name: iconName,
+              path: `${iconName}.${fileExtension}`,
+              data: fileData
+            } as IconMetadata & { data: Blob });
+          }
+        } else if (file.type.startsWith('image/') || file.name.endsWith('.svg')) {
+          // Handle individual image files
+          const iconName = file.name.replace(/\.[^/.]+$/, '');
+          allIcons.push({
+            id: iconName,
+            name: iconName,
+            path: file.name,
+            data: file
+          } as IconMetadata & { data: File });
+        }
+      }
+
+      if (allIcons.length === 0) {
+        superstate.ui.notify('No valid icons found in dropped files', 'error');
+        return;
+      }
+
+      // Generate iconset name if not set
+      if (!iconsetName) {
+        iconsetName = `Icons-${Date.now()}`;
+      }
+
+      let iconsetId = iconsetName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+      const assetManager = superstate.assets;
+      if (!assetManager) {
+        superstate.ui.notify('Asset manager not available', 'error');
+        return;
+      }
+
+      // Check if iconset ID already exists and make it unique
+      const existingIconsets = assetManager.getIconsets?.() || [];
+      let counter = 1;
+      let uniqueId = iconsetId;
+
+      while (existingIconsets.some(set => set.id === uniqueId)) {
+        uniqueId = `${iconsetId}-${counter}`;
+        counter++;
+      }
+
+      iconsetId = uniqueId;
+
+      // Create the iconset asset
+      const iconsetAsset: IconsetAsset = {
+        id: iconsetId,
+        name: iconsetName,
+        path: `.space/assets/icons/${iconsetId}`,
+        type: 'iconset',
+        description: files.some(f => f.name.endsWith('.zip')) 
+          ? `Sticker pack extracted from ${files.find(f => f.name.endsWith('.zip'))?.name}`
+          : `Icon set created from dropped files`,
+        tags: ['custom', 'user'],
+        icons: allIcons.map(icon => ({
+          id: icon.id,
+          name: icon.name,
+          path: icon.path
+        })),
+        theme: 'auto',
+        format: 'mixed',
+        created: Date.now(),
+        modified: Date.now()
+      };
+
+      // Create the icon folder path
+      const iconFolderPath = `.space/assets/icons/${iconsetId}`;
+      
+      // Ensure the icon folder exists by creating the folder structure
+      const folderParts = iconFolderPath.split('/');
+      let currentPath = '';
+      for (const part of folderParts) {
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+        if (!(await superstate.spaceManager.pathExists(currentPath))) {
+          // Create folder using createItemAtPath with type 'folder'
+          await superstate.spaceManager.createItemAtPath(
+            currentPath.substring(0, currentPath.lastIndexOf('/')) || '/',
+            'folder',
+            part
+          );
+        }
+      }
+
+      // Save each icon file using spaceManager.createItemAtPath
+      for (const icon of allIcons) {
+        const iconData = (icon as any).data;
+        if (iconData) {
+          const fileExtension = icon.path.split('.').pop()?.toLowerCase() || 'svg';
+          
+          // Convert blob/file to appropriate content
+          let content: string | ArrayBuffer;
+          if (iconData instanceof Blob || iconData instanceof File) {
+            if (fileExtension === 'svg' || fileExtension === 'xml') {
+              // For SVG files, read as text
+              content = await iconData.text();
+            } else {
+              // For binary image files (PNG, JPG, etc.), read as ArrayBuffer
+              content = await iconData.arrayBuffer();
+            }
+          } else {
+            content = iconData;
+          }
+          
+          // Create the icon file at the proper path
+          await superstate.spaceManager.createItemAtPath(
+            iconFolderPath,
+            fileExtension,
+            icon.id,
+            content
+          );
+        }
+      }
+
+      // Save the iconset metadata with the asset manager
+      await assetManager.saveIconset(iconsetAsset);
+
+      // Reload iconsets to get the updated list
+      if (assetManager.reindexAssets) {
+        await assetManager.reindexAssets();
+      }
+
+      const packType = files.some(f => f.name.endsWith('.zip')) ? 'sticker pack' : 'icon files';
+      superstate.ui.notify(`Added ${allIcons.length} icons from ${packType} to "${iconsetName}"`);
+    } catch (e) {
+      console.error('Failed to create icon set from dropped files:', e);
+      const errorMessage = e instanceof Error ? e.message : 'Failed to create icon set from dropped files';
+      superstate.ui.notify(errorMessage, 'error');
+    }
+  }, [superstate]);
+
+  const onDropSettings = useCallback((acceptedFiles: File[]) => {
+    handleStickerPackDrop(acceptedFiles);
+    setDropHighlighted(false);
+  }, [handleStickerPackDrop]);
+
+  const onDragEnter = useCallback(() => {
+    setDropHighlighted(true);
+  }, []);
+
+  const onDragLeave = useCallback(() => {
+    setDropHighlighted(false);
+  }, []);
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop: useCallback((acceptedFiles: File[]) => {
+      handleStickerPackDrop(acceptedFiles);
+      setDropHighlighted(false);
+    }, [handleStickerPackDrop]),
+    onDragEnter,
+    onDragLeave,
+    accept: {
+      'image/*': ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp'],
+      'application/zip': ['.zip'],
+      'application/x-zip-compressed': ['.zip']
+    },
+    noClick: true
+  });
+
   return (
     <div className="mk-setting-section">
       <h2>{i18n.labels.stickers}</h2>
+
+      <div className="mk-community-callout" {...getRootProps()} style={{
+        position: 'relative',
+        border: dropHighlighted ? '2px dashed var(--interactive-accent)' : undefined,
+        backgroundColor: dropHighlighted ? 'var(--background-modifier-hover)' : undefined
+      }}>
+        <input {...getInputProps()} />
+        <div className="mk-callout-icon">💡</div>
+        <div className="mk-callout-content">
+          <div className="mk-callout-text">
+            {dropHighlighted ? (
+              <>
+                <strong>Drop sticker pack (.zip) or individual icons here to import</strong>
+                <br />
+                Import sticker packs downloaded from the community or individual icon files
+              </>
+            ) : (
+              <>
+                Find and download sticker packs from the community at{" "}
+                <span
+                  className="mk-callout-url"
+                  onClick={() =>
+                    window.open("https://make.md/community", "_blank")
+                  }
+                  style={{ cursor: "pointer" }}
+                >
+                  https://make.md/community
+                </span>
+                <br />
+                <small style={{ opacity: 0.7 }}>Drag and drop .zip sticker packs or individual icon files here to import</small>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="mk-setting-group">
         <div className="mk-setting-item">
           <div className="mk-setting-item-info">

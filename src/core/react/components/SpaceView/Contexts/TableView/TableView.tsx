@@ -41,6 +41,7 @@ import { ColumnHeader } from "./ColumnHeader";
 import classNames from "classnames";
 import { showRowContextMenu } from "core/react/components/UI/Menus/contexts/rowContextMenu";
 import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
+
 import { ContextEditorContext } from "core/react/context/ContextEditorContext";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";

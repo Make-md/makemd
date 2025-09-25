@@ -1,4 +1,5 @@
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
+import { openContextCreateItemModal } from "core/react/components/UI/Modals/ContextCreateItemModal";
 import { savePathColor } from "core/superstate/utils/label";
 import {
   convertPathToSpace,
@@ -306,6 +307,55 @@ export const showPathContextMenu = (
       );
     },
   });
+
+  // Edit Properties option - only show when a context space is provided
+  if (space) {
+    // Get context from contextsIndex through spaceManager
+    const contextInfo = superstate.contextsIndex.get(space);
+    
+    // Only show if the space has context data
+    if (contextInfo && contextInfo.contextTable) {
+      menuOptions.push({
+        name: i18n.menu.editProperties || "Edit Properties",
+        icon: "ui//list",
+        onClick: async (e) => {
+          // Get the context table from spaceManager
+          const contextTable = await superstate.spaceManager.readTable(space, "context");
+          
+          if (contextTable && contextTable.rows) {
+            // Find the row index for this path
+            const rowIndex = contextTable.rows.findIndex(
+              row => row["File"] === path || row["_path"] === path
+            );
+            
+            if (rowIndex >= 0) {
+              // Open the modal in edit mode
+              openContextCreateItemModal(
+                superstate,
+                space,
+                "context", // context schema
+                undefined, // frameSchema
+                windowFromDocument(e.view.document),
+                rowIndex, // Row index for edit mode
+                contextTable.rows[rowIndex] // Current row data
+              );
+            } else {
+              // If path not found in context, open in create mode with path pre-filled
+              openContextCreateItemModal(
+                superstate,
+                space,
+                "context",
+                undefined,
+                windowFromDocument(e.view.document),
+                -1, // New item mode
+                { File: path, _path: path } // Pre-fill with path
+              );
+            }
+          }
+        },
+      });
+    }
+  }
 
   menuOptions.push({
     name: i18n.buttons.addToSpace,

@@ -8,7 +8,7 @@ border-top: thin solid var(--mk-ui-divider);
 flex-direction: column;
 }
 .mk-editor-context {
-  overflow-x: scroll;
+  overflow-x: auto;
 }
 .mk-editor-context-groups {
   display: flex;

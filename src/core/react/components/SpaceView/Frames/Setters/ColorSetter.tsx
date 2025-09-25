@@ -22,7 +22,7 @@ export const ColorSetter = (props: {
   };
   return (
     <div
-      className="mk-color"
+      className="mk-editor-frame-color"
       style={{
         background: props.value,
       }}

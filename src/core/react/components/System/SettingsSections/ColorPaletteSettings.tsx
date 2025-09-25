@@ -1,7 +1,8 @@
 import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { Superstate, i18n } from "makemd-core";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 import {
   ColorPaletteAsset,
   NamedColor,
@@ -16,6 +17,7 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
   const [showImportArea, setShowImportArea] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState("");
+  const [dropHighlighted, setDropHighlighted] = useState(false);
 
   React.useEffect(() => {
     loadPalettes();
@@ -225,6 +227,83 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
     }
   };
 
+  const handleFileDrop = useCallback(async (files: File[]) => {
+    try {
+      // Process dropped JSON files
+      for (const file of files) {
+        if (file.type === 'application/json' || file.name.endsWith('.json')) {
+          const text = await file.text();
+          const importedData = JSON.parse(text);
+
+          // Validate the imported data
+          if (!importedData.name || !Array.isArray(importedData.colors)) {
+            superstate.ui.notify(`Invalid palette file format in ${file.name}. Must have 'name' and 'colors' array.`, 'error');
+            continue;
+          }
+
+          const newPalette: ColorPaletteAsset = {
+            id: `palette-${Date.now()}`,
+            name: importedData.name,
+            path: `assets/color-palettes/${importedData.name
+              .replace(/\s+/g, "-")
+              .toLowerCase()}`,
+            type: "colorpalette" as const,
+            colors: importedData.colors.map((color: any) => ({
+              name: color.name || "Unnamed Color",
+              value: color.value || "#000000",
+              category: color.category || "custom",
+              cssVariable: color.cssVariable,
+              semanticTokens: color.semanticTokens || [],
+              description: color.description,
+              aliases: color.aliases || [],
+            })),
+            gradients: importedData.gradients || [],
+            designSystemMapping: importedData.designSystemMapping || {
+              baseTokens: {},
+              semanticTokens: {},
+            },
+            tags: importedData.tags || [],
+            category: importedData.category || ("custom" as const),
+            description: importedData.description || "",
+            created: Date.now(),
+            modified: Date.now(),
+          };
+
+          await savePalette(newPalette);
+          superstate.ui.notify(`Imported palette "${importedData.name}" successfully`);
+        }
+      }
+
+      await loadPalettes();
+    } catch (e) {
+      console.error('Failed to import palette from dropped files:', e);
+      superstate.ui.notify('Failed to import palette from dropped files', 'error');
+    }
+  }, [superstate, savePalette, loadPalettes]);
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    handleFileDrop(acceptedFiles);
+    setDropHighlighted(false);
+  }, [handleFileDrop]);
+
+  const onDragEnter = useCallback(() => {
+    setDropHighlighted(true);
+  }, []);
+
+  const onDragLeave = useCallback(() => {
+    setDropHighlighted(false);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    onDragEnter,
+    onDragLeave,
+    accept: {
+      'application/json': ['.json']
+    },
+    noClick: true
+  });
+
   const addNewPalette = async () => {
     superstate.ui.openPalette(
       <InputModal
@@ -265,7 +344,43 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
   }
 
   return (
-    <div className="mk-color-palette-manager">
+    <div className="mk-color-palette-manager" {...getRootProps()} style={{ position: 'relative' }}>
+      <input {...getInputProps()} />
+
+      {/* Drop zone hint */}
+      {dropHighlighted && (
+        <div className="mk-drop-zone-overlay" style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'var(--background-modifier-hover)',
+          border: '2px dashed var(--interactive-accent)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100,
+          pointerEvents: 'none'
+        }}>
+          <div style={{
+            padding: '20px',
+            backgroundColor: 'var(--background-primary)',
+            borderRadius: '8px',
+            textAlign: 'center'
+          }}>
+            <div
+              className="mk-icon-large"
+              dangerouslySetInnerHTML={{
+                __html: superstate.ui.getSticker("lucide//download"),
+              }}
+              style={{ marginBottom: '10px' }}
+            />
+            <div style={{ fontWeight: 'bold' }}>{i18n.labels.dropPalettesHere || 'Drop JSON palette files here to import'}</div>
+          </div>
+        </div>
+      )}
       {palettes.map((palette) => (
         <div key={palette.id} className="mk-palette-item">
           <div className="mk-palette-left-column">
@@ -514,25 +629,126 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
 };
 
 export const ColorPaletteSettings = ({ superstate }: SettingsProps) => {
+  const [dropHighlighted, setDropHighlighted] = useState(false);
+
+  const handleFileDrop = useCallback(async (files: File[]) => {
+    try {
+      // Process dropped JSON files
+      for (const file of files) {
+        if (file.type === 'application/json' || file.name.endsWith('.json')) {
+          const text = await file.text();
+          const importedData = JSON.parse(text);
+
+          // Validate the imported data
+          if (!importedData.name || !Array.isArray(importedData.colors)) {
+            superstate.ui.notify(`Invalid palette file format in ${file.name}. Must have 'name' and 'colors' array.`, 'error');
+            continue;
+          }
+
+          const assetManager = superstate.assets;
+          if (assetManager) {
+            const newPalette: ColorPaletteAsset = {
+              id: `palette-${Date.now()}`,
+              name: importedData.name,
+              path: `assets/color-palettes/${importedData.name
+                .replace(/\s+/g, "-")
+                .toLowerCase()}`,
+              type: "colorpalette" as const,
+              colors: importedData.colors.map((color: any) => ({
+                name: color.name || "Unnamed Color",
+                value: color.value || "#000000",
+                category: color.category || "custom",
+                cssVariable: color.cssVariable,
+                semanticTokens: color.semanticTokens || [],
+                description: color.description,
+                aliases: color.aliases || [],
+              })),
+              gradients: importedData.gradients || [],
+              designSystemMapping: importedData.designSystemMapping || {
+                baseTokens: {},
+                semanticTokens: {},
+              },
+              tags: importedData.tags || [],
+              category: importedData.category || ("custom" as const),
+              description: importedData.description || "",
+              created: Date.now(),
+              modified: Date.now(),
+            };
+
+            const success = await assetManager.saveColorPalette(newPalette);
+            if (success) {
+              superstate.ui.notify(`Imported palette "${importedData.name}" successfully`);
+              // Force refresh to show new palette
+              window.location.reload();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to import palette from dropped files:', e);
+      superstate.ui.notify('Failed to import palette from dropped files', 'error');
+    }
+  }, [superstate]);
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    handleFileDrop(acceptedFiles);
+    setDropHighlighted(false);
+  }, [handleFileDrop]);
+
+  const onDragEnter = useCallback(() => {
+    setDropHighlighted(true);
+  }, []);
+
+  const onDragLeave = useCallback(() => {
+    setDropHighlighted(false);
+  }, []);
+
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    onDragEnter,
+    onDragLeave,
+    accept: {
+      'application/json': ['.json']
+    },
+    noClick: true
+  });
+
   return (
     <>
       <div className="mk-setting-section">
         <h2>{i18n.labels.colors}</h2>
 
-        <div className="mk-community-callout">
+        <div className="mk-community-callout" {...getRootProps()} style={{
+          position: 'relative',
+          border: dropHighlighted ? '2px dashed var(--interactive-accent)' : undefined,
+          backgroundColor: dropHighlighted ? 'var(--background-modifier-hover)' : undefined
+        }}>
+          <input {...getInputProps()} />
           <div className="mk-callout-icon">💡</div>
           <div className="mk-callout-content">
             <div className="mk-callout-text">
-              Find and share color palettes with the community at{" "}
-              <span
-                className="mk-callout-url"
-                onClick={() =>
-                  window.open("https://make.md/community", "_blank")
-                }
-                style={{ cursor: "pointer" }}
-              >
-                https://make.md/community
-              </span>
+              {dropHighlighted ? (
+                <>
+                  <strong>Drop color palette here to import</strong>
+                  <br />
+                  Import palettes downloaded from the community
+                </>
+              ) : (
+                <>
+                  Find and download color palettes from the community at{" "}
+                  <span
+                    className="mk-callout-url"
+                    onClick={() =>
+                      window.open("https://make.md/community", "_blank")
+                    }
+                    style={{ cursor: "pointer" }}
+                  >
+                    https://make.md/community
+                  </span>
+                  <br />
+                  <small style={{ opacity: 0.7 }}>Drag and drop packs from the community here to import</small>
+                </>
+              )}
             </div>
           </div>
         </div>

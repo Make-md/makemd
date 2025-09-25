@@ -210,6 +210,7 @@ export const executeCode =  (code: any, environment: {[key: string]: any}) => {
     // let result;
     const isMultiLine = (typeof code === 'string' || code instanceof String) ? code.includes('\n') : false;
             // Execute the code block.
+            
             const func = isMultiLine
                 ? new Function(`with(this) { ${code} }`)
                 : new Function(`with(this) { return ${code}; }`);
@@ -281,6 +282,7 @@ const { id } = node
             if (key in (results.newState?.[id]?.[type] || {}) && results.newState[id][type][key] !== undefined) {
                 result = results.newState[id][type][key];
             } else {
+                
                 try {
                     result = codeBlockStore[key]?.call(results.state);
                 } catch (execError) {

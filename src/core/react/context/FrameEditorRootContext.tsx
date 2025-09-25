@@ -245,6 +245,10 @@ export const FrameEditorProvider: React.FC<
                   ...state.actions,
                 }
               : existingDeltaNode.actions,
+            interactions: state.interactions ? {
+              ...existingDeltaNode.interactions,
+                  ...state.interactions,
+            } : existingDeltaNode.interactions,
           },
         ]);
       }
@@ -270,6 +274,12 @@ export const FrameEditorProvider: React.FC<
                 ...state.actions,
               }
             : node.actions,
+            interactions: state.interactions
+            ? {
+                ...node.interactions,
+                ...state.interactions,
+              }
+            : node.interactions,
         },
       ]);
     }

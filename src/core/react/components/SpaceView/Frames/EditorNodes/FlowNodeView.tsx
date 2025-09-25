@@ -5,6 +5,7 @@ import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle"
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
+import { useMKitContext } from "core/react/context/MKitContext";
 import { wrapQuotes } from "core/utils/strings";
 import { i18n } from "makemd-core";
 import React, { useContext, useMemo, useState } from "react";
@@ -41,7 +42,7 @@ export const FlowNodeView = (
 ) => {
   const fullPath = props.state?.props?.value;
   const parsedPath = fullPath ? parseContent(fullPath) : null;
-
+  
   // Check if this is a space fragment view (e.g., ./#*frameId or path#*frameId)
   const isSpaceFragment = useMemo(() => {
     if (!parsedPath) return false;
@@ -56,6 +57,8 @@ export const FlowNodeView = (
     );
   }, [parsedPath, props.source]);
 
+  const mkitContext = useMKitContext();
+  
   const pathState: PathState = useMemo(() => {
     if (!parsedPath || isSpaceFragment) return null;
 
@@ -63,6 +66,18 @@ export const FlowNodeView = (
       parsedPath,
       props.source
     );
+
+   
+
+    // Check MKit context first
+    if (mkitContext?.isPreviewMode) {
+      const spaceData = mkitContext.getSpaceByFullPath(path) || 
+                       mkitContext.getSpaceByRelativePath(parsedPath);
+                        
+      if (spaceData) {
+        return spaceData.pseudoPath;
+      }
+    }
 
     const uri = props.superstate.spaceManager.uriByString(parsedPath);
     if (uri?.scheme == "https" || uri?.scheme == "http") {
@@ -85,13 +100,18 @@ export const FlowNodeView = (
     //   );
     // }
     return props.superstate.pathsIndex.get(path);
-  }, [parsedPath, props.source, isSpaceFragment]);
+  }, [parsedPath, props.source, isSpaceFragment, mkitContext]);
   const { updateNode, nodes } = useContext(FramesEditorRootContext);
   const { selectionMode } = useContext(FrameSelectionContext);
   const [expanded, setExpanded] = useState<boolean>(
     props.state?.styles?.["--mk-expanded"]
   );
   const updateValue = (newValue: string) => {
+    // Don't allow updates in MKit preview mode
+    if (mkitContext?.isPreviewMode) {
+      return;
+    }
+    
     if (newValue != props.state.props?.value) {
       if (props.treeNode.editorProps?.linkedNode) {
         const node = nodes.find(
@@ -145,7 +165,7 @@ export const FlowNodeView = (
           <div className="mk-node-link">
             <PathCrumb
               superstate={props.superstate}
-              path={props.state?.props?.value}
+              path={pathState?.path ?? props.state?.props?.value}
             ></PathCrumb>
           </div>
         ))}

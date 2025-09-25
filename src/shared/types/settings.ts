@@ -88,4 +88,5 @@ export interface MakeMDSettings {
   editStickerInSidebar: boolean;
   overrideNativeMenu: boolean;
   onboardingCompleted: boolean;
+  contextCreateUseModal: boolean;
 }

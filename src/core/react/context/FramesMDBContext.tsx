@@ -25,6 +25,7 @@ import {
 } from "shared/utils/makemd/schema";
 import { sanitizeColumnName, sanitizeTableName } from "shared/utils/sanitizers";
 import { SpaceContext } from "./SpaceContext";
+import { useMKitContext } from "./MKitContext";
 type FramesMDBContextProps = {
   frameSchemas: FrameSchema[];
   frames: FrameSchema[];
@@ -65,20 +66,52 @@ export const FramesMDBProvider: React.FC<
     contextSchema?: string;
     schema?: string;
     path?: string;
+    // Optional preloaded data for preview mode
+    preloadedFrameData?: MDBFrames;
+    preloadedFrameSchemas?: FrameSchema[];
+    preloadedSchemaTable?: DBTable;
+    previewMode?: boolean; // Flag to disable save operations
   }>
 > = (props) => {
   const [history, setHistory] = useState<MDBFrame[]>([]);
   const [future, setFuture] = useState<MDBFrame[]>([]);
-  const [schemaTable, setSchemaTable] = useState<DBTable>(null);
-  const schemas = useMemo(
-    () =>
-      ((schemaTable?.rows ?? []).map((f) =>
-        mdbSchemaToFrameSchema(f as SpaceTableSchema)
-      ) as FrameSchema[]) ?? [],
-    [schemaTable]
+
+  // Check if we're in MKit preview mode
+  const mkitContext = useMKitContext();
+  const isKitPreview = mkitContext.isPreviewMode && !props.preloadedSchemaTable;
+
+  // Use MKit data if available and we're in preview mode
+  const kitSpaceData = isKitPreview && props.path
+    ? mkitContext.getSpaceByFullPath(props.path)
+    : null;
+
+  // Use preloaded data if available, otherwise initialize as null
+  const [schemaTable, setSchemaTable] = useState<DBTable>(
+    props.preloadedSchemaTable || kitSpaceData?.schemaTable || null
   );
+
+  const schemas = useMemo(
+    () => {
+      // Use preloaded schemas if available
+      if (props.preloadedFrameSchemas) {
+        return props.preloadedFrameSchemas;
+      }
+      // Use MKit frame schemas if available
+      if (kitSpaceData?.frameSchemas) {
+        return kitSpaceData.frameSchemas;
+      }
+      // Otherwise compute from schemaTable
+      return ((schemaTable?.rows ?? []).map((f) =>
+        mdbSchemaToFrameSchema(f as SpaceTableSchema)
+      ) as FrameSchema[]) ?? [];
+    },
+    [schemaTable, props.preloadedFrameSchemas, kitSpaceData]
+  );
+
   const frames = schemas.filter((f) => f.type == "frame");
-  const [frameData, setFrameData] = useState<MDBFrames | null>(null);
+  const [frameData, setFrameData] = useState<MDBFrames | null>(
+    props.preloadedFrameData || kitSpaceData?.frameData || null
+  );
   const [frameSchema, setFrameSchema] = useState<FrameSchema>(null);
 
   const tableData = useMemo(() => {
@@ -88,6 +121,7 @@ export const FramesMDBProvider: React.FC<
   const { spaceInfo, readMode } = useContext(SpaceContext);
   const deleteSchema = async (table: FrameSchema) => {
     if (table.primary) return;
+    if (props.previewMode) return; // Skip if in preview mode
 
     await props.superstate.spaceManager.deleteFrame(spaceInfo.path, table.id);
     const newSchemaTable = {
@@ -113,7 +147,7 @@ export const FramesMDBProvider: React.FC<
           rows: [...schemaTable.rows, frameSchemaToTableSchema(table)],
         };
 
-    if (!spaceInfo.readOnly) {
+    if (!spaceInfo.readOnly && !props.previewMode) {
       await props.superstate.spaceManager.saveFrameSchema(
         spaceInfo.path,
         table.id,
@@ -135,6 +169,9 @@ export const FramesMDBProvider: React.FC<
   };
 
   useEffect(() => {
+    // Skip loading if we have preloaded data or kit data
+    if (props.preloadedFrameData || props.previewMode || isKitPreview) return;
+
     if (schemaTable)
       getMDBData().then((f) => {
         if (f && Object.keys(f).length > 0) {
@@ -144,7 +181,7 @@ export const FramesMDBProvider: React.FC<
           // }
         }
       });
-  }, [schemaTable]);
+  }, [schemaTable, props.preloadedFrameData, props.previewMode, isKitPreview]);
   useEffect(() => {
     if (schemaTable) {
       setFrameSchema((p) => {
@@ -204,7 +241,9 @@ export const FramesMDBProvider: React.FC<
     }
   }, [schemaTable, props.contextSchema, props.schema]);
   const loadTables = useCallback(async () => {
-    if (!spaceInfo) return;
+    // Skip loading if we have preloaded data or in preview mode or kit preview
+    if (props.preloadedSchemaTable || props.previewMode || isKitPreview || !spaceInfo) return;
+
     props.superstate.spaceManager.framesForSpace(spaceInfo.path).then((f) => {
       if (f)
         setSchemaTable((prev) => ({
@@ -213,7 +252,7 @@ export const FramesMDBProvider: React.FC<
           rows: f,
         }));
     });
-  }, [props.schema, spaceInfo]);
+  }, [props.schema, spaceInfo, props.preloadedSchemaTable, props.previewMode, isKitPreview]);
   const refreshSpace = useCallback(
     async (payload: { path: string }) => {
       if (payload.path == spaceInfo.path) {
@@ -225,6 +264,9 @@ export const FramesMDBProvider: React.FC<
   );
 
   useEffect(() => {
+    // Skip event listeners in preview mode
+    if (props.previewMode) return;
+
     props.superstate.eventsDispatcher.addListener(
       "frameStateUpdated",
       refreshSpace
@@ -235,8 +277,20 @@ export const FramesMDBProvider: React.FC<
         refreshSpace
       );
     };
-  }, [refreshSpace]);
+  }, [refreshSpace, props.previewMode]);
   const getMDBData = async (): Promise<MDBFrames> => {
+    // Return preloaded data if available
+    if (props.preloadedFrameData) {
+      return props.preloadedFrameData;
+    }
+    // Return kit data if available
+    if (kitSpaceData?.frameData) {
+      return kitSpaceData.frameData;
+    }
+    // Return empty if in preview mode or no spaceInfo
+    if (props.previewMode || !spaceInfo) {
+      return {};
+    }
     const tables = await props.superstate.spaceManager.readAllFrames(
       spaceInfo.path
     );
@@ -248,7 +302,9 @@ export const FramesMDBProvider: React.FC<
   }, [spaceInfo, props.schema]);
 
   const saveFrame = async (newTable: MDBFrame, track = true) => {
-    if (spaceInfo.readOnly) return;
+    if (spaceInfo?.readOnly) return;
+    if (props.previewMode) return; // Skip if in preview mode
+
     if (track) {
       setHistory((prevHistory) => [...prevHistory, newTable]);
       setFuture([]);
@@ -317,7 +373,9 @@ export const FramesMDBProvider: React.FC<
     const mdbtable = tableData;
 
     if (column.name == "") {
-      props.superstate.ui.notify(i18n.notice.noPropertyName);
+      if (!props.previewMode) {
+        props.superstate.ui.notify(i18n.notice.noPropertyName);
+      }
       return false;
     }
     if (
@@ -331,7 +389,9 @@ export const FramesMDBProvider: React.FC<
           (f) => f.name.toLowerCase() == column.name.toLowerCase()
         ))
     ) {
-      props.superstate.ui.notify(i18n.notice.duplicatePropertyName);
+      if (!props.previewMode) {
+        props.superstate.ui.notify(i18n.notice.duplicatePropertyName);
+      }
       return false;
     }
     const oldFieldIndex = oldColumn

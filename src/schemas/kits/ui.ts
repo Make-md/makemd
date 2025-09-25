@@ -169,7 +169,7 @@ export const buttonNode = () : FrameRoot => ({
       iconSize: 'number',
       label: 'text',
       action: 'option',
-      actionValue: 'super',
+      actionValue: 'object',
     },
     propsAttrs: {
       action: ({
@@ -197,8 +197,6 @@ export const buttonNode = () : FrameRoot => ({
       }),
       actionValue: ({
         alias: 'Action Properties',
-        dynamic: true,
-        field: 'action',
       }),
     },
     actions: {
@@ -886,7 +884,7 @@ export const linkNode = (): FrameRoot => ({
       sem: `'a'`,
     },
     actions: {
-      onClick: '$api.path.open(link.props.link, false)',
+      onClick: '$api.path.open(link.props.link, false, $contexts?.$space?.path)',
     },
     interactions: {
       onClick: 'onClick',

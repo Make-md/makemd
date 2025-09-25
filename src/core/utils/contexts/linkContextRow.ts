@@ -5,11 +5,13 @@ import { IndexMap } from "shared/types/indexMap";
 import { DBRow, DBRows, SpaceProperty } from "shared/types/mdb";
 import { ContextState, PathState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
+import { FilterGroupDef } from "shared/types/spaceDef";
 import { uniq } from "shared/utils/array";
 import { serializeMultiString } from "utils/serializers";
 import { parseMultiString, parseProperty } from "../../../utils/parsers";
 import { runFormulaWithContext } from "../formula/parser";
 import { calculateAggregate } from "./predicate/aggregates";
+import { filterReturnForCol } from "./predicate/filter";
 import { resolvePath } from "core/superstate/utils/path";
 
 
@@ -88,6 +90,7 @@ export const linkContextRow = (
   dependencies?: string[]
 ) => {
   if (!_row) return {}
+  if (!path) return _row
   const resolvedPath = resolvePath(_row[PathPropertyName], path.path, (spacePath) => paths.get(spacePath)?.type == 'space');
   
   const result = dependencies ?? propertyDependencies(fields)
@@ -102,12 +105,7 @@ export const linkContextRow = (
     tagData[tagField.name] = serializeMultiString([...(paths.get(resolvedPath)?.tags ?? [])]) 
   }
   
-  const formulaFields = result.map(f => fields.find(g => g.name == f) as SpaceProperty).filter((f) => f && (f.type == "fileprop")).reduce((p, c) => {
-    
-    const { value } = parseFieldValue(c.value, c.type);
-    return {...p, [c.name]: runFormulaWithContext(runContext, paths, spaceMap, value, properties, {..._row, ...p}, path)};
-    
-  }, {});
+  
   const relationFields = fields.filter((f) => f && (f.type.startsWith('context'))).reduce((p, c) => {
     
     const fieldValue = parseFieldValue(c.value, c.type);
@@ -135,14 +133,48 @@ export const linkContextRow = (
   }, {} as DBRow);
   const aggregateFields = fields.filter((f) => f && (f.type == "aggregate")).reduce((p, c) => {
     const fieldValue = parseFieldValue(c.value, c.type);
+    // Resolve space path if it exists
+    if (fieldValue.space) {
+      fieldValue.space = resolvePath(fieldValue.space, path.path, (spacePath) => paths.get(spacePath)?.type == 'space');
+    }
+    
     const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields, path)
+    
     if (!values) return p;
-        const value = calculateAggregate(
-          settings,
-          values,
-          fieldValue.fn,
-          fieldValue.field
-        );
+    
+    // Get the actual column definition for the field being aggregated
+    let fieldCol: SpaceProperty = null;
+    if (fieldValue.schema) {
+      // Space-based aggregate
+      const contextData = contextsMap.get(fieldValue.space || path.path);
+      fieldCol = contextData?.mdb?.[fieldValue.schema]?.cols?.find(col => col.name === fieldValue.field);
+    } else if (fieldValue.ref == '$items') {
+      // Items aggregate
+      fieldCol = contextsMap.get(_row[PathPropertyName])?.contextTable?.cols?.find(col => col.name === fieldValue.field);
+    } else {
+      // Reference-based aggregate
+      const refField = fields.find(f => f.name == fieldValue.ref);
+      if (refField) {
+        const refFieldValue = parseFieldValue(refField.value, refField.type);
+        const spacePath = refFieldValue?.space;
+        if (spacePath) {
+          fieldCol = contextsMap.get(spacePath)?.contextTable?.cols?.find(col => col.name === fieldValue.field);
+        }
+      }
+    }
+
+    
+    if (!fieldCol) {
+      // If we can't find the column definition, create a basic one
+      fieldCol = { name: fieldValue.field, type: 'text' } as SpaceProperty;
+    }
+    
+    const value = calculateAggregate(
+      settings,
+      values,
+      fieldValue.fn,
+      fieldCol
+    );
         
     return {
       ...p, [c.name]: value
@@ -160,13 +192,44 @@ export const linkContextRow = (
     }
     if (type == 'aggregate') {
       const fieldValue = config;
+      // Resolve space path if it exists
+      if (fieldValue.space) {
+        fieldValue.space = resolvePath(fieldValue.space, path.path, (spacePath) => paths.get(spacePath)?.type == 'space');
+      }
       const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields, path)
       if (!values) return p;
+      
+      // Get the actual column definition for the field being aggregated
+      let fieldCol: SpaceProperty = null;
+      if (fieldValue.schema) {
+        // Space-based aggregate
+        const contextData = contextsMap.get(fieldValue.space || path.path);
+        fieldCol = contextData?.mdb?.[fieldValue.schema]?.cols?.find(col => col.name === fieldValue.field);
+      } else if (fieldValue.ref == '$items') {
+        // Items aggregate
+        fieldCol = contextsMap.get(_row[PathPropertyName])?.contextTable?.cols?.find(col => col.name === fieldValue.field);
+      } else {
+        // Reference-based aggregate
+        const refField = fields.find(f => f.name == fieldValue.ref);
+        if (refField) {
+          const refFieldValue = parseFieldValue(refField.value, refField.type);
+          const spacePath = refFieldValue?.space;
+          if (spacePath) {
+            fieldCol = contextsMap.get(spacePath)?.contextTable?.cols?.find(col => col.name === fieldValue.field);
+          }
+        }
+      }
+      
+      if (!fieldCol) {
+        // If we can't find the column definition, create a basic one
+        fieldCol = { name: fieldValue.field, type: 'text' } as SpaceProperty;
+      }
+      
       value = calculateAggregate(
         settings,
         values,
         config?.fn,
-        config?.field
+        fieldCol
       );
     }
     return {
@@ -178,6 +241,19 @@ export const linkContextRow = (
       }),
     };
   }, {})
+  const formulaFields = result.map(f => fields.find(g => g.name == f) as SpaceProperty).filter((f) => f && (f.type == "fileprop")).reduce((p, c) => {
+    
+    const { value } = parseFieldValue(c.value, c.type);
+    return {...p, [c.name]: runFormulaWithContext(runContext, paths, spaceMap, value, properties, {..._row,
+    
+    ...filteredFrontmatter,
+    ...tagData,
+
+    ...relationFields,
+    ...aggregateFields,
+    ...flexFields, ...p}, path, true)};
+    
+  }, {});
   return {
     ..._row,
     
@@ -193,7 +269,12 @@ export const linkContextRow = (
 const rowsForAggregate = (fieldValue: Record<string, any>, fields: SpaceProperty[], spaceMap: IndexMap, _row: Record<string, string>, contextsMap: Map<string, ContextState>, relationFields: Record<string, string>, pathState: PathState) => {
   let rows = [];
     const column = fieldValue?.field;
-    if (fieldValue.schema) {
+    
+    // Handle space-based aggregates
+    if (fieldValue.space && fieldValue.schema) {
+        const contextData = contextsMap.get(fieldValue.space);
+        rows = contextData?.mdb?.[fieldValue.schema]?.rows ?? [];
+    } else if (fieldValue.schema) {
         rows = (contextsMap.get(pathState.path)?.mdb[fieldValue.schema]?.rows ?? []);
     } else if (fieldValue?.ref == '$items') {
       rows = (contextsMap.get(_row[PathPropertyName])?.contextTable?.rows ?? []);
@@ -214,5 +295,49 @@ const rowsForAggregate = (fieldValue: Record<string, any>, fields: SpaceProperty
       rows = propValues
       .map((f) => (contextsMap.get(spacePath)?.contextTable?.rows ?? []).find(g => g[PathPropertyName] == f))
     }
+
+    // Apply filters if they exist
+    if (fieldValue.filters && fieldValue.filters.length > 0) {
+      const cols = fieldValue.schema 
+        ? contextsMap.get(fieldValue.space || pathState.path)?.mdb?.[fieldValue.schema]?.cols
+        : fieldValue.ref == '$items' 
+          ? contextsMap.get(_row[PathPropertyName])?.contextTable?.cols
+          : (() => {
+              const refField = fields.find(f => f.name == fieldValue?.ref);
+              if (!refField) return [];
+              const refFieldValue = parseFieldValue(refField.value, refField.type);
+              return contextsMap.get(refFieldValue?.space)?.contextTable?.cols;
+            })();
+      
+      if (cols) {
+        rows = filterRowsByGroups(rows, fieldValue.filters, cols, {});
+      }
+      
+    }
+
     return rows.map((f) => f?.[column] ?? '')
+}
+
+// Helper function to filter rows by filter groups
+const filterRowsByGroups = (rows: DBRow[], filterGroups: FilterGroupDef[], cols: SpaceProperty[], properties: Record<string, any>) => {
+  
+  return rows.filter(row => {
+    return filterGroups.every((group) => {
+      const filters = group.filters || [];
+      
+      if (group.type === 'any') {
+        // OR logic - at least one filter must pass
+        return filters.length === 0 || filters.some((filter) => {
+          const col = cols.find(c => c.name === filter.field);
+          return col ? filterReturnForCol(col, filter, row, properties) : true;
+        });
+      } else {
+        // AND logic - all filters must pass
+        return filters.every((filter) => {
+          const col = cols.find(c => c.name === filter.field);
+          return col ? filterReturnForCol(col, filter, row, properties) : true;
+        });
+      }
+    });
+  });
 }

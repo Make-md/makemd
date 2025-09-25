@@ -176,10 +176,34 @@ export class FilesystemMiddleware {
     }
 
     public async newFile (parent: string, name: string, type: string, content?: any) : Promise<AFile> {
+        // Construct the full path: parent/name.type
+        const fullName = name.includes('.') ? name : `${name}.${type}`;
+        const fullPath = parent ? `${parent}/${fullName}` : fullName;
 
+        // Find the appropriate file type adapter for this file type
         const adapter = this.filetypes.find(f => f.supportedFileTypes.includes(type));
-        if (adapter)
+        if (adapter?.newFile) {
             return adapter.newFile(parent, name, type, content);
+        }
+
+        // If no specific file type adapter is found, use the default filesystem adapter
+        // First ensure the parent directory exists
+        if (parent && !(await this.primary.fileExists(parent))) {
+            await this.primary.createFolder(parent);
+        }
+
+        // Create the file using the primary (default) filesystem adapter
+        const fileContent = content || '';
+        if (typeof fileContent === 'string') {
+            await this.primary.writeTextToFile(fullPath, fileContent);
+        } else if (fileContent instanceof ArrayBuffer) {
+            await this.primary.writeBinaryToFile(fullPath, fileContent);
+        } else {
+            await this.primary.writeTextToFile(fullPath, '');
+        }
+
+        // Return the created file
+        return await this.primary.getFile(fullPath);
     }
 
     public newFileFragment (file: AFile, fragmentType: string, name: string, content: any, options?: {[key: string]: any}) {

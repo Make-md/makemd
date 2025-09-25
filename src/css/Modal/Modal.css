@@ -60,6 +60,40 @@
     text-align: left;
     line-height: 1.3;
 }
+
+/* Title input for context create modal */
+.mk-modal-title-container {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.mk-modal-title-input {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 12px;
+    border: 1px solid var(--mk-ui-border);
+    border-radius: 4px;
+    font-size: var(--font-ui-large);
+    font-weight: var(--font-semibold);
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: var(--mk-ui-background);
+    color: var(--mk-ui-text);
+}
+
+.mk-modal-title-input:focus {
+    outline: none;
+    border-color: var(--mk-ui-border-active);
+    background: var(--mk-ui-background-active);
+}
+
+.mk-modal-title-input:empty::before {
+    content: attr(data-ph);
+    color: var(--mk-ui-text-tertiary);
+    font-weight: normal;
+}
 .mk-modal:before, .mk-palette:before {
     content: '';
     position: absolute;
@@ -864,4 +898,54 @@ display: flex;
 .mk-add-existing-button:hover {
   background: var(--mk-ui-background-hover);
   border-color: var(--mk-ui-border);
+}
+
+/* Context Create Item Modal Styles */
+.mk-context-create-item-modal .mk-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* Add gaps between form fields */
+  width: 100%;
+}
+
+.mk-context-create-item-modal .mk-form-field {
+  width: 100%;
+  margin-bottom: 0; /* Keep margin removed since we use gap */
+}
+
+.mk-context-create-item-modal .mk-modal-title-input {
+  border: none; /* Remove border from title input */
+  border-radius: 0;
+  border-bottom: 1px solid var(--mk-ui-border);
+  padding: 12px 0;
+  background: transparent;
+}
+
+.mk-context-create-item-modal .mk-modal-title-input:focus {
+  border-color: var(--mk-ui-border-active);
+  background: transparent;
+}
+
+.mk-form-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mk-form-field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mk-form-container .mk-path-context-field {
+  width: 100%;
+  min-width: 300px;
+}
+
+.mk-field-error {
+  color: var(--text-error);
+  font-size: 12px;
+  margin-top: 4px;
 }

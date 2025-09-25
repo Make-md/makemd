@@ -14,6 +14,8 @@ import { Focus } from "./focus";
 import { IndexMap } from "./indexMap";
 import { FrameRoot, MDBFrames } from "./mframe";
 import { ContextState, PathState, SpaceState, SuperstateEvent } from "./PathState";
+
+export type { ContextState, PathState, SpaceState, SuperstateEvent };
 import { FilterGroupDef, SpaceDefinition } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
 import { SpaceManagerInterface } from "./spaceManager";

@@ -317,3 +317,23 @@ if (dontExpand) {
     // Return null if the parent is not found
     return null;
   }
+
+  export const findNode = (tree: FrameTreeNode, targetId: string, parentId: string = null): FrameTreeNode | null => {
+    // Check if the current node has the target id among its children
+    for (const child of tree.children) {
+      if (child.id === targetId) {
+        return child;
+      }
+    }
+    
+    // Recursively check each child node
+    for (const child of tree.children) {
+      const foundParent = findNode(child, targetId, tree.id);
+      if (foundParent) {
+        return foundParent;
+      }
+    }
+    
+    // Return null if the parent is not found
+    return null;
+  }

@@ -4,6 +4,7 @@ import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 import { displayTextForType } from 'core/utils/displayTextForType';
 import { getPaletteColors } from '../utils';
 import { ScatterPlotData } from '../../transformers';
+import { formatNumber } from '../formatNumber';
 
 export class ScatterPlotUtility {
   static render(context: RenderContext): void {
@@ -322,8 +323,8 @@ export class ScatterPlotUtility {
             .text((d: any) => {
               const xVal = d[xEncoding.field];
               const yVal = d[yEncoding.field];
-              const xFormatted = Number.isInteger(Number(xVal)) ? xVal : Number(xVal).toFixed(1);
-              const yFormatted = Number.isInteger(Number(yVal)) ? yVal : Number(yVal).toFixed(1);
+              const xFormatted = typeof xVal === 'number' ? formatNumber(xVal) : xVal;
+              const yFormatted = typeof yVal === 'number' ? formatNumber(yVal) : yVal;
               return `(${xFormatted}, ${yFormatted})`;
             });
           
@@ -525,8 +526,8 @@ export class ScatterPlotUtility {
             const y = getYPosition(d, yEncoding);
             const radius = sizeField && sizeScale ? sizeScale(d[sizeField]) : defaultSize;
             
-            const xFormatted = Number.isInteger(Number(xValue)) ? xValue : Number(xValue).toFixed(1);
-            const yFormatted = Number.isInteger(Number(yValue)) ? yValue : Number(yValue).toFixed(1);
+            const xFormatted = typeof xValue === 'number' ? formatNumber(xValue) : xValue;
+            const yFormatted = typeof yValue === 'number' ? formatNumber(yValue) : yValue;
             ctx.fillText(`(${xFormatted}, ${yFormatted})`, x, y - radius - 5);
           });
         });
@@ -723,7 +724,7 @@ export class ScatterPlotUtility {
         .attr('text-anchor', 'middle')
         .attr('font-size', '10px')
         .attr('fill', 'var(--mk-ui-text-primary)')
-        .text(d => d.label || `(${d.x.toFixed(1)}, ${d.y.toFixed(1)})`);
+        .text(d => d.label || `(${formatNumber(d.x)}, ${formatNumber(d.y)})`);
     }
     
     // Store tooltip reference for cleanup

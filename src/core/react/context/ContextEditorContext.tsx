@@ -51,6 +51,7 @@ import {
 } from "../../utils/contexts/predicate/predicate";
 import { FramesMDBContext } from "./FramesMDBContext";
 import { SpaceContext } from "./SpaceContext";
+import { useMKitContext } from "./MKitContext";
 type ContextEditorContextProps = {
   dbSchema: SpaceTableSchema;
   sortedColumns: SpaceTableColumn[];
@@ -142,6 +143,9 @@ export const ContextEditorProvider: React.FC<
     spaceState: spaceCache,
   } = useContext(SpaceContext);
 
+  // Check if we're in MKit preview mode
+  const mkitContext = useMKitContext();
+
   const [schemaTable, setSchemaTable] = useState<DBTable>(null);
   const [contextTable, setContextTable] = useState<SpaceTables>({});
   const [tableData, setTableData] = useState<SpaceTable>(null);
@@ -152,6 +156,11 @@ export const ContextEditorProvider: React.FC<
   const [editMode, setEditMode] = useState<number>(0);
   const contextPath =
     props.source ?? frameSchema?.def?.context ?? spaceInfo?.path;
+
+  // Get kit space data if available
+  const kitSpaceData = mkitContext.isPreviewMode && contextPath
+    ? mkitContext.getSpaceByFullPath(contextPath)
+    : null;
 
   const dbSchema: SpaceTableSchema = useMemo(() => {
     if (frameSchema && frameSchema.def?.db) {
@@ -415,8 +424,8 @@ export const ContextEditorProvider: React.FC<
       );
   }, [cols, predicate]);
   const filteredData = useMemo(
-    () =>
-      data
+    () => {
+      const filtered = data
         .filter((f) => {
           return (predicate?.filters ?? []).reduce((p, c) => {
             const row = cols.some(
@@ -463,7 +472,15 @@ export const ContextEditorProvider: React.FC<
                 )
               : p;
           }, 0);
-        }),
+        });
+
+      // Apply limit if set (0 means show all)
+      if (predicate?.limit > 0) {
+        return filtered.slice(0, predicate.limit);
+      }
+
+      return filtered;
+    },
     [predicate, data, cols, searchString]
   );
 

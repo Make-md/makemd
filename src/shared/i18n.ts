@@ -376,6 +376,12 @@ class I18nLoader {
       },
       buttons: {
         add: "Add",
+        calculate: "Calculate",
+        createNew: "Create New",
+        import: "Import",
+        cancel: "Cancel",
+        create: "Create",
+        select: "Select",
         togglePin: "Toggle Pin",
         refresh: "Refresh",
         showHidden: "Show Hidden",
@@ -410,7 +416,6 @@ class I18nLoader {
         addProperty: "Add Property",
         editProperty: "Edit Property",
         addContext: "Add Tag",
-        cancel: "Cancel",
         search: "Search",
         delete: "Delete",
         toggleFlow: "Toggle Flow",
@@ -484,7 +489,12 @@ class I18nLoader {
         noneOf: "is none of",
         checked: "is checked",
         unchecked: "is unchecked",
+        isNotEmpty: "is not empty",
         isEmpty: "is empty",
+        dateBefore: 'is before',
+        dateAfter: 'is after',
+        isSameDate: 'is same day as',
+        isSameDateAsToday: 'is today',
       },
       aggregateTypes: {
       },
@@ -630,7 +640,6 @@ class I18nLoader {
         contextMaker: "Context Maker",
         select: "Select",
         pinnedItems: "Pinned Items",
-        allDay: "all day",
         makeAStaticWebVersion: "Make a static web version of",
         withNavigator: "With Navigator",
         withoutNavigator: "Without Navigator",
@@ -692,6 +701,8 @@ class I18nLoader {
         filterItemSelectPlaceholder: "Select Filter",
         imageSelectPlaceholder: "Select an image or paste a URL",
         imageNotFoundPlaceholder: "No Images Found",
+        pastePaletteJSON: "Paste your palette JSON here...",
+        newPaletteName: "New palette name...",
         syncFrontmatterProperty: "Sync Frontmatter Property",
         newProperty: "New Property",
         newPropertyShort: "New Property",
@@ -732,7 +743,21 @@ class I18nLoader {
         manageStickerSets: "Manage sticker sets available in your vault. Add custom sticker sets from folders containing SVG or image files.",
         showingFirst: "Showing first ${1} of ${2} icons",
         iconsIn: "Icons in ${1}",
+        dropIconsHere: "Drop icons here to create a new icon set",
+        dropPalettesHere: "Drop JSON palette files here to import",
+        dropLanguagePackHere: "Drop JSON language pack here to import",
+        dragDropCommunityPacks: "Drag and drop packs from the community here to import",
+        dropIconPackHere: "Drop icon pack here to import",
+        importIconPacksFromCommunity: "Import icon packs downloaded from the community",
+        dropColorPaletteHere: "Drop color palette here to import",
+        importPalettesFromCommunity: "Import palettes downloaded from the community",
+        dropLanguagePackHereTitle: "Drop language pack here to import",
+        importLanguagePacksFromCommunity: "Import language packs downloaded from the community",
+        findDownloadIconPacks: "Find and download icon packs from the community at",
+        findDownloadColorPalettes: "Find and download color palettes from the community at",
+        findDownloadLanguagePacks: "Find and download language packs from the community at",
         systemName: "System Name",
+        manageGlobalTemplates: "Manage Global Templates",
         addExtension: "Add Rule",
         saveView: "Save View",
         saveTable: "Save Table",
@@ -797,6 +822,12 @@ class I18nLoader {
         ungroup: "Ungroup",
         duplicate: "Duplicate",
         delete: "Delete",
+        templates: "Templates",
+        noNotesInside: "No Notes Inside",
+        list: "List",
+        none: "None",
+        language: "Language",
+        allDay: "All Day",
         auto: "auto",
         addKit: "Add Kit",
         kitLocation: "Kit Location",
@@ -823,7 +854,6 @@ class I18nLoader {
         createVisualization: "Create Visualization",
         newVisualization: "New Visualization",
         deleteSpaceFiles: "Delete Space Files",
-        noNotesInside: "No Notes Inside",
         noOptionsFound: "No options found",
         openTable: "Open Table",
         selectProperty: "Select Property",
@@ -943,8 +973,13 @@ class I18nLoader {
           addGradientStop: "Add gradient stop",
           stopPosition: "Stop position (%)",
           removeGradientStop: "Remove selected gradient stop",
+          importPalette: "Import palette from JSON",
+          exportPalette: "Export palette to JSON",
+          invalidPaletteFormat: "Invalid palette file format. Must have 'name' and 'colors' array.",
+          invalidJSON: "Invalid JSON format",
         },
         ariaLabels: {
+          noColorApplied: "This element will have no color applied.",
           closeOnboarding: "Close onboarding",
           dataSource: "Data Source",
           chartType: "Chart Type",
@@ -1356,6 +1391,29 @@ class I18nLoader {
           minimal: "Minimal",
         },
       },
+      calendar: {
+        frequency: {
+          yearly: "Yearly",
+          monthly: "Monthly",
+          weekly: "Weekly",
+          daily: "Daily"
+        }
+      },
+      formulas: {
+        prop: {
+          description: "Get the value of a property",
+          paramLabel: "Property"
+        },
+        substring: {
+          description: "Get a part of a text"
+        },
+        if: {
+          description: "If condition is true return the first argument else return the second"
+        },
+        types: {
+          string: "String"
+        }
+      }
     }
     };
   }
@@ -1516,6 +1574,22 @@ type I18nStrings = {
   flowView: Record<string, string>;
   notice: Record<string, string>;
   settings: Record<string, any>;
+  calendar?: {
+    frequency?: Record<string, string>;
+  };
+  formulas?: {
+    prop?: {
+      description: string;
+      paramLabel: string;
+    };
+    substring?: {
+      description: string;
+    };
+    if?: {
+      description: string;
+    };
+    types?: Record<string, string>;
+  };
 };
 
 export default i18nProxy as I18nStrings;

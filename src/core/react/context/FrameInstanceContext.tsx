@@ -87,6 +87,7 @@ export const FrameInstanceProvider: React.FC<
     contexts: {},
   });
   const [rootProps, setRootProps] = useState<FrameTreeProp>(props.props);
+  
   useEffect(() => {
     setRootProps((p) => {
       if (_.isEqual(p, props.props)) return p;
@@ -176,6 +177,7 @@ export const FrameInstanceProvider: React.FC<
       const newRoot = _.cloneDeep(root);
       const runID = uniqueId();
       activeRunID.current = runID;
+      
       executeTreeNode(
         newRoot,
         {
@@ -199,6 +201,7 @@ export const FrameInstanceProvider: React.FC<
           styleAst: defaultStyleAst,
         }
       ).then((s) => {
+        
         setInstance((p) => {
           return s;
         });

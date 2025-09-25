@@ -1,6 +1,7 @@
 import { VisualizationConfig } from "shared/types/visualization";
 import { ScatterPlotData, ScatterPlotDataPoint } from "../types/ChartDataSchemas";
 import { SpaceProperty } from "shared/types/mdb";
+import { ensureCorrectEncodingType } from "../utils/inferEncodingType";
 
 /**
  * Transforms raw data into the format expected by scatter plot renderer
@@ -25,6 +26,19 @@ export class ScatterPlotTransformer {
 
     let xEncoding = Array.isArray(config.encoding.x) ? config.encoding.x[0] : config.encoding.x;
     let yEncoding = Array.isArray(config.encoding.y) ? config.encoding.y[0] : config.encoding.y;
+    
+    // Ensure correct encoding types based on field properties
+    if (xEncoding && tableProperties) {
+      const xProperty = tableProperties.find(p => p.name === xEncoding.field);
+      const xValues = rawData.map(d => d[xEncoding.field]);
+      xEncoding = ensureCorrectEncodingType(xEncoding, xProperty, xValues);
+    }
+    
+    if (yEncoding && tableProperties) {
+      const yProperty = tableProperties.find(p => p.name === yEncoding.field);
+      const yValues = rawData.map(d => d[yEncoding.field]);
+      yEncoding = ensureCorrectEncodingType(yEncoding, yProperty, yValues);
+    }
     
     const sizeEncoding = config.encoding.size;
     const colorEncoding = config.encoding.color;

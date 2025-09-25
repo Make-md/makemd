@@ -11,6 +11,7 @@ export const preprocessCode = (code: unknown, oldName: string, newName: string):
   let string;
   let codeBlock: string = ensureString(code);
   const isMultiLine = codeBlock.includes('\n');
+  if (codeBlock.startsWith('{') && codeBlock.endsWith('}')) codeBlock = `(${codeBlock})`
   let hasReturn = false;
   if (isMultiLine) {
       // If the code block is multi-line, prepend the last line with `return`.
@@ -57,6 +58,7 @@ export const preprocessCode = (code: unknown, oldName: string, newName: string):
 
     string = generate(ast).trimEnd();
   } catch (e){
+    console.log(codeBlock, e)
         string = `"error"`
   }
 

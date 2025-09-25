@@ -69,6 +69,7 @@ export const validatePredicate = (
       : [],
     colsSize: prevPredicate.colsSize ?? {},
     colsCalc: prevPredicate.colsCalc ?? {},
+    limit: typeof prevPredicate.limit === 'number' && prevPredicate.limit >= 0 ? prevPredicate.limit : 0,
   };
 };
 
@@ -78,5 +79,6 @@ export const defaultPredicateForSchema = (schema: SpaceTableSchema) => {
     : {
         ...defaultPredicate,
         view: "table",
+        limit: 0,
       };
 };

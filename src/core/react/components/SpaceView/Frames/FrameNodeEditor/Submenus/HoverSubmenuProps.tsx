@@ -6,7 +6,7 @@ import { PathState } from "shared/types/PathState";
 
 export type HoverSubmenuProps = {
   superstate: Superstate;
-  exitMenu: () => void;
+  exitMenu: (e: React.MouseEvent) => void;
   saveStyleValue: (key: string, value: string) => void;
   selectedNode: FrameNode;
   setHoverMenu: (menu: number) => void;
@@ -14,10 +14,13 @@ export type HoverSubmenuProps = {
   frameProps: FrameTreeProp;
   fields: SpaceProperty[];
   state: FrameNodeState;
+  updateNode: (node: FrameNode, updates: Partial<FrameNode>) => void;
+  styleState?: string; // Optional state prefix for styles (e.g., "hover", "focus", etc.)
+  instance: FrameRunInstance;
+  pathState: PathState;
 };
 
 export type PropertySubmenuProps = HoverSubmenuProps & {
-  pathState: PathState;
   frameProperties: SpaceProperty[];
   instance: FrameRunInstance;
 };

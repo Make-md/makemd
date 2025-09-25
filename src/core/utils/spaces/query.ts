@@ -1,4 +1,5 @@
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
+import { isString } from "lodash";
 import { PathState } from "shared/types/PathState";
 import { FilterDef, FilterGroupDef, JoinDefGroup } from "shared/types/spaceDef";
 import { parseProperty } from "utils/parsers";
@@ -42,8 +43,9 @@ const filterContext = ( paths: PathState[], def: FilterDef, props: Record<string
   
     if (filterFn) {
       const value =  (def.fType == 'property') ? props[def.value] : def.value;
-      
-      result = filterFn.fn(parseProperty(field, fm[field]), value);
+      const propValue = parseProperty(field, fm[field])
+      if (isString(value) && isString(propValue))
+      result = filterFn.fn(propValue, value);
     }
     return result;
   })
@@ -64,7 +66,9 @@ const filterFM = ( paths: PathState[], def: FilterDef, props: Record<string, str
   
     if (filterFn) {
       const value =  (def.fType == 'property') ? props[def.value] : def.value;
-      result = filterFn.fn(parseProperty(def.field, fm[def.field]), value);
+      const propValue = parseProperty(def.field, fm[def.field])
+      if (isString(value) && isString(propValue))
+      result = filterFn.fn(propValue, value);
     }
     return result;
   })
@@ -89,7 +93,7 @@ const filterPathCache = (paths: PathState[], def: FilterDef, props: Record<strin
   
     if (filterFn) {
       const defValue =  (def.fType == 'property') ? props[def.value] : def.value;
-      
+      if (isString(value) && isString(defValue))
       result = filterFn.fn(value, defValue);
      
     }
@@ -107,6 +111,7 @@ const filterPathProperties = (paths: PathState[], def: FilterDef, props: Record<
       let result = true;
       if (filterFn) {
         const value =  (def.fType == 'property') ? props[def.value] : def.value;
+        if (isString(value) && isString(f.metadata?.[def.type]?.[def.field]))
         result = filterFn.fn(f.metadata?.[def.type]?.[def.field], value);
       }
       return result;

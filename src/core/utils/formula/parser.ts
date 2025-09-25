@@ -325,7 +325,7 @@ export const runFormulaWithContext = (runContext: math.MathJsInstance, paths: Ma
 		}
 	} catch (e) {
 		value = ""
-		if (emitError) throw(e)
+		if (emitError) console.log(e)
 	}
 	return  value
 }

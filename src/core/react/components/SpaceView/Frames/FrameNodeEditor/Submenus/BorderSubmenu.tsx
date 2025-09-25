@@ -64,16 +64,7 @@ export const BorderSubmenu = (props: HoverSubmenuProps) => {
   return (
     <>
       <div className="mk-divider"></div>
-      <div
-        style={{
-          fontSize: "11px",
-          color: "var(--mk-ui-text-tertiary)",
-          marginLeft: "8px",
-          marginRight: "4px",
-        }}
-      >
-        {i18n.editor.stroke}
-      </div>
+      <div className="mk-frame-submenu-label">{i18n.editor.stroke}</div>
       <div
         className="mk-editor-frame-node-button"
         onClick={(e) => showOutlineStyleMenu(e)}
@@ -98,7 +89,7 @@ export const BorderSubmenu = (props: HoverSubmenuProps) => {
         onClick={(e) => {
           showColorMenu(e, "outlineColor");
         }}
-        className="mk-color"
+        className="mk-editor-frame-color"
         style={{
           background: props.state.styles?.["outlineColor"],
         }}

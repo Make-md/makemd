@@ -35,8 +35,9 @@ export const FramePadding = (props: {
   useEffect(() => {
     const getNumericValue = (type: string) => {
       if (!props.styles[type]) return null;
-      const match = props.styles[type]
-        ? props.styles[type].match(/^(\d+(?:\.\d+)?)\s?([a-zA-Z%]+)$/)
+      const styleValue = String(props.styles[type]);
+      const match = styleValue
+        ? styleValue.match(/^(\d+(?:\.\d+)?)\s?([a-zA-Z%]+)$/)
         : null;
       const numericValue = Math.max(match ? parseInt(match[1]) : 0, 8);
       // const unit = match && match[2] ? match[2] : "px";

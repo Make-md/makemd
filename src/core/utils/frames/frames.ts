@@ -1,5 +1,6 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { SpaceManager } from "core/spaceManager/spaceManager";
+import { isInteger, isString } from "lodash";
 import { DBRow, SpaceProperty } from "shared/types/mdb";
 import { FrameNode, FrameRoot, FrameTreeProp, MFrame } from "shared/types/mframe";
 import { SpaceInfo } from "shared/types/spaceInfo";
@@ -39,10 +40,12 @@ export const objectIsConst = (objString: string, type: string): boolean => {
 }
 
 export const stringIsConst = (str: string): boolean => {
-  if (!str) return false;
+  if (!str || isInteger(str)) return true;
+  if (!isString(str)) return false;
+  
   // Check for quotes at the start and end without any quotes inside
   const hasQuotesAtStartEndOnly = /^["'](?:[^"\\]|\\.)*["'](?:;)?$/.test(str);
-  const fixedStr = str?.replace(/;+$/, "");
+  const fixedStr =  str?.replace(/;+$/, "");
   // Check for number by trying to parse string into a number and checking if it's NaN
   const isNumber = !isNaN(parseFloat(fixedStr)) && !isNaN(fixedStr as any);
   return hasQuotesAtStartEndOnly || isNumber || fixedStr.startsWith('[') && fixedStr.endsWith(']') || fixedStr == 'false' || fixedStr == 'true' || str == null || str == "";

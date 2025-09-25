@@ -38,7 +38,7 @@ export type FrameExecutableContext = {
 };
 export type FrameContexts = { [key: string]: FrameTreeProp; };
 export type FrameStateKeys = 'props' | 'actions' | 'styles';
-export type FrameNodeState = Partial<{ props: FrameTreeProp; actions: FrameTreeProp; styles: FrameTreeProp; }>;
+export type FrameNodeState = Partial<{ props: FrameTreeProp; actions: FrameTreeProp; styles: FrameTreeProp; interactions: FrameTreeProp }>;
 export type FrameState = { [key: string]: FrameNodeState; } & { $contexts?: FrameContexts; $api?: IAPI; };
 export type FrameStateUpdate = { newState: FrameState; updatedState: FrameState; };
 export enum FrameEditorResizeMode {

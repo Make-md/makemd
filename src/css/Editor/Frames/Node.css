@@ -16,7 +16,7 @@ body:not(.is-mobile) .mk-frame-props-editor {
     display: flex;
     flex-direction: column;
     --icon-container-size: 16px;
-    overflow: scroll;
+    overflow: auto;
     --icon-size: 14px;
     align-items: flex-start;
     height: 100%;
@@ -91,6 +91,7 @@ body:not(.is-mobile) .mk-frame-props-editor {
 }
 .mk-editor-frame-properties > div {
   padding: 8px;
+  overflow:hidden;
 }
 .mk-editor-frame-properties > .mk-editor-actions-name {
   border-bottom: thin solid var(--mk-ui-border);
@@ -167,7 +168,25 @@ body:not(.is-mobile) .mk-frame-props-editor {
     margin: 0;
   }
 
-  
+  .mk-editor-frame-node-button-back {
+    margin: 4px;
+    padding: 4px;
+    border-radius: 24px;
+    background-color: var(--mk-ui-background-menu-hover);
+    display: flex;
+    font-size: 13px;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    z-index: var(--layer-tooltip)
+  }
+  .mk-editor-frame-color {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  border: thin solid var(--mk-ui-divider);
+  margin: 0 4px;
+  }
   .mk-editor-frame-node-selector .mk-mark-option >div:first-child {
     flex: 1;
     min-width: 80px;
@@ -204,7 +223,7 @@ body:not(.is-mobile) .mk-frame-props-editor {
   .mk-editor-frame-node-selector .mk-divider {
     border-left: thin solid var(--mk-ui-divider);
     width: 1px;
-    height: 100%;
+    height: 60%;
   }
   
   .mk-editor-frame-property .mk-cell-text {

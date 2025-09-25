@@ -9,7 +9,7 @@ export type Filter = {
 
   export type Predicate = {
     view: string;
-    
+
     listView: string;
     listItem: string;
     listGroup: string;
@@ -24,6 +24,7 @@ export type Filter = {
     colsHidden: string[];
     colsSize: Record<string, number>;
     colsCalc: Record<string, string>;
+    limit: number;
   };
 
   export type Sort = {

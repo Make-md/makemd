@@ -22,6 +22,7 @@ export const PathCrumb = (
         : props.path,
     [props.source, props.path]
   );
+  
 
   const [cache, setCache] = useState<PathState>(
     props.superstate.pathsIndex.get(path)

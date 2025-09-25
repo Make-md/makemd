@@ -1,5 +1,6 @@
 import { Superstate, i18n, i18nLoader } from "makemd-core";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 import { SettingsProps } from "./types";
 
 export const LanguageSettings = ({ superstate }: SettingsProps) => {
@@ -13,6 +14,7 @@ export const LanguageSettings = ({ superstate }: SettingsProps) => {
   const [importError, setImportError] = useState("");
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [originalStrings, setOriginalStrings] = useState<Record<string, string>>({});
+  const [dropHighlighted, setDropHighlighted] = useState(false);
 
   // Load lang.json on mount
   React.useEffect(() => {
@@ -256,6 +258,91 @@ export const LanguageSettings = ({ superstate }: SettingsProps) => {
     }
   };
 
+  const handleFileDrop = useCallback(async (files: File[]) => {
+    try {
+      // Process dropped JSON files
+      for (const file of files) {
+        if (file.type === 'application/json' || file.name.endsWith('.json')) {
+          const text = await file.text();
+          const importData = JSON.parse(text);
+
+          // Flatten the imported data to match our override format
+          const flatImported: Array<{ key: string; value: string }> = [];
+          const flatten = (obj: any, prefix = "") => {
+            for (const key in obj) {
+              const fullKey = prefix ? `${prefix}.${key}` : key;
+              if (typeof obj[key] === "object" && obj[key] !== null && !Array.isArray(obj[key])) {
+                flatten(obj[key], fullKey);
+              } else if (typeof obj[key] === "string") {
+                flatImported.push({ key: fullKey, value: obj[key] });
+              }
+            }
+          };
+          flatten(importData);
+
+          const overrides: Record<string, string> = {};
+
+          // Compare with original values and only store overrides
+          flatImported.forEach(({ key, value }) => {
+            const originalValue = originalStrings[key] || "";
+
+            if (value !== originalValue) {
+              overrides[key] = value;
+            }
+          });
+
+          setModifiedStrings(overrides);
+          superstate.ui.notify(`Imported language pack from ${file.name} successfully`);
+
+          // Save the changes
+          const langPath = ".space/lang.json";
+
+          // Ensure .space directory exists
+          try {
+            await superstate.spaceManager.createSpace(".space", "", {});
+          } catch (e) {
+            // Directory might already exist
+          }
+
+          // Write the lang.json file
+          await superstate.spaceManager.writeToPath(
+            langPath,
+            JSON.stringify(overrides, null, 2)
+          );
+
+          // Apply the overrides to the current session
+          i18nLoader.setOverridesFromFile(overrides);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to import language pack from dropped files:', e);
+      superstate.ui.notify('Failed to import language pack from dropped files', 'error');
+    }
+  }, [superstate, originalStrings]);
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    handleFileDrop(acceptedFiles);
+    setDropHighlighted(false);
+  }, [handleFileDrop]);
+
+  const onDragEnter = useCallback(() => {
+    setDropHighlighted(true);
+  }, []);
+
+  const onDragLeave = useCallback(() => {
+    setDropHighlighted(false);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    onDragEnter,
+    onDragLeave,
+    accept: {
+      'application/json': ['.json']
+    },
+    noClick: true
+  });
+
   const importJSON = () => {
     try {
       setImportError("");
@@ -314,6 +401,42 @@ export const LanguageSettings = ({ superstate }: SettingsProps) => {
   return (
     <div className="mk-setting-section">
       <h2>Language</h2>
+
+      <div className="mk-community-callout" {...getRootProps()} style={{
+        position: 'relative',
+        border: dropHighlighted ? '2px dashed var(--interactive-accent)' : undefined,
+        backgroundColor: dropHighlighted ? 'var(--background-modifier-hover)' : undefined
+      }}>
+        <input {...getInputProps()} />
+        <div className="mk-callout-icon">💡</div>
+        <div className="mk-callout-content">
+          <div className="mk-callout-text">
+            {dropHighlighted ? (
+              <>
+                <strong>Drop language pack here to import</strong>
+                <br />
+                Import language packs downloaded from the community
+              </>
+            ) : (
+              <>
+                Find and download language packs from the community at{" "}
+                <span
+                  className="mk-callout-url"
+                  onClick={() =>
+                    window.open("https://make.md/community", "_blank")
+                  }
+                  style={{ cursor: "pointer" }}
+                >
+                  https://make.md/community
+                </span>
+                <br />
+                <small style={{ opacity: 0.7 }}>Drag and drop packs from the community here to import</small>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="mk-setting-group">
         <div className="mk-setting-item">
           <div

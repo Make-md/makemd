@@ -13,7 +13,7 @@ import {
   InteractionState,
   parseStylesForState,
 } from "core/utils/frames/stateStyles";
-import { Superstate } from "makemd-core";
+import { API, Superstate } from "makemd-core";
 import React, {
   memo,
   useContext,
@@ -60,10 +60,34 @@ import { ImageNodeView } from "./ImageNodeView";
 import { InputNodeView } from "./InputNodeView";
 import { NewNodeView } from "./NewNodeView";
 import { TextNodeView } from "./TextNodeView";
+import { ViewNodeView } from "./ViewNodeView";
 import { VisualizationNodeView } from "./VisualizationNodeView";
 
 export const defaultFrameStyles = {
   position: "relative",
+};
+
+// Helper function to execute actions - exactly matching FrameView implementation
+const executeAction = (
+  action: any,
+  event: React.MouseEvent,
+  context: any,
+  frameState: FrameState,
+  saveState: (state: FrameState) => void,
+  api: API
+) => {
+  
+  if (typeof action === "function") {
+    // Current behavior: execute function directly
+    action(event, null, frameState, saveState, api);
+  } else if (typeof action === "object" && action.command) {
+    // New behavior: execute command with parameters
+    const parameters = {
+      ...action.parameters,
+     
+    };
+    api.commands.run(action.command, parameters, frameState.$contexts);
+  }
 };
 const FrameEditorInner = memo(function FrameEditorInner(props: {
   treeNode: FrameTreeNode;
@@ -108,6 +132,8 @@ const FrameEditorInner = memo(function FrameEditorInner(props: {
           containerRef={props.containerRef}
           source={pathState.path}
         ></ContextNodeView>
+      ) : treeNode.node.type == "view" ? (
+        <ViewNodeView {...nodeProps} source={pathState.path}></ViewNodeView>
       ) : treeNode.node.type == "flow" ? (
         <FlowNodeView
           {...nodeProps}
@@ -326,9 +352,16 @@ export const FrameEditorNodeView = (props: {
     });
   };
 
-  const clickable = true; // You may want to adjust this based on your logic
+  // Check if we can click - matching FrameView implementation
+  const canClick =
+    props.treeNode.node.interactions?.onClick &&
+    (typeof state.actions?.[props.treeNode.node.interactions?.onClick] ==
+      "function" ||
+      (typeof state.actions?.[props.treeNode.node.interactions?.onClick] ==
+        "object" &&
+        state.actions?.[props.treeNode.node.interactions?.onClick]?.command));
 
-  // Log the conditions for onClick assignment - removed to reduce clutter
+  // Debug logging for canClick
 
   const onClick =
     isSelectable &&
@@ -339,14 +372,14 @@ export const FrameEditorNodeView = (props: {
         }
       : props.treeNode.id == props.instance.exec.id && selection.length > 0
       ? undefined
-      : !selected && clickable && props.treeNode.node.interactions?.onClick
+      : !selected && canClick
       ? (e: React.MouseEvent) => {
-          if (
-            typeof state.actions?.[
-              props.treeNode.node?.interactions?.onClick
-            ] == "function"
-          ) {
-            state.actions?.[props.treeNode.node?.interactions?.onClick](
+          const action =
+            state.actions?.[props.treeNode.node?.interactions?.onClick];
+
+          if (action) {
+            executeAction(
+              action,
               e,
               null,
               props.instance.state,
@@ -358,21 +391,29 @@ export const FrameEditorNodeView = (props: {
           }
         }
       : undefined;
-  const doubleClick = props.treeNode.node.interactions?.onDoubleClick
+  const canDoubleClick =
+    props.treeNode.node.interactions?.onDoubleClick &&
+    (typeof state.actions?.[props.treeNode.node.interactions?.onDoubleClick] ==
+      "function" ||
+      (typeof state.actions?.[
+        props.treeNode.node.interactions?.onDoubleClick
+      ] == "object" &&
+        state.actions?.[props.treeNode.node.interactions?.onDoubleClick]
+          ?.command));
+
+  const doubleClick = canDoubleClick
     ? (e: React.MouseEvent) => {
-        if (
-          typeof state.actions?.[
-            props.treeNode.node.interactions?.onDoubleClick
-          ] == "function"
-        ) {
-          state.actions?.[props.treeNode.node.interactions?.onDoubleClick](
+        const action =
+          state.actions?.[props.treeNode.node.interactions?.onDoubleClick];
+        if (action) {
+          executeAction(
+            action,
             e,
             null,
             props.instance.state,
             (s: FrameState) => saveState(s, props.instance),
             props.superstate.api
           );
-          return;
         }
       }
     : undefined;
@@ -780,6 +821,7 @@ export const FrameEditorNodeView = (props: {
                   duplicateFrame={() => {
                     addNode(treeNode.node, treeNode.node);
                   }}
+                  instance={props.instance}
                   state={state}
                   deleteFrame={() => deleteNode(treeNode.node)}
                   fields={propertiesForNode(treeNode.node)}

@@ -4,6 +4,7 @@ import { getPaletteColors } from '../utils';
 import { displayTextForType } from 'core/utils/displayTextForType';
 import { GradientUtility, GradientConfig } from './GradientUtility';
 import { BarChartData } from '../../transformers';
+import { formatNumber } from '../formatNumber';
 
 export class BarChartUtility {
   static render(context: RenderContext): void {
@@ -145,7 +146,7 @@ export class BarChartUtility {
         const tooltipContent = `
           <div><strong>${d.category}</strong></div>
           ${d.series ? `<div>${d.series}</div>` : ''}
-          <div>Value: ${d.value.toFixed(2)}</div>
+          <div>Value: ${formatNumber(d.value)}</div>
         `;
         
         tooltip.html(tooltipContent)
@@ -497,7 +498,7 @@ export class BarChartUtility {
         .style('font-weight', '500')
         .text((d: any) => {
           const value = Number(d[yField]) || 0;
-          return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+          return formatNumber(value);
         });
     }
 
@@ -967,13 +968,13 @@ export class BarChartUtility {
         const value = d[1] - d[0];
         const yProp = context.tableProperties?.find(p => p.name === d.key);
         const formattedY = yProp ? displayTextForType(yProp, value, context.superstate) : 
-                          (Number.isInteger(value) ? value.toString() : value.toFixed(2));
+                          formatNumber(value);
         tooltipContent += `${formattedY}`;
         
         // Add series name
         tooltipContent += ` • ${d.key}`;
         
-        tooltipContent += `<br/><span style="color: ${resolveColor('var(--mk-ui-text-secondary)')};">Total: ${d[1].toFixed(2)}</span>`;
+        tooltipContent += `<br/><span style="color: ${resolveColor('var(--mk-ui-text-secondary)')};">Total: ${formatNumber(d[1])}</span>`;
         tooltipContent += `</div>`;
         tooltipContent += `</div>`;
 
@@ -1027,7 +1028,7 @@ export class BarChartUtility {
         .text((d: any) => {
           const value = d[1] - d[0];
           if (value === 0) return '';
-          return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+          return formatNumber(value);
         })
         .style('opacity', (d: any) => {
           // Hide label if segment is too small
@@ -1229,7 +1230,7 @@ export class BarChartUtility {
         ctx.font = `500 ${config.mark.dataLabels.fontSize || 11}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        const formattedValue = Number.isInteger(yValue) ? yValue.toString() : yValue.toFixed(1);
+        const formattedValue = formatNumber(yValue);
         ctx.fillText(formattedValue, x + barWidth / 2, y - 5);
         ctx.restore();
       }
@@ -1298,7 +1299,7 @@ export class BarChartUtility {
           ctx.font = `500 ${config.mark.dataLabels.fontSize || 11}px sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
-          const formattedValue = Number.isInteger(yValue) ? yValue.toString() : yValue.toFixed(1);
+          const formattedValue = formatNumber(yValue);
           ctx.fillText(formattedValue, x + barWidth / 2, y - 5);
           ctx.restore();
         }
@@ -1380,7 +1381,7 @@ export class BarChartUtility {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           const value = d[1] - d[0];
-          const formattedValue = Number.isInteger(value) ? value.toString() : value.toFixed(1);
+          const formattedValue = formatNumber(value);
           ctx.fillText(formattedValue, x + bandwidth / 2, y + height / 2);
           ctx.restore();
         }

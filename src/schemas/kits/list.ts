@@ -3,7 +3,7 @@ import { frameRootWithProps, kitWithProps } from "core/utils/frames/frames";
 import { FrameRoot } from "shared/types/mframe";
 import { contentNode, dataNode, flowNode, groupNode, iconNode, imageNode, inputNode, textNode } from "./base";
 import { deltaNode, slideNode, slidesNode } from "./slides";
-import { listItemNode, listNode, previewNode } from "./ui";
+import { checkboxNode, listItemNode, listNode, previewNode } from "./ui";
 
 export const fieldsView : FrameRoot = {
   id: 'fieldsView',
@@ -274,12 +274,10 @@ export const flowListItem: FrameRoot = {
       styles: {
         layout: `"column"`,
         overflow: `'hidden'`,
-        borderRadius: `'8px'`,
         width: `'100%'`,
         height: `'100%'`,
-        border: `'1px solid var(--mk-ui-border)'`,
-        boxShadow: `'var(--mk-shadow-card)'`,
-        sem: `'contextItem'`
+        padding: `'0'`,
+        sem: `'card'`
       },
       interactions: {
       onClick: 'select',
@@ -301,7 +299,7 @@ export const flowListItem: FrameRoot = {
                     { ...deltaNode, node: { ...deltaNode.node, ref: "$root" } },
                     {},
                     {
-                      background: `'var(--mk-ui-background-selected)'`,
+                      sem: `'card-selected'`,
                     }
                   ),
                 ],
@@ -316,7 +314,7 @@ export const flowListItem: FrameRoot = {
                     { ...deltaNode, node: { ...deltaNode.node, ref: "$root" } },
                     {},
                     {
-                      background: `'var(--mk-ui-background)'`,
+                      sem: `'card'`,
                     }
                   ),
                 ],
@@ -351,7 +349,7 @@ export const flowListItem: FrameRoot = {
           width: `'100%'`,
           height: `'80px'`,
           background: `'var(--mk-ui-background-contrast)'`,
-          // hidden: `$root.props.hideCover`
+          hidden: `!$contexts.$context['_isContext']`,
         }
       ),
       frameRootWithProps(
@@ -633,6 +631,7 @@ export const flowListItem: FrameRoot = {
       }, {
         borderRadius: `'4px'`,
         background: `'var(--background-secondary)'`,
+        hidden:  `!$contexts.$context['_isContext']`,
 
       }
       ),
@@ -661,7 +660,8 @@ export const flowListItem: FrameRoot = {
                 layout: `'row'`,
                 layoutAlign: `'w'`,
                 height: `'auto'`,
-                width: `'100%'`
+                width: `'100%'`,
+                flexWrap: `'wrap'`
               },
             },
             children:[
@@ -691,6 +691,258 @@ export const flowListItem: FrameRoot = {
       },
     ],
   }
+
+export const taskListItem = () : FrameRoot => ({
+  def: {
+    id: 'taskListItem',
+    type: 'listItem',
+  },
+  node: {
+    type: 'group',
+    id: '$root',
+    schemaId: '$root',
+    name: 'Task Item',
+    rank: 0,
+    props: {
+      _selected: `$root.props['_selectedIndexes']?.some(f => f == $contexts.$context['_index'])`,
+      _selectedIndexes: '[]',
+      _expanded: `false`,
+      _nestBy: ``,
+      completedField: `'completed'`,
+      dueField: `'due'`,
+      priorityField: `'priority'`,
+      fields: ``,
+      list: ``
+    },
+    styles: {
+      layout: `"column"`,
+      overflow: `'hidden'`,
+      width: `'100%'`,
+      layoutAlign: `'w'`,
+      alignItems: `'stretch'`,
+    },
+    types: {
+      completedField: 'option',
+      dueField: 'option',
+      priorityField: 'option',
+      _nestBy: 'text',
+      _expanded: 'boolean',
+      _selected: 'boolean',
+      fields: 'option-multi',
+      list: 'option'
+    },
+    propsValue: {
+      completedField: {
+        alias: 'Completed',
+        source: `$properties`,
+      },
+      dueField: {
+        alias: 'Due',
+        source: `$properties`,
+      },
+      list: {
+        alias: 'List',
+        source: `$properties`,
+      },
+      fields: {
+        alias: 'Fields',
+        source: `$properties`,
+      },
+      priorityField: {
+        alias: 'Priority',
+        source: `$properties`,
+      }
+    },
+    interactions: {
+      onClick: 'select',
+      onDoubleClick: 'open',
+      onContextMenu: 'contextMenu',
+    }
+  },
+  id: '$root',
+  children: [
+    {
+      ...groupNode,
+      node: {
+        ...groupNode.node,
+        id: '$item',
+        styles: {
+          layout: `'row'`,
+          gap: `'8px'`,
+          flex: `'1'`,
+          padding: `'4px'`,
+          layoutAlign: `'w'`,
+          height: `'auto'`,
+          background: `'transparent'`,
+          borderRadius: `'4px'`,
+        }
+      },
+      children: [
+        kitWithProps(
+          checkboxNode(),
+          {
+            value: `$contexts.$context['_path']?.[$root.props.completedField]`,
+          },
+          {},
+          {
+            toggle: `$api.table.update($contexts.$context['_path'], $contexts.$context['_schema'], [{field: '_index', value: $contexts.$context['_index']}], { [$root.props.completedField]: $contexts.$context['_path']?.[$root.props.completedField] ? 'false' : 'true' })`,
+          },
+          {
+            onClick: 'toggle'
+          }
+        ),
+        {
+          ...groupNode,
+          node: {
+            ...groupNode.node,
+            styles: {
+              layout: `'column'`,
+              flex: `'1'`,
+            }
+          },
+          children: [
+            {
+              ...groupNode,
+              node: {
+                ...groupNode.node,
+                styles: {
+                  layout: `'row'`,
+                  gap: `'8px'`,
+                  alignItems: `'center'`,
+                }
+              },
+              children: [
+                frameRootWithProps(
+                  textNode,
+                  {
+                    value: `$contexts.$context['_name']`,
+                  },
+                  {
+                    '--font-text-size': `'14px'`,
+                    '--font-text-weight': `'400'`,
+                    width: `'auto'`,
+                  }
+                ),
+                frameRootWithProps(groupNode, {}, {
+                  flex: `'1'`,
+                }),
+                frameRootWithProps(
+                  flowNode,
+                  {
+                    value: `$contexts.$context['_path']?.[$root.props.list]`,
+                  },
+                  {
+                    padding: `'0'`,
+                    width: `'auto'`,
+                    "--mk-link": `true`,
+                  }
+                ),
+                frameRootWithProps(
+                  iconNode,
+                  {
+                    value: `'ui//collapse'`,
+                  },
+                  {
+                    width: `'20px'`,
+                    height: `'20px'`,
+                    padding: `'4px'`,
+                    '--icon-size': `'12px'`,
+                    transform: `$root.props['_expanded'] ? 'rotate(90deg)' : ''`,
+                    hidden: `!($root.props['_nestBy']?.length > 0)`,
+                  },
+                  {
+                    expand: `$saveState({ $root: {props: {_expanded: !$root.props['_expanded']}} });`,
+                  },
+                  {
+                    onClick: 'expand'
+                  }
+                )
+              ]
+            }
+          ]
+        },
+        {
+          ...groupNode,
+          node: {
+            ...groupNode.node,
+            styles: {
+              layout: `'row'`,
+              padding: `'2px 4px'`,
+              layoutAlign: `'w'`,
+              borderRadius: `'4px'`,
+              height: `'auto'`,
+              width: `'auto'`,
+              hidden: `!($contexts.$context['_path']?.[$root.props.dueField]?.length > 0)`,
+              background: `'var(--mk-ui-active)'`,
+            }
+          },
+          children: [
+            frameRootWithProps(
+              textNode,
+              {
+                value: `$api.utils.date.format($api.utils.date.parse($contexts.$context['_path']?.[$root.props.dueField]))`,
+              },
+              {
+                '--font-text-size': `'12px'`,
+                '--font-text-weight': `'400'`,
+                width: `'auto'`,
+              }
+            )
+          ]
+        }
+      ]
+    },
+    frameRootWithProps(
+      contentNode,
+      {},
+      {
+        layout: `'column'`,
+        alignItems: `'stretch'`,
+        width: `'100%'`,
+      }
+    ),
+    frameRootWithProps(
+      {
+        ...slidesNode,
+        children: [
+          frameRootWithProps(
+            {
+              ...slideNode,
+              children: [
+                frameRootWithProps(
+                  { ...deltaNode, node: { ...deltaNode.node, ref: '$item' } },
+                  {},
+                  {
+                    background: `'var(--mk-ui-background-selected)'`,
+                  }
+                )
+              ]
+            },
+            { value: 'true' }
+          ),
+          frameRootWithProps(
+            {
+              ...slideNode,
+              children: [
+                frameRootWithProps(
+                  { ...deltaNode, node: { ...deltaNode.node, ref: '$item' } },
+                  {},
+                  {
+                    background: `'transparent'`,
+                  }
+                )
+              ]
+            },
+            { value: 'false' }
+          )
+        ]
+      },
+      {
+        value: `'_selected'`,
+      }
+    )
+  ]
+});
 
   export const overviewItem: FrameRoot = {
     def: {
@@ -1021,6 +1273,76 @@ export const flowListItem: FrameRoot = {
   ]
   }
 
+  export const newItemButton : FrameRoot = {
+    id: "newItemButton",
+    def: {
+      id: 'newItemButton',
+    },
+    node: {
+      schemaId: "newItemButton",
+      parentId: "",
+      name: "New Item Button",
+      rank: 0,
+      id: "newItemButton",
+      type: "group",
+      props: {
+      space: "",
+      schema: '',
+      group: "",
+      groupValue: ""
+    },
+      types: {
+      space: "text",
+      schema: "text",
+      group: "text",
+      groupValue: "text"
+    },
+      actions: {
+        openNewModal: `{
+          command: "spaces://$api/table/#;createModal",
+          parameters: {
+            space: newItemButton.props.space,
+            schema: newItemButton.props.schema,
+            properties: newItemButton.props.group ? {[newItemButton.props.group]: newItemButton.props.groupValue} : {},
+          }
+      }`
+      },
+      styles: {
+        padding: `'8px'`,
+        width: `'100%'`,
+        sem: `'card'`,
+        cursor: `'pointer'`,
+      },
+      interactions: {
+        onClick: 'openNewModal'
+      }
+    }, 
+    children: [
+      frameRootWithProps({
+        ...groupNode, 
+        children: [
+          frameRootWithProps(iconNode, {
+            value: `'ui//plus'`
+          }, {
+            width: `'16px'`,
+            height: `'16px'`,
+            '--icon-size': `'16px'`,
+          }),
+          frameRootWithProps(textNode, {
+            value: `'New Item'`
+          }, {
+            '--font-text-color': `'var(--mk-ui-text)'`,
+            "--font-text-size": `'14px'`,
+          })
+        ]
+      }, {}, {
+        layout: `'row'`,
+        gap: `'8px'`,
+        alignItems: `'center'`,
+      })
+    ]
+  }
+
   export const listGroup: FrameRoot = {
     def: {
       id: 'listGroup',
@@ -1134,23 +1456,15 @@ export const flowListItem: FrameRoot = {
 
       }
       ),
-      frameRootWithProps({...groupNode, children:[kitWithProps(newItemNode, {
-        space: `$contexts.$context['_path']`,
+      kitWithProps(newItemButton, {
+         space: `$contexts.$context['_path']`,
       schema: `$contexts.$context['_schema']`,
-      key: `$contexts.$context['_key']`,
       group: `$root.props['_groupField']?.name`,
         groupValue: `$root.props['_groupValue']`,
       },
-    {
-      paddingLeft: `'8px'`,
-   
-    })]}, {}, 
-      {height: `'auto'`, marginTop: `'8px'`,
-      borderRadius: `'8px'`,
-      width: `'250px'`,
-      border: `'1px solid var(--mk-ui-border)'`,
-      background: `'var(--mk-ui-background)'`,
-      hidden: `!$root.props['showNew'] || $root.props['_readMode']`})
+      {
+        hidden: `!$root.props['showNew'] || $root.props['_readMode']`
+      })
       
     ],
   };
