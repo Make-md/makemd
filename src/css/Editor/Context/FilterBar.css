@@ -360,3 +360,18 @@ button.mk-filter-add {
   padding-top: var(--tag-padding-y) !important;
   padding-bottom: var(--tag-padding-y) !important;
 }
+
+.mk-filter-editor {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mk-filter-editor-header {
+  display: flex; 
+  align-items: center;
+}
+
+.mk-filter-editor-header span {
+  flex: 1;
+}

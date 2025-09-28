@@ -1,3 +1,4 @@
+import { ContextEditorProvider } from "core/react/context/ContextEditorContext";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
@@ -5,9 +6,8 @@ import { PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { FrameEditorMode } from "shared/types/frameExec";
-import { FrameNodeViewProps } from "../ViewNodes/FrameView";
-import { ContextEditorProvider } from "core/react/context/ContextEditorContext";
 import { ContextListContainer } from "../../Contexts/ContextListContainer";
+import { FrameNodeViewProps } from "../ViewNodes/FrameView";
 
 export const ViewNodeView = (
   props: FrameNodeViewProps & { source?: string }
@@ -16,7 +16,16 @@ export const ViewNodeView = (
   const mdbFrameId = rawMdbFrameId
     ? rawMdbFrameId.replace(/^["']|["']$/g, "")
     : null; // Remove quotes if present
-  const sourcePath = useMemo(() => props.state?.props?.context ? props.superstate.spaceManager.resolvePath(props.state?.props?.context, props.source) : props.source, [props.state, props.source]);
+  const sourcePath = useMemo(
+    () =>
+      props.state?.props?.context
+        ? props.superstate.spaceManager.resolvePath(
+            props.state?.props?.context,
+            props.source
+          )
+        : props.source,
+    [props.state, props.source]
+  );
   const { nodes, updateNode } = useContext(FramesEditorRootContext);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -41,12 +50,10 @@ export const ViewNodeView = (
 
   // Log when selection mode changes
   useEffect(() => {}, [selectionMode, selected, editable]);
-
   // Create a new visualization MDBFrame
 
   return (
     <div
-     
       style={{
         width: "100%",
         height: "100%",
@@ -64,18 +71,21 @@ export const ViewNodeView = (
               superstate={props.superstate}
               schema={mdbFrameId}
             >
-             <ContextEditorProvider superstate={props.superstate}>
-                         <ContextListContainer
-                           showTitle={false}
-                           superstate={props.superstate}
-                           minMode={true}
-                         ></ContextListContainer>
-                       </ContextEditorProvider>
+              <ContextEditorProvider superstate={props.superstate}>
+                <ContextListContainer
+                  showTitle={false}
+                  superstate={props.superstate}
+                  minMode={true}
+                ></ContextListContainer>
+              </ContextEditorProvider>
             </FramesMDBProvider>
           </SpaceProvider>
         </PathProvider>
-      ) : editable ? 
-       <></> : <></>}
+      ) : editable ? (
+        <></>
+      ) : (
+        <></>
+      )}
     </div>
   );
 };

@@ -4,6 +4,8 @@ import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
 import { PathStickerView } from "../../../../../shared/components/PathSticker";
 import { showPathContextMenu } from "../Menus/navigator/pathContextMenu";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
+import { resolvePath } from "core/superstate/utils/path";
 
 export const PathCrumb = (
   props: PropsWithChildren<{
@@ -15,20 +17,26 @@ export const PathCrumb = (
     onClick?: (e: React.MouseEvent) => void;
   }>
 ) => {
+  const spaceManager = useSpaceManager();
+
   const path = useMemo(
     () =>
       props.source && props.path
-        ? props.superstate.spaceManager.resolvePath(props.path, props.source)
+        ? spaceManager.resolvePath(props.path, props.source)
         : props.path,
-    [props.source, props.path]
+    [props.source, props.path, spaceManager]
   );
   
-
-  const [cache, setCache] = useState<PathState>(
-    props.superstate.pathsIndex.get(path)
-  );
+  const [cache, setCache] = useState<PathState | null>(null);
+  
   const reloadCache = () => {
-    setCache(props.superstate.pathsIndex.get(path));
+    try {
+      const pathState = spaceManager.getPathState(path);
+      setCache(pathState);
+    } catch (error) {
+      console.error('Failed to get path state for PathCrumb:', error);
+      setCache(null);
+    }
   };
   const reloadIcon = (payload: { path: string }) => {
     if (payload.path == path) {
@@ -47,7 +55,7 @@ export const PathCrumb = (
         reloadIcon
       );
     };
-  }, [path]);
+  }, [path, spaceManager]);
 
   return (
     <div
@@ -57,9 +65,17 @@ export const PathCrumb = (
           props.onClick(e);
           return;
         }
+        // In preview mode, don't navigate to prevent breaking the preview
+        if (spaceManager.isPreviewMode) {
+          return;
+        }
         props.superstate.ui.openPath(cache?.path ?? path, false);
       }}
       onContextMenu={(e) => {
+        // Disable context menu in preview mode
+        if (spaceManager.isPreviewMode) {
+          return;
+        }
         if (cache) {
           e.stopPropagation();
           showPathContextMenu(

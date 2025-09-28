@@ -1,4 +1,5 @@
 import { parseFieldValue, parseFlexValue } from "core/schemas/parseFieldValue";
+import { resolvePath } from "core/superstate/utils/path";
 import { ConstantNode, FunctionNode, parse } from "mathjs";
 import { PathPropertyName } from "shared/types/context";
 import { IndexMap } from "shared/types/indexMap";
@@ -12,7 +13,6 @@ import { parseMultiString, parseProperty } from "../../../utils/parsers";
 import { runFormulaWithContext } from "../formula/parser";
 import { calculateAggregate } from "./predicate/aggregates";
 import { filterReturnForCol } from "./predicate/filter";
-import { resolvePath } from "core/superstate/utils/path";
 
 
 
@@ -168,6 +168,7 @@ export const linkContextRow = (
       // If we can't find the column definition, create a basic one
       fieldCol = { name: fieldValue.field, type: 'text' } as SpaceProperty;
     }
+    
     
     const value = calculateAggregate(
       settings,

@@ -9,6 +9,7 @@ import React, {
 import { SpaceState } from "shared/types/PathState";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { PathContext } from "./PathContext";
+import { useSpaceManager } from "./SpaceManagerContext";
 type SpaceContextProps = {
   spaceInfo: SpaceInfo | null;
   readMode: boolean;
@@ -24,20 +25,39 @@ export const SpaceContext = createContext<SpaceContextProps>({
 export const SpaceProvider: React.FC<
   React.PropsWithChildren<{
     superstate: Superstate;
-    spaceInfo?: SpaceInfo
+    spaceInfo?: SpaceInfo;
   }>
 > = (props) => {
   const { pathState } = useContext(PathContext);
+  const spaceManager = useSpaceManager();
 
   const spaceInfo: SpaceInfo = useMemo(() => {
-    if (props.spaceInfo) return props.spaceInfo
-    return props.superstate.spacesIndex.get(pathState.path)?.space;
-  }, [pathState]);
+    if (props.spaceInfo) return props.spaceInfo;
+
+    // SpaceManager handles MKit paths internally
+    if (spaceManager.isPreviewMode && pathState?.path) {
+      const spaceData = spaceManager.spaceInfoForPath(pathState.path);
+      if (spaceData) {
+        return spaceData;
+      }
+    }
+
+    const indexSpace = props.superstate.spacesIndex.get(pathState.path)?.space;
+
+    return indexSpace;
+  }, [pathState, spaceManager]);
 
   const [spaceState, setSpaceState] = useState<SpaceState>(null);
   const readMode = spaceState?.metadata.readMode ?? spaceInfo?.readOnly;
   useEffect(() => {
     const reloadSpace = () => {
+      // For preview mode, create a minimal space state
+      if (spaceManager.isPreviewMode) {
+        // Don't try to get from index for mkit paths
+        setSpaceState(null);
+        return;
+      }
+
       setSpaceState(props.superstate.spacesIndex.get(pathState.path));
     };
 

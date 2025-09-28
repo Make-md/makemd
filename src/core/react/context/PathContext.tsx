@@ -6,7 +6,7 @@ import { Superstate } from "makemd-core";
 import React, { createContext, useEffect, useState } from "react";
 import { PathState } from "shared/types/PathState";
 import { genId } from "shared/utils/uuid";
-import { useMKitContext } from "./MKitContext";
+import { useSpaceManager } from "./SpaceManagerContext";
 type PathContextProps = {
   uid: string;
   pathState: PathState;
@@ -31,30 +31,28 @@ export const PathProvider: React.FC<
     readMode: boolean;
   }>
 > = (props) => {
-  // Check if we're inside an MKit context
-  const mkitContext = useMKitContext();
-  
-  // If we're in MKit context, try to get the pseudo path from MKit
-  const getMKitPathState = (): PathState | null => {
-    if (mkitContext?.isPreviewMode) {
-      // Try to find the space data for this path
-      const spaceData = mkitContext.getSpaceByFullPath(props.path) || 
-                       mkitContext.getSpaceByRelativePath(props.path);
-      if (spaceData) {
-        return spaceData.pseudoPath;
-      }
-    }
-    return null;
-  };
+  // SpaceManager handles MKit context internally
+  const spaceManager = useSpaceManager();
 
   const [pathState, setPathState] = useState<PathState>(() => {
-    // First try to get from MKit context
-    const mkitPath = getMKitPathState();
-    if (mkitPath) {
-      return mkitPath;
+    // Use provided pathState if available
+    if (props.pathState) {
+      return props.pathState;
     }
-    // Otherwise use the provided pathState or get from superstate
-    return props.pathState ?? props.superstate.pathsIndex.get(props.path);
+    
+    // SpaceManager handles MKit paths internally
+    if (spaceManager.isPreviewMode) {
+      // For preview mode, return minimal path state
+      return {
+        path: props.path,
+        label: { name: props.path, sticker: "", color: "" },
+        metadata: {},
+        readOnly: true
+      };
+    }
+    
+    // Otherwise get from superstate as fallback
+    return props.superstate.pathsIndex.get(props.path);
   });
 
   const addToSpace = async (spacePath: string) => {
@@ -70,29 +68,42 @@ export const PathProvider: React.FC<
   const readMode = pathState?.readOnly || props.readMode;
   useEffect(() => {
     const reloadPath = () => {
-      // First check MKit context
-      const mkitPath = getMKitPathState();
-      if (mkitPath) {
-        setPathState(mkitPath);
+      // Use provided pathState if available
+      if (props.pathState) {
+        setPathState(props.pathState);
         return;
       }
-      // Otherwise use superstate
-      if (!props.pathState)
+      
+      // Use spaceManager to get path state
+      try {
+        const pathStateFromManager = spaceManager.getPathState(props.path);
+        if (pathStateFromManager) {
+          setPathState(pathStateFromManager);
+        } else {
+          // Fallback to superstate if spaceManager doesn't have the path
+          setPathState(props.superstate.pathsIndex.get(props.path));
+        }
+      } catch (error) {
+        // Fallback to superstate on error
         setPathState(props.superstate.pathsIndex.get(props.path));
+      }
     };
 
     const changePath = (payload: { path: string; newPath: string }) => {
       if (payload.path == pathState?.path) {
-        // Check MKit context first for the new path
-        if (mkitContext?.isPreviewMode) {
-          const spaceData = mkitContext.getSpaceByFullPath(payload.newPath) || 
-                           mkitContext.getSpaceByRelativePath(payload.newPath);
-          if (spaceData) {
-            setPathState(spaceData.pseudoPath);
-            return;
+        // Use spaceManager to get path state for the new path
+        try {
+          const pathStateFromManager = spaceManager.getPathState(payload.newPath);
+          if (pathStateFromManager) {
+            setPathState(pathStateFromManager);
+          } else {
+            // Fallback to superstate if spaceManager doesn't have the path
+            setPathState(props.superstate.pathsIndex.get(payload.newPath));
           }
+        } catch (error) {
+          // Fallback to superstate on error
+          setPathState(props.superstate.pathsIndex.get(payload.newPath));
         }
-        setPathState(props.superstate.pathsIndex.get(payload.newPath));
       }
     };
     const refreshPath = (payload: { path: string }) => {
@@ -125,7 +136,7 @@ export const PathProvider: React.FC<
         changePath
       );
     };
-  }, [props.path, mkitContext]);
+  }, [props.path, spaceManager]);
 
   return (
     <PathContext.Provider

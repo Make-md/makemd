@@ -6,6 +6,7 @@ import { Superstate } from "makemd-core";
 
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { parseDate } from "core/utils/date";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { FrameEditorMode } from "shared/types/frameExec";
@@ -34,6 +35,8 @@ export const ContextListContainer = (props: {
 }) => {
   const flattenedItems = useRef<Record<string, [string, DBRow, Pos]>>({});
   const { pathState } = useContext(PathContext);
+  const spaceManager = useSpaceManager();
+
   const {
     predicate,
     editMode,
@@ -53,15 +56,15 @@ export const ContextListContainer = (props: {
   }>(
     predicate
       ? {
-          listView: props.superstate.spaceManager.uriByString(
+          listView: spaceManager.uriByString(
             initiateString(predicate.listView, "spaces://$kit/#*listView"),
             pathState.path
           ),
-          listGroup: props.superstate.spaceManager.uriByString(
+          listGroup: spaceManager.uriByString(
             initiateString(predicate.listGroup, "spaces://$kit/#*listGroup"),
             pathState.path
           ),
-          listItem: props.superstate.spaceManager.uriByString(
+          listItem: spaceManager.uriByString(
             initiateString(predicate.listItem, "spaces://$kit/#*rowItem"),
             pathState.path
           ),
@@ -70,22 +73,21 @@ export const ContextListContainer = (props: {
   );
   useEffect(() => {
     if (!predicate) return;
+    
+    const listViewUri = initiateString(predicate.listView, "spaces://$kit/#*listView");
+    const listGroupUri = initiateString(predicate.listGroup, "spaces://$kit/#*listGroup");
+    const listItemUri = initiateString(predicate.listItem, "spaces://$kit/#*rowItem");
+    
+    
     const newURIs = {
-      listView: props.superstate.spaceManager.uriByString(
-        initiateString(predicate.listView, "spaces://$kit/#*listView"),
-        pathState.path
-      ),
-      listGroup: props.superstate.spaceManager.uriByString(
-        initiateString(predicate.listGroup, "spaces://$kit/#*listGroup"),
-        pathState.path
-      ),
-      listItem: props.superstate.spaceManager.uriByString(
-        initiateString(predicate.listItem, "spaces://$kit/#*rowItem"),
-        pathState.path
-      ),
+      listView: spaceManager.uriByString(listViewUri, pathState.path),
+      listGroup: spaceManager.uriByString(listGroupUri, pathState.path),
+      listItem: spaceManager.uriByString(listItemUri, pathState.path),
     };
+    
+    
     setURIs((p) => (!_.isEqual(newURIs, p) ? newURIs : p));
-  }, [predicate, pathState]);
+  }, [predicate, pathState, spaceManager]);
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key == "Escape") {
       setSelectedIndexes([]);
@@ -180,6 +182,7 @@ export const ContextListContainer = (props: {
   };
 
   const viewType = props.viewType ?? predicate?.view;
+
   return tableData ? (
     <div className="mk-context-container">
       {!props.minMode && (

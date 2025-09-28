@@ -4,6 +4,7 @@ import { FrameRootProvider } from "core/react/context/FrameRootContext";
 import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
 import { PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { Superstate } from "makemd-core";
 import { PathState } from "shared/types/superstate";
 import React, { useMemo } from "react";
@@ -25,10 +26,12 @@ export const MKitFramePreview: React.FC<MKitFramePreviewProps> = ({
   spaceKit,
   frameId,
 }) => {
+  const spaceManager = useSpaceManager();
+  
   // Create pseudo path for preview
   const pseudoPath: PathState = useMemo(
     () => ({
-      path: `mkit://preview/${spaceKit.name || "space"}`,
+      path: `mkit://preview/${spaceKit.path || spaceKit.name}`,
       name: spaceKit.name,
       label: { name: spaceKit.name, sticker: "", color: "" },
       readOnly: true,
@@ -247,10 +250,6 @@ export const MKitFramePreview: React.FC<MKitFramePreviewProps> = ({
         <SpaceProvider superstate={superstate} spaceInfo={spaceInfo}>
           <FramesMDBProvider
             superstate={superstate}
-            preloadedFrameData={mdbFrames}
-            preloadedFrameSchemas={frameSchemas}
-            preloadedSchemaTable={schemaTable}
-            previewMode={true}
           >
             <FrameRootProvider
               superstate={superstate}

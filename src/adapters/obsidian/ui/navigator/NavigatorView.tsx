@@ -7,6 +7,7 @@ export const ICON = "layout-grid";
 import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
 
 import { getLeaf } from "adapters/obsidian/utils/file";
+import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
 import { eventTypes } from "core/types/types";
 import { Navigator, Superstate } from "makemd-core";
 import { Root } from "react-dom/client";
@@ -26,7 +27,6 @@ export class FileTreeView extends ItemView {
   }
 
   revealInFolder(file: TAbstractFile) {
-    
     if (file instanceof TFolder) {
       const leaf = getLeaf(this.leaf.view.app, false);
       leaf.setViewState({
@@ -77,7 +77,11 @@ export class FileTreeView extends ItemView {
     this.destroy();
     this.root = this.ui.createRoot(this.contentEl);
     if (this.root) {
-      this.root.render(<Navigator superstate={this.superstate} />);
+      this.root.render(
+        <SpaceManagerProvider superstate={this.superstate}>
+          <Navigator superstate={this.superstate} />
+        </SpaceManagerProvider>
+      );
     } else {
       this.ui.manager.eventsDispatch.addOnceListener("windowReady", () => {
         this.constructFileTree();

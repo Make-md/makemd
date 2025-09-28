@@ -388,7 +388,7 @@ export const TableView = (props: { superstate: Superstate }) => {
                 f.schemaId == defaultContextSchemaID &&
                 data[index][PathPropertyName],
               columns: cols,
-              contextPath: spaceCache.path,
+              contextPath: spaceCache?.path,
             };
 
             const fieldType = fieldTypeForType(f.type, f.name);

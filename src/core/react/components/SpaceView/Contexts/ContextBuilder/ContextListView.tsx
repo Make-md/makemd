@@ -68,8 +68,12 @@ export const ContextListView = (props: {
   const groupByOptions = useMemo(() => {
     const groupByOptions =
       instance?.state[instance?.root?.id].props?.groupOptions;
-    if (groupByOptions) return ensureArray(groupByOptions);
-    if (!groupBy) return [""];
+    if (groupByOptions) {
+      return ensureArray(groupByOptions);
+    }
+    if (!groupBy) {
+      return [""];
+    }
     
     // Check if it's a multi-value field
     const isMultiField = groupBy.type?.endsWith('-multi') || groupBy.type === 'tags';
@@ -93,11 +97,13 @@ export const ContextListView = (props: {
     ]) as string[];
     
     // Sort to ensure empty string (None category) appears last
-    return options.sort((a, b) => {
+    const sortedOptions = options.sort((a, b) => {
       if (a === "" && b !== "") return 1;  // Move empty string to end
       if (a !== "" && b === "") return -1; // Keep non-empty before empty
       return 0; // Maintain relative order for other items
     });
+    
+    return sortedOptions;
   }, [groupBy, data, instance]);
 
   const groupByFilter = useMemo(() => {
@@ -106,7 +112,7 @@ export const ContextListView = (props: {
   }, [instance]);
 
   const items: Items = useMemo(() => {
-    return groupByOptions.reduce(
+    const computedItems = groupByOptions.reduce(
       (p, c) => {
         const [acc, count] = p;
         if (!groupBy) {
@@ -157,6 +163,8 @@ export const ContextListView = (props: {
       },
       [{}, 0]
     )[0];
+    
+    return computedItems;
   }, [data, groupByOptions, groupByFilter, groupBy]);
 
   const primaryKey = useMemo(() => {
@@ -197,7 +205,9 @@ export const ContextListView = (props: {
   };
 
   const contextMap: { [key: string]: FrameTreeProp } = useMemo(() => {
-    if (!dbSchema) return {};
+    if (!dbSchema) {
+      return {};
+    }
     return dbSchema?.primary == "true"
       ? data.reduce<{ [key: string]: FrameTreeProp }>((p, c) => {
           return {
@@ -220,7 +230,7 @@ export const ContextListView = (props: {
               }, {}),
               ...Object.keys(contextTable)
                 .filter((f) =>
-                  spaceState.contexts.some((g) => tagSpacePathFromTag(g) == f)
+                  spaceState?.contexts?.some((g) => tagSpacePathFromTag(g) == f) ?? false
                 )
                 .reduce<FrameTreeProp>((d, e) => {
                   return {
@@ -259,6 +269,8 @@ export const ContextListView = (props: {
             },
           };
         }, {});
+  
+  return contextMap;
   }, [data, cols, source, contextTable, spaceState]);
 
   return (
@@ -270,16 +282,17 @@ export const ContextListView = (props: {
     >
       <SortableContext
         items={Object.keys(items).map(
-          (f, i) => spaceInfo.path + "listGroup" + i
+          (f, i) => (spaceInfo?.path || "unknown") + "listGroup" + i
         )}
         strategy={rectSortingStrategy}
       >
         {
           // groupBy ?
-          Object.keys(items).map((c, i) => (
+          Object.keys(items).map((c, i) => {
+            return (
             <ContextListInstance
               key={"listGroup" + i}
-              id={spaceInfo.path + "listGroup" + i}
+              id={(spaceInfo?.path || "unknown") + "listGroup" + i}
               type="listGroup"
               superstate={props.superstate}
               uri={groupURI}
@@ -308,7 +321,7 @@ export const ContextListView = (props: {
               >
                 <SortableContext
                   items={items[c].flatMap(
-                    (f, k) => spaceInfo.path + "listGroup" + i + "_listItem" + k
+                    (f, k) => (spaceInfo?.path || "unknown") + "listGroup" + i + "_listItem" + k
                   )}
                   strategy={rectSortingStrategy}
                 >
@@ -317,15 +330,16 @@ export const ContextListView = (props: {
                       (f) => parseInt(f["_pageId"]) <= pageId * pageLength
                     )
                     .map((f, j) => {
-                      if (parseInt(f["_pageId"]) == pageId * pageLength)
+                      if (parseInt(f["_pageId"]) == pageId * pageLength) {
                         return (
                           <ContextInfiniteScroll
                             key={j}
                             onScroll={() => setPageId((p) => p + 1)}
                           ></ContextInfiniteScroll>
                         );
+                      }
                       const id =
-                        spaceInfo.path + "listGroup" + i + "_listItem" + j;
+                        (spaceInfo?.path || "unknown") + "listGroup" + i + "_listItem" + j;
                       return (
                         <ContextListInstance
                           key={"listGroup" + i + "_listItem" + j}
@@ -366,7 +380,8 @@ export const ContextListView = (props: {
                 </SortableContext>
               </FrameContainerView>
             </ContextListInstance>
-          ))
+            );
+          })
         }
       </SortableContext>
     </FrameContainerView>

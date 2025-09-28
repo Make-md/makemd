@@ -20,7 +20,9 @@ export type FilterEditorProps = {
 
 export const FilterEditor = (props: FilterEditorProps) => {
   const [filters, setFilters] = useState<FilterGroupDef[]>(props.filters ?? []);
-  const [joinType, setJoinType] = useState<"any" | "all">(props.joinType ?? "all");
+  const [joinType, setJoinType] = useState<"any" | "all">(
+    props.joinType ?? "all"
+  );
 
   const handleSetFilters = (newFilters: FilterGroupDef[]) => {
     setFilters(newFilters);
@@ -55,16 +57,16 @@ export const FilterEditor = (props: FilterEditorProps) => {
   return (
     <div className="mk-filter-editor">
       <div className="mk-filter-editor-header">
-        <h3>{i18n.labels.filters}</h3>
-        <button 
-          aria-label={i18n.labels.done} 
+        <span>{i18n.menu.filters}</span>
+        <button
+          aria-label={i18n.labels.done}
           onClick={save}
           className="mk-toolbar-button"
         >
           {i18n.labels.done}
         </button>
       </div>
-      
+
       <div className="mk-filter-editor-content">
         <SpaceQuery
           superstate={props.superstate}

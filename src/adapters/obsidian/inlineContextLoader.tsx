@@ -1,4 +1,5 @@
 import { PathProvider } from "core/react/context/PathContext";
+import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
 import { FMMetadataKeys } from "core/types/space";
 import MakeMDPlugin from "main";
 import { Backlinks, MarkdownHeaderView } from "makemd-core";
@@ -34,18 +35,20 @@ export const modifyFlowDom = (plugin: MakeMDPlugin) => {
 
     const construct = (root: Root) => {
       root.render(
-        <PathProvider
-          superstate={plugin.superstate}
-          path={file.path}
-          readMode={false}
-        >
-          <MarkdownHeaderView
+        <SpaceManagerProvider superstate={plugin.superstate}>
+          <PathProvider
             superstate={plugin.superstate}
-            editorView={editorView.cm}
-            editable={true}
-            hiddenFields={[...FMMetadataKeys(plugin.superstate.settings)]}
-          ></MarkdownHeaderView>
-        </PathProvider>
+            path={file.path}
+            readMode={false}
+          >
+            <MarkdownHeaderView
+              superstate={plugin.superstate}
+              editorView={editorView.cm}
+              editable={true}
+              hiddenFields={[...FMMetadataKeys(plugin.superstate.settings)]}
+            ></MarkdownHeaderView>
+          </PathProvider>
+        </SpaceManagerProvider>
       );
     };
     let root = plugin.ui.getRoot(inlineContext);

@@ -1,4 +1,5 @@
 import { SpaceFragmentWrapper } from "core/react/components/SpaceView/Editor/EmbedView/SpaceFragmentWrapper";
+import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
 import MakeMDPlugin from "main";
 import { SpaceFragmentViewComponent } from "makemd-core";
 import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
@@ -79,27 +80,31 @@ export class SpaceFragmentView extends ItemView {
     if (this.root) {
       if (this.flow) {
         this.root.render(
-          <SpaceFragmentViewComponent
-            id={this.path}
-            superstate={this.plugin.superstate}
-            path={this.path}
-            source={this.source}
-            showTitle={true}
-          ></SpaceFragmentViewComponent>
-        );
-      } else {
-        this.root.render(
-          <SpaceFragmentWrapper
-            superstate={this.plugin.superstate}
-            path={this.path}
-          >
+          <SpaceManagerProvider superstate={this.plugin.superstate}>
             <SpaceFragmentViewComponent
               id={this.path}
               superstate={this.plugin.superstate}
               path={this.path}
               source={this.source}
+              showTitle={true}
             ></SpaceFragmentViewComponent>
-          </SpaceFragmentWrapper>
+          </SpaceManagerProvider>
+        );
+      } else {
+        this.root.render(
+          <SpaceManagerProvider superstate={this.plugin.superstate}>
+            <SpaceFragmentWrapper
+              superstate={this.plugin.superstate}
+              path={this.path}
+            >
+              <SpaceFragmentViewComponent
+                id={this.path}
+                superstate={this.plugin.superstate}
+                path={this.path}
+                source={this.source}
+              ></SpaceFragmentViewComponent>
+            </SpaceFragmentWrapper>
+          </SpaceManagerProvider>
         );
       }
     } else {

@@ -20,6 +20,7 @@ import { parseMDBStringValue } from "utils/properties";
 import { defaultMenu, menuInput } from "../UI/Menus/menu/SelectionMenu";
 import { showColorPickerMenu } from "../UI/Menus/properties/colorPickerMenu";
 import { D3VisualizationEngine } from "./D3VisualizationEngine";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 
 import { VisualizationSetup } from "./VisualizationSetup";
 import { VisualizationToolbar } from "./VisualizationToolbar";
@@ -54,6 +55,8 @@ export const Visualization = ({
   isSelected = false,
   minMode = false,
 }: VisualizationProps) => {
+  const spaceManager = useSpaceManager();
+  
   // Use default width if initialWidth is a string percentage
   const defaultWidth =
     typeof initialWidth === "string" && (initialWidth as string).includes("%")
@@ -160,7 +163,7 @@ export const Visualization = ({
 
   // Load MDBFrame configuration
   const loadConfiguration = useCallback(async () => {
-    if (!mdbFrameId || !superstate?.spaceManager) {
+    if (!mdbFrameId || !spaceManager) {
       setConfigData(null);
       setLoading(false);
       return;
@@ -175,7 +178,7 @@ export const Visualization = ({
     setLoading(true);
     try {
       // Read MDBFrame via space manager
-      const configMDBFrame: MDBFrame = await superstate.spaceManager.readFrame(
+      const configMDBFrame: MDBFrame = await spaceManager.readFrame(
         sourcePath,
         mdbFrameId
       );
@@ -259,7 +262,7 @@ export const Visualization = ({
     } finally {
       setLoading(false);
     }
-  }, [mdbFrameId, sourcePath, superstate]);
+  }, [mdbFrameId, sourcePath, spaceManager]);
 
   // Function to load list data
   const loadListData = useCallback(
@@ -297,13 +300,9 @@ export const Visualization = ({
         const tableSourcePath = config?.dataSourcePath || sourcePath || "";
         const tableId = listId;
 
-        // Use the space manager to read the table
-        if (superstate.spaceManager) {
-          const spaceData = await superstate.spaceManager.readTable(
-            tableSourcePath,
-            tableId
-          );
-          if (spaceData && spaceData.rows && Array.isArray(spaceData.rows)) {
+        // Use the SpaceManager to read the table
+        const spaceData = await spaceManager.readTable(tableSourcePath, tableId);
+        if (spaceData && spaceData.rows && Array.isArray(spaceData.rows)) {
             // Process rows and expand multi-value fields
             const processedRows: VisualizationDataRow[] = [];
 
@@ -655,11 +654,8 @@ export const Visualization = ({
                 }
                 return prev;
               });
-            } else {
             }
-          } else {
-          }
-        } else {
+          
         }
 
         // If still not found, try pathsIndex
@@ -715,21 +711,19 @@ export const Visualization = ({
         setLoadingData(false);
       }
     },
-    [sourcePath, superstate]
+    [sourcePath, superstate, spaceManager]
   );
 
   // Load available tables
   const loadAvailableTables = useCallback(async () => {
-    if (!superstate || !superstate.spaceManager) return;
+    if (!superstate) return;
 
     try {
       // Use the dataSourcePath, then fallback to sourcePath
       const tablesSourcePath = configData?.dataSourcePath || sourcePath;
 
-      // Get tables for the space using the proper API
-      const schemas = await superstate.spaceManager.tablesForSpace(
-        tablesSourcePath
-      );
+      // Get tables using the SpaceManager
+      const schemas = await spaceManager.tablesForSpace(tablesSourcePath);
 
       if (schemas && Array.isArray(schemas)) {
         // Filter valid schemas and set directly (already SpaceTableSchema[])
@@ -743,7 +737,7 @@ export const Visualization = ({
     } catch (error) {
       setAvailableTables([]);
     }
-  }, [superstate, sourcePath, configData?.dataSourcePath, configData]);
+  }, [superstate, sourcePath, configData?.dataSourcePath, configData, spaceManager]);
 
   // Save schema (listId and dataSourcePath)
   const saveVisualizationSchema = async (
@@ -797,10 +791,10 @@ export const Visualization = ({
     });
 
     // Stage 2: Save to persistent storage
-    if (mdbFrameId && sourcePath && superstate?.spaceManager) {
+    if (mdbFrameId && sourcePath && spaceManager) {
       try {
         setIsSaving(true);
-        const frame = await superstate.spaceManager.readFrame(
+        const frame = await spaceManager.readFrame(
           sourcePath,
           mdbFrameId
         );
@@ -811,7 +805,7 @@ export const Visualization = ({
             frame.rows
           );
           frame.rows = updatedRows;
-          await superstate.spaceManager.saveFrame(sourcePath, frame);
+          await spaceManager.saveFrame(sourcePath, frame);
           superstate.eventsDispatcher.dispatchEvent("frameStateUpdated", {
             path: sourcePath,
             schemaId: mdbFrameId,
@@ -849,9 +843,9 @@ export const Visualization = ({
   // Handle table change from formatter
   const handleTableChange = async (tableId: string) => {
     // Load the table columns for the selected data source
-    if (tableId && superstate?.spaceManager) {
+    if (tableId && superstate) {
       try {
-        const spaceData = await superstate.spaceManager.readTable(
+        const spaceData = await spaceManager.readTable(
           sourcePath || "",
           tableId
         );

@@ -14,6 +14,7 @@ import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { newPathInSpace } from "core/superstate/utils/spaces";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
 import {
@@ -77,6 +78,7 @@ export const FrameNodeEditor = (props: {
   const { pathState } = useContext(PathContext);
   const { deleteFrame, duplicateFrame } = props;
   const { spaceInfo } = useContext(SpaceContext);
+  const spaceManager = useSpaceManager();
   const {
     addNode,
     ungroupNode,
@@ -145,9 +147,9 @@ export const FrameNodeEditor = (props: {
         const frameId = removeQuotes(props.state.props.value);
         const sourcePath = pathState?.path || spaceInfo?.path || "";
 
-        if (frameId && sourcePath && props.superstate.spaceManager) {
+        if (frameId && sourcePath && spaceManager) {
           try {
-            const frame = await props.superstate.spaceManager.readFrame(
+            const frame = await spaceManager.readFrame(
               sourcePath,
               frameId
             );
@@ -202,10 +204,10 @@ export const FrameNodeEditor = (props: {
     const loadAvailableTables = async () => {
       const sourcePath = pathState?.path || spaceInfo?.path || "";
 
-      if (sourcePath && props.superstate.spaceManager) {
+      if (sourcePath && spaceManager) {
         try {
           // Use tablesForSpace to get available tables
-          const tables = await props.superstate.spaceManager.tablesForSpace(
+          const tables = await spaceManager.tablesForSpace(
             sourcePath
           );
 
@@ -236,10 +238,10 @@ export const FrameNodeEditor = (props: {
         : null;
       const listId = visualizationConfig?.data?.listId || frameSchema?.def?.db;
 
-      if (listId && props.superstate.spaceManager) {
+      if (listId && spaceManager) {
         const sourcePath = pathState?.path || spaceInfo?.path || "";
         try {
-          const table = await props.superstate.spaceManager.readTable(
+          const table = await spaceManager.readTable(
             sourcePath,
             listId
           );
@@ -293,7 +295,7 @@ export const FrameNodeEditor = (props: {
       const defaultConfig = parseVisualizationData(newFrame);
 
       // First save the frame schema
-      await props.superstate.spaceManager.saveFrameSchema(
+      await spaceManager.saveFrameSchema(
         sourcePath,
         frameId,
         () => ({
@@ -309,7 +311,7 @@ export const FrameNodeEditor = (props: {
       );
 
       // Then save the frame data
-      await props.superstate.spaceManager.saveFrame(sourcePath, newFrame);
+      await spaceManager.saveFrame(sourcePath, newFrame);
 
       // Update the node's value to reference the new frame
       const wrappedFrameId = wrapQuotes(frameId);

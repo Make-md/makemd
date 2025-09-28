@@ -1,57 +1,54 @@
-import { ReactNode, useCallback, useMemo, useState } from "react";
+import { ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Root, createRoot as origCreateRoot } from "react-dom/client";
 
 //https://github.com/bubblydoo/angular-react/blob/e0f370a7ea3563b1d92530aad207575c086ba3ef/projects/angular-react/src/lib/use-in-tree-create-root/use-in-tree-create-root.ts#L11
 export function useInTreeCreateRoot() {
-  const [roots, setRoots] = useState<
-    Map<Element | DocumentFragment, ReactNode>
-  >(new Map());
-  const [rootMap, setRootMap] = useState<Map<Element | DocumentFragment, Root>>(
-    new Map()
-  );
+  // Use WeakMap to prevent memory leaks - DOM elements can be garbage collected
+  const rootsRef = useRef(new WeakMap<Element | DocumentFragment, ReactNode>());
+  const rootMapRef = useRef(new WeakMap<Element | DocumentFragment, Root>());
+  const [updateCounter, setUpdateCounter] = useState(0);
+  
+  // Track containers for iteration (since WeakMap is not iterable)
+  const [containers, setContainers] = useState<Set<Element | DocumentFragment>>(new Set());
   const getRoot = (container: Element | DocumentFragment) => {
-    return rootMap.get(container);
+    return rootMapRef.current.get(container);
   };
   const createRoot: typeof origCreateRoot = useCallback(
     (container, options) => {
       const root: Root = {
         render: (children) => {
-          setRoots((roots) => {
-            const newRoots = new Map(roots);
-            newRoots.set(container, children);
-            return newRoots;
-          });
+          rootsRef.current.set(container, children);
+          setUpdateCounter(c => c + 1);
         },
         unmount: () => {
-          setRoots((roots) => {
-            const newRoots = new Map(roots);
-            newRoots.delete(container);
-            return newRoots;
+          rootsRef.current.delete(container);
+          rootMapRef.current.delete(container);
+          setContainers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(container);
+            return newSet;
           });
-          setRootMap((roots) => {
-            const newRoots = new Map(roots);
-            newRoots.delete(container);
-            return newRoots;
-          });
+          setUpdateCounter(c => c + 1);
         },
       };
-      setRoots((roots) => {
-        return new Map(roots).set(container, null);
-      });
-      setRootMap((r) => {
-        return new Map(r).set(container, root);
-      });
+      
+      rootsRef.current.set(container, null);
+      rootMapRef.current.set(container, root);
+      setContainers(prev => new Set(prev).add(container));
+      setUpdateCounter(c => c + 1);
+      
       return root;
     },
     []
   );
 
   const portals = useMemo(() => {
-    return [...roots.entries()].map(([container, root]) => {
-      return createPortal(root, container);
-    });
-  }, [roots]);
+    return [...containers].map((container) => {
+      const root = rootsRef.current.get(container);
+      return root ? createPortal(root, container) : null;
+    }).filter(Boolean);
+  }, [containers, updateCounter]);
 
   return { createRoot, portals, getRoot };
 }

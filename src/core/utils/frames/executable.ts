@@ -4,8 +4,8 @@ import { applyFunctionToObject } from "../objects";
 import { objectIsConst, stringIsConst } from "./frames";
 
 const generateCodeForProp = (value: any, isClosure: boolean, type?: string) => {
-    let codeBlock : string = value;
-    if (value.startsWith('{') && value.endsWith('}')) codeBlock = `(${codeBlock})`
+    let codeBlock : string = value || '';
+    if (codeBlock.startsWith('{') && codeBlock.endsWith('}')) codeBlock = `(${codeBlock})`
     codeBlock = (isClosure && !codeBlock.startsWith('(')) ? `($event, $value, $state, $saveState, $api) => { ${codeBlock} }` : codeBlock;
     const isMultiLine = (typeof codeBlock === 'string') ? codeBlock.includes('\n') : false;
     const isObject = type?.startsWith('object') && objectIsConst(codeBlock, type)

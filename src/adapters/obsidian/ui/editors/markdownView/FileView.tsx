@@ -1,3 +1,4 @@
+import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
 import { Superstate } from "makemd-core";
 import { App, ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
@@ -77,13 +78,15 @@ export class FileLinkView extends ItemView {
     this.root = this.superstate.ui.createRoot(this.contentEl);
     this.root.render(
       <div className="markdown-reading-view">
-        <FileLinkViewComponent
-          app={this.app}
-          component={this}
-          superstate={this.superstate}
-          path={path}
-          flow={this.flow}
-        ></FileLinkViewComponent>
+        <SpaceManagerProvider superstate={this.superstate}>
+          <FileLinkViewComponent
+            app={this.app}
+            component={this}
+            superstate={this.superstate}
+            path={path}
+            flow={this.flow}
+          ></FileLinkViewComponent>
+        </SpaceManagerProvider>
       </div>
     );
   }

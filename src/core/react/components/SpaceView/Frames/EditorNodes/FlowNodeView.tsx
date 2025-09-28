@@ -5,10 +5,10 @@ import { CollapseToggle } from "core/react/components/UI/Toggles/CollapseToggle"
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
-import { useMKitContext } from "core/react/context/MKitContext";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { wrapQuotes } from "core/utils/strings";
 import { i18n } from "makemd-core";
-import React, { useContext, useMemo, useState } from "react";
+import React, { useContext, useMemo, useState, useEffect } from "react";
 import { BlinkMode } from "shared/types/blink";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { PathState } from "shared/types/PathState";
@@ -43,72 +43,74 @@ export const FlowNodeView = (
   const fullPath = props.state?.props?.value;
   const parsedPath = fullPath ? parseContent(fullPath) : null;
   
-  // Check if this is a space fragment view (e.g., ./#*frameId or path#*frameId)
-  const isSpaceFragment = useMemo(() => {
-    if (!parsedPath) return false;
+  const spaceManager = useSpaceManager();
+
+  // Check if this is a space fragment view and store the parsed URI
+  const { isSpaceFragment, parsedUri } = useMemo(() => {
+    if (!parsedPath) return { isSpaceFragment: false, parsedUri: null };
+    
     const uri = props.superstate.spaceManager.uriByString(
       parsedPath,
       props.source
     );
-    return (
+    
+    const isFragment = (
       uri?.refType === "frame" ||
       uri?.refType === "context" ||
       uri?.refType === "action"
     );
+    
+    return { isSpaceFragment: isFragment, parsedUri: uri };
   }, [parsedPath, props.source]);
-
-  const mkitContext = useMKitContext();
   
-  const pathState: PathState = useMemo(() => {
-    if (!parsedPath || isSpaceFragment) return null;
+  const [pathState, setPathState] = useState<PathState | null>(null);
 
-    const path = props.superstate.spaceManager.resolvePath(
-      parsedPath,
-      props.source
-    );
-
-   
-
-    // Check MKit context first
-    if (mkitContext?.isPreviewMode) {
-      const spaceData = mkitContext.getSpaceByFullPath(path) || 
-                       mkitContext.getSpaceByRelativePath(parsedPath);
-                        
-      if (spaceData) {
-        return spaceData.pseudoPath;
+  useEffect(() => {
+    const loadPathState = () => {
+      if (!parsedPath || isSpaceFragment) {
+        setPathState(null);
+        return;
       }
-    }
 
-    const uri = props.superstate.spaceManager.uriByString(parsedPath);
-    if (uri?.scheme == "https" || uri?.scheme == "http") {
-      return {
-        path: parsedPath,
-        label: {
-          sticker: uri.scheme,
-          name: uri.path,
-          color: "",
-        },
-        hidden: false,
-        subtype: "md",
-        type: "remote",
-        readOnly: true,
-      };
-    }
-    // if (props.superstate.spacesIndex.get(path)) {
-    //   return props.superstate.pathsIndex.get(
-    //     props.superstate.spacesIndex.get(path).defPath
-    //   );
-    // }
-    return props.superstate.pathsIndex.get(path);
-  }, [parsedPath, props.source, isSpaceFragment, mkitContext]);
+      const path = spaceManager.resolvePath(parsedPath, props.source);
+
+      // Use the already parsed URI
+      const uri = parsedUri || props.superstate.spaceManager.uriByString(parsedPath);
+      if (uri?.scheme == "https" || uri?.scheme == "http") {
+        setPathState({
+          path: parsedPath,
+          label: {
+            sticker: uri.scheme,
+            name: uri.path,
+            color: "",
+          },
+          hidden: false,
+          subtype: "md",
+          type: "remote",
+          readOnly: true,
+        });
+        return;
+      }
+      
+      try {
+        const pathStateFromManager = spaceManager.getPathState(path);
+        setPathState(pathStateFromManager);
+      } catch (error) {
+        console.error('Failed to get path state for FlowNodeView:', error);
+        setPathState(null);
+      }
+    };
+
+    loadPathState();
+  }, [parsedPath, props.source, isSpaceFragment, spaceManager, parsedUri]);
   const { updateNode, nodes } = useContext(FramesEditorRootContext);
   const { selectionMode } = useContext(FrameSelectionContext);
   const [expanded, setExpanded] = useState<boolean>(
     props.state?.styles?.["--mk-expanded"]
   );
   const updateValue = (newValue: string) => {
-    // Don't allow updates in MKit preview mode
-    if (mkitContext?.isPreviewMode) {
+    // Don't allow updates in preview mode
+    if (spaceManager.isPreviewMode) {
       return;
     }
     
@@ -143,6 +145,7 @@ export const FlowNodeView = (
         },
       });
   };
+
   return (
     <div className="mk-node-flow">
       {!props.state?.styles?.["--mk-min-mode"] &&
@@ -169,7 +172,7 @@ export const FlowNodeView = (
             ></PathCrumb>
           </div>
         ))}
-      {props.state &&
+{props.state &&
         expanded &&
         (props.state?.props?.value?.length > 0 ? (
           isSpaceFragment ? (

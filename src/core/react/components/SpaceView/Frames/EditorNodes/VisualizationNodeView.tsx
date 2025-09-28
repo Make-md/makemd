@@ -3,6 +3,7 @@ import { FrameSelectionContext } from "core/react/context/FrameSelectionContext"
 import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
 import { PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { wrapQuotes } from "core/utils/strings";
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { FrameEditorMode } from "shared/types/frameExec";
@@ -20,6 +21,7 @@ export const VisualizationNodeView = (
   const sourcePath = props.source || "";
   const { nodes, updateNode } = useContext(FramesEditorRootContext);
   const [isCreating, setIsCreating] = useState(false);
+  const spaceManager = useSpaceManager();
 
   const {
     selectionMode,
@@ -45,7 +47,7 @@ export const VisualizationNodeView = (
 
   // Create a new visualization MDBFrame
   const createNewVisualization = async () => {
-    if (!props.superstate?.spaceManager || isCreating) return;
+    if (!spaceManager || isCreating) return;
 
     setIsCreating(true);
     try {
@@ -93,7 +95,7 @@ export const VisualizationNodeView = (
       };
 
       // Save the new visualization frame
-      await props.superstate.spaceManager.saveFrame(
+      await spaceManager.saveFrame(
         sourcePath,
         newVisualizationFrame
       );

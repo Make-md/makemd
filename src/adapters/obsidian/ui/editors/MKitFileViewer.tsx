@@ -7,6 +7,7 @@ import { createRoot, Root } from "react-dom/client";
 import { SpaceKit } from "shared/types/kits";
 import { safelyParseJSON } from "shared/utils/json";
 import { MKitFramePreview } from "./MKitFramePreview";
+import { MKitProvider } from "core/react/context/MKitContext";
 
 export const MKIT_FILE_VIEWER_TYPE = "mk-mkit-view";
 export const ICON = "package";
@@ -80,10 +81,12 @@ const MKitViewerComponent: React.FC<MKitViewerProps> = ({ plugin, spaceKit, file
       </div>
 
       <div className="mk-mkit-content">
-        <MKitFramePreview
-          superstate={plugin.superstate}
-          spaceKit={spaceKit}
-        />
+        <MKitProvider spaceKit={spaceKit}>
+          <MKitFramePreview
+            superstate={plugin.superstate}
+            spaceKit={spaceKit}
+          />
+        </MKitProvider>
       </div>
     </div>
   );

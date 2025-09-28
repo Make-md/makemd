@@ -194,8 +194,7 @@ export class UIManager implements IUIManager {
     }
     this.mainFrame.openToast(content);
   }
-  public error(error: any) {
-  }
+  public error(error: any) {}
   public openPalette(modal: JSX.Element, win: Window, className?: string) {
     return this.mainFrame.openPalette(modal, win, className);
   }

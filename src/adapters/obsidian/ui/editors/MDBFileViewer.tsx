@@ -1,4 +1,5 @@
 import { getAbstractFileAtPath } from "adapters/obsidian/utils/file";
+import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
 import MakeMDPlugin from "main";
 import { MDBViewer } from "makemd-core";
 import { FileView, TFile, ViewStateResult, WorkspaceLeaf } from "obsidian";
@@ -90,11 +91,13 @@ export class MDBFileViewer extends FileView {
       this.root = this.plugin.ui.createRoot(this.contentEl);
       if (this.root) {
         this.root.render(
-          <MDBViewer
-            superstate={this.plugin.superstate}
-            space={space}
-            schema={schema}
-          ></MDBViewer>
+          <SpaceManagerProvider superstate={this.plugin.superstate}>
+            <MDBViewer
+              superstate={this.plugin.superstate}
+              space={space}
+              schema={schema}
+            ></MDBViewer>
+          </SpaceManagerProvider>
         );
       } else {
         this.plugin.ui.manager.eventsDispatch.addOnceListener(

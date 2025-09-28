@@ -1,6 +1,7 @@
 import { ReadingModeHeader } from "adapters/obsidian/ui/editors/ReadingModeHeader";
 import { RemoteMarkdownHeaderView } from "adapters/obsidian/ui/editors/markdownView/RemoteMarkdownHeaderView";
 import { replaceMarkdownForReadingMode } from "adapters/obsidian/ui/editors/readingMode";
+import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
 import MakeMDPlugin from "main";
 import { MarkdownPostProcessorContext, MarkdownRenderChild } from "obsidian";
 import React from "react";
@@ -40,11 +41,13 @@ export const replaceInlineContext = (
         const construct = (root: Root) => {
           if (ctx.sourcePath.match(urlRegex)) {
             root.render(
-              <RemoteMarkdownHeaderView
-                superstate={plugin.superstate}
-                fm={ctx.frontmatter}
-                name={pathToString(ctx.sourcePath)}
-              ></RemoteMarkdownHeaderView>
+              <SpaceManagerProvider superstate={plugin.superstate}>
+                <RemoteMarkdownHeaderView
+                  superstate={plugin.superstate}
+                  fm={ctx.frontmatter}
+                  name={pathToString(ctx.sourcePath)}
+                ></RemoteMarkdownHeaderView>
+              </SpaceManagerProvider>
             );
           } else {
             root.render(

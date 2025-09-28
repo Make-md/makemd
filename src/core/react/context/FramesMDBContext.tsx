@@ -15,7 +15,6 @@ import {
   SpaceProperty,
   SpaceTable,
   SpaceTableSchema,
-  SpaceTables,
 } from "shared/types/mdb";
 import { FrameSchema, MDBFrame, MDBFrames } from "shared/types/mframe";
 import { uniqueNameFromString } from "shared/utils/array";
@@ -25,7 +24,7 @@ import {
 } from "shared/utils/makemd/schema";
 import { sanitizeColumnName, sanitizeTableName } from "shared/utils/sanitizers";
 import { SpaceContext } from "./SpaceContext";
-import { useMKitContext } from "./MKitContext";
+import { useSpaceManager } from "./SpaceManagerContext";
 type FramesMDBContextProps = {
   frameSchemas: FrameSchema[];
   frames: FrameSchema[];
@@ -66,52 +65,28 @@ export const FramesMDBProvider: React.FC<
     contextSchema?: string;
     schema?: string;
     path?: string;
-    // Optional preloaded data for preview mode
-    preloadedFrameData?: MDBFrames;
-    preloadedFrameSchemas?: FrameSchema[];
-    preloadedSchemaTable?: DBTable;
-    previewMode?: boolean; // Flag to disable save operations
   }>
 > = (props) => {
   const [history, setHistory] = useState<MDBFrame[]>([]);
   const [future, setFuture] = useState<MDBFrame[]>([]);
 
-  // Check if we're in MKit preview mode
-  const mkitContext = useMKitContext();
-  const isKitPreview = mkitContext.isPreviewMode && !props.preloadedSchemaTable;
+  const spaceManager = useSpaceManager();
 
-  // Use MKit data if available and we're in preview mode
-  const kitSpaceData = isKitPreview && props.path
-    ? mkitContext.getSpaceByFullPath(props.path)
-    : null;
+  // Initialize schema table as null - SpaceManager will load data
+  const [schemaTable, setSchemaTable] = useState<DBTable>(null);
 
-  // Use preloaded data if available, otherwise initialize as null
-  const [schemaTable, setSchemaTable] = useState<DBTable>(
-    props.preloadedSchemaTable || kitSpaceData?.schemaTable || null
-  );
-
-  const schemas = useMemo(
-    () => {
-      // Use preloaded schemas if available
-      if (props.preloadedFrameSchemas) {
-        return props.preloadedFrameSchemas;
-      }
-      // Use MKit frame schemas if available
-      if (kitSpaceData?.frameSchemas) {
-        return kitSpaceData.frameSchemas;
-      }
-      // Otherwise compute from schemaTable
-      return ((schemaTable?.rows ?? []).map((f) =>
+  const schemas = useMemo(() => {
+    // Compute schemas from schemaTable
+    const computedSchemas =
+      ((schemaTable?.rows ?? []).map((f) =>
         mdbSchemaToFrameSchema(f as SpaceTableSchema)
       ) as FrameSchema[]) ?? [];
-    },
-    [schemaTable, props.preloadedFrameSchemas, kitSpaceData]
-  );
 
-  const frames = schemas.filter((f) => f.type == "frame");
-  const [frameData, setFrameData] = useState<MDBFrames | null>(
-    props.preloadedFrameData || kitSpaceData?.frameData || null
-  );
+    return computedSchemas;
+  }, [schemaTable, spaceManager.isPreviewMode]);
+
+  const frames = schemas.filter((f: FrameSchema) => f.type == "frame");
+  const [frameData, setFrameData] = useState<MDBFrames | null>(null);
   const [frameSchema, setFrameSchema] = useState<FrameSchema>(null);
 
   const tableData = useMemo(() => {
@@ -121,9 +96,9 @@ export const FramesMDBProvider: React.FC<
   const { spaceInfo, readMode } = useContext(SpaceContext);
   const deleteSchema = async (table: FrameSchema) => {
     if (table.primary) return;
-    if (props.previewMode) return; // Skip if in preview mode
+    if (spaceInfo?.readOnly) return; // Skip if in read-only mode
 
-    await props.superstate.spaceManager.deleteFrame(spaceInfo.path, table.id);
+    await spaceManager.deleteFrame(spaceInfo.path, table.id);
     const newSchemaTable = {
       ...schemaTable,
       rows: schemaTable.rows.filter((f) => f.id != table.id),
@@ -147,11 +122,9 @@ export const FramesMDBProvider: React.FC<
           rows: [...schemaTable.rows, frameSchemaToTableSchema(table)],
         };
 
-    if (!spaceInfo.readOnly && !props.previewMode) {
-      await props.superstate.spaceManager.saveFrameSchema(
-        spaceInfo.path,
-        table.id,
-        () => frameSchemaToTableSchema(table)
+    if (!spaceInfo.readOnly) {
+      await spaceManager.saveFrameSchema(spaceInfo.path, table.id, () =>
+        frameSchemaToTableSchema(table)
       );
     }
 
@@ -169,19 +142,22 @@ export const FramesMDBProvider: React.FC<
   };
 
   useEffect(() => {
-    // Skip loading if we have preloaded data or kit data
-    if (props.preloadedFrameData || props.previewMode || isKitPreview) return;
+    // Load data regardless of read-only mode
 
-    if (schemaTable)
-      getMDBData().then((f) => {
-        if (f && Object.keys(f).length > 0) {
-          setFrameData(f);
-          // if (f[frameSchema?.id]) {
-          //   setHistory((prev) => [...prev, f[frameSchema?.id] as MDBFrame]);
-          // }
-        }
-      });
-  }, [schemaTable, props.preloadedFrameData, props.previewMode, isKitPreview]);
+    if (schemaTable) {
+      getMDBData()
+        .then((f) => {
+          if (f && Object.keys(f).length > 0) {
+            setFrameData(f);
+            // if (f[frameSchema?.id]) {
+            //   setHistory((prev) => [...prev, f[frameSchema?.id] as MDBFrame]);
+            // }
+          } else {
+          }
+        })
+        .catch((error) => {});
+    }
+  }, [schemaTable, spaceManager]);
   useEffect(() => {
     if (schemaTable) {
       setFrameSchema((p) => {
@@ -241,18 +217,27 @@ export const FramesMDBProvider: React.FC<
     }
   }, [schemaTable, props.contextSchema, props.schema]);
   const loadTables = useCallback(async () => {
-    // Skip loading if we have preloaded data or in preview mode or kit preview
-    if (props.preloadedSchemaTable || props.previewMode || isKitPreview || !spaceInfo) return;
+    // Don't load if no spaceInfo
+    if (!spaceInfo) {
+      return;
+    }
 
-    props.superstate.spaceManager.framesForSpace(spaceInfo.path).then((f) => {
-      if (f)
-        setSchemaTable((prev) => ({
-          uniques: [],
-          cols: ["id", "name", "type", "def", "predicate", "primary"],
-          rows: f,
-        }));
-    });
-  }, [props.schema, spaceInfo, props.preloadedSchemaTable, props.previewMode, isKitPreview]);
+    try {
+      const frameSchemas = await spaceManager.framesForSpace(spaceInfo.path);
+
+      if (frameSchemas) {
+        setSchemaTable((prev) => {
+          const newSchemaTable: DBTable = {
+            uniques: [],
+            cols: ["id", "name", "type", "def", "predicate", "primary"],
+            rows: frameSchemas,
+          };
+          return newSchemaTable;
+        });
+      } else {
+      }
+    } catch (error) {}
+  }, [props.schema, spaceInfo, spaceManager]);
   const refreshSpace = useCallback(
     async (payload: { path: string }) => {
       if (payload.path == spaceInfo.path) {
@@ -264,8 +249,8 @@ export const FramesMDBProvider: React.FC<
   );
 
   useEffect(() => {
-    // Skip event listeners in preview mode
-    if (props.previewMode) return;
+    // Skip event listeners in read-only mode
+    if (spaceInfo?.readOnly) return;
 
     props.superstate.eventsDispatcher.addListener(
       "frameStateUpdated",
@@ -277,24 +262,19 @@ export const FramesMDBProvider: React.FC<
         refreshSpace
       );
     };
-  }, [refreshSpace, props.previewMode]);
+  }, [refreshSpace]);
   const getMDBData = async (): Promise<MDBFrames> => {
-    // Return preloaded data if available
-    if (props.preloadedFrameData) {
-      return props.preloadedFrameData;
-    }
-    // Return kit data if available
-    if (kitSpaceData?.frameData) {
-      return kitSpaceData.frameData;
-    }
-    // Return empty if in preview mode or no spaceInfo
-    if (props.previewMode || !spaceInfo) {
+    // Return empty if no spaceInfo
+    if (!spaceInfo) {
       return {};
     }
-    const tables = await props.superstate.spaceManager.readAllFrames(
-      spaceInfo.path
-    );
-    return tables;
+
+    try {
+      const tables = await spaceManager.readAllFrames(spaceInfo.path);
+      return tables || {};
+    } catch (error) {
+      return {};
+    }
   };
 
   useEffect(() => {
@@ -303,20 +283,18 @@ export const FramesMDBProvider: React.FC<
 
   const saveFrame = async (newTable: MDBFrame, track = true) => {
     if (spaceInfo?.readOnly) return;
-    if (props.previewMode) return; // Skip if in preview mode
+    if (spaceInfo?.readOnly) return; // Skip if in read-only mode
 
     if (track) {
       setHistory((prevHistory) => [...prevHistory, newTable]);
       setFuture([]);
     }
-    await props.superstate.spaceManager
-      .saveFrame(spaceInfo.path, newTable)
-      .then((f) => {
-        setFrameData((p) => ({
-          ...p,
-          [newTable.schema.id]: newTable,
-        }));
-      });
+    await spaceManager.saveFrame(spaceInfo.path, newTable).then((f) => {
+      setFrameData((p) => ({
+        ...p,
+        [newTable.schema.id]: newTable,
+      }));
+    });
   };
   const undoLastAction = () => {
     if (history.length === 0) return;
@@ -373,7 +351,7 @@ export const FramesMDBProvider: React.FC<
     const mdbtable = tableData;
 
     if (column.name == "") {
-      if (!props.previewMode) {
+      if (!spaceInfo?.readOnly) {
         props.superstate.ui.notify(i18n.notice.noPropertyName);
       }
       return false;
@@ -389,7 +367,7 @@ export const FramesMDBProvider: React.FC<
           (f) => f.name.toLowerCase() == column.name.toLowerCase()
         ))
     ) {
-      if (!props.previewMode) {
+      if (!spaceInfo?.readOnly) {
         props.superstate.ui.notify(i18n.notice.duplicatePropertyName);
       }
       return false;

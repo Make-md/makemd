@@ -42,10 +42,12 @@ export const calculateAggregate = (settings: MakeMDSettings, values: any[], fn: 
         if (aggregateFn.valueType == 'date') {
             const format = safelyParseJSON(col.value)?.format
             result = formatDate(settings, parseDate(calcResult), format);
+        } else if (aggregateFn.valueType == 'number') {
+            result = calcResult.toString();
         } else {
             result = calcResult ?? '';
         }
-        result = parseProperty("", result)
+        result = parseProperty("", result, aggregateFn.valueType)
         if (typeof result != "string") {
             result = ''
 		}

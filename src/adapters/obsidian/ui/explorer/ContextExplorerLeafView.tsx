@@ -1,3 +1,4 @@
+import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
 import { FileContextView, Superstate, i18n } from "makemd-core";
 import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
@@ -58,7 +59,9 @@ export class ContextExplorerLeafView extends ItemView {
     this.root = this.ui.createRoot(this.contentEl);
     if (this.root)
       this.root.render(
-        <FileContextView superstate={this.superstate}></FileContextView>
+        <SpaceManagerProvider superstate={this.superstate}>
+          <FileContextView superstate={this.superstate}></FileContextView>
+        </SpaceManagerProvider>
       );
   }
 }

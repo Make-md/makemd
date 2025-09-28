@@ -22,7 +22,6 @@ import { movePath } from "shared/utils/uri";
 import { stringFromTag } from "utils/tags";
 import { ConfirmationModal } from "../../Modals/ConfirmationModal";
 import { InputModal } from "../../Modals/InputModal";
-import { openContextCreateItemModal } from "../../Modals/ContextCreateItemModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../properties/colorPickerMenu";
 import { showSpacesMenu } from "../properties/selectSpaceMenu";
@@ -391,50 +390,6 @@ export const showSpaceContextMenu = (
         );
       },
     });
-
-    // Edit Properties option - for spaces with context data
-    const contextInfo = superstate.contextsIndex.get(space.path);
-    if (contextInfo && contextInfo.contextTable) {
-      menuOptions.push({
-        name: i18n.menu.editProperties || "Edit Properties",
-        icon: "ui//list",
-        onClick: async (e) => {
-          // Get the context table from spaceManager
-          const contextTable = await superstate.spaceManager.readTable(space.path, "context");
-          
-          if (contextTable && contextTable.rows) {
-            // Find the row index for this space path
-            const rowIndex = contextTable.rows.findIndex(
-              row => row["File"] === space.path || row["_path"] === space.path
-            );
-            
-            if (rowIndex >= 0) {
-              // Open the modal in edit mode
-              openContextCreateItemModal(
-                superstate,
-                space.path,
-                "context", // context schema
-                undefined, // frameSchema
-                windowFromDocument(e.view.document),
-                rowIndex, // Row index for edit mode
-                contextTable.rows[rowIndex] // Current row data
-              );
-            } else {
-              // If space not found in context, open in create mode with path pre-filled
-              openContextCreateItemModal(
-                superstate,
-                space.path,
-                "context",
-                undefined,
-                windowFromDocument(e.view.document),
-                -1, // New item mode
-                { File: space.path, _path: space.path } // Pre-fill with path
-              );
-            }
-          }
-        },
-      });
-    }
   }
 
   const parentSpaceCache = superstate.spacesIndex.get(parentSpace);

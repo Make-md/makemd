@@ -2,6 +2,7 @@ import { FrameSelectionProvider } from "core/react/context/FrameSelectionContext
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext, PathProvider } from "core/react/context/PathContext";
 import { SpaceContext, SpaceProvider } from "core/react/context/SpaceContext";
+import { SpaceManagerProvider, useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useContext } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -19,25 +20,27 @@ export const SpaceView = (
 ) => {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <PathProvider
-        superstate={props.superstate}
-        path={props.path}
-        readMode={false}
-      >
-        <SpaceProvider superstate={props.superstate}>
-          <SpaceRoot superstate={props.superstate}>
-            <FrameSelectionProvider
-              id={"main"}
-              superstate={props.superstate}
-              editMode={
-                props.readOnly ? FrameEditorMode.Read : FrameEditorMode.Page
-              }
-            >
-              {props.children}
-            </FrameSelectionProvider>
-          </SpaceRoot>
-        </SpaceProvider>
-      </PathProvider>
+      <SpaceManagerProvider superstate={props.superstate}>
+        <PathProvider
+          superstate={props.superstate}
+          path={props.path}
+          readMode={false}
+        >
+          <SpaceProvider superstate={props.superstate}>
+            <SpaceRoot superstate={props.superstate}>
+              <FrameSelectionProvider
+                id={"main"}
+                superstate={props.superstate}
+                editMode={
+                  props.readOnly ? FrameEditorMode.Read : FrameEditorMode.Page
+                }
+              >
+                {props.children}
+              </FrameSelectionProvider>
+            </SpaceRoot>
+          </SpaceProvider>
+        </PathProvider>
+      </SpaceManagerProvider>
     </ErrorBoundary>
   );
 };
@@ -48,6 +51,8 @@ export const SpaceRoot = (
   const { pathState } = useContext(PathContext);
   const { spaceInfo, spaceState } = useContext(SpaceContext);
   const { tableData } = useContext(FramesMDBContext);
+  const spaceManager = useSpaceManager();
+  
   const cols: SpaceTableColumn[] = [
     ...[...(props.superstate.spacesMap.get(pathState.path) ?? [])].flatMap(
       (f) =>
@@ -65,7 +70,7 @@ export const SpaceRoot = (
                 style={fullWidth ? { '--page-width': '100%' } as React.CSSProperties : undefined}
               >
     <FrameContainerView
-      uri={props.superstate.spaceManager.uriByString(`${spaceInfo.path}#*main`)}
+      uri={spaceManager.uriByString(`${spaceInfo.path}#*main`)}
       superstate={props.superstate}
       editMode={
         spaceInfo.readOnly ? FrameEditorMode.Read : FrameEditorMode.Page

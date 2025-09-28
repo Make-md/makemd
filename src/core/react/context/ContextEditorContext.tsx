@@ -51,7 +51,7 @@ import {
 } from "../../utils/contexts/predicate/predicate";
 import { FramesMDBContext } from "./FramesMDBContext";
 import { SpaceContext } from "./SpaceContext";
-import { useMKitContext } from "./MKitContext";
+import { useSpaceManager } from "./SpaceManagerContext";
 type ContextEditorContextProps = {
   dbSchema: SpaceTableSchema;
   sortedColumns: SpaceTableColumn[];
@@ -143,8 +143,9 @@ export const ContextEditorProvider: React.FC<
     spaceState: spaceCache,
   } = useContext(SpaceContext);
 
-  // Check if we're in MKit preview mode
-  const mkitContext = useMKitContext();
+  // Use the SpaceManager context (handles MKit preview mode internally)
+  const spaceManager = useSpaceManager();
+
 
   const [schemaTable, setSchemaTable] = useState<DBTable>(null);
   const [contextTable, setContextTable] = useState<SpaceTables>({});
@@ -156,11 +157,6 @@ export const ContextEditorProvider: React.FC<
   const [editMode, setEditMode] = useState<number>(0);
   const contextPath =
     props.source ?? frameSchema?.def?.context ?? spaceInfo?.path;
-
-  // Get kit space data if available
-  const kitSpaceData = mkitContext.isPreviewMode && contextPath
-    ? mkitContext.getSpaceByFullPath(contextPath)
-    : null;
 
   const dbSchema: SpaceTableSchema = useMemo(() => {
     if (frameSchema && frameSchema.def?.db) {
@@ -184,18 +180,31 @@ export const ContextEditorProvider: React.FC<
 
   const defaultSchema = defaultContextTable;
 
-  const contexts = spaceCache?.contexts ?? [];
+  const contexts = useMemo(() => spaceCache?.contexts ?? [], [spaceCache]);
   const loadTables = async () => {
-    let schemas = props.superstate.contextsIndex.get(contextPath)?.schemas;
-    if (!schemas)
-      schemas = await props.superstate.spaceManager.tablesForSpace(contextPath);
+    let schemas: SpaceTableSchema[];
+    
+    
+    // SpaceManager handles MKit preview mode internally
+    schemas = props.superstate.contextsIndex.get(contextPath)?.schemas;
+    
+    if (!schemas) {
+      try {
+        schemas = await spaceManager.tablesForSpace(contextPath);
+      } catch (error) {
+        schemas = [];
+      }
+    }
+    
     if (schemas && !isEqual(schemaTable?.rows, schemas)) {
       setSchemaTable(() => ({
         ...defaultSchema,
         rows: schemas,
       }));
     } else {
-      if (dbSchema) retrieveCachedTable(dbSchema);
+      if (dbSchema) {
+        retrieveCachedTable(dbSchema);
+      }
     }
   };
 
@@ -204,7 +213,7 @@ export const ContextEditorProvider: React.FC<
   }, [dbSchema]);
 
   const loadContextFields = useCallback(async (space: string) => {
-    props.superstate.spaceManager.contextForSpace(space).then((f) => {
+    spaceManager.contextForSpace(space).then((f) => {
       setContextTable((t) => ({
         ...t,
         [space]: f,
@@ -212,9 +221,12 @@ export const ContextEditorProvider: React.FC<
     });
   }, []);
   const retrieveCachedTable = (newSchema: SpaceTableSchema) => {
-    props.superstate.spaceManager
+    
+    // SpaceManager handles MKit data internally
+    spaceManager
       .readTable(contextPath, newSchema.id)
       .then((f) => {
+        
         if (f) {
           if (newSchema.primary) {
             for (const c of contexts) {
@@ -228,10 +240,14 @@ export const ContextEditorProvider: React.FC<
             }
           }
           updateTable(f);
+        } else {
         }
+      })
+      .catch(error => {
       });
   };
   const updateTable = (newTable: SpaceTable) => {
+    
     setTableData(newTable);
     setContextTable((t) => ({
       ...t,
@@ -246,7 +262,7 @@ export const ContextEditorProvider: React.FC<
       } else {
         const tag = Object.keys(contextTable).find(
           (t) =>
-            props.superstate.spaceManager.spaceInfoForPath(t)?.path ==
+            spaceManager.spaceInfoForPath(t)?.path ==
             payload.path
         );
         if (tag) loadContextFields(tag);
@@ -295,7 +311,7 @@ export const ContextEditorProvider: React.FC<
 
   useEffect(() => {
     loadTables();
-  }, [spaceInfo, frameSchema, props.source]);
+  }, [spaceInfo, frameSchema, props.source, spaceManager]);
   const saveDB = async (newTable: SpaceTable) => {
     if (spaceInfo.readOnly) return;
     updateTable(newTable);
@@ -331,13 +347,14 @@ export const ContextEditorProvider: React.FC<
   );
 
   const data: DBRows = useMemo(
-    () =>
-      tableData?.rows.map((r, index) => ({
+    () => {
+      
+      const computedData = tableData?.rows?.map((r, index) => ({
         _index: index.toString(),
         ...r,
         ...(r[PathPropertyName]
           ? {
-              [PathPropertyName]: props.superstate.spaceManager.resolvePath(
+              [PathPropertyName]: spaceManager.resolvePath(
                 r[PathPropertyName],
                 spaceCache?.path
               ),
@@ -357,8 +374,12 @@ export const ContextEditorProvider: React.FC<
             ["_index" + c]: contextRowIndexByPath.toString(),
           });
           return { ...p, ...contextRowsWithKeysAppended };
-        }, {}),
-      })) ?? [],
+        }, {})
+      })) ?? [];
+      
+      
+      return computedData;
+    },
     [tableData, contextTable, cols, dbSchema, spaceCache]
   );
 
@@ -371,7 +392,7 @@ export const ContextEditorProvider: React.FC<
   }, [tableData]);
 
   const saveContextDB = async (newTable: SpaceTable, space: string) => {
-    await props.superstate.spaceManager
+    await spaceManager
       .saveTable(space, newTable, true)
       .then((f) =>
         props.superstate.reloadContextByPath(space, {
@@ -436,8 +457,7 @@ export const ContextEditorProvider: React.FC<
               ? {
                   ...f,
                   [f.name]: (
-                    props.superstate.pathsIndex.get(f[PathPropertyName])
-                      ?.tags ?? []
+                    spaceManager.getPathState(f[PathPropertyName])?.tags ?? []
                   ).join(", "),
                 }
               : f;

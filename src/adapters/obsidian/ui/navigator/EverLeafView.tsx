@@ -5,6 +5,7 @@ export const VIEW_DISPLAY_TEXT = "Overview";
 export const ICON = "columns";
 
 import { EverView } from "core/react/components/Navigator/EverView";
+import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
 import { Superstate } from "makemd-core";
 import { Root } from "react-dom/client";
 import { ObsidianUI } from "../ui";
@@ -73,7 +74,11 @@ export class EverLeafView extends ItemView {
       }
     }
     if (this.root) {
-      this.root.render(<EverView superstate={this.superstate} path={path} />);
+      this.root.render(
+        <SpaceManagerProvider superstate={this.superstate}>
+          <EverView superstate={this.superstate} path={path} />
+        </SpaceManagerProvider>
+      );
     } else {
       this.ui.manager.eventsDispatch.addOnceListener("windowReady", () => {
         this.constructView(path);
