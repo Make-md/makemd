@@ -49,6 +49,9 @@ export class SpaceManager implements SpaceManagerInterface {
 
     }
 
+    public getPathState = (path: string) => {
+      return this.superstate.pathsIndex.get(path);
+    }
     public onFocusesUpdated = () => {
       this.readFocuses().then(f => {
         this.superstate.focuses = f    

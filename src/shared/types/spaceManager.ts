@@ -10,12 +10,13 @@ import { MDBFrame, MDBFrames } from "./mframe";
 import { SpaceDefinition, SpaceType } from "./spaceDef";
 import { SpaceFragmentType } from "./spaceFragment";
 import { SpaceInfo } from "./spaceInfo";
-import { ISuperstate } from "./superstate";
+import { ISuperstate, PathState } from "./superstate";
 
 export interface SpaceManagerInterface {
   primarySpaceAdapter: SpaceAdapter;
   spaceAdapters: SpaceAdapter[];
   superstate: ISuperstate;
+  getPathState: (path: string) => PathState;
   loadPath: (path: string) => Promise<PathCache | void>;
     readSystemCommands(): Promise<Library[]>;
     saveSystemCommand(lib: string, action: Command): Promise<void>;

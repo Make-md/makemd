@@ -2,7 +2,10 @@ import { FrameSelectionProvider } from "core/react/context/FrameSelectionContext
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext, PathProvider } from "core/react/context/PathContext";
 import { SpaceContext, SpaceProvider } from "core/react/context/SpaceContext";
-import { SpaceManagerProvider, useSpaceManager } from "core/react/context/SpaceManagerContext";
+import {
+  SpaceManagerProvider,
+  useSpaceManager,
+} from "core/react/context/SpaceManagerContext";
 import { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useContext } from "react";
 import { ErrorBoundary } from "react-error-boundary";
@@ -51,8 +54,8 @@ export const SpaceRoot = (
   const { pathState } = useContext(PathContext);
   const { spaceInfo, spaceState } = useContext(SpaceContext);
   const { tableData } = useContext(FramesMDBContext);
-  const spaceManager = useSpaceManager();
-  
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
+
   const cols: SpaceTableColumn[] = [
     ...[...(props.superstate.spacesMap.get(pathState.path) ?? [])].flatMap(
       (f) =>
@@ -62,22 +65,27 @@ export const SpaceRoot = (
     ),
     ...(tableData?.cols.map((f) => ({ ...f, table: "" })) ?? []),
   ];
-    const fullWidth = spaceState?.metadata?.fullWidth;
+  const fullWidth = spaceState?.metadata?.fullWidth;
   return (
-    <div 
-                className="mk-space-view" 
-                data-path={pathState.path}
-                style={fullWidth ? { '--page-width': '100%' } as React.CSSProperties : undefined}
-              >
-    <FrameContainerView
-      uri={spaceManager.uriByString(`${spaceInfo.path}#*main`)}
-      superstate={props.superstate}
-      editMode={
-        spaceInfo.readOnly ? FrameEditorMode.Read : FrameEditorMode.Page
+    <div
+      className="mk-space-view"
+      data-path={pathState.path}
+      style={
+        fullWidth
+          ? ({ "--page-width": "100%" } as React.CSSProperties)
+          : undefined
       }
-      cols={cols}
     >
-      {props.children}
-    </FrameContainerView></div>
+      <FrameContainerView
+        uri={spaceManager.uriByString(`${spaceInfo.path}#*main`)}
+        superstate={props.superstate}
+        editMode={
+          spaceInfo.readOnly ? FrameEditorMode.Read : FrameEditorMode.Page
+        }
+        cols={cols}
+      >
+        {props.children}
+      </FrameContainerView>
+    </div>
   );
 };

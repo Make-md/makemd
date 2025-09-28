@@ -70,7 +70,7 @@ export const FramesMDBProvider: React.FC<
   const [history, setHistory] = useState<MDBFrame[]>([]);
   const [future, setFuture] = useState<MDBFrame[]>([]);
 
-  const spaceManager = useSpaceManager();
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
   // Initialize schema table as null - SpaceManager will load data
   const [schemaTable, setSchemaTable] = useState<DBTable>(null);
@@ -83,7 +83,7 @@ export const FramesMDBProvider: React.FC<
       ) as FrameSchema[]) ?? [];
 
     return computedSchemas;
-  }, [schemaTable, spaceManager.isPreviewMode]);
+  }, [schemaTable]);
 
   const frames = schemas.filter((f: FrameSchema) => f.type == "frame");
   const [frameData, setFrameData] = useState<MDBFrames | null>(null);

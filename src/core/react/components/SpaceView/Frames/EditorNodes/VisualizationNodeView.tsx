@@ -9,7 +9,6 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { Visualization } from "../../../Visualization";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";
-import { createVisualizationRows } from "core/utils/visualization/visualizationUtils";
 
 export const VisualizationNodeView = (
   props: FrameNodeViewProps & { source?: string }
@@ -21,7 +20,7 @@ export const VisualizationNodeView = (
   const sourcePath = props.source || "";
   const { nodes, updateNode } = useContext(FramesEditorRootContext);
   const [isCreating, setIsCreating] = useState(false);
-  const spaceManager = useSpaceManager();
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
   const {
     selectionMode,
@@ -95,10 +94,7 @@ export const VisualizationNodeView = (
       };
 
       // Save the new visualization frame
-      await spaceManager.saveFrame(
-        sourcePath,
-        newVisualizationFrame
-      );
+      await spaceManager.saveFrame(sourcePath, newVisualizationFrame);
 
       // Update the node's value to reference the new visualization
       if (updateNode && props.treeNode.node.id) {
@@ -119,7 +115,6 @@ export const VisualizationNodeView = (
 
   return (
     <div
-     
       style={{
         width: "100%",
         height: "100%",

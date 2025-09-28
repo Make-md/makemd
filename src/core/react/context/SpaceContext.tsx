@@ -29,13 +29,13 @@ export const SpaceProvider: React.FC<
   }>
 > = (props) => {
   const { pathState } = useContext(PathContext);
-  const spaceManager = useSpaceManager();
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
   const spaceInfo: SpaceInfo = useMemo(() => {
     if (props.spaceInfo) return props.spaceInfo;
 
     // SpaceManager handles MKit paths internally
-    if (spaceManager.isPreviewMode && pathState?.path) {
+    if ((spaceManager as any).isPreviewMode && pathState?.path) {
       const spaceData = spaceManager.spaceInfoForPath(pathState.path);
       if (spaceData) {
         return spaceData;
@@ -52,13 +52,8 @@ export const SpaceProvider: React.FC<
   useEffect(() => {
     const reloadSpace = () => {
       // For preview mode, create a minimal space state
-      if (spaceManager.isPreviewMode) {
-        // Don't try to get from index for mkit paths
-        setSpaceState(null);
-        return;
-      }
 
-      setSpaceState(props.superstate.spacesIndex.get(pathState.path));
+      setSpaceState(props.superstate.spacesIndex.get(pathState?.path));
     };
 
     const refreshSpace = (payload: { path: string }) => {

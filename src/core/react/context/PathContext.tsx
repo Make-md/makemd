@@ -32,27 +32,15 @@ export const PathProvider: React.FC<
   }>
 > = (props) => {
   // SpaceManager handles MKit context internally
-  const spaceManager = useSpaceManager();
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
   const [pathState, setPathState] = useState<PathState>(() => {
     // Use provided pathState if available
     if (props.pathState) {
       return props.pathState;
     }
-    
-    // SpaceManager handles MKit paths internally
-    if (spaceManager.isPreviewMode) {
-      // For preview mode, return minimal path state
-      return {
-        path: props.path,
-        label: { name: props.path, sticker: "", color: "" },
-        metadata: {},
-        readOnly: true
-      };
-    }
-    
-    // Otherwise get from superstate as fallback
-    return props.superstate.pathsIndex.get(props.path);
+
+    return spaceManager.getPathState(props.path);
   });
 
   const addToSpace = async (spacePath: string) => {
@@ -73,7 +61,7 @@ export const PathProvider: React.FC<
         setPathState(props.pathState);
         return;
       }
-      
+
       // Use spaceManager to get path state
       try {
         const pathStateFromManager = spaceManager.getPathState(props.path);
@@ -93,7 +81,9 @@ export const PathProvider: React.FC<
       if (payload.path == pathState?.path) {
         // Use spaceManager to get path state for the new path
         try {
-          const pathStateFromManager = spaceManager.getPathState(payload.newPath);
+          const pathStateFromManager = spaceManager.getPathState(
+            payload.newPath
+          );
           if (pathStateFromManager) {
             setPathState(pathStateFromManager);
           } else {

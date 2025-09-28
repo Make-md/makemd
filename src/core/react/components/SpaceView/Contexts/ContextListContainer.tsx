@@ -35,7 +35,7 @@ export const ContextListContainer = (props: {
 }) => {
   const flattenedItems = useRef<Record<string, [string, DBRow, Pos]>>({});
   const { pathState } = useContext(PathContext);
-  const spaceManager = useSpaceManager();
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
   const {
     predicate,
@@ -73,19 +73,26 @@ export const ContextListContainer = (props: {
   );
   useEffect(() => {
     if (!predicate) return;
-    
-    const listViewUri = initiateString(predicate.listView, "spaces://$kit/#*listView");
-    const listGroupUri = initiateString(predicate.listGroup, "spaces://$kit/#*listGroup");
-    const listItemUri = initiateString(predicate.listItem, "spaces://$kit/#*rowItem");
-    
-    
+
+    const listViewUri = initiateString(
+      predicate.listView,
+      "spaces://$kit/#*listView"
+    );
+    const listGroupUri = initiateString(
+      predicate.listGroup,
+      "spaces://$kit/#*listGroup"
+    );
+    const listItemUri = initiateString(
+      predicate.listItem,
+      "spaces://$kit/#*rowItem"
+    );
+
     const newURIs = {
       listView: spaceManager.uriByString(listViewUri, pathState.path),
       listGroup: spaceManager.uriByString(listGroupUri, pathState.path),
       listItem: spaceManager.uriByString(listItemUri, pathState.path),
     };
-    
-    
+
     setURIs((p) => (!_.isEqual(newURIs, p) ? newURIs : p));
   }, [predicate, pathState, spaceManager]);
   const onKeyDown = (e: React.KeyboardEvent) => {

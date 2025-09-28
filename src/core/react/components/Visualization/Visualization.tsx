@@ -1,3 +1,4 @@
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import {
   AggregationType,
   createVisualizationRows,
@@ -20,7 +21,6 @@ import { parseMDBStringValue } from "utils/properties";
 import { defaultMenu, menuInput } from "../UI/Menus/menu/SelectionMenu";
 import { showColorPickerMenu } from "../UI/Menus/properties/colorPickerMenu";
 import { D3VisualizationEngine } from "./D3VisualizationEngine";
-import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 
 import { VisualizationSetup } from "./VisualizationSetup";
 import { VisualizationToolbar } from "./VisualizationToolbar";
@@ -55,8 +55,8 @@ export const Visualization = ({
   isSelected = false,
   minMode = false,
 }: VisualizationProps) => {
-  const spaceManager = useSpaceManager();
-  
+  const spaceManager = useSpaceManager() || superstate.spaceManager;
+
   // Use default width if initialWidth is a string percentage
   const defaultWidth =
     typeof initialWidth === "string" && (initialWidth as string).includes("%")
@@ -301,129 +301,54 @@ export const Visualization = ({
         const tableId = listId;
 
         // Use the SpaceManager to read the table
-        const spaceData = await spaceManager.readTable(tableSourcePath, tableId);
+        const spaceData = await spaceManager.readTable(
+          tableSourcePath,
+          tableId
+        );
         if (spaceData && spaceData.rows && Array.isArray(spaceData.rows)) {
-            // Process rows and expand multi-value fields
-            const processedRows: VisualizationDataRow[] = [];
+          // Process rows and expand multi-value fields
+          const processedRows: VisualizationDataRow[] = [];
 
-            spaceData.rows.forEach((row, rowIndex) => {
-              if (rowIndex === 0) {
-              }
+          spaceData.rows.forEach((row, rowIndex) => {
+            if (rowIndex === 0) {
+            }
 
-              // Check if this row has any multi-value fields
-              let hasMultiField = false;
-              const multiFields: { [key: string]: string[] } = {};
+            // Check if this row has any multi-value fields
+            let hasMultiField = false;
+            const multiFields: { [key: string]: string[] } = {};
 
-              // First pass: identify multi-value fields
-              Object.entries(row).forEach(([key, value]) => {
-                const column = spaceData.cols?.find((col) => col.name === key);
-                if (
-                  column &&
-                  (column.type?.endsWith("-multi") || column.type === "tags")
-                ) {
-                  // Parse the multi-value string
-                  const valueStr = String(value || "");
-                  if (valueStr && valueStr !== "" && valueStr !== "[]") {
-                    const parsedValues = parseMultiString(valueStr);
-                    // Only mark as multi-field if we have actual values
-                    if (
-                      parsedValues &&
-                      parsedValues.length > 0 &&
-                      parsedValues.some((v) => v && v.trim() !== "")
-                    ) {
-                      hasMultiField = true;
-                      multiFields[key] = parsedValues.filter(
-                        (v) => v && v.trim() !== ""
-                      );
-                      if (rowIndex === 0) {
-                      }
+            // First pass: identify multi-value fields
+            Object.entries(row).forEach(([key, value]) => {
+              const column = spaceData.cols?.find((col) => col.name === key);
+              if (
+                column &&
+                (column.type?.endsWith("-multi") || column.type === "tags")
+              ) {
+                // Parse the multi-value string
+                const valueStr = String(value || "");
+                if (valueStr && valueStr !== "" && valueStr !== "[]") {
+                  const parsedValues = parseMultiString(valueStr);
+                  // Only mark as multi-field if we have actual values
+                  if (
+                    parsedValues &&
+                    parsedValues.length > 0 &&
+                    parsedValues.some((v) => v && v.trim() !== "")
+                  ) {
+                    hasMultiField = true;
+                    multiFields[key] = parsedValues.filter(
+                      (v) => v && v.trim() !== ""
+                    );
+                    if (rowIndex === 0) {
                     }
                   }
                 }
-              });
-
-              if (hasMultiField && Object.keys(multiFields).length > 0) {
-                // Process multi-value fields - create a row for each combination
-                // For visualization, we typically want to expand on ONE multi-field at a time
-                // Let's find the first multi-field that's being used in the visualization
-                const xField = Array.isArray(
-                  config?.visualizationConfig?.encoding?.x
-                )
-                  ? config?.visualizationConfig?.encoding?.x?.[0]?.field
-                  : config?.visualizationConfig?.encoding?.x?.field;
-                const yField = Array.isArray(
-                  config?.visualizationConfig?.encoding?.y
-                )
-                  ? config?.visualizationConfig?.encoding?.y?.[0]?.field
-                  : config?.visualizationConfig?.encoding?.y?.field;
-
-                // Determine which multi-field to expand on (prefer x-axis field, then y-axis field)
-                let expandField: string = null;
-                if (xField && multiFields[xField]) {
-                  expandField = xField;
-                } else if (yField && multiFields[yField]) {
-                  expandField = yField;
-                } else {
-                  // If neither axis uses a multi-field, use the first multi-field
-                  expandField = Object.keys(multiFields)[0];
-                }
-
-                if (rowIndex === 0) {
-                }
-
-                // Expand rows based on the selected multi-field
-                if (expandField && multiFields[expandField]) {
-                  multiFields[expandField].forEach((multiValue) => {
-                    const expandedRow: VisualizationDataRow = {};
-
-                    Object.entries(row).forEach(([key, value]) => {
-                      const column = spaceData.cols?.find(
-                        (col) => col.name === key
-                      );
-
-                      if (key === expandField) {
-                        // Use the expanded value for this field
-                        expandedRow[key] = multiValue;
-                      } else if (column) {
-                        // Parse other fields normally
-                        expandedRow[key] = parseMDBStringValue(
-                          column.type,
-                          String(value || "")
-                        );
-                      } else {
-                        expandedRow[key] = value;
-                      }
-                    });
-
-                    processedRows.push(expandedRow);
-                  });
-                }
-              } else {
-                // No multi-value fields, process normally
-                const parsedRow: VisualizationDataRow = {};
-                Object.entries(row).forEach(([key, value]) => {
-                  const column = spaceData.cols?.find(
-                    (col) => col.name === key
-                  );
-                  if (column) {
-                    parsedRow[key] = parseMDBStringValue(
-                      column.type,
-                      String(value || "")
-                    );
-                  } else {
-                    parsedRow[key] = value;
-                  }
-                });
-
-                if (rowIndex === 0) {
-                }
-
-                processedRows.push(parsedRow);
               }
             });
 
-            // Aggregate data if needed based on chart type and field types
-            if (config?.visualizationConfig?.encoding) {
+            if (hasMultiField && Object.keys(multiFields).length > 0) {
+              // Process multi-value fields - create a row for each combination
+              // For visualization, we typically want to expand on ONE multi-field at a time
+              // Let's find the first multi-field that's being used in the visualization
               const xField = Array.isArray(
                 config?.visualizationConfig?.encoding?.x
               )
@@ -434,228 +359,299 @@ export const Visualization = ({
               )
                 ? config?.visualizationConfig?.encoding?.y?.[0]?.field
                 : config?.visualizationConfig?.encoding?.y?.field;
-              const xType = Array.isArray(
-                config?.visualizationConfig?.encoding?.x
-              )
-                ? config?.visualizationConfig?.encoding?.x?.[0]?.type
-                : config?.visualizationConfig?.encoding?.x?.type;
-              const yType = Array.isArray(
-                config?.visualizationConfig?.encoding?.y
-              )
-                ? config?.visualizationConfig?.encoding?.y?.[0]?.type
-                : config?.visualizationConfig?.encoding?.y?.type;
 
-              const chartType = config?.visualizationConfig?.chartType;
+              // Determine which multi-field to expand on (prefer x-axis field, then y-axis field)
+              let expandField: string = null;
+              if (xField && multiFields[xField]) {
+                expandField = xField;
+              } else if (yField && multiFields[yField]) {
+                expandField = yField;
+              } else {
+                // If neither axis uses a multi-field, use the first multi-field
+                expandField = Object.keys(multiFields)[0];
+              }
 
-              // Check if yField exists in the data
-              const hasYFieldInData =
-                processedRows.length > 0 && yField in processedRows[0];
+              if (rowIndex === 0) {
+              }
 
-              // Check if we have a group by field
-              const groupByField =
-                config.visualizationConfig?.encoding?.color?.field;
-              const groupByAggregation = (config.visualizationConfig?.encoding
-                ?.color?.aggregate || "sum") as AggregationType;
+              // Expand rows based on the selected multi-field
+              if (expandField && multiFields[expandField]) {
+                multiFields[expandField].forEach((multiValue) => {
+                  const expandedRow: VisualizationDataRow = {};
 
-              // Use utility function to process all aggregation logic
-              const aggregatedData = processDataAggregation(processedRows, {
-                xField,
-                yField,
-                groupByField,
-                groupByAggregation,
-                chartType,
-                hasYFieldInData,
-                spaceData,
-                xType,
-                yType,
+                  Object.entries(row).forEach(([key, value]) => {
+                    const column = spaceData.cols?.find(
+                      (col) => col.name === key
+                    );
+
+                    if (key === expandField) {
+                      // Use the expanded value for this field
+                      expandedRow[key] = multiValue;
+                    } else if (column) {
+                      // Parse other fields normally
+                      expandedRow[key] = parseMDBStringValue(
+                        column.type,
+                        String(value || "")
+                      );
+                    } else {
+                      expandedRow[key] = value;
+                    }
+                  });
+
+                  processedRows.push(expandedRow);
+                });
+              }
+            } else {
+              // No multi-value fields, process normally
+              const parsedRow: VisualizationDataRow = {};
+              Object.entries(row).forEach(([key, value]) => {
+                const column = spaceData.cols?.find((col) => col.name === key);
+                if (column) {
+                  parsedRow[key] = parseMDBStringValue(
+                    column.type,
+                    String(value || "")
+                  );
+                } else {
+                  parsedRow[key] = value;
+                }
               });
 
-              tableData = aggregatedData;
-            } else {
-              tableData = processedRows;
+              if (rowIndex === 0) {
+              }
+
+              processedRows.push(parsedRow);
             }
+          });
 
-            // Sort data by x-axis if it's temporal (date)
-            if (
-              tableData &&
-              tableData.length > 0 &&
+          // Aggregate data if needed based on chart type and field types
+          if (config?.visualizationConfig?.encoding) {
+            const xField = Array.isArray(
               config?.visualizationConfig?.encoding?.x
-            ) {
-              const xField = Array.isArray(
-                config?.visualizationConfig?.encoding?.x
-              )
-                ? config?.visualizationConfig?.encoding?.x?.[0]?.field
-                : config?.visualizationConfig?.encoding?.x?.field;
-              const xType = Array.isArray(
-                config?.visualizationConfig?.encoding?.x
-              )
-                ? config?.visualizationConfig?.encoding?.x?.[0]?.type
-                : config?.visualizationConfig?.encoding?.x?.type;
+            )
+              ? config?.visualizationConfig?.encoding?.x?.[0]?.field
+              : config?.visualizationConfig?.encoding?.x?.field;
+            const yField = Array.isArray(
+              config?.visualizationConfig?.encoding?.y
+            )
+              ? config?.visualizationConfig?.encoding?.y?.[0]?.field
+              : config?.visualizationConfig?.encoding?.y?.field;
+            const xType = Array.isArray(
+              config?.visualizationConfig?.encoding?.x
+            )
+              ? config?.visualizationConfig?.encoding?.x?.[0]?.type
+              : config?.visualizationConfig?.encoding?.x?.type;
+            const yType = Array.isArray(
+              config?.visualizationConfig?.encoding?.y
+            )
+              ? config?.visualizationConfig?.encoding?.y?.[0]?.type
+              : config?.visualizationConfig?.encoding?.y?.type;
 
-              // Check if we should sort by date or option order
-              let shouldSortByDate = false;
-              let shouldSortByOption = false;
-              let optionOrder: string[] = [];
+            const chartType = config?.visualizationConfig?.chartType;
 
-              if (xField && xType === "temporal") {
+            // Check if yField exists in the data
+            const hasYFieldInData =
+              processedRows.length > 0 && yField in processedRows[0];
+
+            // Check if we have a group by field
+            const groupByField =
+              config.visualizationConfig?.encoding?.color?.field;
+            const groupByAggregation = (config.visualizationConfig?.encoding
+              ?.color?.aggregate || "sum") as AggregationType;
+
+            // Use utility function to process all aggregation logic
+            const aggregatedData = processDataAggregation(processedRows, {
+              xField,
+              yField,
+              groupByField,
+              groupByAggregation,
+              chartType,
+              hasYFieldInData,
+              spaceData,
+              xType,
+              yType,
+            });
+
+            tableData = aggregatedData;
+          } else {
+            tableData = processedRows;
+          }
+
+          // Sort data by x-axis if it's temporal (date)
+          if (
+            tableData &&
+            tableData.length > 0 &&
+            config?.visualizationConfig?.encoding?.x
+          ) {
+            const xField = Array.isArray(
+              config?.visualizationConfig?.encoding?.x
+            )
+              ? config?.visualizationConfig?.encoding?.x?.[0]?.field
+              : config?.visualizationConfig?.encoding?.x?.field;
+            const xType = Array.isArray(
+              config?.visualizationConfig?.encoding?.x
+            )
+              ? config?.visualizationConfig?.encoding?.x?.[0]?.type
+              : config?.visualizationConfig?.encoding?.x?.type;
+
+            // Check if we should sort by date or option order
+            let shouldSortByDate = false;
+            let shouldSortByOption = false;
+            let optionOrder: string[] = [];
+
+            if (xField && xType === "temporal") {
+              shouldSortByDate = true;
+            } else if (xField && !xType) {
+              // Auto-detect field type
+              const xFieldColumn = spaceData.cols?.find(
+                (col) => col.name === xField
+              );
+              const xFieldType = xFieldColumn?.type?.toLowerCase();
+
+              if (
+                xFieldType &&
+                (xFieldType === "date" ||
+                  xFieldType === "datetime" ||
+                  xFieldType === "date-end")
+              ) {
                 shouldSortByDate = true;
-              } else if (xField && !xType) {
-                // Auto-detect field type
-                const xFieldColumn = spaceData.cols?.find(
-                  (col) => col.name === xField
-                );
-                const xFieldType = xFieldColumn?.type?.toLowerCase();
-
-                if (
-                  xFieldType &&
-                  (xFieldType === "date" ||
-                    xFieldType === "datetime" ||
-                    xFieldType === "date-end")
-                ) {
-                  shouldSortByDate = true;
-                } else if (
-                  xFieldType === "option" ||
-                  xFieldType === "option-multi"
-                ) {
-                  // For option fields, get the order from the field configuration
-                  shouldSortByOption = true;
-                  // Parse the options from the value field which contains the options configuration
-                  if (xFieldColumn?.value) {
-                    try {
-                      const optionsConfig = JSON.parse(xFieldColumn.value);
-                      if (
-                        optionsConfig &&
-                        optionsConfig.options &&
-                        Array.isArray(optionsConfig.options)
-                      ) {
-                        // Extract the order of option values
-                        optionOrder = optionsConfig.options.map(
-                          (opt: any) => opt.value || opt.name || opt
-                        );
-                      }
-                    } catch (e) {
-                      // If parsing fails, we'll fall back to alphabetical sorting
-                      console.debug(
-                        "Could not parse options configuration:",
-                        e
+              } else if (
+                xFieldType === "option" ||
+                xFieldType === "option-multi"
+              ) {
+                // For option fields, get the order from the field configuration
+                shouldSortByOption = true;
+                // Parse the options from the value field which contains the options configuration
+                if (xFieldColumn?.value) {
+                  try {
+                    const optionsConfig = JSON.parse(xFieldColumn.value);
+                    if (
+                      optionsConfig &&
+                      optionsConfig.options &&
+                      Array.isArray(optionsConfig.options)
+                    ) {
+                      // Extract the order of option values
+                      optionOrder = optionsConfig.options.map(
+                        (opt: any) => opt.value || opt.name || opt
                       );
                     }
-                  }
-                } else if (tableData.length > 0) {
-                  // Check if the first value looks like a date
-                  const sampleValue = tableData[0][xField];
-                  if (sampleValue) {
-                    const dateTest = new Date(sampleValue as string | number);
-                    if (
-                      !isNaN(dateTest.getTime()) &&
-                      typeof sampleValue === "string" &&
-                      (sampleValue.includes("-") || sampleValue.includes("/"))
-                    ) {
-                      shouldSortByDate = true;
-                    }
+                  } catch (e) {
+                    // If parsing fails, we'll fall back to alphabetical sorting
+                    console.debug("Could not parse options configuration:", e);
                   }
                 }
-              }
-
-              if (shouldSortByDate) {
-                // Enhanced date sorting with better date parsing
-                tableData.sort((a, b) => {
-                  const valA = String(a[xField] || "");
-                  const valB = String(b[xField] || "");
-
-                  // Try multiple date parsing approaches
-                  let dateA = new Date(valA);
-                  let dateB = new Date(valB);
-
-                  // If direct parsing fails, try some common formats
-                  if (isNaN(dateA.getTime())) {
-                    // Try parsing formats like "2023-12-01", "12/01/2023", etc.
-                    const reformattedA = valA.replace(
-                      /(\d{2})\/(\d{2})\/(\d{4})/,
-                      "$3-$1-$2"
-                    ); // MM/DD/YYYY -> YYYY-MM-DD
-                    dateA = new Date(reformattedA);
+              } else if (tableData.length > 0) {
+                // Check if the first value looks like a date
+                const sampleValue = tableData[0][xField];
+                if (sampleValue) {
+                  const dateTest = new Date(sampleValue as string | number);
+                  if (
+                    !isNaN(dateTest.getTime()) &&
+                    typeof sampleValue === "string" &&
+                    (sampleValue.includes("-") || sampleValue.includes("/"))
+                  ) {
+                    shouldSortByDate = true;
                   }
-
-                  if (isNaN(dateB.getTime())) {
-                    const reformattedB = valB.replace(
-                      /(\d{2})\/(\d{2})\/(\d{4})/,
-                      "$3-$1-$2"
-                    ); // MM/DD/YYYY -> YYYY-MM-DD
-                    dateB = new Date(reformattedB);
-                  }
-
-                  // Handle invalid dates by putting them at the end
-                  if (isNaN(dateA.getTime()) && isNaN(dateB.getTime()))
-                    return 0;
-                  if (isNaN(dateA.getTime())) return 1;
-                  if (isNaN(dateB.getTime())) return -1;
-
-                  return dateA.getTime() - dateB.getTime();
-                });
-              } else if (shouldSortByOption && optionOrder.length > 0) {
-                // Sort by the defined option order
-                tableData.sort((a, b) => {
-                  const valA = String(a[xField] || "");
-                  const valB = String(b[xField] || "");
-
-                  // Get the index of each value in the option order
-                  const indexA = optionOrder.indexOf(valA);
-                  const indexB = optionOrder.indexOf(valB);
-
-                  // If both values are in the option order, sort by their position
-                  if (indexA !== -1 && indexB !== -1) {
-                    return indexA - indexB;
-                  }
-
-                  // If one value is not in the option order, put it at the end
-                  if (indexA === -1 && indexB !== -1) return 1;
-                  if (indexA !== -1 && indexB === -1) return -1;
-
-                  // If neither value is in the option order, sort alphabetically
-                  return valA.localeCompare(valB, undefined, {
-                    numeric: true,
-                    sensitivity: "base",
-                  });
-                });
-              } else if (
-                xField &&
-                config?.visualizationConfig?.chartType === "line"
-              ) {
-                // For line charts, always ensure some kind of logical ordering even for non-dates
-                tableData.sort((a, b) => {
-                  const valA = String(a[xField] || "");
-                  const valB = String(b[xField] || "");
-
-                  // Try numeric sorting first
-                  const numA = parseFloat(valA);
-                  const numB = parseFloat(valB);
-
-                  if (!isNaN(numA) && !isNaN(numB)) {
-                    return numA - numB;
-                  }
-
-                  // Fallback to string sorting with numeric comparison
-                  return valA.localeCompare(valB, undefined, {
-                    numeric: true,
-                    sensitivity: "base",
-                  });
-                });
+                }
               }
             }
 
-            tableFields = spaceData.cols?.map((c) => c.name) || [];
-            // Store the table properties for axis label formatting
-            if (spaceData.cols) {
-              setTableProperties((prev) => {
-                // Only update if actually different to prevent re-renders
-                if (JSON.stringify(prev) !== JSON.stringify(spaceData.cols)) {
-                  return spaceData.cols;
+            if (shouldSortByDate) {
+              // Enhanced date sorting with better date parsing
+              tableData.sort((a, b) => {
+                const valA = String(a[xField] || "");
+                const valB = String(b[xField] || "");
+
+                // Try multiple date parsing approaches
+                let dateA = new Date(valA);
+                let dateB = new Date(valB);
+
+                // If direct parsing fails, try some common formats
+                if (isNaN(dateA.getTime())) {
+                  // Try parsing formats like "2023-12-01", "12/01/2023", etc.
+                  const reformattedA = valA.replace(
+                    /(\d{2})\/(\d{2})\/(\d{4})/,
+                    "$3-$1-$2"
+                  ); // MM/DD/YYYY -> YYYY-MM-DD
+                  dateA = new Date(reformattedA);
                 }
-                return prev;
+
+                if (isNaN(dateB.getTime())) {
+                  const reformattedB = valB.replace(
+                    /(\d{2})\/(\d{2})\/(\d{4})/,
+                    "$3-$1-$2"
+                  ); // MM/DD/YYYY -> YYYY-MM-DD
+                  dateB = new Date(reformattedB);
+                }
+
+                // Handle invalid dates by putting them at the end
+                if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+                if (isNaN(dateA.getTime())) return 1;
+                if (isNaN(dateB.getTime())) return -1;
+
+                return dateA.getTime() - dateB.getTime();
+              });
+            } else if (shouldSortByOption && optionOrder.length > 0) {
+              // Sort by the defined option order
+              tableData.sort((a, b) => {
+                const valA = String(a[xField] || "");
+                const valB = String(b[xField] || "");
+
+                // Get the index of each value in the option order
+                const indexA = optionOrder.indexOf(valA);
+                const indexB = optionOrder.indexOf(valB);
+
+                // If both values are in the option order, sort by their position
+                if (indexA !== -1 && indexB !== -1) {
+                  return indexA - indexB;
+                }
+
+                // If one value is not in the option order, put it at the end
+                if (indexA === -1 && indexB !== -1) return 1;
+                if (indexA !== -1 && indexB === -1) return -1;
+
+                // If neither value is in the option order, sort alphabetically
+                return valA.localeCompare(valB, undefined, {
+                  numeric: true,
+                  sensitivity: "base",
+                });
+              });
+            } else if (
+              xField &&
+              config?.visualizationConfig?.chartType === "line"
+            ) {
+              // For line charts, always ensure some kind of logical ordering even for non-dates
+              tableData.sort((a, b) => {
+                const valA = String(a[xField] || "");
+                const valB = String(b[xField] || "");
+
+                // Try numeric sorting first
+                const numA = parseFloat(valA);
+                const numB = parseFloat(valB);
+
+                if (!isNaN(numA) && !isNaN(numB)) {
+                  return numA - numB;
+                }
+
+                // Fallback to string sorting with numeric comparison
+                return valA.localeCompare(valB, undefined, {
+                  numeric: true,
+                  sensitivity: "base",
+                });
               });
             }
-          
+          }
+
+          tableFields = spaceData.cols?.map((c) => c.name) || [];
+          // Store the table properties for axis label formatting
+          if (spaceData.cols) {
+            setTableProperties((prev) => {
+              // Only update if actually different to prevent re-renders
+              if (JSON.stringify(prev) !== JSON.stringify(spaceData.cols)) {
+                return spaceData.cols;
+              }
+              return prev;
+            });
+          }
         }
 
         // If still not found, try pathsIndex
@@ -737,7 +733,13 @@ export const Visualization = ({
     } catch (error) {
       setAvailableTables([]);
     }
-  }, [superstate, sourcePath, configData?.dataSourcePath, configData, spaceManager]);
+  }, [
+    superstate,
+    sourcePath,
+    configData?.dataSourcePath,
+    configData,
+    spaceManager,
+  ]);
 
   // Save schema (listId and dataSourcePath)
   const saveVisualizationSchema = async (
@@ -794,10 +796,7 @@ export const Visualization = ({
     if (mdbFrameId && sourcePath && spaceManager) {
       try {
         setIsSaving(true);
-        const frame = await spaceManager.readFrame(
-          sourcePath,
-          mdbFrameId
-        );
+        const frame = await spaceManager.readFrame(sourcePath, mdbFrameId);
         if (frame) {
           const updatedRows = createVisualizationRows(
             newConfig,

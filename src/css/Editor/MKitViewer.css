@@ -6,9 +6,8 @@
 
 .mk-mkit-header {
   display: flex;
-  justify-content: flex-end;
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--background-modifier-border);
+  justify-content: space-between;
+  align-items: center;;
 }
 
 .mk-mkit-content {
@@ -18,10 +17,12 @@
   flex-direction: column;
 }
 
+.mk-mkit-body {
+  padding: var(--file-margins);
+}
 .mk-mkit-frame-preview {
   flex: 1;
   overflow: auto;
-  padding: 20px;
 }
 
 .mk-frame-preview-container {

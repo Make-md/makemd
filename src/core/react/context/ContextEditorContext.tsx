@@ -144,8 +144,7 @@ export const ContextEditorProvider: React.FC<
   } = useContext(SpaceContext);
 
   // Use the SpaceManager context (handles MKit preview mode internally)
-  const spaceManager = useSpaceManager();
-
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
   const [schemaTable, setSchemaTable] = useState<DBTable>(null);
   const [contextTable, setContextTable] = useState<SpaceTables>({});
@@ -183,11 +182,10 @@ export const ContextEditorProvider: React.FC<
   const contexts = useMemo(() => spaceCache?.contexts ?? [], [spaceCache]);
   const loadTables = async () => {
     let schemas: SpaceTableSchema[];
-    
-    
+
     // SpaceManager handles MKit preview mode internally
     schemas = props.superstate.contextsIndex.get(contextPath)?.schemas;
-    
+
     if (!schemas) {
       try {
         schemas = await spaceManager.tablesForSpace(contextPath);
@@ -195,7 +193,7 @@ export const ContextEditorProvider: React.FC<
         schemas = [];
       }
     }
-    
+
     if (schemas && !isEqual(schemaTable?.rows, schemas)) {
       setSchemaTable(() => ({
         ...defaultSchema,
@@ -221,12 +219,10 @@ export const ContextEditorProvider: React.FC<
     });
   }, []);
   const retrieveCachedTable = (newSchema: SpaceTableSchema) => {
-    
     // SpaceManager handles MKit data internally
     spaceManager
       .readTable(contextPath, newSchema.id)
       .then((f) => {
-        
         if (f) {
           if (newSchema.primary) {
             for (const c of contexts) {
@@ -243,11 +239,9 @@ export const ContextEditorProvider: React.FC<
         } else {
         }
       })
-      .catch(error => {
-      });
+      .catch((error) => {});
   };
   const updateTable = (newTable: SpaceTable) => {
-    
     setTableData(newTable);
     setContextTable((t) => ({
       ...t,
@@ -261,9 +255,7 @@ export const ContextEditorProvider: React.FC<
         loadTables();
       } else {
         const tag = Object.keys(contextTable).find(
-          (t) =>
-            spaceManager.spaceInfoForPath(t)?.path ==
-            payload.path
+          (t) => spaceManager.spaceInfoForPath(t)?.path == payload.path
         );
         if (tag) loadContextFields(tag);
       }
@@ -346,10 +338,9 @@ export const ContextEditorProvider: React.FC<
     [tableData, contextTable, contexts, dbSchema]
   );
 
-  const data: DBRows = useMemo(
-    () => {
-      
-      const computedData = tableData?.rows?.map((r, index) => ({
+  const data: DBRows = useMemo(() => {
+    const computedData =
+      tableData?.rows?.map((r, index) => ({
         _index: index.toString(),
         ...r,
         ...(r[PathPropertyName]
@@ -374,14 +365,11 @@ export const ContextEditorProvider: React.FC<
             ["_index" + c]: contextRowIndexByPath.toString(),
           });
           return { ...p, ...contextRowsWithKeysAppended };
-        }, {})
+        }, {}),
       })) ?? [];
-      
-      
-      return computedData;
-    },
-    [tableData, contextTable, cols, dbSchema, spaceCache]
-  );
+
+    return computedData;
+  }, [tableData, contextTable, cols, dbSchema, spaceCache]);
 
   useEffect(() => {
     if (tableData) {
@@ -392,14 +380,12 @@ export const ContextEditorProvider: React.FC<
   }, [tableData]);
 
   const saveContextDB = async (newTable: SpaceTable, space: string) => {
-    await spaceManager
-      .saveTable(space, newTable, true)
-      .then((f) =>
-        props.superstate.reloadContextByPath(space, {
-          force: true,
-          calculate: true,
-        })
-      );
+    await spaceManager.saveTable(space, newTable, true).then((f) =>
+      props.superstate.reloadContextByPath(space, {
+        force: true,
+        calculate: true,
+      })
+    );
   };
   // const getSchema = (
   //   _schemaTable: FrameSchema[],
@@ -444,65 +430,62 @@ export const ContextEditorProvider: React.FC<
           (predicate?.colsOrder ?? []).findIndex((x) => x == b.name + b.table)
       );
   }, [cols, predicate]);
-  const filteredData = useMemo(
-    () => {
-      const filtered = data
-        .filter((f) => {
-          return (predicate?.filters ?? []).reduce((p, c) => {
-            const row = cols.some(
-              (f) =>
-                f.schemaId == defaultContextSchemaID &&
-                f.name.toLowerCase() == "tags"
-            )
-              ? {
-                  ...f,
-                  [f.name]: (
-                    spaceManager.getPathState(f[PathPropertyName])?.tags ?? []
-                  ).join(", "),
-                }
-              : f;
-            return p
-              ? filterReturnForCol(
-                  cols.find((col) => col.name + col.table == c.field),
-                  c,
-                  row,
-                  spaceCache.properties
-                )
-              : p;
-          }, true);
-        })
-        .filter((f) =>
-          searchString?.length > 0
-            ? matchAny(searchString).test(
-                Object.keys(f)
-                  .filter((g) => g.charAt(0) != "_")
-                  .map((g) => f[g])
-                  .join("|")
+  const filteredData = useMemo(() => {
+    const filtered = data
+      .filter((f) => {
+        return (predicate?.filters ?? []).reduce((p, c) => {
+          const row = cols.some(
+            (f) =>
+              f.schemaId == defaultContextSchemaID &&
+              f.name.toLowerCase() == "tags"
+          )
+            ? {
+                ...f,
+                [f.name]: (
+                  spaceManager.getPathState(f[PathPropertyName])?.tags ?? []
+                ).join(", "),
+              }
+            : f;
+          return p
+            ? filterReturnForCol(
+                cols.find((col) => col.name + col.table == c.field),
+                c,
+                row,
+                spaceCache.properties
               )
-            : true
-        )
-        .sort((a, b) => {
-          return (predicate?.sort ?? []).reduce((p, c) => {
-            return p == 0
-              ? sortReturnForCol(
-                  cols.find((col) => col.name + col.table == c.field),
-                  c,
-                  a,
-                  b
-                )
-              : p;
-          }, 0);
-        });
+            : p;
+        }, true);
+      })
+      .filter((f) =>
+        searchString?.length > 0
+          ? matchAny(searchString).test(
+              Object.keys(f)
+                .filter((g) => g.charAt(0) != "_")
+                .map((g) => f[g])
+                .join("|")
+            )
+          : true
+      )
+      .sort((a, b) => {
+        return (predicate?.sort ?? []).reduce((p, c) => {
+          return p == 0
+            ? sortReturnForCol(
+                cols.find((col) => col.name + col.table == c.field),
+                c,
+                a,
+                b
+              )
+            : p;
+        }, 0);
+      });
 
-      // Apply limit if set (0 means show all)
-      if (predicate?.limit > 0) {
-        return filtered.slice(0, predicate.limit);
-      }
+    // Apply limit if set (0 means show all)
+    if (predicate?.limit > 0) {
+      return filtered.slice(0, predicate.limit);
+    }
 
-      return filtered;
-    },
-    [predicate, data, cols, searchString]
-  );
+    return filtered;
+  }, [predicate, data, cols, searchString]);
 
   const updateRow = async (row: DBRow, index: number) => {
     const spaceState = props.superstate.spacesIndex.get(

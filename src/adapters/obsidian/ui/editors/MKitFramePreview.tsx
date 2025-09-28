@@ -4,15 +4,14 @@ import { FrameRootProvider } from "core/react/context/FrameRootContext";
 import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
 import { PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
-import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { Superstate } from "makemd-core";
-import { PathState } from "shared/types/superstate";
-import React, { useMemo } from "react";
+import React, { PropsWithChildren, useMemo } from "react";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { SpaceKit } from "shared/types/kits";
 import { DBTable, SpaceProperty, SpaceTableSchema } from "shared/types/mdb";
 import { FrameTreeProp, MDBFrames } from "shared/types/mframe";
 import { SpaceInfo } from "shared/types/spaceInfo";
+import { PathState } from "shared/types/superstate";
 import { mdbSchemaToFrameSchema } from "shared/utils/makemd/schema";
 
 interface MKitFramePreviewProps {
@@ -21,13 +20,9 @@ interface MKitFramePreviewProps {
   frameId?: string;
 }
 
-export const MKitFramePreview: React.FC<MKitFramePreviewProps> = ({
-  superstate,
-  spaceKit,
-  frameId,
-}) => {
-  const spaceManager = useSpaceManager();
-  
+export const MKitFramePreview: React.FC<
+  PropsWithChildren<MKitFramePreviewProps>
+> = ({ children, superstate, spaceKit, frameId }) => {
   // Create pseudo path for preview
   const pseudoPath: PathState = useMemo(
     () => ({
@@ -172,21 +167,24 @@ export const MKitFramePreview: React.FC<MKitFramePreviewProps> = ({
   const bannerUri = useMemo(() => {
     // Check various possible property names for banner/cover
     const bannerKey = Object.keys(spaceKit.properties || {}).find(
-      key => key.toLowerCase().includes('banner') || 
-             key.toLowerCase().includes('cover') || 
-             key.toLowerCase().includes('image')
+      (key) =>
+        key.toLowerCase().includes("banner") ||
+        key.toLowerCase().includes("cover") ||
+        key.toLowerCase().includes("image")
     );
-    
+
     if (bannerKey && spaceKit.properties[bannerKey]) {
-      return superstate.spaceManager.uriByString(spaceKit.properties[bannerKey]);
+      return superstate.spaceManager.uriByString(
+        spaceKit.properties[bannerKey]
+      );
     }
-    
+
     // Check if there's a banner in the label properties
     const labelProperties = spaceKit.context?.label?.rows?.[0];
     if (labelProperties?.banner) {
       return superstate.spaceManager.uriByString(labelProperties.banner);
     }
-    
+
     return null;
   }, [spaceKit, superstate]);
 
@@ -228,52 +226,53 @@ export const MKitFramePreview: React.FC<MKitFramePreviewProps> = ({
           className="mk-mkit-banner"
           style={{
             backgroundImage: `url("${
-              bannerUri.scheme === 'vault'
+              bannerUri.scheme === "vault"
                 ? superstate.ui.getUIPath(bannerUri.basePath)
                 : bannerUri.fullPath
             }")`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            height: '200px'
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            height: "200px",
           }}
         />
       )}
-      <div className="mk-mkit-header">
-        <h1 className="mk-mkit-title">{spaceKit.name}</h1>
-      </div>
-      <PathProvider
-        superstate={superstate}
-        path={pseudoPath.path}
-        pathState={pseudoPath}
-        readMode={true}
-      >
-        <SpaceProvider superstate={superstate} spaceInfo={spaceInfo}>
-          <FramesMDBProvider
-            superstate={superstate}
-          >
-            <FrameRootProvider
-              superstate={superstate}
-              path={superstate.spaceManager.uriByString(pseudoPath.path)}
-              cols={[]}
-              previewMode={true}
-              frame={mdbFrames.main}
-            >
-              <FrameInstanceProvider
-                id="mkit-preview"
+      <div className="mk-mkit-body">
+        <div className="mk-mkit-header">
+          <h1 className="mk-mkit-title">{spaceKit.name}</h1>
+          {children}
+        </div>
+        <PathProvider
+          superstate={superstate}
+          path={pseudoPath.path}
+          pathState={pseudoPath}
+          readMode={true}
+        >
+          <SpaceProvider superstate={superstate} spaceInfo={spaceInfo}>
+            <FramesMDBProvider superstate={superstate}>
+              <FrameRootProvider
                 superstate={superstate}
-                props={{}}
-                contexts={contexts}
-                editable={false}
+                path={superstate.spaceManager.uriByString(pseudoPath.path)}
+                cols={[]}
+                previewMode={true}
+                frame={mdbFrames.main}
               >
-                <FrameInstanceView
+                <FrameInstanceProvider
+                  id="mkit-preview"
                   superstate={superstate}
-                  source={pseudoPath.path}
-                />
-              </FrameInstanceProvider>
-            </FrameRootProvider>
-          </FramesMDBProvider>
-        </SpaceProvider>
-      </PathProvider>
+                  props={{}}
+                  contexts={contexts}
+                  editable={false}
+                >
+                  <FrameInstanceView
+                    superstate={superstate}
+                    source={pseudoPath.path}
+                  />
+                </FrameInstanceProvider>
+              </FrameRootProvider>
+            </FramesMDBProvider>
+          </SpaceProvider>
+        </PathProvider>
+      </div>
     </div>
   );
 };

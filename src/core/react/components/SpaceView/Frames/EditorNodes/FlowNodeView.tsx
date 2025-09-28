@@ -8,7 +8,7 @@ import { FrameSelectionContext } from "core/react/context/FrameSelectionContext"
 import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { wrapQuotes } from "core/utils/strings";
 import { i18n } from "makemd-core";
-import React, { useContext, useMemo, useState, useEffect } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { BlinkMode } from "shared/types/blink";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { PathState } from "shared/types/PathState";
@@ -42,27 +42,26 @@ export const FlowNodeView = (
 ) => {
   const fullPath = props.state?.props?.value;
   const parsedPath = fullPath ? parseContent(fullPath) : null;
-  
-  const spaceManager = useSpaceManager();
+
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
   // Check if this is a space fragment view and store the parsed URI
   const { isSpaceFragment, parsedUri } = useMemo(() => {
     if (!parsedPath) return { isSpaceFragment: false, parsedUri: null };
-    
+
     const uri = props.superstate.spaceManager.uriByString(
       parsedPath,
       props.source
     );
-    
-    const isFragment = (
+
+    const isFragment =
       uri?.refType === "frame" ||
       uri?.refType === "context" ||
-      uri?.refType === "action"
-    );
-    
+      uri?.refType === "action";
+
     return { isSpaceFragment: isFragment, parsedUri: uri };
   }, [parsedPath, props.source]);
-  
+
   const [pathState, setPathState] = useState<PathState | null>(null);
 
   useEffect(() => {
@@ -75,7 +74,8 @@ export const FlowNodeView = (
       const path = spaceManager.resolvePath(parsedPath, props.source);
 
       // Use the already parsed URI
-      const uri = parsedUri || props.superstate.spaceManager.uriByString(parsedPath);
+      const uri =
+        parsedUri || props.superstate.spaceManager.uriByString(parsedPath);
       if (uri?.scheme == "https" || uri?.scheme == "http") {
         setPathState({
           path: parsedPath,
@@ -91,12 +91,12 @@ export const FlowNodeView = (
         });
         return;
       }
-      
+
       try {
         const pathStateFromManager = spaceManager.getPathState(path);
         setPathState(pathStateFromManager);
       } catch (error) {
-        console.error('Failed to get path state for FlowNodeView:', error);
+        console.error("Failed to get path state for FlowNodeView:", error);
         setPathState(null);
       }
     };
@@ -110,10 +110,7 @@ export const FlowNodeView = (
   );
   const updateValue = (newValue: string) => {
     // Don't allow updates in preview mode
-    if (spaceManager.isPreviewMode) {
-      return;
-    }
-    
+
     if (newValue != props.state.props?.value) {
       if (props.treeNode.editorProps?.linkedNode) {
         const node = nodes.find(
@@ -172,7 +169,7 @@ export const FlowNodeView = (
             ></PathCrumb>
           </div>
         ))}
-{props.state &&
+      {props.state &&
         expanded &&
         (props.state?.props?.value?.length > 0 ? (
           isSpaceFragment ? (

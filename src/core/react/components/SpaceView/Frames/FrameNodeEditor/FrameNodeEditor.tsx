@@ -78,7 +78,7 @@ export const FrameNodeEditor = (props: {
   const { pathState } = useContext(PathContext);
   const { deleteFrame, duplicateFrame } = props;
   const { spaceInfo } = useContext(SpaceContext);
-  const spaceManager = useSpaceManager();
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
   const {
     addNode,
     ungroupNode,
@@ -149,10 +149,7 @@ export const FrameNodeEditor = (props: {
 
         if (frameId && sourcePath && spaceManager) {
           try {
-            const frame = await spaceManager.readFrame(
-              sourcePath,
-              frameId
-            );
+            const frame = await spaceManager.readFrame(sourcePath, frameId);
 
             if (frame && frame.schema?.id === frameId) {
               setVisualizationFrame(frame);
@@ -207,9 +204,7 @@ export const FrameNodeEditor = (props: {
       if (sourcePath && spaceManager) {
         try {
           // Use tablesForSpace to get available tables
-          const tables = await spaceManager.tablesForSpace(
-            sourcePath
-          );
+          const tables = await spaceManager.tablesForSpace(sourcePath);
 
           if (tables) {
             // Map to the expected format
@@ -241,10 +236,7 @@ export const FrameNodeEditor = (props: {
       if (listId && spaceManager) {
         const sourcePath = pathState?.path || spaceInfo?.path || "";
         try {
-          const table = await spaceManager.readTable(
-            sourcePath,
-            listId
-          );
+          const table = await spaceManager.readTable(sourcePath, listId);
           if (table && table.cols) {
             const columns = table.cols.map((col) => col.name || col.type);
             setSelectedTableColumns(columns);
@@ -295,20 +287,16 @@ export const FrameNodeEditor = (props: {
       const defaultConfig = parseVisualizationData(newFrame);
 
       // First save the frame schema
-      await spaceManager.saveFrameSchema(
-        sourcePath,
-        frameId,
-        () => ({
-          id: frameId,
-          name: "vis",
-          type: "frame",
-          def: JSON.stringify({
-            type: "view",
-            id: "main",
-            db: "",
-          }),
-        })
-      );
+      await spaceManager.saveFrameSchema(sourcePath, frameId, () => ({
+        id: frameId,
+        name: "vis",
+        type: "frame",
+        def: JSON.stringify({
+          type: "view",
+          id: "main",
+          db: "",
+        }),
+      }));
 
       // Then save the frame data
       await spaceManager.saveFrame(sourcePath, newFrame);
@@ -891,7 +879,7 @@ export const FrameNodeEditor = (props: {
       ) : (
         <>
           {editMode == FrameNodeEditMode.EditModeText ? (
-            <TextSubmenu {...submenuProps as any}></TextSubmenu>
+            <TextSubmenu {...(submenuProps as any)}></TextSubmenu>
           ) : editMode == FrameNodeEditMode.EditModeLayout ? (
             <LayoutSubmenu {...submenuProps}></LayoutSubmenu>
           ) : editMode == FrameNodeEditMode.EditModeSizing ? (

@@ -1,13 +1,19 @@
-import { getAbstractFileAtPath } from "adapters/obsidian/utils/file";
 import { installSpaceKit } from "adapters/obsidian/ui/kit/kits";
+import { getAbstractFileAtPath } from "adapters/obsidian/utils/file";
+import { MKitProvider } from "core/react/context/MKitContext";
 import MakeMDPlugin from "main";
-import { FileView, Notice, TFile, ViewStateResult, WorkspaceLeaf } from "obsidian";
+import {
+  FileView,
+  Notice,
+  TFile,
+  ViewStateResult,
+  WorkspaceLeaf,
+} from "obsidian";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
 import { SpaceKit } from "shared/types/kits";
 import { safelyParseJSON } from "shared/utils/json";
 import { MKitFramePreview } from "./MKitFramePreview";
-import { MKitProvider } from "core/react/context/MKitContext";
 
 export const MKIT_FILE_VIEWER_TYPE = "mk-mkit-view";
 export const ICON = "package";
@@ -19,21 +25,26 @@ interface MKitViewerProps {
   onInstall: () => void;
 }
 
-const MKitViewerComponent: React.FC<MKitViewerProps> = ({ plugin, spaceKit, filePath, onInstall }) => {
+const MKitViewerComponent: React.FC<MKitViewerProps> = ({
+  plugin,
+  spaceKit,
+  filePath,
+  onInstall,
+}) => {
   const [installing, setInstalling] = React.useState(false);
 
   // Set CSS variable based on fullWidth property
   React.useEffect(() => {
     if (spaceKit?.definition?.fullWidth) {
-      document.documentElement.style.setProperty('--page-width', '100%');
+      document.documentElement.style.setProperty("--page-width", "100%");
     } else {
       // Reset to default if not fullWidth
-      document.documentElement.style.removeProperty('--page-width');
+      document.documentElement.style.removeProperty("--page-width");
     }
 
     // Cleanup on unmount
     return () => {
-      document.documentElement.style.removeProperty('--page-width');
+      document.documentElement.style.removeProperty("--page-width");
     };
   }, [spaceKit?.definition?.fullWidth]);
 
@@ -44,7 +55,7 @@ const MKitViewerComponent: React.FC<MKitViewerProps> = ({ plugin, spaceKit, file
     try {
       // Get the parent folder of the .mkit file as the install location
       const file = getAbstractFileAtPath(plugin.app, filePath) as TFile;
-      const parentPath = file.parent?.path || '/';
+      const parentPath = file.parent?.path || "/";
 
       await installSpaceKit(plugin, plugin.superstate, spaceKit, parentPath);
       new Notice(`Successfully installed ${spaceKit.name}`);
@@ -70,22 +81,17 @@ const MKitViewerComponent: React.FC<MKitViewerProps> = ({ plugin, spaceKit, file
 
   return (
     <div className="mk-mkit-viewer">
-      <div className="mk-mkit-header">
-        <button
-          className="mod-cta"
-          onClick={handleInstall}
-          disabled={installing}
-        >
-          {installing ? "Installing..." : "Install Space Kit"}
-        </button>
-      </div>
-
       <div className="mk-mkit-content">
         <MKitProvider spaceKit={spaceKit}>
-          <MKitFramePreview
-            superstate={plugin.superstate}
-            spaceKit={spaceKit}
-          />
+          <MKitFramePreview superstate={plugin.superstate} spaceKit={spaceKit}>
+            <button
+              className="mod-cta"
+              onClick={handleInstall}
+              disabled={installing}
+            >
+              {installing ? "Installing..." : "Install Space Kit"}
+            </button>
+          </MKitFramePreview>
         </MKitProvider>
       </div>
     </div>
@@ -126,7 +132,7 @@ export class MKitFileViewer extends FileView {
     }
     // Clean up CSS variable
     if (this.contentEl) {
-      this.contentEl.style.removeProperty('--page-width');
+      this.contentEl.style.removeProperty("--page-width");
     }
   }
 
@@ -184,7 +190,7 @@ export class MKitFileViewer extends FileView {
 
       // Check if fullWidth is set and apply CSS variable
       if (this.spaceKit?.definition?.fullWidth) {
-        this.contentEl.style.setProperty('--page-width', '100%');
+        this.contentEl.style.setProperty("--page-width", "100%");
       }
 
       // Use the plugin's UI createRoot method if available, otherwise use React's createRoot
@@ -208,15 +214,13 @@ export class MKitFileViewer extends FileView {
           />
         );
       }
-
     } catch (error) {
       console.error("Failed to load MKit file:", error);
       this.contentEl.empty();
       this.contentEl.createEl("div", {
         cls: "mk-mkit-error",
-        text: `Failed to load MKit file: ${error.message}`
+        text: `Failed to load MKit file: ${error.message}`,
       });
     }
   }
-
 }

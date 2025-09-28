@@ -40,19 +40,19 @@ type SpaceFragmentObject = {
 export const SpaceFragmentViewComponent = (
   props: SpaceFragmentViewComponentProps
 ) => {
-  const spaceManager = useSpaceManager();
-  
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
+
   const path: URI = useMemo(() => {
     const uri = props.superstate.spaceManager.uriByString(
       props.path,
       props.source
     );
-    
+
     // SpaceManager handles path resolution internally
-    if (spaceManager.isPreviewMode && uri?.basePath) {
+    if ((spaceManager as any).isPreviewMode && uri?.basePath) {
       const adjustedUri = {
         ...uri,
-        basePath: props.source || uri.basePath
+        basePath: props.source || uri.basePath,
       };
       return adjustedUri;
     }
@@ -61,7 +61,7 @@ export const SpaceFragmentViewComponent = (
   }, [props.path, props.source, spaceManager]);
 
   const [spaceFragment, setSpaceFragment] = useState<SpaceFragmentObject>(null);
-  
+
   useEffect(() => {
     if (path.refType == "context") {
       setSpaceFragment({
@@ -72,43 +72,16 @@ export const SpaceFragmentViewComponent = (
       });
     } else if (path.refType == "frame") {
       // SpaceManager handles MKit frame data internally
-      if (spaceManager.isPreviewMode) {
-        // Try to get frame data from SpaceManager (it handles MKit internally)
-        spaceManager.readFrame(path.basePath, path.ref).then((frameData) => {
-          if (frameData) {
-            const schema = frameData.schema || { id: path.ref, type: 'frame' };
-            
-            if (schema?.type == "view") {
-              setSpaceFragment({
-                type: "context",
-                path: path.basePath,
-                frameSchema: path.ref,
-              });
-            } else if (schema?.type == "vis") {
-              setSpaceFragment({
-                type: "vis",
-                path: path.basePath,
-                frameSchema: path.ref,
-              });
-            } else {
-              setSpaceFragment({
-                type: "frame",
-                path: path.basePath,
-                frameSchema: path.ref,
-              });
-            }
-          } else {
-          }
-        }).catch((error) => {
-        });
-      } else {
-        // Fallback for non-preview mode or if SpaceManager didn't find the frame
-        spaceManager.readFrame(path.basePath, path.ref).then((s) => {
+
+      // Fallback for non-preview mode or if SpaceManager didn't find the frame
+      spaceManager
+        .readFrame(path.basePath, path.ref)
+        .then((s) => {
           let schema = s?.schema;
           if (!schema && path.ref == defaultFrameListViewSchema.id) {
             schema = defaultFrameListViewSchema;
             setSpaceFragment({
-              type: "context", 
+              type: "context",
               path: path.basePath,
               frameSchema: schema.id,
             });
@@ -133,9 +106,8 @@ export const SpaceFragmentViewComponent = (
               frameSchema: path.ref,
             });
           }
-        }).catch((error) => {
-        });
-      }
+        })
+        .catch((error) => {});
     } else if (path.refType == "action") {
       setSpaceFragment({
         type: "action",
@@ -150,7 +122,7 @@ export const SpaceFragmentViewComponent = (
       });
     }
   }, [path, spaceManager]);
-  
+
   return (
     <>
       {spaceFragment?.path ? (

@@ -1,11 +1,10 @@
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import type { Superstate } from "makemd-core";
 import React, { PropsWithChildren, useEffect, useMemo, useState } from "react";
 import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
 import { PathStickerView } from "../../../../../shared/components/PathSticker";
 import { showPathContextMenu } from "../Menus/navigator/pathContextMenu";
-import { useSpaceManager } from "core/react/context/SpaceManagerContext";
-import { resolvePath } from "core/superstate/utils/path";
 
 export const PathCrumb = (
   props: PropsWithChildren<{
@@ -17,7 +16,7 @@ export const PathCrumb = (
     onClick?: (e: React.MouseEvent) => void;
   }>
 ) => {
-  const spaceManager = useSpaceManager();
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
   const path = useMemo(
     () =>
@@ -26,15 +25,15 @@ export const PathCrumb = (
         : props.path,
     [props.source, props.path, spaceManager]
   );
-  
+
   const [cache, setCache] = useState<PathState | null>(null);
-  
+
   const reloadCache = () => {
     try {
       const pathState = spaceManager.getPathState(path);
       setCache(pathState);
     } catch (error) {
-      console.error('Failed to get path state for PathCrumb:', error);
+      console.error("Failed to get path state for PathCrumb:", error);
       setCache(null);
     }
   };
@@ -66,14 +65,14 @@ export const PathCrumb = (
           return;
         }
         // In preview mode, don't navigate to prevent breaking the preview
-        if (spaceManager.isPreviewMode) {
+        if ((spaceManager as any).isPreviewMode) {
           return;
         }
         props.superstate.ui.openPath(cache?.path ?? path, false);
       }}
       onContextMenu={(e) => {
         // Disable context menu in preview mode
-        if (spaceManager.isPreviewMode) {
+        if ((spaceManager as any).isPreviewMode) {
           return;
         }
         if (cache) {
