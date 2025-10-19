@@ -1,6 +1,7 @@
 import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import {
@@ -42,7 +43,7 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
         path: `assets/color-palettes/${newPaletteName.trim()}`,
         type: "colorpalette" as const,
         colors: [
-          { name: "Color 1", value: "#3b82f6", category: "custom" as const },
+          { name: i18n.settings.color1, value: "#3b82f6", category: "custom" as const },
         ],
         gradients: [] as NamedGradient[],
         designSystemMapping: { baseTokens: {}, semanticTokens: {} },
@@ -165,7 +166,7 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
 
     try {
       await navigator.clipboard.writeText(dataStr);
-      superstate.ui.notify(`Palette "${palette.name}" copied to clipboard`);
+      superstate.ui.notify(`${i18n.notice.palette} "${palette.name}" copied to clipboard`);
     } catch (e) {
       console.error("Failed to copy to clipboard:", e);
       superstate.ui.notify("Failed to copy palette to clipboard", "error");
@@ -568,7 +569,7 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
             i18n.settings.tooltips.importPalette || "Import palette from JSON"
           }
         >
-          Import
+          {i18n.buttons.import}
         </button>
       </div>
 
@@ -586,7 +587,7 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
             <textarea
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
-              placeholder="Paste your palette JSON here..."
+              placeholder={i18n.descriptions.pasteYourPaletteJsonHere}
               style={{
                 width: "100%",
                 minHeight: "200px",
@@ -609,7 +610,7 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
                 onClick={importPaletteFromText}
                 disabled={!importText.trim()}
               >
-                Import
+                {i18n.buttons.import}
               </button>
               <button
                 onClick={() => {
@@ -618,7 +619,7 @@ const ColorPaletteManager = ({ superstate }: { superstate: Superstate }) => {
                   setImportError("");
                 }}
               >
-                Cancel
+                {i18n.buttons.cancel}
               </button>
             </div>
           </div>
@@ -729,7 +730,7 @@ export const ColorPaletteSettings = ({ superstate }: SettingsProps) => {
             <div className="mk-callout-text">
               {dropHighlighted ? (
                 <>
-                  <strong>Drop color palette here to import</strong>
+                  <strong>{i18n.settings.dropColorPaletteHereToImport}</strong>
                   <br />
                   Import palettes downloaded from the community
                 </>

@@ -16,7 +16,6 @@ import { default as i18n } from "shared/i18n";
 import { PathState } from "shared/types/PathState";
 import { SpaceSort } from "shared/types/spaceDef";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
-import { windowFromDocument } from "shared/utils/dom";
 import { savePathSticker } from "shared/utils/sticker";
 import { movePath } from "shared/utils/uri";
 import { stringFromTag } from "utils/tags";
@@ -27,14 +26,16 @@ import { showColorPickerMenu } from "../properties/colorPickerMenu";
 import { showSpacesMenu } from "../properties/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
+import { Rect } from "shared/types/Pos";
 
 export const showSpaceContextMenu = (
   superstate: Superstate,
   path: PathState,
-  e: React.MouseEvent | React.TouchEvent,
-  activePath: string,
+  rect: Rect,
+  win: Window,
   parentSpace?: string,
-  onClose?: () => void
+  onClose?: () => void,
+  
 ) => {
   const space = superstate.spacesIndex.get(path.path);
   if (!space) return;
@@ -42,20 +43,20 @@ export const showSpaceContextMenu = (
   menuOptions.push({
     name: i18n.menu.openFilePane,
     icon: "ui//go-to-file",
-    onClick: (e) => {
+    onClick: () => {
       superstate.ui.openPath(path.path, true);
     },
   });
   menuOptions.push(menuSeparator);
 
   menuOptions.push({
-    name: "New",
+    name: i18n.menu.new,
     type: SelectOptionType.Submenu,
     onSubmenu: (offset) => {
       return showSpaceAddMenu(
         superstate,
         offset,
-        windowFromDocument(e.view.document),
+        win,
         space,
         false,
         true
@@ -64,7 +65,6 @@ export const showSpaceContextMenu = (
     icon: "ui//plus",
   });
 
-  menuOptions.push(menuSeparator);
 
   menuOptions.push(menuSeparator);
   if (superstate.settings.spacesStickers) {
@@ -76,7 +76,7 @@ export const showSpaceContextMenu = (
         return showColorPickerMenu(
           superstate,
           offset,
-          windowFromDocument(e.view.document),
+          win,
           "",
           (value) => savePathColor(superstate, space.path, value),
           false,
@@ -95,7 +95,7 @@ export const showSpaceContextMenu = (
               savePathSticker(superstate, space.path, emoji)
             }
           />,
-          windowFromDocument(e.view.document)
+          win
         );
       },
     });
@@ -343,7 +343,7 @@ export const showSpaceContextMenu = (
         return superstate.ui.openMenu(
           offset,
           defaultMenu(superstate.ui, sortOptions),
-          windowFromDocument(e.view.document)
+          win
         );
       },
     });
@@ -358,20 +358,11 @@ export const showSpaceContextMenu = (
         offset,
         superstate,
         space,
-        windowFromDocument(e.view.document)
+        win
       ),
   });
 
-  if (superstate.ui.hasNativePathMenu(space.path)) {
-    menuOptions.push(menuSeparator);
-    menuOptions.push({
-      name: i18n.menu.openNativeMenu,
-      icon: "ui//options",
-      onClick: (e) => {
-        superstate.ui.nativePathMenu(e, space.path);
-      },
-    });
-  }
+  
   if (space.type != "default") {
     menuOptions.push(menuSeparator);
 
@@ -386,39 +377,14 @@ export const showSpaceContextMenu = (
             value={space.type == "tag" ? stringFromTag(space.name) : space.name}
             saveValue={(v) => renamePathByName(superstate, space.path, v)}
           ></InputModal>,
-          windowFromDocument(e.view.document)
+          win
         );
       },
     });
   }
 
   const parentSpaceCache = superstate.spacesIndex.get(parentSpace);
-  if (
-    parentSpaceCache &&
-    (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")
-  ) {
-    if (parentSpace != path.parent) {
-      const spaceCache = superstate.spacesIndex.get(parentSpace);
-      if (spaceCache) {
-        menuOptions.push({
-          name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
-          icon: "ui//pin-off",
-          onClick: (e) => {
-            removePathsFromSpace(superstate, spaceCache.path, [space.path]);
-          },
-        });
-      }
-    }
-  }
-  if (onClose) {
-    menuOptions.push({
-      name: i18n.menu.closeSpace,
-      icon: "ui//close",
-      onClick: (e) => {
-        onClose();
-      },
-    });
-  }
+  
   if (space.type == "folder") {
     menuOptions.push({
       name: i18n.buttons.addToSpace,
@@ -427,7 +393,7 @@ export const showSpaceContextMenu = (
         const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
         showSpacesMenu(
           offset,
-          windowFromDocument(e.view.document),
+          win,
           superstate,
           (link) => {
             const spaceCache = superstate.spacesIndex.get(link);
@@ -448,7 +414,7 @@ export const showSpaceContextMenu = (
         const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
         showSpacesMenu(
           offset,
-          windowFromDocument(e.view.document),
+          win,
           superstate,
           (link) => {
             superstate.spaceManager.renameSpace(
@@ -480,6 +446,15 @@ export const showSpaceContextMenu = (
       },
     });
   }
+  if (superstate.ui.hasNativePathMenu(space.path)) {
+    menuOptions.push({
+      name: i18n.menu.openNativeMenu,
+      icon: "ui//options",
+      onClick: (e) => {
+        superstate.ui.nativePathMenu(e, space.path);
+      },
+    });
+  }
 
   menuOptions.push(menuSeparator);
   if (!isTouchScreen(superstate.ui)) {
@@ -498,6 +473,34 @@ export const showSpaceContextMenu = (
     });
   }
   menuOptions.push(menuSeparator);
+  
+  if (
+    parentSpaceCache &&
+    (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")
+  ) {
+    
+    if (parentSpace != path.parent) {
+      const spaceCache = superstate.spacesIndex.get(parentSpace);
+      if (spaceCache) {
+        menuOptions.push({
+          name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
+          icon: "ui//pin-off",
+          onClick: (e) => {
+            removePathsFromSpace(superstate, spaceCache.path, [space.path]);
+          },
+        });
+      }
+    }
+  }
+  if (onClose) {
+    menuOptions.push({
+      name: i18n.menu.closeSpace,
+      icon: "ui//close",
+      onClick: (e) => {
+        onClose();
+      },
+    });
+  }
   if (space.type == "folder") {
     menuOptions.push({
       name: i18n.menu.hide,
@@ -520,15 +523,15 @@ export const showSpaceContextMenu = (
             confirmLabel={i18n.buttons.delete}
             message={i18n.descriptions.deleteSpace}
           ></ConfirmationModal>,
-          windowFromDocument(e.view.document)
+          win
         );
       },
     });
 
   superstate.ui.openMenu(
-    (e.target as HTMLElement).getBoundingClientRect(),
+    rect,
     defaultMenu(superstate.ui, menuOptions),
-    windowFromDocument(e.view.document)
+    win
   );
 
   return false;

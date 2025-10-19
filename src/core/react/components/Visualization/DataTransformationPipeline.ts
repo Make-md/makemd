@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { VisualizationConfig } from "shared/types/visualization";
 import { SpaceProperty } from "shared/types/mdb";
 import {
@@ -14,12 +16,86 @@ import {
   ScatterPlotData,
   RadarChartData
 } from "./transformers";
+import { ensureCorrectEncodingType } from "./utils/inferEncodingType";
 
 /**
  * Main data transformation pipeline
  * Orchestrates data transformation based on chart type
  */
 export class DataTransformationPipeline {
+  /**
+   * Normalize config by auto-detecting field types from data and properties
+   */
+  static normalizeConfig(
+    rawData: Record<string, unknown>[],
+    config: VisualizationConfig,
+    tableProperties?: SpaceProperty[]
+  ): VisualizationConfig {
+    const normalizedConfig = { ...config };
+    
+    // Auto-detect encoding types for x-axis
+    if (normalizedConfig.encoding?.x) {
+      const xEncodings = Array.isArray(normalizedConfig.encoding.x) 
+        ? normalizedConfig.encoding.x 
+        : [normalizedConfig.encoding.x];
+      
+      const normalizedXEncodings = xEncodings.map(encoding => {
+        if (!encoding?.field) return encoding;
+        
+        const property = tableProperties?.find(p => p.name === encoding.field);
+        const values = rawData.map(d => d[encoding.field]);
+        return ensureCorrectEncodingType(encoding, property, values);
+      });
+      
+      normalizedConfig.encoding.x = Array.isArray(normalizedConfig.encoding.x)
+        ? normalizedXEncodings
+        : normalizedXEncodings[0];
+    }
+    
+    // Auto-detect encoding types for y-axis
+    if (normalizedConfig.encoding?.y) {
+      const yEncodings = Array.isArray(normalizedConfig.encoding.y) 
+        ? normalizedConfig.encoding.y 
+        : [normalizedConfig.encoding.y];
+      
+      const normalizedYEncodings = yEncodings.map(encoding => {
+        if (!encoding?.field) return encoding;
+        
+        const property = tableProperties?.find(p => p.name === encoding.field);
+        const values = rawData.map(d => d[encoding.field]);
+        return ensureCorrectEncodingType(encoding, property, values);
+      });
+      
+      normalizedConfig.encoding.y = Array.isArray(normalizedConfig.encoding.y)
+        ? normalizedYEncodings
+        : normalizedYEncodings[0];
+    }
+    
+    // Auto-detect encoding type for color
+    if (normalizedConfig.encoding?.color?.field) {
+      const property = tableProperties?.find(p => p.name === normalizedConfig.encoding.color.field);
+      const values = rawData.map(d => d[normalizedConfig.encoding.color.field]);
+      normalizedConfig.encoding.color = ensureCorrectEncodingType(
+        normalizedConfig.encoding.color,
+        property,
+        values
+      );
+    }
+    
+    // Auto-detect encoding type for size
+    if (normalizedConfig.encoding?.size?.field) {
+      const property = tableProperties?.find(p => p.name === normalizedConfig.encoding.size.field);
+      const values = rawData.map(d => d[normalizedConfig.encoding.size.field]);
+      normalizedConfig.encoding.size = ensureCorrectEncodingType(
+        normalizedConfig.encoding.size,
+        property,
+        values
+      );
+    }
+    
+    return normalizedConfig;
+  }
+
   /**
    * Transform raw data based on visualization config
    */
@@ -33,7 +109,7 @@ export class DataTransformationPipeline {
       return {
         type: config.chartType,
         data: null,
-        error: 'No data provided'
+        error: i18n.labels.noDataProvided
       };
     }
 
@@ -45,34 +121,37 @@ export class DataTransformationPipeline {
       };
     }
 
+    // Normalize config to auto-detect field types
+    const normalizedConfig = this.normalizeConfig(rawData, config, tableProperties);
+
     try {
-      switch (config.chartType) {
+      switch (normalizedConfig.chartType) {
         case 'bar':
           return {
             type: 'bar',
-            data: BarChartTransformer.transform(rawData, config, tableProperties)
+            data: BarChartTransformer.transform(rawData, normalizedConfig, tableProperties)
           };
 
         case 'pie':
           return {
             type: 'pie',
-            data: PieChartTransformer.transform(rawData, config)
+            data: PieChartTransformer.transform(rawData, normalizedConfig)
           };
 
         case 'line':
           return {
             type: 'line',
-            data: LineChartTransformer.transform(rawData, config, tableProperties)
+            data: LineChartTransformer.transform(rawData, normalizedConfig, tableProperties)
           };
 
         case 'area':
           return {
             type: 'area',
-            data: AreaChartTransformer.transform(rawData, config, tableProperties)
+            data: AreaChartTransformer.transform(rawData, normalizedConfig, tableProperties)
           };
 
         case 'scatter':
-          const scatterResult = ScatterPlotTransformer.transform(rawData, config, tableProperties);
+          const scatterResult = ScatterPlotTransformer.transform(rawData, normalizedConfig, tableProperties);
           return {
             type: 'scatter',
             data: scatterResult
@@ -81,23 +160,23 @@ export class DataTransformationPipeline {
         case 'radar':
           return {
             type: 'radar',
-            data: RadarChartTransformer.transform(rawData, config, tableProperties)
+            data: RadarChartTransformer.transform(rawData, normalizedConfig, tableProperties)
           };
 
         // Add more chart types as needed
         case 'heatmap':
         default:
           return {
-            type: config.chartType,
+            type: normalizedConfig.chartType,
             data: null,
-            error: `Chart type '${config.chartType}' transformation not yet implemented`
+            error: `Chart type '${normalizedConfig.chartType}' transformation not yet implemented`
           };
       }
     } catch (error) {
       return {
-        type: config.chartType,
+        type: normalizedConfig.chartType,
         data: null,
-        error: error instanceof Error ? error.message : 'Unknown transformation error'
+        error: error instanceof Error ? error.message : i18n.labels.unknownTransformationError
       };
     }
   }

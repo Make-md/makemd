@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { MDBFrame } from "shared/types/mframe";
 import { ISuperstate } from "shared/types/superstate";
 import { VisualizationConfig } from "shared/types/visualization";
@@ -33,7 +35,7 @@ export const parseVisualizationData = (frame: MDBFrame): VisualizationConfig => 
     
     const config: VisualizationConfig = {
       id: frame.schema?.id || '',
-      name: parsedProps.name || 'Visualization',
+      name: parsedProps.name || i18n.labels.visualization,
       chartType: parsedProps.chartType || 'bar',
       mark: {
         type: parsedProps.chartType === 'line' ? 'line' :
@@ -57,12 +59,14 @@ export const parseVisualizationData = (frame: MDBFrame): VisualizationConfig => 
           ? parsedProps.xFields.map((field: string) => ({ 
               field, 
               type: parsedProps.xType || 'nominal',
-              ...(parsedProps.xAggregate && { aggregate: parsedProps.xAggregate })
+              ...(parsedProps.xAggregate && { aggregate: parsedProps.xAggregate }),
+              ...(parsedProps.xTimeUnit && { timeUnit: parsedProps.xTimeUnit })
             }))
           : { 
               field: parsedProps.xField || '', 
               type: parsedProps.xType || 'nominal',
-              ...(parsedProps.xAggregate && { aggregate: parsedProps.xAggregate })
+              ...(parsedProps.xAggregate && { aggregate: parsedProps.xAggregate }),
+              ...(parsedProps.xTimeUnit && { timeUnit: parsedProps.xTimeUnit })
             },
         y: parsedProps.yFields !== undefined && parsedProps.yFields.length > 0
           ? parsedProps.yFields.map((field: string) => ({ 
@@ -224,7 +228,7 @@ export const createVisualizationRows = (
   
   const mainProps = {
     chartType: config.chartType || 'bar',
-    name: config.name || 'Visualization',
+    name: config.name || i18n.labels.visualization,
     markType: markType, // Save mark type explicitly
     xField: Array.isArray(config.encoding?.x) 
       ? config.encoding.x[0]?.field 
@@ -262,6 +266,10 @@ export const createVisualizationRows = (
       : config.encoding?.y?.aggregate,
     colorAggregate: config.encoding?.color?.aggregate,
     sizeAggregate: config.encoding?.size?.aggregate,
+    // Save timeUnit for temporal grouping
+    xTimeUnit: Array.isArray(config.encoding?.x) 
+      ? config.encoding.x[0]?.timeUnit 
+      : config.encoding?.x?.timeUnit,
     xFields: Array.isArray(config.encoding?.x) 
       ? config.encoding.x.map((e: any) => e.field) 
       : undefined,
@@ -308,6 +316,7 @@ export const createVisualizationRows = (
   if (config.layout?.xAxis) {
     updateOrCreateRow('x-axis', {
       label: config.layout.xAxis.label || '',
+      showLabel: config.layout.xAxis.showLabel ?? true,
       tickAngle: config.layout.xAxis.tickAngle ?? 0,
       tickColor: config.layout.xAxis.tickColor || 'var(--mk-ui-text-secondary)',
       labelColor: config.layout.xAxis.labelColor || 'var(--mk-ui-text-primary)',
@@ -321,6 +330,7 @@ export const createVisualizationRows = (
   if (config.layout?.yAxis) {
     updateOrCreateRow('y-axis', {
       label: config.layout.yAxis.label || '',
+      showLabel: config.layout.yAxis.showLabel ?? true,
       tickColor: config.layout.yAxis.tickColor || 'var(--mk-ui-text-secondary)',
       labelColor: config.layout.yAxis.labelColor || 'var(--mk-ui-text-primary)',
       labelFontSize: config.layout.yAxis.labelFontSize || 12,
@@ -362,7 +372,7 @@ export const createVisualizationRows = (
  */
 export const createDefaultVisualizationConfig = (): VisualizationConfig => ({
   id: '',
-  name: 'Visualization',
+  name: "Visualization",
   chartType: 'bar',
   mark: { 
     type: 'rect',
@@ -449,7 +459,7 @@ export const aggregateForPieChart = (
   
   // Group data by the category field only (not by x field)
   rows.forEach(row => {
-    const categoryValue = String(row[categoryField] || 'None');
+    const categoryValue = String(row[categoryField] || i18n.labels.none);
     
     if (!groupedData.has(categoryValue)) {
       groupedData.set(categoryValue, []);
@@ -525,7 +535,7 @@ export const aggregateByGroup = (
   // Group data by the groupBy field and x field
   rows.forEach(row => {
     const xValue = String(row[xField] || '');
-    const groupValue = String(row[groupByField] || 'None');
+    const groupValue = String(row[groupByField] || i18n.labels.none);
     const key = `${xValue}|${groupValue}`;
     
     if (!groupedData.has(key)) {

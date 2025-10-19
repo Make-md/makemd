@@ -1,10 +1,9 @@
 import { ObjectCell } from "core/react/components/SpaceView/Contexts/DataTypeView/ObjectCell";
-import {
-  parseFieldValue,
-  parseSourceOptions,
-} from "core/schemas/parseFieldValue";
+import { parseSourceOptions } from "core/schemas/fieldValueUtils";
+import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { RepeatTemplate } from "core/utils/contexts/fields/presets";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { Rect } from "shared/types/Pos";
 import { SpaceProperty } from "shared/types/mdb";
@@ -104,8 +103,8 @@ export const showSetValueMenu = (
     );
   } else if (property.type == "boolean") {
     const options = [
-      { name: "Yes", value: "true" },
-      { name: "No", value: "false" },
+      { name: i18n.menu.yes, value: "true" },
+      { name: i18n.menu.no, value: "false" },
     ];
     superstate.ui.openMenu(
       rect,

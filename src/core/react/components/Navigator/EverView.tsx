@@ -8,6 +8,7 @@ import { defaultContextSchemaID } from "shared/schemas/context";
 import { ContextListContainer } from "../SpaceView/Contexts/ContextListContainer";
 import { FilterBar } from "../SpaceView/Contexts/FilterBar/FilterBar";
 import { showSpaceContextMenu } from "../UI/Menus/navigator/spaceContextMenu";
+import { windowFromDocument } from "shared/utils/dom";
 export const EverView = (props: { superstate: Superstate; path: string }) => {
   const ref = React.useRef(null);
   const [title, setTitle] = useState(
@@ -58,7 +59,7 @@ export const EverView = (props: { superstate: Superstate; path: string }) => {
           }}
           onClick={(e) => {
             const pathState = props.superstate.pathsIndex.get(props.path);
-            showSpaceContextMenu(props.superstate, pathState, e, null);
+            showSpaceContextMenu(props.superstate, pathState, (e.target as HTMLButtonElement).getBoundingClientRect(), windowFromDocument(e.view.document));
           }}
         ></button>
       </div>

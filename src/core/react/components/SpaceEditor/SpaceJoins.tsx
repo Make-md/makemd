@@ -1,5 +1,6 @@
 import { saveSpaceCache } from "core/superstate/utils/spaces";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useState } from "react";
 import { Metadata } from "shared/types/metadata";
 import { SpaceState } from "shared/types/PathState";

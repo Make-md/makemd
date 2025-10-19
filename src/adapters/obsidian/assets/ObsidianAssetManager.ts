@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { LocalCachePersister } from 'shared/types/persister';
 import { IUIManager } from 'shared/types/uiManager';
 import { SpaceManagerInterface } from 'shared/types/spaceManager';
@@ -550,7 +552,7 @@ export class ObsidianAssetManager implements IAssetManager {
           type: 'iconset',
           icons: lucideIconMetadata,
           theme: 'auto',
-          description: 'Lucide icon library for Obsidian',
+          description: i18n.labels.lucideIconLibraryForObsidian,
           tags: ['default', 'builtin', 'lucide'],
           format: 'svg',
           created: Date.now(),
@@ -584,7 +586,7 @@ export class ObsidianAssetManager implements IAssetManager {
           type: 'iconset',
           icons: emojiIconMetadata,
           theme: 'auto',
-          description: 'Emoji icon library',
+          description: i18n.labels.emojiIconLibrary,
           tags: ['default', 'builtin', 'emoji'],
           format: 'emoji',
           created: Date.now(),
@@ -610,18 +612,18 @@ export class ObsidianAssetManager implements IAssetManager {
         path: `${this.ASSETS_SPACE_PATH}/color-palettes/default-palette`,
         type: 'colorpalette',
         colors: [
-          { name: "Red", value: "var(--mk-color-red)", category: 'brand' },
-          { name: "Pink", value: "var(--mk-color-pink)", category: 'brand' },
-          { name: "Orange", value: "var(--mk-color-orange)", category: 'brand' },
-          { name: "Yellow", value: "var(--mk-color-yellow)", category: 'brand' },
-          { name: "Green", value: "var(--mk-color-green)", category: 'brand' },
-          { name: "Turquoise", value: "var(--mk-color-turquoise)", category: 'brand' },
-          { name: "Teal", value: "var(--mk-color-teal)", category: 'brand' },
-          { name: "Blue", value: "var(--mk-color-blue)", category: 'brand' },
-          { name: "Purple", value: "var(--mk-color-purple)", category: 'brand' },
-          { name: "Brown", value: "var(--mk-color-brown)", category: 'brand' },
-          { name: "Charcoal", value: "var(--mk-color-charcoal)", category: 'brand' },
-          { name: "Gray", value: "var(--mk-color-gray)", category: 'brand' },
+          { name: i18n.colors.red, value: "var(--mk-color-red)", category: 'brand' },
+          { name: i18n.colors.pink, value: "var(--mk-color-pink)", category: 'brand' },
+          { name: i18n.colors.orange, value: "var(--mk-color-orange)", category: 'brand' },
+          { name: i18n.colors.yellow, value: "var(--mk-color-yellow)", category: 'brand' },
+          { name: i18n.colors.green, value: "var(--mk-color-green)", category: 'brand' },
+          { name: i18n.colors.turquoise, value: "var(--mk-color-turquoise)", category: 'brand' },
+          { name: i18n.colors.teal, value: "var(--mk-color-teal)", category: 'brand' },
+          { name: i18n.colors.blue, value: "var(--mk-color-blue)", category: 'brand' },
+          { name: i18n.colors.purple, value: "var(--mk-color-purple)", category: 'brand' },
+          { name: i18n.colors.brown, value: "var(--mk-color-brown)", category: 'brand' },
+          { name: i18n.colors.charcoal, value: "var(--mk-color-charcoal)", category: 'brand' },
+          { name: i18n.colors.gray, value: "var(--mk-color-gray)", category: 'brand' },
         ],
         gradients: [],
         designSystemMapping: {
@@ -643,7 +645,7 @@ export class ObsidianAssetManager implements IAssetManager {
         },
         tags: ['default', 'theme'],
         category: 'theme',
-        description: 'Default MakeML color palette with theme colors',
+        description: i18n.descriptions.defaultMakemlColorPaletteWithThemeColors,
         created: Date.now(),
         modified: Date.now(),
       };
@@ -660,17 +662,17 @@ export class ObsidianAssetManager implements IAssetManager {
         path: `${this.ASSETS_SPACE_PATH}/color-palettes/monochrome-palette`,
         type: 'colorpalette',
         colors: [
-          { name: "Base 0", value: "var(--mk-color-base-0)", category: 'base' },
-          { name: "Base 10", value: "var(--mk-color-base-10)", category: 'base' },
-          { name: "Base 20", value: "var(--mk-color-base-20)", category: 'base' },
-          { name: "Base 30", value: "var(--mk-color-base-30)", category: 'base' },
-          { name: "Base 40", value: "var(--mk-color-base-40)", category: 'base' },
-          { name: "Base 50", value: "var(--mk-color-base-50)", category: 'base' },
-          { name: "Base 60", value: "var(--mk-color-base-60)", category: 'base' },
-          { name: "Base 70", value: "var(--mk-color-base-70)", category: 'base' },
-          { name: "Base 80", value: "var(--mk-color-base-80)", category: 'base' },
-          { name: "Base 90", value: "var(--mk-color-base-90)", category: 'base' },
-          { name: "Base 100", value: "var(--mk-color-base-100)", category: 'base' },
+          { name: i18n.labels.base0, value: "var(--mk-color-base-0)", category: 'base' },
+          { name: i18n.labels.base10, value: "var(--mk-color-base-10)", category: 'base' },
+          { name: i18n.labels.base20, value: "var(--mk-color-base-20)", category: 'base' },
+          { name: i18n.labels.base30, value: "var(--mk-color-base-30)", category: 'base' },
+          { name: i18n.labels.base40, value: "var(--mk-color-base-40)", category: 'base' },
+          { name: i18n.labels.base50, value: "var(--mk-color-base-50)", category: 'base' },
+          { name: i18n.labels.base60, value: "var(--mk-color-base-60)", category: 'base' },
+          { name: i18n.labels.base70, value: "var(--mk-color-base-70)", category: 'base' },
+          { name: i18n.labels.base80, value: "var(--mk-color-base-80)", category: 'base' },
+          { name: i18n.labels.base90, value: "var(--mk-color-base-90)", category: 'base' },
+          { name: i18n.labels.base100, value: "var(--mk-color-base-100)", category: 'base' },
         ],
         gradients: [],
         designSystemMapping: {
@@ -691,7 +693,7 @@ export class ObsidianAssetManager implements IAssetManager {
         },
         tags: ['default', 'monochrome', 'base'],
         category: 'theme',
-        description: 'Monochrome color palette with base colors',
+        description: i18n.descriptions.monochromeColorPaletteWithBaseColors,
         created: Date.now(),
         modified: Date.now(),
       };
@@ -708,7 +710,7 @@ export class ObsidianAssetManager implements IAssetManager {
     if (needsGradientPalette) {
       const defaultGradientPalette: ColorPaletteAsset = {
         id: 'default-gradient-palette',
-        name: 'Gradients',
+        name: i18n.labels.gradients,
         path: `${this.ASSETS_SPACE_PATH}/color-palettes/default-gradient-palette`,
         type: 'colorpalette',
         colors: [
@@ -725,7 +727,7 @@ export class ObsidianAssetManager implements IAssetManager {
         },
         tags: ['default', 'gradients'],
         category: 'material',
-        description: 'Default gradient palette with beautiful gradients',
+        description: i18n.descriptions.defaultGradientPaletteWithBeautifulGradients,
         created: Date.now(),
         modified: Date.now(),
       };
@@ -743,15 +745,15 @@ export class ObsidianAssetManager implements IAssetManager {
         type: 'colorpalette',
         colors: [
           { name: "Light Pink", value: "#FFB6C1", category: 'custom' },
-          { name: "Gold", value: "#FFD700", category: 'custom' },
+          { name: i18n.colors.gold, value: "#FFD700", category: 'custom' },
           { name: "Pale Green", value: "#98FB98", category: 'custom' },
           { name: "Sky Blue", value: "#87CEEB", category: 'custom' },
-          { name: "Plum", value: "#DDA0DD", category: 'custom' },
-          { name: "Khaki", value: "#F0E68C", category: 'custom' },
+          { name: i18n.colors.plum, value: "#DDA0DD", category: 'custom' },
+          { name: i18n.colors.khaki, value: "#F0E68C", category: 'custom' },
           { name: "Light Salmon", value: "#FFA07A", category: 'custom' },
           { name: "Powder Blue", value: "#B0E0E6", category: 'custom' },
-          { name: "Moccasin", value: "#FFE4B5", category: 'custom' },
-          { name: "Lavender", value: "#E6E6FA", category: 'custom' }
+          { name: i18n.colors.moccasin, value: "#FFE4B5", category: 'custom' },
+          { name: i18n.colors.lavender, value: "#E6E6FA", category: 'custom' }
         ],
         designSystemMapping: {
           baseTokens: {},
@@ -759,7 +761,7 @@ export class ObsidianAssetManager implements IAssetManager {
         },
         tags: ['default', 'pastel', 'light'],
         category: 'theme',
-        description: 'Soft pastel colors for gentle visualizations',
+        description: i18n.descriptions.softPastelColorsForGentleVisualizations,
         created: Date.now(),
         modified: Date.now(),
       };
@@ -1178,7 +1180,22 @@ export class ObsidianAssetManager implements IAssetManager {
         } catch (error) {
           console.error(`[ObsidianAssetManager] Failed to remove iconset ${id} from mapping:`, error);
         }
+        
+        // Delete the iconset folder and all its assets
+        const iconsetFolderPath = `.space/iconsets/${id}`;
+        try {
+          const folderExists = await this.pathExists(iconsetFolderPath);
+          if (folderExists) {
+            await this.deletePath(iconsetFolderPath);
+            console.log(`[ObsidianAssetManager] Deleted iconset folder: ${iconsetFolderPath}`);
+          }
+        } catch (error) {
+          console.error(`[ObsidianAssetManager] Failed to delete iconset folder ${iconsetFolderPath}:`, error);
+        }
       }
+      
+      // Clear iconset cache
+      this.iconsetCaches.delete(id);
       
       return deleted;
     } catch (error) {

@@ -12,6 +12,7 @@ export interface Encoding {
   field: string;
   type: FieldType;
   aggregate?: 'count' | 'sum' | 'average' | 'min' | 'max' | 'distinct';
+  timeUnit?: 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
   scale?: {
     type?: 'linear' | 'log' | 'sqrt' | 'pow' | 'time';
     domain?: [number, number] | string[];
@@ -76,6 +77,7 @@ export interface Layout {
   };
   xAxis?: {
     show: boolean;
+    showLabel?: boolean;
     label: string;
     tickAngle: number;
     tickColor: string;
@@ -87,6 +89,7 @@ export interface Layout {
   };
   yAxis?: {
     show: boolean;
+    showLabel?: boolean;
     label: string;
     tickColor: string;
     labelColor: string;

@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { VisualizationConfig } from "shared/types/visualization";
 import { PieChartData, PieChartDataPoint, AggregationType } from "../types/ChartDataSchemas";
 
@@ -77,11 +79,11 @@ export class PieChartTransformer {
         const othersPercentage = (othersValue / chartData.total) * 100;
         
         limited.push({
-          label: 'Others',
+          label: i18n.labels.others,
           value: othersValue,
           percentage: othersPercentage,
           metadata: {
-            [categoryEncoding.field]: 'Others',
+            [categoryEncoding.field]: i18n.labels.others,
             [valueEncoding.field]: othersValue,
             count: others.length
           }

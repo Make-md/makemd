@@ -1,7 +1,8 @@
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext, useEffect, useState } from "react";
 import { stickerForSchema } from "schemas/mdb";
 import { Command } from "shared/types/commands";
@@ -99,7 +100,7 @@ export const SpaceActionProperty = (props: {
               __html: props.superstate.ui.getSticker("ui//mouse-pointer-click"),
             }}
           ></div>
-          <div className="mk-path-context-field-key">Actions</div>
+          <div className="mk-path-context-field-key">{i18n.labels.actions}</div>
         </div>
         <div className="mk-path-context-value">
           <div

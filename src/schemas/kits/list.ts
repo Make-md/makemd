@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 
 import { frameRootWithProps, kitWithProps } from "core/utils/frames/frames";
 import { FrameRoot } from "shared/types/mframe";
@@ -13,7 +15,7 @@ export const fieldsView : FrameRoot = {
   node: {
     schemaId: 'fieldsView',
     parentId: "",
-    name: "Properties",
+    name: i18n.menu.properties,
     rank: 0,
     id: 'fieldsView',
     type: 'group',
@@ -169,6 +171,81 @@ export const imageListItem: FrameRoot = {
       }
       
     ),
+    frameRootWithProps(
+      {...groupNode, children: [
+        
+      
+      
+      {
+        ...groupNode,
+        node: {
+          ...groupNode.node,
+          styles: {
+            gap: `'8px'`,
+            padding: `'8px'`,
+            flex: `'1'`,
+            width: `'100%'`,
+            background: `'var(--mk-gradient-overlay)'`
+          },
+        },
+        children: [
+          frameRootWithProps(
+        {...groupNode, children: [frameRootWithProps(
+          iconNode,
+          {
+            value: `$api.path.label($contexts.$context['_keyValue'])?.sticker`,
+          },
+          {
+            width: `'32px'`,
+            height: `'32px'`,
+            padding: `'4px'`,
+            "--icon-size": `'24px'`,
+            borderRadius: `'4px'`,
+            overflow: `'hidden'`,
+              background: `$api.path.label($contexts.$context['_keyValue'])?.color`,
+            
+          }
+        ),
+        
+
+        ]},
+        {},
+        {
+          width: `'32px'`,
+            height: `'32px'`,
+          hidden: `!$contexts.$context['_isContext']`,
+          marginLeft: `'4px'`,
+          borderRadius: `'4px'`,
+          background: `'var(--mk-ui-background-contrast)'`,
+          // hidden: `$root.props.hideCover`
+        }
+      ),
+          frameRootWithProps(
+            textNode,
+            {
+                            value: `$contexts.$context['_name']`,
+
+            },
+            {
+              "--font-text-weight": `'var(--bold-weight)'`,
+            }
+          ),
+         
+        ],
+      },
+      ]},
+      {
+
+      },
+      {
+        position: `'absolute'`,
+        height: `'100%'`,
+        width: `'100%'`,
+        "hover:opacity": `'1'`,
+        opacity: `'0'`,
+        transition: `'all 0.2s ease'`
+      }
+    )
     
   ],
 }
@@ -196,7 +273,7 @@ export const flowListItem: FrameRoot = {
       },
       propsValue: {
         expanded: {
-          alias: "Expanded",
+          alias: i18n.labels.expanded,
         },
         seamless: {
           alias: "Seamless",
@@ -264,10 +341,10 @@ export const flowListItem: FrameRoot = {
           source: `$properties`
         },
         showLabel: {
-          alias: "Show Field Labels"
+          alias: i18n.labels.showFieldLabels
         },
         showSticker: {
-          alias: "Show Field Icons"
+          alias: i18n.labels.showFieldIcons
         }
       },
 
@@ -400,7 +477,8 @@ export const flowListItem: FrameRoot = {
           frameRootWithProps(
             textNode,
             {
-              value: `$contexts.$context['_name']`,
+                            value: `$contexts.$context['_name']`,
+
             },
             {
               "--font-text-weight": `'var(--bold-weight)'`,
@@ -438,10 +516,10 @@ export const flowListItem: FrameRoot = {
       },
       propsValue: {
         showLabel: {
-          alias: "Show Field Labels"
+          alias: i18n.labels.showFieldLabels
         },
         showSticker: {
-          alias: "Show Field Icons"
+          alias: i18n.labels.showFieldIcons
         }
       },
       styles: {
@@ -555,11 +633,14 @@ export const flowListItem: FrameRoot = {
       props: {
         _selected: `$root.props._selectedIndexes?.some(f => f == $contexts.$context['_index'])`,
         previewField: `'Created'`,
+        prefixField: ``,
+        subtitleField: ``,
         _selectedIndexes: '[]',
       },
       styles: {
         layout: `"row"`,
         gap: `'12px'`,
+        sem: `'listItem'`,
         padding: `'4px'`,
         overflow: `'hidden'`,
         width: `'100%'`,
@@ -572,10 +653,20 @@ export const flowListItem: FrameRoot = {
     },
       types: {
         previewField: "option",
+        prefixField: "option",
+        subtitleField: "option",
       },
       propsValue: {
         previewField: {
-          alias: "Preview",
+          alias: i18n.labels.status,
+          source: `$properties`
+        },
+        subtitleField: {
+          alias: i18n.labels.subtitle,
+          source: `$properties`
+        },
+        prefixField: {
+          alias: i18n.labels.prefix,
           source: `$properties`
         }
       },
@@ -594,7 +685,7 @@ export const flowListItem: FrameRoot = {
                     { ...deltaNode, node: { ...deltaNode.node, ref: "$root" } },
                     {},
                     {
-                      background: `'var(--mk-ui-background-selected)'`,
+                      sem: `'listItem-selected'`,
                     }
                   ),
                 ],
@@ -609,7 +700,7 @@ export const flowListItem: FrameRoot = {
                     { ...deltaNode, node: { ...deltaNode.node, ref: "$root" } },
                     {},
                     {
-                      background: `'transparent'`,
+                      sem: `'listItem'`,
                     }
                   ),
                 ],
@@ -622,6 +713,22 @@ export const flowListItem: FrameRoot = {
           value: `'_selected'`,
         }
       ),
+      frameRootWithProps(
+        {...groupNode, children: [frameRootWithProps(dataNode, {
+            field: `$contexts.$context._properties?.find(f => f.name == $root.props['prefixField'])`,
+            value: `$contexts[$contexts.$context['_path']]?.[$root.props.prefixField]`,
+          }, {
+            "--font-text-size": `'12px'`,
+            "--font-text-color": `'var(--mk-ui-text-tertiary)'`,
+          }),]}, {}, {
+            width: `'120px'`,
+            hidden: `!($root.props.prefixField?.length > 0)`,
+            height: `'32px'`,
+            layout: `'row'`,
+            layoutAlign: `'w'`
+          }
+      ),
+      
       kitWithProps(previewNode(), {
         path: `$contexts.$context['_keyValue']`,
         width: `'32px'`,
@@ -640,9 +747,7 @@ export const flowListItem: FrameRoot = {
         node: {
           ...groupNode.node,
           styles: {
-            gap: `'8px'`,
             flex: `'1'`,
-            padding: `'2px'`,
             layout: `'column'`,
             layoutAlign: `'w'`,
             height: `'auto'`
@@ -655,13 +760,10 @@ export const flowListItem: FrameRoot = {
               ...groupNode.node,
               styles: {
                 gap: `'8px'`,
-                flex: `'1'`,
-                padding: `'2px'`,
                 layout: `'row'`,
                 layoutAlign: `'w'`,
-                height: `'auto'`,
+                height: `'32px'`,
                 width: `'100%'`,
-                flexWrap: `'wrap'`
               },
             },
             children:[
@@ -671,7 +773,7 @@ export const flowListItem: FrameRoot = {
               value: `$contexts.$context['_name']`,
             },
             {
-              "--font-text-size": `'14px'`,
+              "--font-text-size": `'16px'`,
               "--font-text-weight": `'var(--bold-weight)'`,
               width: `'auto'`
             }
@@ -687,8 +789,15 @@ export const flowListItem: FrameRoot = {
             "--font-text-color": `'var(--mk-ui-text-tertiary)'`,
           }),
         ],
-      }],
+      }, frameRootWithProps(dataNode, {
+            field: `$contexts.$context._properties?.find(f => f.name == $root.props['subtitleField'])`,
+            value: `$contexts[$contexts.$context['_path']]?.[$root.props.subtitleField]`,
+          }, {
+            "--font-text-color": `'var(--mk-ui-text-tertiary)'`,
+            "--font-text-size": `'12px'`
+          }),],
       },
+      
     ],
   }
 
@@ -733,23 +842,23 @@ export const taskListItem = () : FrameRoot => ({
     },
     propsValue: {
       completedField: {
-        alias: 'Completed',
+        alias: i18n.labels.completed,
         source: `$properties`,
       },
       dueField: {
-        alias: 'Due',
+        alias: i18n.labels.due,
         source: `$properties`,
       },
       list: {
-        alias: 'List',
+        alias: i18n.labels.list,
         source: `$properties`,
       },
       fields: {
-        alias: 'Fields',
+        alias: i18n.labels.fields,
         source: `$properties`,
       },
       priorityField: {
-        alias: 'Priority',
+        alias: i18n.labels.priority,
         source: `$properties`,
       }
     },
@@ -872,7 +981,7 @@ export const taskListItem = () : FrameRoot => ({
               borderRadius: `'4px'`,
               height: `'auto'`,
               width: `'auto'`,
-              hidden: `!($contexts.$context['_path']?.[$root.props.dueField]?.length > 0)`,
+              hidden: `!($contexts[$contexts.$context['_path']]?.[$root.props.dueField]?.length > 0)`,
               background: `'var(--mk-ui-active)'`,
             }
           },
@@ -1113,10 +1222,10 @@ export const taskListItem = () : FrameRoot => ({
       },
       propsValue: {
         showLabel: {
-          alias: "Show Field Labels"
+          alias: i18n.labels.showFieldLabels
         },
         showSticker: {
-          alias: "Show Field Icons"
+          alias: i18n.labels.showFieldIcons
         }
       },
       styles: {
@@ -1258,13 +1367,28 @@ export const taskListItem = () : FrameRoot => ({
       
     },
     styles: {
-      gap: `'4px'`,
+      gap: `'12px'`,
+      layout: `'row'`,
+      padding: `'4px'`
     }
-  }, children: [
+  }, children: [ frameRootWithProps({
+        ...groupNode, 
+        children: [
+     frameRootWithProps(iconNode, {
+            value: `'ui//plus'`
+          }, {
+            width: `'16px'`,
+            height: `'16px'`,
+            '--icon-size': `'16px'`,
+            
+          })]
+        }, {}, { width: `'32px'`,
+            height: `'32px'`, layoutAlign: `'m'`, background: `'var(--background-secondary)'`,
+            borderRadius: `'4px'`}),
     {
       ...inputNode, node: {
         ...inputNode.node,
-        styles: {...inputNode.node.styles, placeholder: `'+ New Item'`, border: `'none'`, background: `'transparent'`},
+        styles: {...inputNode.node.styles, placeholder: `'New Item'`, border: `'none'`, background: `'transparent'`},
         actions: {
       onEnter: `$api.table.insert($root.props.space, $root.props.schema, {[$root.props.group]: $root.props.groupValue, [$root.props.key]: $value}); $event.currentTarget.value = ''`,
         },
@@ -1281,7 +1405,7 @@ export const taskListItem = () : FrameRoot => ({
     node: {
       schemaId: "newItemButton",
       parentId: "",
-      name: "New Item Button",
+      name: i18n.labels.newItemButton,
       rank: 0,
       id: "newItemButton",
       type: "group",
@@ -1364,7 +1488,7 @@ export const taskListItem = () : FrameRoot => ({
       },
       propsValue: {
         showNew: {
-          alias: "Show New Item Button",
+          alias: i18n.labels.showNewItemButton,
         }
       },
       styles:{
@@ -1372,7 +1496,7 @@ export const taskListItem = () : FrameRoot => ({
       },
       id: "$root",
       schemaId: "$root",
-      name: "Rows",
+      name: i18n.labels.rows,
       rank: 0,
     },
     id: "$root",
@@ -1421,7 +1545,7 @@ export const taskListItem = () : FrameRoot => ({
       },
       propsValue: {
         showNew: {
-          alias: "Show New Item Button",
+          alias: i18n.labels.showNewItemButton,
         }
       },
       styles: {
@@ -1434,7 +1558,7 @@ export const taskListItem = () : FrameRoot => ({
       },
       id: "$root",
       schemaId: "$root",
-      name: "Columns",
+      name: i18n.labels.columns,
       rank: 0,
         
     },
@@ -1578,7 +1702,7 @@ export const taskListItem = () : FrameRoot => ({
       props: {},
       id: "$root",
       schemaId: "$root",
-      name: "Masonry",
+      name: i18n.labels.masonry,
       rank: 0,
         styles: {
           layout: `'column'`,

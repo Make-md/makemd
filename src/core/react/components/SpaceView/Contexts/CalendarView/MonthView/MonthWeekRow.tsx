@@ -13,6 +13,7 @@ import {
   isValidDate,
   parseDate,
 } from "core/utils/date";
+import { isPhone } from "core/utils/ui/screen";
 import {
   add,
   addHours,
@@ -178,6 +179,8 @@ export const MonthWeekRow = (props: {
     weekStart,
     weekEnd,
   ]);
+
+  const weekItemHeight = !isPhone(props.superstate.ui) ? 30 : 22;
 
   const [placeholderEvent, setPlaceholderEvent] =
     useState<MonthEventLayout>(null);
@@ -372,11 +375,12 @@ export const MonthWeekRow = (props: {
                           ? "var(--mk-ui-text-accent)"
                           : "var(--mk-ui-text-primary)",
                         top: `${
-                          event.offset * 22 +
+                          event.offset * weekItemHeight +
                           30 +
-                          (collidesWithPlaceholderEvent ? 22 : 0)
+                          (collidesWithPlaceholderEvent ? weekItemHeight : 0)
                         }px`,
                         width: `${(event.endDay - event.startDay + 1) * 100}%`,
+                        height: `${weekItemHeight - 2}px`,
                       } as React.CSSProperties
                     }
                     data={props.events[event.index]}

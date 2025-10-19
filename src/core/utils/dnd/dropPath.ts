@@ -3,6 +3,7 @@ import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTr
 import { TreeNode } from "core/superstate/utils/spaces";
 import { nodeIsAncestorOfTarget } from "core/utils/tree";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { PathState, SpaceState } from "shared/types/PathState";
 
 
@@ -72,7 +73,7 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
   export const reorderOpenSpace = (superstate: Superstate, path: string, index: number) => {
     const newWaypoint = superstate.focuses[
       superstate.settings.currentWaypoint
-    ] ?? { sticker: "", name: "Waypoint", paths: [] };
+    ] ?? { sticker: "", name: i18n.labels.waypoint, paths: [] as string[] };
     const currentIndex = newWaypoint.paths.findIndex(f => f == path);
     const newIndex = currentIndex > index ? Math.max(0, index - 1) : index;
     newWaypoint.paths = arrayMove(newWaypoint.paths, newWaypoint.paths.findIndex(f => f == path), newIndex);

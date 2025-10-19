@@ -6,7 +6,10 @@ import { addRowInTable, updateTableRow, updateValueInContext } from "core/utils/
 import { formatDate } from "core/utils/date";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { parseContextNode, parseLinkedNode } from "core/utils/frames/frame";
-import { SelectOption } from "makemd-core";
+import { SelectOption, SpaceManager } from "makemd-core";
+import { SpaceManagerInterface } from "shared/types/spaceManager";
+import { PathState } from "shared/types/superstate";
+import { SpaceTable } from "shared/types/mdb";
 import { stickerForField } from "schemas/mdb";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { IAPI } from "shared/types/api";
@@ -17,16 +20,23 @@ import { TargetLocation } from "shared/types/path";
 import { windowFromDocument } from "shared/utils/dom";
 import { sanitizeTableName } from "shared/utils/sanitizers";
 import { parseMDBStringValue } from "utils/properties";
-import { Superstate } from "./superstate";
+import { ISuperstate } from "shared/types/superstate";
 import { newPathInSpace, saveProperties } from "./utils/spaces";
 
-
-
+// Interface for the minimal space manager functionality needed by API
+export interface APISpaceManager {
+    getPathState(path: string): PathState | null;
+    resolvePath(path: string, source?: string): string;
+    readTable(path: string, table: string): Promise<SpaceTable | null>;
+    createTable(path: string, schema: SpaceTableSchema): void;
+}
 
 export class API implements IAPI {
-    private superstate: Superstate;
-    public constructor(superstate: Superstate) {
+    private superstate: ISuperstate;
+    private spaceManager: SpaceManager | SpaceManagerInterface | APISpaceManager; // Can be SpaceManager, SpaceManagerInterface or SpaceManagerContext
+    public constructor(superstate: ISuperstate, spaceManager?: SpaceManager | SpaceManagerInterface | APISpaceManager) {
         this.superstate = superstate;
+        this.spaceManager = spaceManager || superstate.spaceManager;
     }
     public frame = {
 update: (property: string, value: string, path: string, saveState: (state: any) => void) => {
@@ -69,7 +79,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
     public path = 
     {
         label:  (path: string) => {
-            return this.superstate.pathsIndex.get(path)?.label;
+            return this.spaceManager.getPathState(path)?.label;
         },
         thumbnail: (path: string) => {
             // If path is a URL, return it directly
@@ -77,11 +87,11 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
                 return path;
             }
             // Otherwise get thumbnail from path label
-            return this.superstate.pathsIndex.get(path)?.label?.thumbnail;
+            return this.spaceManager.getPathState(path)?.label?.thumbnail;
         },
         open: (path: string, target?: TargetLocation, source?: string) => {
             const resolvedPath = source 
-                ? this.superstate.spaceManager.resolvePath(path, source) 
+                ? this.spaceManager.resolvePath(path, source) 
                 : path;
             this.superstate.ui.openPath(resolvedPath, target)
         },
@@ -121,7 +131,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
                 // Resolve link-type parameters using the context source
                 command.fields.forEach(field => {
                     if (field.type === 'link' && parameters?.[field.name]) {
-                        resolvedParameters[field.name] = this.superstate.spaceManager.resolvePath(
+                        resolvedParameters[field.name] = this.spaceManager.resolvePath(
                             parameters[field.name], 
                             contexts.$space.path
                         );
@@ -135,20 +145,22 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             return runFormulaWithContext(this.superstate.formulaContext, this.superstate.pathsIndex, this.superstate.spacesMap, formula, contexts.$properties, parameters, contexts?.$contexts?.$space?.path)
         }
     }
-    
-    public buttonCommand = (action: string, parameters: { [key: string]: any; }, contexts: FrameContexts, saveState: (state: any) => void) => {
-        alert('Button actions have been upgraded, please rebind your buttons to use the new API.')
+
+    public buttonCommand = (action: string, parameters: { [key: string]: any }, contexts: FrameContexts, saveState: (state: any) => void) => {
+        // Handle button commands by delegating to the regular command runner
+        this.commands.run(action, parameters, contexts);
     }
+    
     
     
     public table = {
         select: (path: string, table: string) => {
-            return this.superstate.spaceManager.readTable(path, table)?.then(f => f?.rows)
+            return this.spaceManager.readTable(path, table)?.then(f => f?.rows)
         },
         update: (path: string, table:string, index: number, row: DBRow) => {
             const space = this.superstate.spacesIndex.get(path)
             if (space)
-            return updateTableRow(this.superstate.spaceManager, space.space, table, index, row)
+            return updateTableRow(this.spaceManager as SpaceManager, space.space, table, index, row)
         },
         insert: (path: string, schema: string, _row: DBRow) => {
             const row: DBRow = Object.keys(_row).reduce((f, g) => {
@@ -162,7 +174,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             }
             const space = this.superstate.spacesIndex.get(path)
             if (space)
-            return addRowInTable(this.superstate.spaceManager, row, space.space, schema)
+            return addRowInTable(this.spaceManager as SpaceManager, row, space.space, schema)
         return Promise.resolve()
         },
         
@@ -172,15 +184,15 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
                 name: table,
                 type: "db",
               };
-            this.superstate.spaceManager.createTable(
+            this.spaceManager.createTable(
                 path,
                 newSchema
               );
         },
         open: async (space: string, table: string, index: number, target?: TargetLocation) => {
-            const context = await this.superstate.spaceManager.readTable(space, table)
+            const context = await this.spaceManager.readTable(space, table)
             if (table == defaultContextSchemaID) {
-                const path = this.superstate.spaceManager.resolvePath(context?.rows[index]?.[PathPropertyName], space)
+                const path = this.spaceManager.resolvePath(context?.rows[index]?.[PathPropertyName], space)
                 this.superstate.ui.openPath(path, target)
             } else {
                 // For non-default schemas, open the edit modal instead of a path
@@ -188,7 +200,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             }
         },
         contextMenu: async (e: React.MouseEvent, space: string, table: string, index: number) => {
-            const context = await this.superstate.spaceManager.readTable(space, table);
+            const context = await this.spaceManager.readTable(space, table);
             if (table == defaultContextSchemaID) {
                 const path = context?.rows[index]?.[PathPropertyName]
                 showPathContextMenu(this.superstate, path, space, { x: e.clientX, y: e.clientY, width: 0, height: 0 }, windowFromDocument(e.view.document))
@@ -197,7 +209,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
             }
         },
         editModal: async (space: string, table: string, index: number, properties?: DBRow, win?: Window) => {
-            const context = await this.superstate.spaceManager.readTable(space, table);
+            const context = await this.spaceManager.readTable(space, table);
             const rowData = {...(properties ?? {}), ...context?.rows[index]};
             
             // Open modal in edit mode when index >= 0, create mode when index = -1
@@ -218,13 +230,13 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
     }
     public context = {
         select: (path: string, table: string) => {
-            return this.superstate.spaceManager.readTable(path, table).then(f => f?.rows)
+            return this.spaceManager.readTable(path, table).then(f => f?.rows)
         },
         update: (path: string, file: string, field: string, value: string) => {
 
             const space = this.superstate.spacesIndex.get(path)
             if (space)
-            updateValueInContext(this.superstate.spaceManager, file, field, value, space.space)
+            updateValueInContext(this.spaceManager as SpaceManager, file, field, value, space.space)
         },
         insert: async (path: string, schema: string, name: string, row: DBRow) => {
             if (schema == defaultContextSchemaID)
@@ -240,7 +252,7 @@ update: (property: string, value: string, path: string, saveState: (state: any) 
                 }
                 })
         } else {
-            const table = await this.superstate.spaceManager.readTable(path, schema)
+            const table = await this.spaceManager.readTable(path, schema)
             
             if (table) {
                 const prop = table.cols.find(f => f.primary == "true")

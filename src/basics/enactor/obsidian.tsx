@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { EditorState, RangeSetBuilder, StateField } from "@codemirror/state";
 import { Decoration, DecorationSet, EditorView } from "@codemirror/view";
 import MakeBasicsPlugin from "basics/basics";
@@ -122,8 +124,8 @@ class FilesModal extends FuzzySuggestModal<TFile> {
     this.emptyStateText = this.EMPTY_TEXT;
     // this.setPlaceholder(PLACEHOLDER_TEXT);
     this.setInstructions([
-      { command: "↑↓", purpose: "to navigate" },
-      { command: "↵", purpose: "to append link to the file" },
+      { command: "↑↓", purpose: i18n.labels.toNavigate },
+      { command: "↵", purpose: i18n.labels.toAppendLinkToTheFile },
       { command: "esc", purpose: "to dismiss" },
     ]);
     this.initNewNoteItem();
@@ -319,13 +321,13 @@ export class ObsidianEnactor implements Enactor {
     linkSelector.open();
   }
   selectSpace(e: React.MouseEvent, onSelect: (path: string) => void) {
-    return this.notify("Not implemented");
+    return this.notify(i18n.labels.notImplemented);
   }
   pathExists(path: string) {
     return this.plugin.app.vault.adapter.exists(path);
   }
   selectImage(e: React.MouseEvent, onSelect: (path: string) => void) {
-    return this.notify("Not implemented");
+    return this.notify(i18n.labels.notImplemented);
   }
   isSpace(path: string) {
     return false;

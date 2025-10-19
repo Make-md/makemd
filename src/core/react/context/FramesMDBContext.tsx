@@ -8,7 +8,8 @@ import React, {
 } from "react";
 import { defaultFrameListViewSchema } from "schemas/mdb";
 
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { defaultPredicate } from "shared/schemas/predicate";
 import {
   DBTable,
@@ -196,7 +197,7 @@ export const FramesMDBProvider: React.FC<
                   props.contextSchema,
                   schemaTable?.rows.map((f) => f.id) ?? []
                 ),
-                name: "Table",
+                name: i18n.menu.table,
                 type: "view",
                 predicate: JSON.stringify({
                   ...defaultPredicate,
@@ -216,6 +217,7 @@ export const FramesMDBProvider: React.FC<
       });
     }
   }, [schemaTable, props.contextSchema, props.schema]);
+  
   const loadTables = useCallback(async () => {
     // Don't load if no spaceInfo
     if (!spaceInfo) {

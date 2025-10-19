@@ -1,5 +1,5 @@
 import { frameRootWithProps, kitWithProps } from "core/utils/frames/frames";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import { FrameRoot } from "shared/types/mframe";
 import { contentNode, flowNode, groupNode, textNode } from "./base";
 import { buttonNode } from "./ui";
@@ -46,7 +46,7 @@ export const dateGroup: FrameRoot = {
       },
       id: "$root",
       schemaId: "$root",
-      name: "Date",
+      name: i18n.fieldTypes.date,
       rank: 0,
         
     },

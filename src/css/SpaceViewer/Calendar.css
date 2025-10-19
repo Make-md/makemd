@@ -97,6 +97,16 @@
     padding: 0;
   }
   
+  .is-phone .mk-month-day {
+    padding: 2px;
+  }
+  .is-phone .mk-month-week, .is-phone .mk-month-header {
+gap: 1px;
+  }
+  .is-phone .mk-day-block-time {
+    display: none;
+  }
+
   .mk-month-week
   {
     display: flex;
@@ -168,12 +178,14 @@
     display: flex;
     padding: 2px;
     font-size: 12px;
-    height: 20px;
     background: var(--block-bg-color);
     border-radius: 4px;
   }
   .mk-month-event .mk-path {
     color: var(--block-text-color);
+  }
+  .mk-month-event .mk-path span {
+    text-overflow: clip;
   }
   .mk-month-event .mk-path, .mk-week-view-all-day-cell .mk-path {
     font-size: 12px;

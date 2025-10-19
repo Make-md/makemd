@@ -1,4 +1,5 @@
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useCallback, useEffect, useState } from "react";
 import { SpaceProperty, SpaceTableSchema } from "shared/types/mdb";
 import { VisualizationConfig } from "shared/types/visualization";
@@ -205,7 +206,7 @@ export const VisualizationSetup: React.FC<VisualizationSetupProps> = ({
             __html: superstate.ui.getSticker("ui//list"),
           }}
         ></div>
-        <div className="mk-path-context-field-key">List</div>
+        <div className="mk-path-context-field-key">{i18n.labels.list}</div>
       </div>
       <div className="mk-path-context-value">
         <div 
@@ -229,7 +230,7 @@ export const VisualizationSetup: React.FC<VisualizationSetupProps> = ({
             __html: superstate.ui.getSticker("ui//arrow-right"),
           }}
         ></div>
-        <div className="mk-path-context-field-key">X-Field</div>
+        <div className="mk-path-context-field-key">{i18n.labels.xField}</div>
       </div>
       <div className="mk-path-context-value">
         <div 
@@ -253,7 +254,7 @@ export const VisualizationSetup: React.FC<VisualizationSetupProps> = ({
             __html: superstate.ui.getSticker("ui//arrow-up"),
           }}
         ></div>
-        <div className="mk-path-context-field-key">Y-Field</div>
+        <div className="mk-path-context-field-key">{i18n.labels.yField}</div>
       </div>
       <div className="mk-path-context-value">
         <div 

@@ -114,7 +114,7 @@ const childrenForNode = async (
     // if (isSpace) {
     //   metadataTypes.push({
     //     type: "tables",
-    //     label: "Tables",
+    //     label: i18n.labels.tables,
     //     sticker: "ui//table",
     //   });
     // }

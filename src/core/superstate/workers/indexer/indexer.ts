@@ -32,7 +32,7 @@ export class Indexer {
         this.callbacks = new Map();
 
         for (let index = 0; index < numWorkers; index++) {
-            const worker = new SuperstateWorker({ name: "Make.md Superstate Indexer " + (index + 1) });
+            const worker = new SuperstateWorker({ name: "Superstate Indexer " + (index + 1) });
 
             worker.onmessage = (evt: Partial<any>) => this.finish(evt.data.job, evt.data.result, index);
             this.workers.push(worker);
@@ -111,7 +111,8 @@ export class Indexer {
             return;
         }
         if (job.type == 'path')
-        {const spaceState = this.cache.spacesIndex.get(job.path);
+        {
+            const spaceState = this.cache.spacesIndex.get(job.path);
             let cachePath = job.path;
             let name;
             let isFolderNote = false;
@@ -127,12 +128,14 @@ export class Indexer {
             let pathMetadata = await this.cache.spaceManager.readPathCache(cachePath) ?? await this.cache.spaceManager.readPathCache(job.path)
             if (isFolderNote && pathMetadata) {
                 const folderMetadata = await this.cache.spaceManager.readPathCache(job.path);
-                pathMetadata = {...pathMetadata,
-                    file: folderMetadata.file,
-                parent: folderMetadata.parent,
-                subtype: folderMetadata.subtype,
-                type: folderMetadata.type,
-                contentTypes: folderMetadata.contentTypes
+                if (folderMetadata) {
+                    pathMetadata = {...pathMetadata,
+                        file: folderMetadata.file,
+                    parent: folderMetadata.parent,
+                    subtype: folderMetadata.subtype,
+                    type: folderMetadata.type,
+                    contentTypes: folderMetadata.contentTypes
+                    }
                 }
     
 

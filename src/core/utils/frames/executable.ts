@@ -2,9 +2,11 @@ import * as acorn from "acorn";
 import { FrameExecutable, FrameTreeNode } from "shared/types/frameExec";
 import { applyFunctionToObject } from "../objects";
 import { objectIsConst, stringIsConst } from "./frames";
+import { isString } from "lodash";
 
 const generateCodeForProp = (value: any, isClosure: boolean, type?: string) => {
     let codeBlock : string = value || '';
+    if (!isString(codeBlock)) codeBlock = JSON.stringify(codeBlock);
     if (codeBlock.startsWith('{') && codeBlock.endsWith('}')) codeBlock = `(${codeBlock})`
     codeBlock = (isClosure && !codeBlock.startsWith('(')) ? `($event, $value, $state, $saveState, $api) => { ${codeBlock} }` : codeBlock;
     const isMultiLine = (typeof codeBlock === 'string') ? codeBlock.includes('\n') : false;

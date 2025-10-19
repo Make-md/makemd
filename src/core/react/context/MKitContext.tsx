@@ -20,8 +20,8 @@ interface ProcessedSpaceData {
   schemaTable?: DBTable;
   contextTables: SpaceTables;
   contextSchemas?: SpaceTableSchema[];
-  pseudoPath: PathState;
-  pseudoContext: ContextState;
+  pathState: PathState;
+  contextState: ContextState;
   parentPath?: string;
   relativePath: string; // Relative path from root kit
   childPaths: string[];
@@ -31,6 +31,8 @@ interface MKitContextType {
   spaceKit: SpaceKit | null;
   isPreviewMode: boolean;
   rootPath: string; // Base path for the root kit
+  kitMeta: { version?: string } | undefined; // Metadata of the loaded kit
+  isVersionCompatible: boolean; // Whether kit version is compatible with app
   // Dictionary of spaces by relative path
   spacesByRelativePath: Record<string, ProcessedSpaceData>;
   // Helper functions
@@ -45,12 +47,20 @@ interface MKitContextType {
   getChildSpaces: (parentPath: string) => ProcessedSpaceData[];
   getSpaceHierarchy: () => Map<string, string[]>; // path -> child paths
   resolvePath: (path: string, source?: string) => string;
+  // Context access map
+  getContextsIndexMap: () => Map<string, ContextState>;
+  getContextForPath: (path: string) => ContextState | undefined;
+  // Path access map
+  getPathsIndexMap: () => Map<string, PathState>;
+  getPathState: (path: string) => PathState | undefined;
 }
 
 const MKitContext = createContext<MKitContextType>({
   spaceKit: null,
   isPreviewMode: false,
   rootPath: "",
+  kitMeta: undefined,
+  isVersionCompatible: true,
   spacesByRelativePath: {},
   getSpaceByRelativePath: () => undefined,
   getSpaceByFullPath: () => undefined,
@@ -61,6 +71,10 @@ const MKitContext = createContext<MKitContextType>({
   getChildSpaces: () => [],
   getSpaceHierarchy: () => new Map(),
   resolvePath: () => "",
+  getContextsIndexMap: () => new Map(),
+  getContextForPath: () => undefined,
+  getPathsIndexMap: () => new Map(),
+  getPathState: () => undefined,
 });
 
 export const useMKitPreviewContext = () => {
@@ -70,11 +84,12 @@ export const useMKitPreviewContext = () => {
 
 interface MKitProviderProps {
   spaceKit?: SpaceKit;
+  superstate?: any; // Add superstate for API creation
   children: React.ReactNode;
 }
 
-// Helper function to create pseudo path for a space kit
-const createPseudoPath = (
+// Helper function to create path state for a space kit
+const createPathState = (
   spaceKit: SpaceKit,
   parentPath?: string
 ): PathState => {
@@ -90,26 +105,33 @@ const createPseudoPath = (
     parent: parentPath || "",
     label: {
       name: spaceKit.name,
-      sticker: spaceKit.definition?.defaultSticker || "",
-      color: spaceKit.definition?.defaultColor || "",
+      sticker:
+        spaceKit.properties?.sticker ||
+        spaceKit.definition?.defaultSticker ||
+        "",
+      color:
+        spaceKit.properties?.color || spaceKit.definition?.defaultColor || "",
+      cover: spaceKit.properties?.cover,
+      thumbnail: spaceKit.properties?.thumbnail,
+      preview: spaceKit.properties?.preview,
     },
-    metadata: spaceKit.properties || {},
+    metadata: { property: spaceKit.properties || {} },
     tags: [],
     spaces: spaceKit.children?.map((child) => `${path}/${child.name}`) || [],
     readOnly: true,
   };
 };
 
-// Helper function to create pseudo context for a space kit
-const createPseudoContext = (
+// Helper function to create context state for a space kit
+const createContextState = (
   spaceKit: SpaceKit,
-  pseudoPath: PathState
+  pathState: PathState
 ): ContextState => {
   const mainTable = spaceKit.context?.[defaultContextSchemaID];
   const contextTable = mainTable || Object.values(spaceKit.context || {})[0];
 
   return {
-    path: pseudoPath.path,
+    path: pathState.path,
     schemas: Object.values(spaceKit.context || {})
       .map((table) => table.schema)
       .filter(Boolean),
@@ -137,7 +159,6 @@ const createFrameSchemas = (
   const schemas: SpaceTableSchema[] = [];
   Object.values(frames).forEach((table) => {
     if (table.schema) {
-      
       schemas.push(table.schema);
     }
   });
@@ -145,7 +166,6 @@ const createFrameSchemas = (
   if (schemas.length === 0) {
     return {};
   }
-
 
   const schemaTable: DBTable = {
     uniques: [],
@@ -156,7 +176,6 @@ const createFrameSchemas = (
   const frameSchemas = schemaTable.rows.map((schema) =>
     mdbSchemaToFrameSchema(schema as SpaceTableSchema)
   );
-
 
   return { schemaTable, frameSchemas };
 };
@@ -208,9 +227,9 @@ const processSpaceRecursively = (
       ? rootPath
       : `${rootPath}/${parentRelativePath}`;
 
-  const pseudoPath = createPseudoPath(spaceKit, parentPath);
-  const pseudoContext = createPseudoContext(spaceKit, pseudoPath);
-  
+  const pathState = createPathState(spaceKit, parentPath);
+  const contextState = createContextState(spaceKit, pathState);
+
   // Extract context schemas from context tables first
   const contextSchemas: SpaceTableSchema[] = [];
   if (spaceKit.context) {
@@ -220,8 +239,7 @@ const processSpaceRecursively = (
       }
     });
   }
-  
-  
+
   // Create frame schemas (should already have proper def fields from existing frames)
   const { schemaTable, frameSchemas } = createFrameSchemas(spaceKit.frames);
 
@@ -247,8 +265,8 @@ const processSpaceRecursively = (
     schemaTable,
     contextTables: spaceKit.context || {},
     contextSchemas: contextSchemas.length > 0 ? contextSchemas : undefined,
-    pseudoPath,
-    pseudoContext,
+    pathState,
+    contextState,
     parentPath,
     relativePath,
     childPaths,
@@ -260,11 +278,48 @@ const processSpaceRecursively = (
   return processedData;
 };
 
+// Get current app version from package.json or manifest
+const APP_VERSION = "1.3.2"; // This should match the version in manifest.json
+
+// Helper function to check version compatibility
+function checkVersionCompatibility(kitVersion?: string): boolean {
+  if (!kitVersion) return true; // No version specified means assume compatible
+
+  const parseVersion = (version: string) => {
+    const parts = version.split(".").map(Number);
+    return {
+      major: parts[0] || 0,
+      minor: parts[1] || 0,
+      patch: parts[2] || 0,
+    };
+  };
+
+  const kit = parseVersion(kitVersion);
+  const app = parseVersion(APP_VERSION);
+
+  // Compatible if same major version and kit minor <= app minor
+  return kit.major === app.major && kit.minor <= app.minor;
+}
+
 export const MKitProvider: React.FC<MKitProviderProps> = ({
   spaceKit,
+  superstate,
   children,
 }) => {
   const isPreviewMode = !!spaceKit;
+  const isVersionCompatible = spaceKit
+    ? checkVersionCompatibility(spaceKit.meta?.version)
+    : true;
+
+  // Log warning if version incompatible
+  React.useEffect(() => {
+    if (spaceKit?.meta?.version && !isVersionCompatible) {
+      console.warn(
+        `SpaceKit version ${spaceKit.meta.version} may not be fully compatible with app version ${APP_VERSION}. ` +
+          `Some features may not work as expected.`
+      );
+    }
+  }, [spaceKit?.meta?.version, isVersionCompatible]);
 
   // Process entire space hierarchy
   const { spacesByRelativePath, rootPath } = useMemo(() => {
@@ -303,6 +358,7 @@ export const MKitProvider: React.FC<MKitProviderProps> = ({
   const getSpaceByFullPath = (
     fullPath: string
   ): ProcessedSpaceData | undefined => {
+    if (!fullPath) return null;
     // Extract relative path from full path
     if (fullPath.startsWith(rootPath)) {
       let relativePath: string;
@@ -326,9 +382,9 @@ export const MKitProvider: React.FC<MKitProviderProps> = ({
       return spacesByRelativePath[normalizedPath];
     }
 
-    // Try to find by matching pseudoPath
+    // Try to find by matching pathState
     const foundSpace = Object.values(spacesByRelativePath).find(
-      (space) => space.pseudoPath.path === fullPath
+      (space) => space.pathState.path === fullPath
     );
 
     return foundSpace;
@@ -398,7 +454,7 @@ export const MKitProvider: React.FC<MKitProviderProps> = ({
   // Get all full paths
   const getAllFullPaths = (): string[] => {
     return Object.values(spacesByRelativePath).map(
-      (space) => space.pseudoPath.path
+      (space) => space.pathState.path
     );
   };
 
@@ -449,10 +505,117 @@ export const MKitProvider: React.FC<MKitProviderProps> = ({
     return result;
   };
 
+  /**
+   * Creates a comprehensive map of all contexts accessible in the MKit preview.
+   * This map includes all contexts from the space hierarchy with their associated data.
+   *
+   * Each ContextState entry contains:
+   * - path: The space path for this context
+   * - schemas: Array of SpaceTableSchema objects defining the structure of tables
+   * - contextTable: The main context table with cols and rows
+   * - outlinks: Array of paths that this context links to
+   * - contexts: Array of tag contexts this space belongs to
+   * - paths: Array of file paths included in this context
+   * - spaceMap: Nested mapping of spaces and their properties
+   * - dbExists: Whether the database/context exists
+   * - mdb: SpaceTables containing all the context's database tables
+   *
+   * The map is keyed by both:
+   * 1. Full path (e.g., "mkit://preview/kit-name/space-name")
+   * 2. Relative path (e.g., ".", "space-name", "parent/child")
+   *
+   * This allows flexible access to contexts using either path format.
+   */
+  const getContextsIndexMap = (): Map<string, ContextState> => {
+    const contextsMap = new Map<string, ContextState>();
+
+    // Iterate through all processed spaces and add their contexts
+    Object.entries(spacesByRelativePath).forEach(
+      ([relativePath, spaceData]) => {
+        if (spaceData.contextState) {
+          // Add the context using the full path as key
+          contextsMap.set(spaceData.pathState.path, spaceData.contextState);
+
+          // Also add using relative path for easier access
+          contextsMap.set(relativePath, spaceData.contextState);
+        }
+      }
+    );
+
+    return contextsMap;
+  };
+
+  /**
+   * Gets the context state for a specific path.
+   * Supports both full paths and relative paths.
+   *
+   * @param path - Either a full path (mkit://preview/...) or relative path
+   * @returns The ContextState for the given path, or undefined if not found
+   */
+  const getContextForPath = (path: string): ContextState | undefined => {
+    // Try to get the space data first
+    const spaceData = getSpaceByFullPath(path) || getSpaceByRelativePath(path);
+    return spaceData?.contextState;
+  };
+
+  /**
+   * Creates a comprehensive map of all paths accessible in the MKit preview.
+   * This map includes all paths from the space hierarchy with their associated PathState data.
+   *
+   * Each PathState entry contains:
+   * - path: The full path for this item
+   * - name: The name of the path item
+   * - type: The type of path (e.g., "space", "file")
+   * - subtype: The subtype (e.g., "folder")
+   * - parent: The parent path
+   * - label: Object with visual properties (name, sticker, color, cover, etc.)
+   * - metadata: Additional metadata/properties
+   * - tags: Array of tags
+   * - spaces: Array of child space paths
+   * - readOnly: Whether the path is read-only
+   *
+   * The map is keyed by both:
+   * 1. Full path (e.g., "mkit://preview/kit-name/space-name")
+   * 2. Relative path (e.g., ".", "space-name", "parent/child")
+   */
+  const getPathsIndexMap = (): Map<string, PathState> => {
+    const pathsMap = new Map<string, PathState>();
+
+    // Iterate through all processed spaces and add their paths
+    Object.entries(spacesByRelativePath).forEach(
+      ([relativePath, spaceData]) => {
+        if (spaceData.pathState) {
+          // Add the path using the full path as key
+          pathsMap.set(spaceData.pathState.path, spaceData.pathState);
+
+          // Also add using relative path for easier access
+          pathsMap.set(relativePath, spaceData.pathState);
+        }
+      }
+    );
+
+    return pathsMap;
+  };
+
+  /**
+   * Gets the path state for a specific path.
+   * Supports both full paths and relative paths.
+   *
+   * @param path - Either a full path (mkit://preview/...) or relative path
+   * @returns The PathState for the given path, or undefined if not found
+   */
+  const getPathState = (path: string): PathState | undefined => {
+    // Try to get the space data first
+    const spaceData = getSpaceByFullPath(path) || getSpaceByRelativePath(path);
+    return spaceData?.pathState;
+  };
+
   const contextValue: MKitContextType = {
     spaceKit: spaceKit || null,
     isPreviewMode,
     rootPath,
+    kitMeta: spaceKit?.meta,
+    isVersionCompatible,
     spacesByRelativePath,
     getSpaceByRelativePath,
     getSpaceByFullPath,
@@ -463,11 +626,18 @@ export const MKitProvider: React.FC<MKitProviderProps> = ({
     getChildSpaces,
     getSpaceHierarchy,
     resolvePath: mkitResolvePath,
+    getContextsIndexMap,
+    getContextForPath,
+    getPathsIndexMap,
+    getPathState,
   };
 
   return (
     <MKitContext.Provider value={contextValue}>
-      <MKitSpaceManagerProvider mkitContext={contextValue}>
+      <MKitSpaceManagerProvider
+        mkitContext={contextValue}
+        superstate={superstate}
+      >
         {children}
       </MKitSpaceManagerProvider>
     </MKitContext.Provider>

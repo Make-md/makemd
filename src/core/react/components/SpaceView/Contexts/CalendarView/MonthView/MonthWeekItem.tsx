@@ -1,8 +1,10 @@
 import { useDraggable } from "@dnd-kit/core";
 import { PathCrumb } from "core/react/components/UI/Crumbs/PathCrumb";
+import { PathContext } from "core/react/context/PathContext";
+import { SpaceContext } from "core/react/context/SpaceContext";
 import { formatDate } from "core/utils/date";
 import { Superstate } from "makemd-core";
-import React, { useMemo } from "react";
+import React, { useContext, useMemo } from "react";
 import { PathPropertyName } from "shared/types/context";
 import { DBRow } from "shared/types/mdb";
 
@@ -24,6 +26,7 @@ export const MonthWeekItem = (props: {
       index: props.index,
     },
   });
+  const {spaceState} = useContext(SpaceContext)
   const timeString = useMemo(() => {
     const startDate = new Date(props.startEvent);
 
@@ -44,6 +47,7 @@ export const MonthWeekItem = (props: {
       <PathCrumb
         superstate={props.superstate}
         path={props.data[PathPropertyName]}
+        source={spaceState.path}
         hideIcon
       />
       <div className="mk-day-block-time">{timeString}</div>

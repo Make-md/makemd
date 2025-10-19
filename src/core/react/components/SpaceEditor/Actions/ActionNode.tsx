@@ -1,4 +1,4 @@
-import { allActions } from "core/schemas/parseFieldValue";
+import { allActions } from "core/schemas/fieldValueUtils";
 import { Superstate } from "makemd-core";
 import React, { useEffect, useMemo } from "react";
 import { stickerForSchema } from "schemas/mdb";

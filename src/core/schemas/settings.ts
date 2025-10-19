@@ -1,10 +1,12 @@
-import { MakeMDSettings } from "../../shared/types/settings";
+import i18n from "shared/i18n";
+
 import { BasicDefaultSettings } from "../../basics/schemas/settings";
+import { MakeMDSettings } from "../../shared/types/settings";
 
 
 
 export const DEFAULT_SETTINGS: MakeMDSettings = {
-  newNotePlaceholder: 'Untitled',
+  newNotePlaceholder: i18n.settings.untitled,
   defaultInitialization: false,
   navigatorEnabled: true,
   filePreviewOnHover: false,
@@ -44,7 +46,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   deleteFileOption: "trash",
   expandedSpaces: ["/"],
   expandFolderOnClick: true,
-  spacesFolder: "Tags",
+  spacesFolder: i18n.settings.tags,
   suppressedWarnings: [],
   spaceSubFolder: ".space",
   hiddenFiles: [],
@@ -74,13 +76,13 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   enableDefaultSpaces: true,
   showSpacePinIcon: true,
   experimental: false,
-  systemName: "Vault",
+  systemName: i18n.settings.vault,
   defaultSpaceTemplate: "",
   selectedKit: "default",
   actionMaxSteps: 100,
   contextPagination: 25,
-  skipFolderNames: [],
   skipFolders: [],
+  skipFolderNames: [],
   enhancedLogs: false,
   basics: true,
   basicsSettings: BasicDefaultSettings,

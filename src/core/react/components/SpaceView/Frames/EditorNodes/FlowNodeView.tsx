@@ -7,13 +7,14 @@ import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { wrapQuotes } from "core/utils/strings";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { BlinkMode } from "shared/types/blink";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
 import { FrameNodeViewProps } from "../ViewNodes/FrameView";
+import { SpaceContext } from "core/react/context/SpaceContext";
 
 function parseContent(input: string): string {
   // Define regular expressions to match ![![content]] and !![[content]]
@@ -103,6 +104,7 @@ export const FlowNodeView = (
 
     loadPathState();
   }, [parsedPath, props.source, isSpaceFragment, spaceManager, parsedUri]);
+  const {readMode} = useContext(SpaceContext);
   const { updateNode, nodes } = useContext(FramesEditorRootContext);
   const { selectionMode } = useContext(FrameSelectionContext);
   const [expanded, setExpanded] = useState<boolean>(
@@ -175,11 +177,13 @@ export const FlowNodeView = (
           isSpaceFragment ? (
             <SpaceFragmentViewComponent
               id={id}
+              key={parsedPath}
               source={props.source}
               showTitle={false}
               superstate={props.superstate}
               path={parsedPath}
               minMode={props.state?.styles?.["--mk-min-mode"]}
+              predicate={props.state?.props?.predicate}
               containerRef={props.containerRef}
             />
           ) : (
@@ -189,7 +193,7 @@ export const FlowNodeView = (
               path={pathState?.path ?? props.state?.props?.value}
               containerRef={props.containerRef}
               styles={{}}
-              readOnly={true}
+              readOnly={readMode}
             ></PathView>
           )
         ) : (

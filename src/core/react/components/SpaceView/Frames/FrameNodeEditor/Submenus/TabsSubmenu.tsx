@@ -1,5 +1,6 @@
 import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { SelectOptionType, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useState } from "react";
 import { FrameNodeState } from "shared/types/frameExec";
 import { FrameNode } from "shared/types/mframe";
@@ -141,7 +142,7 @@ export const TabsSubmenu: React.FC<TabsSubmenuProps> = ({
 
     if (options.length === 0) {
       options.push({
-        name: "No frames available",
+        name: i18n.menu.noFramesAvailable,
         type: SelectOptionType.Option,
         disabled: true,
       });
@@ -213,7 +214,7 @@ export const TabsSubmenu: React.FC<TabsSubmenuProps> = ({
                     (e.target as HTMLInputElement).blur();
                   }
                 }}
-                placeholder="Tab name"
+                placeholder={i18n.menu.tabName}
                 className="mk-frame-editor-tab-name-input"
               />
               <div
@@ -244,7 +245,7 @@ export const TabsSubmenu: React.FC<TabsSubmenuProps> = ({
                 <button
                   onClick={() => removeTab(index)}
                   className="mk-inline-button"
-                  title="Remove tab"
+                  title={i18n.menu.removeTab}
                   dangerouslySetInnerHTML={{
                     __html: superstate.ui.getSticker("ui//close"),
                   }}

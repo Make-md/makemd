@@ -21,7 +21,8 @@ import {
   createNewVisualizationFrame as createNewVisFrame,
   parseVisualizationData,
 } from "core/utils/visualization/visualizationUtils";
-import { SelectOption, Superstate, i18n } from "makemd-core";
+import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { flowNode } from "schemas/kits/base";
 import {
   FrameEditorMode,
@@ -104,13 +105,13 @@ export const FrameNodeEditor = (props: {
     return nodes.find((f) => f.id == props.node.id);
   }, [nodes, props.node]);
   const fields = useMemo(() => {
-    if (!node || !node.types) return [];
-    return Object.keys(node.types).map((f) => ({
-      type: node.types[f],
+    if (!props.node || !props.node.types) return [];
+    return Object.keys(props.node.types).map((f) => ({
+      type: props.node.types[f],
       name: f,
-      attrs: node.propsAttrs?.[f],
-      schemaId: node.schemaId,
-      value: node.propsValue?.[f],
+      attrs: props.node.propsAttrs?.[f],
+      schemaId: props.node.schemaId,
+      value: props.node.propsValue?.[f],
     }));
   }, [node]);
   const saveNodeValue = useCallback(
@@ -132,7 +133,7 @@ export const FrameNodeEditor = (props: {
   };
   const [editMode, setEditMode] = useState(FrameNodeEditMode.EditModeNone);
   const [frameProps, setFrameProps] = useState(node?.props || {});
-  const [visualizationInSubmenu, setVisualizationInSubmenu] = useState(false);
+  
 
   useEffect(() => {
     if (node) {
@@ -404,21 +405,21 @@ export const FrameNodeEditor = (props: {
   const showGroupStyleMenu = (e: React.MouseEvent) => {
     const styleOptions: SelectOption[] = [
       {
-        name: "None",
+        name: i18n.labels.none,
         icon: "lucide//square",
         onClick: () => {
           saveStyleValue("sem", "");
         },
       },
       {
-        name: "Card",
+        name: i18n.labels.card,
         icon: "lucide//credit-card",
         onClick: () => {
           saveStyleValue("sem", "'card'");
         },
       },
       {
-        name: "Button",
+        name: i18n.labels.button,
         icon: "ui//mouse-pointer-click",
         onClick: () => {
           saveStyleValue("sem", "'button'");
@@ -473,6 +474,8 @@ export const FrameNodeEditor = (props: {
   if (!node) {
     return null;
   }
+
+  
 
   return (
     <div
@@ -606,10 +609,10 @@ export const FrameNodeEditor = (props: {
                     ></div>
                     <span>
                       {removeQuotes(node.styles?.["sem"]) === "card"
-                        ? "Card"
+                        ? i18n.labels.card
                         : removeQuotes(node.styles?.["sem"]) === "button"
-                        ? "Button"
-                        : "None"}
+                        ? i18n.labels.button
+                        : i18n.labels.none}
                     </span>
                   </div>
                 </>
@@ -660,7 +663,7 @@ export const FrameNodeEditor = (props: {
                   padding: "0 8px",
                 }}
               >
-                <span>No visualization found</span>
+                <span>{i18n.labels.noVisualizationFound}</span>
                 <div
                   className="mk-editor-frame-node-button"
                   onClick={createNewVisualizationFrame}
@@ -701,7 +704,7 @@ export const FrameNodeEditor = (props: {
               ></div>
             )
           )}
-          {!visualizationInSubmenu && (
+      
             <>
               {node.type == "text" && (
                 <>
@@ -734,7 +737,7 @@ export const FrameNodeEditor = (props: {
               )}
               <div className="mk-divider"></div>
               <div
-                aria-label="Sizing"
+                aria-label={i18n.labels.sizing}
                 className="mk-editor-frame-node-button"
                 onClick={(e) => {
                   e.preventDefault();
@@ -760,7 +763,7 @@ export const FrameNodeEditor = (props: {
               ></div>
               {(node.type === "group" || node.type === "text") && (
                 <div
-                  aria-label="Interactions"
+                  aria-label={i18n.labels.interactions}
                   className={`mk-editor-frame-node-button`}
                   onClick={(e) => {
                     e.preventDefault();
@@ -772,11 +775,7 @@ export const FrameNodeEditor = (props: {
                   }}
                 ></div>
               )}
-              {(node.type == "flow" ||
-                node.type == "space" ||
-                node.type == "vis") && (
-                <ModeSubmenu {...submenuProps}></ModeSubmenu>
-              )}
+             
 
               {node.type !== "visualization" && (
                 <div
@@ -792,10 +791,16 @@ export const FrameNodeEditor = (props: {
                   }}
                 ></div>
               )}
-
+<div className="mk-divider"></div>
+ {(node.type == "flow" ||
+                node.type == "space" || node.type == "view" ||
+                node.type == "visualization") && (
+                <ModeSubmenu {...submenuProps}></ModeSubmenu>
+              )}
               {selectionMode == FrameEditorMode.Page && (
                 <>
-                  <div className="mk-divider"></div>
+                  
+                  
                   <ToggleSetter
                     superstate={props.superstate}
                     name={"Page Width"}
@@ -845,7 +850,7 @@ export const FrameNodeEditor = (props: {
                       }
                       return node.styles?.["--max-width"];
                     })()}
-                    icon={"ui//full-width"}
+                    icon={"ui//full-page"}
                   ></ToggleSetter>
                 </>
               )}
@@ -874,7 +879,7 @@ export const FrameNodeEditor = (props: {
                 }}
               ></div>
             </>
-          )}
+       
         </>
       ) : (
         <>

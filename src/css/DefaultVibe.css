@@ -75,7 +75,7 @@ body {
 
     --mk-layer-editor-popover: 100;
     --mk-layer-editor-overlay: 100;
-
+    --mk-gradient-overlay: linear-gradient(to bottom, #000000, transparent)
 }
 
 .mk-smooth-border {

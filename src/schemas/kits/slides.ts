@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { FrameRoot } from "shared/types/mframe";
 
 
@@ -8,7 +10,7 @@ export const slidesNode: FrameRoot = {
     icon: 'ui//gem',
     schemaId: "slides",
     parentId: "",
-    name: "Slides",
+    name: i18n.labels.slides,
     rank: 0,
     id: "slides",
     styles: {},
@@ -30,7 +32,7 @@ export const slideNode: FrameRoot = {
     icon: 'ui//gem',
     schemaId: "slide",
     parentId: "",
-    name: "Slide",
+    name: i18n.labels.slide,
     rank: 0,
     id: "slide",
     styles: {},
@@ -52,7 +54,7 @@ export const deltaNode: FrameRoot = {
     icon: 'ui//gem',
     schemaId: "delta",
     parentId: "",
-    name: "Delta",
+    name: i18n.labels.delta,
     rank: 0,
     id: "delta",
     styles: {},

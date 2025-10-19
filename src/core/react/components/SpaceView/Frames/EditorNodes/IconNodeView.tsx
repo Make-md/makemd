@@ -1,7 +1,7 @@
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { wrapQuotes } from "core/utils/strings";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext, useMemo } from "react";
 import StickerModal from "shared/components/StickerModal";
 import { FrameEditorMode } from "shared/types/frameExec";

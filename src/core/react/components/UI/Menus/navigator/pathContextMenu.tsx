@@ -33,6 +33,7 @@ import { ConfirmationModal } from "../../Modals/ConfirmationModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../properties/colorPickerMenu";
 import { showSpacesMenu } from "../properties/selectSpaceMenu";
+import { showSpaceContextMenu } from "./spaceContextMenu";
 
 export const triggerMultiPathMenu = (
   superstate: Superstate,
@@ -192,6 +193,12 @@ export const showPathContextMenu = (
   onClose?: () => void
 ) => {
   const cache = superstate.pathsIndex.get(path);
+   
+  if (cache.type == 'space') {
+    
+    showSpaceContextMenu(superstate, cache, rect, win, space, onClose)
+    return
+  }
   if (!cache) return;
   const menuOptions: SelectOption[] = [];
 
@@ -203,30 +210,6 @@ export const showPathContextMenu = (
     },
   });
   menuOptions.push(menuSeparator);
-
-  if (onClose) {
-    menuOptions.push({
-      name: i18n.menu.closeSpace,
-      icon: "ui//close",
-      onClick: (e) => {
-        onClose();
-      },
-    });
-    menuOptions.push(menuSeparator);
-  }
-
-  if (space && space != cache.parent) {
-    const spaceCache = superstate.spacesIndex.get(space);
-    if (spaceCache) {
-      menuOptions.push({
-        name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
-        icon: "ui//pin-off",
-        onClick: (e) => {
-          removePathsFromSpace(superstate, spaceCache.path, [path]);
-        },
-      });
-    }
-  }
 
   if (superstate.settings.spacesStickers) {
     menuOptions.push(menuSeparator);
@@ -269,16 +252,7 @@ export const showPathContextMenu = (
       },
     });
   }
-  if (superstate.ui.hasNativePathMenu(path)) {
-    menuOptions.push(menuSeparator);
-    menuOptions.push({
-      name: i18n.menu.openNativeMenu,
-      icon: "ui//options",
-      onClick: (e) => {
-        superstate.ui.nativePathMenu(e, path);
-      },
-    });
-  }
+  
 
   menuOptions.push(menuSeparator);
 
@@ -360,6 +334,15 @@ export const showPathContextMenu = (
       saveSpaceTemplate(superstate, path, space);
     },
   });
+  if (superstate.ui.hasNativePathMenu(path)) {
+    menuOptions.push({
+      name: i18n.menu.openNativeMenu,
+      icon: "ui//options",
+      onClick: (e) => {
+        superstate.ui.nativePathMenu(e, path);
+      },
+    });
+  }
 
   // Move Item
 
@@ -377,6 +360,32 @@ export const showPathContextMenu = (
     });
     menuOptions.push(menuSeparator);
   }
+
+  
+  if (onClose) {
+    menuOptions.push({
+      name: i18n.menu.closeSpace,
+      icon: "ui//close",
+      onClick: (e) => {
+        onClose();
+      },
+    });
+    
+  }
+
+  if (space && space != cache.parent) {
+    const spaceCache = superstate.spacesIndex.get(space);
+    if (spaceCache) {
+      menuOptions.push({
+        name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
+        icon: "ui//pin-off",
+        onClick: (e) => {
+          removePathsFromSpace(superstate, spaceCache.path, [path]);
+        },
+      });
+    }
+  }
+
 
   menuOptions.push({
     name: i18n.menu.hide,

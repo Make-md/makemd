@@ -1,4 +1,5 @@
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useState, useEffect } from "react";
 import { useDebouncedSave } from "./hooks";
 import { SettingsProps } from "./types";
@@ -32,7 +33,7 @@ export const GeneralSettings = ({ superstate }: SettingsProps) => {
           <div className="mk-setting-item-info">
             <div className="mk-setting-item-name">System Name</div>
             <div className="mk-setting-item-description">
-              Name of your system
+              {i18n.settings.nameOfYourSystem}
             </div>
           </div>
           <div className="mk-setting-item-control">

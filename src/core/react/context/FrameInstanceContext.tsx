@@ -18,6 +18,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { useSpaceManager } from "./SpaceManagerContext";
 import { defaultStyleAst } from "schemas/kits/defaultStyleAst";
 import { FrameRunInstance, FrameState } from "shared/types/frameExec";
 import { ActionProp, FrameTreeProp } from "shared/types/mframe";
@@ -77,6 +78,7 @@ export const FrameInstanceProvider: React.FC<
     editable: boolean;
   }>
 ) => {
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
   const [hoverNode, setHoverNode] = useState(null);
   const [instance, setInstance] = useState<FrameRunInstance>({
     state: {},
@@ -130,7 +132,7 @@ export const FrameInstanceProvider: React.FC<
         slides: {},
       },
       {
-        api: props.superstate.api,
+        api: spaceManager.api,
         saveState,
         root: _root,
         contexts: props.contexts,
@@ -191,7 +193,7 @@ export const FrameInstanceProvider: React.FC<
           slides: {},
         },
         {
-          api: props.superstate.api,
+          api: spaceManager.api,
           contexts: props.contexts,
           saveState,
           root: root,

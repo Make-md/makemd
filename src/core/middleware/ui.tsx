@@ -10,7 +10,8 @@ import {
 } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
 import _ from "lodash";
-import { i18n, Superstate } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { RootOptions } from "react-dom/client";
 import { tagsSpacePath } from "shared/schemas/builtin";

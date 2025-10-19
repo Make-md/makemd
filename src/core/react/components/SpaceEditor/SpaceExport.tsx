@@ -2,7 +2,8 @@ import { generateStyleAst } from "core/export/styleAst/generateStyleAst";
 import { styleAstToCSS } from "core/export/styleAst/styleAstToCSS";
 import { noteToHtml, spaceToHtml } from "core/export/toHtml/spaceToHtml";
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext } from "react";
 import { Dropdown } from "../UI/Dropdown";
 
@@ -137,7 +138,7 @@ export const SpaceExport = (props: {
             __html: props.superstate.ui.getSticker("ui//pin"),
           }}
         ></div>
-        <span>Make a static web version of </span>
+        <span>{i18n.labels.makeAStaticWebVersionOf} </span>
         <Dropdown
           superstate={props.superstate}
           options={[
@@ -146,7 +147,7 @@ export const SpaceExport = (props: {
               value: "false",
             },
             {
-              name: "This Space and All Subfolders",
+              name: i18n.labels.thisSpaceAndAllSubfolders,
               value: "true",
             },
           ]}
@@ -183,9 +184,9 @@ export const SpaceExport = (props: {
       ) : (
         <div className="mk-button-group">
           <button onClick={() => exportWithOptions(spaceState.path, true)}>
-            Export
+            {i18n.buttons.export}
           </button>
-          <button onClick={() => props.close()}>{i18n.menu.cancel}</button>
+          <button onClick={() => props.close()}>{i18n.buttons.cancel}</button>
         </div>
       )}
     </div>

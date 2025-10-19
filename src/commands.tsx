@@ -12,7 +12,7 @@ import { addPathToSpaceAtIndex } from "core/superstate/utils/spaces";
 import { eventTypes } from "core/types/types";
 import { isPhone } from "core/utils/ui/screen";
 import MakeMDPlugin from "main";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { BlinkMode } from "shared/types/blink";
 import { windowFromDocument } from "shared/utils/dom";
@@ -55,7 +55,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
   });
   plugin.addCommand({
     id: "logs",
-    name: i18n.commands.toggleEnhancedLogs,
+    name: i18n.commandPalette.toggleEnhancedLogs,
     callback: () => {
       plugin.superstate.settings.enhancedLogs =
         !plugin.superstate.settings.enhancedLogs;
@@ -64,21 +64,21 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
   });
   plugin.addCommand({
     id: "path-fixer",
-    name: i18n.commands.fixPathCharacters,
+    name: i18n.commandPalette.fixPathCharacters,
     callback: () => {
       openPathFixer(plugin);
     },
   });
   plugin.addCommand({
     id: "move-space-folder",
-    name: i18n.commands.moveSpaceDataFolder,
+    name: i18n.commandPalette.moveSpaceDataFolder,
     callback: () => {
       const win = windowFromDocument(
         plugin.app.workspace.getLeaf()?.containerEl.ownerDocument
       );
       openInputModal(
         plugin.superstate,
-        i18n.commands.moveSpaceDataFolder,
+        i18n.commandPalette.moveSpaceDataFolder,
         plugin.superstate.settings.spaceSubFolder,
         (path) => {
           moveSpaceFiles(
@@ -95,7 +95,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
   if (plugin.superstate.settings.spacesEnabled) {
     plugin.addCommand({
       id: "mk-new-space",
-      name: i18n.buttons.newFolder,
+      name: i18n.buttons.createFolder,
       callback: () => {
         newSpaceModal(plugin.superstate);
       },
@@ -103,7 +103,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
 
     plugin.addCommand({
       id: "mk-debug-close-tabs",
-      name: i18n.commands.closeExtraFileTabs,
+      name: i18n.commandPalette.closeExtraFileTabs,
       callback: () => {
         plugin.closeExtraFileTabs();
       },
@@ -124,7 +124,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
 
     plugin.addCommand({
       id: "mk-collapse-folders",
-      name: i18n.commandPalette.collapseAllFolders,
+      name: i18n.menu.collapseAllFolders,
       callback: () => {
         plugin.superstate.settings.expandedSpaces = [];
         plugin.saveSettings();
@@ -159,7 +159,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
 
     plugin.addCommand({
       id: "mk-pin-active",
-      name: i18n.commands.pinActiveFileToSpace,
+      name: i18n.commandPalette.pinActiveFileToSpace,
       callback: () => {
         const file = plugin.superstate.ui.activePath;
         if (!file) return;

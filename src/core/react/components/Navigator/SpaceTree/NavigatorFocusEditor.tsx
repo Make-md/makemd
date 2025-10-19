@@ -1,7 +1,8 @@
 import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { createSpace } from "core/superstate/utils/spaces";
-import { i18n, Superstate } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { windowFromDocument } from "shared/utils/dom";

@@ -1,8 +1,8 @@
-import { format as formatNumber } from "numfmt";
 import React, { useEffect, useMemo, useRef } from "react";
 import { safelyParseJSON } from "shared/utils/json";
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
+import { safeFormatNumber } from "core/utils/number";
 
 export const NumberCell = (props: TableCellProp) => {
   const { initialValue, saveValue } = props;
@@ -81,7 +81,7 @@ export const NumberCell = (props: TableCellProp) => {
     
     // Default number formatting
     return format?.length > 0 && format !== "sticker" && value
-      ? formatNumber(format, parseFloat(value))
+      ? safeFormatNumber(format, parseFloat(value))
       : value ?? "";
   };
   

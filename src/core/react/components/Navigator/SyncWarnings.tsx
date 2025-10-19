@@ -1,4 +1,5 @@
-import { i18n, Superstate } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useState } from "react";
 
 export const showWarningsModal = (superstate: Superstate, win: Window) => {

@@ -1,6 +1,6 @@
 import MakeBasicsPlugin from "basics/basics";
 import { App, DropdownComponent, Setting } from "obsidian";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 
 export class MakeBasicsSettingsTab {
     plugin: MakeBasicsPlugin;
@@ -133,8 +133,8 @@ export class MakeBasicsSettingsTab {
         });
         
       new Setting(containerEl)
-        .setName(i18n.settings.editorMakePlacholder?.name || "Menu Placeholder")
-        .setDesc(i18n.settings.editorMakePlacholder?.desc || "Show placeholder text for menu")
+        .setName(i18n.settings.editorMakePlaceholder?.name || "Menu Placeholder")
+        .setDesc(i18n.settings.editorMakePlaceholder?.desc || "Show placeholder text for menu")
         .addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings.makeMenuPlaceholder)

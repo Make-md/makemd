@@ -27,6 +27,9 @@ export const getThemeColors = (): string[] => [
 ];
 
 export const createTooltip = (className: string = 'd3-viz-tooltip') => {
+  // Remove any existing tooltips with this class name to prevent duplicates
+  select('body').selectAll(`.${className}`).remove();
+  
   return select('body').append('div')
     .attr('class', className)
     .style('position', 'absolute')
@@ -47,6 +50,11 @@ export const showTooltip = (
   content: string,
   event: MouseEvent
 ) => {
+  // Hide all other tooltips before showing this one
+  select('body').selectAll('[class*="-tooltip"]')
+    .filter(function() { return this !== tooltip.node(); })
+    .style('opacity', 0);
+  
   tooltip.transition()
     .duration(200)
     .style('opacity', 1);
@@ -123,17 +131,24 @@ export const getPaletteColors = (colorPaletteId?: string, superstate?: any): str
     }
   }
   
-  // Fall back to pastel palette as default
+  // Fall back to default theme colors
+  // Try to get theme colors first
+  const themeColors = getThemeColors();
+  if (themeColors && themeColors.length > 0) {
+    return themeColors;
+  }
+  
+  // If theme colors not available, use default palette values
   return [
-    '#FFB6C1', // Light Pink
-    '#FFD700', // Gold
-    '#98FB98', // Pale Green
-    '#87CEEB', // Sky Blue
-    '#DDA0DD', // Plum
-    '#F0E68C', // Khaki
-    '#FFA07A', // Light Salmon
-    '#B0E0E6', // Powder Blue
-    '#FFE4B5', // Moccasin
-    '#E6E6FA'  // Lavender
+    '#ef4444', // Red
+    '#ec4899', // Pink
+    '#f97316', // Orange
+    '#eab308', // Yellow
+    '#22c55e', // Green
+    '#06b6d4', // Turquoise
+    '#14b8a6', // Teal
+    '#3b82f6', // Blue
+    '#a855f7', // Purple
+    '#a16207', // Brown
   ];
 };

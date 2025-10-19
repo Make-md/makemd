@@ -1,7 +1,8 @@
 import SelectMenuSuggestions from "core/react/components/UI/Menus/menu/SelectMenuSuggestions";
 
 import { calculateBoundsBasedOnPosition } from "core/utils/ui/menu";
-import { SelectOption, SelectSection, Superstate, i18n } from "makemd-core";
+import { SelectOption, SelectSection, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Pos } from "shared/types/Pos";

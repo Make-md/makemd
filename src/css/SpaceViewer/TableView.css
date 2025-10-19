@@ -263,10 +263,18 @@
   flex: 1;
 }
 .mk-cell-text {
-  white-space: pre-line;
+  --font-text-size: "13px";
   width: 100%;
   min-height: 24px;
   padding: 4px 4px;
+  font-size: var(--font-text-size);
+    font-weight: var(--font-text-weight);
+    font-style: var(--font-text-style);
+    text-decoration: var(--font-text-decoration);
+    color: var(--font-text-color);
+    font-family: var(--font-text);
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .mk-cell-text:empty::before {
@@ -619,6 +627,7 @@ height: 60px;
 .mk-icon-xsmall {
   display: flex;
   align-items: center;
+  overflow: hidden;
 }
 
 .mk-icon-xxsmall svg {

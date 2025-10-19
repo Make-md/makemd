@@ -1,4 +1,4 @@
-import * as d3 from 'd3';
+import { histogram, max, select, axisBottom } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 
 export class HistogramUtility {
@@ -34,15 +34,15 @@ export class HistogramUtility {
       .filter(v => !isNaN(v));
 
     // Create histogram generator
-    const histogram = d3.histogram()
+    const histogramGen = histogram()
       .domain(xScale.domain() as [number, number])
       .thresholds(binCount);
 
     // Generate bins
-    const bins = histogram(values);
+    const bins = histogramGen(values);
 
     // Update y scale to use frequency
-    const maxFrequency = d3.max(bins, d => d.length) || 0;
+    const maxFrequency = max(bins, d => d.length) || 0;
     yScale.domain([0, maxFrequency]);
 
     // Calculate bar width
@@ -66,13 +66,13 @@ export class HistogramUtility {
     // Add hover effects
     bars
       .on('mouseenter', function() {
-        d3.select(this)
+        select(this)
           .transition()
           .duration(200)
           .attr('fill-opacity', 0.8);
       })
       .on('mouseleave', function() {
-        d3.select(this)
+        select(this)
           .transition()
           .duration(200)
           .attr('fill-opacity', 1);
@@ -97,7 +97,7 @@ export class HistogramUtility {
         bars.each(function(d: any, i: number) {
           const id = `histogram-bin-${i}`;
           if (selectedElement.id === id) {
-            d3.select(this)
+            select(this)
               .style('stroke', 'var(--mk-ui-accent)')
               .style('stroke-width', 2)
               .style('stroke-dasharray', '4,2');
@@ -133,7 +133,7 @@ export class HistogramUtility {
     }
 
     xAxis.call(
-      d3.axisBottom(xScale)
+      axisBottom(xScale)
         .tickValues(tickValues)
         .tickFormat((d: any) => {
           const num = Number(d);
@@ -181,15 +181,15 @@ export class HistogramUtility {
       .filter(v => !isNaN(v));
 
     // Create histogram generator
-    const histogram = d3.histogram()
+    const histogramGen = histogram()
       .domain(xScale.domain() as [number, number])
       .thresholds(binCount);
 
     // Generate bins
-    const bins = histogram(values);
+    const bins = histogramGen(values);
 
     // Update y scale to use frequency
-    const maxFrequency = d3.max(bins, d => d.length) || 0;
+    const maxFrequency = max(bins, d => d.length) || 0;
     yScale.domain([0, maxFrequency]);
 
     // Calculate bar width

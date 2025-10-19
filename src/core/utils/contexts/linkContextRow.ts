@@ -78,6 +78,42 @@ const visited: Set<string> = new Set();
   }
   return result;
 }
+
+export const syncContextRow = ( 
+  paths: Map<string, PathState>,
+  _row: DBRow,
+  fields: SpaceProperty[],
+  path: PathState,
+  ) => {
+    if (!path) return _row
+const resolvedPath = resolvePath(_row[PathPropertyName], path?.path, (spacePath) => paths.get(spacePath)?.type == 'space');
+  
+
+  const frontmatter = (paths.get(resolvedPath)?.metadata?.property ?? {});
+  
+  const filteredFrontmatter = Object.keys(frontmatter).filter(f => fields.some(g => g.name == f) && f != PathPropertyName).reduce((p, c) => ({ ...p, [c]: parseProperty(c, frontmatter[c]) }), {})
+  
+  const tagData : Record<string, string> = {};
+  const tagField = fields.find(f => f.name?.toLowerCase() == 'tags');
+  if (tagField) {
+    tagData[tagField.name] = serializeMultiString([...(paths.get(resolvedPath)?.tags ?? [])]) 
+  }
+  return {
+        ..._row,
+    
+    ...filteredFrontmatter,
+    ...tagData,
+  }
+}
+
+export const mergeContextRows = ( paths: string[], rows: DBRows, pathStates: Map<string, PathState>, spaceMap: IndexMap, path: PathState) => {
+  
+  const contextPaths = uniq(rows.map(f => resolvePath(f[PathPropertyName], path?.path, (spacePath) => pathStates.get(spacePath)?.type == 'space')).filter(f => paths.includes(f)));
+  const missingPaths = paths.filter(f => !contextPaths.includes(f));
+      
+      return [...contextPaths.map(g => rows.find(f => resolvePath(f[PathPropertyName], path?.path, (spacePath) => pathStates.get(spacePath)?.type == 'space') == g)), ...missingPaths.map(f => ({[PathPropertyName]: f}))]
+
+}
 export const linkContextRow = (
   runContext: math.MathJsInstance,
   paths: Map<string, PathState>,
@@ -91,20 +127,9 @@ export const linkContextRow = (
 ) => {
   if (!_row) return {}
   if (!path) return _row
-  const resolvedPath = resolvePath(_row[PathPropertyName], path.path, (spacePath) => paths.get(spacePath)?.type == 'space');
-  
-  const result = dependencies ?? propertyDependencies(fields)
-  const frontmatter = (paths.get(resolvedPath)?.metadata?.property ?? {});
-  
-  const filteredFrontmatter = Object.keys(frontmatter).filter(f => fields.some(g => g.name == f) && f != PathPropertyName).reduce((p, c) => ({ ...p, [c]: parseProperty(c, frontmatter[c]) }), {})
+  const resolvedPath = resolvePath(_row[PathPropertyName], path?.path, (spacePath) => paths.get(spacePath)?.type == 'space');
   const properties = fields.reduce((p, c) => ({ ...p, [c.name]: c }), {});
-  
-  const tagData : Record<string, string> = {};
-  const tagField = fields.find(f => f.name.toLowerCase() == 'tags');
-  if (tagField) {
-    tagData[tagField.name] = serializeMultiString([...(paths.get(resolvedPath)?.tags ?? [])]) 
-  }
-  
+    const result = dependencies ?? propertyDependencies(fields)
   
   const relationFields = fields.filter((f) => f && (f.type.startsWith('context'))).reduce((p, c) => {
     
@@ -135,7 +160,7 @@ export const linkContextRow = (
     const fieldValue = parseFieldValue(c.value, c.type);
     // Resolve space path if it exists
     if (fieldValue.space) {
-      fieldValue.space = resolvePath(fieldValue.space, path.path, (spacePath) => paths.get(spacePath)?.type == 'space');
+      fieldValue.space = resolvePath(fieldValue.space, path?.path, (spacePath) => paths.get(spacePath)?.type == 'space');
     }
     
     const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields, path)
@@ -146,7 +171,7 @@ export const linkContextRow = (
     let fieldCol: SpaceProperty = null;
     if (fieldValue.schema) {
       // Space-based aggregate
-      const contextData = contextsMap.get(fieldValue.space || path.path);
+      const contextData = contextsMap.get(fieldValue.space || path?.path);
       fieldCol = contextData?.mdb?.[fieldValue.schema]?.cols?.find(col => col.name === fieldValue.field);
     } else if (fieldValue.ref == '$items') {
       // Items aggregate
@@ -195,7 +220,7 @@ export const linkContextRow = (
       const fieldValue = config;
       // Resolve space path if it exists
       if (fieldValue.space) {
-        fieldValue.space = resolvePath(fieldValue.space, path.path, (spacePath) => paths.get(spacePath)?.type == 'space');
+        fieldValue.space = resolvePath(fieldValue.space, path?.path, (spacePath) => paths.get(spacePath)?.type == 'space');
       }
       const values = rowsForAggregate(fieldValue, fields, spaceMap, _row, contextsMap, relationFields, path)
       if (!values) return p;
@@ -204,7 +229,7 @@ export const linkContextRow = (
       let fieldCol: SpaceProperty = null;
       if (fieldValue.schema) {
         // Space-based aggregate
-        const contextData = contextsMap.get(fieldValue.space || path.path);
+        const contextData = contextsMap.get(fieldValue.space || path?.path);
         fieldCol = contextData?.mdb?.[fieldValue.schema]?.cols?.find(col => col.name === fieldValue.field);
       } else if (fieldValue.ref == '$items') {
         // Items aggregate
@@ -247,8 +272,7 @@ export const linkContextRow = (
     const { value } = parseFieldValue(c.value, c.type);
     return {...p, [c.name]: runFormulaWithContext(runContext, paths, spaceMap, value, properties, {..._row,
     
-    ...filteredFrontmatter,
-    ...tagData,
+
 
     ...relationFields,
     ...aggregateFields,
@@ -257,9 +281,7 @@ export const linkContextRow = (
   }, {});
   return {
     ..._row,
-    
-    ...filteredFrontmatter,
-    ...tagData,
+
     ...formulaFields,
     ...relationFields,
     ...aggregateFields,
@@ -275,8 +297,9 @@ const rowsForAggregate = (fieldValue: Record<string, any>, fields: SpaceProperty
     if (fieldValue.space && fieldValue.schema) {
         const contextData = contextsMap.get(fieldValue.space);
         rows = contextData?.mdb?.[fieldValue.schema]?.rows ?? [];
+        
     } else if (fieldValue.schema) {
-        rows = (contextsMap.get(pathState.path)?.mdb[fieldValue.schema]?.rows ?? []);
+        rows = (contextsMap.get(pathState?.path)?.mdb[fieldValue.schema]?.rows ?? []);
     } else if (fieldValue?.ref == '$items') {
       rows = (contextsMap.get(_row[PathPropertyName])?.contextTable?.rows ?? []);
     } else {
@@ -300,7 +323,7 @@ const rowsForAggregate = (fieldValue: Record<string, any>, fields: SpaceProperty
     // Apply filters if they exist
     if (fieldValue.filters && fieldValue.filters.length > 0) {
       const cols = fieldValue.schema 
-        ? contextsMap.get(fieldValue.space || pathState.path)?.mdb?.[fieldValue.schema]?.cols
+        ? contextsMap.get(fieldValue.space || pathState?.path)?.mdb?.[fieldValue.schema]?.cols
         : fieldValue.ref == '$items' 
           ? contextsMap.get(_row[PathPropertyName])?.contextTable?.cols
           : (() => {

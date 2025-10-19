@@ -1,7 +1,8 @@
 import { DataPropertyView } from "core/react/components/SpaceView/Contexts/DataTypeView/DataPropertyView";
 import { CellEditMode } from "core/react/components/SpaceView/Contexts/TableView/TableView";
 import { updateTableRow } from "core/utils/contexts/context";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect } from "react";
 import { SpaceTable } from "shared/types/mdb";
 import { PathState } from "shared/types/PathState";

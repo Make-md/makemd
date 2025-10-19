@@ -3,7 +3,7 @@ import { FramesEditorRootContext } from "core/react/context/FrameEditorRootConte
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext } from "react";
 import { FrameNode } from "shared/types/mframe";
 import { windowFromDocument } from "shared/utils/dom";

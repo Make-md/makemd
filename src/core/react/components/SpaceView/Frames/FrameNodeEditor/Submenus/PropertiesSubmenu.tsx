@@ -17,7 +17,8 @@ import {
   stringIsConst,
 } from "core/utils/frames/frames";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
-import { SelectOption, i18n } from "makemd-core";
+import { SelectOption } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { stickerForField } from "schemas/mdb";
 import { FrameRunInstance } from "shared/types/frameExec";

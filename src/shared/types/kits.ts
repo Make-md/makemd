@@ -21,7 +21,12 @@ export type Assets = {
     type?: string
 }
 
+export type SpaceKitMeta = {
+    version?: string;
+}
+
 export type SpaceKit = {
+    meta?: SpaceKitMeta;
     name: string;
     path: string;
     definition: SpaceDefinition;

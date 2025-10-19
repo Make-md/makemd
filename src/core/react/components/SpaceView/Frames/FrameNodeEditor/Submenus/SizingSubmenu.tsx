@@ -1,5 +1,6 @@
 import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
-import { SelectOption, i18n } from "makemd-core";
+import { SelectOption } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { HoverSubmenuProps } from "./HoverSubmenuProps";
@@ -46,7 +47,7 @@ export const SizingSubmenu = (props: HoverSubmenuProps) => {
     <>
       <div
         className="mk-editor-frame-node-button-back"
-        aria-label="Back"
+        aria-label={i18n.buttons.back}
         onMouseDown={(e) => {
           props.exitMenu(e);
         }}

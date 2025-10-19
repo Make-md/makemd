@@ -1,7 +1,7 @@
 import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
 import { listFonts } from "core/utils/fonts";
 import { removeQuotes } from "core/utils/strings";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { ColorSetter } from "../../Setters/ColorSetter";
@@ -55,7 +55,7 @@ export const TextSubmenu = (props: HoverSubmenuProps & { styleState?: "hover" })
     <>
       <div
         className="mk-editor-frame-node-button-back"
-        aria-label="Back"
+        aria-label={i18n.buttons.back}
         onMouseDown={(e) => {
           props.exitMenu(e);
         }}

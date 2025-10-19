@@ -1,6 +1,17 @@
+import { API, APISpaceManager } from "core/superstate/api";
+import {
+  linkContextRow,
+  propertyDependencies,
+} from "core/utils/contexts/linkContextRow";
+import { formulas } from "core/utils/formula/formulas";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
+import * as math from "mathjs";
+import { all } from "mathjs";
 import React, { createContext, useCallback, useContext, useMemo } from "react";
+import { IAPI } from "shared/types/api";
 import { PathCache } from "shared/types/caches";
+import { IndexMap } from "shared/types/indexMap";
 import {
   SpaceProperty,
   SpaceTable,
@@ -10,16 +21,18 @@ import {
 import { MDBFrame, MDBFrames } from "shared/types/mframe";
 import { URI } from "shared/types/path";
 import { PathState } from "shared/types/PathState";
+import { MakeMDSettings } from "shared/types/settings";
 import { SpaceDefinition } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { SpaceManagerInterface } from "shared/types/spaceManager";
+import { ContextState } from "shared/types/superstate";
 import { parseURI } from "shared/utils/uri";
 import { useMKitPreviewContext } from "./MKitContext";
 
 /**
  * Enhanced SpaceManager interface that handles both regular and MKit operations
  */
-interface SpaceManagerContextType {
+interface SpaceManagerContextType extends APISpaceManager {
   // Core data operations (MKit-aware)
   readTable(path: string, schema: string): Promise<SpaceTable | null>;
   saveTable(path: string, table: SpaceTable, force?: boolean): Promise<boolean>;
@@ -92,6 +105,7 @@ interface SpaceManagerContextType {
   getPathInfo(path: string): Promise<Record<string, any>>;
   readPathCache(path: string): Promise<PathCache>;
   getPathState(path: string): PathState | null;
+  getPathsIndexMap: () => Map<string, PathState>;
   childrenForPath(path: string, type?: string): Promise<string[]>;
 
   // Frame schema operations
@@ -107,6 +121,12 @@ interface SpaceManagerContextType {
   convertMKitPath(path: string): string;
   isMKitPath(path: string): boolean;
 
+  // Context access map
+  getContextsIndexMap: () => Map<string, ContextState>;
+
+  // API reference
+  api: IAPI;
+
   // Fallback to original spaceManager for uncovered methods
   spaceManager: SpaceManagerInterface;
 }
@@ -120,6 +140,7 @@ interface SpaceManagerProviderProps {
 
 interface MKitSpaceManagerProviderProps {
   mkitContext: any;
+  superstate: Superstate;
   children: React.ReactNode;
 }
 
@@ -128,6 +149,20 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
   children,
 }) => {
   const mkitContext = useMKitPreviewContext();
+
+  // Create formula context for regular provider
+  const formulaContext = useMemo(() => {
+    // Use superstate's formula context if available, otherwise create one
+    if (superstate?.formulaContext) {
+      return superstate.formulaContext;
+    }
+    const config: math.ConfigOptions = {
+      matrix: "Array",
+    };
+    const runContext = math.create(all, config);
+    runContext.import(formulas, { override: true });
+    return runContext;
+  }, [superstate]);
 
   // MKit path utilities
   const isMKitPath = useCallback((path: string): boolean => {
@@ -159,6 +194,32 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
     [mkitContext?.rootPath, isMKitPath]
   );
 
+  // Define getContextsIndexMap before readTable to avoid reference errors
+  const getContextsIndexMap = useCallback((): Map<string, ContextState> => {
+    if (mkitContext?.isPreviewMode && mkitContext?.getContextsIndexMap) {
+      // In MKit preview mode, use MKit context's map
+      return mkitContext.getContextsIndexMap();
+    } else if (superstate?.contextsIndex) {
+      // In regular mode, return superstate's contexts index
+      return superstate.contextsIndex;
+    }
+    // Fallback to empty map
+    return new Map<string, ContextState>();
+  }, [mkitContext, superstate]);
+
+  // Define getPathsIndexMap before readTable to avoid reference errors
+  const getPathsIndexMap = useCallback((): Map<string, PathState> => {
+    if (mkitContext?.isPreviewMode && mkitContext?.getPathsIndexMap) {
+      // In MKit preview mode, use MKit context's map
+      return mkitContext.getPathsIndexMap();
+    } else if (superstate?.pathsIndex) {
+      // In regular mode, return superstate's paths index
+      return superstate.pathsIndex;
+    }
+    // Fallback to empty map
+    return new Map<string, PathState>();
+  }, [mkitContext, superstate]);
+
   // Core data operations
   const readTable = useCallback(
     async (path: string, schema: string): Promise<SpaceTable | null> => {
@@ -171,20 +232,98 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
           mkitContext.getSpaceByRelativePath(lookupPath);
 
         if (mkitSpaceData?.contextTables?.[schema]) {
-          const tableData = mkitSpaceData.contextTables[schema];
-          return tableData;
-        } else {
+          const table = mkitSpaceData.contextTables[schema];
+
+          // Apply linkContextRow for MKit data
+          if (table.rows && table.cols && table.cols.length > 0) {
+            // Use getPathsIndexMap and getContextsIndexMap from MKit context
+            const pathsMap = mkitContext?.getPathsIndexMap
+              ? mkitContext.getPathsIndexMap()
+              : new Map<string, PathState>();
+            const contextsMap = mkitContext?.getContextsIndexMap
+              ? mkitContext.getContextsIndexMap()
+              : new Map<string, ContextState>();
+            const spacesMap = new IndexMap();
+
+            // Calculate dependencies once
+            const dependencies = propertyDependencies(table.cols);
+
+            // Use superstate settings if available
+            const settings = superstate?.settings || ({} as MakeMDSettings);
+
+            // Apply linkContextRow to each row
+            const processedRows = table.rows.map((row: any) =>
+              linkContextRow(
+                formulaContext,
+                pathsMap,
+                contextsMap,
+                spacesMap,
+                row,
+                table.cols,
+                mkitSpaceData.pathState,
+                settings,
+                dependencies
+              )
+            );
+
+            return {
+              ...table,
+              rows: processedRows,
+            };
+          }
+
+          return table;
         }
       }
 
       // Fallback to regular spaceManager
       if (superstate?.spaceManager) {
-        return await superstate.spaceManager.readTable(path, schema);
+        const table = await superstate.spaceManager.readTable(path, schema);
+
+        // Apply linkContextRow for regular data using getPathsIndexMap
+        if (table && table.rows && table.cols && table.cols.length > 0) {
+          // Use getPathsIndexMap and getContextsIndexMap for consistent access
+          const pathsMap = getPathsIndexMap();
+          const contextsMap = getContextsIndexMap();
+          const pathState = pathsMap.get(path);
+
+          if (pathState) {
+            const dependencies = propertyDependencies(table.cols);
+            const processedRows = table.rows.map((row: any) =>
+              linkContextRow(
+                formulaContext,
+                pathsMap,
+                contextsMap,
+                superstate.spacesMap || new IndexMap(),
+                row,
+                table.cols,
+                pathState,
+                superstate.settings || ({} as MakeMDSettings),
+                dependencies
+              )
+            );
+
+            return {
+              ...table,
+              rows: processedRows,
+            };
+          }
+        }
+
+        return table;
       }
 
       return null;
     },
-    [mkitContext, isMKitPath, convertMKitPath, superstate]
+    [
+      mkitContext,
+      isMKitPath,
+      convertMKitPath,
+      superstate,
+      formulaContext,
+      getPathsIndexMap,
+      getContextsIndexMap,
+    ]
   );
 
   const saveTable = useCallback(
@@ -475,6 +614,16 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
     [superstate]
   );
 
+  // Table operations
+  const createTable = useCallback(
+    (path: string, schema: SpaceTableSchema): void => {
+      if (superstate?.spaceManager) {
+        superstate.spaceManager.createTable(path, schema);
+      }
+    },
+    [superstate]
+  );
+
   // File operations (always use regular spaceManager)
   const createItemAtPath = useCallback(
     async (
@@ -710,20 +859,17 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
 
   const getPathState = useCallback(
     (path: string): PathState | null => {
-      if (mkitContext?.isPreviewMode && isMKitPath(path)) {
-        // Handle MKit preview mode - get pseudoPath from MKit context
-        const lookupPath = convertMKitPath(path);
-
-        const mkitSpaceData =
-          mkitContext.getSpaceByFullPath(lookupPath) ||
-          mkitContext.getSpaceByRelativePath(lookupPath);
-
-        if (mkitSpaceData?.pseudoPath) {
-          return mkitSpaceData.pseudoPath;
+      if (mkitContext?.isPreviewMode && mkitContext?.getPathState) {
+        // In MKit preview mode, use MKit context's getPathState
+        if (isMKitPath(path)) {
+          const convertedPath = convertMKitPath(path);
+          return mkitContext.getPathState(convertedPath) || null;
         }
+        // For non-MKit paths in preview mode, still try MKit context
+        return mkitContext.getPathState(path) || null;
       }
 
-      // Fallback to regular superstate pathsIndex
+      // In regular mode, use superstate's paths index
       if (superstate?.pathsIndex) {
         return superstate.pathsIndex.get(path) || null;
       }
@@ -798,6 +944,9 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
       deleteProperty,
       renameProperty,
 
+      // Table operations
+      createTable,
+
       // File operations
       createItemAtPath,
       deletePath,
@@ -823,6 +972,7 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
       getPathInfo,
       readPathCache,
       getPathState,
+      getPathsIndexMap,
       childrenForPath,
 
       // Frame schema operations
@@ -833,6 +983,12 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
       isPreviewMode: !!mkitContext?.isPreviewMode,
       convertMKitPath,
       isMKitPath,
+
+      // Context access map
+      getContextsIndexMap,
+
+      // API reference
+      api: superstate?.api,
 
       // Fallback
       spaceManager: superstate?.spaceManager as SpaceManagerInterface,
@@ -855,6 +1011,7 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
       saveProperties,
       deleteProperty,
       renameProperty,
+      createTable,
       createItemAtPath,
       deletePath,
       readPath,
@@ -875,18 +1032,21 @@ export const SpaceManagerProvider: React.FC<SpaceManagerProviderProps> = ({
       getPathInfo,
       readPathCache,
       getPathState,
+      getPathsIndexMap,
       childrenForPath,
       saveFrameSchema,
       deleteFrame,
       mkitContext?.isPreviewMode,
       convertMKitPath,
       isMKitPath,
+      getContextsIndexMap,
       superstate?.spaceManager,
+      formulaContext,
     ]
   );
 
   return (
-    <SpaceManagerContext.Provider value={contextValue}>
+    <SpaceManagerContext.Provider value={{ ...contextValue }}>
       {children}
     </SpaceManagerContext.Provider>
   );
@@ -904,7 +1064,17 @@ export const useSpaceManager = (): SpaceManagerContextType => {
  */
 export const MKitSpaceManagerProvider: React.FC<
   MKitSpaceManagerProviderProps
-> = ({ mkitContext, children }) => {
+> = ({ mkitContext, superstate, children }) => {
+  // Create formula context for MKit
+  const formulaContext = useMemo(() => {
+    const config: math.ConfigOptions = {
+      matrix: "Array",
+    };
+    const runContext = math.create(all, config);
+    runContext.import(formulas, { override: true });
+    return runContext;
+  }, []);
+
   // MKit path utilities
   const isMKitPath = useCallback((path: string): boolean => {
     return path?.startsWith("mkit://preview/") || false;
@@ -944,12 +1114,52 @@ export const MKitSpaceManagerProvider: React.FC<
         mkitContext?.getSpaceByRelativePath(convertedPath);
 
       if (spaceData?.contextTables?.[schema]) {
-        return spaceData.contextTables[schema];
+        const table = spaceData.contextTables[schema];
+
+        // Apply linkContextRow to calculate formulas and aggregates
+        if (table.rows && table.cols && table.cols.length > 0) {
+          // Use getPathsIndexMap and getContextsIndexMap from MKit context
+          const pathsMap = mkitContext?.getPathsIndexMap
+            ? mkitContext.getPathsIndexMap()
+            : new Map<string, PathState>();
+          const contextsMap = mkitContext?.getContextsIndexMap
+            ? mkitContext.getContextsIndexMap()
+            : new Map<string, ContextState>();
+          const spacesMap = new IndexMap();
+
+          // Calculate dependencies once
+          const dependencies = propertyDependencies(table.cols);
+
+          // Default settings (can be extended if needed)
+          const settings: MakeMDSettings = {} as MakeMDSettings;
+
+          // Apply linkContextRow to each row
+          const processedRows = table.rows.map((row: any) =>
+            linkContextRow(
+              formulaContext,
+              pathsMap,
+              contextsMap,
+              spacesMap,
+              row,
+              table.cols,
+              spaceData.pathState,
+              settings,
+              dependencies
+            )
+          );
+
+          return {
+            ...table,
+            rows: processedRows,
+          };
+        }
+
+        return table;
       }
 
       return null;
     },
-    [mkitContext, convertMKitPath]
+    [mkitContext, convertMKitPath, formulaContext]
   );
 
   const saveTable = useCallback(
@@ -1069,7 +1279,7 @@ export const MKitSpaceManagerProvider: React.FC<
 
       // Return empty table
       return {
-        schema: { id: "default", name: "Default", type: "db" },
+        schema: { id: "default", name: i18n.labels.default, type: "db" },
         cols: [],
         rows: [],
       } as SpaceTable;
@@ -1086,7 +1296,7 @@ export const MKitSpaceManagerProvider: React.FC<
 
       if (spaceData) {
         return {
-          name: spaceData.spaceKit.name || "Unknown",
+          name: spaceData.spaceKit.name || i18n.labels.unknown,
           path: path,
           readOnly: true,
           isRemote: false,
@@ -1096,7 +1306,7 @@ export const MKitSpaceManagerProvider: React.FC<
       }
 
       return {
-        name: "Unknown",
+        name: i18n.labels.unknown,
         path: path,
         readOnly: true,
         isRemote: false,
@@ -1140,6 +1350,13 @@ export const MKitSpaceManagerProvider: React.FC<
   const renameProperty = useCallback(
     (path: string, property: string, newProperty: string): void => {
       // Read-only in MKit
+    },
+    []
+  );
+
+  const createTable = useCallback(
+    (path: string, schema: SpaceTableSchema): void => {
+      // Read-only in MKit - no table creation allowed
     },
     []
   );
@@ -1191,7 +1408,7 @@ export const MKitSpaceManagerProvider: React.FC<
   const allSpaces = useCallback((): SpaceInfo[] => {
     const allPaths = mkitContext?.getAllRelativePaths() || [];
     return allPaths.map((path: string) => ({
-      name: path || "Root",
+      name: path || i18n.labels.root,
       path: path,
       readOnly: true,
       isRemote: false,
@@ -1304,13 +1521,22 @@ export const MKitSpaceManagerProvider: React.FC<
   );
   const getPathState = useCallback(
     (path: string): PathState | null => {
-      const convertedPath = convertMKitPath(path);
-      const spaceData =
-        mkitContext?.getSpaceByFullPath(convertedPath) ||
-        mkitContext?.getSpaceByRelativePath(convertedPath);
+      // Use MKit context's getPathState if available
+      if (mkitContext?.getPathState) {
+        const convertedPath = convertMKitPath(path);
+        return mkitContext.getPathState(convertedPath) || null;
+      }
 
-      if (spaceData?.pseudoPath) {
-        return spaceData.pseudoPath;
+      // Fallback to direct lookup
+      const convertedPath = convertMKitPath(path);
+      const spaceDataByFullPath =
+        mkitContext?.getSpaceByFullPath(convertedPath);
+      const spaceDataByRelativePath =
+        mkitContext?.getSpaceByRelativePath(convertedPath);
+      const spaceData = spaceDataByFullPath || spaceDataByRelativePath;
+
+      if (spaceData?.pathState) {
+        return spaceData.pathState;
       }
 
       return null;
@@ -1340,8 +1566,26 @@ export const MKitSpaceManagerProvider: React.FC<
     []
   );
 
-  const contextValue = useMemo<SpaceManagerContextType>(
-    () => ({
+  const getContextsIndexMap = useCallback((): Map<string, ContextState> => {
+    // Use the MKit context's getContextsIndexMap if available
+    if (mkitContext?.getContextsIndexMap) {
+      return mkitContext.getContextsIndexMap();
+    }
+    // Fallback to empty map if not available
+    return new Map<string, ContextState>();
+  }, [mkitContext]);
+
+  const getPathsIndexMap = useCallback((): Map<string, PathState> => {
+    // Use the MKit context's getPathsIndexMap if available
+    if (mkitContext?.getPathsIndexMap) {
+      return mkitContext.getPathsIndexMap();
+    }
+    // Fallback to empty map if not available
+    return new Map<string, PathState>();
+  }, [mkitContext]);
+
+  const contextValue = useMemo<SpaceManagerContextType>(() => {
+    const spaceManagerContextValue = {
       // Core data operations
       readTable,
       saveTable,
@@ -1369,6 +1613,9 @@ export const MKitSpaceManagerProvider: React.FC<
       deleteProperty,
       renameProperty,
 
+      // Table operations
+      createTable,
+
       // File operations
       createItemAtPath,
       deletePath,
@@ -1394,6 +1641,7 @@ export const MKitSpaceManagerProvider: React.FC<
       getPathInfo,
       readPathCache,
       getPathState,
+      getPathsIndexMap,
       childrenForPath,
 
       // Frame schema operations
@@ -1405,57 +1653,79 @@ export const MKitSpaceManagerProvider: React.FC<
       convertMKitPath,
       isMKitPath,
 
-      // No fallback - MKit operates in isolation
-      spaceManager: null,
-    }),
-    [
-      readTable,
-      saveTable,
-      readFrame,
-      saveFrame,
-      tablesForSpace,
-      framesForSpace,
-      resolvePath,
-      uriByString,
-      pathExists,
-      createSpace,
-      deleteSpace,
-      spaceInfoForPath,
-      contextForSpace,
-      addSpaceProperty,
-      saveProperties,
-      deleteProperty,
-      renameProperty,
-      createItemAtPath,
-      deletePath,
-      readPath,
-      writeToPath,
-      parentPathForPath,
-      allSpaces,
-      childrenForSpace,
-      spaceInitiated,
-      contextInitiated,
-      readAllTables,
-      readAllFrames,
-      saveSpace,
-      renameSpace,
-      spaceDefForSpace,
-      allPaths,
-      renamePath,
-      copyPath,
-      getPathInfo,
-      readPathCache,
-      getPathState,
-      childrenForPath,
-      saveFrameSchema,
-      deleteFrame,
-      convertMKitPath,
-      isMKitPath,
-    ]
-  );
+      // Context access map
+      getContextsIndexMap,
 
+      // API reference - will be set below
+      api: null as IAPI,
+
+      // No fallback - MKit operates in isolation
+      spaceManager: null as SpaceManagerInterface,
+    };
+
+    // Create API for MKit preview using the provided superstate
+    if (superstate) {
+      spaceManagerContextValue.api = new API(
+        superstate,
+        spaceManagerContextValue
+      );
+    }
+
+    return spaceManagerContextValue;
+  }, [
+    readTable,
+    saveTable,
+    readFrame,
+    saveFrame,
+    tablesForSpace,
+    framesForSpace,
+    resolvePath,
+    uriByString,
+    pathExists,
+    createSpace,
+    deleteSpace,
+    spaceInfoForPath,
+    contextForSpace,
+    addSpaceProperty,
+    saveProperties,
+    deleteProperty,
+    renameProperty,
+    createItemAtPath,
+    deletePath,
+    readPath,
+    writeToPath,
+    parentPathForPath,
+    allSpaces,
+    childrenForSpace,
+    spaceInitiated,
+    contextInitiated,
+    readAllTables,
+    readAllFrames,
+    saveSpace,
+    renameSpace,
+    spaceDefForSpace,
+    allPaths,
+    renamePath,
+    copyPath,
+    getPathInfo,
+    readPathCache,
+    getPathState,
+    getPathsIndexMap,
+    childrenForPath,
+    saveFrameSchema,
+    deleteFrame,
+    convertMKitPath,
+    isMKitPath,
+    getContextsIndexMap,
+    superstate,
+    formulaContext,
+  ]);
+  const api = useMemo(() => {
+    const kitAPI = new API(superstate, contextValue);
+    return kitAPI;
+  }, [contextValue]);
   return (
-    <SpaceManagerContext.Provider value={contextValue}>
+    <SpaceManagerContext.Provider value={{ ...contextValue, api: api }}>
       {children}
     </SpaceManagerContext.Provider>
   );

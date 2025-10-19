@@ -6,7 +6,7 @@ export const excludePathPredicate =
       settings.hiddenExtensions.some((e) => path.endsWith(e))
       || path.endsWith('/'+settings.spaceSubFolder) || path == settings.spaceSubFolder || path.split('/').pop() == settings.spaceSubFolder
     ) || path.startsWith(settings.spacesFolder+'/#') ||
-    settings.hiddenFiles.some((e) => e == path)
+    settings.hiddenFiles.some((e) => path.startsWith(e))
 
 export const excludeSpacesPredicate =
   (settings: MakeMDSettings, path: string) =>
@@ -14,4 +14,4 @@ export const excludeSpacesPredicate =
       settings.skipFolderNames.some((e) => path.endsWith(e))
       || path.endsWith('/'+settings.spaceSubFolder) || path == settings.spaceSubFolder || path.split('/').pop() == settings.spaceSubFolder
     ) || path.startsWith(settings.spacesFolder+'/#') || path.startsWith(settings.spacesFolder+'/$') ||
-    settings.skipFolders.some((e) => e == path)
+    settings.hiddenFiles.some((e) => path.startsWith(e))

@@ -1,6 +1,7 @@
 import { saveSpaceCache } from "core/superstate/utils/spaces";
 import { tagSpacePathFromTag } from "core/utils/strings";
-import { i18n, SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { SpaceState } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
@@ -144,7 +145,7 @@ export const showApplyItemsMenu = (
         showContextEditMenu(rect, space.path, superstate, win, onHide),
     },
     {
-      name: "Set Default Sticker",
+      name: i18n.menu.setDefaultSticker,
       icon: "ui//sticker",
       value: "apply-all-sticker",
       onClick: () => {

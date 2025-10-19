@@ -8,9 +8,10 @@ import {
   saveProperties,
 } from "core/superstate/utils/spaces";
 import { updateContextValue } from "core/utils/contexts/context";
-import { SelectOption, Superstate, i18n } from "makemd-core";
+import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 
-import { linkContextRow } from "core/utils/contexts/linkContextRow";
+import { linkContextRow, syncContextRow } from "core/utils/contexts/linkContextRow";
 import React, { useContext, useEffect, useState } from "react";
 import { fieldTypes } from "schemas/mdb";
 import { defaultContextSchemaID } from "shared/schemas/context";
@@ -113,7 +114,7 @@ export const PropertiesView = (props: {
         props.superstate.pathsIndex,
         props.superstate.contextsIndex,
         props.superstate.spacesMap,
-        newValues,
+        syncContextRow(props.superstate.pathsIndex, newValues, cols, pathState),
         cols,
         pathState,
         props.superstate.settings

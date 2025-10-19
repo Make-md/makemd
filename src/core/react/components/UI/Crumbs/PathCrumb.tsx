@@ -26,7 +26,7 @@ export const PathCrumb = (
     [props.source, props.path, spaceManager]
   );
 
-  const [cache, setCache] = useState<PathState | null>(null);
+  const [cache, setCache] = useState<PathState | null>(spaceManager.getPathState(path));
 
   const reloadCache = () => {
     try {

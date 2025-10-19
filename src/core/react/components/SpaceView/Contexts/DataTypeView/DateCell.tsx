@@ -41,6 +41,7 @@ export const DateCell = (props: TableCellProp) => {
       date,
       hasTime ? isoDateFormat : "yyyy-MM-dd"
     );
+    
     props.saveValue(newValue);
     setValue(newValue);
     props.setEditMode(null);
@@ -95,7 +96,7 @@ export const DateCell = (props: TableCellProp) => {
     [props.propertyValue]
   );
   const isEmpty = !(value?.length > 0);
-  return (
+  return props.editMode > CellEditMode.EditModeNone ? (
     <div className="mk-cell-date" onClick={(e) => showPicker(e)}>
       <div
         className={classNames(
@@ -110,8 +111,17 @@ export const DateCell = (props: TableCellProp) => {
           }}
         ></div>
         {isEmpty && "Select"}
-        {props.editMode == CellEditMode.EditModeActive ? (
-          <input
+        {props.editMode != CellEditMode.EditModeActive ?
+         <div className="mk-cell-text">
+            {date
+              ? formatDate(
+                  props.superstate.settings,
+                  date,
+                  format?.length > 0 ? format : null
+                )
+              : value}
+          </div> : 
+        <input
             onClick={(e) => e.stopPropagation()}
             className="mk-cell-text"
             ref={ref}
@@ -120,9 +130,11 @@ export const DateCell = (props: TableCellProp) => {
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={onKeyDown}
             // onBlur={onBlur}
-          />
-        ) : (
-          <div className="mk-cell-date-value" onClick={(e) => showPicker(e)}>
+          />}
+      </div>
+    </div>
+  ) : 
+          <div className="mk-cell-text">
             {date
               ? formatDate(
                   props.superstate.settings,
@@ -130,9 +142,5 @@ export const DateCell = (props: TableCellProp) => {
                   format?.length > 0 ? format : null
                 )
               : value}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+          </div>;
 };

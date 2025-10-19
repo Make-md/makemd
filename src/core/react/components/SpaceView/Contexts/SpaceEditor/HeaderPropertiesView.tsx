@@ -17,8 +17,10 @@ import {
 import { addTagToPath } from "core/superstate/utils/tags";
 import { FMMetadataKeys } from "core/types/space";
 import { updateContextValue } from "core/utils/contexts/context";
-import { i18n, SelectOption, Superstate } from "makemd-core";
+import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, {
+  PropsWithChildren,
   useContext,
   useEffect,
   useMemo,
@@ -32,16 +34,17 @@ import { windowFromDocument } from "shared/utils/dom";
 import { parseMDBStringValue } from "utils/properties";
 import { DataPropertyView } from "../DataTypeView/DataPropertyView";
 import { CellEditMode } from "../TableView/TableView";
+import { uniq } from "shared/utils/array";
 
 type PathContextProperty = {
   property: SpaceProperty;
   contexts: string[];
   value: string;
 };
-export const HeaderPropertiesView = (props: {
+export const HeaderPropertiesView = (props: PropsWithChildren<{
   superstate: Superstate;
   collapseSpaces: boolean;
-}) => {
+}>) => {
   const [collapsed, setCollapsed] = useState(
     !props.superstate.settings.inlineContextExpanded || !props.collapseSpaces
   );
@@ -106,19 +109,17 @@ export const HeaderPropertiesView = (props: {
     );
   };
 
-  const spacesFromPath = (path: string) => {
-    return [...props.superstate.spacesMap.get(path)]
+ 
+
+  const spacePathStates = useMemo(
+    () =>uniq([pathState.parent, ...props.superstate.spacesMap.get(pathState.path)])
       .map((f) => props.superstate.spacesIndex.get(f))
       .filter((f) => f && f.type != "default" && f.path != "/")
       .map((f) => props.superstate.pathsIndex.get(f.path))
       .sort((f, k) =>
-        path.startsWith(f.path) ? -1 : path.startsWith(k.path) ? 1 : 0
+        pathState.path.startsWith(f.path) ? -1 : pathState.path.startsWith(k.path) ? 1 : 0
       )
-      .filter((f) => f);
-  };
-
-  const spacePathStates = useMemo(
-    () => spacesFromPath(pathState.path),
+      .filter((f) => f), 
     [pathState]
   );
   const spaces = useMemo(
@@ -271,8 +272,9 @@ export const HeaderPropertiesView = (props: {
       }, {}),
     });
     const properties: PathContextProperty[] = [];
+    
     contexts.forEach((f) => {
-      const row = f.rows.find((f) => f[PathPropertyName] == pathState.path);
+      const row = f.rows.find((g) => props.superstate.spaceManager.resolvePath(g[PathPropertyName], f.path)  == pathState.path);
       f.cols
         .filter((f) => f.primary != "true")
         .forEach((g) => {
@@ -424,6 +426,7 @@ export const HeaderPropertiesView = (props: {
               ></span>
               {i18n.labels.spaces}
             </div>
+            <span style={{flex: 1}}></span>{props.children}
           </div>
         </div>
       )}
@@ -444,7 +447,7 @@ export const HeaderPropertiesView = (props: {
                     __html: props.superstate.ui.getSticker("ui//file-stack"),
                   }}
                 ></div>
-                <div className="mk-path-context-field-key">Spaces</div>
+                <div className="mk-path-context-field-key">{i18n.labels.spaces}</div>
               </div>
               <div className="mk-path-context-value">
                 <div className="mk-props-value">
@@ -459,6 +462,7 @@ export const HeaderPropertiesView = (props: {
                   </div>
                 </div>
               </div>
+              
             </div>
           )}
 

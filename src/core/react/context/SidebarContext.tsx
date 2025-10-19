@@ -2,6 +2,7 @@ import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTr
 import { TreeNode } from "core/superstate/utils/spaces";
 import _ from "lodash";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { createContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { PathState } from "shared/types/PathState";
@@ -69,8 +70,8 @@ export const SidebarProvider: React.FC<
   const setActiveViewSpaceByPath = (path: string) => {
     const newWaypoint = props.superstate.focuses[activeFocus] ?? {
       sticker: "",
-      name: "Waypoint",
-      paths: [],
+      name: i18n.labels.waypoint,
+      paths: [] as string[],
     };
     newWaypoint.paths = [...newWaypoint.paths.filter((f) => f != path), path];
     if (activeFocus > props.superstate.focuses.length) {
@@ -88,8 +89,8 @@ export const SidebarProvider: React.FC<
   const closeActiveViewSpace = (path: string) => {
     const newWaypoint = props.superstate.focuses[activeFocus] ?? {
       sticker: "",
-      name: "Waypoint",
-      paths: [],
+      name: i18n.labels.waypoint,
+      paths: [] as string[],
     };
     newWaypoint.paths = [...newWaypoint.paths.filter((f) => f != path)];
     if (activeFocus > props.superstate.focuses.length) {

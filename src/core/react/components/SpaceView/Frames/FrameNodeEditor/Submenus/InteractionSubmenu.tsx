@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import React, { useRef } from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { ButtonSubmenu } from "./ButtonSubmenu";
@@ -84,7 +86,7 @@ export const InteractionSubmenu = (props: HoverSubmenuProps) => {
     <>
       <div
         className="mk-editor-frame-node-button-back"
-        aria-label="Back"
+        aria-label={i18n.buttons.back}
         onMouseDown={(e) => {
           props.exitMenu(e);
         }}
@@ -92,7 +94,7 @@ export const InteractionSubmenu = (props: HoverSubmenuProps) => {
           __html: props.superstate.ui.getSticker("ui//arrow-left"),
         }}
       ></div>
-      <div className="mk-frame-submenu-label">Click</div>
+      <div className="mk-frame-submenu-label">{i18n.menu.click}</div>
 
       <div
         className="mk-editor-frame-node-button"
@@ -108,7 +110,7 @@ export const InteractionSubmenu = (props: HoverSubmenuProps) => {
 
       <div className="mk-divider"></div>
 
-      <div className="mk-frame-submenu-label">Hover</div>
+      <div className="mk-frame-submenu-label">{i18n.menu.hover}</div>
 
       <div
         className="mk-editor-frame-node-button"

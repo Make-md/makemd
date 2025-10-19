@@ -1,7 +1,7 @@
 import { ConfirmationModal } from "core/react/components/UI/Modals/ConfirmationModal";
 import { retrieveAllRecursiveChildren } from "core/spaceManager/filesystemAdapter/spaces";
 import MakeMDPlugin from "main";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { windowFromDocument } from "shared/utils/dom";

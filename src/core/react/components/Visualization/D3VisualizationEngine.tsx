@@ -1,4 +1,5 @@
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useMemo, useRef } from "react";
 import { VisualizationConfig } from "shared/types/visualization";
 import { SVGRenderContext } from "./utils/RenderContext";
@@ -23,6 +24,7 @@ import { getPaletteColors, resolveColor } from "./utils/utils";
 import * as d3Selection from "d3-selection";
 import * as d3Scale from "d3-scale";
 import * as d3Array from "d3-array";
+import { scaleUtc } from "core/utils/d3-imports";
 import { SpaceProperty } from "shared/types/mdb";
 import { displayTextForType } from "core/utils/displayTextForType";
 import { DataTransformationPipeline, TransformedData } from "./DataTransformationPipeline";
@@ -172,13 +174,12 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
       const field = primaryEncoding.field;
       const values = data.map((d) => d[field]);
       
-      // For scatter plots and line charts, ensure numeric/date fields use appropriate encoding
-      if (config.chartType === 'scatter' || config.chartType === 'line') {
+      // For scatter plots, line charts, bar charts, and area charts, ensure numeric/date fields use appropriate encoding
+      if (config.chartType === 'scatter' || config.chartType === 'line' || config.chartType === 'bar' || config.chartType === 'area') {
         const fieldProperty = tableProperties?.find(p => p.name === field);
         primaryEncoding = ensureCorrectEncodingType(primaryEncoding, fieldProperty, values);
       }
       
-
       switch (primaryEncoding.type) {
         case "quantitative": {
           // For scatter plots with transformed data, use the x extent from transformed data
@@ -206,32 +207,97 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
             fieldDef
           );
           
+          // For bar charts, use tighter spacing; for other charts use default
+          const innerPadding = config.chartType === 'bar' ? 0.05 : 0.1;
+          const outerPadding = config.chartType === 'bar' ? 0.05 : 0.2;
           scales.set(
             "x",
             d3Scale
               .scaleBand()
               .domain(uniqueValues)
               .range([0, 0])
-              .paddingInner(0.1)
-              .paddingOuter(0.2)
-          ); // Increased outer padding for better spacing
+              .paddingInner(innerPadding)
+              .paddingOuter(outerPadding)
+          );
           break;
         }
         case "temporal": {
-          const timeExtent = d3Array.extent(
-            values,
-            (d) => {
-              // Handle values that are already Date objects or date strings
-              if (d instanceof Date) return d;
-              if (d === null || d === undefined || d === '') return null;
-              const date = new Date(String(d));
-              return isNaN(date.getTime()) ? null : date;
+          let timeExtent: [Date, Date] | null = null;
+          
+          // For bar charts, use transformed data categories if available
+          if (config.chartType === 'bar' && transformedData?.type === 'bar' && transformedData.data) {
+            const barData = transformedData.data as BarChartData;
+            if (barData.categories && barData.categories.length > 0) {
+              const dates = barData.categories.filter(c => c instanceof Date) as Date[];
+              if (dates.length > 0) {
+                timeExtent = [
+                  new Date(Math.min(...dates.map(d => d.getTime()))),
+                  new Date(Math.max(...dates.map(d => d.getTime())))
+                ];
+              }
             }
-          ).filter(d => d !== null) as [Date, Date];
+          }
+          
+          // For line charts, use transformed data xDomain if available
+          if (config.chartType === 'line' && transformedData?.type === 'line' && transformedData.data) {
+            const lineData = transformedData.data as LineChartData;
+            if (lineData.xDomain && lineData.xDomain.length > 0) {
+              const dates = lineData.xDomain.filter(x => x instanceof Date) as Date[];
+              if (dates.length > 0) {
+                timeExtent = [
+                  new Date(Math.min(...dates.map(d => d.getTime()))),
+                  new Date(Math.max(...dates.map(d => d.getTime())))
+                ];
+              }
+            }
+          }
+          
+          // For area charts, use transformed data xDomain if available
+          if (config.chartType === 'area' && transformedData?.type === 'area' && transformedData.data) {
+            const areaData = transformedData.data as AreaChartData;
+            if (areaData.xDomain && areaData.xDomain.length > 0) {
+              const dates = areaData.xDomain.filter(x => x instanceof Date) as Date[];
+              if (dates.length > 0) {
+                timeExtent = [
+                  new Date(Math.min(...dates.map(d => d.getTime()))),
+                  new Date(Math.max(...dates.map(d => d.getTime())))
+                ];
+              }
+            }
+          }
+          
+          // Fallback to raw data if no transformed data available
+          if (!timeExtent) {
+            timeExtent = d3Array.extent(
+              values,
+              (d) => {
+                // Handle values that are already Date objects or date strings
+                if (d instanceof Date) return d;
+                if (d === null || d === undefined || d === '') return null;
+                const dateStr = String(d);
+                // Parse as UTC to match transformer behavior
+                if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+                  const parsed = new Date(dateStr);
+                  // Convert to UTC midnight
+                  return new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
+                }
+                const date = new Date(dateStr);
+                return isNaN(date.getTime()) ? null : date;
+              }
+            ).filter(d => d !== null) as [Date, Date];
+          }
+          
           
           // Only create scale if we have valid dates
           if (timeExtent && timeExtent[0] && timeExtent[1]) {
-            scales.set("x", d3Scale.scaleTime().domain(timeExtent).range([0, 0])); // Will be set in render
+            const timeRange = timeExtent[1].getTime() - timeExtent[0].getTime();
+            const msPerDay = 24 * 60 * 60 * 1000;
+            const padding = Math.max(msPerDay * 0.5, timeRange * 0.02);
+            const domain: [Date, Date] = [
+              new Date(timeExtent[0].getTime() - padding),
+              new Date(timeExtent[1].getTime() + padding)
+            ];
+            scales.set("x", scaleUtc().domain(domain).range([0, 0])); // Will be set in render
           } else {
             // Fallback to linear scale if dates are invalid
             const numericValues = values.map(v => Number(v)).filter(v => !isNaN(v));
@@ -339,7 +405,7 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
             allValues,
             (v) => new Date(String(v))
           ) as [Date, Date];
-          scales.set("y", d3Scale.scaleTime().domain(timeExtent).range([0, 0])); // Will be set in render
+          scales.set("y", scaleUtc().domain(timeExtent).range([0, 0])); // Will be set in render
           break;
         }
       }
@@ -457,7 +523,7 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
         const colors = getPaletteColors(colorPaletteId, superstate);
         const result = [
           {
-            label: config.chartType || 'Data',
+            label: config.chartType || i18n.labels.data,
             color: colors[0] || "#1f77b4",
           },
         ];
@@ -601,6 +667,90 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
           .attr("stroke-width", 1)
           .attr("stroke-dasharray", "3,3")
           .attr("opacity", 0.5);
+      }
+      
+      // Show X-axis area (orange)
+      if (showXAxis && layoutDimensions.xAxisHeight > 0) {
+        debugGroup.append("rect")
+          .attr("x", graphArea.left)
+          .attr("y", graphArea.bottom)
+          .attr("width", graphArea.width)
+          .attr("height", layoutDimensions.xAxisHeight)
+          .attr("fill", "none")
+          .attr("stroke", "orange")
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "2,2")
+          .attr("opacity", 0.7);
+        
+        debugGroup.append("text")
+          .attr("x", graphArea.left + 5)
+          .attr("y", graphArea.bottom + 15)
+          .attr("font-size", "10px")
+          .attr("fill", "orange")
+          .text("X-Axis");
+      }
+      
+      // Show X-axis label area (yellow)
+      if (showXAxisLabel && layoutDimensions.xAxisLabelHeight > 0) {
+        debugGroup.append("rect")
+          .attr("x", graphArea.left)
+          .attr("y", graphArea.bottom + layoutDimensions.xAxisHeight)
+          .attr("width", graphArea.width)
+          .attr("height", layoutDimensions.xAxisLabelHeight)
+          .attr("fill", "none")
+          .attr("stroke", "gold")
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "2,2")
+          .attr("opacity", 0.7);
+        
+        debugGroup.append("text")
+          .attr("x", graphArea.left + 5)
+          .attr("y", graphArea.bottom + layoutDimensions.xAxisHeight + 12)
+          .attr("font-size", "10px")
+          .attr("fill", "gold")
+          .text("X-Axis Label");
+      }
+      
+      // Show Y-axis area (cyan)
+      if (showYAxis && layoutDimensions.yAxisWidth > 0) {
+        debugGroup.append("rect")
+          .attr("x", graphArea.left - layoutDimensions.yAxisWidth)
+          .attr("y", graphArea.top)
+          .attr("width", layoutDimensions.yAxisWidth)
+          .attr("height", graphArea.height)
+          .attr("fill", "none")
+          .attr("stroke", "cyan")
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "2,2")
+          .attr("opacity", 0.7);
+        
+        debugGroup.append("text")
+          .attr("x", graphArea.left - layoutDimensions.yAxisWidth + 5)
+          .attr("y", graphArea.top + 15)
+          .attr("font-size", "10px")
+          .attr("fill", "cyan")
+          .text("Y-Axis");
+      }
+      
+      // Show Y-axis label area (magenta)
+      if (showYAxisLabel && layoutDimensions.yAxisLabelWidth > 0) {
+        debugGroup.append("rect")
+          .attr("x", graphArea.left - layoutDimensions.yAxisWidth - layoutDimensions.yAxisLabelWidth)
+          .attr("y", graphArea.top)
+          .attr("width", layoutDimensions.yAxisLabelWidth)
+          .attr("height", graphArea.height)
+          .attr("fill", "none")
+          .attr("stroke", "magenta")
+          .attr("stroke-width", 1)
+          .attr("stroke-dasharray", "2,2")
+          .attr("opacity", 0.7);
+        
+        debugGroup.append("text")
+          .attr("x", graphArea.left - layoutDimensions.yAxisWidth - layoutDimensions.yAxisLabelWidth + 5)
+          .attr("y", graphArea.top + 15)
+          .attr("font-size", "10px")
+          .attr("fill", "magenta")
+          .text("Y-Axis Label");
       }
     }
 
@@ -836,7 +986,7 @@ export const D3VisualizationEngine: React.FC<D3VisualizationEngineProps> = ({
       
       // Get title element
       if (showTitle) {
-        const titleText = config.layout?.title?.text || 'Title';
+        const titleText = config.layout?.title?.text || i18n.labels.title;
         const titleElement = svg.select('.title-group text').node() as SVGTextElement;
         if (titleElement && svgRef.current) {
           const svgRect = svgRef.current.getBoundingClientRect();

@@ -1,4 +1,5 @@
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useRef, useState } from "react";
 import { urlRegex } from "utils/regex";
 
@@ -84,7 +85,7 @@ const ImageModal: React.FC<ImageModalProps> = (props) => {
         ref={ref}
         onChange={handleInputChange}
         className="mk-input mk-input-large mk-border-bottom"
-        placeholder="Search for images in your vault or paste a url"
+        placeholder={i18n.descriptions.searchForImagesInYourVaultOrPasteAUrl}
       />
 
       <div className="mk-layout-masonry mk-padding-12 mk-layout-scroll">

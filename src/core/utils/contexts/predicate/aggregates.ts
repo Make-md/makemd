@@ -9,12 +9,9 @@ import { parseProperty } from "utils/parsers";
 import { empty } from "./filter";
 
 export type AggregateFunctionType = {
-    label: string;
-    shortLabel?: string;
     type: string;
     fn: (v: any[], type: string) => any;
     valueType: string;
-    
 };
 
 export const calculateAggregate = (settings: MakeMDSettings, values: any[], fn: string, col: SpaceProperty) => {
@@ -62,19 +59,16 @@ export const calculateAggregate = (settings: MakeMDSettings, values: any[], fn: 
 
 export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
     values: {
-        label: "Values",
         type: 'any',
         fn: (v) => uniq(v.map(f => parseProperty("", f))).join(", "),
         valueType: "none",
     },
     sum: {
-        label: "Sum",
         type: "number",
         fn: (v) => v.map(f => parseFloat(f)).filter(f => !isNaN(f)).reduce((a, b) => b ? a + b : a, 0),
         valueType: "number",
     },
     avg: {
-        label: "Average",
         type: "number",
         fn: (v) => {
             const filtered = v.map(f => parseFloat(f)).filter((f) => !isNaN(f));
@@ -83,7 +77,6 @@ export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
         valueType: "number",
     },
     median: {
-        label: "Median",
         type: "number",
         fn: (v) => {
             const filtered = v.map(f => parseFloat(f)).filter((f) => !isNaN(f));
@@ -92,103 +85,81 @@ export const aggregateFnTypes: Record<string, AggregateFunctionType> = {
         valueType: "number",
     },
     count: {
-        label: "Count",
         type: 'any',
         fn: (v) => v.length,
         valueType: "number",
     },
     countValues: {
-        label: "Count Values",
-        shortLabel: "Values",
         type: 'any',
         fn: (v) => v.flat().length,
         valueType: "number",
     },
     countUniques: {
-        label: "Count Uniques",
-        shortLabel: "Uniques",
         type: 'any',
         fn: (v) => new Set(v.flat()).size,
         valueType: "number",
     },
     percentageEmpty: {
-        label: "Percentage Empty",
-        shortLabel: "Empty",
         type: 'any',
         fn: (v) => Math.round(v.filter((f) => empty(f, '')).length / v.length * 100) + "%",
         valueType: "string",
     },
     percentageNotEmpty: {
-        label: "Percentage Not Empty",
-        shortLabel: "Not Empty",
         type: 'any',
         fn: (v) => Math.round(v.filter((f) => !empty(f, '')).length / v.length * 100) + "%",
         valueType: "string",
     },
     min: {
-        label: "Min",
         type: "number",
         fn: (v) => Math.min(...v.map(f => parseFloat(f)).filter(f => !isNaN(f))),
         valueType: "number",
     },
     max: {
-        label: "Max",
         type: "number",
-        fn: (v, f) => Math.max(...v.map(f => parseFloat(f)).filter(f => !isNaN(f))),
+        fn: (v) => Math.max(...v.map(f => parseFloat(f)).filter(f => !isNaN(f))),
         valueType: "number",
     },
     range: {
-        label: "Range",
         type: "number",
         fn: (v) => Math.max(...v.map(f => parseFloat(f)).filter(f => !isNaN(f))) - Math.min(...v.filter(f => !isNaN(f))),
         valueType: "number",
     },
     empty: {
-        label: "Empty",
         type: 'any',
         fn: (v) => v.filter((f) => empty(f, '')).length,
         valueType: "none",
     },
     notEmpty: {
-        label: "Not Empty",
         type: 'any',
         fn: (v) => v.filter((f) => !empty(f, '')).length,
         valueType: "none",
     },
     earliest: {
-        label: "Earliest",
         type: "date",
         fn: (v) => new Date(Math.min(...v.map((f) => f.getTime()))),
         valueType: "date",
     },
     latest: {
-        label: "Latest",
         type: "date",
         fn: (v) => new Date(Math.max(...v.map((f) => f.getTime()))),
         valueType: "date",
     },
     complete: {
-        label: "Complete",
         type: 'boolean',
         fn: (v) => v.filter((f) => f == 'true').length,
         valueType: "number",
     },
     incomplete: {
-        label: "Not Complete",
         type: 'boolean',
         fn: (v) => v.filter((f) => f != 'true').length,
         valueType: "number",
     },
     percentageComplete: {
-        label: "Percentage Complete",
-        shortLabel: "Complete",
         type: 'boolean',
         fn: (v) => Math.round(v.filter((f) => f == 'true').length / v.length * 100) + "%",
         valueType: "string",
     },
     dateRange: {
-        label: "Date Range",
-        shortLabel: "Range",
         type: "date",
         fn: (v) => {
             const dates = v.map((f) => f.getTime());

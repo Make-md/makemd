@@ -1,5 +1,6 @@
 import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
-import { FileContextView, Superstate, i18n } from "makemd-core";
+import { FileContextView, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { ItemView, ViewStateResult, WorkspaceLeaf } from "obsidian";
 import React from "react";
 import { Root } from "react-dom/client";

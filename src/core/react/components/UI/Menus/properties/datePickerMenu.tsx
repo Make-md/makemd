@@ -3,7 +3,7 @@ import { Anchors, Rect } from "shared/types/Pos";
 
 import { formatDate } from "core/utils/date";
 import { addMonths, startOfDay } from "date-fns";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useState } from "react";
 import { CaptionProps, DayPicker, useNavigation } from "react-day-picker";
 

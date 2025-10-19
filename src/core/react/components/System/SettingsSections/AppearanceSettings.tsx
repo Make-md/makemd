@@ -1,4 +1,4 @@
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useState } from "react";
 import { CoverImage } from "shared/types/assets";
 import { useDebouncedSave } from "./hooks";
@@ -224,14 +224,14 @@ export const CoverImageSettings = ({ superstate }: SettingsProps) => {
                 onClick={() => setShowImportArea(!showImportArea)}
                 className="mk-button mk-button-secondary"
               >
-                Import URLs
+                {i18n.settings.importUrls}
               </button>
               <button
                 onClick={exportURLs}
                 className="mk-button mk-button-secondary"
                 disabled={coverImages.length === 0}
               >
-                Export URLs
+                {i18n.settings.exportUrls}
               </button>
             </div>
           </div>
@@ -249,7 +249,7 @@ export const CoverImageSettings = ({ superstate }: SettingsProps) => {
                 <textarea
                   value={importText}
                   onChange={(e) => setImportText(e.target.value)}
-                  placeholder="Paste URLs here, one per line..."
+                  placeholder={i18n.descriptions.pasteUrlsHereOnePerLine}
                   style={{
                     width: "100%",
                     minHeight: "150px",
@@ -272,7 +272,7 @@ export const CoverImageSettings = ({ superstate }: SettingsProps) => {
                     onClick={importURLs}
                     disabled={!importText.trim()}
                   >
-                    Import
+                    {i18n.buttons.import}
                   </button>
                   <button
                     onClick={() => {
@@ -281,7 +281,7 @@ export const CoverImageSettings = ({ superstate }: SettingsProps) => {
                       setImportError("");
                     }}
                   >
-                    Cancel
+                    {i18n.buttons.cancel}
                   </button>
                 </div>
               </div>
@@ -300,7 +300,7 @@ export const CoverImageSettings = ({ superstate }: SettingsProps) => {
                       <button
                         onClick={() => handleRemoveCoverImage(image.url)}
                         className="mk-cover-image-delete"
-                        title="Remove image"
+                        title={i18n.settings.removeImage}
                       >
                         ×
                       </button>

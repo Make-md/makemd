@@ -12,6 +12,7 @@ import { DBRow } from "shared/types/mdb";
 import { windowFromDocument } from "shared/utils/dom";
 import { FrameDraggableHandle } from "../../../Frames/FrameNodeEditor/Overlays/FrameDraggableHandle";
 import { EventLayout } from "./DayView";
+import { PathContext } from "core/react/context/PathContext";
 
 export const DayItem = (props: {
   superstate: Superstate;
@@ -25,7 +26,9 @@ export const DayItem = (props: {
   editRepeat?: (e: React.MouseEvent) => void;
 }) => {
   const { event, hourHeight, startHour } = props;
+  const { pathState } = useContext(PathContext);
   const { spaceState } = useContext(SpaceContext);
+  
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `event-${event?.index ?? ""}-${
       event?.start?.getTime().toString() ?? ""
@@ -69,6 +72,7 @@ export const DayItem = (props: {
       }}
       onContextMenu={(e) => {
         const rect = e.currentTarget.getBoundingClientRect();
+       
         showPathContextMenu(
           props.superstate,
           props.item[PathPropertyName],
@@ -133,6 +137,7 @@ export const DayItem = (props: {
             <PathCrumb
               superstate={props.superstate}
               path={props.item[PathPropertyName]}
+              source={spaceState.path}
               hideIcon
             ></PathCrumb>
           ) : (

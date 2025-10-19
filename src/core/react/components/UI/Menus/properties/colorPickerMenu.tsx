@@ -8,7 +8,7 @@ import {
   stringifyGradient,
 } from "core/utils/color/gradient";
 import { uniqueId, debounce } from "lodash";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   getColors,
@@ -22,6 +22,9 @@ import {
 
 // Color mode types
 type ColorMode = 'palettes' | 'solid' | 'gradient' | 'none';
+
+// Constants
+const ICON_BUTTON_SIZE = 28;
 
 // Helper function to convert HSL to RGB
 const hslToRgb = (h: number, s: number, l: number): number[] => {
@@ -526,7 +529,7 @@ const ColorPaletteSelector: React.FC<{
           </div>
         ))
       ) : (
-        <div className="mk-palette-empty">No color palettes available</div>
+        <div className="mk-palette-empty">{i18n.menu.noColorPalettesAvailable}</div>
       )}
     </div>
   );
@@ -794,8 +797,8 @@ export const ColorPicker = (props: {
                   saveGradient(newGradient);
                 }}
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: `${ICON_BUTTON_SIZE}px`,
+                  height: `${ICON_BUTTON_SIZE}px`,
                   padding: '0',
                   display: 'flex',
                   alignItems: 'center',
@@ -986,7 +989,7 @@ export const ColorPicker = (props: {
                   minWidth: 0
                 }}
                 placeholder="0"
-                title="Stop position (%)"
+                title={i18n.menu.stopPosition}
               />
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>%</span>
               
@@ -1002,8 +1005,8 @@ export const ColorPicker = (props: {
                 }}
                 disabled={gradient.values.length <= 2}
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: `${ICON_BUTTON_SIZE}px`,
+                  height: `${ICON_BUTTON_SIZE}px`,
                   padding: '0',
                   display: 'flex',
                   alignItems: 'center',
@@ -1015,7 +1018,7 @@ export const ColorPicker = (props: {
                   color: gradient.values.length <= 2 ? 'var(--mk-ui-text-tertiary)' : 'var(--mk-ui-text-primary)',
                   opacity: gradient.values.length <= 2 ? 0.5 : 1
                 }}
-                title="Remove selected gradient stop"
+                title={i18n.menu.removeSelectedGradientStop}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -1046,8 +1049,8 @@ export const ColorPicker = (props: {
       {/* None Mode Display */}
       {!props.hidePaletteSelector && mode === 'none' && (
         <div className="mk-color-none-display">
-          <div className="mk-color-none-text">No color</div>
-          <div className="mk-color-none-desc">This element will have no color applied.</div>
+          <div className="mk-color-none-text">{i18n.menu.noColor}</div>
+          <div className="mk-color-none-desc">{i18n.menu.thisElementWillHaveNoColorApplied}</div>
         </div>
       )}
     </div>

@@ -14,6 +14,10 @@ import { DBTables, SpaceTables } from "shared/types/mdb";
 import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { safelyParseJSON } from "shared/utils/json";
+import { VERSION } from "version";
+
+// Use the centralized version from version.ts
+const manifest = { version: VERSION };
 
 export const installSpaceTemplate = async (plugin: MakeMDPlugin, superstate: Superstate, space: string, template: TemplateKit) => {
     
@@ -85,6 +89,11 @@ export const mdbToDBTables = (tables: SpaceTables) : DBTables => {
 export const installSpaceKit = async (plugin: MakeMDPlugin, superstate: Superstate, kit: SpaceKit, space: string, isTemplate?: boolean) => {
     if (!kit) return;
 
+    // Check version compatibility if version is specified in meta
+    if (kit.meta?.version && !isVersionCompatible(kit.meta.version, manifest.version)) {
+        console.warn(`SpaceKit version ${kit.meta.version} may not be fully compatible with app version ${manifest.version}`);
+    }
+
     const path = space == '/' ? kit.name : space + '/' + kit.name;
     let newSpace;
     if (isTemplate) {
@@ -112,7 +121,7 @@ export const installSpaceKit = async (plugin: MakeMDPlugin, superstate: Supersta
     if (kit.content) {
         await plugin.files.writeTextToFile(newSpace.space.notePath, kit.content);
     }
-    if (kit.frames) {
+    if (kit.frames && Object.keys(kit.frames).length > 0) {
         const framePath = (newSpace.space as FilesystemSpaceInfo).framePath;
         plugin.mdbFileAdapter.newContent({
             path: framePath,
@@ -284,6 +293,9 @@ export const exportSpaceKit = async (plugin: MakeMDPlugin, superstate: Superstat
     
     
     const spaceKit: SpaceKit = {
+        meta: {
+            version: manifest.version
+        },
         name: name,
         path: absolutePathToRelativePath(space, root),
         definition: definition,
@@ -297,4 +309,33 @@ export const exportSpaceKit = async (plugin: MakeMDPlugin, superstate: Superstat
         templates: templates
     };
     return spaceKit;
+}
+
+// Helper function to check version compatibility
+function isVersionCompatible(kitVersion: string, appVersion: string): boolean {
+    // Parse versions (assuming semantic versioning)
+    const parseVersion = (version: string) => {
+        const parts = version.split('.').map(Number);
+        return {
+            major: parts[0] || 0,
+            minor: parts[1] || 0,
+            patch: parts[2] || 0
+        };
+    };
+
+    const kit = parseVersion(kitVersion);
+    const app = parseVersion(appVersion);
+
+    // Compatible if:
+    // - Same major version
+    // - Kit minor version <= app minor version (when major versions match)
+    if (kit.major !== app.major) {
+        return false;
+    }
+    
+    if (kit.minor > app.minor) {
+        return false;
+    }
+
+    return true;
 }

@@ -33,7 +33,8 @@ import { formatDate } from "core/utils/date";
 import { nameForField } from "core/utils/frames/frames";
 import { isPhone } from "core/utils/ui/screen";
 import { isString } from "lodash";
-import { SelectOption, SelectOptionType, Superstate, i18n } from "makemd-core";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { fieldTypeForField, stickerForField } from "schemas/mdb";
 import { defaultContextSchemaID } from "shared/schemas/context";
@@ -91,7 +92,7 @@ export const FilterBar = (props: {
           name: "start",
           type: "option",
           value: JSON.stringify({
-            alias: "Start Time Property",
+            alias: i18n.labels.startTimeProperty,
             source: `$properties`,
             sourceProps: {
               type: "date",
@@ -103,7 +104,7 @@ export const FilterBar = (props: {
           name: "end",
           type: "option",
           value: JSON.stringify({
-            alias: "End Time Property",
+            alias: i18n.labels.endTimeProperty,
             source: `$properties`,
             sourceProps: {
               type: "date",
@@ -118,7 +119,7 @@ export const FilterBar = (props: {
             source: `$properties`,
             sourceProps: {
               type: "object",
-              typeName: "Repeat",
+              typeName: i18n.labels.repeat,
             },
           }),
         },
@@ -126,14 +127,14 @@ export const FilterBar = (props: {
           name: "startOfDay",
           type: "number",
           value: JSON.stringify({
-            alias: "Start of Day",
+            alias: i18n.labels.startOfDay,
           }),
         },
         {
           name: "endOfDay",
           type: "number",
           value: JSON.stringify({
-            alias: "End of Day",
+            alias: i18n.labels.endOfDay,
           }),
         },
         {
@@ -148,6 +149,13 @@ export const FilterBar = (props: {
           type: "boolean",
           value: JSON.stringify({
             alias: "Hide Header",
+          }),
+        },
+        {
+          name: "showHours",
+          type: "boolean",
+          value: JSON.stringify({
+            alias: "Show Hours",
           }),
         },
       ];
@@ -557,10 +565,10 @@ export const FilterBar = (props: {
     });
 
     menuOptions.push({
-      name: "Limit",
+      name: i18n.labels.limit,
       icon: "ui//hash",
       type: SelectOptionType.Disclosure,
-      value: predicate?.limit > 0 ? predicate.limit.toString() : "Show all",
+      value: predicate?.limit > 0 ? predicate.limit.toString() : i18n.labels.showAll,
       onClick: (e) => {
         const offset = (e.target as HTMLElement).getBoundingClientRect();
         const limitOptions = [0, 10, 25, 50, 100, 200, 500];
@@ -579,7 +587,7 @@ export const FilterBar = (props: {
             editable: true,
             value: [currentLimit],
             options: allOptions.map((limit) => ({
-              name: limit === 0 ? "Show all" : limit.toString(),
+              name: limit === 0 ? i18n.labels.showAll : limit.toString(),
               value: limit.toString(),
             })),
             saveOptions: (_: string[], value: string[]) => {
@@ -601,7 +609,7 @@ export const FilterBar = (props: {
 
     const sourceSpace = props.superstate.spacesIndex.get(source);
     menuOptions.push({
-      name: "Source",
+      name: i18n.labels.source,
       icon: "ui//table",
       type: SelectOptionType.Disclosure,
       value: sourceSpace.name,
@@ -612,7 +620,7 @@ export const FilterBar = (props: {
 
     const table = dbSchema.name;
     menuOptions.push({
-      name: "List",
+      name: i18n.labels.list,
       icon: "ui//table",
       type: SelectOptionType.Disclosure,
       value: table,
@@ -1402,13 +1410,18 @@ export const FilterBar = (props: {
             </div>
           )}
           <div className="mk-view-config">
-            {!expanded && (
+            {!expanded ? props.setView ? (
               <ListSelector
                 superstate={props.superstate}
                 expanded={false}
                 setView={props.setView}
               ></ListSelector>
-            )}
+            ) : <div className="mk-context-config">
+              <ContextTitle superstate={props.superstate}></ContextTitle>
+
+              <span></span>
+
+            </div> : <></>}
 
             {
               <div className="mk-view-options">
@@ -1466,7 +1479,7 @@ export const FilterBar = (props: {
           {missingOptions.map((f) => (
             <div key={f.name}>{nameForField(f)}</div>
           ))}
-          {"are required for this layout"}
+          {i18n.labels.areRequiredForThisLayout}
         </div>
       )}
 

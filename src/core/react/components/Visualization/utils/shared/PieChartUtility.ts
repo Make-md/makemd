@@ -1,6 +1,8 @@
-import * as d3 from 'd3';
+import i18n from "shared/i18n";
+
+import { group, pie, arc, sum, select } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
-import { getPaletteColors } from '../utils';
+import { getPaletteColors, createTooltip, resolveColor } from '../utils';
 import { displayTextForType } from 'core/utils/displayTextForType';
 import { GradientUtility, GradientConfig } from './GradientUtility';
 
@@ -44,7 +46,7 @@ export class PieChartUtility {
 
     if (hasNonNumericalValues) {
       // Count occurrences of each category
-      const categoryGroups = d3.group(processedData, d => String(d[categoryField] || 'Unknown'));
+      const categoryGroups = group(processedData, d => String(d[categoryField] || i18n.labels.unknown));
       pieData = Array.from(categoryGroups, ([category, items]) => ({
         [categoryField]: category,
         [valueField]: items.length, // Count of occurrences
@@ -53,17 +55,17 @@ export class PieChartUtility {
     }
 
     // Create pie generator
-    const pie = d3.pie<any>()
+    const pieGen = pie<any>()
       .value((d) => Math.abs(Number(d[valueField]) || 0))
       .sort(null);
 
     // Create arc generator
-    const arc = d3.arc<any>()
+    const arcGen = arc<any>()
       .innerRadius(innerRadiusRatio * radius)
       .outerRadius(radius);
 
     // Create arc for labels
-    const labelArc = d3.arc<any>()
+    const labelArc = arc<any>()
       .innerRadius(radius * 0.8)
       .outerRadius(radius * 0.8);
 
@@ -72,7 +74,7 @@ export class PieChartUtility {
     const colorField = categoryField;
 
     // Generate pie data
-    const pieDataSlices = pie(pieData);
+    const pieDataSlices = pieGen(pieData);
 
     // Store legend items
     const legendItems: Array<{ label: string; color: string }> = [];
@@ -109,7 +111,7 @@ export class PieChartUtility {
       .attr('class', 'slice');
 
     const paths = slices.append('path')
-      .attr('d', arc)
+      .attr('d', arcGen)
       .attr('fill', (d: any, i: number) => {
         // Check if color palette has gradients to use
         const palettes = context.superstate?.assets?.getColorPalettes();
@@ -145,26 +147,17 @@ export class PieChartUtility {
       });
 
     // Create tooltip
-    const tooltip = d3.select('body').append('div')
-      .attr('class', 'pie-tooltip')
-      .style('position', 'absolute')
-      .style('padding', '8px')
-      .style('background', 'rgba(0, 0, 0, 0.8)')
-      .style('color', 'white')
-      .style('border-radius', '4px')
-      .style('font-size', '12px')
-      .style('pointer-events', 'none')
-      .style('opacity', 0);
+    const tooltip = createTooltip('pie-tooltip');
 
     // Add hover effects
     paths
       .on('mouseenter', function(event, d: any) {
         // Expand slice
-        d3.select(this)
+        select(this)
           .transition()
           .duration(200)
           .attr('transform', function(d: any) {
-            const [x, y] = arc.centroid(d);
+            const [x, y] = arcGen.centroid(d);
             return `translate(${x * 0.1}, ${y * 0.1})`;
           });
         
@@ -174,11 +167,11 @@ export class PieChartUtility {
           .style('opacity', 0.9);
         
         // Calculate percentage
-        const total = d3.sum(pieDataSlices, pd => pd.value);
+        const total = sum(pieDataSlices, pd => pd.value);
         const percentage = ((d.value / total) * 100).toFixed(1);
         
         // Get slice color
-        const sliceElement = d3.select(this);
+        const sliceElement = select(this);
         const sliceColor = sliceElement.attr('fill');
         
         // Build tooltip content
@@ -217,7 +210,7 @@ export class PieChartUtility {
           .style('top', (event.pageY - 28) + 'px');
       })
       .on('mouseleave', function() {
-        d3.select(this)
+        select(this)
           .transition()
           .duration(200)
           .attr('transform', 'translate(0, 0)');
@@ -245,7 +238,7 @@ export class PieChartUtility {
         paths.each(function(d: any) {
           const id = `slice-${d.data[colorField]}`;
           if (selectedElement.id === id) {
-            d3.select(this)
+            select(this)
               .style('filter', 'drop-shadow(0 0 4px var(--mk-ui-accent))');
           }
         });
@@ -310,7 +303,7 @@ export class PieChartUtility {
 
     if (hasNonNumericalValues) {
       // Count occurrences of each category
-      const categoryGroups = d3.group(processedData, d => String(d[categoryField] || 'Unknown'));
+      const categoryGroups = group(processedData, d => String(d[categoryField] || i18n.labels.unknown));
       pieData = Array.from(categoryGroups, ([category, items]) => ({
         [categoryField]: category,
         [valueField]: items.length,

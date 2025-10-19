@@ -14,12 +14,12 @@ import { Focus } from "./focus";
 import { IndexMap } from "./indexMap";
 import { FrameRoot, MDBFrames } from "./mframe";
 import { ContextState, PathState, SpaceState, SuperstateEvent } from "./PathState";
-
-export type { ContextState, PathState, SpaceState, SuperstateEvent };
 import { FilterGroupDef, SpaceDefinition } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
 import { SpaceManagerInterface } from "./spaceManager";
 import { IUIManager } from "./uiManager";
+
+export type { ContextState, PathState, SpaceState, SuperstateEvent };
 
 
 
@@ -85,7 +85,7 @@ export abstract class ISuperstate {
     reloadContextByPath:(path: string, options?: {calculate?: boolean, force?: boolean}) => Promise<boolean>;
     reloadContext:(space: SpaceInfo, options?: {calculate?: boolean, force?: boolean}) => Promise<boolean>;
     contextReloaded:(path: string, cache: ContextState, changed: boolean, force?: boolean) => Promise<boolean>;
-    allSpaces:(ordered?: boolean) => SpaceState[];
+    allSpaces:(ordered?: boolean, hidden?: boolean) => SpaceState[];
     spaceOrder:() => string[];
     updateSpaceMetadata:(spacePath: string, metadata: SpaceDefinition) => Promise<SpaceState>;
     reloadSpace:(space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized?: boolean) => Promise<SpaceState>;

@@ -3,6 +3,7 @@ import { runActionString } from "core/utils/commands/actions";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { executeCode } from "core/utils/frames/runner";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { ActionInstance, ActionTree, CLIAdapter } from "shared/types/actions";
 import { Command, CommandWithPath } from "shared/types/commands";
 import { parseURI } from "shared/utils/uri";
@@ -20,11 +21,115 @@ export class SpacesCommandsAdapter implements CLIAdapter {
     }
 
     public apiCommands : {[key: string]: {[key: string]: Command}} = {
+        frame: {
+            update: {
+                schema: {
+                    id: 'frame.update',
+                    name: 'Update Frame Property',
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: 'Update a frame property value',
+                        templateString: 'Update ${property} to ${value} in ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'property',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.property
+                    })
+                }, {
+                    name: 'value',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.value
+                    })
+                }, {
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }],
+            }
+        },
+        properties: {
+            color: {
+                schema: {
+                    id: 'properties.color',
+                    name: i18n.descriptions.getPropertyColor,
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.getTheColorForAPropertyValue,
+                        templateString: 'Get color for ${property} with value ${value}'
+                    }
+                },
+                fields: [{
+                    name: 'property',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.property
+                    })
+                }, {
+                    name: 'value',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.value
+                    })
+                }],
+            },
+            sticker: {
+                schema: {
+                    id: 'properties.sticker',
+                    name: i18n.descriptions.getPropertySticker,
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.getTheStickericonForAProperty,
+                        templateString: 'Get sticker for ${property}'
+                    }
+                },
+                fields: [{
+                    name: 'property',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.property
+                    })
+                }],
+            },
+            value: {
+                schema: {
+                    id: 'properties.value',
+                    name: i18n.descriptions.parsePropertyValue,
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: 'Parse a property value according to its type',
+                        templateString: 'Parse ${value} as ${type}'
+                    }
+                },
+                fields: [{
+                    name: 'type',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.labels.type
+                    })
+                }, {
+                    name: 'value',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.value
+                    })
+                }],
+            }
+        },
         path: {
             contents: {
                 schema: {
                     id: 'path.contents',
-                    name: 'Get Contents of Path',
+                    name: i18n.descriptions.getContentsOfPath,
                     type: 'api',
                     def: {
                         type: 'get',
@@ -36,14 +141,14 @@ export class SpacesCommandsAdapter implements CLIAdapter {
                     name: 'path',
                     type: 'link',
                     value: JSON.stringify({
-                        alias: 'Path'
+                        alias: i18n.menu.path
                     })
                 }],
             },
             properties: {
                 schema: {
                     id: 'path.properties',
-                    name: 'Get Properties of Path',
+                    name: i18n.descriptions.getPropertiesOfPath,
                     type: 'api',
                     def: {
                         type: 'get',
@@ -55,14 +160,52 @@ export class SpacesCommandsAdapter implements CLIAdapter {
                     name: 'path',
                     type: 'link',
                     value: JSON.stringify({
-                        alias: 'Path'
+                        alias: i18n.menu.path
+                    })
+                }],
+            },
+            label: {
+                schema: {
+                    id: 'path.label',
+                    name: i18n.descriptions.getPathLabel,
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.getTheLabelForAPath,
+                        templateString: 'Get label for ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }],
+            },
+            thumbnail: {
+                schema: {
+                    id: 'path.thumbnail',
+                    name: i18n.descriptions.getPathThumbnail,
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.getTheThumbnailForAPath,
+                        templateString: 'Get thumbnail for ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
                     })
                 }],
             },
             write: {
                 schema: {
                     id: 'path.write',
-                    name: 'Write to Path',
+                    name: i18n.descriptions.writeToPath,
                     type: 'api',
                     def: {
                         type: 'write',
@@ -74,24 +217,24 @@ export class SpacesCommandsAdapter implements CLIAdapter {
                     name: 'path',
                     type: 'link',
                     value: JSON.stringify({
-                        alias: 'Path'
+                        alias: i18n.menu.path
                     })
                 },
                 {
                     name: 'text',
                     type: 'text',
                     value: JSON.stringify({
-                        alias: 'Text'
+                        alias: i18n.fieldTypes.text
                     })
                 },
                 {
                     name: 'append',
                     type: 'option',
                     value: JSON.stringify({
-                        alias: 'Mode',
+                        alias: i18n.descriptions.mode,
                         options: [
-                            { name: 'Append', value: 'true' },
-                            { name: 'Replace', value: 'false' },
+                            { name: i18n.descriptions.append, value: 'true' },
+                            { name: i18n.descriptions.replace, value: 'false' },
                         ],
                     })
                 }],
@@ -99,7 +242,7 @@ export class SpacesCommandsAdapter implements CLIAdapter {
             items: {
                 schema: {
                     id: 'path.items',
-                    name: 'Get Items Inside of Path',
+                    name: i18n.descriptions.getItemsInsideOfPath,
                     type: 'api',
                     def: {
                         type: 'get',
@@ -127,7 +270,7 @@ export class SpacesCommandsAdapter implements CLIAdapter {
                     name: 'path',
                     type: 'link',
                     value: JSON.stringify({
-                        alias: 'Path'
+                        alias: i18n.menu.path
                     })
                 },
                 {
@@ -195,7 +338,7 @@ export class SpacesCommandsAdapter implements CLIAdapter {
             create: {
                 schema: {
                     id: 'path.create',
-                    name: 'Write to file',
+                    name: i18n.descriptions.writeToFile,
                     type: 'api',
                     def: {
                         type: 'write',
@@ -207,7 +350,597 @@ export class SpacesCommandsAdapter implements CLIAdapter {
                     name: 'name',
                     type: 'text',
                     value: JSON.stringify({
-                        alias: 'Name'
+                        alias: i18n.menu.name
+                    })
+                }],
+            },
+            setProperty: {
+                schema: {
+                    id: 'path.setProperty',
+                    name: i18n.descriptions.setPathProperty,
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: i18n.descriptions.setAPropertyOnAPath,
+                        templateString: 'Set ${property} to ${value} on ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }, {
+                    name: 'property',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.property
+                    })
+                }, {
+                    name: 'value',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.value
+                    })
+                }],
+            },
+            contextMenu: {
+                schema: {
+                    id: 'path.contextMenu',
+                    name: i18n.descriptions.showPathContextMenu,
+                    type: 'api',
+                    def: {
+                        type: 'action',
+                        description: i18n.descriptions.showContextMenuForAPath,
+                        templateString: 'Show context menu for ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }],
+            }
+        },
+        commands: {
+            run: {
+                schema: {
+                    id: 'commands.run',
+                    name: 'Run Command',
+                    type: 'api',
+                    def: {
+                        type: 'action',
+                        description: 'Execute a command with parameters',
+                        templateString: 'Run ${action} command'
+                    }
+                },
+                fields: [{
+                    name: 'action',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.labels.action
+                    })
+                }],
+            },
+            formula: {
+                schema: {
+                    id: 'commands.formula',
+                    name: 'Run Formula',
+                    type: 'api',
+                    def: {
+                        type: 'action',
+                        description: i18n.descriptions.executeAFormulaWithParameters,
+                        templateString: 'Run formula ${formula}'
+                    }
+                },
+                fields: [{
+                    name: 'formula',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.formula
+                    })
+                }],
+            }
+        },
+        table: {
+            select: {
+                schema: {
+                    id: 'table.select',
+                    name: 'Select Table Rows',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: 'Get rows from a table',
+                        templateString: 'Select rows from ${table} in ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }, {
+                    name: 'table',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.table
+                    })
+                }],
+            },
+            update: {
+                schema: {
+                    id: 'table.update',
+                    name: 'Update Table Row',
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: 'Update a row in a table',
+                        templateString: 'Update row ${index} in ${table} at ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }, {
+                    name: 'table',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.table
+                    })
+                }, {
+                    name: 'index',
+                    type: 'number',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.index
+                    })
+                }],
+            },
+            insert: {
+                schema: {
+                    id: 'table.insert',
+                    name: 'Insert Table Row',
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: 'Insert a new row into a table',
+                        templateString: 'Insert row into ${schema} at ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }, {
+                    name: 'schema',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.schema
+                    })
+                }],
+            },
+            create: {
+                schema: {
+                    id: 'table.create',
+                    name: 'Create Table',
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: i18n.descriptions.createANewTable,
+                        templateString: 'Create table ${table} at ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }, {
+                    name: 'table',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.table
+                    })
+                }],
+            },
+            open: {
+                schema: {
+                    id: 'table.open',
+                    name: i18n.descriptions.openTableRow,
+                    type: 'api',
+                    def: {
+                        type: 'open',
+                        description: i18n.descriptions.openATableRow,
+                        templateString: 'Open row ${index} from ${table} in ${space}'
+                    }
+                },
+                fields: [{
+                    name: 'space',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: 'Space'
+                    })
+                }, {
+                    name: 'table',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.table
+                    })
+                }, {
+                    name: 'index',
+                    type: 'number',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.index
+                    })
+                }],
+            },
+            contextMenu: {
+                schema: {
+                    id: 'table.contextMenu',
+                    name: i18n.descriptions.showTableRowContextMenu,
+                    type: 'api',
+                    def: {
+                        type: 'action',
+                        description: i18n.descriptions.showContextMenuForATableRow,
+                        templateString: 'Show context menu for row ${index} in ${table}'
+                    }
+                },
+                fields: [{
+                    name: 'space',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: 'Space'
+                    })
+                }, {
+                    name: 'table',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.table
+                    })
+                }, {
+                    name: 'index',
+                    type: 'number',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.index
+                    })
+                }],
+            },
+            editModal: {
+                schema: {
+                    id: 'table.editModal',
+                    name: i18n.descriptions.openTableRowEditModal,
+                    type: 'api',
+                    def: {
+                        type: 'action',
+                        description: i18n.descriptions.openEditModalForATableRow,
+                        templateString: 'Edit row ${index} in ${table} at ${space}'
+                    }
+                },
+                fields: [{
+                    name: 'space',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: 'Space'
+                    })
+                }, {
+                    name: 'table',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.table
+                    })
+                }, {
+                    name: 'index',
+                    type: 'number',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.index
+                    })
+                }],
+            },
+            createModal: {
+                schema: {
+                    id: 'table.createModal',
+                    name: i18n.descriptions.openTableRowCreateModal,
+                    type: 'api',
+                    def: {
+                        type: 'action',
+                        description: i18n.descriptions.openCreateModalForANewTableRow,
+                        templateString: 'Create new row in ${table} at ${space}'
+                    }
+                },
+                fields: [{
+                    name: 'space',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: 'Space'
+                    })
+                }, {
+                    name: 'table',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.table
+                    })
+                }],
+            }
+        },
+        context: {
+            select: {
+                schema: {
+                    id: 'context.select',
+                    name: 'Select Context Rows',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: 'Get rows from a context',
+                        templateString: 'Select rows from ${table} in ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }, {
+                    name: 'table',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.table
+                    })
+                }],
+            },
+            update: {
+                schema: {
+                    id: 'context.update',
+                    name: 'Update Context Value',
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: 'Update a value in a context',
+                        templateString: 'Update ${field} to ${value} for ${file} in ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }, {
+                    name: 'file',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.fieldTypes.file
+                    })
+                }, {
+                    name: 'field',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.field
+                    })
+                }, {
+                    name: 'value',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.value
+                    })
+                }],
+            },
+            insert: {
+                schema: {
+                    id: 'context.insert',
+                    name: 'Insert Context Item',
+                    type: 'api',
+                    def: {
+                        type: 'write',
+                        description: 'Insert a new item into a context',
+                        templateString: 'Insert ${name} into ${schema} at ${path}'
+                    }
+                },
+                fields: [{
+                    name: 'path',
+                    type: 'link',
+                    value: JSON.stringify({
+                        alias: i18n.menu.path
+                    })
+                }, {
+                    name: 'schema',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.schema
+                    })
+                }, {
+                    name: 'name',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.menu.name
+                    })
+                }],
+            }
+        },
+        date: {
+            parse: {
+                schema: {
+                    id: 'date.parse',
+                    name: 'Parse Date',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.parseADateString,
+                        templateString: 'Parse date ${date}'
+                    }
+                },
+                fields: [{
+                    name: 'date',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.fieldTypes.date
+                    })
+                }],
+            },
+            daysInMonth: {
+                schema: {
+                    id: 'date.daysInMonth',
+                    name: i18n.descriptions.daysInMonth,
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.getNumberOfDaysInAMonth,
+                        templateString: 'Get days in month for ${date}'
+                    }
+                },
+                fields: [{
+                    name: 'date',
+                    type: 'date',
+                    value: JSON.stringify({
+                        alias: i18n.fieldTypes.date
+                    })
+                }],
+            },
+            format: {
+                schema: {
+                    id: 'date.format',
+                    name: 'Format Date',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.formatADateWithAPattern,
+                        templateString: 'Format ${date} as ${format}'
+                    }
+                },
+                fields: [{
+                    name: 'date',
+                    type: 'date',
+                    value: JSON.stringify({
+                        alias: i18n.fieldTypes.date
+                    })
+                }, {
+                    name: 'format',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.format
+                    })
+                }],
+            },
+            component: {
+                schema: {
+                    id: 'date.component',
+                    name: i18n.descriptions.getDateComponent,
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.getAComponentOfADate,
+                        templateString: 'Get ${component} from ${date}'
+                    }
+                },
+                fields: [{
+                    name: 'date',
+                    type: 'date',
+                    value: JSON.stringify({
+                        alias: i18n.fieldTypes.date
+                    })
+                }, {
+                    name: 'component',
+                    type: 'option',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.component,
+                        options: [
+                            { name: i18n.timeUnits.year, value: 'year' },
+                            { name: i18n.timeUnits.month, value: 'month' },
+                            { name: i18n.timeUnits.day, value: 'day' },
+                            { name: i18n.descriptions.dayOfWeek, value: 'dayOfWeek' },
+                            { name: i18n.timeUnits.hour, value: 'hour' },
+                            { name: i18n.timeUnits.minute, value: 'minute' },
+                            { name: i18n.timeUnits.second, value: 'second' },
+                        ],
+                    })
+                }],
+            },
+            offset: {
+                schema: {
+                    id: 'date.offset',
+                    name: 'Offset Date',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.offsetADateByAnAmount,
+                        templateString: 'Offset ${date} by ${offset} ${type}'
+                    }
+                },
+                fields: [{
+                    name: 'date',
+                    type: 'date',
+                    value: JSON.stringify({
+                        alias: i18n.fieldTypes.date
+                    })
+                }, {
+                    name: 'offset',
+                    type: 'number',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.offset
+                    })
+                }, {
+                    name: 'type',
+                    type: 'option',
+                    value: JSON.stringify({
+                        alias: i18n.labels.type,
+                        options: [
+                            { name: i18n.timeUnits.day, value: 'day' },
+                            { name: i18n.timeUnits.month, value: 'month' },
+                            { name: i18n.timeUnits.year, value: 'year' },
+                        ],
+                    })
+                }],
+            },
+            now: {
+                schema: {
+                    id: 'date.now',
+                    name: 'Current Date',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.getTheCurrentDate,
+                        templateString: i18n.descriptions.getCurrentDate
+                    }
+                },
+                fields: [],
+            },
+            range: {
+                schema: {
+                    id: 'date.range',
+                    name: 'Date Range',
+                    type: 'api',
+                    def: {
+                        type: 'get',
+                        description: i18n.descriptions.getARangeOfDates,
+                        templateString: 'Get dates from ${start} to ${end}'
+                    }
+                },
+                fields: [{
+                    name: 'start',
+                    type: 'date',
+                    value: JSON.stringify({
+                        alias: 'Start Date'
+                    })
+                }, {
+                    name: 'end',
+                    type: 'date',
+                    value: JSON.stringify({
+                        alias: 'End Date'
+                    })
+                }, {
+                    name: 'format',
+                    type: 'text',
+                    value: JSON.stringify({
+                        alias: i18n.descriptions.format
                     })
                 }],
             }

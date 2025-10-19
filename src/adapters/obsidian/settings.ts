@@ -211,7 +211,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         type: 'options',
         props: {
           options: [
-            { name: t.settings.spacesDeleteOptions.permanant, value: 'permanent' },
+            { name: t.settings.spacesDeleteOptions.permanent, value: 'permanent' },
             { name: t.settings.spacesDeleteOptions.trash, value: 'trash' },
             { name: t.settings.spacesDeleteOptions["system-trash"], value: 'system-trash' }
           ]

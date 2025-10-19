@@ -227,7 +227,7 @@ function nodeToFormula(
 		} else {
 			const error = {
 				type: "error" as const,
-				message: "Undefined constant:" + name,
+				message: "Undefined constant: " + name,
 			}
 			errors.push(error.message)
 			return error

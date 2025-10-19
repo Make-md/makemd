@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import type { FrameRoot } from 'shared/types/mframe';
 import { groupNode, imageNode, textNode } from './base';
 
@@ -6,14 +8,14 @@ export const headerKit: FrameRoot = {
   def: {
     id: 'pageHeader',
     icon: 'ui//layout-header',
-    name: 'Header',
-    description: 'Page header containing banner and title',
+    name: i18n.labels.header,
+    description: i18n.labels.pageHeaderContainingBannerAndTitle,
   },
   node: {
     icon: 'ui//layout-header',
     schemaId: 'pageHeader',
     parentId: '',
-    name: 'Header',
+    name: i18n.labels.header,
     rank: 0,
     id: 'pageHeader',
     type: 'group',
@@ -32,7 +34,7 @@ export const headerKit: FrameRoot = {
       node: {
         ...imageNode.node,
         id: 'banner',
-        name: 'Banner',
+        name: i18n.labels.banner,
         props: {
           value: '$contexts.$space.cover',
         },
@@ -69,7 +71,7 @@ export const headerKit: FrameRoot = {
       node: {
         ...textNode.node,
         id: 'title',
-        name: 'Title',
+        name: i18n.labels.title,
         props: {
           value: '$contexts.$space.title',
         },

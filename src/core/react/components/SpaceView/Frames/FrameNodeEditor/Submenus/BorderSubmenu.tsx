@@ -1,7 +1,8 @@
 import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
 import { removeQuotes } from "core/utils/strings";
-import { SelectOption, i18n } from "makemd-core";
+import { SelectOption } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { StepSetter } from "../../Setters/StepSetter";

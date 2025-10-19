@@ -26,8 +26,6 @@ export const ViewNodeView = (
         : props.source,
     [props.state, props.source]
   );
-  const { nodes, updateNode } = useContext(FramesEditorRootContext);
-  const [isCreating, setIsCreating] = useState(false);
 
   const {
     selectionMode,
@@ -75,7 +73,7 @@ export const ViewNodeView = (
                 <ContextListContainer
                   showTitle={false}
                   superstate={props.superstate}
-                  minMode={true}
+                  minMode={props.state?.styles?.["--mk-min-mode"]}
                 ></ContextListContainer>
               </ContextEditorProvider>
             </FramesMDBProvider>

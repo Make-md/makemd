@@ -1,5 +1,6 @@
 import { getColorPalettes } from "core/utils/colorPalette";
-import { SelectOption, SelectOptionType, Superstate, i18n } from "makemd-core";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { SpaceProperty } from "shared/types/mdb";
 import { VisualizationConfig } from "shared/types/visualization";
@@ -48,32 +49,32 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
     const chartTypes = [
       {
         type: "bar",
-        name: i18n.menu.barChart || "Bar Chart",
+        name: i18n.menu.barChart,
         icon: "lucide//bar-chart",
       },
       {
         type: "line",
-        name: i18n.menu.lineChart || "Line Chart",
+        name: i18n.menu.lineChart,
         icon: "lucide//activity",
       },
       {
         type: "scatter",
-        name: i18n.menu.scatterPlot || "Scatter Plot",
+        name: i18n.menu.scatterPlot,
         icon: "lucide//scatter-chart",
       },
       {
         type: "pie",
-        name: i18n.menu.pieChart || "Pie Chart",
+        name: i18n.menu.pieChart,
         icon: "lucide//pie-chart",
       },
       {
         type: "area",
-        name: i18n.menu.areaChart || "Area Chart",
+        name: i18n.menu.areaChart,
         icon: "lucide//area-chart",
       },
       {
         type: "radar",
-        name: i18n.menu.radarChart || "Radar Chart",
+        name: i18n.menu.radarChart,
         icon: "lucide//radar",
       },
     ];
@@ -120,7 +121,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
         editable: false,
         value: [listId],
         options: [
-          { name: "None", value: "" },
+          { name: i18n.labels.none, value: "" },
           ...availableTables.map((table) => ({
             name: table.name,
             value: table.id,
@@ -129,7 +130,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
         saveOptions: (_: string[], value: string[]) => {
           onDataSourceChange(value[0]);
         },
-        placeholder: i18n.menu.selectDataSource || "Select a data source",
+        placeholder: i18n.menu.selectDataSource,
         searchable: true,
         showAll: true,
       },
@@ -145,7 +146,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
 
     // Space selector submenu
     menuOptions.push({
-      name: i18n.menu.space || "Space",
+      name: i18n.menu.space,
       value: spaceNameFromSpacePath(sourcePath, superstate),
       icon: "lucide//folder",
       type: SelectOptionType.Disclosure,
@@ -157,8 +158,8 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
 
     // Data source submenu
     menuOptions.push({
-      name: i18n.menu.list || "List",
-      value: !listId ? "None" : listId,
+      name: i18n.menu.list,
+      value: !listId ? i18n.labels.none : listId,
       icon: "lucide//database",
       type: SelectOptionType.Disclosure,
       onSubmenu: createDataSourceSelector,
@@ -168,20 +169,20 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
     menuOptions.push({
       name:
         configData?.chartType === "pie"
-          ? i18n.menu.category || "Category"
-          : i18n.menu.xAxisField || "X-Axis Field",
+          ? i18n.menu.category
+          : i18n.menu.xAxisField,
       value: (() => {
         const xEncoding = configData?.encoding?.x;
         if (Array.isArray(xEncoding)) {
-          return xEncoding[0]?.field || "None";
+          return xEncoding[0]?.field || i18n.labels.none;
         } else if (
           xEncoding &&
           typeof xEncoding === "object" &&
           "field" in xEncoding
         ) {
-          return xEncoding.field || "None";
+          return xEncoding.field || i18n.labels.none;
         }
-        return "None";
+        return i18n.labels.none;
       })(),
       icon:
         configData?.chartType === "pie"
@@ -211,7 +212,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
             editable: false,
             value: [currentXField],
             options: [
-              { name: "None", value: "" },
+              { name: i18n.labels.none, value: "" },
               ...fields.map((field) => ({
                 name: field.name,
                 value: field.name,
@@ -232,8 +233,8 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
             },
             placeholder:
               configData?.chartType === "pie"
-                ? i18n.menu.selectCategoryField || "Select category field"
-                : i18n.menu.selectXAxisField || "Select X-axis field",
+                ? i18n.menu.selectCategoryField
+                : i18n.menu.selectXAxisField,
             searchable: true,
             showAll: true,
           },
@@ -244,12 +245,80 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
       },
     });
 
+    // Time Unit submenu (for temporal x-axis in line, bar, and area charts)
+    const xEncoding = Array.isArray(configData?.encoding?.x) 
+      ? configData?.encoding?.x[0] 
+      : configData?.encoding?.x;
+    
+    if (
+      (configData?.chartType === "line" || configData?.chartType === "bar" || configData?.chartType === "area") &&
+      xEncoding &&
+      typeof xEncoding === "object" &&
+      "type" in xEncoding &&
+      xEncoding.type === "temporal"
+    ) {
+      menuOptions.push({
+        name: "Group By",
+        value: xEncoding.timeUnit || "day",
+        icon: "lucide//calendar",
+        type: SelectOptionType.Disclosure,
+        onSubmenu: (offset, onHide) => {
+          const timeUnitOptions: SelectOption[] = [
+            { name: i18n.timeUnits.hour, value: "hour" },
+            { name: i18n.timeUnits.day, value: "day" },
+            { name: i18n.timeUnits.week, value: "week" },
+            { name: i18n.timeUnits.month, value: "month" },
+            { name: i18n.labels.quarter, value: "quarter" },
+            { name: i18n.timeUnits.year, value: "year" },
+          ];
+
+          return superstate.ui.openMenu(
+            offset,
+            {
+              ui: superstate.ui,
+              multi: false,
+              editable: false,
+              value: [xEncoding.timeUnit || "day"],
+              options: timeUnitOptions,
+              saveOptions: (_: string[], value: string[]) => {
+                const timeUnit = value[0] as 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
+                const currentXEncoding = Array.isArray(configData?.encoding?.x)
+                  ? configData?.encoding?.x[0]
+                  : configData?.encoding?.x;
+                
+                const updatedXEncoding = {
+                  ...currentXEncoding,
+                  timeUnit,
+                };
+
+                onConfigChange({
+                  ...configData,
+                  encoding: {
+                    ...(configData?.encoding || {}),
+                    x: Array.isArray(configData?.encoding?.x)
+                      ? [updatedXEncoding]
+                      : updatedXEncoding,
+                  },
+                });
+              },
+              placeholder: "Select time grouping",
+              searchable: false,
+              showAll: true,
+            },
+            window,
+            null,
+            onHide
+          );
+        },
+      });
+    }
+
     // Y-Axis fields submenu
     menuOptions.push({
       name:
         configData?.chartType === "pie"
-          ? i18n.menu.values || "Values"
-          : i18n.menu.yAxisFields || "Y-Axis Fields",
+          ? i18n.menu.values
+          : i18n.menu.yAxisFields,
       value: (() => {
         const yEncoding = configData?.encoding?.y;
         if (Array.isArray(yEncoding)) {
@@ -258,15 +327,15 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
               y && typeof y === "object" && "field" in y ? y.field : null
             )
             .filter(Boolean);
-          return fields.length > 0 ? fields.join(", ") : "None";
+          return fields.length > 0 ? fields.join(", ") : i18n.labels.none;
         } else if (
           yEncoding &&
           typeof yEncoding === "object" &&
           "field" in yEncoding
         ) {
-          return yEncoding.field || "None";
+          return yEncoding.field || i18n.labels.none;
         }
-        return "None";
+        return i18n.labels.none;
       })(),
       icon:
         configData?.chartType === "pie" || configData?.chartType === "radar"
@@ -319,8 +388,8 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
             },
             placeholder:
               configData?.chartType === "pie"
-                ? i18n.menu.selectValueFields || "Select value fields"
-                : i18n.menu.selectYAxisFields || "Select Y-axis fields",
+                ? i18n.menu.selectValueFields
+                : i18n.menu.selectYAxisFields,
             searchable: true,
             showAll: true,
           },
@@ -334,13 +403,56 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
     // Add separator before display options
     menuOptions.push(menuSeparator);
 
+    // Smooth curve toggle (only for line and area charts)
+    if (configData?.chartType === "line" || configData?.chartType === "area") {
+      menuOptions.push({
+        name: "Smooth Curve",
+        value: configData.mark?.interpolate === "monotone" ? i18n.labels.on : i18n.labels.off,
+        icon: "lucide//line-chart",
+        type: SelectOptionType.Disclosure,
+        onSubmenu: (offset, onHide) => {
+          const smoothOptions: SelectOption[] = [
+            { name: i18n.labels.on, value: "monotone" },
+            { name: i18n.labels.off, value: "linear" },
+          ];
+
+          return superstate.ui.openMenu(
+            offset,
+            {
+              ui: superstate.ui,
+              multi: false,
+              editable: false,
+              value: [configData.mark?.interpolate || "linear"],
+              options: smoothOptions,
+              saveOptions: (_: string[], value: string[]) => {
+                const interpolate = value[0] as 'linear' | 'monotone';
+                onConfigChange({
+                  ...configData,
+                  mark: {
+                    ...configData.mark,
+                    interpolate,
+                  },
+                });
+              },
+              placeholder: "Select curve style",
+              searchable: false,
+              showAll: true,
+            },
+            window,
+            null,
+            onHide
+          );
+        },
+      });
+    }
+
     // Legend submenu - exact copy from Visualization.tsx
     menuOptions.push({
-      name: i18n.menu.legend || "Legend",
+      name: i18n.menu.legend,
       value:
         configData.layout?.legend?.show !== false
-          ? configData.layout?.legend?.position || i18n.menu.right || "right"
-          : i18n.menu.hidden || "Hidden",
+          ? configData.layout?.legend?.position || i18n.menu.right
+          : i18n.menu.hidden,
       icon: "lucide//list",
       type: SelectOptionType.Disclosure,
       onSubmenu: (offset, onHide) => {
@@ -348,8 +460,8 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
           {
             name:
               configData.layout?.legend?.show !== false
-                ? i18n.menu.hideLegend || "Hide Legend"
-                : i18n.menu.showLegend || "Show Legend",
+                ? i18n.menu.hideLegend
+                : i18n.menu.showLegend,
             icon: "ui//eye",
             onClick: () => {
               onConfigChange({
@@ -366,14 +478,14 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
           },
           menuSeparator,
           {
-            name: i18n.menu.legendPosition || "Position",
+            name: i18n.menu.legendPosition,
             value: configData.layout?.legend?.position || "right",
             icon: "ui//move",
             type: SelectOptionType.Disclosure,
             onSubmenu: (offset, onHide) => {
               const positionOptions: SelectOption[] = [
                 {
-                  name: i18n.menu.legendTop || "Top",
+                  name: i18n.menu.legendTop,
                   value: "top",
                   onClick: () => {
                     onConfigChange({
@@ -389,7 +501,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
                   },
                 },
                 {
-                  name: i18n.menu.legendBottom || "Bottom",
+                  name: i18n.menu.legendBottom,
                   value: "bottom",
                   onClick: () => {
                     onConfigChange({
@@ -405,7 +517,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
                   },
                 },
                 {
-                  name: i18n.menu.legendLeft || "Left",
+                  name: i18n.menu.legendLeft,
                   value: "left",
                   onClick: () => {
                     onConfigChange({
@@ -421,7 +533,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
                   },
                 },
                 {
-                  name: i18n.menu.legendRight || "Right",
+                  name: i18n.menu.legendRight,
                   value: "right",
                   onClick: () => {
                     onConfigChange({
@@ -447,14 +559,14 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
             },
           },
           {
-            name: i18n.menu.orientation || "Orientation",
+            name: i18n.menu.orientation,
             value: configData.layout?.legend?.orient || "horizontal",
             icon: "ui//layout",
             type: SelectOptionType.Disclosure,
             onSubmenu: (offset, onHide) => {
               const orientationOptions: SelectOption[] = [
                 {
-                  name: i18n.menu.horizontal || "Horizontal",
+                  name: i18n.menu.horizontal,
                   value: "horizontal",
                   onClick: () => {
                     onConfigChange({
@@ -470,7 +582,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
                   },
                 },
                 {
-                  name: i18n.menu.vertical || "Vertical",
+                  name: i18n.menu.vertical,
                   value: "vertical",
                   onClick: () => {
                     onConfigChange({
@@ -509,10 +621,10 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
 
     // Color palette submenu - exact copy from Visualization.tsx
     menuOptions.push({
-      name: i18n.menu.colorPalette || "Color Palette",
+      name: i18n.menu.colorPalette,
       value: (() => {
         const paletteId = configData.colorPalette;
-        if (!paletteId) return i18n.menu.defaultPalette || "Default";
+        if (!paletteId) return i18n.menu.defaultPalette;
         // Try to get the palette name
         return (
           paletteId.charAt(0).toUpperCase() +
@@ -530,7 +642,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
         const colorOptions: SelectOption[] = [
           // None option to clear the palette
           {
-            name: i18n.menu.none || "None",
+            name: i18n.menu.none,
             value: "",
             onClick: () => {
               onConfigChange({
@@ -565,14 +677,14 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
 
     // Labels submenu - with toggles and inputs
     menuOptions.push({
-      name: i18n.menu.axisLabels || "Labels",
+      name: i18n.menu.axisLabels,
       icon: "lucide//tag",
       type: SelectOptionType.Disclosure,
       onSubmenu: (offset, onHide) => {
         const labelOptions: SelectOption[] = [
-          // X-Axis label section - toggle and text input grouped together
+          // X-Axis section
           {
-            name: i18n.menu.showXAxisLabel || "Show X-Axis Label",
+            name: i18n.menu.showXAxis,
             icon:
               configData.layout?.xAxis?.show !== false
                 ? "lucide//check"
@@ -590,26 +702,55 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
               });
             },
           },
-          menuInput(
-            configData.layout?.xAxis?.label || "",
-            (value) => {
+          {
+            name: i18n.menu.showXAxisTitle,
+            icon:
+              configData.layout?.xAxis?.showLabel !== false
+                ? "lucide//check"
+                : "lucide//square",
+            onClick: () => {
               onConfigChange({
                 ...configData,
                 layout: {
                   ...configData.layout,
                   xAxis: {
                     ...configData.layout?.xAxis,
-                    label: value,
+                    showLabel: configData.layout?.xAxis?.showLabel === false,
                   },
                 },
               });
             },
-            "X-Axis Label"
-          ),
-          menuSeparator,
-          // Y-Axis label section - toggle and text input grouped together
+          },
+        ];
+
+        // Only show X-Axis title input if showLabel is enabled
+        if (configData.layout?.xAxis?.showLabel !== false) {
+          labelOptions.push(
+            menuInput(
+              configData.layout?.xAxis?.label || "",
+              (value) => {
+                onConfigChange({
+                  ...configData,
+                  layout: {
+                    ...configData.layout,
+                    xAxis: {
+                      ...configData.layout?.xAxis,
+                      label: value,
+                    },
+                  },
+                });
+              },
+              "X-Axis Title"
+            )
+          );
+        }
+
+        labelOptions.push(menuSeparator);
+
+        // Y-Axis section
+        labelOptions.push(
           {
-            name: i18n.menu.showYAxisLabel || "Show Y-Axis Label",
+            name: i18n.menu.showYAxis,
             icon:
               configData.layout?.yAxis?.show !== false
                 ? "lucide//check"
@@ -627,26 +768,99 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
               });
             },
           },
-          menuInput(
-            configData.layout?.yAxis?.label || "",
-            (value) => {
+          {
+            name: i18n.menu.showYAxisTitle,
+            icon:
+              configData.layout?.yAxis?.showLabel !== false
+                ? "lucide//check"
+                : "lucide//square",
+            onClick: () => {
               onConfigChange({
                 ...configData,
                 layout: {
                   ...configData.layout,
                   yAxis: {
                     ...configData.layout?.yAxis,
-                    label: value,
+                    showLabel: configData.layout?.yAxis?.showLabel === false,
                   },
                 },
               });
             },
-            "Y-Axis Label"
-          ),
+          }
+        );
+
+        // Only show Y-Axis title input if showLabel is enabled
+        if (configData.layout?.yAxis?.showLabel !== false) {
+          labelOptions.push(
+            menuInput(
+              configData.layout?.yAxis?.label || "",
+              (value) => {
+                onConfigChange({
+                  ...configData,
+                  layout: {
+                    ...configData.layout,
+                    yAxis: {
+                      ...configData.layout?.yAxis,
+                      label: value,
+                    },
+                  },
+                });
+              },
+              "Y-Axis Title"
+            )
+          );
+        }
+
+        // Grid section - only for bar, line, scatter, and area charts
+        if (['bar', 'line', 'scatter', 'area'].includes(configData.chartType)) {
+          labelOptions.push(
+            menuSeparator,
+            {
+              name: i18n.menu.showXGridlines,
+              icon:
+                configData.layout?.grid?.x === true
+                  ? "lucide//check"
+                  : "lucide//square",
+              onClick: () => {
+                onConfigChange({
+                  ...configData,
+                  layout: {
+                    ...configData.layout,
+                    grid: {
+                      ...configData.layout?.grid,
+                      x: configData.layout?.grid?.x !== true,
+                    },
+                  },
+                });
+              },
+            },
+            {
+              name: i18n.menu.showYGridlines,
+              icon:
+                configData.layout?.grid?.y !== false
+                  ? "lucide//check"
+                  : "lucide//square",
+              onClick: () => {
+                onConfigChange({
+                  ...configData,
+                  layout: {
+                    ...configData.layout,
+                    grid: {
+                      ...configData.layout?.grid,
+                      y: configData.layout?.grid?.y === false,
+                    },
+                  },
+                });
+              },
+            }
+          );
+        }
+
+        labelOptions.push(
           menuSeparator,
           // Data labels toggle
           {
-            name: i18n.menu.showDataLabels || "Show Data Labels",
+            name: i18n.menu.showDataLabels,
             icon: configData.mark?.dataLabels?.show
               ? "lucide//check"
               : "lucide//square",
@@ -668,7 +882,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
           configData?.chartType === "area"
             ? [
                 {
-                  name: i18n.menu.showDataPoints || "Show Data Points",
+                  name: i18n.menu.showDataPoints,
                   icon: configData?.mark?.point?.show
                     ? "lucide//check"
                     : "lucide//square",
@@ -686,8 +900,8 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
                   },
                 },
               ]
-            : []),
-        ];
+            : [])
+        );
 
         return superstate.ui.openMenu(
           offset,
@@ -702,8 +916,8 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
     // Stacked option - only for bar and area charts
     if (configData?.chartType === "bar" || configData?.chartType === "area") {
       menuOptions.push({
-        name: i18n.menu.stacked || "Stacked",
-        value: configData?.stacked ? "On" : "Off",
+        name: i18n.menu.stacked,
+        value: configData?.stacked ? i18n.labels.on : i18n.labels.off,
         icon: "lucide//layers",
         onClick: () => {
           onConfigChange({
@@ -719,14 +933,14 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
 
     // Group By menu - direct field selection
     menuOptions.push({
-      name: i18n.menu.groupBy || "Group By",
-      value: configData.encoding?.color?.field || "None",
+      name: i18n.menu.groupBy,
+      value: configData.encoding?.color?.field || i18n.labels.none,
       icon: "lucide//columns",
       type: SelectOptionType.Disclosure,
       onSubmenu: (offset, onHide) => {
         const groupOptions: SelectOption[] = [
           {
-            name: i18n.menu.none || "None",
+            name: i18n.menu.none,
             icon: "lucide//x",
             onClick: () => {
               onConfigChange({
@@ -772,7 +986,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
 
     // Aggregate menu
     menuOptions.push({
-      name: i18n.menu.aggregate || "Aggregate",
+      name: i18n.menu.aggregate,
       value: (() => {
         // Get current aggregate setting
         if (configData?.encoding?.color?.field) {
@@ -788,7 +1002,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
       onSubmenu: (offset, onHide) => {
         const aggregateOptions: SelectOption[] = [
           {
-            name: i18n.menu.count || "Count",
+            name: i18n.menu.count,
             icon: "lucide//hash",
             onClick: () => {
               updateAggregate("count");
@@ -796,7 +1010,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
             },
           },
           {
-            name: i18n.menu.sum || "Sum",
+            name: i18n.menu.sum,
             icon: "lucide//plus",
             onClick: () => {
               updateAggregate("sum");
@@ -804,7 +1018,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
             },
           },
           {
-            name: i18n.menu.average || "Average",
+            name: i18n.menu.average,
             icon: "lucide//divide",
             onClick: () => {
               updateAggregate("average");
@@ -812,7 +1026,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
             },
           },
           {
-            name: i18n.menu.min || "Min",
+            name: i18n.menu.min,
             icon: "lucide//arrow-down",
             onClick: () => {
               updateAggregate("min");
@@ -820,7 +1034,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
             },
           },
           {
-            name: i18n.menu.max || "Max",
+            name: i18n.menu.max,
             icon: "lucide//arrow-up",
             onClick: () => {
               updateAggregate("max");
@@ -828,7 +1042,7 @@ export const VisualizationToolbar: React.FC<VisualizationToolbarProps> = ({
             },
           },
           {
-            name: i18n.menu.distinct || "Distinct",
+            name: i18n.menu.distinct,
             icon: "lucide//filter",
             onClick: () => {
               updateAggregate("distinct");

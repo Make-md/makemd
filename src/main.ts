@@ -41,7 +41,7 @@ import { FileLinkView, LINK_VIEW_TYPE } from "adapters/obsidian/ui/editors/markd
 import { ContextExplorerLeafView, FILE_CONTEXT_VIEW_TYPE } from "adapters/obsidian/ui/explorer/ContextExplorerLeafView";
 
 
-import { i18n, i18nLoader } from "makemd-core";
+import i18n, { i18nLoader } from "shared/i18n";
 
 import {
   defaultConfigFile,

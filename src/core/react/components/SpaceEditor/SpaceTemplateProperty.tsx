@@ -11,7 +11,8 @@ import {
   setTemplateNameInSpace,
 } from "core/superstate/utils/spaces";
 import { isString } from "lodash";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext } from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { defaultMenu } from "../UI/Menus/menu/SelectionMenu";

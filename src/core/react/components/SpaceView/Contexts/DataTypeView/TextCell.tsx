@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import React, { useEffect, useRef } from "react";
 import { CellEditMode, TableCellProp } from "../TableView/TableView";
 
@@ -41,7 +43,7 @@ export const TextCell = (props: TableCellProp) => {
       onClick={(e) => e.stopPropagation()}
       className="mk-cell-text"
       ref={ref}
-      data-ph={props.compactMode ? props.property.name : "Empty"}
+      data-ph={props.compactMode ? props.property.name : i18n.labels.empty}
       onKeyDown={onKeyDown}
       onBlur={onBlur}
       contentEditable={true}

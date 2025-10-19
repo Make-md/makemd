@@ -1,6 +1,7 @@
 import { formatDate, isValidDate, parseDate } from "core/utils/date";
 import { add, addDays, startOfDay, startOfWeek } from "date-fns";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useMemo, useState } from "react";
 import { PathPropertyName } from "shared/types/context";
 import { DBRow, DBRows } from "shared/types/mdb";
@@ -28,6 +29,7 @@ export const WeekView = (props: {
   header?: boolean;
   startHour?: number;
   endHour?: number;
+  showHours?: boolean;
   insertItem: (row: DBRow) => void;
   updateItem: (row: DBRow) => void;
 }) => {
@@ -51,8 +53,9 @@ export const WeekView = (props: {
       if (
         endDate >= date &&
         rowDate <= add(date, { days: 7 }) &&
-        startOfDay(rowDate).getTime() == rowDate.getTime() &&
-        startOfDay(endDate).getTime() == endDate.getTime()
+        (props.showHours === false ||
+          (startOfDay(rowDate).getTime() == rowDate.getTime() &&
+            startOfDay(endDate).getTime() == endDate.getTime()))
       )
         rows.push({
           index,
@@ -99,7 +102,7 @@ export const WeekView = (props: {
         ></CalendarHeaderView>
       )}
       <div className="mk-week-view-header">
-        <div className="mk-day-view-gutter"></div>
+        {props.showHours !== false && <div className="mk-day-view-gutter"></div>}
         {Array.from({ length: 7 }).map((_, day) => {
           return (
             <div key={day}>
@@ -112,22 +115,24 @@ export const WeekView = (props: {
           );
         })}
       </div>
-      <div className="mk-week-view-all-day">
-        <div className="mk-day-view-gutter">
-          <div
-            className="mk-day-view-hour-title"
-            style={{
-              height: `${maxOffset * 30}px`,
-            }}
-          >
-            all day
+      <div className="mk-week-view-all-day" style={props.showHours === false ? { borderBottom: 'none' } : undefined}>
+        {props.showHours !== false && (
+          <div className="mk-day-view-gutter">
+            <div
+              className="mk-day-view-hour-title"
+              style={{
+                height: `${maxOffset * 30}px`,
+              }}
+            >
+              {i18n.labels.allDay}
+            </div>
           </div>
-        </div>
+        )}
         {Array.from({ length: 7 }).map((_, day) => {
           return (
             <AllDayCell
               key={day}
-              height={maxOffset + 1}
+              height={maxOffset + 2}
               superstate={props.superstate}
               date={addDays(date, day)}
               insertItem={(path: string) => {
@@ -163,38 +168,40 @@ export const WeekView = (props: {
           );
         })}
       </div>
-      <div className="mk-week-view-content">
-        <DayGutter
-          hourHeight={hourHeight}
-          startHour={startHour}
-          endHour={endHour}
-        />
-        {Array.from({ length: 7 }).map((_, day) => {
-          return (
-            <DayView
-              superstate={props.superstate}
-              key={formatDate(
-                props.superstate.settings,
-                add(date, { days: day })
-              )}
-              field={props.field}
-              fieldEnd={props.fieldEnd}
-              fieldRepeat={props.fieldRepeat}
-              date={add(date, { days: day })}
-              data={props.data}
-              hourHeight={hourHeight}
-              startHour={startHour}
-              endHour={endHour}
-              insertItem={(row: DBRow) => {
-                props.insertItem(row);
-              }}
-              updateItem={(row: DBRow) => {
-                props.updateItem(row);
-              }}
-            />
-          );
-        })}
-      </div>
+      {props.showHours !== false && (
+        <div className="mk-week-view-content">
+          <DayGutter
+            hourHeight={hourHeight}
+            startHour={startHour}
+            endHour={endHour}
+          />
+          {Array.from({ length: 7 }).map((_, day) => {
+            return (
+              <DayView
+                superstate={props.superstate}
+                key={formatDate(
+                  props.superstate.settings,
+                  add(date, { days: day })
+                )}
+                field={props.field}
+                fieldEnd={props.fieldEnd}
+                fieldRepeat={props.fieldRepeat}
+                date={add(date, { days: day })}
+                data={props.data}
+                hourHeight={hourHeight}
+                startHour={startHour}
+                endHour={endHour}
+                insertItem={(row: DBRow) => {
+                  props.insertItem(row);
+                }}
+                updateItem={(row: DBRow) => {
+                  props.updateItem(row);
+                }}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

@@ -22,7 +22,8 @@ export const loadFlowEditorByDOM = (
   plugin: MakeBasicsPlugin,
   el: HTMLElement,
   view: EditorView,
-  id: string
+  id: string,
+  reading?: boolean
 ) => {
   setTimeout(async () => {
     //wait for el to be attached to the displayed document
@@ -58,7 +59,8 @@ export const loadFlowEditorByDOM = (
                 plugin.app.workspace.activeEditor.editor.cm,
                 plugin.app.workspace.activeEditor.file?.path,
                 plugin,
-                id
+                id,
+                reading
               );
             }
           }, plugin.app.workspace["rootSplit"]!);
@@ -75,7 +77,8 @@ export const loadFlowEditorByDOM = (
               cm,
               (leaf.view as MarkdownView).file?.path,
               plugin,
-              id
+              id,
+              reading
             );
           }
         }, plugin.app.workspace["rootSplit"]!);
@@ -88,14 +91,15 @@ export const loadFlowEditorsForLeafForID = (
   cm: EditorView,
   source: string,
   plugin: MakeBasicsPlugin,
-  id: string
+  id: string,
+  reading?: boolean
 ) => {
 
   const stateField = cm.state.field(flowEditorInfo, false);
   if (!stateField) return;
   const flowInfo = stateField.find((f) => f.id == id);
   if (flowInfo && flowInfo.expandedState == 2) {
-    loadFlowEditor(leaf, cm, flowInfo, source, plugin);
+    loadFlowEditor(leaf, cm, flowInfo, source, plugin, reading);
   }
 };
 
@@ -104,7 +108,8 @@ const loadFlowEditor = async (
   cm: EditorView,
   flowEditorInfo: FlowEditorInfo,
   source: string,
-  plugin: MakeBasicsPlugin
+  plugin: MakeBasicsPlugin, 
+  reading?: boolean
 ) => {
   const dom = cm.dom.querySelector(
     "#mk-flow-" + flowEditorInfo.id
@@ -121,7 +126,7 @@ const loadFlowEditor = async (
       if (!dom.hasAttribute("ready")) {
         // dom.empty();
         dom.setAttribute("ready", "");
-        plugin.enactor.openPath(path.fullPath, dom);
+        plugin.enactor.openPath(path.fullPath, dom, reading);
         
         return;
       }
@@ -133,7 +138,7 @@ const loadFlowEditor = async (
       if (!dom.hasAttribute("ready")) {
         // dom.empty();
         dom.setAttribute("ready", "");
-        plugin.enactor.openPath(basePath, dom);
+        plugin.enactor.openPath(basePath, dom, reading);
         
       }
     } else {
@@ -145,7 +150,7 @@ const loadFlowEditor = async (
         e.stopPropagation();
         e.stopImmediatePropagation();
         await plugin.plugin.files.newFile('/', basePath, 'md');
-        loadFlowEditor(leaf, cm, flowEditorInfo, source, plugin);
+        loadFlowEditor(leaf, cm, flowEditorInfo, source, plugin, reading);
       };
       createDiv.setText(`"${basePath}" ` + i18n.labels.noFile);
       createDiv.addEventListener("click", createFile);

@@ -7,7 +7,8 @@ import ReactCodeMirror, {
 } from "@uiw/react-codemirror";
 import { FormulaInfo, formulasInfos } from "core/utils/formula/formulasInfos";
 import { mathjs } from "core/utils/formula/syntax";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useRef, useState } from "react";
 import { fieldTypeForField } from "schemas/mdb";
 import { SpaceProperty } from "shared/types/mdb";
@@ -233,7 +234,7 @@ export const FormulaEditor = (props: FormulaEditorProps) => {
             </div>
           ))}
           {filteredFunctions.length > 0 && (
-            <div className="mk-formula-list-section">Functions</div>
+            <div className="mk-formula-list-section">{i18n.labels.functions}</div>
           )}
           {filteredFunctions.map((f, i) => (
             <div
@@ -270,7 +271,7 @@ export const FormulaEditor = (props: FormulaEditorProps) => {
                   </div>
                   )
                 </div>
-                <div>{presetField.func.description}</div>
+                <div>{i18n.formulas[presetField.func.name]}</div>
               </>
             ) : presetField.prop ? (
               <>
@@ -283,7 +284,7 @@ export const FormulaEditor = (props: FormulaEditorProps) => {
             ))}
 
           {suggestionsForPreset(presetField).length > 0 && (
-            <div className="mk-formula-suggester-title">Suggestions</div>
+            <div className="mk-formula-suggester-title">{i18n.labels.suggestions}</div>
           )}
           {suggestionsForPreset(presetField).map((f, i) => (
             <div key={i} className="mk-formula-suggestion">

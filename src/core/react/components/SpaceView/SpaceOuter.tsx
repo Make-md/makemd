@@ -13,7 +13,7 @@ import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
 import { SpaceContext } from "core/react/context/SpaceContext";
 import { saveProperties } from "core/superstate/utils/spaces";
-import { linkContextRow } from "core/utils/contexts/linkContextRow";
+import { linkContextRow, syncContextRow } from "core/utils/contexts/linkContextRow";
 import { Superstate } from "makemd-core";
 import React, {
   forwardRef,
@@ -68,12 +68,13 @@ const SpaceOuter = forwardRef<
             props.superstate.pathsIndex,
             props.superstate.contextsIndex,
             props.superstate.spacesMap,
-            properties,
+            syncContextRow(props.superstate.pathsIndex, properties, tableData?.cols ?? [], pathState),
             tableData?.cols ?? [],
             pathState,
             props.superstate.settings
           );
           setFrameProps(row);
+          
         } else {
           const properties = {
             ...(pathState?.metadata?.property ?? {}),

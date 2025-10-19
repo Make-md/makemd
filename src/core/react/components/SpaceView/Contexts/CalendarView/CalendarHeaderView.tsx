@@ -1,5 +1,6 @@
 import { formatDate } from "core/utils/date";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 
 export const CalendarHeaderView = (props: {
@@ -46,7 +47,7 @@ export const CalendarHeaderView = (props: {
           props.setDate(new Date());
         }}
       >
-        Today
+        {i18n.labels.today}
       </button>
       <button
         onClick={() => {

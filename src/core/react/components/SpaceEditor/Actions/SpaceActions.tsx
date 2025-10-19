@@ -1,4 +1,5 @@
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import React, { useEffect, useMemo, useState } from "react";
@@ -138,7 +139,7 @@ export const SpaceCommand = (props: {
         <>
           <div className="mk-props-contexts">
             <div className="mk-path-context-row">
-              <div className="mk-path-context-field">Type</div>
+              <div className="mk-path-context-field">{i18n.labels.type}</div>
               <div className="mk-path-context-value">
                 <Dropdown
                   superstate={props.superstate}

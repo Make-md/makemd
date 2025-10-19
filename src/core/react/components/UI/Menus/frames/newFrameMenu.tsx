@@ -10,6 +10,7 @@ import {
 import {
   buttonNode,
   callout,
+  circularProgressNode,
   dividerNode,
   progressNode,
   ratingNode,
@@ -299,12 +300,12 @@ export const showNewFrameMenu = (
     def: {
       id: 'cardNode',
       icon: "lucide//credit-card",
-      description: "Card container with styled background",
+      description: i18n.menu.cardContainerWithStyledBackground,
     },
     node: {
       id: "card",
       schemaId: "card",
-      name: "Card",
+      name: i18n.labels.card,
       rank: 0,
       parentId: "",
       styles: {
@@ -321,12 +322,12 @@ export const showNewFrameMenu = (
     def: {
       id: 'buttonNode',
       icon: "ui//mouse-pointer-click",
-      description: "Button container with styled appearance",
+      description: i18n.menu.buttonContainerWithStyledAppearance,
     },
     node: {
       id: "button",
       schemaId: "button",
-      name: "Button",
+      name: i18n.labels.button,
       rank: 0,
       parentId: "",
       styles: {
@@ -356,6 +357,7 @@ export const showNewFrameMenu = (
     toggleNode(),
     callout(),
     progressNode(),
+    circularProgressNode,
     tabsNode(),
   ];
 

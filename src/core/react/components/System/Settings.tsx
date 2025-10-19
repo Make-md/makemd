@@ -1,4 +1,5 @@
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useState } from "react";
 import { AdvancedSettings } from "./SettingsSections/AdvancedSettings";
 import { CoverImageSettings } from "./SettingsSections/AppearanceSettings";
@@ -90,7 +91,7 @@ export const Settings = ({ superstate }: SettingsProps) => {
     },
     {
       id: "language",
-      name: i18n.settings.sections.language || "Language",
+      name: i18n.settings.sections.language || i18n.settings.language,
       icon: "lucide//globe",
       component: LanguageSettings,
       category: "system",

@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 
 export interface TitleConfig {
@@ -91,7 +93,7 @@ export class TitleUtility {
       .style('font-weight', 'bold')
       .style('cursor', editMode ? 'pointer' : 'default')
       .style('opacity', editMode ? 0 : 1) // Hide in edit mode
-      .text(config.layout.title?.text || (editMode ? 'Title' : ''));
+      .text(config.layout.title?.text || (editMode ? i18n.labels.title : ''));
 
     // Add selection indicator
     if (editMode && selectedElement?.type === 'title') {

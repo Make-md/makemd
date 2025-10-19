@@ -1,3 +1,4 @@
+
 import { SpaceTableSchema } from "shared/types/mdb";
 
 export const defaultContextSchemaID = "files";

@@ -1,6 +1,5 @@
 import { fileSystemSpaceInfoFromFolder } from "core/spaceManager/filesystemAdapter/spaceInfo"
 import { SpaceManager } from "makemd-core"
-import i18n from "shared/i18n"
 
 
 import { PathState, SpaceState } from "shared/types/PathState"
@@ -12,7 +11,7 @@ export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanne
   spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey
 ]
   export const createVaultSpace  = (manager: SpaceManager) : SpaceState => ({
-    name: i18n.menu.vault,
+    name: "Vault",
     path: "/",
     space: fileSystemSpaceInfoFromFolder(manager, "/"),
     type: "default",
@@ -26,12 +25,12 @@ export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanne
   
 
   export const vaultPath: PathState = {
-    name: i18n.menu.vault,
+    name: "Vault",
     readOnly: false,
     path: "/",
     label: {
       thumbnail: '',
-      name: i18n.menu.vault,
+      name: "Vault",
       sticker: "ui//vault",
       color: ''
     },

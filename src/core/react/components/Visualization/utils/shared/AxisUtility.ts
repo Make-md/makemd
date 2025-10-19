@@ -1,4 +1,6 @@
-import { axisBottom, axisLeft, type Selection, timeFormat } from 'core/utils/d3-imports';
+import i18n from "shared/i18n";
+
+import { axisBottom, axisLeft, type Selection, timeFormat, utcFormat } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 import { displayTextForType } from 'core/utils/displayTextForType';
 import { formatNumber } from '../formatNumber';
@@ -50,9 +52,9 @@ export class AxisUtility {
 
       const xAxisGenerator = axisBottom(xScale);
       
-      // Check if this is a temporal scale
+      // Check if this is a temporal scale (either explicitly set or inferred from scale type)
       const xEncoding = config.encoding.x && !Array.isArray(config.encoding.x) ? config.encoding.x : null;
-      const isTemporalX = xEncoding?.type === 'temporal';
+      const isTemporalX = xEncoding?.type === 'temporal' || (xScale as any).tickFormat !== undefined && typeof (xScale as any).domain === 'function' && (xScale as any).domain()[0] instanceof Date;
       const isCategoricalX = xEncoding?.type === 'nominal' || xEncoding?.type === 'ordinal';
       
       // Apply custom tick format
@@ -60,15 +62,15 @@ export class AxisUtility {
         // For categorical scales without property info, handle empty labels
         xAxisGenerator.tickFormat((d: any) => {
           const label = String(d);
-          return (!label || label.trim() === '') ? 'None' : label;
+          return (!label || label.trim() === '') ? i18n.labels.none : label;
         });
       } else if (isTemporalX) {
-        // For temporal scales, use custom formatting
-        const formatMonth = timeFormat('%b'); // e.g., "Jan"
-        const formatDay = timeFormat('%d'); // e.g., "15"
-        const formatYear = timeFormat('%Y');
-        const formatMonthYear = timeFormat('%b %Y');
-        const formatTime = timeFormat('%I:%M %p');
+        // For temporal scales, use UTC formatting to match UTC dates
+        const formatMonth = utcFormat('%b'); // e.g., "Jan"
+        const formatDay = utcFormat('%d'); // e.g., "15"
+        const formatYear = utcFormat('%Y');
+        const formatMonthYear = utcFormat('%b %Y');
+        const formatTime = utcFormat('%I:%M %p');
         
         // Track which months we've already labeled
         const labeledMonths = new Set<string>();
@@ -95,9 +97,16 @@ export class AxisUtility {
             const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
             const dayOfMonth = date.getDate();
             
-            // Check if this is the first tick of the month or the first tick overall
-            if (dayOfMonth === 1 || i === 0) {
-              // Show month label at month boundary or start
+            // First tick should always show full date
+            if (i === 0) {
+              labeledMonths.add(monthKey);
+              const formatFullDate = utcFormat('%b %d');
+              return formatFullDate(date);
+            }
+            
+            // Check if this is the first tick of a new month
+            if (dayOfMonth === 1) {
+              // Show month label at month boundary
               if (!labeledMonths.has(monthKey)) {
                 labeledMonths.add(monthKey);
                 return formatMonth(date);
@@ -112,49 +121,53 @@ export class AxisUtility {
           }
         });
         
-        // For temporal scales with day-level data, use more ticks to show individual days
+        // For temporal scales, use appropriate tick count based on time span
         const domain = xScale.domain();
         const domainSpan = domain[1] - domain[0];
+        const msPerHour = 60 * 60 * 1000;
         const msPerDay = 24 * 60 * 60 * 1000;
+        const hoursInRange = domainSpan / msPerHour;
         const daysInRange = Math.ceil(domainSpan / msPerDay);
         
-        if (daysInRange <= 31) {
-          // Show all days if less than a month
+        if (hoursInRange <= 24) {
+          // For hourly data (within a day), show appropriate number of ticks
+          xAxisGenerator.ticks(Math.min(Math.ceil(hoursInRange), 12));
+        } else if (daysInRange <= 7) {
           xAxisGenerator.ticks(daysInRange);
+        } else if (daysInRange <= 31) {
+          xAxisGenerator.ticks(Math.min(daysInRange, 15));
         } else if (daysInRange <= 90) {
-          // Show every few days for up to 3 months
           xAxisGenerator.ticks(15);
         } else {
-          // Default to fewer ticks for larger ranges
           xAxisGenerator.ticks(8);
         }
       } else if (xProperty && context.superstate) {
         // Use property-based formatting for non-temporal scales
         xAxisGenerator.tickFormat((d: any) => {
           if (d === null || d === undefined || d === '') {
-            return 'None';
+            return i18n.labels.none;
           }
           const formatted = displayTextForType(xProperty, d, context.superstate);
-          return (!formatted || formatted.trim() === '') ? 'None' : formatted;
+          return (!formatted || formatted.trim() === '') ? i18n.labels.none : formatted;
         });
       } else {
         // Default formatter that handles empty values and dates
         xAxisGenerator.tickFormat((d: any) => {
           // Check if it's a date
           if (d instanceof Date) {
-            const formatDay = timeFormat('%b %d');
+            const formatDay = utcFormat('%b %d');
             return formatDay(d);
           }
           // Check if it's a date string
           if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) {
             const date = new Date(d);
             if (!isNaN(date.getTime())) {
-              const formatDay = timeFormat('%b %d');
+              const formatDay = utcFormat('%b %d');
               return formatDay(date);
             }
           }
           const label = String(d);
-          return (!label || label.trim() === '') ? 'None' : label;
+          return (!label || label.trim() === '') ? i18n.labels.none : label;
         });
       }
       
@@ -215,13 +228,13 @@ export class AxisUtility {
         // For categorical scales without property info, handle empty labels
         yAxisGenerator.tickFormat((d: any) => {
           const label = String(d);
-          return (!label || label.trim() === '') ? 'None' : label;
+          return (!label || label.trim() === '') ? i18n.labels.none : label;
         });
       } else if (isTemporalY) {
-        // For temporal scales on Y axis, use appropriate date formatting
-        const formatDate = timeFormat('%b %d');
-        const formatYear = timeFormat('%Y');
-        const formatMonth = timeFormat('%b %Y');
+        // For temporal scales on Y axis, use UTC formatting
+        const formatDate = utcFormat('%b %d');
+        const formatYear = utcFormat('%Y');
+        const formatMonth = utcFormat('%b %Y');
         
         yAxisGenerator.tickFormat((d: any) => {
           const date = d instanceof Date ? d : new Date(d);
@@ -247,30 +260,30 @@ export class AxisUtility {
         // Use property-based formatting for non-temporal scales
         yAxisGenerator.tickFormat((d: any) => {
           if (d === null || d === undefined || d === '') {
-            return 'None';
+            return i18n.labels.none;
           }
           const formatted = displayTextForType(yProperty, d, context.superstate);
-          return (!formatted || formatted.trim() === '') ? 'None' : formatted;
+          return (!formatted || formatted.trim() === '') ? i18n.labels.none : formatted;
         });
       } else if (isCategoricalY) {
         // Default formatter for categorical Y axis that handles empty values
         yAxisGenerator.tickFormat((d: any) => {
           const label = String(d);
-          return (!label || label.trim() === '') ? 'None' : label;
+          return (!label || label.trim() === '') ? i18n.labels.none : label;
         });
       } else {
         // Default formatter that handles dates and other values
         yAxisGenerator.tickFormat((d: any) => {
           // Check if it's a date
           if (d instanceof Date) {
-            const formatDay = timeFormat('%b %d');
+            const formatDay = utcFormat('%b %d');
             return formatDay(d);
           }
           // Check if it's a date string
           if (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}/.test(d)) {
             const date = new Date(d);
             if (!isNaN(date.getTime())) {
-              const formatDay = timeFormat('%b %d');
+              const formatDay = utcFormat('%b %d');
               return formatDay(date);
             }
           }
@@ -385,12 +398,12 @@ export class AxisUtility {
         if (xProperty && context.superstate) {
           tickLabel = displayTextForType(xProperty, tick, context.superstate);
         } else if (tick instanceof Date) {
-          const formatDay = timeFormat('%b %d');
+          const formatDay = utcFormat('%b %d');
           tickLabel = formatDay(tick);
         } else if (typeof tick === 'string' && /^\d{4}-\d{2}-\d{2}/.test(tick)) {
           const date = new Date(tick);
           if (!isNaN(date.getTime())) {
-            const formatDay = timeFormat('%b %d');
+            const formatDay = utcFormat('%b %d');
             tickLabel = formatDay(date);
           } else {
             tickLabel = tick;
@@ -487,12 +500,12 @@ export class AxisUtility {
         if (yProperty && context.superstate) {
           tickLabel = displayTextForType(yProperty, tick, context.superstate);
         } else if (tick instanceof Date) {
-          const formatDay = timeFormat('%b %d');
+          const formatDay = utcFormat('%b %d');
           tickLabel = formatDay(tick);
         } else if (typeof tick === 'string' && /^\d{4}-\d{2}-\d{2}/.test(tick)) {
           const date = new Date(tick);
           if (!isNaN(date.getTime())) {
-            const formatDay = timeFormat('%b %d');
+            const formatDay = utcFormat('%b %d');
             tickLabel = formatDay(date);
           } else {
             tickLabel = tick;
@@ -580,11 +593,11 @@ export class AxisUtility {
           text.textContent = truncatedText;
         }
         
-        // Always add tooltips for x-axis labels
+        // Always add tooltips for x-axis labels using SVG title element only
         text.setAttribute('aria-label', originalText);
-        text.setAttribute('title', originalText);
+        // Don't use HTML title attribute to avoid conflicts with Obsidian's tooltip system
         
-        // Add a title element for SVG hover (works better in some browsers)
+        // Add a title element for native SVG hover tooltips
         const existingTitle = text.querySelector('title');
         if (existingTitle) {
           existingTitle.textContent = originalText;
@@ -602,11 +615,11 @@ export class AxisUtility {
         const text = this;
         const originalText = text.textContent || '';
         
-        // Always add tooltips for y-axis labels
+        // Always add tooltips for y-axis labels using SVG title element only
         text.setAttribute('aria-label', originalText);
-        text.setAttribute('title', originalText);
+        // Don't use HTML title attribute to avoid conflicts with Obsidian's tooltip system
         
-        // Add a title element for SVG hover
+        // Add a title element for native SVG hover tooltips
         const existingTitle = text.querySelector('title');
         if (existingTitle) {
           existingTitle.textContent = originalText;

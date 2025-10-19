@@ -1,5 +1,5 @@
 import { frameRootWithProps } from "core/utils/frames/frames";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 
 import { FrameRoot } from "shared/types/mframe";
 import {
@@ -31,7 +31,7 @@ export const listNode = () : FrameRoot => ({
     icon: 'ui//list',
     schemaId: 'list',
     parentId: '',
-    name: 'List',
+    name: i18n.labels.list,
     rank: 0,
     id: 'list',
     styles: {},
@@ -100,7 +100,7 @@ export const countdownNode = () : FrameRoot => ({
     icon: 'ui//clock',
     schemaId: 'countdown',
     parentId: '',
-    name: 'Countdown',
+    name: i18n.labels.countdown,
     rank: 0,
     id: 'countdown',
     type: 'group',
@@ -247,11 +247,12 @@ export const tabsNode = (): FrameRoot => ({
     type: 'group',
     props: {
       currentTab: '0',
+      predicate: '{}',
       tabs: "[{'name': 'Tab 1', 'view': ''}, {'name': 'Tab 2', 'view': ''}]",
     },
     propsValue: {
       tabs: ({
-        alias: 'Tabs',
+        alias: i18n.labels.tabs,
         typeName: 'Tab',
         type: {
           name: {
@@ -260,7 +261,7 @@ export const tabsNode = (): FrameRoot => ({
           },
           view: {
             type: 'link',
-            value: ({ alias: 'Page' }),
+            value: ({ alias: i18n.labels.page }),
           },
         },
       }),
@@ -269,6 +270,7 @@ export const tabsNode = (): FrameRoot => ({
       }),
     },
     types: {
+      predicate: 'object',
       tabs: 'object-multi',
       currentTab: 'number',
     },
@@ -319,6 +321,7 @@ export const tabsNode = (): FrameRoot => ({
     frameRootWithProps(
       flowNode,
       {
+        predicate: `$root.props.predicate`,
         value: `$root.props.tabs[$root.props.currentTab].view`,
       },
       {
@@ -342,7 +345,7 @@ export const checkboxNode = (): FrameRoot => ({
     icon: 'ui//check',
     schemaId: 'checkbox',
     parentId: '',
-    name: 'Checkbox',
+    name: i18n.labels.checkbox,
     rank: 0,
     id: 'checkbox',
     type: 'group',
@@ -400,7 +403,7 @@ export const previewNode = (): FrameRoot => ({
   node: {
     schemaId: 'preview',
     parentId: '',
-    name: 'Preview',
+    name: i18n.labels.preview,
     rank: 0,
     id: 'preview',
     type: 'group',
@@ -803,6 +806,54 @@ export const progressNode = (): FrameRoot => ({
 });
 
 
+export const circularProgressNode: FrameRoot = {
+  id: "circularProgress",
+  def: {
+    id: 'circularProgress',
+    icon: "ui//pie-chart"
+  },
+  node: {
+    icon: "ui//pie-chart",
+    schemaId: "circularProgress",
+    parentId: "",
+    name: i18n.commands.circularProgress,
+    rank: 0,
+    id: "circularProgress",
+    type: "group",
+    props: {
+      value: "50",
+      max: "100",
+      color: `'var(--color-orange)'`,
+      backgroundColor: "'var(--background-modifier-form-field)'",
+      ringWidth: "5" 
+    },
+    types: {
+      value: "number",
+      color: 'color',
+      max: 'number',
+      backgroundColor: 'color',
+      ringWidth: 'number'
+    },
+    styles: {
+      height: `'100px'`,
+      width: `'100px'`,
+    }
+  }, 
+  children: [
+    frameRootWithProps(groupNode,
+      {
+
+      }, 
+      {
+        background: 
+    "`conic-gradient(${$root.props.color} ${$root.props.value/$root.props.max*100}%, ${$root.props.backgroundColor} 0)`",
+    "maskImage": "`radial-gradient(circle calc(calc(${$root.styles.width} - ${$root.props.ringWidth}px) / 2) at calc(50%) calc(50%),transparent 100%,black 0%)`",
+      height: `'100%'`,
+      width: `'100%'`,
+      borderRadius: `'50%'`,
+      })
+  ]
+};
 
 export const cardNode = (): FrameRoot => ({
   id: 'card',

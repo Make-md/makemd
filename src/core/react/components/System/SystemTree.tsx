@@ -1,4 +1,5 @@
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useState } from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { InputModal } from "../UI/Modals/InputModal";
@@ -24,8 +25,8 @@ export const SystemTree = (props: { superstate: Superstate }) => {
     <div>
       <div style={{ display: "flex", flexDirection: "column" }}>
         <div className="mk-tree-item">Kit</div>
-        <div className="mk-tree-item">Templates</div>
-        <div className="mk-tree-item">Actions</div>
+        <div className="mk-tree-item">{i18n.labels.templates}</div>
+        <div className="mk-tree-item">{i18n.labels.actions}</div>
         {[...libraries.keys()].map((f, i) => (
           <React.Fragment key={i}>
             <div key={i} className="mk-tree-item">

@@ -1,6 +1,6 @@
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext } from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { StepSetter } from "../../Setters/StepSetter";
@@ -18,7 +18,7 @@ export const LayoutSubmenu = (props: HoverSubmenuProps) => {
         <>
           <div
             className="mk-editor-frame-node-button-back"
-            aria-label="Back"
+            aria-label={i18n.buttons.back}
             onMouseDown={(e) => {
               props.exitMenu(e);
             }}
@@ -74,7 +74,7 @@ export const LayoutSubmenu = (props: HoverSubmenuProps) => {
         </>
       ) : (
         <>
-          <div className="mk-frame-submenu-label">Align</div>
+          <div className="mk-frame-submenu-label">{i18n.menu.align}</div>
           <div
             className="mk-editor-frame-node-button"
             onClick={(e) => {

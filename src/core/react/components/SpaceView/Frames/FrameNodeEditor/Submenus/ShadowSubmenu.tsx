@@ -1,6 +1,6 @@
 import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
 import { removeQuotes } from "core/utils/strings";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { hexToRgb } from "core/utils/colorPalette";
 import { windowFromDocument } from "shared/utils/dom";

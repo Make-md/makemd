@@ -6,7 +6,7 @@ import {
   showPathContextMenu,
   triggerMultiPathMenu,
 } from "core/react/components/UI/Menus/navigator/pathContextMenu";
-import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
+
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import {
@@ -255,22 +255,11 @@ export const TreeItem = (props: TreeItemProps) => {
     if (superstate.settings.overrideNativeMenu) {
       return superstate.ui.nativePathMenu(e, pathState.path);
     }
-    if (superstate.spacesIndex.has(pathState.path)) {
-      showSpaceContextMenu(
-        superstate,
-        pathState,
-        e,
-        activePath,
-        data.type == "group" ? null : data.space,
-        data.type == "group" ? () => closeActiveSpace(data.path) : null
-      );
-
-      return;
-    }
+   
     showPathContextMenu(
       superstate,
       data.path,
-      data.space,
+      data.type == "group" ? null : data.space,
       (e.target as HTMLElement).getBoundingClientRect(),
       windowFromDocument(e.view.document),
       "right",
@@ -496,7 +485,7 @@ export const TreeItem = (props: TreeItemProps) => {
                 '--spacing': `${indentationWidth * (depth+1)}px`,
               } as React.CSSProperties
             }
-            >No Notes Inside</div>} */}
+            >{i18n.labels.noNotesInside}</div>} */}
     </>
   );
 };

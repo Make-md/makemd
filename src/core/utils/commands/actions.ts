@@ -1,6 +1,7 @@
 import { resultForFilters } from "core/utils/commands/filter";
 import { isArray } from "lodash";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { safelyParseJSON } from "shared/utils/json";
 import { ActionInstance, ActionTree } from "../../../shared/types/actions";
 
@@ -23,7 +24,7 @@ export const runActionTree = async (
   instance: ActionInstance
 ): Promise<any> => {
   if (instance.iterations > superstate.settings.actionMaxSteps) {
-    alert("Max steps reached, you can change this in settings.");
+    alert(i18n.descriptions.maxStepsReachedYouCanChangeThisInSettings);
     return;
   }
   const newInstance  : ActionInstance= {

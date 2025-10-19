@@ -1,4 +1,4 @@
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import { FrameRoot } from "shared/types/mframe";
 
 
@@ -160,6 +160,7 @@ export const flowNode: FrameRoot = {
     id: "flow",
     type: "flow",
     props: {
+      query: "{}",
       value: "",
     },
     styles: {
@@ -167,6 +168,7 @@ export const flowNode: FrameRoot = {
       padding: `'8px'`
     },
     types: {
+      query: 'object',
       value: "link",
     },
   }
@@ -274,7 +276,7 @@ export const contentNode: FrameRoot = {
     icon: "ui//type",
     schemaId: "content",
     parentId: "",
-    name: 'Content',
+    name: i18n.menu.content,
     rank: 0,
     id: "content",
     type: "content",
@@ -317,7 +319,7 @@ export const dataNode: FrameRoot = {
   def: {
     id: 'data',
     icon: 'ui//database',
-    description: 'Display data with custom field types',
+    description: i18n.labels.displayDataWithCustomFieldTypes,
   },
   node: {
     icon: 'ui//database',
@@ -340,7 +342,7 @@ export const dataNode: FrameRoot = {
         alias: 'Field Configuration',
       },
       value: {
-        alias: 'Value',
+        alias: i18n.menu.value,
       },
     },
   },

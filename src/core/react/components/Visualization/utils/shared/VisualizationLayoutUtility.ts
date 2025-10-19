@@ -145,15 +145,15 @@ export class VisualizationLayoutUtility {
       }
     }
 
-    // Calculate axis label dimensions
+    // Calculate axis label dimensions - check both showLabel toggle and label text
     let xAxisLabelHeight = 0;
-    if (showXAxisLabel && config.layout?.xAxis?.label) {
+    if (showXAxisLabel && config.layout?.xAxis?.label && config.layout?.xAxis?.showLabel !== false) {
       const labelFontSize = config.layout.xAxis.labelFontSize || 12;
       xAxisLabelHeight = labelFontSize + 10; // Font size + spacing
     }
 
     let yAxisLabelWidth = 0;
-    if (showYAxisLabel && config.layout?.yAxis?.label) {
+    if (showYAxisLabel && config.layout?.yAxis?.label && config.layout?.yAxis?.showLabel !== false) {
       const labelFontSize = config.layout.yAxis.labelFontSize || 12;
       yAxisLabelWidth = labelFontSize + 10; // Font size + spacing (rotated text)
     }
@@ -177,10 +177,10 @@ export class VisualizationLayoutUtility {
     let yAxisWidth = 0;
     
     if (config.chartType !== 'pie') {
-      if (showXAxis) {
+      if (showXAxis && config.layout?.xAxis?.show !== false) {
         xAxisHeight = 25; // Height for axis line, ticks, and tick labels
       }
-      if (showYAxis) {
+      if (showYAxis && config.layout?.yAxis?.show !== false) {
         yAxisWidth = 35; // Width for axis line, ticks, and tick labels
       }
     } else {

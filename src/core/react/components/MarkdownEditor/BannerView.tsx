@@ -215,6 +215,7 @@ export const BannerView = (props: {
   );
 
   const handleKeyDown = (e: KeyboardEvent) => {
+    if (!props.reposition) return;
     if (e.metaKey) {
       setModifier("metaKey");
     } else if (e.ctrlKey) {

@@ -1,6 +1,6 @@
 import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useMemo } from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { parseObject } from "utils/parsers";

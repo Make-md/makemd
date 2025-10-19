@@ -71,9 +71,9 @@ export const SpaceRoot = (
       className="mk-space-view"
       data-path={pathState.path}
       style={
-        fullWidth
-          ? ({ "--page-width": "100%" } as React.CSSProperties)
-          : undefined
+        {
+          ...(fullWidth ? { "--page-width": "100%" } : undefined),
+        } as React.CSSProperties
       }
     >
       <FrameContainerView

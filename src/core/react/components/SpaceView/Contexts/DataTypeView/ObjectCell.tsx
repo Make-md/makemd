@@ -156,7 +156,7 @@ export const ObjectEditor = (props: {
             props.showDragMenu(e);
           }}
         >
-          {props.typeName ?? "Object"}
+          {props.typeName ?? i18n.fieldTypes.object}
         </div>
       )}
       <div className="mk-cell-object">
@@ -569,7 +569,7 @@ export const ObjectEditorModal = (
                 __html: props.superstate.ui.getSticker("ui//insert"),
               }}
             ></div>
-            Object
+            {i18n.fieldTypes.object}
           </button>
         )}
       </div>

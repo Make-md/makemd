@@ -8,7 +8,8 @@ import { WindowContext } from "core/react/context/WindowContext";
 import { replaceFrameWithFrameRoot } from "core/utils/frames/frame";
 import { nameForField } from "core/utils/frames/frames";
 import { initiateString } from "core/utils/strings";
-import { SelectOption, Superstate, i18n } from "makemd-core";
+import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, {
   useContext,
   useEffect,

@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { defaultTableFields } from "shared/schemas/fields";
 import { ISuperstate } from "shared/types/superstate";
 import { uniqueNameFromString } from "shared/utils/array";
@@ -82,7 +84,7 @@ export const predicateForViewType = (type: string) => {
 export const createInlineTable = async (superstate: ISuperstate, path: string, type?: string) => {
 
   
-  let tableName = type == 'board' ? "Board" : "Table";
+  let tableName = type == 'board' ? i18n.labels.board : i18n.menu.table;
     const schemas = await superstate.spaceManager.tablesForSpace(path)
     if (schemas) {
       tableName = uniqueNameFromString(

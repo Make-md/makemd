@@ -1,4 +1,4 @@
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 
 
 type LayoutType = {
@@ -68,7 +68,7 @@ export const defaultViewTypes: Record<string, LayoutType> = {
     listItem: 'spaces://$kit/#*cardListItem',
   },
   tasks: {
-    name: 'Checklist',
+    name: i18n.labels.checklist,
     icon: 'ui//square-kanban',
     view: 'list',
     listView: 'spaces://$kit/#*listView',

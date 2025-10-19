@@ -135,7 +135,7 @@ const NewPropertyMenuComponent = (
           });
         });
       options.push({
-        name: "Special",
+        name: i18n.menu.special,
         value: "special",
         icon: "ui//edit",
         type: SelectOptionType.Submenu,

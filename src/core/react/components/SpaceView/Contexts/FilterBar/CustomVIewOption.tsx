@@ -1,5 +1,6 @@
 import { Sticker } from "core/react/components/UI/Stickers/Sticker";
-import { UIManager, i18n } from "makemd-core";
+import { UIManager } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 export const CustomViewOption = (props: {
   ui: UIManager;

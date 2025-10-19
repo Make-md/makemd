@@ -25,6 +25,7 @@ import {
 import { FrameContainerView } from "./ContextBuilder/FrameContainerView";
 import { FilterBar } from "./FilterBar/FilterBar";
 import { TableView } from "./TableView/TableView";
+
 export const ContextListContainer = (props: {
   superstate: Superstate;
   minMode?: boolean;
@@ -46,6 +47,7 @@ export const ContextListContainer = (props: {
     data,
     updateRow,
   } = useContext(ContextEditorContext);
+  
   const { frameSchema } = useContext(FramesMDBContext);
   const [editSection, setEditSection] = useState<ContextListSections>(null);
   const [selectedIndexes, setSelectedIndexes] = useState<string[]>([]);
@@ -214,6 +216,7 @@ export const ContextListContainer = (props: {
             startHour={predicate.listViewProps?.startOfDay ?? 0}
             endHour={predicate.listViewProps?.endOfDay ?? 24}
             gutter
+            showHours={predicate.listViewProps?.showHours}
             date={
               predicate.listViewProps?.date &&
               parseDate(predicate.listViewProps.date)
@@ -236,6 +239,7 @@ export const ContextListContainer = (props: {
             fieldRepeat={predicate.listViewProps?.repeat}
             startHour={predicate.listViewProps?.startOfDay ?? 0}
             endHour={predicate.listViewProps?.endOfDay ?? 24}
+            showHours={predicate.listViewProps?.showHours}
             hourHeight={40}
             weekStart={
               predicate.listViewProps?.date &&

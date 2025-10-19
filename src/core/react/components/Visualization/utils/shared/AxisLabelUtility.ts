@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 
 export class AxisLabelUtility {
@@ -45,11 +47,14 @@ export class AxisLabelUtility {
     // In edit mode, show field name or placeholder
     if (!label && editMode) {
       label = config.encoding.x && !Array.isArray(config.encoding.x) 
-        ? config.encoding.x.field || 'X Axis' 
-        : 'X Axis';
+        ? config.encoding.x.field || i18n.labels.xAxis 
+        : i18n.labels.xAxis;
     }
     
-    if (!label || !showXAxisLabel || 
+    // Check if X-axis title should be shown
+    const shouldShowLabel = config.layout?.xAxis?.showLabel !== false && showXAxisLabel;
+    
+    if (!label || !shouldShowLabel || 
         !['bar', 'line', 'scatter', 'area', 'histogram'].includes(config.chartType)) {
       return;
     }
@@ -148,11 +153,14 @@ export class AxisLabelUtility {
     // In edit mode, show field name or placeholder
     if (!label && editMode) {
       label = config.encoding.y && !Array.isArray(config.encoding.y) 
-        ? config.encoding.y.field || 'Y Axis' 
-        : 'Y Axis';
+        ? config.encoding.y.field || i18n.labels.yAxis 
+        : i18n.labels.yAxis;
     }
     
-    if (!label || !showYAxisLabel || 
+    // Check if Y-axis title should be shown
+    const shouldShowLabel = config.layout?.yAxis?.showLabel !== false && showYAxisLabel;
+    
+    if (!label || !shouldShowLabel || 
         !['bar', 'line', 'scatter', 'area', 'histogram'].includes(config.chartType)) {
       return;
     }
@@ -261,7 +269,10 @@ export class AxisLabelUtility {
       label = config.encoding.x.field;
     }
     
-    if (!label || 
+    // Check if X-axis title should be shown (Canvas)
+    const shouldShowLabel = config.layout?.xAxis?.showLabel !== false;
+    
+    if (!label || !shouldShowLabel ||
         !['bar', 'line', 'scatter', 'area', 'histogram'].includes(config.chartType)) {
       return;
     }
@@ -296,7 +307,10 @@ export class AxisLabelUtility {
       label = config.encoding.y.field;
     }
     
-    if (!label || 
+    // Check if Y-axis title should be shown (Canvas)
+    const shouldShowLabel = config.layout?.yAxis?.showLabel !== false;
+    
+    if (!label || !shouldShowLabel ||
         !['bar', 'line', 'scatter', 'area', 'histogram'].includes(config.chartType)) {
       return;
     }

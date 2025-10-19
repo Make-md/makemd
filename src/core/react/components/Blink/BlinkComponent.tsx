@@ -1,7 +1,8 @@
 import { PathProvider } from "core/react/context/PathContext";
 import { allMetadata } from "core/utils/metadata";
 import { debounce } from "lodash";
-import { i18n, SelectOption, Superstate } from "makemd-core";
+import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useMemo, useState } from "react";
 import { Metadata } from "shared/types/metadata";
 import { PathState } from "shared/types/PathState";
@@ -78,7 +79,7 @@ export const BlinkComponent = (props: {
     ? [
         {
           type: "section",
-          label: (i18n.labels as any).blink?.items || "Items",
+          label: i18n.labels.blink.items,
         },
         ...[...props.superstate.spacesMap.getInverse(props.parentSpace)]
           .map((f) => props.superstate.pathsIndex.get(f))
@@ -89,7 +90,7 @@ export const BlinkComponent = (props: {
   const recentPaths = [
     {
       type: "section",
-      label: (i18n.labels as any).blink?.recent || "Recent",
+      label: i18n.labels.blink.recent,
     },
     ...props.superstate.ui
       .navigationHistory()
@@ -117,7 +118,7 @@ export const BlinkComponent = (props: {
       const defaultSpaces: BlinkItem[] = [
         {
           type: "section",
-          label: (i18n.labels as any).blink?.createNew || "Create New",
+          label: i18n.labels.blink.createNew,
         },
       ];
       if (props.mode != BlinkMode.OpenSpaces) {
@@ -125,21 +126,21 @@ export const BlinkComponent = (props: {
           type: "new-note",
           sticker: "ui//edit",
           value: query,
-          label: (i18n.labels as any).blink?.newNote || "New Note",
+          label: i18n.labels.blink.newNote,
         });
       }
       defaultSpaces.push({
         type: "new-space",
         sticker: "ui//folder-plus",
         value: query,
-        label: (i18n.labels as any).blink?.newSpace || "New Space",
+        label: i18n.labels.blink.newSpace,
       });
       if (filters.length == 0) {
         props.superstate.search(path, query).then((g) =>
           setFilteredPaths([
             {
               type: "section",
-              label: (i18n.labels as any).blink?.results || "Results",
+              label: i18n.labels.blink.results,
             },
             ...g.map((f) => pathToBlinkItem(f)),
             ...defaultSpaces,
@@ -433,7 +434,7 @@ export const BlinkPathWrapper = (props: {
 
       {showProperties && (
         <div className="mk-blink-properties">
-          <div className="mk-blink-properties-header">Properties</div>
+          <div className="mk-blink-properties-header">{i18n.labels.properties}</div>
           <PathProvider
             path={props.path}
             superstate={props.superstate}

@@ -1,6 +1,7 @@
 import { SpaceTreeComponent } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 import { isTouchScreen } from "core/utils/ui/screen";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect } from "react";
 import { ErrorBoundary, useErrorBoundary } from "react-error-boundary";
 import { FocusSelector } from "./Focuses/FocusSelector";

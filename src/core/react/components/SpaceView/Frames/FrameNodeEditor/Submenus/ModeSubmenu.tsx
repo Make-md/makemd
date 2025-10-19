@@ -1,4 +1,4 @@
-import { i18n } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { ToggleSetter } from "../../Setters/ToggleSetter";
 import { HoverSubmenuProps } from "./HoverSubmenuProps";

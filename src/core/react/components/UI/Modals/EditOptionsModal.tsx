@@ -164,7 +164,7 @@ const SortableOptionItem: React.FC<SortableOptionItemProps> = ({
             e.stopPropagation();
             onRemove();
           }}
-          aria-label="Remove option"
+          aria-label={i18n.labels.removeOption}
         >
           ×
         </button>

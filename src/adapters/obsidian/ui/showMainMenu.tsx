@@ -6,7 +6,8 @@ import {
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { isPhone, isTouchScreen } from "core/utils/ui/screen";
 import MakeMDPlugin from "main";
-import { SelectOption, Superstate, i18n } from "makemd-core";
+import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { WorkspaceLeaf, WorkspaceMobileDrawer } from "obsidian";
 import React from "react";
 import { windowFromDocument } from "shared/utils/dom";

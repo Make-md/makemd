@@ -9,9 +9,10 @@ export const showSpacesMenu = (
   saveLink: (link: string, isNew?: boolean, type?: string) => void,
   includeDefaults?: boolean,
   canAdd?: boolean,
-  onlyTags?: boolean
+  onlyTags?: boolean,
+  hidden?: boolean
 ) => {
-  const options = [...superstate.allSpaces(true)]
+  const options = [...superstate.allSpaces(true, hidden)]
     .filter(
       (f) =>
         (includeDefaults || f.type != "default") &&

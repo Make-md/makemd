@@ -1,6 +1,7 @@
 import { installSpaceKit } from "adapters/obsidian/ui/kit/kits";
 import { getAbstractFileAtPath } from "adapters/obsidian/utils/file";
 import { MKitProvider } from "core/react/context/MKitContext";
+import i18n from "shared/i18n";
 import MakeMDPlugin from "main";
 import {
   FileView,
@@ -72,7 +73,7 @@ const MKitViewerComponent: React.FC<MKitViewerProps> = ({
     return (
       <div className="mk-mkit-viewer">
         <div className="mk-mkit-error">
-          <h2>Invalid MKit File</h2>
+          <h2>{i18n.labels.invalidMKitFile}</h2>
           <p>Unable to parse the space kit data from this file.</p>
         </div>
       </div>
@@ -89,7 +90,7 @@ const MKitViewerComponent: React.FC<MKitViewerProps> = ({
               onClick={handleInstall}
               disabled={installing}
             >
-              {installing ? "Installing..." : "Install Space Kit"}
+              {installing ? i18n.descriptions.installing : i18n.labels.installSpaceKit}
             </button>
           </MKitFramePreview>
         </MKitProvider>
@@ -114,7 +115,7 @@ export class MKitFileViewer extends FileView {
   }
 
   getDisplayText(): string {
-    return this.file?.name || "MKit Viewer";
+    return this.file?.name || i18n.labels.mkitViewer;
   }
 
   async onClose() {

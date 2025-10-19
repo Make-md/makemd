@@ -53,6 +53,7 @@ import {
   aggregateFnTypes,
   calculateAggregate,
 } from "core/utils/contexts/predicate/aggregates";
+import { safeFormatNumber } from "core/utils/number";
 import { isTouchScreen } from "core/utils/ui/screen";
 import {
   selectNextIndex,
@@ -61,7 +62,6 @@ import {
 } from "core/utils/ui/selection";
 import { debounce } from "lodash";
 import { SelectOption, Superstate } from "makemd-core";
-import { format } from "numfmt";
 import { fieldTypeForField, fieldTypeForType } from "schemas/mdb";
 import i18n from "shared/i18n";
 import { defaultContextSchemaID } from "shared/schemas/context";
@@ -515,7 +515,7 @@ export const TableView = (props: { superstate: Superstate }) => {
     if (agType == "number") {
       const parsedValue = parseFieldValue(col.value, col.type);
       if (parsedValue?.format?.length > 0) {
-        return format(parsedValue.format, parseInt(value));
+        return safeFormatNumber(parsedValue.format, parseInt(value));
       }
     }
     return value;
@@ -820,7 +820,7 @@ export const TableView = (props: { superstate: Superstate }) => {
                   onClick={(e) => {
                     const options: SelectOption[] = [];
                     options.push({
-                      name: "None",
+                      name: i18n.labels.none,
                       value: "",
                       onClick: () => {
                         saveAggregate(col.name, null);
@@ -833,7 +833,7 @@ export const TableView = (props: { superstate: Superstate }) => {
                         col.type == "flex"
                       )
                         options.push({
-                          name: aggregateFnTypes[f].label,
+                          name: i18n.aggregates[f],
                           value: f,
                           onClick: () => {
                             saveAggregate(col.name, f);
@@ -851,9 +851,7 @@ export const TableView = (props: { superstate: Superstate }) => {
                   {predicate.colsCalc[col.name]?.length > 0 ? (
                     <div>
                       <span>
-                        {aggregateFnTypes[predicate.colsCalc[col.name]]
-                          .shortLabel ??
-                          aggregateFnTypes[predicate.colsCalc[col.name]].label}
+                        {i18n.aggregates[predicate.colsCalc[col.name]]}
                       </span>
                       {valueForAggregate(
                         aggregateValues[col.name],
@@ -864,7 +862,7 @@ export const TableView = (props: { superstate: Superstate }) => {
                     </div>
                   ) : (
                     <div>
-                      <span>Calculate</span>
+                      <span>{i18n.labels.calculate}</span>
                     </div>
                   )}
                 </td>

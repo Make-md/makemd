@@ -5,6 +5,7 @@ import { ensureString } from "core/utils/strings";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { ActionInstance } from "shared/types/actions";
+import { IAPI } from "shared/types/api";
 import { Command } from "shared/types/commands";
 import { Focus } from "shared/types/focus";
 import { SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
@@ -24,6 +25,7 @@ export class SpaceManager implements SpaceManagerInterface {
     public primarySpaceAdapter : SpaceAdapter;
     public spaceAdapters: SpaceAdapter[] = []
     public superstate: ISuperstate;
+    public api: IAPI;
 
  
     public readSystemCommands = () => {
@@ -51,6 +53,12 @@ export class SpaceManager implements SpaceManagerInterface {
 
     public getPathState = (path: string) => {
       return this.superstate.pathsIndex.get(path);
+    }
+    public getPathsIndexMap = () => {
+      return this.superstate.pathsIndex;
+    }
+        public getContextsIndexMap = () => {
+      return this.superstate.contextsIndex;
     }
     public onFocusesUpdated = () => {
       this.readFocuses().then(f => {
@@ -85,6 +93,7 @@ export class SpaceManager implements SpaceManagerInterface {
       await this.superstate.onSpaceDefinitionChanged(space)
       
       await this.superstate.onPathCreated(path)
+      await this.superstate.reloadContextByPath(path, {calculate: true, force: true})
      
     }
     public onSpaceRenamed = async (path: string, oldPath: string) => {
@@ -325,8 +334,8 @@ export class SpaceManager implements SpaceManagerInterface {
        }
  
      
-     public allSpaces () {
-        return this.primarySpaceAdapter.allSpaces();
+     public allSpaces (hidden?: boolean) {
+        return this.primarySpaceAdapter.allSpaces(hidden);
      }
  
      //Local SpaceInfo for Path
@@ -372,7 +381,7 @@ export class SpaceManager implements SpaceManagerInterface {
       }
         return this.adapterForPath(path).addSpaceProperty(path, property).then(f => 
           {
-            this.superstate.ui.notify(`Property ${property.name} added to all items in ${path}`);
+            
            return this.superstate.reloadContextByPath(path, { force: true, calculate: true })
           });
      

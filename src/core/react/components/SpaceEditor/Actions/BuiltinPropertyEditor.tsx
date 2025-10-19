@@ -1,4 +1,5 @@
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useMemo } from "react";
 import { ActionTree } from "shared/types/actions";
 import { Command } from "shared/types/commands";

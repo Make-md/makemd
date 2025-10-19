@@ -1,36 +1,38 @@
+import i18n from "shared/i18n";
+
 import { ObjectType } from 'core/react/components/SpaceView/Contexts/DataTypeView/ObjectCell';
 import { SpaceProperty } from 'shared/types/mdb';
 
 const repeatType: ObjectType = {
   freq: {
-    label: 'Frequency',
+    label: i18n.labels.frequency,
     type: 'option',
     value: {
       required: true,
       options: [
-        { name: 'Yearly', value: 'YEARLY' },
-        { name: 'Monthly', value: 'MONTHLY' },
-        { name: 'Weekly', value: 'WEEKLY' },
-        { name: 'Daily', value: 'DAILY' },
-        { name: 'Hourly', value: 'HOURLY' },
-        { name: 'Minutely', value: 'MINUTELY' },
-        { name: 'Secondly', value: 'SECONDLY' },
+        { name: i18n.labels.yearly, value: 'YEARLY' },
+        { name: i18n.labels.monthly, value: 'MONTHLY' },
+        { name: i18n.labels.weekly, value: 'WEEKLY' },
+        { name: i18n.labels.daily, value: 'DAILY' },
+        { name: i18n.labels.hourly, value: 'HOURLY' },
+        { name: i18n.labels.minutely, value: 'MINUTELY' },
+        { name: i18n.labels.secondly, value: 'SECONDLY' },
       ],
     },
   },
   until: {
-    label: 'Until',
+    label: i18n.labels.until,
     type: 'date',
     value: {
       required: true,
     }
   },
   interval: {
-    label: 'Interval',
+    label: i18n.labels.interval,
     type: 'number',
   },
   count: {
-    label: 'Count',
+    label: i18n.aggregates.count,
     type: 'number',
   },
   wkst: {
@@ -38,13 +40,13 @@ const repeatType: ObjectType = {
     type: 'option',
     value: {
       options: [
-        { name: 'Monday', value: 'MO' },
-        { name: 'Tuesday', value: 'TU' },
-        { name: 'Wednesday', value: 'WE' },
-        { name: 'Thursday', value: 'TH' },
-        { name: 'Friday', value: 'FR' },
-        { name: 'Saturday', value: 'SA' },
-        { name: 'Sunday', value: 'SU' },
+        { name: i18n.labels.monday, value: 'MO' },
+        { name: i18n.labels.tuesday, value: 'TU' },
+        { name: i18n.labels.wednesday, value: 'WE' },
+        { name: i18n.labels.thursday, value: 'TH' },
+        { name: i18n.labels.friday, value: 'FR' },
+        { name: i18n.labels.saturday, value: 'SA' },
+        { name: i18n.labels.sunday, value: 'SU' },
       ],
     },
   },
@@ -54,23 +56,23 @@ const repeatType: ObjectType = {
     value: {
         alias: 'Repeat Event',
       options: [
-        { name: 'Monday', value: 'MO' },
-        { name: 'Tuesday', value: 'TU' },
-        { name: 'Wednesday', value: 'WE' },
-        { name: 'Thursday', value: 'TH' },
-        { name: 'Friday', value: 'FR' },
-        { name: 'Saturday', value: 'SA' },
-        { name: 'Sunday', value: 'SU' },
+        { name: i18n.labels.monday, value: 'MO' },
+        { name: i18n.labels.tuesday, value: 'TU' },
+        { name: i18n.labels.wednesday, value: 'WE' },
+        { name: i18n.labels.thursday, value: 'TH' },
+        { name: i18n.labels.friday, value: 'FR' },
+        { name: i18n.labels.saturday, value: 'SA' },
+        { name: i18n.labels.sunday, value: 'SU' },
       ],
     },
   },
 };
 
 export const RepeatTemplate: SpaceProperty = {
-  name: 'Repeat',
+  name: i18n.labels.repeat,
   type: 'object',
   value: JSON.stringify({
-    typeName: 'Repeat',
+    typeName: i18n.labels.repeat,
     type: repeatType,
   }),
 };

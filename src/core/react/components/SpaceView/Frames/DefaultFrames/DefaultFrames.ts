@@ -107,7 +107,7 @@ const folderNoteMainFrame : FrameNode[] = [
 
   [defaultFrameListViewID]: {
     schema: {id: defaultFrameListViewID,
-      name: "All",
+      name: i18n.labels.all,
       type: "view",
       def: JSON.stringify({db: defaultContextSchemaID, icon: 'ui//file-stack'}),
     predicate: JSON.stringify({listView:"spaces://$kit/#*listView", listGroup: "spaces://$kit/#*listGroup", listItem: "spaces://$kit/#*overviewItem", view: 'list' } as Predicate)},

@@ -1,5 +1,6 @@
 import { MakeBasicsSettings } from "basics/types/settings";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useState, useEffect } from "react";
 import { useDebouncedSave } from "./hooks";
 import { SettingsProps } from "./types";
@@ -283,7 +284,7 @@ export const NotesSettings = ({ superstate }: SettingsProps) => {
           </div>
         </div>
 
-        <h3>{i18n.settings.sectionFlow || "Flow"}</h3>
+        <h3>{i18n.settings.sectionFlow || i18n.settings.flow}</h3>
         <div className="mk-setting-item">
           <div className="mk-setting-item-info">
             <div className="mk-setting-item-name">
@@ -455,10 +456,10 @@ export const NotesSettings = ({ superstate }: SettingsProps) => {
         <div className="mk-setting-item">
           <div className="mk-setting-item-info">
             <div className="mk-setting-item-name">
-              {i18n.settings.editorMakePlacholder?.name || "Make Menu Placeholder"}
+              {i18n.settings.editorMakePlaceholder?.name || "Make Menu Placeholder"}
             </div>
             <div className="mk-setting-item-description">
-              {i18n.settings.editorMakePlacholder?.desc || "Show placeholder when Make menu appears"}
+              {i18n.settings.editorMakePlaceholder?.desc || "Show placeholder when Make menu appears"}
             </div>
           </div>
           <div className="mk-setting-item-control">

@@ -1,32 +1,34 @@
+import i18n from "shared/i18n";
+
 export const unitTypes = [{
-    label: "None",
+    label: i18n.labels.none,
     value: "",
 }, {
-    label: "Percent",
+    label: i18n.labels.percent,
     value: "0%",
 }, 
 {
-    label: 'Sticker',
+    label: i18n.labels.sticker,
     value: 'sticker',
 },
 {
-    label: "Celsius",
+    label: i18n.units.celsius,
     value: `0"°C"`,
 },
 {
-    label: "Fahrenheit",
+    label: i18n.units.fahrenheit,
     value: `0"°F"`,
 },
 {
-    label: "Dollars",
+    label: i18n.labels.dollars,
     value: `$0.00`,
 },
 {
-    label: "Yen",
+    label: i18n.units.yen,
     value: `"¥"0`,
 },
 {
-    label: "Euros",
+    label: i18n.labels.euros,
     value: `0.00"€"`,
 },
 {
@@ -34,143 +36,143 @@ export const unitTypes = [{
     value: `0.00"£"`,
 },
 {
-    label: 'Yuan',
+    label: i18n.labels.yuan,
     value: `0.00"¥"`,
 },
 {
-    label: 'Rupees',
+    label: i18n.labels.rupees,
     value: `0.00"₹"`,
 },
 {
-    label: 'Won',
+    label: i18n.labels.won,
     value: `0.00"₩"`,
 },
 {
-    label: 'Francs',
+    label: i18n.labels.francs,
     value: `0.00"₣"`,
 },
 {
-    label: 'Rands',
+    label: i18n.labels.rands,
     value: `0.00"R"`,
 },
 {
-    label: 'Krones',
+    label: i18n.labels.krones,
     value: `0.00"kr"`,
 },
 {
-    label: 'Rubles',
+    label: i18n.labels.rubles,
     value: `0.00"₽"`,
 },
 {
-    label: 'Dinars',
+    label: i18n.labels.dinars,
     value: `0.00"د.ك"`,
 },
 {
-    label: 'Pesos',
+    label: i18n.labels.pesos,
     value: `0.00"$"`,
 },
 {
-    label: 'Rials',
+    label: i18n.labels.rials,
     value: `0.00"﷼"`,
 },
 {
-    label: 'Ringgits',
+    label: i18n.labels.ringgits,
     value: `0.00"RM"`,
 },
 {
-    label: 'Baht',
+    label: i18n.units.baht,
     value: `0.00"฿"`,
 },
 {
-    label: 'Drachmas',
+    label: i18n.labels.drachmas,
     value: `0.00"₯"`,
 },
 {
-    label: 'Kuna',
+    label: i18n.labels.kuna,
     value: `0.00"kn"`,
 },
 {
-    label: 'Forint',
+    label: i18n.labels.forint,
     value: `0.00"Ft"`,
 },
 {
-    label: 'Koruna',
+    label: i18n.labels.koruna,
     value: `0.00"Kč"`,
 },
 {
-    label: 'Dong',
+    label: i18n.labels.dong,
     value: `0.00"₫"`,
 },
 {
-    label: 'Lira',
+    label: i18n.labels.lira,
     value: `0.00"₤"`,
 },
 {
-    label: 'Lev',
+    label: i18n.labels.lev,
     value: `0.00"лв"`,
 },
 {
-    label: 'Zloty',
+    label: i18n.labels.zloty,
     value: `0.00"zł"`,
 },
 {
-    label: 'Kip',
+    label: i18n.labels.kip,
     value: `0.00"₭"`,
 },
 {
-    label: 'Tughrik',
+    label: i18n.labels.tughrik,
     value: `0.00"₮"`,
 },
 {
-    label: 'Rupiah',
+    label: i18n.labels.rupiah,
     value: `"Rp"0.00`,
 },
 {
-    label: "Pounds",
+    label: i18n.labels.pounds,
     value: `0"lb"`,
 },
 {
-    label: "Liters",
+    label: i18n.labels.liters,
     value: `0"L"`,
 },
 {
-    label: "Ounces",
+    label: i18n.units.ounces,
     value: `0"oz"`,
 },
 {
-    label: "Miles",
+    label: i18n.units.miles,
     value: `0"mi"`,
 },
 {
-    label: "Feet",
+    label: i18n.units.feet,
     value: `0"ft"`,
 },
 {
-    label: "Inches",
+    label: i18n.units.inches,
     value: `0"in"`,
 },
 {
-    label: "Centimeters",
+    label: i18n.units.centimeters,
     value: `0"cm"`,
 },
 {
-    label: "Millimeters",
+    label: i18n.units.millimeters,
     value: `0"mm"`,
 },
 {
-    label: "Kilograms",
+    label: i18n.units.kilograms,
     value: `0"kg"`,
 },
 {
-    label: "Grams",
+    label: i18n.units.grams,
     value: `0"g"`,
 },
 {
-    label: "Seconds",
+    label: i18n.labels.seconds,
     value: `0"s"`,
 },
 {
-    label: 'Scientific',
+    label: i18n.labels.scientific,
     value: `0.00E+00`,
 },
 

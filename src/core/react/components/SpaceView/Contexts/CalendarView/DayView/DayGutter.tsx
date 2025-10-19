@@ -1,4 +1,6 @@
 import React from "react";
+import i18n from "shared/i18n";
+
 export const DayGutter = (props: {
   hourHeight: number;
   startHour: number;
@@ -7,7 +9,7 @@ export const DayGutter = (props: {
 }) => {
   return (
     <div className="mk-day-view-gutter">
-      {props.allDay && <div className="mk-day-view-hour-title">all day</div>}
+      {props.allDay && <div className="mk-day-view-hour-title">{i18n.labels.allDay}</div>}
       {Array.from({ length: props.endHour - props.startHour + 1 }).map(
         (_, index) => {
           const hour = index + props.startHour;

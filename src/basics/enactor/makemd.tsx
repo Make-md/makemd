@@ -639,7 +639,7 @@ export class MakeMDEnactor implements Enactor {
   pathExists(path: string) {
     return this.makemd.superstate.spaceManager.pathExists(path);
   }
-  openPath(path: string, source?: HTMLElement) {
+  openPath(path: string, source?: HTMLElement, reading?: boolean) {
     const uri = this.uriByString(path);
     openPathInElement(
       this.plugin.app,
@@ -662,6 +662,9 @@ export class MakeMDEnactor implements Enactor {
           );
           if (!leaf.view?.editor) {
             return;
+          }
+          if (reading) {
+            leaf.setViewState({type: 'markdown', state: {mode: 'preview'}})
           }
 
           if (selectiveRange[0] && selectiveRange[1]) {

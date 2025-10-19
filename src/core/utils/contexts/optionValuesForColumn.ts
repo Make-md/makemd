@@ -23,7 +23,7 @@ export const optionValuesForColumn = (column: string, table: SpaceTable) => {
 };
 
 export const defaultTableDataForContext = (superstate: Superstate, space: SpaceInfo): SpaceTable => {
-  const paths = [...superstate.getSpaceItems(space.path, true)];
+  const paths = [...superstate.getSpaceItems(space.path)];
   return {
     ...defaultMDBTableForContext(space),
     rows: paths.map((f) => ({ [PathPropertyName]: f.path, "Created": formatDate(superstate.settings, parseDate(f.metadata?.ctime), "yyyy-MM-dd") })),

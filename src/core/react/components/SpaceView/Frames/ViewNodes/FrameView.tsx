@@ -1,3 +1,4 @@
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { parseStylesToClass } from "core/utils/frames/renderer";
 import {
   hasStatePrefixes,
@@ -13,6 +14,18 @@ import {
   FrameRunInstance,
   FrameState,
 } from "shared/types/frameExec";
+import { AudioNodeView } from "../EditorNodes/AudioNodeView";
+import { ContentNodeView } from "../EditorNodes/ContentNodeView";
+import { ContextNodeView } from "../EditorNodes/ContextNodeView";
+import { DataNodeView } from "../EditorNodes/DataNodeView";
+import { FlowNodeView } from "../EditorNodes/FlowNodeView";
+import { defaultFrameStyles } from "../EditorNodes/FrameEditorNodeView";
+import { IconNodeView } from "../EditorNodes/IconNodeView";
+import { ImageNodeView } from "../EditorNodes/ImageNodeView";
+import { InputNodeView } from "../EditorNodes/InputNodeView";
+import { TextNodeView } from "../EditorNodes/TextNodeView";
+import { ViewNodeView } from "../EditorNodes/ViewNodeView";
+import { VisualizationNodeView } from "../EditorNodes/VisualizationNodeView";
 
 // Helper function to execute actions that can be either functions or objects
 const executeAction = (
@@ -23,7 +36,6 @@ const executeAction = (
   saveState: (state: FrameState) => void,
   api: API
 ) => {
-  
   if (typeof action === "function") {
     // Current behavior: execute function directly
     action(event, null, frameState, saveState, api);
@@ -35,23 +47,11 @@ const executeAction = (
       $context: context,
       $frameState: frameState,
       $saveState: saveState,
-      $api: api
+      $api: api,
     };
     api.commands.run(action.command, parameters);
   }
 };
-import { AudioNodeView } from "../EditorNodes/AudioNodeView";
-import { ContentNodeView } from "../EditorNodes/ContentNodeView";
-import { ContextNodeView } from "../EditorNodes/ContextNodeView";
-import { DataNodeView } from "../EditorNodes/DataNodeView";
-import { FlowNodeView } from "../EditorNodes/FlowNodeView";
-import { defaultFrameStyles } from "../EditorNodes/FrameEditorNodeView";
-import { IconNodeView } from "../EditorNodes/IconNodeView";
-import { ImageNodeView } from "../EditorNodes/ImageNodeView";
-import { InputNodeView } from "../EditorNodes/InputNodeView";
-import { TextNodeView } from "../EditorNodes/TextNodeView";
-import { VisualizationNodeView } from "../EditorNodes/VisualizationNodeView";
-import { ViewNodeView } from "../EditorNodes/ViewNodeView";
 export type FrameNodeViewProps = {
   superstate: Superstate;
   treeNode: FrameExecutable;
@@ -65,6 +65,8 @@ export const FrameView = (props: {
   source?: string;
   children?: React.ReactNode;
 }) => {
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
+  
   const nodeProps: FrameNodeViewProps = {
     superstate: props.superstate,
     treeNode: props.treeNode,
@@ -89,11 +91,9 @@ export const FrameView = (props: {
       <AudioNodeView {...nodeProps}></AudioNodeView>
     ) : props.treeNode.node.type == "image" ? (
       <ImageNodeView {...nodeProps}></ImageNodeView>
-    ): props.treeNode.node.type == "view" ? (
-            <ViewNodeView              {...nodeProps}
-              source={props.source}
-            ></ViewNodeView>
-          ) : props.treeNode.node.type == "space" ? (
+    ) : props.treeNode.node.type == "view" ? (
+      <ViewNodeView {...nodeProps} source={props.source}></ViewNodeView>
+    ) : props.treeNode.node.type == "space" ? (
       <ContextNodeView {...nodeProps} source={props.source}></ContextNodeView>
     ) : props.treeNode.node.type == "content" ? (
       <ContentNodeView>
@@ -163,18 +163,19 @@ export const FrameView = (props: {
     (typeof props.instance.state[props.treeNode.id].actions?.[
       props.treeNode.node.interactions?.onClick
     ] == "function" ||
-    (typeof props.instance.state[props.treeNode.id].actions?.[
-      props.treeNode.node.interactions?.onClick
-    ] == "object" && 
-    props.instance.state[props.treeNode.id].actions?.[
-      props.treeNode.node.interactions?.onClick
-    ]?.command));
+      (typeof props.instance.state[props.treeNode.id].actions?.[
+        props.treeNode.node.interactions?.onClick
+      ] == "object" &&
+        props.instance.state[props.treeNode.id].actions?.[
+          props.treeNode.node.interactions?.onClick
+        ]?.command));
 
   const canDoubleClick = props.treeNode.node.interactions?.onDoubleClick
     ? (e: React.MouseEvent) => {
-        const action = props.instance.state[props.treeNode.id].actions?.[
-          props.treeNode.node.interactions?.onDoubleClick
-        ];
+        const action =
+          props.instance.state[props.treeNode.id].actions?.[
+            props.treeNode.node.interactions?.onDoubleClick
+          ];
         if (action) {
           executeAction(
             action,
@@ -182,7 +183,7 @@ export const FrameView = (props: {
             null,
             props.instance.state,
             (s: FrameState) => props.saveState(s, props.instance),
-            props.superstate.api
+            spaceManager.api
           );
           e.stopPropagation?.();
         }
@@ -215,9 +216,10 @@ export const FrameView = (props: {
         onContextMenu={(e) => {
           if (props.treeNode.node.interactions?.onContextMenu) {
             e.preventDefault?.();
-            const action = props.instance.state[props.treeNode.id].actions?.[
-              props.treeNode.node.interactions?.onContextMenu
-            ];
+            const action =
+              props.instance.state[props.treeNode.id].actions?.[
+                props.treeNode.node.interactions?.onContextMenu
+              ];
             if (action) {
               executeAction(
                 action,
@@ -225,7 +227,7 @@ export const FrameView = (props: {
                 null,
                 props.instance.state,
                 (s: FrameState) => props.saveState(s, props.instance),
-                props.superstate.api
+                spaceManager.api
               );
               e.stopPropagation?.();
             }
@@ -259,9 +261,10 @@ export const FrameView = (props: {
             ? canDoubleClick
             : canClick
             ? (e) => {
-                const action = props.instance.state[props.treeNode.id].actions?.[
-                  props.treeNode.node.interactions?.onClick
-                ];
+                const action =
+                  props.instance.state[props.treeNode.id].actions?.[
+                    props.treeNode.node.interactions?.onClick
+                  ];
                 if (action) {
                   executeAction(
                     action,
@@ -269,7 +272,7 @@ export const FrameView = (props: {
                     null,
                     props.instance.state,
                     (s: FrameState) => props.saveState(s, props.instance),
-                    props.superstate.api
+                    spaceManager.api
                   );
                   e.stopPropagation?.();
                 }
@@ -277,9 +280,10 @@ export const FrameView = (props: {
                   isTouchScreen(props.superstate.ui) &&
                   props.treeNode.node.interactions?.onDoubleClick
                 ) {
-                  const doubleClickAction = props.instance.state[props.treeNode.id].actions?.[
-                    props.treeNode.node.interactions?.onDoubleClick
-                  ];
+                  const doubleClickAction =
+                    props.instance.state[props.treeNode.id].actions?.[
+                      props.treeNode.node.interactions?.onDoubleClick
+                    ];
                   if (doubleClickAction) {
                     executeAction(
                       doubleClickAction,
@@ -287,7 +291,7 @@ export const FrameView = (props: {
                       null,
                       props.instance.state,
                       (s: FrameState) => props.saveState(s, props.instance),
-                      props.superstate.api
+                      spaceManager.api
                     );
                     e.stopPropagation?.();
                   }

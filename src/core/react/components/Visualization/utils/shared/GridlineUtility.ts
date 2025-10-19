@@ -28,6 +28,10 @@ export class GridlineUtility {
     
     if (!config?.layout?.grid) return;
     
+    // Default y gridlines to true if not explicitly set
+    const showYGridlines = config.layout.grid.y !== undefined ? config.layout.grid.y : true;
+    const showXGridlines = config.layout.grid.x || false;
+    
     // Check if graphArea values are valid
     if (!graphArea || isNaN(graphArea.bottom) || isNaN(graphArea.height) || 
         isNaN(graphArea.left) || isNaN(graphArea.width)) {
@@ -35,7 +39,7 @@ export class GridlineUtility {
       return;
     }
 
-    if (config?.layout?.grid?.x && xScale) {
+    if (showXGridlines && xScale) {
       const xGridlines = gridGroup
         .append('g')
         .attr('class', 'grid-x')
@@ -74,7 +78,7 @@ export class GridlineUtility {
       xGridlines.select('.domain').remove();
     }
 
-    if (config?.layout?.grid?.y && yScale) {
+    if (showYGridlines && yScale) {
       const yGridlines = gridGroup
         .append('g')
         .attr('class', 'grid-y')
@@ -131,6 +135,10 @@ export class GridlineUtility {
     
     if (!config?.layout?.grid) return;
     
+    // Default y gridlines to true if not explicitly set
+    const showYGridlines = config.layout.grid.y !== undefined ? config.layout.grid.y : true;
+    const showXGridlines = config.layout.grid.x || false;
+    
     // Check if graphArea values are valid
     if (!graphArea || isNaN(graphArea.bottom) || isNaN(graphArea.height) || 
         isNaN(graphArea.left) || isNaN(graphArea.width) || 
@@ -150,7 +158,7 @@ export class GridlineUtility {
     }
 
     // X gridlines
-    if (config?.layout?.grid?.x && xScale) {
+    if (showXGridlines && xScale) {
       const ticks = xScale.ticks ? xScale.ticks(5) : xScale.domain();
       
       if (xScale.bandwidth) {
@@ -182,7 +190,7 @@ export class GridlineUtility {
     }
 
     // Y gridlines
-    if (config?.layout?.grid?.y && yScale) {
+    if (showYGridlines && yScale) {
       const ticks = yScale.ticks ? yScale.ticks(5) : yScale.domain();
       
       ticks.forEach((tick: any) => {

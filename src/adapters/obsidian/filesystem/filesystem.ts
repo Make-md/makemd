@@ -1,9 +1,5 @@
-import { dbResultsToDBTables, getDB, saveDBToPath, selectDB } from "adapters/mdb/db/db";
-import { initiateDB } from "adapters/mdb/utils/mdb";
-import { rebuildIndex } from "adapters/obsidian/filesystem/rebuildIndex";
-import { vaultSchema } from "adapters/obsidian/filesystem/schemas/vaultSchema";
 import { addTagToProperties, getAllFilesForTag, loadTags, removeTagFromMarkdownFile, renameTagInMarkdownFile } from "adapters/obsidian/utils/tags";
-import _, { debounce } from "lodash";
+import _ from "lodash";
 import MakeMDPlugin from "main";
 import { AFile, FileCache, FileSystemAdapter, FileTypeCache, FilesystemMiddleware, PathLabel } from "makemd-core";
 import { FileSystemAdapter as ObsidianFileSystemAdapter, Platform, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
@@ -15,10 +11,11 @@ import { MobileCachePersister } from "adapters/mdb/localCache/localCacheMobile";
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
 import { defaultFocusFile } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
 import { parsePathState } from "core/utils/superstate/parser";
-import { DBRows, DBTables } from "shared/types/mdb";
+import { DBRows } from "shared/types/mdb";
 import { uniqueNameFromString } from "shared/utils/array";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { parseURI } from "shared/utils/uri";
+import { excludePathPredicate } from "utils/hide";
 import { getParentPathFromString, pathToString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { serializeMultiDisplayString } from "utils/serializers";
@@ -35,17 +32,11 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public tagsCache: Set<string>;
 
     public cache: Map<string, FileCache> = new Map();
-    private vaultQueue = Promise.resolve();
     public persister: LocalCachePersister;
     public pathLastUpdated: Map<string, number> = new Map();
 
     public fileNameWarnings: Set<string> = new Set();
-    public addToVaultQueue(operation: () => Promise<any>) {
-        //Simple queue (FIFO) for processing context changes
-        this.vaultQueue = this.vaultQueue.then(operation).catch(() => {
-            //do nuth'ing
-        });
-    }
+    
     public updateFileCache(path: string, cache: FileTypeCache, refresh: boolean) {
         
         if (!cache) return;
@@ -118,28 +109,14 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public async loadCacheFromObsidianCache () {
         //Load Spaces Database File
         await this.persister.initialize();
-        const db = await getDB(this.plugin.mdbFileAdapter, await this.plugin.mdbFileAdapter.sqlJS(), this.vaultDBPath);
-        let tables;
-        try {
-            tables =  dbResultsToDBTables(
-                db.exec(
-                    "SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
-                    )
-            );
-            } catch (e) {
-                this.plugin.superstate.ui.error(e);
-            tables = [];
-            }
-        if (tables.length == 0) {
-            initiateDB(db);
-            await saveDBToPath(this.plugin.mdbFileAdapter, this.spacesDBPath, {
-                vault: vaultSchema,
-            }, false)
-        }
-        this.vaultDBCache = selectDB(db, "vault")?.rows ?? []
-        db.close();
-        this.vaultDBLoaded = true;
-        await rebuildIndex(this, this.plugin, true);
+        
+        
+        this.vaultDBCache = getAllAbstractFilesInVault(this.plugin.app).map(file => ({
+            path: file.path,
+                parent: file.parent?.path,
+                created: file instanceof TFile ? file.stat.ctime.toString() : undefined,
+                folder: file instanceof TFolder ? "true" : "false",
+        })).filter(f => !excludePathPredicate(this.plugin.superstate.settings, f.path));
 
         const allPaths = await this.persister.loadAll('file');
         this.fileNameWarnings = new Set();
@@ -151,7 +128,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                 f.name = "Vault"
             }
             this.checkIllegalCharacters(file);
-            
+            if (excludePathPredicate(this.plugin.superstate.settings, file.path)) return;
             let cache : Partial<FileCache> = {
                 metadata: {},
                 tags: [],
@@ -228,7 +205,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public allContent () {
         return [...this.cache.values()].flatMap(f => f);
     }
-      public allFiles () {
+      public allFiles (hidden?: boolean) {
         return getAllAbstractFilesInVault(this.plugin.app).map(f => tFileToAFile(f));
       }
       public getFileCache (path: string, source?: string) {
@@ -256,30 +233,11 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     }
     
     public updateFileLabel (path: string, label: string, content: any) {
-    const newVaultDB = this.vaultDBCache.map(f => f.path == path ? {...f, [label]: content } : f)
-    this.saveSpacesDatabaseToDisk({vault: { ...vaultSchema, rows: newVaultDB}})
+    
     const file = this.cache.get(path);
     this.middleware.updateFileCache(path, {label: {...file.label, [label]: content} as PathLabel}, true)
 
     }
-    public async saveSpacesDatabaseToDisk (tables: DBTables, save=true) {
-        if (await this.plugin.files.fileExists(normalizePath(this.spacesDBPath)) && !this.vaultDBLoaded) {
-            return;
-        }
-        this.vaultDBLoaded = true;
-        if (tables.vault) this.vaultDBCache = tables.vault.rows
-            if (save && this.plugin.superstate.settings.spacesEnabled) {
-                this.debounceSaveSpaceDatabase(tables);
-            }
-        
-    }
-    private debounceSaveSpaceDatabase = debounce(
-        (tables: DBTables) => {
-        saveDBToPath(this.plugin.mdbFileAdapter, this.spacesDBPath, tables, false)
-    }, 1000,
-    {
-        leading: false,
-      })
     
 
     public initiate (middleware: FilesystemMiddleware) {
@@ -303,17 +261,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
 
         if (!file) return;
         this.checkIllegalCharacters(file);
-        this.addToVaultQueue(async () => {
-        const folder = file instanceof TFolder
-        const parent = file.parent
-        
-        await this.saveSpacesDatabaseToDisk({vault: { ...vaultSchema, rows: [...this.vaultDBCache, {
-            path: file.path,
-            parent: parent?.path,
-            created: Math.trunc(Date.now() / 1000).toString(),
-            folder: folder ? "true" : "false",
-        }]}})
-        });
+        if (excludePathPredicate(this.plugin.superstate.settings, file.path)) return;
         const afile = tFileToAFile(file);
         
     this.cache.set(afile.path, {
@@ -331,6 +279,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
       };
     onModify = async (file: TAbstractFile) => {
         if (!file) return;
+        if (excludePathPredicate(this.plugin.superstate.settings, file.path)) return;
         this.middleware.onModify(tFileToAFile(file))
     }
       onDelete = async (file: TAbstractFile) => {
@@ -338,15 +287,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         if (!file) return;
 
         this.fileNameWarnings.delete(file.path);
-        this.addToVaultQueue(async () => {
-        if (file instanceof TFolder) {
-            const newVaultRows = this.vaultDBCache.filter(f => f.path != file.path && !f.parent.startsWith(file.path));
-            await this.saveSpacesDatabaseToDisk({ vault: {...vaultSchema, rows: newVaultRows}});
-        } else {
-            const newVaultRows = this.vaultDBCache.filter(f => f.path != file.path);
-        await this.saveSpacesDatabaseToDisk({ vault: {...vaultSchema, rows: newVaultRows} });
-        }
-    });
+        
         this.middleware.onDelete(tFileToAFile(file))
       };
       
@@ -354,34 +295,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         if (!file) return;
         this.checkIllegalCharacters(file);
         this.fileNameWarnings.delete(oldPath);
-        this.addToVaultQueue(async () => {
-        if (file instanceof TFolder) {
-            const newVaultRows = this.vaultDBCache.map(f => f.path == oldPath ?
-                {
-                ...f,
-                path: file.path,
-                parent: file.parent.path
-            } : f.parent.startsWith(oldPath) || f.path.startsWith(oldPath) ? {
-                ...f,
-                path: f.path.replace(oldPath, file.path),
-                parent: f.parent.replace(oldPath, file.path),
-            } : f);
-            
-            await this.saveSpacesDatabaseToDisk({ vault: {...vaultSchema, rows: newVaultRows}});
         
-        } else {
-            const newVaultRows = this.vaultDBCache.map(f => f.path == oldPath ?
-                {
-                    ...f,
-                    path: file.path,
-                    parent: file.parent.path
-                  }
-                  : f);
-
-            await this.saveSpacesDatabaseToDisk({ vault: {...vaultSchema, rows: newVaultRows}});
-        }
-    });
-    
     const newFile = tFileToAFile(file);
 const oldCache = this.cache.get(oldPath);
     this.cache.set(newFile.path, {...this.cache.get(oldPath), 

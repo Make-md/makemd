@@ -1,4 +1,4 @@
-import * as d3 from 'd3';
+import { extent, scaleSequential, interpolateViridis, interpolateInferno, interpolateMagma, interpolatePlasma, interpolateBlues, interpolateGreens, interpolateReds, interpolateWarm, interpolateCool, select } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 import { displayTextForType } from 'core/utils/displayTextForType';
 
@@ -49,25 +49,25 @@ export class HeatmapUtility {
 
     // Create color scale for values
     const colorValues = processedData.map(d => Number(d[colorEncoding.field]) || 0);
-    const colorExtent = d3.extent(colorValues) as [number, number];
+    const colorExtent = extent(colorValues) as [number, number];
     
     // Use custom color scale or default to Viridis
     const colorScheme = config.scale?.color?.scheme || 'viridis';
     const interpolators: { [key: string]: (t: number) => string } = {
-      'viridis': d3.interpolateViridis,
-      'inferno': d3.interpolateInferno,
-      'magma': d3.interpolateMagma,
-      'plasma': d3.interpolatePlasma,
-      'blues': d3.interpolateBlues,
-      'greens': d3.interpolateGreens,
-      'reds': d3.interpolateReds,
-      'warm': d3.interpolateWarm,
-      'cool': d3.interpolateCool,
+      'viridis': interpolateViridis,
+      'inferno': interpolateInferno,
+      'magma': interpolateMagma,
+      'plasma': interpolatePlasma,
+      'blues': interpolateBlues,
+      'greens': interpolateGreens,
+      'reds': interpolateReds,
+      'warm': interpolateWarm,
+      'cool': interpolateCool,
     };
     
-    const colorScale = d3.scaleSequential()
+    const colorScale = scaleSequential()
       .domain(colorExtent)
-      .interpolator(interpolators[colorScheme] || d3.interpolateViridis);
+      .interpolator(interpolators[colorScheme] || interpolateViridis);
 
     // Create data map for quick lookup
     const dataMap = new Map<string, any>();
@@ -108,7 +108,7 @@ export class HeatmapUtility {
       .attr('stroke-width', 1);
 
     // Add hover effects with tooltip
-    const tooltip = d3.select('body').append('div')
+    const tooltip = select('body').append('div')
       .attr('class', 'heatmap-tooltip')
       .style('position', 'absolute')
       .style('padding', '8px')
@@ -121,7 +121,7 @@ export class HeatmapUtility {
 
     cells
       .on('mouseenter', function(event, d: any) {
-        d3.select(this)
+        select(this)
           .transition()
           .duration(200)
           .attr('stroke', 'black')
@@ -132,7 +132,7 @@ export class HeatmapUtility {
           .style('opacity', 0.9);
         
         // Get cell color
-        const cellElement = d3.select(this);
+        const cellElement = select(this);
         const cellColor = cellElement.attr('fill');
         
         // Build tooltip content
@@ -170,7 +170,7 @@ export class HeatmapUtility {
           .style('top', (event.pageY - 28) + 'px');
       })
       .on('mouseleave', function() {
-        d3.select(this)
+        select(this)
           .transition()
           .duration(200)
           .attr('stroke', 'white')
@@ -199,7 +199,7 @@ export class HeatmapUtility {
         cells.each(function(d: any) {
           const id = `cell-${d[xEncoding.field]}-${d[yEncoding.field]}`;
           if (selectedElement.id === id) {
-            d3.select(this)
+            select(this)
               .style('stroke', 'var(--mk-ui-accent)')
               .style('stroke-width', 3);
           }
@@ -284,25 +284,25 @@ export class HeatmapUtility {
 
     // Create color scale for values
     const colorValues = processedData.map(d => Number(d[colorEncoding.field]) || 0);
-    const colorExtent = d3.extent(colorValues) as [number, number];
+    const colorExtent = extent(colorValues) as [number, number];
     
     // Use custom color scale or default to Viridis
     const colorScheme = config.scale?.color?.scheme || 'viridis';
     const interpolators: { [key: string]: (t: number) => string } = {
-      'viridis': d3.interpolateViridis,
-      'inferno': d3.interpolateInferno,
-      'magma': d3.interpolateMagma,
-      'plasma': d3.interpolatePlasma,
-      'blues': d3.interpolateBlues,
-      'greens': d3.interpolateGreens,
-      'reds': d3.interpolateReds,
-      'warm': d3.interpolateWarm,
-      'cool': d3.interpolateCool,
+      'viridis': interpolateViridis,
+      'inferno': interpolateInferno,
+      'magma': interpolateMagma,
+      'plasma': interpolatePlasma,
+      'blues': interpolateBlues,
+      'greens': interpolateGreens,
+      'reds': interpolateReds,
+      'warm': interpolateWarm,
+      'cool': interpolateCool,
     };
     
-    const colorScale = d3.scaleSequential()
+    const colorScale = scaleSequential()
       .domain(colorExtent)
-      .interpolator(interpolators[colorScheme] || d3.interpolateViridis);
+      .interpolator(interpolators[colorScheme] || interpolateViridis);
 
     ctx.save();
 

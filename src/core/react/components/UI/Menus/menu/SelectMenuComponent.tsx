@@ -18,9 +18,9 @@ const KEYS = {
   TAB: "Tab",
   BACKSPACE: "Backspace",
   UP_ARROW: "ArrowUp",
-  UP_ARROW_COMPAT: "Up",
+  UP_ARROW_COMPAT: i18n.menu.up,
   DOWN_ARROW: "ArrowDown",
-  DOWN_ARROW_COMPAT: "Down",
+  DOWN_ARROW_COMPAT: i18n.menu.down,
   LEFT_ARROW: "ArrowLeft",
   RIGHT_ARROW: "ArrowRight",
 };
@@ -42,7 +42,7 @@ const CLASS_NAMES = {
 
 const defaultProps: SelectMenuComponentProps = {
   ui: null,
-  id: "SelectMenu",
+  id: i18n.menu.selectmenu,
   tags: [],
   hide: () => null,
   onHide: () => null,
@@ -197,7 +197,7 @@ const SelectMenuComponent = React.forwardRef(
       if (!props.showSections) return [];
       return [
         {
-          name: "All",
+          name: i18n.labels.all,
           value: "",
         },
         ...(props.sections ??

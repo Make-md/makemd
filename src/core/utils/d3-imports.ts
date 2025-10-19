@@ -7,6 +7,7 @@ export {
   scaleBand,
   scaleOrdinal,
   scaleTime,
+  scaleUtc,
   scalePoint,
   scaleSqrt,
   scaleLog,
@@ -53,6 +54,7 @@ export {
   // Time
   timeFormat,
   timeParse,
+  utcFormat,
   // Color
   schemeCategory10,
   schemeSet1,
@@ -70,6 +72,11 @@ export {
   interpolatePlasma,
   interpolateWarm,
   interpolateCool,
+  interpolateInferno,
+  interpolateMagma,
+  interpolateBlues,
+  interpolateGreens,
+  interpolateReds,
   // Dispatch (for events)
   dispatch,
   // Ease
@@ -78,6 +85,9 @@ export {
   easeCubicInOut,
   // Bin
   bin,
+  histogram,
+  // Scale types
+  scaleSequential,
   // Hierarchy
   hierarchy,
   treemap,

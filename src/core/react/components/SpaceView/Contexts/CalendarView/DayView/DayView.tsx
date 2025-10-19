@@ -10,6 +10,7 @@ import {
 } from "core/utils/date";
 import { add, addMilliseconds, startOfDay } from "date-fns";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { RRule } from "rrule";
 import { PathPropertyName } from "shared/types/context";
@@ -56,6 +57,7 @@ export const DayView = (props: {
   hourHeight?: number;
   startHour?: number;
   endHour?: number;
+  showHours?: boolean;
   insertItem?: (row: DBRow) => void;
   updateItem?: (row: DBRow) => void;
 }) => {
@@ -421,14 +423,16 @@ export const DayView = (props: {
         ></CalendarHeaderView>
       )}
 
-      {props.gutter && (
-        <div className="mk-day-view-all-day">
-          <div className="mk-day-view-gutter">
-            <div className="mk-day-view-hour-title">all day</div>
-          </div>
+      {(props.gutter || props.showHours === false) && (
+        <div className="mk-day-view-all-day" style={props.showHours === false ? { borderBottom: 'none' } : undefined}>
+          {props.showHours !== false && props.gutter && (
+            <div className="mk-day-view-gutter">
+              <div className="mk-day-view-hour-title">{i18n.labels.allDay}</div>
+            </div>
+          )}
           <div className="mk-day-view-hour">
             {eventBlocks
-              .filter((f) => f.allDay)
+              .filter((f) => props.showHours === false ? true : f.allDay)
               .map((event, i) => (
                 <AllDayItem
                   superstate={props.superstate}
@@ -450,16 +454,17 @@ export const DayView = (props: {
           </div>
         </div>
       )}
-      <div className="mk-day-view">
-        {props.gutter && (
-          <DayGutter
-            hourHeight={hourHeight}
-            startHour={startHour}
-            endHour={endHour}
-          ></DayGutter>
-        )}
-        <div
-          className="mk-day-view-content"
+      {props.showHours !== false && (
+        <div className="mk-day-view">
+          {props.gutter && (
+            <DayGutter
+              hourHeight={hourHeight}
+              startHour={startHour}
+              endHour={endHour}
+            ></DayGutter>
+          )}
+          <div
+            className="mk-day-view-content"
           ref={setNodeRef}
           onMouseDown={(event) => {
             if (event.button != 0) return;
@@ -666,8 +671,9 @@ export const DayView = (props: {
               clone
             ></DayItem>
           ) : null}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

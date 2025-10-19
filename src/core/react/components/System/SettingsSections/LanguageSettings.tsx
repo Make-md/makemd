@@ -1,4 +1,5 @@
-import { Superstate, i18n, i18nLoader } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n, { i18nLoader } from "shared/i18n";
 import React, { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { SettingsProps } from "./types";
@@ -90,7 +91,7 @@ export const LanguageSettings = ({ superstate }: SettingsProps) => {
 
   // Group strings by category
   const groupedStrings = filteredStrings.reduce((groups, item) => {
-    const category = item.category || "Other";
+    const category = item.category || i18n.settings.other;
     if (!groups[category]) {
       groups[category] = [];
     }
@@ -400,7 +401,7 @@ export const LanguageSettings = ({ superstate }: SettingsProps) => {
 
   return (
     <div className="mk-setting-section">
-      <h2>Language</h2>
+      <h2>{i18n.settings.sections.language}</h2>
 
       <div className="mk-community-callout" {...getRootProps()} style={{
         position: 'relative',
@@ -413,7 +414,7 @@ export const LanguageSettings = ({ superstate }: SettingsProps) => {
           <div className="mk-callout-text">
             {dropHighlighted ? (
               <>
-                <strong>Drop language pack here to import</strong>
+                <strong>{i18n.settings.dropLanguagePackHereToImport}</strong>
                 <br />
                 Import language packs downloaded from the community
               </>

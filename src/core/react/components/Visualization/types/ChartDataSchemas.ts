@@ -8,7 +8,7 @@
  * Data is grouped by category with aggregated values
  */
 export interface BarChartDataPoint {
-  category: string | number;  // X-axis value
+  category: string | number | Date;  // X-axis value
   value: number;              // Y-axis value (aggregated)
   series?: string;            // Series name for grouped bars
   stack?: string;             // Stack group identifier
@@ -18,7 +18,7 @@ export interface BarChartDataPoint {
 
 export interface BarChartData {
   data: BarChartDataPoint[];
-  categories: (string | number)[];  // All unique categories
+  categories: (string | number | Date)[];  // All unique categories
   series?: string[];                 // All unique series
   stacks?: string[];                 // Stack groups if stacked
   yExtent?: [number, number];        // Min and max y values after aggregation

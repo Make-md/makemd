@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { isInteger, isString } from "lodash";
@@ -95,7 +97,7 @@ export const frameRootWithProps = (
         id: root?.id || '',
         schemaId: '',
         parentId: '',
-        name: 'Unknown',
+        name: i18n.labels.unknown,
         rank: root?.node?.rank || 0
       },
       children: [] as FrameRoot[]

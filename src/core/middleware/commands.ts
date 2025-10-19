@@ -1,4 +1,5 @@
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { ActionInstance, CLIAdapter, ICLIManager } from "shared/types/actions";
 import { Command, CommandWithPath } from "shared/types/commands";
 import { SpaceProperty } from "shared/types/mdb";
@@ -22,8 +23,8 @@ const builtinCommands : BuiltinCommand[] = [
 //     {
 //     id: 'loop',
 //     icon: 'lucide//repeat',
-//     description: 'Loop over a list',
-//     name: 'Loop',
+//     description: i18n.descriptions.loopOverAList,
+//     name: i18n.descriptions.loop,
 //     fields: [{
 //         name: 'list',
 //         type: 'object-multi',
@@ -33,15 +34,15 @@ const builtinCommands : BuiltinCommand[] = [
 {
     id: 'filter',
     icon: 'lucide//filter',
-    description: 'Only continue if a condition is met',
-    name: 'Filter',
+    description: i18n.descriptions.onlyContinueIfAConditionIsMet,
+    name: i18n.descriptions.filter,
     fields: [],
 },
 {
     id: 'formula',
     icon: 'lucide//sigma',
-    description: 'Use a formula to calculate a result',
-    name: 'Formula',
+    description: i18n.descriptions.useAFormulaToCalculateAResult,
+    name: i18n.descriptions.formula,
     fields: [],
 }]
 

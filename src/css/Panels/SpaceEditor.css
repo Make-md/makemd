@@ -191,7 +191,6 @@ align-items: center;
     display: flex;
     gap: 1px;
     align-items: center;
-    margin-top: 8px;
     font-size: 14px;
 
     border-radius: 8px;
@@ -205,22 +204,22 @@ align-items: center;
 
   
   .mk-space-context-bar-section .mk-toolbar-button {
-    height: 26px;
+    height: 22px;
+    padding: 2px 8px !important;
+    border-radius: 0;
   }
   .mk-space-context-bar .mk-space-context-bar-section {
     display: flex;
-    padding: 2px 4px;
-    
 
     gap: 4px;
     align-items: center;
     background: var(--mk-ui-background-contrast);
-    font-size: 12px;
+    font-size: 11px;
     color: var(--mk-ui-text-secondary)
   }
 
   .mk-space-context-bar .mk-space-context-bar-section > div {
-    padding: 4px;
+    padding: 2px 8px;
     text-wrap: nowrap;
     
   }

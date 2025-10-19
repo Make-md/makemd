@@ -1,5 +1,6 @@
 import { SpaceContext } from "core/react/context/SpaceContext";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext, useRef } from "react";
 
 import { useDndMonitor, useDraggable } from "@dnd-kit/core";

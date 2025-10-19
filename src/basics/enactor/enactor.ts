@@ -27,7 +27,7 @@ export interface Enactor {
       resolvePath(path: string, source?: string) : string;
       saveSettings() : void;
       openMenu(ev: React.MouseEvent, options: SelectOption[]) : void;
-      openPath(path: string, source?: HTMLElement) : void;
+      openPath(path: string, source?: HTMLElement, reading?: boolean) : void;
       addActiveStateListener(listener: () => void) : void;
         removeActiveStateListener(listener: () => void) : void;
 }

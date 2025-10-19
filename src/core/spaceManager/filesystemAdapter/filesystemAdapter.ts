@@ -9,7 +9,7 @@ import { DefaultEverViewTables, DefaultFolderNoteMDBTables, DefaultMDBTables } f
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { parseSpaceMetadata } from "core/superstate/utils/spaces";
 import { builtinSpaces, spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
-import { linkContextRow, propertyDependencies } from "core/utils/contexts/linkContextRow";
+import { linkContextRow, mergeContextRows, propertyDependencies, syncContextRow } from "core/utils/contexts/linkContextRow";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { executeCode } from "core/utils/frames/runner";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
@@ -192,9 +192,9 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     public uriByPath (path: string) {
       return this.spaceManager.uriByString(path);
     }
-    public allPaths (type?: string[]) {
+    public allPaths (type?: string[], hidden?: boolean) {
       
-      return [...this.fileSystem.allFiles().filter(f =>  type ? type.some(g =>  g == 'folder' ? f.isFolder : f.extension == g) : true).map(g => g.path).filter(f => !excludeSpacesPredicate(this.spaceManager.superstate.settings, f))];
+      return [...this.fileSystem.allFiles(hidden).filter(f =>  type ? type.some(g =>  g == 'folder' ? f.isFolder : f.extension == g) : true).map(g => g.path).filter(f => !hidden && !excludeSpacesPredicate(this.spaceManager.superstate.settings, f))];
     }
     public async pathExists (path: string) {
       const uri = this.uriByPath(path);
@@ -411,7 +411,14 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
       }
     }
     const dependencies = propertyDependencies(table.cols);
-    const rows = table.rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, this.spaceManager.superstate.pathsIndex,  this.spaceManager.superstate.contextsIndex, this.spaceManager.superstate.spacesMap, f, table.cols, this.spaceManager.superstate.pathsIndex.get(path), this.spaceManager.superstate.settings, dependencies))
+    const pathsIndexMap = this.spaceManager.superstate.pathsIndex;
+    const contextsIndexMap = this.spaceManager.superstate.contextsIndex;
+    const pathState = pathsIndexMap.get(path);
+    
+    let rows = table.rows;
+    if (schema == defaultContextDBSchema.id)
+      rows = mergeContextRows(this.spaceManager.superstate.getSpaceItems(path).map(f => f.path), table.rows, pathsIndexMap, this.spaceManager.superstate.spacesMap, pathState).map(f => syncContextRow(pathsIndexMap, f, table.cols, pathState))
+    rows = rows.map(f => linkContextRow(this.spaceManager.superstate.formulaContext, pathsIndexMap, contextsIndexMap, this.spaceManager.superstate.spacesMap, f, table.cols, pathState, this.spaceManager.superstate.settings, dependencies))
     return {...table, rows}
   }
   public async spaceInitiated (path: string) {
@@ -539,7 +546,8 @@ const defaultSpaceTemplate = this.defaultFrame(path);
         [defaultTable.schema.id]: defaultTable
       }
     }
-    return this.fileSystem.readFileFragments(mdbFile, 'mdbTables', null)
+    return this.fileSystem.readFileFragments(mdbFile, 'mdbTables', null);
+   
   }
 
   public async framesForSpace (path: string) {
@@ -837,10 +845,10 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     public authorities = ['vault'];
 
 
-    public allSpaces ()  {
+    public allSpaces (hidden?: boolean)  {
       
           const getAllFolderContextFiles = () => {
-            const folders = this.allPaths(['folder']).filter(f => !excludeSpacesPredicate(this.spaceManager.superstate.settings, f))
+            const folders = this.allPaths(['folder'], hidden).filter(f => !excludeSpacesPredicate(this.spaceManager.superstate.settings, f) && !hidden)
             
             return folders.map(f => fileSystemSpaceInfoFromFolder(this.spaceManager, f));
           }

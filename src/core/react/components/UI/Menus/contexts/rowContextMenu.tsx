@@ -1,11 +1,12 @@
 import { deleteRowInTable } from "core/utils/contexts/context";
-import { SelectOption, Superstate, i18n } from "makemd-core";
+import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { PathPropertyName } from "shared/types/context";
 import { windowFromDocument } from "shared/utils/dom";
 import { defaultMenu } from "../menu/SelectionMenu";
 import { showPathContextMenu } from "../navigator/pathContextMenu";
-import { showSpaceContextMenu } from "../navigator/spaceContextMenu";
+
 import { EditPropertiesSubmenu } from "./EditPropertyMenu";
 import { openContextCreateItemModal } from "../../Modals/ContextCreateItemModal";
 
@@ -24,12 +25,7 @@ export const showRowContextMenu = async (
   if (dbSchema.primary == "true") {
     const row = rows.find((f, i) => i == index);
     if (row) {
-      if (superstate.spacesIndex.has(row[PathPropertyName])) {
-        const pathState = superstate.pathsIndex.get(row[PathPropertyName]);
-        if (pathState)
-          showSpaceContextMenu(superstate, pathState, e, "", contextPath);
-        return;
-      }
+     
       showPathContextMenu(
         superstate,
         row[PathPropertyName],

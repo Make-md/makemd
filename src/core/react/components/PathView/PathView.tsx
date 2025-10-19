@@ -47,6 +47,7 @@ export const PathView = (props: {
             path={props.path}
             load={true}
             classname="mk-flow-node"
+            readOnly={props.readOnly}
           ></NoteView>
         ) : (
           <iframe src={props.path}></iframe>
@@ -67,6 +68,7 @@ export const PathView = (props: {
           path={props.path}
           load={true}
           classname="mk-flow-node"
+          readOnly={props.readOnly}
         ></NoteView>
       ) : (
         <></>

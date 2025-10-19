@@ -4,7 +4,10 @@ import { FrameRootProvider } from "core/react/context/FrameRootContext";
 import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
 import { PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
+import { linkContextRow, syncContextRow } from "core/utils/contexts/linkContextRow";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { PropsWithChildren, useMemo } from "react";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { SpaceKit } from "shared/types/kits";
@@ -188,13 +191,6 @@ export const MKitFramePreview: React.FC<
     return null;
   }, [spaceKit, superstate]);
 
-  if (!currentFrame) {
-    return (
-      <div className="mk-mkit-preview-empty">
-        <p>No frames available in this space kit</p>
-      </div>
-    );
-  }
 
   // Create context for frame instance
   const contexts = {
@@ -218,6 +214,26 @@ export const MKitFramePreview: React.FC<
     defPath: pseudoPath.path,
     notePath: "",
   };
+  const spaceManagerContext = useSpaceManager() || superstate.spaceManager;
+const frameProps = useMemo(() => {
+  return linkContextRow(
+              superstate.formulaContext,
+              spaceManagerContext.getPathsIndexMap(),
+              spaceManagerContext.getContextsIndexMap(),
+              superstate.spacesMap,
+              syncContextRow(spaceManagerContext.getPathsIndexMap(), pseudoPath.metadata?.property ?? {}, mdbFrames.main?.cols ?? [], pseudoPath),
+              mdbFrames.main?.cols ?? [],
+              pseudoPath,
+              superstate.settings
+            );
+}, []);
+  if (!currentFrame) {
+    return (
+      <div className="mk-mkit-preview-empty">
+        <p>{i18n.labels.noFramesAvailable}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mk-mkit-frame-preview">
@@ -259,7 +275,7 @@ export const MKitFramePreview: React.FC<
                 <FrameInstanceProvider
                   id="mkit-preview"
                   superstate={superstate}
-                  props={{}}
+                  props={frameProps}
                   contexts={contexts}
                   editable={false}
                 >

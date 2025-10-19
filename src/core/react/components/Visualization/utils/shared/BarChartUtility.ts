@@ -1,12 +1,30 @@
-import { select, schemeCategory10, scaleBand, stack, max } from 'core/utils/d3-imports';
+import i18n from "shared/i18n";
+
+import { select, schemeCategory10, scaleBand, stack, max, timeFormat, utcFormat } from 'core/utils/d3-imports';
 import { RenderContext, isCanvasContext, isSVGContext } from '../RenderContext';
-import { getPaletteColors } from '../utils';
+import { getPaletteColors, createTooltip, resolveColor } from '../utils';
 import { displayTextForType } from 'core/utils/displayTextForType';
 import { GradientUtility, GradientConfig } from './GradientUtility';
 import { BarChartData } from '../../transformers';
 import { formatNumber } from '../formatNumber';
 
 export class BarChartUtility {
+  /**
+   * Format a date for tooltip display based on time granularity
+   */
+  private static formatDateForTooltip(date: Date, xEncoding: any): string {
+    // Check if we have hour-level precision (minutes/seconds/hours are non-zero)
+    const hasHourPrecision = date.getUTCHours() !== 0 || date.getUTCMinutes() !== 0 || date.getUTCSeconds() !== 0;
+    
+    // If hour grouping or has hour precision, show date and time
+    if (xEncoding?.timeUnit === 'hour' || hasHourPrecision) {
+      return utcFormat('%b %d, %I:%M %p')(date);
+    }
+    
+    // Otherwise just show date
+    return utcFormat('%b %d')(date);
+  }
+
   static render(context: RenderContext): void {
 
     if (isSVGContext(context)) {
@@ -45,22 +63,19 @@ export class BarChartUtility {
     const themeColors = getPaletteColors(context.colorPaletteId, context.superstate);
     
     // Create tooltip
-    const tooltip = select('body').append('div')
-      .attr('class', 'bar-tooltip')
-      .style('position', 'absolute')
-      .style('padding', '8px 12px')
-      .style('background', resolveColor('var(--mk-ui-background)'))
-      .style('color', resolveColor('var(--mk-ui-text-primary)'))
-      .style('border', `1px solid ${resolveColor('var(--mk-ui-border)')}`)
-      .style('border-radius', '4px')
-      .style('font-size', '12px')
-      .style('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.15)')
-      .style('pointer-events', 'none')
-      .style('opacity', 0)
-      .style('z-index', 10000);
+    const tooltip = createTooltip('bar-tooltip');
     
     // Calculate bar dimensions
-    const bandwidth = xScale.bandwidth ? xScale.bandwidth() : 40;
+    let bandwidth: number;
+    if (xScale.bandwidth) {
+      bandwidth = xScale.bandwidth();
+    } else {
+      // For temporal/linear scales, calculate based on data density
+      const dataCount = barData.data.length;
+      const availableWidth = graphArea.right - graphArea.left;
+      const calculatedBandwidth = availableWidth / (dataCount + 1);
+      bandwidth = Math.min(calculatedBandwidth * 0.9, 80);
+    }
     const barPadding = bandwidth * 0.1;
     
     // Group bars by category for grouped/stacked rendering
@@ -86,7 +101,18 @@ export class BarChartUtility {
       .append('rect')
       .attr('class', d => `bar ${d.series ? `series-${d.series}` : ''}`)
       .attr('x', d => {
-        const baseX = xScale(String(d.category));
+        let baseX: number;
+        
+        // Check if this is a temporal/continuous scale (time or linear)
+        if (d.category instanceof Date || (typeof xScale.bandwidth === 'undefined')) {
+          // For temporal/linear scales, center the bar at the data point
+          const xPos = xScale(d.category);
+          baseX = xPos - bandwidth / 2;
+        } else {
+          // For band scales, use the band position
+          baseX = xScale(String(d.category));
+        }
+        
         if (!hasMultipleSeries || barData.stacks) {
           return baseX + barPadding;
         }
@@ -143,10 +169,30 @@ export class BarChartUtility {
           .duration(200)
           .style('opacity', 0.9);
         
+        // Format category (x-axis value)
+        let categoryDisplay: string;
+        const xEncoding = Array.isArray(config.encoding.x) ? config.encoding.x[0] : config.encoding.x;
+        
+        // Check if this is a temporal field
+        if (xEncoding?.type === 'temporal' || d.category instanceof Date) {
+          // Match axis formatting for dates
+          const date = d.category instanceof Date ? d.category : new Date(Number(d.category));
+          if (!isNaN(date.getTime())) {
+            categoryDisplay = BarChartUtility.formatDateForTooltip(date, xEncoding);
+          } else {
+            categoryDisplay = String(d.category);
+          }
+        } else {
+          // Use displayTextForType for proper formatting (handles paths, links, etc.)
+          const xProperty = context.tableProperties?.find(p => p.name === xEncoding?.field);
+          categoryDisplay = xProperty && context.superstate 
+            ? displayTextForType(xProperty, d.category as any, context.superstate) 
+            : String(d.category);
+        }
+        
         const tooltipContent = `
-          <div><strong>${d.category}</strong></div>
-          ${d.series ? `<div>${d.series}</div>` : ''}
-          <div>Value: ${formatNumber(d.value)}</div>
+          <div style="font-weight: 600; margin-bottom: 4px;">${categoryDisplay}</div>
+          ${d.series ? `<div><strong>${d.series}:</strong> ${formatNumber(d.value)}</div>` : `<div><strong>{i18n.labels.value}</strong> ${formatNumber(d.value)}</div>`}
         `;
         
         tooltip.html(tooltipContent)
@@ -168,6 +214,93 @@ export class BarChartUtility {
           .duration(500)
           .style('opacity', 0);
       });
+    
+    // Add invisible hit areas for each category to show tooltip on hover over category area
+    categoryGroups.forEach((categoryBars, categoryKey) => {
+      const category = categoryBars[0].category;
+      
+      let hitAreaX: number;
+      // Check if this is a temporal/continuous scale
+      if (category instanceof Date || (typeof xScale.bandwidth === 'undefined')) {
+        // For temporal/linear scales, center the hit area at the data point
+        const xPos = xScale(category);
+        hitAreaX = xPos - bandwidth / 2;
+      } else {
+        // For band scales, use the band position
+        hitAreaX = xScale(String(category));
+      }
+      
+      g.append('rect')
+        .attr('class', 'category-hit-area')
+        .attr('x', hitAreaX)
+        .attr('y', 0)
+        .attr('width', bandwidth)
+        .attr('height', graphArea.bottom - graphArea.top)
+        .attr('fill', 'transparent')
+        .attr('pointer-events', 'all')
+        .style('cursor', 'pointer')
+        .on('mouseover', function(event) {
+          // Highlight all bars in this category
+          bars.filter((d: any) => String(d.category) === categoryKey)
+            .transition()
+            .duration(150)
+            .attr('opacity', 1);
+          
+          // Show tooltip with all series data for this category
+          tooltip.transition()
+            .duration(200)
+            .style('opacity', 0.9);
+          
+          // Format category display
+          let categoryDisplay: string;
+          const xEncoding = Array.isArray(config.encoding.x) ? config.encoding.x[0] : config.encoding.x;
+          
+          // Check if this is a temporal field
+          if (xEncoding?.type === 'temporal' || category instanceof Date) {
+            const date = category instanceof Date ? category : new Date(Number(category));
+            if (!isNaN(date.getTime())) {
+              categoryDisplay = BarChartUtility.formatDateForTooltip(date, xEncoding);
+            } else {
+              categoryDisplay = String(category);
+            }
+          } else {
+            const xProperty = context.tableProperties?.find(p => p.name === xEncoding?.field);
+            categoryDisplay = xProperty && context.superstate 
+              ? displayTextForType(xProperty, category as any, context.superstate) 
+              : String(category);
+          }
+          
+          // Build tooltip content with all series in this category
+          let tooltipContent = `<div style="font-weight: 600; margin-bottom: 4px;">${categoryDisplay}</div>`;
+          categoryBars.forEach(bar => {
+            if (bar.series) {
+              tooltipContent += `<div><strong>${bar.series}:</strong> ${formatNumber(bar.value)}</div>`;
+            } else {
+              tooltipContent += `<div><strong>{i18n.labels.value}</strong> ${formatNumber(bar.value)}</div>`;
+            }
+          });
+          
+          tooltip.html(tooltipContent)
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mousemove', function(event) {
+          tooltip
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', function() {
+          // Reset all bars in this category
+          bars.filter((d: any) => String(d.category) === categoryKey)
+            .transition()
+            .duration(150)
+            .attr('opacity', config.mark?.opacity || 0.8);
+          
+          tooltip.transition()
+            .duration(500)
+            .style('opacity', 0);
+        });
+    });
     
     // Store tooltip reference for cleanup
     (svg.node() as any).__barTooltip = tooltip;
@@ -246,7 +379,8 @@ export class BarChartUtility {
       const dataCount = processedData.length;
       const availableWidth = graphArea.right - graphArea.left;
       bandwidth = availableWidth / (dataCount + 1);
-      barWidth = Math.min(bandwidth * 0.8, 40); // Max width of 40px for time series bars
+      // Use 90% of bandwidth with higher max width for better visibility
+      barWidth = Math.min(bandwidth * 0.9, 80); // Increased max width from 40px to 80px
       barPadding = (bandwidth - barWidth) / 2;
     }
 
@@ -362,16 +496,7 @@ export class BarChartUtility {
       .attr('ry', 4);
 
     // Create tooltip
-    const tooltip = select('body').append('div')
-      .attr('class', 'bar-tooltip')
-      .style('position', 'absolute')
-      .style('padding', '8px')
-      .style('background', 'rgba(0, 0, 0, 0.8)')
-      .style('color', 'white')
-      .style('border-radius', '4px')
-      .style('font-size', '12px')
-      .style('pointer-events', 'none')
-      .style('opacity', 0);
+    const tooltip = createTooltip('bar-tooltip');
 
     // Add hover effects and tooltips
     bars
@@ -565,7 +690,7 @@ export class BarChartUtility {
         .padding(0.05);
     } else if (hasColorGrouping) {
       // Single Y field with color grouping - group by color values
-      groupCategories = Array.from(new Set(processedData.map(d => String(d[colorField] || 'Unknown'))));
+      groupCategories = Array.from(new Set(processedData.map(d => String(d[colorField] || i18n.labels.unknown))));
       x1Scale = scaleBand()
         .domain(groupCategories)
         .range([0, groupWidth])
@@ -580,16 +705,7 @@ export class BarChartUtility {
     }
 
     // Create tooltip
-    const tooltip = select('body').append('div')
-      .attr('class', 'bar-tooltip')
-      .style('position', 'absolute')
-      .style('padding', '8px')
-      .style('background', 'rgba(0, 0, 0, 0.8)')
-      .style('color', 'white')
-      .style('border-radius', '4px')
-      .style('font-size', '12px')
-      .style('pointer-events', 'none')
-      .style('opacity', 0);
+    const tooltip = createTooltip('bar-tooltip');
 
     if (hasMultipleYFields) {
       // Handle multiple Y fields - group by X value, then create bars for each Y field
@@ -662,7 +778,7 @@ export class BarChartUtility {
         // Group data by color value
         const colorGroups = new Map<string, any[]>();
         dataForX.forEach(d => {
-          const colorValue = String(d[colorField] || 'Unknown');
+          const colorValue = String(d[colorField] || i18n.labels.unknown);
           if (!colorGroups.has(colorValue)) {
             colorGroups.set(colorValue, []);
           }
@@ -774,7 +890,7 @@ export class BarChartUtility {
       if (!yField) return;
       
       // Get unique color values and x values
-      const colorValues = Array.from(new Set(processedData.map(d => String(d[colorField] || 'Unknown'))));
+      const colorValues = Array.from(new Set(processedData.map(d => String(d[colorField] || i18n.labels.unknown))));
       const xValues = Array.from(new Set(processedData.map(d => getXValue(d))));
       
       // Reshape data - create one object per x value with properties for each color group
@@ -784,7 +900,7 @@ export class BarChartUtility {
         
         colorValues.forEach(colorVal => {
           const matchingRows = processedData.filter(d => 
-            getXValue(d) === xVal && String(d[colorField] || 'Unknown') === colorVal
+            getXValue(d) === xVal && String(d[colorField] || i18n.labels.unknown) === colorVal
           );
           
           // Sum all values for this x,color combination
@@ -808,16 +924,7 @@ export class BarChartUtility {
     yScale.domain([0, maxStackValue]);
 
     // Create tooltip
-    const tooltip = select('body').append('div')
-      .attr('class', 'bar-tooltip')
-      .style('position', 'absolute')
-      .style('padding', '8px')
-      .style('background', 'rgba(0, 0, 0, 0.8)')
-      .style('color', 'white')
-      .style('border-radius', '4px')
-      .style('font-size', '12px')
-      .style('pointer-events', 'none')
-      .style('opacity', 0);
+    const tooltip = createTooltip('bar-tooltip');
 
     // Create groups for each series
     const series = g.selectAll('.series')

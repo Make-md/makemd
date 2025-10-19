@@ -13,6 +13,7 @@ import {
   defaultFrameListViewSchema,
 } from "schemas/mdb";
 import { URI } from "shared/types/path";
+import { Predicate } from "shared/types/predicate";
 import { SpaceFragmentType } from "shared/types/spaceFragment";
 import { Visualization } from "../../../Visualization/Visualization";
 import { ContextListContainer } from "../../Contexts/ContextListContainer";
@@ -27,6 +28,7 @@ export interface SpaceFragmentViewComponentProps {
   showTitle?: boolean;
   containerRef?: React.RefObject<HTMLDivElement>;
   setFrameSchema?: (schema: string) => void;
+  predicate?: Predicate;
 }
 
 type SpaceFragmentObject = {
@@ -43,16 +45,13 @@ export const SpaceFragmentViewComponent = (
   const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
   const path: URI = useMemo(() => {
-    const uri = props.superstate.spaceManager.uriByString(
-      props.path,
-      props.source
-    );
+    const uri = spaceManager.uriByString(props.path, props.source);
 
     // SpaceManager handles path resolution internally
     if ((spaceManager as any).isPreviewMode && uri?.basePath) {
       const adjustedUri = {
         ...uri,
-        basePath: props.source || uri.basePath,
+        basePath: uri.basePath || props.source,
       };
       return adjustedUri;
     }
@@ -122,7 +121,6 @@ export const SpaceFragmentViewComponent = (
       });
     }
   }, [path, spaceManager]);
-
   return (
     <>
       {spaceFragment?.path ? (
@@ -187,7 +185,6 @@ export const SpaceFragmentViewComponent = (
                   style={{
                     width: "100%",
                     height: "100%",
-                    minHeight: "400px",
                   }}
                 />
               </FramesMDBProvider>

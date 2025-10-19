@@ -46,6 +46,8 @@ align-items: center;
 .mk-props-contexts-space-list {
     display: flex;
     flex-wrap: wrap;
+    width: 100%;
+    align-items: flex-start;
     gap: 4px;
 }
 .mk-props-contexts-space-name {

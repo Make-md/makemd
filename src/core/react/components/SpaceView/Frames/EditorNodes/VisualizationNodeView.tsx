@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { FrameSelectionContext } from "core/react/context/FrameSelectionContext";
 import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
@@ -171,7 +173,7 @@ export const VisualizationNodeView = (
               textAlign: "center",
             }}
           >
-            No visualization configured
+            {i18n.labels.noVisualizationConfigured}
           </div>
           <button
             onClick={createNewVisualization}
@@ -189,7 +191,7 @@ export const VisualizationNodeView = (
               opacity: isCreating ? 0.6 : 1,
             }}
           >
-            {isCreating ? "Creating..." : "Create Visualization"}
+            {isCreating ? i18n.descriptions.creating : "Create Visualization"}
           </button>
         </div>
       ) : (
@@ -205,7 +207,7 @@ export const VisualizationNodeView = (
             fontSize: "14px",
           }}
         >
-          No visualization configured
+          {i18n.labels.noVisualizationConfigured}
         </div>
       )}
     </div>

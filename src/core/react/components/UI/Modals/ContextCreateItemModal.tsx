@@ -8,6 +8,7 @@ import { FramesMDBProvider } from "core/react/context/FramesMDBContext";
 import { PathProvider } from "core/react/context/PathContext";
 import { SpaceProvider } from "core/react/context/SpaceContext";
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { PathPropertyName } from "shared/types/context";
@@ -35,7 +36,7 @@ export const openContextCreateItemModal = (
   onSave?: (data: DBRow, index: number) => Promise<void> | void
 ) => {
   const isEdit = rowIndex >= 0;
-  const modalTitle = isEdit ? "Edit Item" : "Create New Item";
+  const modalTitle = isEdit ? "Edit Item" : i18n.labels.createNewItem;
 
   superstate.ui.openModal(
     modalTitle,
@@ -159,7 +160,7 @@ const ContextCreateItemContent = (props: {
           updateRow(updatedItem, rowIndex);
         }
       } catch (error) {
-        console.error("Auto-save failed:", error);
+        console.error(i18n.labels.autosaveFailed, error);
       }
     }
   };
@@ -334,7 +335,7 @@ const ContextCreateItemContent = (props: {
                   }
                 }}
                 suppressContentEditableWarning={true}
-                data-ph={isEdit ? "Edit title" : "Enter title for new item"}
+                data-ph={isEdit ? i18n.labels.editTitle : i18n.labels.enterTitleForNewItem}
               />
             </div>
             {errors[PathPropertyName] && (

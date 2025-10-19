@@ -22,6 +22,7 @@ import { uniq } from "shared/utils/array";
 import { ContextInfiniteScroll } from "./ContextInfiniteScroll";
 import { ContextListInstance } from "./ContextListInstance";
 import { FrameContainerView } from "./FrameContainerView";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 export const PLACEHOLDER_ID = "_placeholder";
 type Items = Record<string, DBRow[]>;
 export type ContextListSections = "listItem" | "listGroup" | "listView";
@@ -43,6 +44,7 @@ export const ContextListView = (props: {
     itemURI,
     flattenedItems,
   } = props;
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
   const { readMode } = useContext(PathContext);
   const { spaceInfo, spaceState } = useContext(SpaceContext);
   const {
@@ -217,7 +219,7 @@ export const ContextListView = (props: {
                 _index: c["_index"],
                 _keyValue: c[primaryKey],
                 _schema: dbSchema.id,
-                _name: props.superstate.pathsIndex.get(c[primaryKey])?.name,
+                _name: spaceManager.getPathState(c[primaryKey])?.name,
                 _values: c,
                 ...context,
               },

@@ -4,7 +4,8 @@ import {
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { FramesEditorRootContext } from "core/react/context/FrameEditorRootContext";
 import { removeQuotes, wrapQuotes } from "core/utils/strings";
-import { SelectOption, Superstate, i18n } from "makemd-core";
+import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext, useEffect, useState } from "react";
 import { slideNode, slidesNode } from "schemas/kits/slides";
 import { SpaceProperty } from "shared/types/mdb";

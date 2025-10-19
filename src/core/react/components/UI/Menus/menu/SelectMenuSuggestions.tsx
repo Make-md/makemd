@@ -2,6 +2,7 @@ import { UIManager } from "core/middleware/ui";
 import { Sticker } from "core/react/components/UI/Stickers/Sticker";
 import { PointerModifiers } from "core/types/ui";
 import { SelectOption, SelectOptionType } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useRef, useState } from "react";
 import { MenuObject } from "shared/types/menu";
 import { Rect } from "shared/types/Pos";
@@ -32,7 +33,7 @@ const SelectMenuSuggestionsComponent = (props: {
         <Sticker ui={props.ui} sticker={props.item.icon}></Sticker>
       )}
       <div ref={ref} className="mk-menu-options-inner">
-        {props.item.onToggle && <div>Toggle</div>}
+        {props.item.onToggle && <div>{i18n.menu.toggle}</div>}
         <span
           style={
             props.item.color?.length > 0

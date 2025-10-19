@@ -9,13 +9,9 @@ import { fieldTypeForField, fieldTypeForType, fieldTypes } from "schemas/mdb";
 import i18n from "shared/i18n";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { SpaceProperty, SpaceTableColumn } from "shared/types/mdb";
-import { onlyUniqueProp, uniq } from "shared/utils/array";
-import { getColors } from "core/utils/colorPalette";
 import { windowFromDocument } from "shared/utils/dom";
-import { parseMultiString } from "utils/parsers";
 import { InputModal } from "../../Modals/InputModal";
 import { EditOptionsModal } from "../../Modals/EditOptionsModal";
-import { defaultMenu, menuInput, menuSeparator } from "../menu/SelectionMenu";
 import StickerModal from "shared/components/StickerModal";
 import { showFilterSelectorMenu } from "../properties/filterSelectorMenu";
 import { nameForField } from "core/utils/frames/frames";
@@ -89,9 +85,11 @@ export const PropertyValueComponent = (props: {
     () => {
       const parsed = parseFieldValue(props.value, props.fieldType);
       // Resolve space path if it exists
+      
       if (parsed?.space && props.contextPath) {
         parsed.space = props.superstate.spaceManager.resolvePath(parsed.space, props.contextPath);
       }
+      
       return parsed;
     },
     [props.value, props.fieldType, props.contextPath]
@@ -145,6 +143,7 @@ export const PropertyValueComponent = (props: {
 
   const selectAggregateSchema = async (e: React.MouseEvent) => {
     const contextInfo = props.superstate.contextsIndex.get(parsedValue.space || props.contextPath);
+    
     if (!contextInfo || !contextInfo.schemas) {
       return;
     }
@@ -180,7 +179,7 @@ export const PropertyValueComponent = (props: {
   const selectAggregateRef = (e: React.MouseEvent) => {
     const properties: SelectOption[] = [];
     const childrenProperty = {
-      name: "Items",
+      name: i18n.menu.items,
       value: "$items",
     };
     if (props.rowPath) properties.push(childrenProperty);
@@ -295,8 +294,8 @@ export const PropertyValueComponent = (props: {
       (filters) => saveParsedValue("filters", filters),
       {
         sections: [
-          { name: "Properties", value: "property" },
-          { name: "Metadata", value: "metadata" }
+          { name: i18n.menu.properties, value: "property" },
+          { name: i18n.menu.metadata, value: "metadata" }
         ]
       }
     );
@@ -328,7 +327,7 @@ export const PropertyValueComponent = (props: {
     }
   }
     options.push({
-      name: "None",
+      name: i18n.labels.none,
       value: "",
     });
     
@@ -338,7 +337,7 @@ export const PropertyValueComponent = (props: {
         aggregateFnTypes[f].type == "any"
       )
         options.push({
-          name: aggregateFnTypes[f].label,
+          name: i18n.aggregates[f],
           value: f,
         });
     });
@@ -425,7 +424,7 @@ export const PropertyValueComponent = (props: {
         value: "EEE MMM d, yyyy h:mma",
       },
     ];
-    showOptions(e, null, formats, "format", null, "Date Format");
+    showOptions(e, null, formats, "format", null, "Date Format", true);
   };
   const selectEditOptions = (e: React.MouseEvent) => {
     const parsedValue = parseFieldValue(props.value, "option");
@@ -578,23 +577,23 @@ export const PropertyValueComponent = (props: {
         <span>{spaceNameFromSpacePath(parsedValue.space || props.contextPath, props.superstate)}</span>
       </div>
       <div className="mk-menu-option" onClick={(e) => selectAggregateSchema(e) }>
-        <span>{"List"}</span>
+        <span>{i18n.labels.list}</span>
         <span>{schemaNameFromSpacePath(parsedValue.space || props.contextPath,  parsedValue.schema, props.superstate)}</span>
       </div>
       <div className="mk-menu-option" onClick={(e) => selectAggregateFilter(e) }>
-        <span>{"Filter"}</span>
-        <span>{parsedValue.filters?.length > 0 ? `${parsedValue.filters.reduce((acc: number, g: any) => acc + (g.filters?.length || 0), 0)} filters` : "None"}</span>
+        <span>{i18n.descriptions.filter}</span>
+        <span>{parsedValue.filters?.length > 0 ? `${parsedValue.filters.reduce((acc: number, g: any) => acc + (g.filters?.length || 0), 0)} filters` : i18n.labels.none}</span>
       </div>
       </> :
       <>
         <div className="mk-menu-option" onClick={(e) => selectAggregateRef(e)}>
         <span>{i18n.labels.propertyValueReference}</span>
-        <span>{parsedValue.ref == "$items" ? "Items" : parsedValue.ref}</span>
+        <span>{parsedValue.ref == "$items" ? i18n.menu.items : parsedValue.ref}</span>
       </div>
       {parsedValue.ref?.length > 0 && (
         <div className="mk-menu-option" onClick={(e) => selectAggregateFilter(e)}>
-          <span>{"Filter"}</span>
-          <span>{parsedValue.filters?.length > 0 ? `${parsedValue.filters.reduce((acc: number, g: any) => acc + (g.filters?.length || 0), 0)} filters` : "None"}</span>
+          <span>{i18n.descriptions.filter}</span>
+          <span>{parsedValue.filters?.length > 0 ? `${parsedValue.filters.reduce((acc: number, g: any) => acc + (g.filters?.length || 0), 0)} filters` : i18n.labels.none}</span>
         </div>
       )}
       </>
@@ -611,7 +610,7 @@ export const PropertyValueComponent = (props: {
       {parsedValue.field?.length > 0 && (
         <div className="mk-menu-option" onClick={(e) => selectAggregateFn(e)}>
           <span>{i18n.labels.aggregateBy}</span>
-          <span>{aggregateFnTypes[parsedValue?.fn]?.label}</span>
+          <span>{i18n.aggregates[parsedValue?.fn]}</span>
         </div>
       )}
       {aggregateFnTypes[parsedValue?.fn]?.valueType == "number" && (

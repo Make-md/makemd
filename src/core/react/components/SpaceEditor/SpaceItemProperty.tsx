@@ -1,6 +1,7 @@
 import { saveSpaceCache } from "core/superstate/utils/spaces";
 import { isString } from "lodash";
-import { i18n, Superstate } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useMemo, useState } from "react";
 import { SpaceState } from "shared/types/PathState";
 import { SpaceDefinition } from "shared/types/spaceDef";

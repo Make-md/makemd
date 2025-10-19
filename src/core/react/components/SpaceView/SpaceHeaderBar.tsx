@@ -9,7 +9,8 @@ import {
 import { removePathIcon, savePathIcon } from "core/utils/emoji";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { isString } from "lodash";
-import { i18n, SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useContext, useMemo } from "react";
 import StickerModal from "shared/components/StickerModal";
 import { defaultTableFields } from "shared/schemas/fields";
@@ -250,29 +251,7 @@ export const SpaceHeaderBar = (props: {
           },
         },
         menuSeparator,
-        {
-          name: i18n.menu.toggleReadMode,
-          description: i18n.descriptions.toggleReadMode,
-          icon: "ui//eye",
-          onClick: (e) => {
-            saveSpaceCache(props.superstate, spaceState.space, {
-              ...spaceState.metadata,
-              readMode: !spaceState.metadata.readMode,
-            });
-          },
-        },
-        {
-          name: i18n.menu.toggleFullWidth,
-          description: i18n.descriptions.toggleFullWidth,
-          icon: "ui//expand",
-          onClick: (e) => {
-            saveSpaceCache(props.superstate, spaceState.space, {
-              ...spaceState.metadata,
-              fullWidth: !spaceState.metadata.fullWidth,
-            });
-          },
-        },
-        menuSeparator,
+        
         {
           name: i18n.labels.applyToItems,
           description: i18n.descriptions.spaceProperties,

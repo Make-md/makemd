@@ -41,6 +41,7 @@ import { FlowNodeView } from "./FlowNodeView";
 
 import { FrameInstanceContext } from "core/react/context/FrameInstanceContext";
 import { PathContext } from "core/react/context/PathContext";
+import { useSpaceManager } from "core/react/context/SpaceManagerContext";
 import { WindowContext } from "core/react/context/WindowContext";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { Rect } from "shared/types/Pos";
@@ -76,7 +77,6 @@ const executeAction = (
   saveState: (state: FrameState) => void,
   api: API
 ) => {
-  
   if (typeof action === "function") {
     // Current behavior: execute function directly
     action(event, null, frameState, saveState, api);
@@ -84,7 +84,6 @@ const executeAction = (
     // New behavior: execute command with parameters
     const parameters = {
       ...action.parameters,
-     
     };
     api.commands.run(action.command, parameters, frameState.$contexts);
   }
@@ -107,7 +106,6 @@ const FrameEditorInner = memo(function FrameEditorInner(props: {
   };
   const { treeNode } = props;
 
-  const { instance } = useContext(FrameInstanceContext);
   return (
     <>
       {treeNode.node.type == "new" ? (
@@ -210,6 +208,7 @@ export const FrameEditorNodeView = (props: {
   children?: React.ReactNode;
   containerRef: React.RefObject<HTMLDivElement>;
 }) => {
+  const spaceManager = useSpaceManager() || props.superstate.spaceManager;
   const {
     selectionMode,
     selectable,
@@ -386,7 +385,7 @@ export const FrameEditorNodeView = (props: {
               (s: FrameState) => {
                 return saveState(s, props.instance);
               },
-              props.superstate.api
+              spaceManager.api
             );
           }
         }
@@ -412,7 +411,7 @@ export const FrameEditorNodeView = (props: {
             null,
             props.instance.state,
             (s: FrameState) => saveState(s, props.instance),
-            props.superstate.api
+            spaceManager.api
           );
         }
       }

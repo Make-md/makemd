@@ -1,3 +1,5 @@
+import i18n from "shared/i18n";
+
 import { CLIManager } from "core/middleware/commands";
 import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
@@ -18,7 +20,7 @@ import { visualizationNode } from "schemas/kits";
 import { dataNode } from "schemas/kits/base";
 import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
 import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemButton, newItemNode, overviewItem, rowGroup, taskListItem } from "schemas/kits/list";
-import { buttonNode, callout, dividerNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
+import { buttonNode, callout, circularProgressNode, dividerNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
 import { fieldTypeForField, mainFrameID } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
 import { Command } from "shared/types/commands";
@@ -95,6 +97,7 @@ public api: API;
         buttonNode(), 
         dividerNode, 
         progressNode(),
+        circularProgressNode,
         callout(),
         toggleNode(),
         eventItem,
@@ -197,6 +200,8 @@ public api: API;
         
         this.allMetadata = {};
         this.api = new API(this);
+        // Initialize SpaceManager's API reference
+        spaceManager.api = new API(this, spaceManager);
         
         //Initialize Asset Manager - will be replaced by platform-specific implementation
         this.assets = null; // Defer creation until persister is available
@@ -308,7 +313,7 @@ public api: API;
         if (kits.length == 0) {
             this.kits.set('default', {
                 id: 'default',
-                name: 'Default',
+                name: i18n.labels.default,
                 colors: {
                 },
                 frames: []
@@ -347,7 +352,7 @@ public api: API;
         
     }
 
-    public  getSpaceItems(spacePath: string, filesOnly?: boolean) : PathStateWithRank[] {
+    public  getSpaceItems(spacePath: string) : PathStateWithRank[] {
         const items = [...this.spacesMap.getInverse(spacePath)]
         const ranks = this.contextsIndex.get(spacePath)?.paths ?? [];
         
@@ -477,7 +482,7 @@ public api: API;
     public async initializeFocuses() {
         const allFocuses = await this.spaceManager.readFocuses();
         if (allFocuses.length == 0) {
-            this.spaceManager.saveFocuses([{name: "Home", sticker: "ui//home", paths: ['/']}]);
+            this.spaceManager.saveFocuses([{name: i18n.labels.home, sticker: "ui//home", paths: ['/']}]);
             return;
         }
         this.focuses = allFocuses;
@@ -669,6 +674,7 @@ public api: API;
         const parent = getParentPathFromString(path);
         if (this.spacesIndex.has(parent) && this.spacesIndex.get(parent).space.notePath == path) {
             await this.reloadSpace(this.spacesIndex.get(parent).space)
+            await this.reloadContextByPath(parent, {force: true})
         }
         this.dispatchEvent("pathCreated", { path});
     }

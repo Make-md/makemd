@@ -3,6 +3,7 @@ import { CellEditMode } from "core/react/components/SpaceView/Contexts/TableView
 import { defaultMenu } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { defaultValueForField } from "core/utils/contexts/fields/fields";
 import { SelectOptionType, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useEffect, useState } from "react";
 import { Command, CommandWithPath } from "shared/types/commands";
 import { FrameNodeState } from "shared/types/frameExec";
@@ -288,7 +289,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
     });
 
     spaceActions.push({
-      name: "Create Item in Space",
+      name: i18n.menu.createItemInSpace,
       value: "spaces://$api/path/#;create",
       onClick: () => {
         const action = "spaces://$api/path/#;create";
@@ -301,7 +302,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
     });
 
     spaceActions.push({
-      name: "New Item View",
+      name: i18n.menu.newItemView,
       value: "spaces://$api/table/#;createModal",
       onClick: () => {
         const action = "spaces://$api/table/#;createModal";
@@ -368,7 +369,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
 
     if (allOptions.length === 0) {
       allOptions.push({
-        name: "No actions available",
+        name: i18n.menu.noActionsAvailable,
         type: SelectOptionType.Option,
         disabled: true,
       });
@@ -473,7 +474,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                       initialValue={getInitialValue(
                         parameterValues.path || actionParams.path,
                         {
-                          name: "Path",
+                          name: i18n.menu.path,
                           type: "link",
                           value: "",
                           hidden: "false",
@@ -481,7 +482,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                         }
                       )}
                       column={{
-                        name: "Path",
+                        name: i18n.menu.path,
                         type: "link",
                         value: "",
                         hidden: "false",
@@ -509,7 +510,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                         initialValue={getInitialValue(
                           parameterValues.name || actionParams.name,
                           {
-                            name: "Name",
+                            name: i18n.menu.name,
                             type: "text",
                             value: "",
                             hidden: "false",
@@ -517,7 +518,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                           }
                         )}
                         column={{
-                          name: "Name",
+                          name: i18n.menu.name,
                           type: "text",
                           value: "",
                           hidden: "false",
@@ -578,7 +579,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                         initialValue={getInitialValue(
                           parameterValues.content || actionParams.content,
                           {
-                            name: "Content",
+                            name: i18n.menu.content,
                             type: "text",
                             value: "",
                             hidden: "false",
@@ -586,7 +587,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                           }
                         )}
                         column={{
-                          name: "Content",
+                          name: i18n.menu.content,
                           type: "text",
                           value: "",
                           hidden: "false",
@@ -618,7 +619,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                         initialValue={getInitialValue(
                           parameterValues.path || actionParams.path,
                           {
-                            name: "Path",
+                            name: i18n.menu.path,
                             type: "link",
                             value: "",
                             hidden: "false",
@@ -626,7 +627,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                           }
                         )}
                         column={{
-                          name: "Path",
+                          name: i18n.menu.path,
                           type: "link",
                           value: "",
                           hidden: "false",
@@ -651,7 +652,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                         initialValue={getInitialValue(
                           parameterValues.property || actionParams.property,
                           {
-                            name: "Property",
+                            name: i18n.menu.property,
                             type: "option",
                             value: JSON.stringify({ source: "$properties" }),
                             hidden: "false",
@@ -659,7 +660,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                           }
                         )}
                         column={{
-                          name: "Property",
+                          name: i18n.menu.property,
                           type: "option",
                           value: JSON.stringify({ source: "$properties" }),
                           hidden: "false",
@@ -687,7 +688,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                         initialValue={getInitialValue(
                           parameterValues.value || actionParams.value,
                           {
-                            name: "Value",
+                            name: i18n.menu.value,
                             type: "text",
                             value: "",
                             hidden: "false",
@@ -695,7 +696,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                           }
                         )}
                         column={{
-                          name: "Value",
+                          name: i18n.menu.value,
                           type: "text",
                           value: "",
                           hidden: "false",
@@ -765,7 +766,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                         initialValue={getInitialValue(
                           parameterValues.schema || actionParams.schema,
                           {
-                            name: "Table",
+                            name: i18n.menu.table,
                             type: "option",
                             value: JSON.stringify({
                               source: "$lists",
@@ -776,7 +777,7 @@ export const ButtonSubmenu: React.FC<ButtonSubmenuProps> = ({
                           }
                         )}
                         column={{
-                          name: "Table",
+                          name: i18n.menu.table,
                           type: "option",
                           value: JSON.stringify({
                             source: "$lists",

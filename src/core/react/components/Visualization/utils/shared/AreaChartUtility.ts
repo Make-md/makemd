@@ -1,9 +1,29 @@
-import { area as d3Area, line as d3Line, curveMonotoneX, curveLinear, stack as d3Stack, max } from 'core/utils/d3-imports';
+import { area as d3Area, line as d3Line, curveMonotoneX, curveLinear, curveCatmullRom, stack as d3Stack, max, select, timeFormat, utcFormat } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
-import { getPaletteColors, getSolidPaletteColors } from '../utils';
+import { getPaletteColors, getSolidPaletteColors, createTooltip } from '../utils';
 import { GradientUtility, GradientConfig } from './GradientUtility';
+import { formatNumber } from '../formatNumber';
+import { ensureCorrectEncodingType } from '../../utils/inferEncodingType';
+import { AreaChartData } from '../../types/ChartDataSchemas';
+import { displayTextForType } from 'core/utils/displayTextForType';
 
 export class AreaChartUtility {
+  /**
+   * Format a date for tooltip display based on time granularity
+   */
+  private static formatDateForTooltip(date: Date, xEncoding: any): string {
+    // Check if we have hour-level precision
+    const hasHourPrecision = date.getUTCHours() !== 0 || date.getUTCMinutes() !== 0 || date.getUTCSeconds() !== 0;
+    
+    // If hour grouping or has hour precision, show date and time
+    if (xEncoding?.timeUnit === 'hour' || hasHourPrecision) {
+      return utcFormat('%b %d, %I:%M %p')(date);
+    }
+    
+    // Otherwise just show date
+    return utcFormat('%b %d')(date);
+  }
+
   static render(context: RenderContext): void {
     if (isSVGContext(context)) {
       this.renderSVG(context);
@@ -15,18 +35,34 @@ export class AreaChartUtility {
   private static renderSVG(context: RenderContext): void {
     if (!isSVGContext(context)) return;
 
-    const { g, svg, processedData, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, resolveColor, colorPaletteId } = context;
+    const { g, svg, processedData, transformedData, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, resolveColor, colorPaletteId, tableProperties } = context;
     
     const xScale = scales.get('x');
     const yScale = scales.get('y');
     
     if (!xScale || !yScale) return;
 
-    const xEncodings = Array.isArray(config.encoding.x) ? config.encoding.x : [config.encoding.x];
+    // Use transformed data if available (contains aggregated/grouped data)
+    if (transformedData?.type === 'area' && transformedData.data) {
+      this.renderWithTransformedData(context, transformedData.data as AreaChartData);
+      return;
+    }
+
+    let xEncodings = Array.isArray(config.encoding.x) ? config.encoding.x : [config.encoding.x];
     const yEncodings = Array.isArray(config.encoding.y) ? config.encoding.y : [config.encoding.y];
+    
+    // Ensure correct encoding type for x-axis (must match the scale type that was created)
+    if (xEncodings[0] && tableProperties) {
+      const xProperty = tableProperties.find(p => p.name === xEncodings[0].field);
+      const xValues = processedData.map(d => d[xEncodings[0].field]);
+      xEncodings[0] = ensureCorrectEncodingType(xEncodings[0], xProperty, xValues);
+    }
 
     // Store legend items
     const legendItems: Array<{ label: string; color: string }> = [];
+
+    // Create tooltip
+    const tooltip = createTooltip('area-tooltip');
 
     // Check if we should render stacked
     const hasMultipleYFields = yEncodings.length > 1;
@@ -99,6 +135,7 @@ export class AreaChartUtility {
 
       // Extract the sorted data
       const areaData = dataWithPositions.map((item) => item.data);
+      
 
       // Create area generator
       const area = d3Area<any>()
@@ -117,7 +154,7 @@ export class AreaChartUtility {
           const xPos = getXPosition(d, xEncoding);
           return d[yEncoding.field] != null && !isNaN(d[yEncoding.field]) && !isNaN(xPos);
         })
-        .curve((config.mark?.interpolate || 'linear') === 'monotone' ? curveMonotoneX : curveLinear);
+        .curve((config.mark?.interpolate || 'linear') === 'monotone' ? curveCatmullRom : curveLinear);
 
       // Create line generator for the top edge
       const line = d3Line<any>()
@@ -127,7 +164,7 @@ export class AreaChartUtility {
           const xPos = getXPosition(d, xEncoding);
           return d[yEncoding.field] != null && !isNaN(d[yEncoding.field]) && !isNaN(xPos);
         })
-        .curve((config.mark?.interpolate || 'linear') === 'monotone' ? curveMonotoneX : curveLinear);
+        .curve((config.mark?.interpolate || 'linear') === 'monotone' ? curveCatmullRom : curveLinear);
 
       // Determine colors using palette
       const paletteColors = getPaletteColors(context.colorPaletteId, context.superstate);
@@ -229,6 +266,83 @@ export class AreaChartUtility {
         .attr('stroke-width', config.mark?.strokeWidth || 2)
         .attr('d', line);
 
+      // Add invisible circles for tooltip interaction
+      const tooltipGroup = g.append('g')
+        .attr('class', `area-tooltip-points-${seriesIndex}`);
+
+      tooltipGroup.selectAll('circle')
+        .data(areaData)
+        .enter()
+        .append('circle')
+        .attr('cx', (d) => getXPosition(d, xEncoding))
+        .attr('cy', (d) => yScale(d[yEncoding.field]))
+        .attr('r', 4)
+        .attr('fill', 'transparent')
+        .attr('stroke', 'transparent')
+        .style('cursor', 'pointer')
+        .on('mouseover', function(event, d) {
+          // Highlight the point
+          const circle = select(this);
+          circle
+            .attr('fill', strokeColor)
+            .attr('stroke', strokeColor)
+            .attr('r', 6);
+
+          // Show tooltip
+          const xValue = d[xEncoding.field];
+          const yValue = Number(d[yEncoding.field]);
+          
+          let xDisplay: string;
+          // Check if temporal either by explicit type or by checking if value is a Date
+          // Exclude numeric-only strings (timestamps) from auto-detection
+          const isNumericString = typeof xValue === 'string' && /^\d+$/.test(xValue);
+          const isTemporalValue = xEncoding.type === 'temporal' || xValue instanceof Date || 
+            (typeof xValue === 'string' && !isNumericString && !isNaN(Date.parse(xValue)));
+          
+          if (isTemporalValue) {
+            const date = xValue instanceof Date ? xValue : new Date(String(xValue));
+            if (!isNaN(date.getTime())) {
+              // Match axis formatting: use same format as x-axis
+              xDisplay = AreaChartUtility.formatDateForTooltip(date, xEncoding);
+            } else {
+              xDisplay = String(xValue);
+            }
+          } else if (xEncoding.type === 'quantitative') {
+            xDisplay = formatNumber(Number(xValue));
+          } else {
+            // Use displayTextForType for proper formatting (handles paths, links, etc.)
+            const xProperty = tableProperties?.find(p => p.name === xEncoding.field);
+            xDisplay = xProperty && context.superstate 
+              ? displayTextForType(xProperty, xValue as any, context.superstate) 
+              : String(xValue);
+          }
+          
+          const yDisplay = formatNumber(yValue);
+          
+          tooltip.transition()
+            .duration(200)
+            .style('opacity', 0.9);
+          
+          tooltip.html(`
+            <div style="font-weight: 600; margin-bottom: 4px;">${xDisplay}</div>
+            <div><strong>${yEncoding.field}:</strong> ${yDisplay}</div>
+          `)
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', function() {
+          // Hide the point
+          select(this)
+            .attr('fill', 'transparent')
+            .attr('stroke', 'transparent')
+            .attr('r', 4);
+
+          // Hide tooltip
+          tooltip.transition()
+            .duration(500)
+            .style('opacity', 0);
+        });
+
       // Add interactivity
       if (editMode) {
         const interactionGroup = g.append('g')
@@ -299,6 +413,253 @@ export class AreaChartUtility {
     }
 
     // Store legend items for later rendering
+    if (legendItems.length > 0) {
+      (svg as any)._legendItems = legendItems;
+    }
+    
+    // Add category/temporal hit areas for easier tooltip access
+    const xEncoding = xEncodings[0];
+    if (xEncoding && (xEncoding.type === 'temporal' || xEncoding.type === 'nominal' || xEncoding.type === 'ordinal')) {
+      // Group data by x-value to create hit areas
+      const xValueGroups = new Map<string, any[]>();
+      processedData.forEach(d => {
+        const xVal = d[xEncoding.field];
+        const key = xVal instanceof Date ? xVal.getTime().toString() : String(xVal);
+        if (!xValueGroups.has(key)) {
+          xValueGroups.set(key, []);
+        }
+        xValueGroups.get(key)!.push(d);
+      });
+      
+      // Calculate bandwidth for hit areas
+      const xValues = Array.from(xValueGroups.keys()).sort();
+      const bandwidth = xValues.length > 1 
+        ? Math.abs(xScale(processedData[1][xEncoding.field]) - xScale(processedData[0][xEncoding.field]))
+        : 50;
+      
+      xValueGroups.forEach((dataPoints, xKey) => {
+        const xVal = dataPoints[0][xEncoding.field];
+        const xPos = getXPosition(dataPoints[0], xEncoding);
+        
+        if (isNaN(xPos)) return;
+        
+        g.append('rect')
+          .attr('class', 'x-value-hit-area')
+          .attr('x', xPos - bandwidth / 2)
+          .attr('y', 0)
+          .attr('width', bandwidth)
+          .attr('height', graphArea.bottom - graphArea.top)
+          .attr('fill', 'transparent')
+          .attr('pointer-events', 'all')
+          .style('cursor', 'crosshair')
+          .on('mouseover', function(event) {
+            // Show tooltip with all series data at this x-value
+            tooltip.transition()
+              .duration(200)
+              .style('opacity', 0.9);
+            
+            // Format x-value
+            let formattedX: string;
+            if (xEncoding.type === 'temporal' && (xVal instanceof Date || !isNaN(Date.parse(String(xVal))))) {
+              const date = xVal instanceof Date ? xVal : new Date(String(xVal));
+              formattedX = AreaChartUtility.formatDateForTooltip(date, xEncoding);
+            } else {
+              const xProp = tableProperties?.find(p => p.name === xEncoding.field);
+              formattedX = xProp ? displayTextForType(xProp, xVal, context.superstate) : String(xVal);
+            }
+            
+            let tooltipContent = `<div style="font-weight: 600; margin-bottom: 4px;">${formattedX}</div>`;
+            
+            // Add all y-values at this x position
+            yEncodings.forEach(yEncoding => {
+              dataPoints.forEach(d => {
+                const yVal = d[yEncoding.field];
+                if (yVal != null) {
+                  const formattedY = formatNumber(Number(yVal));
+                  tooltipContent += `<div><strong>${yEncoding.field}:</strong> ${formattedY}</div>`;
+                }
+              });
+            });
+            
+            tooltip.html(tooltipContent)
+              .style('left', (event.pageX + 10) + 'px')
+              .style('top', (event.pageY - 28) + 'px');
+          })
+          .on('mousemove', function(event) {
+            tooltip
+              .style('left', (event.pageX + 10) + 'px')
+              .style('top', (event.pageY - 28) + 'px');
+          })
+          .on('mouseout', function() {
+            tooltip.transition()
+              .duration(500)
+              .style('opacity', 0);
+          });
+      });
+    }
+  }
+
+  /**
+   * Render area chart using pre-transformed data (aggregated/grouped)
+   */
+  private static renderWithTransformedData(context: RenderContext, areaData: AreaChartData): void {
+    if (!isSVGContext(context)) return;
+
+    const { g, svg, scales, config, graphArea, editMode, selectedElement, onElementSelect, showDataLabels, resolveColor, colorPaletteId, tableProperties } = context;
+    
+    const xScale = scales.get('x');
+    const yScale = scales.get('y');
+    
+    if (!xScale || !yScale) return;
+
+    let xEncodings = Array.isArray(config.encoding.x) ? config.encoding.x : [config.encoding.x];
+    const yEncodings = Array.isArray(config.encoding.y) ? config.encoding.y : [config.encoding.y];
+    
+    // Ensure correct encoding type
+    if (xEncodings[0] && tableProperties) {
+      const xProperty = tableProperties.find(p => p.name === xEncodings[0].field);
+      const xValues = areaData.xDomain;
+      xEncodings[0] = ensureCorrectEncodingType(xEncodings[0], xProperty, xValues);
+    }
+
+    const xEncoding = xEncodings[0];
+    const yEncoding = yEncodings[0];
+
+    // Store legend items
+    const legendItems: Array<{ label: string; color: string }> = [];
+
+    // Create tooltip
+    const tooltip = createTooltip('area-tooltip');
+
+    // Helper to get x position
+    const getXPosition = (xValue: string | number | Date) => {
+      if (xEncoding.type === 'quantitative' || xEncoding.type === 'temporal') {
+        const scaledValue = xEncoding.type === 'temporal' 
+          ? (xValue instanceof Date ? xValue : new Date(String(xValue)))
+          : Number(xValue);
+        const result = xScale(scaledValue as any);
+        return result;
+      } else {
+        const bandScale = xScale as any;
+        const bandWidth = bandScale.bandwidth ? bandScale.bandwidth() : 0;
+        const bandStart = bandScale(String(xValue));
+        return bandStart + bandWidth / 2;
+      }
+    };
+
+    const paletteColors = getPaletteColors(colorPaletteId, context.superstate);
+    const solidColors = getSolidPaletteColors(colorPaletteId, context.superstate);
+
+    // Group data by series
+    const seriesGroups = new Map<string, typeof areaData.data>();
+    areaData.data.forEach(point => {
+      if (!seriesGroups.has(point.series)) {
+        seriesGroups.set(point.series, []);
+      }
+      seriesGroups.get(point.series)!.push(point);
+    });
+
+    // Render each series
+    areaData.series.forEach((seriesName, seriesIndex) => {
+      const seriesData = seriesGroups.get(seriesName) || [];
+      
+      // Sort by x value
+      seriesData.sort((a, b) => {
+        if (a.x instanceof Date && b.x instanceof Date) {
+          return a.x.getTime() - b.x.getTime();
+        }
+        if (typeof a.x === 'number' && typeof b.x === 'number') {
+          return a.x - b.x;
+        }
+        return String(a.x).localeCompare(String(b.x));
+      });
+
+      const fillColor = paletteColors[seriesIndex % paletteColors.length];
+      const strokeColor = solidColors[seriesIndex % solidColors.length];
+
+      // Add to legend
+      legendItems.push({
+        label: seriesName,
+        color: fillColor
+      });
+
+      // Create area generator
+      const area = d3Area<any>()
+        .x((d) => getXPosition(d.x))
+        .y0((d) => yScale(d.y0 || 0))
+        .y1((d) => yScale(d.y))
+        .curve((config.mark?.interpolate || 'linear') === 'monotone' ? curveCatmullRom : curveLinear);
+
+      // Create line generator
+      const line = d3Line<any>()
+        .x((d) => getXPosition(d.x))
+        .y((d) => yScale(d.y))
+        .curve((config.mark?.interpolate || 'linear') === 'monotone' ? curveCatmullRom : curveLinear);
+
+      // Draw area
+      g.append('path')
+        .datum(seriesData)
+        .attr('class', `area area-series-${seriesIndex}`)
+        .attr('fill', fillColor)
+        .attr('fill-opacity', config.mark?.fillOpacity || 0.3)
+        .attr('d', area);
+
+      // Draw line on top
+      g.append('path')
+        .datum(seriesData)
+        .attr('class', `area-line area-line-series-${seriesIndex}`)
+        .attr('fill', 'none')
+        .attr('stroke', strokeColor)
+        .attr('stroke-width', config.mark?.strokeWidth || 2)
+        .attr('d', line);
+
+      // Add tooltip circles
+      const tooltipGroup = g.append('g')
+        .attr('class', `area-tooltip-points-${seriesIndex}`);
+
+      tooltipGroup.selectAll('circle')
+        .data(seriesData)
+        .enter()
+        .append('circle')
+        .attr('cx', (d) => getXPosition(d.x))
+        .attr('cy', (d) => yScale(d.y))
+        .attr('r', 4)
+        .attr('fill', 'transparent')
+        .attr('stroke', 'transparent')
+        .style('cursor', 'pointer')
+        .on('mouseover', function(event, d) {
+          select(this).attr('fill', strokeColor).attr('stroke', strokeColor).attr('r', 6);
+          
+          let xDisplay: string;
+          if (d.x instanceof Date) {
+            // Match axis formatting
+            const xEncoding = Array.isArray(config.encoding.x) ? config.encoding.x[0] : config.encoding.x;
+            xDisplay = AreaChartUtility.formatDateForTooltip(d.x, xEncoding);
+          } else if (typeof d.x === 'number') {
+            xDisplay = formatNumber(d.x);
+          } else {
+            // Use displayTextForType for proper formatting (handles paths, links, etc.)
+            const xProperty = tableProperties?.find(p => p.name === xEncoding.field);
+            xDisplay = xProperty && context.superstate 
+              ? displayTextForType(xProperty, d.x as any, context.superstate) 
+              : String(d.x);
+          }
+          
+          tooltip.transition().duration(200).style('opacity', 0.9);
+          tooltip.html(`
+            <div style="font-weight: 600; margin-bottom: 4px;">${xDisplay}</div>
+            <div><strong>${seriesName}:</strong> ${formatNumber(d.y)}</div>
+          `)
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', function() {
+          select(this).attr('fill', 'transparent').attr('stroke', 'transparent').attr('r', 4);
+          tooltip.transition().duration(500).style('opacity', 0);
+        });
+    });
+
+    // Store legend items
     if (legendItems.length > 0) {
       (svg as any)._legendItems = legendItems;
     }
@@ -419,15 +780,22 @@ export class AreaChartUtility {
   private static renderCanvas(context: RenderContext): void {
     if (!isCanvasContext(context)) return;
 
-    const { ctx, processedData, scales, config, graphArea, resolveColor, colorPaletteId } = context;
+    const { ctx, processedData, scales, config, graphArea, resolveColor, colorPaletteId, tableProperties } = context;
     
     const xScale = scales.get('x');
     const yScale = scales.get('y');
     
     if (!xScale || !yScale) return;
 
-    const xEncodings = Array.isArray(config.encoding.x) ? config.encoding.x : [config.encoding.x];
+    let xEncodings = Array.isArray(config.encoding.x) ? config.encoding.x : [config.encoding.x];
     const yEncodings = Array.isArray(config.encoding.y) ? config.encoding.y : [config.encoding.y];
+    
+    // Ensure correct encoding type for x-axis (must match the scale type that was created)
+    if (xEncodings[0] && tableProperties) {
+      const xProperty = tableProperties.find(p => p.name === xEncodings[0].field);
+      const xValues = processedData.map(d => d[xEncodings[0].field]);
+      xEncodings[0] = ensureCorrectEncodingType(xEncodings[0], xProperty, xValues);
+    }
 
     // Helper to get x position handling both linear and band scales (same as SVG version)
     const getXPosition = (d: any, xEncoding: any) => {

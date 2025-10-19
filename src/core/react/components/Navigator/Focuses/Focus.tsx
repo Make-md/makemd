@@ -3,6 +3,7 @@ import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import useLongPress from "core/react/hooks/useLongPress";
 import { SelectOption, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { forwardRef, useContext, useRef } from "react";
 import { Focus } from "shared/types/focus";
 import { Rect } from "shared/types/Pos";
@@ -94,7 +95,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(
           },
         },
         {
-          name: "Close",
+          name: i18n.buttons.close,
           icon: "ui//close",
           value: "close",
           onClick: () => {
@@ -162,7 +163,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(
           onClick={(e) => {
             setFocuses([
               ...focuses,
-              { sticker: "ui//spaces", name: "Waypoint", paths: [] },
+              { sticker: "ui//spaces", name: i18n.labels.waypoint, paths: [] },
             ]);
             superstate.saveSettings();
           }}

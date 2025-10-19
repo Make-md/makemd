@@ -1,4 +1,5 @@
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { forwardRef, useEffect, useRef, useState } from "react";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { pathToString } from "utils/path";
@@ -11,6 +12,7 @@ export interface NoteViewProps {
   properties?: Record<string, any>;
   classname?: string;
   forceNote?: boolean;
+  readOnly?: boolean
 }
 
 export const NoteView = forwardRef((props: NoteViewProps, ref) => {
@@ -57,11 +59,11 @@ export const NoteView = forwardRef((props: NoteViewProps, ref) => {
           pathToString(props.path)
         );
         setExistsPas(false);
-        await props.superstate.ui.openPath(newPath, false, div);
+        await props.superstate.ui.openPath(newPath, false, div, {readOnly: props.readOnly});
       }
     } else {
       setExistsPas(false);
-      props.superstate.ui.openPath(filePath, false, div);
+      props.superstate.ui.openPath(filePath, false, div, {readOnly: props.readOnly});
     }
 
     setLoaded(true);

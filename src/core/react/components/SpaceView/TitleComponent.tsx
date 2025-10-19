@@ -8,7 +8,8 @@ import {
 import { renamePathByName } from "core/superstate/utils/path";
 import { savePathIcon } from "core/utils/emoji";
 import { isPhone } from "core/utils/ui/screen";
-import { i18n, Superstate } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, {
   PropsWithChildren,
   useContext,
@@ -18,12 +19,13 @@ import React, {
   useState,
 } from "react";
 import { PathStickerContainer } from "shared/components/PathSticker";
-import { PathState } from "shared/types/PathState";
+import { PathState, SpaceState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
 import { sanitizeFileName } from "shared/utils/sanitizers";
 import { stringFromTag } from "utils/tags";
 import StickerModal from "../../../../shared/components/StickerModal";
 import ImageModal from "../UI/Modals/ImageModal";
+import { saveSpaceCache } from "core/superstate/utils/spaces";
 
 export const TitleComponent = (
   props: PropsWithChildren<{
@@ -150,6 +152,7 @@ export const TitleComponent = (
             pathState={pathState}
             hasBanner={hasBanner}
             hasSticker={hasSticker}
+            spaceState={spaceState}
           />
         )}
         {props.superstate.settings.spacesStickers && hasSticker && (
@@ -214,8 +217,9 @@ const HeaderLabelActions = (props: {
   pathState: PathState;
   hasBanner: boolean;
   hasSticker: boolean;
+  spaceState?: SpaceState
 }) => {
-  const { pathState, hasBanner, hasSticker } = props;
+  const { pathState, hasBanner, hasSticker, spaceState } = props;
   return (
     <div className="mk-header-label-actions">
       {props.superstate.settings.spacesStickers && !hasSticker && (
@@ -266,6 +270,46 @@ const HeaderLabelActions = (props: {
           {i18n.buttons.addCover}
         </button>
       )}
+      <span style={{flex: 1}}></span>
+      {spaceState &&
+      <>
+      <button
+      aria-label={i18n.menu.toggleReadMode}
+          className="mk-inline-button"
+          onClick={(e) =>
+           saveSpaceCache(props.superstate, spaceState.space, {
+                    ...spaceState.metadata,
+                    readMode: !spaceState.metadata.readMode,
+                  })
+          }
+        >
+          <div
+            className="mk-icon-xsmall"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker(spaceState.metadata.readMode ? "ui//eye" : 'ui//edit'),
+            }}
+          ></div>
+        </button>
+        <button
+          className="mk-inline-button"
+          aria-label={i18n.menu.toggleFullWidth}
+          onClick={(e) =>
+            saveSpaceCache(props.superstate, spaceState.space, {
+                    ...spaceState.metadata,
+                    fullWidth: !spaceState.metadata.fullWidth,
+                  })
+            
+          }
+        >
+          <div
+            className="mk-icon-xsmall"
+            dangerouslySetInnerHTML={{
+              __html: props.superstate.ui.getSticker(spaceState.metadata.fullWidth ? "ui//full-page" : "ui//reading-width"),
+            }}
+          ></div>
+        </button></>
+      }
+
     </div>
   );
 };

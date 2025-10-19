@@ -1,10 +1,11 @@
-import { select } from 'core/utils/d3-imports';
+import { select, timeFormat, utcFormat } from 'core/utils/d3-imports';
 import type { ScaleBand } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
 import { displayTextForType } from 'core/utils/displayTextForType';
-import { getPaletteColors } from '../utils';
+import { getPaletteColors, createTooltip, resolveColor } from '../utils';
 import { ScatterPlotData } from '../../transformers';
 import { formatNumber } from '../formatNumber';
+import i18n from "shared/i18n";
 
 export class ScatterPlotUtility {
   static render(context: RenderContext): void {
@@ -111,19 +112,7 @@ export class ScatterPlotUtility {
     }
 
     // Create tooltip
-    const tooltip = select('body').append('div')
-      .attr('class', 'scatter-tooltip')
-      .style('position', 'absolute')
-      .style('padding', '8px 12px')
-      .style('background', resolveColor('var(--mk-ui-background)'))
-      .style('color', resolveColor('var(--mk-ui-text-primary)'))
-      .style('border', `1px solid ${resolveColor('var(--mk-ui-border)')}`)
-      .style('border-radius', '4px')
-      .style('font-size', '12px')
-      .style('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.15)')
-      .style('pointer-events', 'none')
-      .style('opacity', 0)
-      .style('z-index', 10000);
+    const tooltip = createTooltip('scatter-tooltip');
 
     // Create points for each series combination
     let seriesIndex = 0;
@@ -133,8 +122,10 @@ export class ScatterPlotUtility {
         
         const seriesColor = themeColors[seriesIndex % themeColors.length];
         
+        const filteredData = processedData.filter(d => d[xEncoding.field] != null && d[yEncoding.field] != null);
+        
         const points = g.selectAll(`.dot-${xIndex}-${yIndex}`)
-          .data(processedData.filter(d => d[xEncoding.field] != null && d[yEncoding.field] != null))
+          .data(filteredData)
           .enter()
           .append('circle')
           .attr('class', `dot dot-${xIndex}-${yIndex}`)
@@ -155,109 +146,118 @@ export class ScatterPlotUtility {
           .attr('fill-opacity', config.mark?.fillOpacity || 0.7)
           .attr('stroke', 'none')
           .attr('stroke-width', 0)
-          .style('cursor', 'pointer');
+          .style('cursor', 'pointer')
+          .style('pointer-events', 'all');
+
+        // Add hover effects and tooltips to these specific points
+        points
+          .on('click', function(event, d: any) {
+          })
+          .on('mouseover', function(event, d: any) {
+            
+            // Enlarge point and increase opacity on hover
+            select(this)
+              .transition()
+              .duration(150)
+              .attr('r', function() {
+                const currentR = Number(select(this).attr('r'));
+                return currentR * 1.2;
+              })
+              .attr('fill-opacity', 1);
+            
+            // Show tooltip
+            tooltip.transition()
+              .duration(200)
+              .style('opacity', 0.9);
+            
+            // Build tooltip content
+            let tooltipContent = '';
+            
+            // Get point color
+            const pointElement = select(this);
+            const pointColor = pointElement.attr('fill');
+            
+            // X value as title (formatted to match axis)
+            const xValue = d[xEncoding.field];
+            let formattedX: string;
+            // Exclude numeric-only strings (timestamps) from auto-detection
+            const isNumericString = typeof xValue === 'string' && /^\d+$/.test(xValue);
+            const isTemporalValue = xEncoding.type === 'temporal' || xValue instanceof Date || 
+              (typeof xValue === 'string' && !isNumericString && !isNaN(Date.parse(String(xValue))));
+            
+            if (isTemporalValue) {
+              const date = xValue instanceof Date ? xValue : new Date(String(xValue));
+              if (!isNaN(date.getTime())) {
+                const formatDay = utcFormat('%b %d');
+                formattedX = formatDay(date);
+              } else {
+                formattedX = String(xValue);
+              }
+            } else {
+              const xProp = context.tableProperties?.find(p => p.name === xEncoding.field);
+              formattedX = xProp ? displayTextForType(xProp, xValue, context.superstate) : String(xValue);
+            }
+            
+            tooltipContent += `<div style="font-weight: 600; margin-bottom: 4px;">${formattedX}</div>`;
+            
+            // Y value with label and color indicator
+            tooltipContent += `<div style="display: flex; align-items: center; gap: 8px;">`;
+            tooltipContent += `<div style="width: 12px; height: 12px; background-color: ${pointColor}; border-radius: 2px; flex-shrink: 0;"></div>`;
+            
+            const yValue = d[yEncoding.field];
+            const yProp = context.tableProperties?.find(p => p.name === yEncoding.field);
+            const formattedY = yProp ? displayTextForType(yProp, yValue, context.superstate) : formatNumber(Number(yValue));
+            tooltipContent += `<div><strong>${yEncoding.field}:</strong> ${formattedY}</div>`;
+            tooltipContent += `</div>`;
+            
+            // Color field value if present
+            if (colorField) {
+              const colorValue = d[colorField];
+              const colorProp = context.tableProperties?.find(p => p.name === colorField);
+              const formattedColor = colorProp ? displayTextForType(colorProp, colorValue, context.superstate) : String(colorValue);
+              tooltipContent += `<div style="margin-top: 4px;"><strong>${colorField}:</strong> ${formattedColor}</div>`;
+            }
+            
+            // Size field value if present
+            if (sizeField) {
+              const sizeValue = d[sizeField];
+              const sizeProp = context.tableProperties?.find(p => p.name === sizeField);
+              const formattedSize = sizeProp ? displayTextForType(sizeProp, sizeValue, context.superstate) : formatNumber(Number(sizeValue));
+              tooltipContent += `<div style="margin-top: 4px;"><strong>${sizeField}:</strong> ${formattedSize}</div>`;
+            }
+            
+            tooltip.html(tooltipContent)
+              .style('left', (event.pageX + 10) + 'px')
+              .style('top', (event.pageY - 28) + 'px');
+          })
+          .on('mousemove', function(event) {
+            tooltip
+              .style('left', (event.pageX + 10) + 'px')
+              .style('top', (event.pageY - 28) + 'px');
+          })
+          .on('mouseout', function(event, d: any) {
+            // Restore point size and opacity
+            select(this)
+              .transition()
+              .duration(150)
+              .attr('r', () => {
+                if (sizeField && sizeScale) {
+                  return sizeScale(d[sizeField]);
+                }
+                return defaultSize;
+              })
+              .attr('fill-opacity', config.mark?.fillOpacity || 0.7);
+            
+            // Hide tooltip
+            tooltip.transition()
+              .duration(500)
+              .style('opacity', 0);
+          });
 
         seriesIndex++;
       });
     });
 
-    // Add hover effects and tooltips to all points
-    g.selectAll('.dot')
-      .on('mouseover', function(event, d: any) {
-        // Enlarge point and increase opacity on hover
-        select(this)
-          .transition()
-          .duration(150)
-          .attr('r', function() {
-            const currentR = Number(select(this).attr('r'));
-            return currentR * 1.2;
-          })
-          .attr('fill-opacity', 1);
-        
-        // Show tooltip
-        tooltip.transition()
-          .duration(200)
-          .style('opacity', 0.9);
-        
-        // Build tooltip content
-        let tooltipContent = '';
-        
-        // Get point color
-        const pointElement = select(this);
-        const pointColor = pointElement.attr('fill');
-        
-        // Get the class to determine which series this point belongs to
-        const pointClass = select(this).attr('class');
-        const match = pointClass.match(/dot-(\d+)-(\d+)/);
-        const xIndex = match ? parseInt(match[1]) : 0;
-        const yIndex = match ? parseInt(match[2]) : 0;
-        const xEncoding = xEncodings[xIndex];
-        const yEncoding = yEncodings[yIndex];
-        
-        // Primary field (X value) with color square
-        const xValue = d[xEncoding.field];
-        const xProp = context.tableProperties?.find(p => p.name === xEncoding.field);
-        const formattedX = xProp ? displayTextForType(xProp, xValue, context.superstate) : xValue;
-        
-        tooltipContent += `<div style="display: flex; align-items: center; gap: 8px;">`;
-        tooltipContent += `<div style="width: 12px; height: 12px; background-color: ${pointColor}; border-radius: 2px; flex-shrink: 0;"></div>`;
-        tooltipContent += `<div>${formattedX}</div>`;
-        tooltipContent += `</div>`;
-        
-        // Secondary fields (indented)
-        tooltipContent += `<div style="margin-left: 20px; margin-top: 4px;">`;
-        
-        // Y value
-        const yValue = d[yEncoding.field];
-        const yProp = context.tableProperties?.find(p => p.name === yEncoding.field);
-        const formattedY = yProp ? displayTextForType(yProp, yValue, context.superstate) : yValue;
-        tooltipContent += `${formattedY}`;
-        
-        // Color field value if present
-        if (colorField) {
-          const colorValue = d[colorField];
-          const colorProp = context.tableProperties?.find(p => p.name === colorField);
-          const formattedColor = colorProp ? displayTextForType(colorProp, colorValue, context.superstate) : colorValue;
-          tooltipContent += `<br/>${formattedColor}`;
-        }
-        
-        // Size field value if present
-        if (sizeField) {
-          const sizeValue = d[sizeField];
-          const sizeProp = context.tableProperties?.find(p => p.name === sizeField);
-          const formattedSize = sizeProp ? displayTextForType(sizeProp, sizeValue, context.superstate) : sizeValue;
-          tooltipContent += `<br/>${formattedSize}`;
-        }
-        
-        tooltipContent += `</div>`;
-        
-        tooltip.html(tooltipContent)
-          .style('left', (event.pageX + 10) + 'px')
-          .style('top', (event.pageY - 28) + 'px');
-      })
-      .on('mousemove', function(event) {
-        tooltip
-          .style('left', (event.pageX + 10) + 'px')
-          .style('top', (event.pageY - 28) + 'px');
-      })
-      .on('mouseout', function(event, d: any) {
-        // Restore point size and opacity
-        select(this)
-          .transition()
-          .duration(150)
-          .attr('r', () => {
-            if (sizeField && sizeScale) {
-              return sizeScale(d[sizeField]);
-            }
-            return defaultSize;
-          })
-          .attr('fill-opacity', config.mark?.fillOpacity || 0.7);
-        
-        // Hide tooltip
-        tooltip.transition()
-          .duration(500)
-          .style('opacity', 0);
-      });
 
     // Add interactivity for edit mode
     if (editMode) {
@@ -568,19 +568,7 @@ export class ScatterPlotUtility {
     const defaultSize = config.mark?.size || 4;
     
     // Create tooltip
-    const tooltip = select('body').append('div')
-      .attr('class', 'scatter-tooltip')
-      .style('position', 'absolute')
-      .style('padding', '8px 12px')
-      .style('background', 'var(--mk-ui-background-contrast)')
-      .style('color', 'var(--mk-ui-text-primary)')
-      .style('border', '1px solid var(--mk-ui-border)')
-      .style('border-radius', '4px')
-      .style('font-size', '12px')
-      .style('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.15)')
-      .style('pointer-events', 'none')
-      .style('opacity', 0)
-      .style('z-index', 10000);
+    const tooltip = createTooltip('scatter-tooltip');
     
     // Check if we need to use categorical mapping for X axis
     const hasXCategoricalMap = (scatterData as any).xCategoricalMap && (scatterData as any).xCategoricalMap.size > 0;
@@ -659,11 +647,15 @@ export class ScatterPlotUtility {
         return themeColors[seriesIndex % themeColors.length];
       })
       .attr('opacity', config.mark?.opacity || 0.7)
-      .style('cursor', 'pointer');
+      .style('cursor', 'pointer')
+      .style('pointer-events', 'all');
     
     // Add interactivity
     points
+      .on('click', function(event, d) {
+      })
       .on('mouseover', function(event, d) {
+        
         select(this)
           .transition()
           .duration(150)
@@ -678,12 +670,54 @@ export class ScatterPlotUtility {
           .duration(200)
           .style('opacity', 0.9);
         
+        // Format values using metadata
+        const xField = Array.isArray(config.encoding.x) ? config.encoding.x[0]?.field : config.encoding.x?.field;
+        const yField = Array.isArray(config.encoding.y) ? config.encoding.y[0]?.field : config.encoding.y?.field;
+        const xEncoding = Array.isArray(config.encoding.x) ? config.encoding.x[0] : config.encoding.x;
+        const yEncoding = Array.isArray(config.encoding.y) ? config.encoding.y[0] : config.encoding.y;
+        
+        // Format X value
+        let formattedX: string;
+        if (xEncoding?.type === 'temporal' || (d.x as any) instanceof Date) {
+          const date = (d.x as any) instanceof Date ? d.x as unknown as Date : new Date(Number(d.x));
+          if (!isNaN(date.getTime())) {
+            formattedX = utcFormat('%b %d')(date);
+          } else {
+            formattedX = String(d.x);
+          }
+        } else if (d.metadata && xField && d.metadata[xField] !== undefined) {
+          const xProp = context.tableProperties?.find(p => p.name === xField);
+          formattedX = xProp && context.superstate
+            ? displayTextForType(xProp, d.metadata[xField], context.superstate)
+            : formatNumber(Number(d.x));
+        } else {
+          formattedX = formatNumber(Number(d.x));
+        }
+        
+        // Format Y value
+        let formattedY: string;
+        if (yEncoding?.type === 'temporal' || (d.y as any) instanceof Date) {
+          const date = (d.y as any) instanceof Date ? d.y as unknown as Date : new Date(Number(d.y));
+          if (!isNaN(date.getTime())) {
+            formattedY = utcFormat('%b %d')(date);
+          } else {
+            formattedY = String(d.y);
+          }
+        } else if (d.metadata && yField && d.metadata[yField] !== undefined) {
+          const yProp = context.tableProperties?.find(p => p.name === yField);
+          formattedY = yProp && context.superstate
+            ? displayTextForType(yProp, d.metadata[yField], context.superstate)
+            : formatNumber(Number(d.y));
+        } else {
+          formattedY = formatNumber(Number(d.y));
+        }
+        
         const tooltipContent = `
-          <div><strong>X:</strong> ${d.x}</div>
-          <div><strong>Y:</strong> ${d.y}</div>
-          ${d.series && d.series !== 'default' ? `<div><strong>Series:</strong> ${d.series}</div>` : ''}
-          ${d.size !== undefined ? `<div><strong>Size:</strong> ${d.size}</div>` : ''}
-          ${d.label ? `<div><strong>Label:</strong> ${d.label}</div>` : ''}
+          <div style="font-weight: 600; margin-bottom: 4px;">${formattedX}</div>
+          <div><strong>${yField || 'Y'}:</strong> ${formattedY}</div>
+          ${d.series && d.series !== 'default' ? `<div><strong>{i18n.labels.series}</strong> ${d.series}</div>` : ''}
+          ${d.size !== undefined ? `<div><strong>{i18n.labels.size}</strong> ${formatNumber(Number(d.size))}</div>` : ''}
+          ${d.label ? `<div><strong>{i18n.labels.label}</strong> ${d.label}</div>` : ''}
         `;
         
         tooltip.html(tooltipContent)

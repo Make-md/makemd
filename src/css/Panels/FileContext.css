@@ -597,6 +597,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
 }
 .mk-header-label-actions {
   display: flex;
+  width: 100%;
   gap: 12px;
   align-items: center;
 

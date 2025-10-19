@@ -1,6 +1,7 @@
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { NoteView } from "core/react/components/PathView/NoteView";
-import { Superstate, i18n } from "makemd-core";
+import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useCallback, useEffect, useState } from "react";
 
 interface GlobalTemplateEditorProps {
@@ -160,7 +161,7 @@ export const GlobalTemplateEditor = (props: GlobalTemplateEditorProps) => {
             <div className="mk-empty-state-description">
               {templates.length > 0 
                 ? "Select a template from the sidebar to edit it"
-                : "Create a template to get started"
+                : i18n.labels.createATemplateToGetStarted
               }
             </div>
           </div>

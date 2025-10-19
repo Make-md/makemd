@@ -1,4 +1,5 @@
 import { ActionInstance } from "shared/types/actions";
+import { IAPI } from "shared/types/api";
 import { PathLabel } from "shared/types/caches";
 import { Command, CommandResult, Library } from "shared/types/commands";
 import { Focus } from "shared/types/focus";
@@ -10,13 +11,16 @@ import { MDBFrame, MDBFrames } from "./mframe";
 import { SpaceDefinition, SpaceType } from "./spaceDef";
 import { SpaceFragmentType } from "./spaceFragment";
 import { SpaceInfo } from "./spaceInfo";
-import { ISuperstate, PathState } from "./superstate";
+import { ContextState, ISuperstate, PathState } from "./superstate";
 
 export interface SpaceManagerInterface {
   primarySpaceAdapter: SpaceAdapter;
   spaceAdapters: SpaceAdapter[];
   superstate: ISuperstate;
+  api: IAPI;
   getPathState: (path: string) => PathState;
+getPathsIndexMap: () => Map<string, PathState>;
+getContextsIndexMap: () => Map<string, ContextState>
   loadPath: (path: string) => Promise<PathCache | void>;
     readSystemCommands(): Promise<Library[]>;
     saveSystemCommand(lib: string, action: Command): Promise<void>;
@@ -170,7 +174,7 @@ export abstract class SpaceAdapter {
   public writeToPath: (path: string, content: any, binary?: boolean) => Promise<void>;
 
 
-  public allSpaces: () => SpaceInfo[];
+  public allSpaces: (hidden?: boolean) => SpaceInfo[];
   public allCaches: () => Map<string, PathCache>;
   public addProperty: (path: string, property: SpaceProperty) => void;
   public readProperties: (path: string) => Promise<{ [key: string]: any; }>;

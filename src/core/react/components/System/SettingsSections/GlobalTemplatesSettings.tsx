@@ -1,4 +1,5 @@
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React from "react";
 import { GlobalTemplateEditor } from "../GlobalTemplateEditor";
 import { SettingsProps } from "./types";
@@ -10,9 +11,9 @@ export const GlobalTemplatesSettings = ({ superstate }: SettingsProps) => {
       <div className="mk-setting-group">
         <div className="mk-setting-item">
           <div className="mk-setting-item-info">
-            <div className="mk-setting-item-name">Manage Global Templates</div>
+            <div className="mk-setting-item-name">{i18n.settings.manageGlobalTemplates}</div>
             <div className="mk-setting-item-description">
-              Create and edit global templates stored in .space/templates folder
+              {i18n.descriptions.createAndEditGlobalTemplatesStoredInSpacetemplatesFolder}
             </div>
           </div>
         </div>

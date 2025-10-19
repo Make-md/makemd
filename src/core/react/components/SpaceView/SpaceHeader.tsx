@@ -37,10 +37,10 @@ export const SpaceHeader = (props: { superstate: Superstate }) => {
   const refreshData = (payload: { path: string }) => {
     if (payload.path == pathState?.path)
       props.superstate.spaceManager
-        .readAllTables(pathState?.path)
+        .tablesForSpace(pathState?.path)
         ?.then((f) => {
           if (f) {
-            return (Object.values(f).map((g) => g.schema) ?? []).filter(
+            return (Object.values(f) ?? []).filter(
               (f) => f.primary != "true"
             );
           }
@@ -80,16 +80,24 @@ export const SpaceHeader = (props: { superstate: Superstate }) => {
               readOnly={readMode}
               setReposition={setRepositionMode}
             >
-              <SpaceHeaderBar
+             
+            </TitleComponent>
+          </div>
+          {spaceState?.type == "folder" &&
+            !readMode &&
+            props.superstate.settings.inlineContextProperties && (
+              <HeaderPropertiesView
+                superstate={props.superstate}
+                collapseSpaces={true}
+              > <SpaceHeaderBar
                 superstate={props.superstate}
                 path={spaceState.path}
                 templates={templates}
                 expandedSection={expandedSection}
                 setExpandedSection={setExpandedSection}
                 tables={tables}
-              />
-            </TitleComponent>
-          </div>
+              /></HeaderPropertiesView>
+            )}
           {expandedSection == 0 ? (
             <SpaceItemProperty
               superstate={props.superstate}
@@ -114,14 +122,7 @@ export const SpaceHeader = (props: { superstate: Superstate }) => {
               close={() => setExpandedSection(null)}
             />
           ) : null}
-          {spaceState?.type == "folder" &&
-            !readMode &&
-            props.superstate.settings.inlineContextProperties && (
-              <HeaderPropertiesView
-                superstate={props.superstate}
-                collapseSpaces={true}
-              ></HeaderPropertiesView>
-            )}
+          
         </div>
       )}
     </>

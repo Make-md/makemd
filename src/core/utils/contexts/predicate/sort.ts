@@ -1,4 +1,3 @@
-
 import i18n from "shared/i18n";
 import { DBRow, SpaceTableColumn, SpaceProperty } from "shared/types/mdb";
 import { Sort } from "shared/types/predicate";
@@ -189,7 +188,7 @@ export const sortFnTypes: SortFunctionType = {
   reverseNumber: {
     type: ["number"],
     fn: (v, f) => (numSort(v, f) * -1) as SortResultType,
-    label: "9 → 1",
+    label: i18n.labels.nineToOne,
     desc: true,
   },
   optionMultiOrder: {

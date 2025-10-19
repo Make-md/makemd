@@ -57,12 +57,7 @@ export const MarkdownHeaderView = (props: {
               readOnly={!props.editable}
               setReposition={setRepositionMode}
             >
-              {isTouchScreen(props.superstate.ui) && (
-                <SpaceHeaderBar
-                  superstate={props.superstate}
-                  path={pathState.path}
-                />
-              )}
+             
             </TitleComponent>
           </div>
           {props.editable &&
@@ -70,7 +65,12 @@ export const MarkdownHeaderView = (props: {
               <HeaderPropertiesView
                 superstate={props.superstate}
                 collapseSpaces={true}
-              ></HeaderPropertiesView>
+              > {isTouchScreen(props.superstate.ui) && (
+                <SpaceHeaderBar
+                  superstate={props.superstate}
+                  path={pathState.path}
+                />
+              )}</HeaderPropertiesView>
             )}
         </div>
       </>
@@ -108,7 +108,7 @@ export const NoteActionBar = (props: { superstate: Superstate }) => {
     return true;
   };
   const showContextMenu = (e: React.MouseEvent) => {
-    showSpaceContextMenu(props.superstate, pathState, e, null, null);
+     showSpaceContextMenu(props.superstate, pathState, (e.target as HTMLButtonElement).getBoundingClientRect(), windowFromDocument(e.view.document));
   };
   const newProperty = (e: React.MouseEvent) => {
     const offset = (e.target as HTMLElement).getBoundingClientRect();

@@ -42,7 +42,7 @@ export const excludeVaultItemPredicate =
         (e) => (f.path).endsWith(e)
       ))
     ) &&
-    !settings.hiddenFiles.find((e) => e == f.path) &&
+    !settings.hiddenFiles.find((e) => f.path.startsWith(e)) &&
     (!settings.enableFolderNote ||
       (!settings.folderNoteInsideFolder &&
         !folder.some((g) => g.path + ".md" == f.path)) ||

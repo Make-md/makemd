@@ -1,12 +1,28 @@
-import { group, select, line as d3Line, curveMonotoneX, curveLinear } from 'core/utils/d3-imports';
+import { group, select, line as d3Line, curveMonotoneX, curveLinear, curveCatmullRom, timeFormat, utcFormat } from 'core/utils/d3-imports';
 import { RenderContext, isSVGContext, isCanvasContext } from '../RenderContext';
-import { getPaletteColors } from '../utils';
+import { getPaletteColors, createTooltip, resolveColor } from '../utils';
 import { displayTextForType } from 'core/utils/displayTextForType';
 import { sortByEncodingType } from '../sortingUtils';
 import { LineChartData } from '../../transformers';
 import { formatNumber } from '../formatNumber';
 
 export class LineChartUtility {
+  /**
+   * Format a date for tooltip display based on time granularity
+   */
+  private static formatDateForTooltip(date: Date, xEncoding: any): string {
+    // Check if we have hour-level precision
+    const hasHourPrecision = date.getUTCHours() !== 0 || date.getUTCMinutes() !== 0 || date.getUTCSeconds() !== 0;
+    
+    // If hour grouping or has hour precision, show date and time
+    if (xEncoding?.timeUnit === 'hour' || hasHourPrecision) {
+      return utcFormat('%b %d, %I:%M %p')(date);
+    }
+    
+    // Otherwise just show date
+    return utcFormat('%b %d')(date);
+  }
+
   static render(context: RenderContext): void {
     
     if (isSVGContext(context)) {
@@ -116,19 +132,7 @@ export class LineChartUtility {
     const themeColors = getPaletteColors(context.colorPaletteId, context.superstate);
 
     // Create tooltip
-    const tooltip = select('body').append('div')
-      .attr('class', 'line-tooltip')
-      .style('position', 'absolute')
-      .style('padding', '8px 12px')
-      .style('background', resolveColor('var(--mk-ui-background)'))
-      .style('color', resolveColor('var(--mk-ui-text-primary)'))
-      .style('border', `1px solid ${resolveColor('var(--mk-ui-border)')}`)
-      .style('border-radius', '4px')
-      .style('font-size', '12px')
-      .style('box-shadow', '0 2px 8px rgba(0, 0, 0, 0.15)')
-      .style('pointer-events', 'none')
-      .style('opacity', 0)
-      .style('z-index', 10000);
+    const tooltip = createTooltip('line-tooltip');
 
     // Draw lines for each series
     dataGroups.forEach((groupData, groupKey) => {
@@ -154,7 +158,7 @@ export class LineChartUtility {
             const isDefined = d[yEncoding.field] != null && !isNaN(yValue) && !isNaN(xPos);
             return isDefined;
           })
-          .curve((config.mark?.interpolate || 'linear') === 'monotone' ? curveMonotoneX : curveLinear);
+          .curve((config.mark?.interpolate || 'linear') === 'monotone' ? curveCatmullRom : curveLinear);
 
         // Filter and sort data
         let lineData = groupData
@@ -267,12 +271,38 @@ export class LineChartUtility {
 
         // Draw points if enabled or if single-point line for interactivity
         const showPoints = (config.mark as any)?.point?.show || lineData.length === 1;
-        if (showPoints || editMode) {
-          const points = g.selectAll(`.point-series-${seriesIndex}`)
+        
+        // Create invisible hit areas for tooltips (always larger)
+        const hitAreasSelection = g.selectAll(`.point-hit-area-series-${seriesIndex}`)
+          .data(lineData);
+        
+        
+        const hitAreas = hitAreasSelection.enter()
+          .append('circle')
+          .attr('class', `point-hit-area point-hit-area-series-${seriesIndex}`)
+          .attr('cx', (d) => {
+            const x = getXPosition(d, xEncoding);
+            return x;
+          })
+          .attr('cy', (d) => {
+            const value = Number(d[yEncoding.field]) || 0;
+            const result = yScale(value);
+            return (result !== undefined && !isNaN(result)) ? result : 0;
+          })
+          .attr('r', 8) // Larger radius for easier hovering
+          .attr('fill', 'red') // Make it visible for debugging
+          .attr('fill-opacity', 0.2) // Semi-transparent for debugging
+          .attr('stroke', 'blue') // Add stroke for debugging
+          .attr('stroke-width', 1)
+          .style('cursor', 'pointer');
+        
+        // Create visible points if needed
+        if (showPoints) {
+          g.selectAll(`.point-visible-series-${seriesIndex}`)
             .data(lineData)
             .enter()
             .append('circle')
-            .attr('class', `point point-series-${seriesIndex}`)
+            .attr('class', `point-visible point-visible-series-${seriesIndex}`)
             .attr('cx', (d) => getXPosition(d, xEncoding))
             .attr('cy', (d) => {
               const value = Number(d[yEncoding.field]) || 0;
@@ -281,17 +311,19 @@ export class LineChartUtility {
             })
             .attr('r', (config.mark as any)?.point?.size || 4)
             .attr('fill', color)
-            .attr('stroke', 'none')
-            .attr('stroke-width', 0)
-            .attr('opacity', showPoints ? 1 : (editMode ? 0.3 : 0)) // Show points when enabled, semi-transparent in edit mode
-            .style('cursor', 'pointer')
-            .on('mouseover', function(event, d) {
-              // Enlarge point on hover
+            .style('pointer-events', 'none'); // Let hit area handle events
+        }
+        
+        
+        // Add tooltips to hit areas
+        hitAreas.on('mouseover', function(event, d) {
+              // Show visual feedback on hover
               select(this)
                 .transition()
                 .duration(150)
-                .attr('r', (config.mark?.point?.size || 4) + 2)
-                .attr('opacity', 1);
+                .attr('r', 10)
+                .attr('fill', color)
+                .attr('fill-opacity', 0.3);
               
               // Show tooltip
               tooltip.transition()
@@ -301,33 +333,47 @@ export class LineChartUtility {
               // Build tooltip content
               let tooltipContent = '';
               
-              // X value (not indented)
+              // X value (formatted to match axis)
               if (xEncoding.field) {
                 const xValue = d[xEncoding.field];
-                const xProp = context.tableProperties?.find(p => p.name === xEncoding.field);
-                const formattedX = xProp ? displayTextForType(xProp, xValue, context.superstate) : xValue;
-                tooltipContent += `<div>${formattedX}</div>`;
+                let formattedX: string;
+                // Exclude numeric-only strings (timestamps) from auto-detection
+                const isNumericString = typeof xValue === 'string' && /^\d+$/.test(xValue);
+                const isTemporalValue = xEncoding.type === 'temporal' || xValue instanceof Date || 
+                  (typeof xValue === 'string' && !isNumericString && !isNaN(Date.parse(String(xValue))));
+                
+                if (isTemporalValue) {
+                  const date = xValue instanceof Date ? xValue : new Date(String(xValue));
+                  if (!isNaN(date.getTime())) {
+                    formattedX = LineChartUtility.formatDateForTooltip(date, xEncoding);
+                  } else {
+                    formattedX = String(xValue);
+                  }
+                } else {
+                  const xProp = context.tableProperties?.find(p => p.name === xEncoding.field);
+                  formattedX = xProp ? displayTextForType(xProp, xValue, context.superstate) : String(xValue);
+                }
+                tooltipContent += `<div style="font-weight: 600; margin-bottom: 4px;">${formattedX}</div>`;
               }
               
-              // Y value with color square
-              tooltipContent += `<div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">`;
+              // Y value with color square and series name
+              tooltipContent += `<div style="display: flex; align-items: center; gap: 8px;">`;
               tooltipContent += `<div style="width: 12px; height: 12px; background-color: ${color}; border-radius: 2px; flex-shrink: 0;"></div>`;
               
-              tooltipContent += `<div>`;
               const yValue = d[yEncoding.field];
               const yProp = context.tableProperties?.find(p => p.name === yEncoding.field);
-              const formattedY = yProp ? displayTextForType(yProp, yValue, context.superstate) : yValue;
-              tooltipContent += `${formattedY}`;
+              const formattedY = yProp ? displayTextForType(yProp, yValue, context.superstate) : formatNumber(Number(yValue));
               
-              // Color field value if present
+              // Show series name if color field exists
               if (colorField) {
                 const colorValue = d[colorField];
                 const colorProp = context.tableProperties?.find(p => p.name === colorField);
-                const formattedColor = colorProp ? displayTextForType(colorProp, colorValue, context.superstate) : colorValue;
-                tooltipContent += ` • ${formattedColor}`;
+                const seriesName = colorProp ? displayTextForType(colorProp, colorValue, context.superstate) : String(colorValue);
+                tooltipContent += `<div><strong>${seriesName}:</strong> ${formattedY}</div>`;
+              } else {
+                tooltipContent += `<div><strong>${yEncoding.field}:</strong> ${formattedY}</div>`;
               }
               
-              tooltipContent += `</div>`;
               tooltipContent += `</div>`;
               
               tooltip.html(tooltipContent)
@@ -340,12 +386,13 @@ export class LineChartUtility {
                 .style('top', (event.pageY - 28) + 'px');
             })
             .on('mouseout', function() {
-              // Restore point size
+              // Restore hit area to transparent
               select(this)
                 .transition()
                 .duration(150)
-                .attr('r', (config.mark as any)?.point?.size || 4)
-                .attr('opacity', showPoints ? 1 : (editMode ? 0.3 : 0));
+                .attr('r', 8)
+                .attr('fill', 'transparent')
+                .attr('fill-opacity', 0);
               
               // Hide tooltip
               tooltip.transition()
@@ -354,9 +401,8 @@ export class LineChartUtility {
             });
 
           if (editMode) {
-            points.style('cursor', 'pointer');
+            hitAreas.style('cursor', 'pointer');
           }
-        }
 
         // Draw data labels if enabled
         if ((showDataLabels || (config.mark as any)?.dataLabels?.show) && lineData.length < 50) {
@@ -388,6 +434,91 @@ export class LineChartUtility {
     // Store legend items for later rendering
     if (legendItems.length > 0 && showLegend) {
       (svg as any)._legendItems = legendItems;
+    }
+
+    // Add category/temporal hit areas for easier tooltip access
+    const xEncoding = xEncodings[0];
+    if (xEncoding && (xEncoding.type === 'temporal' || xEncoding.type === 'nominal' || xEncoding.type === 'ordinal')) {
+      // Group data by x-value to create hit areas
+      const xValueGroups = new Map<string, any[]>();
+      processedData.forEach(d => {
+        const xVal = d[xEncoding.field];
+        const key = xVal instanceof Date ? xVal.getTime().toString() : String(xVal);
+        if (!xValueGroups.has(key)) {
+          xValueGroups.set(key, []);
+        }
+        xValueGroups.get(key)!.push(d);
+      });
+      
+      // Calculate bandwidth for hit areas
+      const xValues = Array.from(xValueGroups.keys()).sort();
+      const bandwidth = xValues.length > 1 
+        ? Math.abs(xScale(xValues[1]) - xScale(xValues[0]))
+        : 50;
+      
+      xValueGroups.forEach((dataPoints, xKey) => {
+        const xVal = dataPoints[0][xEncoding.field];
+        const xPos = xScale(xVal);
+        
+        g.append('rect')
+          .attr('class', 'x-value-hit-area')
+          .attr('x', xPos - bandwidth / 2)
+          .attr('y', 0)
+          .attr('width', bandwidth)
+          .attr('height', graphArea.bottom - graphArea.top)
+          .attr('fill', 'transparent')
+          .attr('pointer-events', 'all')
+          .style('cursor', 'crosshair')
+          .on('mouseover', function(event) {
+            // Show tooltip with all series data at this x-value
+            tooltip.transition()
+              .duration(200)
+              .style('opacity', 0.9);
+            
+            // Format x-value
+            let formattedX: string;
+            if (xEncoding.type === 'temporal' && (xVal instanceof Date || !isNaN(Date.parse(String(xVal))))) {
+              const date = xVal instanceof Date ? xVal : new Date(String(xVal));
+              formattedX = LineChartUtility.formatDateForTooltip(date, xEncoding);
+            } else {
+              const xProp = context.tableProperties?.find(p => p.name === xEncoding.field);
+              formattedX = xProp ? displayTextForType(xProp, xVal, context.superstate) : String(xVal);
+            }
+            
+            let tooltipContent = `<div style="font-weight: 600; margin-bottom: 4px;">${formattedX}</div>`;
+            
+            // Add all y-values at this x position
+            yEncodings.forEach(yEncoding => {
+              dataPoints.forEach(d => {
+                const yVal = d[yEncoding.field];
+                if (yVal != null) {
+                  const yProp = context.tableProperties?.find(p => p.name === yEncoding.field);
+                  const formattedY = yProp ? displayTextForType(yProp, yVal, context.superstate) : formatNumber(Number(yVal));
+                  
+                  // Add series label if there's color grouping
+                  const colorField = config.encoding.color?.field;
+                  const seriesLabel = colorField ? String(d[colorField]) : yEncoding.field;
+                  
+                  tooltipContent += `<div><strong>${seriesLabel}:</strong> ${formattedY}</div>`;
+                }
+              });
+            });
+            
+            tooltip.html(tooltipContent)
+              .style('left', (event.pageX + 10) + 'px')
+              .style('top', (event.pageY - 28) + 'px');
+          })
+          .on('mousemove', function(event) {
+            tooltip
+              .style('left', (event.pageX + 10) + 'px')
+              .style('top', (event.pageY - 28) + 'px');
+          })
+          .on('mouseout', function() {
+            tooltip.transition()
+              .duration(500)
+              .style('opacity', 0);
+          });
+      });
     }
 
     // Store tooltip reference for cleanup
@@ -658,6 +789,9 @@ export class LineChartUtility {
     const themeColors = getPaletteColors(context.colorPaletteId, context.superstate);
     const colorScale = scales.get('color');
     
+    // Create tooltip
+    const tooltip = createTooltip('line-tooltip-transformed');
+    
     // Create line generator
     const lineGenerator = d3Line<any>()
       .defined(d => {
@@ -726,28 +860,89 @@ export class LineChartUtility {
         .attr('opacity', config.mark?.opacity || 1)
         .style('cursor', 'pointer');
       
-      // Add points if configured
-      if (config.mark?.point && (typeof config.mark.point === 'boolean' ? config.mark.point : config.mark.point?.show !== false)) {
-        const pointSize = config.mark?.size || 4;
-        
-        g.selectAll(`.point-${series}`)
-          .data(sortedPoints)
-          .enter()
-          .append('circle')
-          .attr('class', `point-${series}`)
-          .attr('cx', d => {
-            const scale = xScale as any;
-            if (scale.bandwidth) {
-              return scale(d.x) + scale.bandwidth() / 2;
-            }
-            return scale(d.x);
-          })
-          .attr('cy', d => yScale(d.y))
-          .attr('r', pointSize)
-          .attr('fill', color)
-          .attr('opacity', config.mark?.opacity || 1)
-          .style('cursor', 'pointer');
-      }
+      // Always create hit areas for tooltips (visible points optional)
+      const showPoints = config.mark?.point && (typeof config.mark.point === 'boolean' ? config.mark.point : config.mark.point?.show !== false);
+      const pointSize = config.mark?.size || 4;
+      
+      // Create hit areas for tooltips
+      const hitAreas = g.selectAll(`.point-hit-${series}`)
+        .data(sortedPoints)
+        .enter()
+        .append('circle')
+        .attr('class', `point-hit-${series}`)
+        .attr('cx', d => {
+          const scale = xScale as any;
+          if (scale.bandwidth) {
+            return scale(d.x) + scale.bandwidth() / 2;
+          }
+          return scale(d.x);
+        })
+        .attr('cy', d => yScale(d.y))
+        .attr('r', showPoints ? pointSize : 8) // Larger hit area if points not visible
+        .attr('fill', showPoints ? color : 'transparent')
+        .attr('fill-opacity', showPoints ? (config.mark?.opacity || 1) : 0)
+        .attr('stroke', 'none')
+        .style('cursor', 'pointer');
+      
+      // Add tooltip interactions
+      hitAreas.on('mouseover', function(event, d) {
+          // Show visual feedback
+          if (!showPoints) {
+            select(this)
+              .transition()
+              .duration(150)
+              .attr('r', 10)
+              .attr('fill', color)
+              .attr('fill-opacity', 0.3);
+          } else {
+            select(this)
+              .transition()
+              .duration(150)
+              .attr('r', pointSize + 2);
+          }
+          
+          // Show tooltip
+          tooltip.transition()
+            .duration(200)
+            .style('opacity', 0.9);
+          
+          // Build tooltip content
+          let tooltipContent = `<div>${d.x}</div>`;
+          tooltipContent += `<div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">`;
+          tooltipContent += `<div style="width: 12px; height: 12px; background-color: ${color}; border-radius: 2px; flex-shrink: 0;"></div>`;
+          tooltipContent += `<div>${formatNumber(d.y)}</div>`;
+          tooltipContent += `</div>`;
+          
+          tooltip.html(tooltipContent)
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mousemove', function(event) {
+          tooltip
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY - 28) + 'px');
+        })
+        .on('mouseout', function() {
+          // Restore original state
+          if (!showPoints) {
+            select(this)
+              .transition()
+              .duration(150)
+              .attr('r', 8)
+              .attr('fill', 'transparent')
+              .attr('fill-opacity', 0);
+          } else {
+            select(this)
+              .transition()
+              .duration(150)
+              .attr('r', pointSize);
+          }
+          
+          // Hide tooltip
+          tooltip.transition()
+            .duration(500)
+            .style('opacity', 0);
+        });
       
       // Add data labels if configured
       if (showDataLabels) {

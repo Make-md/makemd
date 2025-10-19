@@ -6,7 +6,8 @@ import {
   processDataAggregation,
   updateVisualizationSchema,
 } from "core/utils/visualization/visualizationUtils";
-import { SelectOption, SelectOptionType, Superstate, i18n } from "makemd-core";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SpaceProperty, SpaceTableSchema } from "shared/types/mdb";
 import { MDBFrame } from "shared/types/mframe";
@@ -188,7 +189,7 @@ export const Visualization = ({
       }
 
       if (!configMDBFrame.rows || configMDBFrame.rows.length === 0) {
-        throw new Error("Frame has no rows");
+        throw new Error(i18n.labels.frameHasNoRows);
       }
 
       // Convert schema to FrameSchema to access def.db
@@ -446,32 +447,8 @@ export const Visualization = ({
               ? config?.visualizationConfig?.encoding?.y?.[0]?.type
               : config?.visualizationConfig?.encoding?.y?.type;
 
-            const chartType = config?.visualizationConfig?.chartType;
-
-            // Check if yField exists in the data
-            const hasYFieldInData =
-              processedRows.length > 0 && yField in processedRows[0];
-
-            // Check if we have a group by field
-            const groupByField =
-              config.visualizationConfig?.encoding?.color?.field;
-            const groupByAggregation = (config.visualizationConfig?.encoding
-              ?.color?.aggregate || "sum") as AggregationType;
-
-            // Use utility function to process all aggregation logic
-            const aggregatedData = processDataAggregation(processedRows, {
-              xField,
-              yField,
-              groupByField,
-              groupByAggregation,
-              chartType,
-              hasYFieldInData,
-              spaceData,
-              xType,
-              yType,
-            });
-
-            tableData = aggregatedData;
+            // Transformers handle their own aggregation based on encoding.aggregate
+            tableData = processedRows;
           } else {
             tableData = processedRows;
           }
@@ -975,7 +952,7 @@ export const Visualization = ({
 
         // Title alignment
         menuOptions.push({
-          name: "Alignment",
+          name: i18n.labels.alignment,
           value: configData.visualizationConfig.layout.title?.align || "center",
           icon: "lucide//align-center",
           type: SelectOptionType.Disclosure,
@@ -999,7 +976,7 @@ export const Visualization = ({
                 },
               },
               {
-                name: "Center",
+                name: i18n.labels.center,
                 value: "center",
                 onClick: () => {
                   const updatedConfig = {
@@ -1150,7 +1127,7 @@ export const Visualization = ({
       case "legend":
         // Legend position
         menuOptions.push({
-          name: "Position",
+          name: i18n.labels.position,
           value:
             configData.visualizationConfig.layout.legend?.position || "right",
           icon: "lucide//move",
@@ -1158,7 +1135,7 @@ export const Visualization = ({
           onSubmenu: (offset, onHide) => {
             const positionOptions: SelectOption[] = [
               {
-                name: "Top",
+                name: i18n.labels.top,
                 value: "top",
                 onClick: () => updateLegendPosition("top"),
               },
@@ -1168,7 +1145,7 @@ export const Visualization = ({
                 onClick: () => updateLegendPosition("right"),
               },
               {
-                name: "Bottom",
+                name: i18n.labels.bottom,
                 value: "bottom",
                 onClick: () => updateLegendPosition("bottom"),
               },
@@ -1397,6 +1374,30 @@ export const Visualization = ({
     // Only reload when listId or dataSourcePath changes, not the entire configData
   }, [configData?.listId, configData?.dataSourcePath, loadListData]);
 
+  // Listen for context updates and reload data when the data source is updated
+  useEffect(() => {
+    if (!superstate || !configData?.dataSourcePath) return;
+
+    const handleContextUpdate = (payload: { path: string }) => {
+      // Reload data if the updated context matches our data source
+      if (payload.path === configData.dataSourcePath && configData.listId) {
+        loadListData(configData);
+      }
+    };
+
+    superstate.eventsDispatcher.addListener(
+      'contextStateUpdated',
+      handleContextUpdate
+    );
+
+    return () => {
+      superstate.eventsDispatcher.removeListener(
+        'contextStateUpdated',
+        handleContextUpdate
+      );
+    };
+  }, [superstate, configData?.dataSourcePath, configData?.listId, loadListData]);
+
   // Load available tables when we have superstate and sourcePath
   useEffect(() => {
     if (superstate && sourcePath) {
@@ -1533,7 +1534,7 @@ export const Visualization = ({
           <div
             style={{ fontSize: "12px", color: "var(--mk-ui-text-secondary)" }}
           >
-            {i18n.labels.visualization?.path || "Path"}:{" "}
+            {i18n.labels.visualization?.path || i18n.menu.path}:{" "}
             {sourcePath || i18n.labels.visualization?.none || "None"}
           </div>
         </div>
@@ -1671,7 +1672,7 @@ export const Visualization = ({
               : ({
                   id: configData?.visualizationConfig?.id || "",
                   name:
-                    configData?.visualizationConfig?.name || "Visualization",
+                    configData?.visualizationConfig?.name || i18n.labels.visualization,
                   chartType: "bar" as ChartType,
                   mark: { type: "rect" as MarkType },
                   layout: {
@@ -1702,7 +1703,7 @@ export const Visualization = ({
               : ({
                   id: configData?.visualizationConfig?.id || "",
                   name:
-                    configData?.visualizationConfig?.name || "Visualization",
+                    configData?.visualizationConfig?.name || i18n.labels.visualization,
                   chartType: "bar" as ChartType,
                   mark: { type: "rect" as MarkType },
                   layout: {

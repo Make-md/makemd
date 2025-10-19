@@ -52,6 +52,7 @@ import {
 import { FramesMDBContext } from "./FramesMDBContext";
 import { SpaceContext } from "./SpaceContext";
 import { useSpaceManager } from "./SpaceManagerContext";
+import { PathContext } from "./PathContext";
 type ContextEditorContextProps = {
   dbSchema: SpaceTableSchema;
   sortedColumns: SpaceTableColumn[];
@@ -137,6 +138,9 @@ export const ContextEditorProvider: React.FC<
   const { frameSchemas, saveSchema, frameSchema } =
     useContext(FramesMDBContext);
 
+    const {
+      pathState
+    } = useContext(PathContext)
   const {
     spaceInfo,
     readMode,
@@ -338,6 +342,7 @@ export const ContextEditorProvider: React.FC<
     [tableData, contextTable, contexts, dbSchema]
   );
 
+  
   const data: DBRows = useMemo(() => {
     const computedData =
       tableData?.rows?.map((r, index) => ({
@@ -347,7 +352,7 @@ export const ContextEditorProvider: React.FC<
           ? {
               [PathPropertyName]: spaceManager.resolvePath(
                 r[PathPropertyName],
-                spaceCache?.path
+                pathState?.path
               ),
             }
           : {}),
@@ -369,7 +374,7 @@ export const ContextEditorProvider: React.FC<
       })) ?? [];
 
     return computedData;
-  }, [tableData, contextTable, cols, dbSchema, spaceCache]);
+  }, [tableData, contextTable, cols, dbSchema, pathState]);
 
   useEffect(() => {
     if (tableData) {
@@ -587,9 +592,10 @@ export const ContextEditorProvider: React.FC<
       col &&
       props.superstate.settings.saveAllContextToFrontmatter
     ) {
+      const resolvedPath = props.superstate.spaceManager.resolvePath(path ?? tableData.rows[index]?.[PathPropertyName], contextPath);
       saveProperties(
         props.superstate,
-        path ?? tableData.rows[index]?.[PathPropertyName],
+        resolvedPath,
         { [column]: parseMDBStringValue(fieldTypeForField(col), value, true) }
       );
     }
