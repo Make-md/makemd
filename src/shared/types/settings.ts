@@ -89,4 +89,6 @@ export interface MakeMDSettings {
   overrideNativeMenu: boolean;
   onboardingCompleted: boolean;
   contextCreateUseModal: boolean;
+  homepagePath: string;
+  mobileMakeHeader: boolean;
 }

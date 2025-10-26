@@ -888,3 +888,11 @@
   color: var(--mk-ui-text-secondary);
   text-align: center;
 }
+
+/* Color Palette Manager Styles */
+.mk-palette-add-section {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  align-items: center;
+}

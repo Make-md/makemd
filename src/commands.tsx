@@ -217,4 +217,19 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
       ],
     });
   }
+
+  plugin.addCommand({
+    id: "mk-set-homepage",
+    name: "Set Current Space/Path as Homepage",
+    callback: () => {
+      const currentPath = plugin.superstate.ui.activePath;
+      if (currentPath) {
+        plugin.superstate.settings.homepagePath = currentPath;
+        plugin.saveSettings();
+        plugin.superstate.ui.notify(`Homepage set to: ${currentPath}`);
+      } else {
+        plugin.superstate.ui.notify("No active path to set as homepage");
+      }
+    },
+  });
 };

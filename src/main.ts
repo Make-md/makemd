@@ -175,6 +175,11 @@ loadSuperState() {
     if (this.superstate.settings.navigatorEnabled) {
       this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
     }
+    
+    if (this.superstate.settings.homepagePath) {
+      const leaf = this.app.workspace.getLeaf(false);
+      await this.openPath(leaf, this.superstate.settings.homepagePath);
+    }
     }
     else {
       await this.superstate.loadFromCache();
@@ -251,6 +256,7 @@ loadViews () {
       
     document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
     document.body.classList.toggle("mk-hide-vault-selector", !this.superstate.settings.vaultSelector);
+    document.body.classList.toggle("mk-mobile-header", this.superstate.settings.mobileMakeHeader);
     // document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
     document.body.classList.toggle(
       "mk-folder-lines",

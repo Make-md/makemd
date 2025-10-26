@@ -363,12 +363,12 @@ export const showNewFrameMenu = (
 
   // Chart types for chart submenu
   const chartTypes = [
-    { type: "bar", name: "Bar Chart", icon: "lucide//bar-chart" },
-    { type: "line", name: "Line Chart", icon: "lucide//activity" },
-    { type: "scatter", name: "Scatter Plot", icon: "lucide//scatter-chart" },
-    { type: "pie", name: "Pie Chart", icon: "lucide//pie-chart" },
-    { type: "area", name: "Area Chart", icon: "lucide//area-chart" },
-    { type: "radar", name: "Radar Chart", icon: "lucide//radar" },
+    { type: "bar", name: i18n.labels.barChart, icon: "lucide//bar-chart" },
+    { type: "line", name: i18n.labels.lineChart, icon: "lucide//activity" },
+    { type: "scatter", name: i18n.labels.scatterPlot, icon: "lucide//scatter-chart" },
+    { type: "pie", name: i18n.labels.pieChart, icon: "lucide//pie-chart" },
+    { type: "area", name: i18n.labels.areaChart, icon: "lucide//area-chart" },
+    { type: "radar", name: i18n.labels.radarChart, icon: "lucide//radar" },
   ];
 
   const visualizationOptions = chartTypes.map((chart) => ({
@@ -402,7 +402,7 @@ export const showNewFrameMenu = (
       icon: "lucide//bar-chart-3",
     },
     {
-      name: "List View",
+      name: i18n.menu.listView,
       value: "frame",
       type: SelectOptionType.Submenu,
       onSubmenu: (offset: Rect) => {

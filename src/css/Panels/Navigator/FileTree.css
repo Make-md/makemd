@@ -21,6 +21,11 @@
   display: none !important;
 }
 
+.is-mobile.mk-mobile-header .workspace-drawer-inner:has(.workspace-leaf-content[data-type="mk-path-view"]) .workspace-drawer-header,
+.is-mobile.mk-mobile-header .workspace-drawer-inner:has(.workspace-leaf-content[data-type="mk-path-view"]) .workspace-drawer-active-tab-header {
+  display: none !important;
+}
+
 .mk-hide-ribbon .workspace-ribbon {
   display: none;
 }

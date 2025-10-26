@@ -20,7 +20,7 @@ export const defaultViewTypes: Record<string, LayoutType> = {
     listItem: '',
   },
   day: {
-    name: 'Day View',
+    name: i18n.menu.dayView,
     icon: 'ui//calendar',
     view: 'day',
     listView: '',
@@ -28,7 +28,7 @@ export const defaultViewTypes: Record<string, LayoutType> = {
     listItem: '',
   },
   week: {
-    name: 'Week View',
+    name: i18n.menu.weekView,
     icon: 'ui//calendar',
     view: 'week',
     listView: '',
@@ -36,7 +36,7 @@ export const defaultViewTypes: Record<string, LayoutType> = {
     listItem: '',
   },
   month: {
-    name: 'Month View',
+    name: i18n.menu.monthView,
     icon: 'ui//calendar',
     view: 'month',
     listView: '',

@@ -169,6 +169,8 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
     };
   });
   const width = isTouchScreen(props.superstate.ui) ? 48 : 32;
+  const isTouch = isTouchScreen(props.superstate.ui);
+  const menuRef = useRef<HTMLDivElement>();
   const calcXOffset = (index: number) => {
     if (!projected || projected.insert) return 0;
     const fromIndex = activeId;
@@ -239,6 +241,18 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
               __html: props.superstate.ui.getSticker("ui//plus"),
             }}
           ></div>
+          {isTouch && (
+            <div
+              className="mk-waypoint-menu"
+              ref={menuRef}
+              onClick={(e) => {
+                props.superstate.ui.mainMenu(menuRef.current, props.superstate);
+              }}
+              dangerouslySetInnerHTML={{
+                __html: props.superstate.ui.getSticker("ui//options"),
+              }}
+            ></div>
+          )}
           {overId != null && activeId === null && (
             <SortablePinnedSpaceItem
               id={focuses.length}

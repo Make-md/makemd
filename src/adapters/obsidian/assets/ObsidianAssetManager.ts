@@ -1,21 +1,15 @@
 import i18n from "shared/i18n";
 
-import { LocalCachePersister } from 'shared/types/persister';
-import { IUIManager } from 'shared/types/uiManager';
-import { SpaceManagerInterface } from 'shared/types/spaceManager';
 import MakeMDPlugin from 'main';
 import { normalizePath } from 'obsidian';
-import { lucideIcons } from '../ui/icons';
 import { emojis } from 'shared/assets/emoji';
 import {
   Asset,
   AssetCacheStats,
   AssetLoadOptions,
   AssetManagerEvents,
-  AssetMetadata,
   AssetType,
   AudioAsset,
-  BaseAsset,
   ColorPaletteAsset,
   CoverImage,
   IAssetManager,
@@ -28,8 +22,11 @@ import {
   VisualizationAsset,
   VisualizationConfig
 } from 'shared/types/assets';
-import { safelyParseJSON } from 'shared/utils/json';
+import { LocalCachePersister } from 'shared/types/persister';
+import { SpaceManagerInterface } from 'shared/types/spaceManager';
+import { IUIManager } from 'shared/types/uiManager';
 import { ASSETS_SPACE_CONFIG } from 'shared/utils/assetSchemas';
+import { lucideIcons } from '../ui/icons';
 
 // Type for file content based on what readPath returns
 type FileContent = string | ArrayBuffer | null;
@@ -670,8 +667,6 @@ export class ObsidianAssetManager implements IAssetManager {
           { name: i18n.labels.base50, value: "var(--mk-color-base-50)", category: 'base' },
           { name: i18n.labels.base60, value: "var(--mk-color-base-60)", category: 'base' },
           { name: i18n.labels.base70, value: "var(--mk-color-base-70)", category: 'base' },
-          { name: i18n.labels.base80, value: "var(--mk-color-base-80)", category: 'base' },
-          { name: i18n.labels.base90, value: "var(--mk-color-base-90)", category: 'base' },
           { name: i18n.labels.base100, value: "var(--mk-color-base-100)", category: 'base' },
         ],
         gradients: [],
@@ -935,6 +930,21 @@ export class ObsidianAssetManager implements IAssetManager {
     const emptyLoadedIds = new Set<string>();
     await this.ensureDefaultPalettes(emptyLoadedIds);
     
+  }
+
+  public async resetSinglePalette(paletteId: string): Promise<boolean> {
+    const defaultPaletteIds = ['default-palette', 'monochrome-palette', 'default-gradient-palette', 'pastel-palette'];
+    
+    if (!defaultPaletteIds.includes(paletteId)) {
+      return false;
+    }
+    
+    this.assets.delete(paletteId);
+    
+    const emptyLoadedIds = new Set<string>();
+    await this.ensureDefaultPalettes(emptyLoadedIds);
+    
+    return true;
   }
 
   // Other required methods

@@ -7,6 +7,7 @@ import { SettingsProps } from "./types";
 export const GeneralSettings = ({ superstate }: SettingsProps) => {
   const { debouncedSave, immediateSave } = useDebouncedSave(superstate);
   const [systemName, setSystemName] = useState(superstate.settings.systemName || "");
+  const [homepagePath, setHomepagePath] = useState(superstate.settings.homepagePath || "");
   const [navigatorEnabled, setNavigatorEnabled] = useState(Boolean(superstate.settings.navigatorEnabled));
   const [spaceViewEnabled, setSpaceViewEnabled] = useState(Boolean(superstate.settings.spaceViewEnabled));
   const [blinkEnabled, setBlinkEnabled] = useState(Boolean(superstate.settings.blinkEnabled));
@@ -17,6 +18,7 @@ export const GeneralSettings = ({ superstate }: SettingsProps) => {
   // Sync state with superstate.settings when component mounts or settings change
   useEffect(() => {
     setSystemName(superstate.settings.systemName || "");
+    setHomepagePath(superstate.settings.homepagePath || "");
     setNavigatorEnabled(Boolean(superstate.settings.navigatorEnabled));
     setSpaceViewEnabled(Boolean(superstate.settings.spaceViewEnabled));
     setBlinkEnabled(Boolean(superstate.settings.blinkEnabled));
@@ -43,6 +45,27 @@ export const GeneralSettings = ({ superstate }: SettingsProps) => {
               onChange={(e) => {
                 setSystemName(e.target.value);
                 superstate.settings.systemName = e.target.value;
+                debouncedSave();
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="mk-setting-item">
+          <div className="mk-setting-item-info">
+            <div className="mk-setting-item-name">Homepage</div>
+            <div className="mk-setting-item-description">
+              Path to open on launch (leave empty for default behavior)
+            </div>
+          </div>
+          <div className="mk-setting-item-control">
+            <input
+              type="text"
+              value={homepagePath}
+              placeholder="e.g., /path/to/note"
+              onChange={(e) => {
+                setHomepagePath(e.target.value);
+                superstate.settings.homepagePath = e.target.value;
                 debouncedSave();
               }}
             />

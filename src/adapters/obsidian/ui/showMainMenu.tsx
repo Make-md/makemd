@@ -3,13 +3,13 @@ import {
   defaultMenu,
   menuSeparator,
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
-import { InputModal } from "core/react/components/UI/Modals/InputModal";
+import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
 import { isPhone, isTouchScreen } from "core/utils/ui/screen";
 import MakeMDPlugin from "main";
 import { SelectOption, Superstate } from "makemd-core";
-import i18n from "shared/i18n";
 import { WorkspaceLeaf, WorkspaceMobileDrawer } from "obsidian";
 import React from "react";
+import i18n from "shared/i18n";
 import { windowFromDocument } from "shared/utils/dom";
 import { FILE_TREE_VIEW_TYPE } from "./navigator/NavigatorView";
 
@@ -52,6 +52,22 @@ export const showMainMenu = (
   const { spaceActive, leafs } = refreshLeafs();
   const menuOptions: SelectOption[] = [];
 
+  if (isMobile)
+    menuOptions.push({
+      name: superstate.settings.mobileMakeHeader
+        ? i18n.menu.showHeader
+        : i18n.menu.hideHeader,
+      icon: "ui//expand",
+      onClick: () => {
+        superstate.settings.mobileMakeHeader =
+          !superstate.settings.mobileMakeHeader;
+        superstate.saveSettings();
+        document.body.classList.toggle(
+          "mk-mobile-header",
+          superstate.settings.mobileMakeHeader
+        );
+      },
+    });
   if (superstate.ui.getWarnings().length > 0) {
     menuOptions.push({
       name: i18n.menu.showWarnings,
@@ -92,6 +108,18 @@ export const showMainMenu = (
   menuOptions.push(menuSeparator);
 
   menuOptions.push({
+    name: i18n.labels.manageHiddenFiles,
+    icon: "ui//eye-off",
+    onClick: (e) => {
+      superstate.ui.openModal(
+        i18n.labels.hiddenFiles,
+        <HiddenPaths superstate={superstate}></HiddenPaths>,
+        windowFromDocument(e.view.document)
+      );
+    },
+  });
+
+  menuOptions.push({
     name: i18n.menu.settings,
     icon: "ui//settings",
     onClick: (e) => {
@@ -99,31 +127,15 @@ export const showMainMenu = (
     },
   });
 
-  menuOptions.push(menuSeparator);
-
-  if (isMobile) {
-    menuOptions.push({
-      name: i18n.views.navigator,
-      icon: "ui//spaces",
-      onClick: () => {
-        const leaves =
-          plugin.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
-        if (leaves.length > 0) {
-          plugin.app.workspace.revealLeaf(leaves[0]);
-        }
-      },
-    });
-  }
-
-  leafs.map((l) =>
-    menuOptions.push({
-      name: l.getDisplayText(),
-      icon: "lucide//" + l.view.icon,
-      onClick: () => {
-        plugin.app.workspace.revealLeaf(l);
-      },
-    })
-  );
+  // leafs.map((l) =>
+  //   menuOptions.push({
+  //     name: l.getDisplayText(),
+  //     icon: "lucide//" + l.view.icon,
+  //     onClick: () => {
+  //       plugin.app.workspace.revealLeaf(l);
+  //     },
+  //   })
+  // );
 
   menuOptions.push(menuSeparator);
 

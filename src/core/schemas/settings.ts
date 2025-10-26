@@ -92,4 +92,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   overrideNativeMenu: false,
   onboardingCompleted: false,
   contextCreateUseModal: false,
+  homepagePath: '',
+  mobileMakeHeader: false,
 };

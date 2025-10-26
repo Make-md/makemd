@@ -34,9 +34,9 @@ import { nameForField } from "core/utils/frames/frames";
 import { isPhone } from "core/utils/ui/screen";
 import { isString } from "lodash";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
-import i18n from "shared/i18n";
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { fieldTypeForField, stickerForField } from "schemas/mdb";
+import i18n from "shared/i18n";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { FrameEditorMode } from "shared/types/frameExec";
 import { SpaceProperty, SpaceTableColumn } from "shared/types/mdb";
@@ -506,8 +506,9 @@ export const FilterBar = (props: {
 
     if (!readMode) {
       menuOptions.push(
-        menuInput(frameSchema.name ?? "", (value) =>
-          saveSchema({ ...frameSchema, name: value }),
+        menuInput(
+          frameSchema.name ?? "",
+          (value) => saveSchema({ ...frameSchema, name: value }),
           ""
         )
       );
@@ -568,7 +569,8 @@ export const FilterBar = (props: {
       name: i18n.labels.limit,
       icon: "ui//hash",
       type: SelectOptionType.Disclosure,
-      value: predicate?.limit > 0 ? predicate.limit.toString() : i18n.labels.showAll,
+      value:
+        predicate?.limit > 0 ? predicate.limit.toString() : i18n.labels.showAll,
       onClick: (e) => {
         const offset = (e.target as HTMLElement).getBoundingClientRect();
         const limitOptions = [0, 10, 25, 50, 100, 200, 500];
@@ -1371,7 +1373,7 @@ export const FilterBar = (props: {
         </div>
       ) : (
         <>
-          {props.showTitle && (
+          {props.showTitle && (expanded || props.setView) && (
             <div className="mk-context-config">
               <ContextTitle superstate={props.superstate}></ContextTitle>
 
@@ -1410,18 +1412,23 @@ export const FilterBar = (props: {
             </div>
           )}
           <div className="mk-view-config">
-            {!expanded ? props.setView ? (
-              <ListSelector
-                superstate={props.superstate}
-                expanded={false}
-                setView={props.setView}
-              ></ListSelector>
-            ) : <div className="mk-context-config">
-              <ContextTitle superstate={props.superstate}></ContextTitle>
+            {!expanded ? (
+              props.setView ? (
+                <ListSelector
+                  superstate={props.superstate}
+                  expanded={false}
+                  setView={props.setView}
+                ></ListSelector>
+              ) : (
+                <div className="mk-context-config">
+                  <ContextTitle superstate={props.superstate}></ContextTitle>
 
-              <span></span>
-
-            </div> : <></>}
+                  <span></span>
+                </div>
+              )
+            ) : (
+              <></>
+            )}
 
             {
               <div className="mk-view-options">

@@ -279,7 +279,7 @@ const processSpaceRecursively = (
 };
 
 // Get current app version from package.json or manifest
-const APP_VERSION = "1.3.2"; // This should match the version in manifest.json
+const APP_VERSION = "1.3.3"; // This should match the version in manifest.json
 
 // Helper function to check version compatibility
 function checkVersionCompatibility(kitVersion?: string): boolean {

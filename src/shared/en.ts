@@ -239,6 +239,8 @@ export const en = {
     "newView": "New",
     "calendarView": "Calendar View",
     "dayView": "Day View",
+    "weekView": "Week View",
+    "monthView": "Month View",
     "closeSpace": "Remove from Focus",
     "customView": "Custom View",
     "detailsView": "Details View",
@@ -311,7 +313,9 @@ export const en = {
     "openFilePane": "Open File Pane",
     "openNativeMenu": "More Options",
     "revealInDefault": "Reveal in Finder",
-    "revealInExplorer": "Reveal in Explorer"
+    "revealInExplorer": "Reveal in Explorer",
+    "showHeader": "Show Header",
+    "hideHeader": "Hide Header"
   },
   "editor": {
     "linkName": "${1} Link",

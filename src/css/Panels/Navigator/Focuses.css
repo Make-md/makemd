@@ -35,6 +35,24 @@
   opacity: 1;
 }
 
+.mk-waypoint-menu {
+  display: flex;
+  align-items: center;
+  color: var(--mk-ui-text-secondary);
+  opacity: .5;
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.mk-waypoint-menu:hover {
+  opacity: 1;
+}
+
+.mk-waypoint-menu svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
 .mk-focuses .mk-focuses-item {
   display: flex;
   justify-content: center;
@@ -47,6 +65,8 @@ padding-top: 12px;
 .is-mobile .mk-focuses > div {
   gap: 8px;
   overflow: initial;
+  padding: 0;
+  margin-bottom: 8px;
 }
 .mk-focuses {
   display: flex;
