@@ -37,10 +37,15 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
       const newSpace = flattenedTree.find(({ id }) => id === parentId)?.item.path;
       const newRank = parentId == overItem.id ? -1 : overItem.rank ?? -1;
       
-      
-
       if (!newSpace) return;
-      dropPathsInSpaceAtIndex(superstate, droppable, newSpace, projected.sortable && newRank, modifier);
+      
+      // Only proceed with reordering if the target space supports manual sorting
+      if (!projected.sortable) {
+        superstate.ui.notify("This folder is not manually sorted. Change sort order to 'Custom' to reorder items.");
+        return;
+      }
+      
+      dropPathsInSpaceAtIndex(superstate, droppable, newSpace, newRank, modifier);
     }
   };
 
@@ -57,16 +62,22 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
       const newSpace = projected.depth == 0 && !projected.insert ? null : clonedItems.find(({ id }) => id === parentId)?.item.path;
 
       const newRank = parentId == null ? activeSpaces.findIndex(f => f?.path == overItem.id) :  parentId == overItem.id ? -1 : overItem.rank ?? -1;
+      
+      // Only proceed with reordering if the target space supports manual sorting
+      if (newSpace && !projected.sortable) {
+        superstate.ui.notify("This folder is not manually sorted. Change sort order to 'Custom' to reorder items.");
+        return;
+      }
+      
       if (!active) {
-        
-        dropPathInSpaceAtIndex(superstate, path, null, newSpace, projected.sortable && newRank, modifier);
+        dropPathInSpaceAtIndex(superstate, path, null, newSpace, newRank, modifier);
         return;
       }
       const activeIndex = clonedItems.findIndex(({ id }) => id === active);
       const activeItem = clonedItems[activeIndex];
 
       const oldSpace = activeItem.parentId == null ? null : clonedItems.find(({ id }) => id === activeItem.parentId)?.item.path;
-      dropPathInSpaceAtIndex(superstate,activeItem.item.path, oldSpace, newSpace,projected.sortable && newRank, modifier);
+      dropPathInSpaceAtIndex(superstate,activeItem.item.path, oldSpace, newSpace, newRank, modifier);
     }
   };
 
