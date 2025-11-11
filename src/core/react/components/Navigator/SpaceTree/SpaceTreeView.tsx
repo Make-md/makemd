@@ -189,6 +189,68 @@ const treeForRoot = (
   return tree;
 };
 
+/**
+ * Apply optimistic reordering to the tree for immediate UI feedback
+ * This mirrors the server-side reordering logic but runs synchronously
+ */
+const applyOptimisticReorder = (
+  tree: TreeNode[],
+  dragPaths: string[],
+  activeNode: TreeNode | null,
+  overId: string,
+  projected: DragProjection
+): TreeNode[] | null => {
+  if (!activeNode || !projected || dragPaths.length === 0) {
+    return null;
+  }
+
+  try {
+    // Find the indices of dragged items and target
+    const overIndex = tree.findIndex(({ id }) => id === overId);
+    if (overIndex === -1) return null;
+
+    const overItem = tree[overIndex];
+    
+    // Calculate target rank based on projection
+    const parentId = projected.insert ? overId : projected.parentId;
+    const targetRank = parentId === overItem.id ? -1 : overItem.rank ?? -1;
+
+    // If not sortable or invalid rank, don't apply optimistic update
+    if (!projected.sortable || targetRank === -1) {
+      return null;
+    }
+
+    // Separate items being moved from the rest
+    const itemsToMove = tree.filter(node => dragPaths.includes(node.path));
+    const remainingItems = tree.filter(node => !dragPaths.includes(node.path));
+
+    // Find insertion point in remaining items
+    let insertionIndex = remainingItems.findIndex(node => 
+      node.rank !== null && node.rank >= targetRank
+    );
+    
+    if (insertionIndex === -1) {
+      insertionIndex = remainingItems.length;
+    }
+
+    // Insert moved items at the target position
+    const newTree = [
+      ...remainingItems.slice(0, insertionIndex),
+      ...itemsToMove,
+      ...remainingItems.slice(insertionIndex)
+    ];
+
+    // Recalculate ranks for visual consistency
+    return newTree.map((node, index) => ({
+      ...node,
+      rank: node.rank !== null ? index : node.rank
+    }));
+  } catch (error) {
+    console.error("Failed to apply optimistic reorder:", error);
+    return null;
+  }
+};
+
 const retrieveData = (
   superstate: Superstate,
   activeViewSpaces: PathState[],
@@ -613,16 +675,46 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
   const dragEnded = (e: React.DragEvent<HTMLDivElement>, overId: string) => {
     const modifiers = eventToModifier(e);
+    
+    // Validate drop before proceeding
+    if (!projected) {
+      resetState();
+      return;
+    }
+    
+    // Store current tree state for potential rollback
+    const previousTree = flattenedTree;
+    
+    // Apply optimistic update to UI immediately
+    const optimisticTree = applyOptimisticReorder(
+      flattenedTree,
+      dragPaths,
+      active,
+      overId,
+      projected
+    );
+    
+    if (optimisticTree) {
+      setFlattenedTree(optimisticTree);
+    }
+    
+    // Fire async DB write (don't await - it's queued)
     dropPathsInTree(
       superstate,
       dragPaths,
       active?.id,
       overId,
       projected,
-      flattenedTree,
+      previousTree, // Use previous tree state for calculations to avoid race conditions
       activeViewSpaces,
       modifiers
-    );
+    ).catch((error) => {
+      // Rollback on error
+      console.error("Failed to reorder items:", error);
+      superstate.ui.notify("Failed to save new order");
+      setFlattenedTree(previousTree);
+    });
+    
     resetState();
   };
 

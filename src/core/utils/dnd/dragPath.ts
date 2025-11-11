@@ -86,7 +86,12 @@ if (!previousItem) return;
   
 const previousItemDroppable = previousItem.type != 'file'
 const insert = activeItem.depth > 0 &&  overItem.collapsed && previousItemDroppable && (!overItem.sortable || dirDown && yOffset <= 13 || !dirDown && yOffset >= 13)
-  const sortable = overItem.sortable || previousItemDroppable && !insert && nextItem.sortable
+  
+  // Determine if the drop target allows manual reordering
+  // A drop is sortable if:
+  // 1. The item we're hovering over is in a manually sorted space, OR
+  // 2. We're dropping between a folder and a sortable sibling (boundary case)
+  const sortable = overItem.sortable || (previousItemDroppable && !insert && nextItem?.sortable)
   const projectedDepth = dragDepth;
   const maxDepth = activeItem.depth == 0 ? 0 : getMaxDepth(
     previousItem, dirDown
