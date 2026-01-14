@@ -444,10 +444,11 @@ export const PropertyValueComponent = (props: {
     const options = parseOptions(parsedValue.options ?? []);
 
     const saveOptionsHandler = (newOptions: SelectOption[], colorScheme?: string) => {
-      saveParsedValue("options", newOptions);
+      const updated: Record<string, any> = { ...parsedValue, options: newOptions };
       if (colorScheme !== undefined) {
-        saveParsedValue("colorScheme", colorScheme);
+        updated.colorScheme = colorScheme;
       }
+      props.saveValue(JSON.stringify(updated));
     };
 
     props.superstate.ui.openModal(

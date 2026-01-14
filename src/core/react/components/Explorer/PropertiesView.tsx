@@ -128,11 +128,21 @@ export const PropertiesView = (props: {
     }
   };
 
+  const pathChanged = (payload: { path: string }) => {
+    if (payload.path == pathState?.path) {
+      refreshData();
+    }
+  };
+
   useEffect(() => {
     refreshData();
     props.superstate.eventsDispatcher.addListener(
       "contextStateUpdated",
       mdbChanged
+    );
+    props.superstate.eventsDispatcher.addListener(
+      "pathStateUpdated",
+      pathChanged
     );
 
     return () => {
@@ -140,8 +150,12 @@ export const PropertiesView = (props: {
         "contextStateUpdated",
         mdbChanged
       );
+      props.superstate.eventsDispatcher.removeListener(
+        "pathStateUpdated",
+        pathChanged
+      );
     };
-  }, [props.spaces, tableData]);
+  }, [props.spaces, tableData, pathState]);
   const savePropertyValue = (value: string, f: SpaceTableColumn) => {
     if (saveProperty) {
       const property = tableData?.cols?.find((g) => g.name == f.name);
