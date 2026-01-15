@@ -105,8 +105,14 @@ export const parseMultiString = (str: string): string[] => ensureString(str).sta
       break;
     case "text":
     case "tag":
-    case "option":
     case "image":
+      return value;
+      break;
+    case "option":
+      // Handle case where option value is an array (from frontmatter)
+      if (Array.isArray(value)) {
+        return value[0] ?? "";
+      }
       return value;
       break;
   }

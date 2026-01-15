@@ -78,13 +78,17 @@ const SortableOptionItem: React.FC<SortableOptionItemProps> = ({
     e.preventDefault();
     
     // Always show color picker menu regardless of color scheme
-    showColorPickerMenu(
+    const menu = showColorPickerMenu(
       superstate,
       (e.target as HTMLElement).getBoundingClientRect(),
       windowFromDocument(e.view.document),
       option.color || "var(--mk-color-none)",
       (color: string) => {
         onEdit({ ...option, color });
+        // Auto-close menu after color selection
+        if (menu) {
+          menu.hide();
+        }
       }
     );
   };
