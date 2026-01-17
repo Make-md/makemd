@@ -3,6 +3,8 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import t from "shared/i18n";
 import MakeMDPlugin from "../../main";
 import { MakeMDSettings } from "../../shared/types/settings";
+import React from "react";
+import { SpaceFolderHidingModal } from "core/react/components/System/SettingsSections/SpaceFolderHidingModal";
 
 type SettingObject = {
   name: keyof MakeMDSettings;
@@ -392,6 +394,11 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         type: 'text',
       },
       {
+        name: 'autoApplySpaceFolderHiding',
+        category: 'advanced',
+        type: 'boolean',
+      },
+      {
         name: 'spacesFolder',
         category: 'advanced',
         type: 'text',
@@ -487,8 +494,23 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       settings.settings.forEach((setting) => {
         if (setting.category === category && !setting.subCategory) {
           insertSetting(containerEl, setting);
+          if (category === "advanced" && setting.name === "spaceSubFolder") {
+            const s = new Setting(containerEl)
+              .setName("Reapply space folder hiding")
+              .setDesc("Open a popup with Dry-run preview and Apply/Undo actions for Obsidian config + CSS snippet.");
+            s.addButton((btn) =>
+              btn.setButtonText("Open").onClick(() => {
+                this.plugin.superstate.ui.openModal(
+                  "Space folder hiding",
+                  React.createElement(SpaceFolderHidingModal, { superstate: this.plugin.superstate }),
+                  window
+                );
+              })
+            );
+          }
         }
       });
+
       settings.subCategories[category].forEach((subCategory) => {
         const subCategoryItems = settings.settings.filter((setting) => setting.category === category && setting.subCategory === subCategory);
         if (subCategoryItems.length > 0) {

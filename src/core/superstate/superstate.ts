@@ -40,6 +40,7 @@ import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { safelyParseJSON } from "shared/utils/json";
 import { mdbSchemaToFrameSchema } from "shared/utils/makemd/schema";
+import { excludePathPredicate } from "utils/hide";
 import { parseMultiString } from "utils/parsers";
 import { getAllParentTags } from "utils/tags";
 import { removeLinkInContexts, removePathInContexts, removeTagInContexts, renameLinkInContexts, renamePathInContexts, renameTagInContexts, updateContextWithProperties } from "../utils/contexts/context";
@@ -899,35 +900,35 @@ public async updateSpaceMetadata (spacePath: string, metadata: SpaceDefinition) 
             if (!pathState) {
                 if (!this.settings.enableFolderNote) {
                     const pathCache = await this.spaceManager.readPathCache(space.path);
-                pathState = {
-                    path: space.path,
-                    name: space.name,
-                    tags: [],
-                    spaces: [],
-                    outlinks: [],
-                    readOnly: space.readOnly,
-                    hidden: false,
-                    metadata: pathCache?.metadata,
-                    type: 'space',
-                    subtype: type,
-                    label: pathCache?.label,
-                }
+                    pathState = {
+                        path: space.path,
+                        name: space.name,
+                        tags: [],
+                        spaces: [],
+                        outlinks: [],
+                        readOnly: space.readOnly,
+                        hidden: excludePathPredicate(this.settings, space.path),
+                        metadata: pathCache?.metadata,
+                        type: 'space',
+                        subtype: type,
+                        label: pathCache?.label,
+                    }
                 } else {
 
-                const pathCache = await this.spaceManager.readPathCache(space.notePath);
-                pathState = {
-                    path: space.path,
-                    name: space.name,
-                    tags: [],
-                    spaces: [],
-                    outlinks: [],
-                    readOnly: space.readOnly,
-                    hidden: false,
-                    metadata: pathCache?.metadata,
-                    type: 'space',
-                    subtype: type,
-                    label: pathCache?.label,
-                }
+                    const pathCache = await this.spaceManager.readPathCache(space.notePath);
+                    pathState = {
+                        path: space.path,
+                        name: space.name,
+                        tags: [],
+                        spaces: [],
+                        outlinks: [],
+                        readOnly: space.readOnly,
+                        hidden: excludePathPredicate(this.settings, space.path),
+                        metadata: pathCache?.metadata,
+                        type: 'space',
+                        subtype: type,
+                        label: pathCache?.label,
+                    }
             }
             }
             properties = await this.spaceManager.readProperties(space.notePath).then(f => linkContextRow(this.formulaContext, this.pathsIndex, this.contextsIndex, this.spacesMap, f, propertyTypes, pathState, this.settings));

@@ -3,6 +3,7 @@ import i18n from "shared/i18n";
 import React, { useState, useEffect } from "react";
 import { useDebouncedSave } from "./hooks";
 import { SettingsProps } from "./types";
+import { SpaceFolderHidingModal } from "./SpaceFolderHidingModal";
 
 export const AdvancedSettings = ({ superstate }: SettingsProps) => {
   const { debouncedSave, immediateSave } = useDebouncedSave(superstate);
@@ -10,6 +11,9 @@ export const AdvancedSettings = ({ superstate }: SettingsProps) => {
   const [defaultTimeFormat, setDefaultTimeFormat] = useState(superstate.settings.defaultTimeFormat);
   const [spaceSubFolder, setSpaceSubFolder] = useState(superstate.settings.spaceSubFolder);
   const [spacesFolder, setSpacesFolder] = useState(superstate.settings.spacesFolder);
+  const [autoApplySpaceFolderHiding, setAutoApplySpaceFolderHiding] = useState(
+    Boolean(superstate.settings.autoApplySpaceFolderHiding)
+  );
   
   // Sync state with superstate.settings when component mounts or settings change
   useEffect(() => {
@@ -17,6 +21,7 @@ export const AdvancedSettings = ({ superstate }: SettingsProps) => {
     setDefaultTimeFormat(superstate.settings.defaultTimeFormat);
     setSpaceSubFolder(superstate.settings.spaceSubFolder);
     setSpacesFolder(superstate.settings.spacesFolder);
+    setAutoApplySpaceFolderHiding(Boolean(superstate.settings.autoApplySpaceFolderHiding));
   }, [superstate.settings]);
   return (
     <div className="mk-setting-section">
@@ -125,6 +130,53 @@ export const AdvancedSettings = ({ superstate }: SettingsProps) => {
                 setSpaceSubFolder(e.target.value);
                 superstate.settings.spaceSubFolder = e.target.value;
                 debouncedSave();
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="mk-setting-item">
+          <div className="mk-setting-item-info">
+            <div className="mk-setting-item-name">
+              Reapply space folder hiding
+            </div>
+            <div className="mk-setting-item-description">
+              Open a popup with a dry-run preview and Apply/Undo actions.
+            </div>
+          </div>
+          <div className="mk-setting-item-control">
+            <button
+              onClick={() => {
+                superstate.ui.openModal(
+                  "Space folder hiding",
+                  <SpaceFolderHidingModal superstate={superstate} />,
+                  window
+                );
+              }}
+            >
+              Open
+            </button>
+          </div>
+        </div>
+
+        <div className="mk-setting-item">
+          <div className="mk-setting-item-info">
+            <div className="mk-setting-item-name">
+              Auto-apply space folder hiding
+            </div>
+            <div className="mk-setting-item-description">
+              When enabled, Make.md automatically updates `.obsidian/app.json` (userIgnoreFilters) and a CSS snippet when Space Folder Name changes.
+              Off by default.
+            </div>
+          </div>
+          <div className="mk-setting-item-control">
+            <input
+              type="checkbox"
+              checked={autoApplySpaceFolderHiding}
+              onChange={(e) => {
+                setAutoApplySpaceFolderHiding(e.target.checked);
+                superstate.settings.autoApplySpaceFolderHiding = e.target.checked;
+                immediateSave();
               }}
             />
           </div>

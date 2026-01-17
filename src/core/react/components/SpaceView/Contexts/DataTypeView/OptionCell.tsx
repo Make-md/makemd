@@ -66,11 +66,11 @@ export const OptionCell = (
         .map((t, index) => ({
           ...t,
           color: editable
-            ? schemeColors
+            ? t.color?.length > 0
+              ? t.color  // Use individual option color if set
+              : schemeColors
               ? schemeColors[index % schemeColors.length]?.value ||
                 "var(--mk-color-none)"
-              : t.color?.length > 0
-              ? t.color
               : undefined
             : undefined,
           removeable: editable ? editMode >= CellEditMode.EditModeView : false,
@@ -155,7 +155,7 @@ export const OptionCell = (
     } else {
       props.saveOptions(
         serializeOptionValue(newOptions, parsedValue),
-        serializeMultiDisplayString(newValues)
+        newValues[0] ?? ""
       );
     }
   };
@@ -168,7 +168,7 @@ export const OptionCell = (
     } else {
       props.saveOptions(
         serializeOptionValue(options, parsedValue),
-        serializeMultiDisplayString(value)
+        value[0] ?? ""
       );
     }
   };

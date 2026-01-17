@@ -9,6 +9,19 @@
   display: flex !important;
   }
 
+.is-phone .workspace-drawer-inner:has(.workspace-leaf-content[data-type="mk-path-view"]) {
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) !important;
+}
+
+.is-mobile .workspace-drawer-inner:has(.workspace-leaf-content[data-type="mk-path-view"]) {
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) !important;
+}
+
+  .mk-mobile-sidepanel.is-phone .workspace-drawer.mod-left .workspace-drawer-inner,
+  .mk-mobile-sidepanel.is-phone .workspace-drawer.mod-right .workspace-drawer-inner {
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) !important;
+}
+
   .mk-mobile-sidepanel.is-mobile.mk-hide-ribbon:not(.mk-spaces-right)
   .workspace-drawer.mod-left
   .workspace-drawer-inner, .mk-mobile-sidepanel.is-mobile.mk-hide-ribbon.mk-spaces-right
@@ -73,7 +86,9 @@
   .workspace-drawer-inner
   .workspace-drawer-header {
   padding-right: 0 !important;
-  padding-top: 0;
+  padding-top: calc(
+    var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 12px
+  ) !important;
 }
 
 .mk-mobile-sidepanel.is-mobile:not(.mk-spaces-right)

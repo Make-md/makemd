@@ -86,7 +86,8 @@ export const PropertiesView = (props: {
     ]).filter((f) => !columns.some((g) => g.name == f));
     const cols: SpaceTableColumn[] = fmKeys.map(
       (f) =>
-        tableData?.cols?.find((g) => g.name == f) ?? {
+        tableData?.cols?.find((g) => g.name == f) ??
+        columns.find((g) => g.name == f) ?? {
           table: "",
           name: f,
           schemaId: "",
@@ -96,7 +97,8 @@ export const PropertiesView = (props: {
     if (properties) {
       newCols.push(...cols);
       fmKeys.forEach((c) => {
-        newValues[c] = parseProperty(c, properties[c]);
+        const colType = cols.find((col) => col.name == c)?.type;
+        newValues[c] = parseProperty(c, properties[c], colType);
       });
     }
 
@@ -128,11 +130,21 @@ export const PropertiesView = (props: {
     }
   };
 
+  const pathChanged = (payload: { path: string }) => {
+    if (payload.path == pathState?.path) {
+      refreshData();
+    }
+  };
+
   useEffect(() => {
     refreshData();
     props.superstate.eventsDispatcher.addListener(
       "contextStateUpdated",
       mdbChanged
+    );
+    props.superstate.eventsDispatcher.addListener(
+      "pathStateUpdated",
+      pathChanged
     );
 
     return () => {
@@ -140,8 +152,12 @@ export const PropertiesView = (props: {
         "contextStateUpdated",
         mdbChanged
       );
+      props.superstate.eventsDispatcher.removeListener(
+        "pathStateUpdated",
+        pathChanged
+      );
     };
-  }, [props.spaces, tableData]);
+  }, [props.spaces, tableData, pathState]);
   const savePropertyValue = (value: string, f: SpaceTableColumn) => {
     if (saveProperty) {
       const property = tableData?.cols?.find((g) => g.name == f.name);

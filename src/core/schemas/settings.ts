@@ -49,6 +49,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   spacesFolder: i18n.settings.tags,
   suppressedWarnings: [],
   spaceSubFolder: ".space",
+  autoApplySpaceFolderHiding: false,
   hiddenFiles: [],
   hiddenExtensions: [".mdb", '_assets', '_blocks'],
   newFileLocation: "root",

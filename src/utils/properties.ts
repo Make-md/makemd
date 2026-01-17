@@ -146,6 +146,11 @@ export const parseMDBStringValue = (type: string, value: string, frontmatter?: b
     );
   } else if (type.includes("link") || type.includes("context")) {
     return frontmatter ? `[[${value}]]` : value;
+  } else if (type == "option" && frontmatter) {
+    // Parse option values when saving to frontmatter
+    // If it's a JSON array string, parse it to get the single value
+    const parsed = parseMultiString(value);
+    return parsed.length === 1 ? parsed[0] : (parsed.length > 1 ? parsed : value);
   }
   return value;
 };
