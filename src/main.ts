@@ -92,6 +92,7 @@ import { attachCommands } from "commands";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
 import { Superstate } from "core/superstate/superstate";
 import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
+import { SpaceFolderHidingManager } from "core/hiding/SpaceFolderHidingManager";
 import { isTouchScreen } from "core/utils/ui/screen";
 import "css/DefaultVibe.css";
 import "css/Editor/Actions/Actions.css";
@@ -152,6 +153,10 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
   
   superstate: Superstate;
   ui: ObsidianUI;
+  private lastSpaceSubFolder: string | null = null;
+  
+  // Space folder hiding manager
+  public hidingManager: SpaceFolderHidingManager;
 
   
   
@@ -650,14 +655,24 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     
     this.loadCommands();
     
+    // Initialize space folder hiding manager
+    this.hidingManager = new SpaceFolderHidingManager(
+      this.app.vault.adapter,
+      this.app.vault.configDir,
+      async () => {
+        // Reindex callback
+        await this.obsidianAdapter.loadCacheFromObsidianCache();
+        if (this.superstate.settings.spacesEnabled) {
+          await this.superstate.initializeSpaces();
+        }
+        await this.superstate.initializePaths();
+      }
+    );
+    
+    // Initialize and restore hiding state
+    await this.hidingManager.initialize();
     
     this.superstate.ui.notify(`Make.md - Plugin loaded in ${(Date.now()-start)/1000} seconds`, 'console');
-
-    if (this.superstate.settings.systemName == 'Vault') {
-    this.superstate.settings.systemName = this.app.vault.getName();
-    this.saveSettings();
-    } 
-    
   }
 
   
@@ -763,21 +778,62 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
     const userConfig = safelyParseJSON(await defaultConfigFile(this));
     this.superstate.settings.newFileFolderPath = userConfig.newFileFolderPath;
     this.superstate.settings.newFileLocation = userConfig.newFileLocation;
+    this.lastSpaceSubFolder = this.superstate.settings.spaceSubFolder;
+    
+    // Sync systemName with vault name if not customized by user
+    if (!this.superstate.settings.systemNameCustomized) {
+      const currentVaultName = this.app.vault.getName();
+      if (this.superstate.settings.systemName !== currentVaultName) {
+        this.superstate.settings.systemName = currentVaultName;
+      }
+    }
+    
     this.saveSettings();
   }
 
   async saveSettings(refresh = true) {
 
+    const previousSpaceSubFolder = this.lastSpaceSubFolder;
     await this.saveData(this.superstate.settings);
     this.obsidianAdapter.pathLastUpdated.set(normalizePath(this.app.vault.configDir + "/plugins/make-md/data.json"), Date.now());
     if (refresh)
     this.superstate.dispatchEvent("settingsChanged", null)
+
+    // Handle space folder pattern change
+    if (previousSpaceSubFolder !== this.superstate.settings.spaceSubFolder) {
+      this.lastSpaceSubFolder = this.superstate.settings.spaceSubFolder;
+      
+      // If hiding is enabled, reapply with new pattern
+      if (this.hidingManager && this.hidingManager.isEnabled()) {
+        try {
+          await this.hidingManager.enable(this.superstate.settings.spaceSubFolder);
+          this.superstate.ui.notify(`Space folder hiding updated: ${this.superstate.settings.spaceSubFolder}`);
+        } catch (error) {
+          console.error('Failed to update space folder hiding:', error);
+          this.superstate.ui.error(error);
+        }
+      }
+    }
     
   }
 
   onunload() {
-    this.superstate.persister.unload();
+    // Cleanup space folder hiding (removes CSS from DOM)
+    if (this.hidingManager) {
+      this.hidingManager.cleanup();
+    }
     
+    // Cleanup UI (React root)
+    if (this.ui) {
+      this.ui.destroy();
+    }
+    
+    // Cleanup persister
+    if (this.superstate?.persister) {
+      this.superstate.persister.unload();
+    }
+    
+    // Remove file tree leaves
     this.detachFileTreeLeafs();
   }
 }

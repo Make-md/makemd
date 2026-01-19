@@ -58,6 +58,8 @@ export interface MakeMDSettings {
   inlineContextNameLayout: InlineContextLayout;
   spacesUseAlias: boolean,
   spaceSubFolder: string,
+  /** When enabled, Make.md will update Obsidian configs/snippets automatically when spaceSubFolder changes. */
+  autoApplySpaceFolderHiding: boolean,
   suppressedWarnings: string[],
   fmKeyAlias: string;
   fmKeyBanner: string;
@@ -75,6 +77,7 @@ export interface MakeMDSettings {
   showSpacePinIcon: boolean;
   experimental: boolean;
   systemName: string;
+  systemNameCustomized: boolean;
   defaultSpaceTemplate: string;
   selectedKit: string;
   actionMaxSteps: number;

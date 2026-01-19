@@ -59,8 +59,16 @@
 }
 
 .is-mobile .mk-focuses {
-    box-shadow: var(--mk-shadow-card);
-padding-top: 12px;
+  box-shadow: var(--mk-shadow-card);
+  padding-top: calc(
+    var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 12px
+  );
+  padding-bottom: 8px;
+}
+.is-mobile .mk-focuses.nav-header {
+  top: 0 !important;
+  background-color: var(--background-primary);
+  z-index: 10;
 }
 .is-mobile .mk-focuses > div {
   gap: 8px;
@@ -71,7 +79,7 @@ padding-top: 12px;
 .mk-focuses {
   display: flex;
   overflow: auto;
-  padding: 12px 12px 4px 12px;
+  padding: 12px 12px 6px 12px;
 }
 
 .mk-focuses-inner {

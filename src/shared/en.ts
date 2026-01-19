@@ -1201,6 +1201,10 @@ export const en = {
       "name": "Space Folder Name",
       "desc": "Name of the folder for spaces"
     },
+    "autoApplySpaceFolderHiding": {
+      "name": "Auto-apply space folder hiding",
+      "desc": "Automatically update Obsidian ignore filters and CSS snippet when the space folder name changes."
+    },
     "basics": {
       "name": "Make.md Basics",
       "desc": "Enable features from Make.md Basics including styler and flow blocks"

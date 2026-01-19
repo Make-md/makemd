@@ -487,8 +487,40 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       settings.settings.forEach((setting) => {
         if (setting.category === category && !setting.subCategory) {
           insertSetting(containerEl, setting);
+          if (category === "advanced" && setting.name === "spaceSubFolder") {
+            // Hide space folders toggle
+            const hidingManager = this.plugin.hidingManager;
+            const isEnabled = hidingManager?.isEnabled() ?? false;
+            const currentPattern = hidingManager?.getCurrentPattern();
+            
+            const hidingSetting = new Setting(containerEl)
+              .setName("Hide space folders from UI")
+              .setDesc(
+                "Hides space folders from File Explorer, Search, and Quick Switcher. " +
+                "Uses dynamic CSS (works only when plugin is enabled). " +
+                "Status: " + (isEnabled && currentPattern ? `Active (hiding: ${currentPattern})` : "Disabled") + ". " +
+                "Note: Graph View requires manual configuration."
+              );
+            
+            hidingSetting.addToggle((toggle) =>
+              toggle.setValue(isEnabled).onChange(async (value: boolean) => {
+                try {
+                  if (value) {
+                    await hidingManager?.enable(this.plugin.superstate.settings.spaceSubFolder);
+                  } else {
+                    await hidingManager?.disable();
+                  }
+                  // Refresh settings display
+                  this.display();
+                } catch (err) {
+                  console.error("Failed to toggle hiding:", err);
+                }
+              })
+            );
+          }
         }
       });
+
       settings.subCategories[category].forEach((subCategory) => {
         const subCategoryItems = settings.settings.filter((setting) => setting.category === category && setting.subCategory === subCategory);
         if (subCategoryItems.length > 0) {

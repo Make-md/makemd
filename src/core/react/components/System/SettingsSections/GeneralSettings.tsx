@@ -45,6 +45,7 @@ export const GeneralSettings = ({ superstate }: SettingsProps) => {
               onChange={(e) => {
                 setSystemName(e.target.value);
                 superstate.settings.systemName = e.target.value;
+                superstate.settings.systemNameCustomized = true;
                 debouncedSave();
               }}
             />

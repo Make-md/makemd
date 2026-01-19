@@ -17,6 +17,7 @@ export const MainMenu = (props: MainMenuComponentProps) => {
 
   const ref = useRef<HTMLDivElement>();
   const [warnings, setWarnings] = React.useState<Warning[]>([]);
+  const [systemName, setSystemName] = React.useState(props.superstate.settings.systemName);
   useEffect(() => {
     setTimeout(() => {
       props.superstate.ui
@@ -37,6 +38,7 @@ export const MainMenu = (props: MainMenuComponentProps) => {
             !props.superstate.settings.suppressedWarnings.some((g) => f.id == g)
         )
     );
+    setSystemName(props.superstate.settings.systemName);
   };
   useEffect(() => {
     props.superstate.eventsDispatcher.addListener(
@@ -71,14 +73,14 @@ export const MainMenu = (props: MainMenuComponentProps) => {
       <div className="mk-main-menu-inner">
         <div className={classNames("mk-main-menu")}>
           <div
-            aria-label={props.superstate.settings.systemName}
+            aria-label={systemName}
             className={`mk-main-menu-button mk-main-menu-button-primary`}
             ref={ref}
             onClick={(e) => {
               props.superstate.ui.mainMenu(ref.current, superstate);
             }}
           >
-            <span>{props.superstate.settings.systemName}</span>
+            <span>{systemName}</span>
             {warnings.length > 0 && (
               <div
                 className="mk-icon-xsmall"
