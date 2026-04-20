@@ -831,6 +831,7 @@ export const en = {
     "kip": "Kip",
     "tughrik": "Tughrik",
     "rupiah": "Rupiah",
+    "reais": "Brazilian Reais",
     "liters": "Liters",
     "seconds": "Seconds",
     "scientific": "Scientific",
