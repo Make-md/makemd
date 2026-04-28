@@ -1,7 +1,8 @@
 import { showNewPropertyMenu } from "core/react/components/UI/Menus/contexts/newSpacePropertyMenu";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
+import { CollapseToggleSmall } from "core/react/components/UI/Toggles/CollapseToggleSmall";
 import i18n from "shared/i18n";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { parseObject } from "utils/parsers";
 import { propertyIsObjectType } from "utils/properties";
@@ -9,6 +10,9 @@ import { PropertyField } from "../ContextBuilder/ContextListEditSelector";
 import { CellEditMode } from "../TableView/TableView";
 import { DataTypeView, DataTypeViewProps } from "./DataTypeView";
 import { ObjectType } from "./ObjectCell";
+
+// Per-column collapse state shared across renders. See DataPropertyView.
+const objectCellCollapseStore = new Map<string, boolean>();
 export type DataPropertyViewProps = DataTypeViewProps & {
   propertyMenu?: (e: React.MouseEvent) => void;
   linkProp?: (e: React.MouseEvent) => void;
@@ -86,6 +90,18 @@ export const DataPropertyView = (props: DataPropertyViewProps) => {
       JSON.stringify([...value.slice(0, index), item, ...value.slice(index)])
     );
   };
+  // Collapse state is persisted in a module-level Map keyed by path+column
+  // name so it survives remounts (which happen on every save when the parent
+  // refreshData rebuilds the cols array). Without this, expanding a cell and
+  // editing a sub-field would collapse the whole thing on save.
+  const collapseKey = `${props.path ?? ""}::${props.column.name}`;
+  const [collapsed, setCollapsedState] = useState<boolean>(() =>
+    objectCellCollapseStore.get(collapseKey) ?? true,
+  );
+  const setCollapsed = (v: boolean) => {
+    objectCellCollapseStore.set(collapseKey, v);
+    setCollapsedState(v);
+  };
   return !props.compactMode ? (
     <>
       <div className="mk-path-context-row">
@@ -97,6 +113,13 @@ export const DataPropertyView = (props: DataPropertyViewProps) => {
           contexts={props.contexts}
           draggable={props.draggable}
         ></PropertyField>
+        {isObjectType && (
+          <CollapseToggleSmall
+            superstate={props.superstate}
+            collapsed={collapsed}
+            onToggle={(c) => setCollapsed(c)}
+          />
+        )}
 
         <div className="mk-path-context-value">
           {props.linkProp && (
@@ -113,45 +136,12 @@ export const DataPropertyView = (props: DataPropertyViewProps) => {
           )}
           {props.linkedProp ? (
             <div className="mk-active">{props.linkedProp}</div>
-          ) : isObjectType ? (
-            !props.compactMode && (
-              <div className="mk-cell-object-options">
-                {props.editMode > CellEditMode.EditModeValueOnly && (
-                  <button
-                    onClick={(e) => newProperty(e)}
-                    className="mk-inline-button"
-                  >
-                    <div
-                      className="mk-icon-xsmall"
-                      dangerouslySetInnerHTML={{
-                        __html: props.superstate.ui.getSticker("ui//plus"),
-                      }}
-                    ></div>
-                    {i18n.labels.propertyFileProp}
-                  </button>
-                )}
-                {props.column.type == "object-multi" && (
-                  <button
-                    onClick={(e) => insertMultiValue(0)}
-                    className="mk-inline-button"
-                  >
-                    <div
-                      className="mk-icon-xsmall"
-                      dangerouslySetInnerHTML={{
-                        __html: props.superstate.ui.getSticker("ui//insert"),
-                      }}
-                    ></div>
-                    {parsedValue?.typeName ?? "Object"}
-                  </button>
-                )}
-              </div>
-            )
-          ) : (
+          ) : isObjectType ? null : (
             <DataTypeView {...props}></DataTypeView>
           )}
         </div>
       </div>
-      {isObjectType && !props.compactMode && (
+      {isObjectType && !props.compactMode && !collapsed && (
         <div className="mk-path-context-row" style={{ marginLeft: "30px" }}>
           <DataTypeView {...props}></DataTypeView>
         </div>

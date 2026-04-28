@@ -94,6 +94,12 @@ export const defaultValueForType = (type: string) => {
   if (type == "image") {
     return "https://images.unsplash.com/photo-1675789652575-0a5d2425b6c2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80";
   }
+  if (type == "object") {
+    return {};
+  }
+  if (type == "object-multi") {
+    return [];
+  }
 };
 
 export const parseParameters = (fieldValues: Record<string, string>, fields: SpaceProperty[]): Record<string, any> => {
@@ -163,6 +169,67 @@ export const yamlTypeToMDBType = (YAMLtype: string) => {
 export const propertyIsObjectType = (property: SpaceProperty) => {
   if (property.type == "object" || property.type == "object-multi" || property.type == "super") return true;
   return false
-  
+
 };
+
+// Like detectPropertyType but tailored for cell rendering: maps the
+// "unknown" return (null/empty values) to "text" so the cell still has a
+// renderer. Use this when picking a fallback type for an undeclared value.
+export const inferCellTypeForValue = (value: any, key = ""): string => {
+  const t = detectPropertyType(value, key);
+  return t === "unknown" ? "text" : t;
+};
+
+// Cell renderers serialize values as strings on save. Coerce them back to
+// the native primitive shape implied by the column type so YAML stays clean
+// (unquoted booleans/numbers) and downstream inference doesn't misread the
+// stringified form as text. Returns the value unchanged when no coercion
+// applies.
+export const coerceStringToType = (value: any, type: string): any => {
+  if (typeof value !== "string") return value;
+  if (type === "boolean") {
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return value;
+  }
+  if (type === "number") {
+    if (value.trim() === "") return value;
+    const n = Number(value);
+    return Number.isNaN(n) ? value : n;
+  }
+  return value;
+};
+
+// Try to JSON-parse a string; return undefined on failure. Convenience
+// wrapper around the try/catch boilerplate.
+export const tryParseJSON = <T = any>(s: string): T | undefined => {
+  try {
+    return JSON.parse(s) as T;
+  } catch {
+    return undefined;
+  }
+};
+
+// Build an ObjectType-shape schema from an example object, recursing into
+// nested objects/arrays-of-objects so deeply-nested keys also get a typed
+// schema entry. Mirrors the structure expected by ObjectCell/ObjectEditor.
+export const deriveSchemaFromValue = (obj: Record<string, any>): any =>
+  Object.keys(obj).reduce<any>((acc, k) => {
+    const v = obj[k];
+    const t = inferCellTypeForValue(v, k);
+    const entry: any = { type: t, label: k };
+    if (t === "object" && v && typeof v === "object" && !Array.isArray(v)) {
+      entry.value = { type: deriveSchemaFromValue(v), typeName: k };
+    } else if (
+      t === "object-multi" &&
+      Array.isArray(v) &&
+      v.length > 0 &&
+      v[0] &&
+      typeof v[0] === "object" &&
+      !Array.isArray(v[0])
+    ) {
+      entry.value = { type: deriveSchemaFromValue(v[0]), typeName: k };
+    }
+    return { ...acc, [k]: entry };
+  }, {});
 

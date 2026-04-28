@@ -111,7 +111,7 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
 
 .mk-path-context-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 2px;
 }
 .mk-path-context-row-new {

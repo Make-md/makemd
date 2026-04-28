@@ -1,34 +1,63 @@
-import { ensureArray, ensureString, indexOfCharElseEOS } from "core/utils/strings";
+import {
+  ensureArray,
+  ensureString,
+  indexOfCharElseEOS,
+} from "core/utils/strings";
 import { format } from "date-fns";
 import { ContextLookup, PathPropertyName } from "shared/types/context";
 import { safelyParseJSON } from "../shared/utils/json";
 import { detectPropertyType } from "./properties";
-import { serializeMultiDisplayString, serializeMultiString } from "./serializers";
+import {
+  serializeMultiDisplayString,
+  serializeMultiString,
+} from "./serializers";
 
-export const parseMultiString = (str: string): string[] => ensureString(str).startsWith("[") ? ensureArray(safelyParseJSON(str)).map(f => ensureString(f)) : parseMultiDisplayString(str)
-  
-  export const parseMultiDisplayString = (str: string):string[] => (ensureString(str).replace('\\,', ',')?.match(/(\\.|[^,])+/g) ?? []).map(f => f.trim());
-  export const parseProperty = (field: string, value: any, type?: string) : string => {
+export const parseMultiString = (str: string): string[] =>
+  ensureString(str).startsWith("[")
+    ? ensureArray(safelyParseJSON(str)).map((f) => ensureString(f))
+    : parseMultiDisplayString(str);
+
+export const parseMultiDisplayString = (str: string): string[] =>
+  (
+    ensureString(str)
+      .replace("\\,", ",")
+      ?.match(/(\\.|[^,])+/g) ?? []
+  ).map((f) => f.trim());
+export const parseProperty = (
+  field: string,
+  value: any,
+  type?: string,
+): string => {
   const YAMLtype = type ?? detectPropertyType(value, field);
-  if (!value) return ""
+  if (!value) return "";
   switch (YAMLtype) {
-    case "tags-multi": {
-      return value;
-    }
-    break;
-    case "object":
-      case "object-multi": 
+    case "tags-multi":
       {
-        if (Array.isArray(value)) {
-          if (value[0].path) {
-            return JSON.stringify(value.map((v: any) => v.path));
+        return value;
+      }
+      break;
+    case "object":
+    case "object-multi":
+      {
+        const normalize = (v: any): any => {
+          if (v == null) return v;
+          if (Array.isArray(v)) return v.map(normalize);
+          if (v instanceof Date) return format(v, "yyyy-MM-dd");
+          if (typeof v === "object") {
+            // link-shaped: { path: "..." } collapses to its path
+            if (typeof v.path === "string" && Object.keys(v).length === 1) {
+              return v.path;
+            }
+            return Object.fromEntries(
+              Object.entries(v).map(([k, val]) => [k, normalize(val)]),
+            );
           }
-        } else {
-          if (value.path) {
-            return value.path;
-          }
-        }
-      return JSON.stringify(value);
+          return v;
+        };
+        const normalized = normalize(value);
+        return typeof normalized === "string"
+          ? normalized
+          : JSON.stringify(normalized);
       }
       break;
     case "number":
@@ -39,37 +68,38 @@ export const parseMultiString = (str: string): string[] => ensureString(str).sta
       break;
     case "date":
       {
-      if (value instanceof Date) {
-        const dateString = format(value, "yyyy-MM-dd")
-        
-        if (typeof dateString === 'string') return dateString;
-        return ''
-      }
-      if (!(typeof value === 'string')) return '';
+        if (value instanceof Date) {
+          const dateString = format(value, "yyyy-MM-dd");
 
-      return value;
-    }
+          if (typeof dateString === "string") return dateString;
+          return "";
+        }
+        if (!(typeof value === "string")) return "";
+
+        return value;
+      }
       break;
     case "duration":
-      return serializeMultiDisplayString(Object.keys(value.values)
-        .reduce(
+      return serializeMultiDisplayString(
+        Object.keys(value.values).reduce(
           (p, c) => [
             ...p,
             ...(value.values[c] > 0 ? [value.values[c] + " " + c] : []),
           ],
-          []
-        ));
+          [],
+        ),
+      );
       break;
     case "option-multi":
     case "link-multi":
-      case "context-multi":
+    case "context-multi":
       if (typeof value === "string") {
         return parseLinkString(value);
       }
-      return serializeMultiString(value
-        .map((v: any) => {
+      return serializeMultiString(
+        value.map((v: any) => {
           if (!v) {
-            return '';
+            return "";
           }
           if (typeof v === "string") {
             return parseLinkString(v);
@@ -77,25 +107,29 @@ export const parseMultiString = (str: string): string[] => ensureString(str).sta
           if (v.path) {
             return v.path;
           }
-          if (Array.isArray(value) &&
+          if (
+            Array.isArray(value) &&
             v.length == 1 &&
             Array.isArray(v[0]) &&
             v[0].length == 1 &&
-            typeof v[0][0] === "string") {
+            typeof v[0][0] === "string"
+          ) {
             return v[0][0];
           }
           return JSON.stringify(v);
-        })
+        }),
       );
       break;
     case "link":
     case "context":
       {
-        if (Array.isArray(value) &&
+        if (
+          Array.isArray(value) &&
           value.length == 1 &&
           Array.isArray(value[0]) &&
           value[0].length == 1 &&
-          typeof value[0][0] === "string") {
+          typeof value[0][0] === "string"
+        ) {
           return value[0][0];
         } else if (typeof value === "string") {
           return parseLinkString(value);
@@ -107,6 +141,14 @@ export const parseMultiString = (str: string): string[] => ensureString(str).sta
     case "tag":
     case "option":
     case "image":
+      if (
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        !(value instanceof Date)
+      ) {
+        return JSON.stringify(value);
+      }
       return value;
       break;
   }
@@ -116,24 +158,25 @@ export const parseMultiString = (str: string): string[] => ensureString(str).sta
 export const parseObject = (value: string, multi: boolean) => {
   return multi
     ? ensureArray(safelyParseJSON(value))
-    : safelyParseJSON(value) ?? {};
+    : (safelyParseJSON(value) ?? {});
 };
 
 export const parsePropString = (str: string): ContextLookup => {
   const [p1, p2] = str?.match(/(\\.|[^.])+/g) ?? [];
-  if (p2) return {
-    field: p1, property: p2
-  };
+  if (p2)
+    return {
+      field: p1,
+      property: p2,
+    };
   return { field: PathPropertyName, property: p1 };
-
 };
 export const parseLinkString = (string: string) => {
   if (!string) return "";
   const match = /\[\[(.*?)\]\]/g.exec(string);
-  const stringValue = match?.length > 1
-    ? match[1].substring(0, indexOfCharElseEOS("|", match[1]))
-    : string;
+  const stringValue =
+    match?.length > 1
+      ? match[1].substring(0, indexOfCharElseEOS("|", match[1]))
+      : string;
   if (stringValue) return stringValue;
   return string;
 };
-

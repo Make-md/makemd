@@ -19,6 +19,7 @@ import { PropertyValueComponent } from "./PropertyValue";
 
 export type NewPropertyMenuProps = {
   type?: string;
+  name?: string;
   spaces: string[];
   fields: SpaceTableColumn[];
   saveField: (source: string, field: SpaceProperty) => boolean;
@@ -37,7 +38,7 @@ const NewPropertyMenuComponent = (
     ) => void;
   } & NewPropertyMenuProps
 ) => {
-  const [fieldName, setFieldName] = useState<string>("");
+  const [fieldName, setFieldName] = useState<string>(props.name ?? "");
   const [fieldSource, setFieldSource] = useState<string>(
     props.fileMetadata ? "$fm" : ""
   );

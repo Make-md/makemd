@@ -1,4 +1,5 @@
 import { useDndMonitor } from "@dnd-kit/core";
+import { ObjectType } from "core/react/components/SpaceView/Contexts/DataTypeView/ObjectCell";
 import { showPropertiesMenu } from "core/react/components/UI/Menus/properties/propertiesMenu";
 import { FramesMDBContext } from "core/react/context/FramesMDBContext";
 import { PathContext } from "core/react/context/PathContext";
@@ -21,6 +22,7 @@ import { windowFromDocument } from "shared/utils/dom";
 import { parseProperty } from "utils/parsers";
 import {
   defaultValueForType,
+  deriveSchemaFromValue,
   detectPropertyType,
   parseMDBStringValue,
 } from "utils/properties";
@@ -159,20 +161,76 @@ export const PropertiesView = (props: {
     deleteProperty(props.superstate, pathState.path, property.name);
   };
   const saveMetadata = async (property: SpaceProperty, space: string) => {
+    let rawVal: any = values[property.name];
+    if (typeof rawVal === "string") {
+      const trimmed = rawVal.trimStart();
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        try {
+          rawVal = JSON.parse(rawVal);
+        } catch {
+          /* noop */
+        }
+      }
+    }
+    const isObjectVal =
+      rawVal != null && typeof rawVal === "object" && !(rawVal instanceof Date);
+
+    let propertyValue = property.value;
+    if (
+      isObjectVal &&
+      (property.type === "object" || property.type === "object-multi")
+    ) {
+      const sample = Array.isArray(rawVal) ? rawVal[0] : rawVal;
+      if (sample && typeof sample === "object" && !Array.isArray(sample)) {
+        // Build the column's schema from the live value. For object-multi we
+        // sample [0]; the assumption is that array entries share a shape.
+        const derivedType: ObjectType = deriveSchemaFromValue(sample);
+        const existing = property.value
+          ? (() => {
+              try {
+                return JSON.parse(property.value);
+              } catch {
+                return {};
+              }
+            })()
+          : {};
+        propertyValue = JSON.stringify({
+          ...existing,
+          type: { ...(existing.type ?? {}), ...derivedType },
+          typeName: existing.typeName ?? property.name,
+        });
+      }
+    }
+
     const field: SpaceProperty = {
       ...property,
+      value: propertyValue,
       schemaId: defaultContextSchemaID,
     };
     const spaceInfo = props.superstate.spacesIndex.get(space)?.space;
     if (!spaceInfo) return;
 
-    await props.superstate.spaceManager.addSpaceProperty(space, field);
+    const existingCols =
+      props.superstate.contextsIndex.get(space)?.contextTable?.cols ?? [];
+    const existing = existingCols.find(
+      (c) => c.name === field.name && c.schemaId === field.schemaId,
+    );
+    if (existing) {
+      await props.superstate.spaceManager.saveSpaceProperty(
+        space,
+        field,
+        existing,
+      );
+    } else {
+      await props.superstate.spaceManager.addSpaceProperty(space, field);
+    }
+    const cellVal = isObjectVal ? JSON.stringify(rawVal) : rawVal;
     await updateContextValue(
       props.superstate.spaceManager,
       spaceInfo,
       pathState.path,
       field.name,
-      values[field.name]
+      cellVal
     );
   };
   const syncFMValue = (e: React.MouseEvent, property: SpaceProperty) => {

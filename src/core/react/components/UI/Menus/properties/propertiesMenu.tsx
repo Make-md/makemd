@@ -30,14 +30,13 @@ export const showPropertiesMenu = (
       changeType(e, property.name);
     },
   });
-  if (property.type != "object")
-    menuOptions.push({
-      name: i18n.menu.syncToContext,
-      icon: "ui//sync",
-      onClick: (e) => {
-        syncProperty(property);
-      },
-    });
+  menuOptions.push({
+    name: i18n.menu.syncToContext,
+    icon: "ui//sync",
+    onClick: (e) => {
+      syncProperty(property);
+    },
+  });
   menuOptions.push({
     name: i18n.menu.deleteProperty,
     icon: "ui//trash",
