@@ -20,7 +20,22 @@ import { parseLinkString, parseMultiString } from "utils/parsers";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
 
-
+/**
+ * Optimized combined filter and map operation to avoid double iteration
+ * @param array - Input array
+ * @param transform - Transform function that returns null for filtered items
+ * @returns Transformed array with filtered items removed
+ */
+function optimizeFilterMap<T, R>(array: T[], transform: (item: T) => R | null): R[] {
+  const result: R[] = [];
+  for (let i = 0; i < array.length; i++) {
+    const transformed = transform(array[i]);
+    if (transformed !== null) {
+      result.push(transformed);
+    }
+  }
+  return result;
+}
 
 export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, paths: string[], dbExists: boolean, pathsIndex: Map<string, PathState>, spacesMap: IndexMap, runContext: math.MathJsInstance, settings: MakeMDSettings, contextsIndex: Map<string, ContextState>, options: { force?: boolean, calculate?: boolean}) : { changed: boolean, cache: ContextState } => {
 
@@ -171,7 +186,7 @@ export const parseMetadata = (
   };
 
     const tags : string[] = [];
-    const fileTags : string[] = pathCache?.tags?.filter(f => f).map(f => f.toLowerCase()) ?? [];
+    const fileTags : string[] = pathCache?.tags ? optimizeFilterMap(pathCache.tags, (f: string) => f ? f.toLowerCase() : null) : [];
     let hidden = excludePathPredicate(settings, path);
     if (path.startsWith(builtinSpacePathPrefix)) {
         const builtin = path.replace(builtinSpacePathPrefix, '');
@@ -186,7 +201,8 @@ export const parseMetadata = (
     const keys: string[] = [];
         
     for (const space of spaces) {
-        const valList = (map.get(space)?.contexts as string[] ?? []).filter(f => f).map(f => f.toLowerCase());
+        const contextsArray = map.get(space)?.contexts as string[] ?? [];
+        const valList = optimizeFilterMap(contextsArray, (f: string) => f ? f.toLowerCase() : null);
 
       for (const key of valList) {
         // If the current key is already seen, skip it to prevent infinite loops

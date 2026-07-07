@@ -26,7 +26,6 @@ import { LocalCachePersister } from 'shared/types/persister';
 import { SpaceManagerInterface } from 'shared/types/spaceManager';
 import { IUIManager } from 'shared/types/uiManager';
 import { ASSETS_SPACE_CONFIG } from 'shared/utils/assetSchemas';
-import { lucideIcons } from '../ui/icons';
 
 // Type for file content based on what readPath returns
 type FileContent = string | ArrayBuffer | null;
@@ -530,37 +529,8 @@ export class ObsidianAssetManager implements IAssetManager {
   // Ensure default iconsets exist
   private async ensureDefaultIconsets(): Promise<void> {
     try {
-      // Use imported lucide icons and emojis
+      // Use imported emojis only (removed lucide icons)
       
-      // Create lucide iconset if not exists
-      if (!this.assets.has('lucide')) {
-        
-        // Convert lucide icons array to icon metadata
-        const lucideIconMetadata: IconMetadata[] = lucideIcons.map(iconName => ({
-          id: iconName,
-          name: iconName,
-          path: `lucide://${iconName}`,
-        }));
-        
-        const lucideIconset: IconsetAsset = {
-          id: 'lucide',
-          name: 'Lucide Icons',
-          path: 'builtin://lucide',
-          type: 'iconset',
-          icons: lucideIconMetadata,
-          theme: 'auto',
-          description: i18n.labels.lucideIconLibraryForObsidian,
-          tags: ['default', 'builtin', 'lucide'],
-          format: 'svg',
-          created: Date.now(),
-          modified: Date.now(),
-        };
-        
-        this.assets.set(lucideIconset.id, lucideIconset);
-        await this.createIconAssetsFromIconset(lucideIconset);
-        this.dispatchEvent('assetLoaded', lucideIconset);
-      }
-
       // Create emoji iconset if not exists
       if (!this.assets.has('emoji')) {
         

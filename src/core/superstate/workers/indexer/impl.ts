@@ -44,7 +44,13 @@ export function indexAllPaths (payload: SearchIndexPayload) {
         
         keys: [{ name: 'name', weight: 2 }, "path", 'label.preview', { name: 'spaceNames', weight: 0.5 }],
       };
-    const items = [...payload.pathsIndex.values()].filter(f => f.hidden == false)
+    // Optimized: Use for-loop instead of filter to avoid double iteration
+    const items: PathState[] = [];
+    for (const item of payload.pathsIndex.values()) {
+      if (!item.hidden) {
+        items.push(item);
+      }
+    }
     return Fuse.createIndex(options.keys, items).toJSON();
 }
 

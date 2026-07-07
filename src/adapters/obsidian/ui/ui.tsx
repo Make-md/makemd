@@ -29,10 +29,10 @@ import { SPACE_VIEW_TYPE } from "../SpaceViewContainer";
 import { getAbstractFileAtPath, getLeaf } from "../utils/file";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
 import { WindowManager } from "./WindowManager";
-import { lucideIcons } from "./icons";
 import { showModal } from "./modal";
 import { showMainMenu } from "./showMainMenu";
 import { stickerFromString } from "./sticker";
+import { heroIconsOutline } from "./icons";
 
 export class ObsidianUI implements UIAdapter {
   public manager: UIManager;
@@ -242,15 +242,20 @@ export class ObsidianUI implements UIAdapter {
   };
 
   public allStickers = () => {
-    const allLucide: Sticker[] = lucideIcons.map((f) => ({
-      name: f,
-      type: "lucide",
-      keywords: f,
-      value: f,
-      html: getIcon(f).outerHTML,
-    }));
+    const allHero: Sticker[] = [];
 
     const allCustom: Sticker[] = [];
+
+    // Add Hero Icons as a built-in iconset (replaces problematic Lucide brand icons)
+    Object.entries(heroIconsOutline).forEach(([name, svg]) => {
+      allHero.push({
+        name,
+        type: "hero",
+        keywords: `hero//${name}`,
+        value: name,
+        html: svg,
+      });
+    });
 
     // Get icons from AssetManager iconsets
     if (this.plugin.superstate.assets) {
@@ -261,9 +266,9 @@ export class ObsidianUI implements UIAdapter {
 
       for (const iconset of iconsets) {
         if (
-          iconset.id === "lucide" ||
           iconset.id === "emoji" ||
-          iconset.id === "ui"
+          iconset.id === "ui" ||
+          iconset.id === "hero"
         ) {
           continue; // Skip built-in iconsets as they're handled separately
         }
@@ -362,7 +367,7 @@ export class ObsidianUI implements UIAdapter {
       []
     );
 
-    return [...allEmojis, ...allCustom, ...allLucide];
+    return [...allEmojis, ...allCustom, ...allHero];
   };
 
   public getUIPath = (path: string, thumbnail?: boolean): string => {

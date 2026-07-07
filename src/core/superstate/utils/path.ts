@@ -56,8 +56,9 @@ export const hidePaths = async (superstate: Superstate, paths: string[]) => {
       ...paths,
     ]);
     superstate.saveSettings();
-    Promise.all(paths.map((path) => {
-        superstate.reloadPath(path, true);
+    // Use Promise.allSettled for fault tolerance - continue even if some paths fail
+    Promise.allSettled(paths.map((path) => {
+        return superstate.reloadPath(path, true);
     })).then(f => superstate.dispatchEvent("superstateUpdated", null));
 }
 

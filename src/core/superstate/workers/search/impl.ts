@@ -25,7 +25,16 @@ export function fastSearch (query: string, pathsIndex: Map<string, PathState>, c
       // fieldNormWeight: 1,
       keys: [{ name: 'name', weight: 2 }, "path", 'label.preview', { name: 'spaceNames', weight: 0.5 }],
     };
-    const fuse = new Fuse([...pathsIndex.values()].filter(f => f.hidden == false), fuseOptions, index);
+    
+    // Optimized: Pre-filter visible paths before creating Fuse instance
+    const visiblePaths: PathState[] = [];
+    for (const path of pathsIndex.values()) {
+      if (!path.hidden) {
+        visiblePaths.push(path);
+      }
+    }
+    
+    const fuse = new Fuse(visiblePaths, fuseOptions, index);
     return fuse.search(query).map((result) => result.item).slice(0, count);
 
 }

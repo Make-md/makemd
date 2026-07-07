@@ -133,6 +133,10 @@ let renamePlugin = {
 
 
 const outputDir = prev ? process.env.prevDir : prod ? process.env.buildDir : demo ? process.env.demoDir : process.env.devDir
+
+// Enable parallel builds for workers
+const workerCount = require('os').cpus().length;
+
 esbuild.build({
 	banner: {
 		js: banner,
@@ -160,7 +164,10 @@ esbuild.build({
 	logLevel: "info",
 	sourcemap: buildv ? false : 'inline',
 	treeShaking: true,
-  minify: true,
+  minify: buildv,
+	minifyWhitespace: buildv,
+	minifyIdentifiers: buildv,
+	minifySyntax: buildv,
 	outfile: outputDir+'/main.js',
   define: { 'process.env.NODE_ENV': prod ? '"production"' : '"development"' },
 	plugins: [renamePlugin, 
@@ -175,5 +182,15 @@ esbuild.build({
 			},
 		  })] : []),
 	],
+	// Enable incremental builds for development
+	incremental: !buildv,
+	// Metafile for bundle analysis
+	metafile: buildv,
+}).then(result => {
+	if (buildv && result.metafile) {
+		const fs = require('fs');
+		require('fs').writeFileSync(outputDir + '/meta.json', JSON.stringify(result.metafile));
+		console.log('Build meta written to', outputDir + '/meta.json');
+	}
 }).catch(() => process.exit(1));
 

@@ -1,7 +1,6 @@
 import MakeMDPlugin from "main";
 import { uiIconSet } from "shared/assets/icons";
 import { emojiFromString, parseStickerString } from "shared/utils/stickers";
-import { lucideIcon } from "./icons";
 
 
 export const stickerFromString = (sticker: string, plugin: MakeMDPlugin, options?: {
@@ -51,8 +50,6 @@ export const stickerFromString = (sticker: string, plugin: MakeMDPlugin, options
     // `;
   } else if (type == 'ui') {
     return uiIconSet[value];
-  } else if (type == 'lucide') {
-    return lucideIcon(value);
   } else {
     // For custom iconsets, the type is the iconset ID and value is the icon name
     // Format: iconsetId//iconName where type=iconsetId and value=iconName

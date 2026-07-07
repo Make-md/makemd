@@ -48,6 +48,7 @@ import { SpacesCommandsAdapter } from "./commands";
 
 import { linkContextRow } from "core/utils/contexts/linkContextRow";
 import { allMetadata } from "core/utils/metadata";
+import { processWithConcurrencyLimit } from "utils/batch-processor";
 import { IAssetManager } from "shared/types/assets";
 import { Metadata } from "shared/types/metadata";
 import { Indexer } from "./workers/indexer/indexer";
@@ -228,8 +229,11 @@ public api: API;
         this.contextStateQueue = Promise.resolve();
 
 
-        //Intiate Workers
-        this.indexer = new Indexer(2, this)
+        //Intiate Workers - Use CPU core count for optimal parallelism
+        const workerCount = typeof navigator !== 'undefined' && navigator.hardwareConcurrency 
+            ? Math.max(2, navigator.hardwareConcurrency) 
+            : 4;
+        this.indexer = new Indexer(workerCount, this)
         
         this.eventsDispatcher.addListener('pathStateUpdated', () => {
             debounce(() => this.reindexSearch(), 300)();
@@ -301,10 +305,18 @@ public api: API;
     }
     public async initializeActions () {
         await this.reloadSystemActions();
-        const promises = this.allSpaces().filter(f => f.type != 'default').map(f => f.space).map(l => 
+        // Optimized: Use for-loop instead of filter+map+map to avoid multiple iterations
+        const allSpaces = this.allSpaces();
+        const nonDefaultSpaces: SpaceInfo[] = [];
+        for (let i = 0; i < allSpaces.length; i++) {
+          if (allSpaces[i].type != 'default') {
+            nonDefaultSpaces.push(allSpaces[i].space);
+          }
+        }
+        const promises = nonDefaultSpaces.map(l => 
             this.reloadActions(l)
             );
-            await Promise.all(promises);
+            await processWithConcurrencyLimit(promises, p => p, 4);
         
     }
     public async initializeKits () {
@@ -348,7 +360,7 @@ public api: API;
             this.onSpaceDeleted(f))
             ;
             
-        await Promise.all(promises);
+        await processWithConcurrencyLimit(promises, p => p, 4);
         
     }
 
@@ -595,7 +607,14 @@ public api: API;
                 if (spaceState) {
                     this.reloadSpace(spaceState.space).then(f => this.onSpaceDefinitionChanged(f, spaceState.metadata))
                 }
-                const allContextsWithFile = pathState.spaces.map(f => this.spacesIndex.get(f)?.space).filter(f => f);   
+                // Optimized: Use for-loop instead of map+filter to avoid double iteration
+                const allContextsWithFile: SpaceInfo[] = [];
+                for (let i = 0; i < pathState.spaces.length; i++) {
+                  const space = this.spacesIndex.get(pathState.spaces[i])?.space;
+                  if (space) {
+                    allContextsWithFile.push(space);
+                  }
+                }
                 this.addToContextStateQueue(() => updateContextWithProperties(this, path, allContextsWithFile));
                     this.dispatchEvent("pathStateUpdated", {path: path})
                 }
@@ -622,7 +641,14 @@ public api: API;
             this.tagsMap.delete(oldPath)
             this.pathsIndex.delete(oldPath);
 
-            const allContextsWithPath = oldSpaces.map(f => this.spacesIndex.get(f)).filter(f => f);
+            // Optimized: Use for-loop instead of map+filter to avoid double iteration
+            const allContextsWithPath: SpaceState[] = [];
+            for (let i = 0; i < oldSpaces.length; i++) {
+              const spaceState = this.spacesIndex.get(oldSpaces[i]);
+              if (spaceState) {
+                allContextsWithPath.push(spaceState);
+              }
+            }
 
             // Index the new path FIRST so it's available when contexts reload
             await this.reloadPath(newFilePath, true)

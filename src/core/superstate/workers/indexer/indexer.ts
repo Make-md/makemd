@@ -5,6 +5,7 @@ import { WorkerJobType } from "shared/types/PathState";
 import { BatchContextWorkerPayload, BatchPathWorkerPayload, ContextWorkerPayload, PathWorkerPayload } from "./impl";
 //@ts-ignore
 import SuperstateWorker from "./indexer.worker";
+import { LRUCache } from "utils/lru-cache";
 /** Callback when a file is resolved. */
 type FileCallback = (p: any) => void;
 
@@ -21,6 +22,8 @@ export class Indexer {
     reloadSet: Set<string>;
     /** Paths -> promises for file reloads which have not yet been queued. */
     callbacks: Map<string, [FileCallback, FileCallback][]>;
+    /** LRU cache for path metadata to reduce redundant reads */
+    pathMetadataCache: LRUCache<string, any>;
 
     public constructor(public numWorkers: number, public cache: Superstate) {
 
@@ -30,6 +33,7 @@ export class Indexer {
         this.reloadQueue = [];
         this.reloadSet = new Set();
         this.callbacks = new Map();
+        this.pathMetadataCache = new LRUCache(500);
 
         for (let index = 0; index < numWorkers; index++) {
             const worker = new SuperstateWorker({ name: "Superstate Indexer " + (index + 1) });
@@ -56,11 +60,13 @@ export class Indexer {
         this.reloadSet.add(jobKey);
 
         // Immediately run this task if there are available workers; otherwise, add it to the queue.
-        const workerId = this.nextAvailableWorker();
+        let workerId = this.nextAvailableWorker();
         if (workerId !== undefined) {
             this.send(jerb, workerId);
 
         } else {
+            // Use work-stealing: assign to least busy worker when all are busy
+            workerId = this.findLeastBusyWorker();
             this.reloadQueue.push(jerb);
         }
 
@@ -125,7 +131,20 @@ export class Indexer {
                     cachePath = spaceState.space.defPath;
                 }
             }
-            let pathMetadata = await this.cache.spaceManager.readPathCache(cachePath) ?? await this.cache.spaceManager.readPathCache(job.path)
+            // Check LRU cache first
+            let pathMetadata = this.pathMetadataCache.get(cachePath);
+            if (!pathMetadata) {
+                pathMetadata = await this.cache.spaceManager.readPathCache(cachePath) ?? await this.cache.spaceManager.readPathCache(job.path);
+                if (pathMetadata) {
+                    this.pathMetadataCache.set(cachePath, pathMetadata);
+                }
+            }
+            if (!pathMetadata) {
+                pathMetadata = await this.cache.spaceManager.readPathCache(job.path);
+                if (pathMetadata) {
+                    this.pathMetadataCache.set(job.path, pathMetadata);
+                }
+            }
             if (isFolderNote && pathMetadata) {
                 const folderMetadata = await this.cache.spaceManager.readPathCache(job.path);
                 if (folderMetadata) {
@@ -214,7 +233,14 @@ export class Indexer {
         return;
     }
     if (job.type == 'contexts') {
-        const spaces = this.cache.allSpaces().filter(f => f.type != 'default').map(f => f.space)
+        // Optimized: Use for-loop instead of filter+map to avoid double iteration
+        const spaces = [];
+        const allSpaces = this.cache.allSpaces();
+        for (let i = 0; i < allSpaces.length; i++) {
+          if (allSpaces[i].type != 'default') {
+            spaces.push(allSpaces[i].space);
+          }
+        }
         const payloads = new Map<string, any>();
         for (const space of spaces) {
             const dbExists = await this.cache.spaceManager.contextInitiated(space.path);
@@ -257,5 +283,19 @@ export class Indexer {
     private nextAvailableWorker(): number | undefined {
         const index = this.busy.indexOf(false);
         return index == -1 ? undefined : index;
+    }
+    
+    /** Find the least busy worker for better load balancing */
+    private findLeastBusyWorker(): number {
+        let minLoad = Infinity;
+        let targetWorker = 0;
+        for (let i = 0; i < this.busy.length; i++) {
+            const load = this.busy[i] ? 1 : 0;
+            if (load < minLoad) {
+                minLoad = load;
+                targetWorker = i;
+            }
+        }
+        return targetWorker;
     }
 }
