@@ -222,8 +222,12 @@ export const parseMetadata = (
     subtype,
     path,
   );
-  const parentDefaultColor = spacesCache.get(parent)?.metadata?.defaultColor;
-  const color = pathCache?.label?.color ?? parentDefaultColor ?? '';
+  // A note's color is its own explicit label color only. Do NOT inherit the
+  // parent space's defaultColor: a fresh note has no label.color, so inheriting
+  // silently colors every new note (typically theme red) with no UI to clear it
+  // (#548 sibling report / Discord A5). Sticker inheritance above is intentional;
+  // color inheritance was an unintended regression (cf18d3a9).
+  const color = pathCache?.label?.color ?? '';
     
   const outlinks = pathCache?.resolvedLinks ?? [];
   const spaceNames = [];

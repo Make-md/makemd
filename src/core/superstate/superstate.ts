@@ -675,9 +675,21 @@ public api: API;
     }
 
     public async onPathCreated(path: string) {
-        
-        await this.reloadPath(path, true)
+
         const parent = getParentPathFromString(path);
+        // Ensure the parent folder is registered as a space BEFORE indexing the new
+        // path. Otherwise a path created before its parent folder-space exists
+        // computes an empty `spaces` membership (cacheParsers parent check) and is
+        // dropped from the navigator until a reload — the create-time race behind
+        // notes "vanishing" on rapid creation (#524). Only reload when the space
+        // isn't registered yet (checked by normalized space path, since `parent`
+        // keeps a trailing slash while spacesIndex keys do not) so this adds no
+        // overhead for creates in already-known folders.
+        const parentSpace = parent ? this.spaceManager.spaceInfoForPath(parent) : null;
+        if (parentSpace && !this.spacesIndex.has(parentSpace.path)) {
+            await this.reloadSpace(parentSpace);
+        }
+        await this.reloadPath(path, true)
         if (this.spacesIndex.has(parent) && this.spacesIndex.get(parent).space.notePath == path) {
             await this.reloadSpace(this.spacesIndex.get(parent).space)
             await this.reloadContextByPath(parent, {force: true})

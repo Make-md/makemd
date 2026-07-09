@@ -220,7 +220,7 @@ div:not(.mk-flowspace-editor) >
 
 .cm-tooltip {
   border: none !important;
-  z-index: var(--layer-popover) !important;
+  z-index: var(--layer-tooltip) !important;
 }
 
 .cm-line:hover > .mk-floweditor-selector, .mk-floweditor-selector:hover {
