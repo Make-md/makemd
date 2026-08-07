@@ -128,6 +128,10 @@ export const unitTypes = [{
     value: `"Rp"0.00`,
 },
 {
+    label: i18n.labels.reais,
+    value: `"R$"0.00`,
+},
+{
     label: i18n.labels.pounds,
     value: `0"lb"`,
 },
