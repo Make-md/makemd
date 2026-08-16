@@ -241,7 +241,7 @@ export const updateContextValue = async (
     {
       const updateFunction = _updateFunction ?? updateValue
       let newMDB = updateFunction(f, PathPropertyName, path, field, value);
-      if (rank)
+      if (rank != null)
       newMDB = reorderRowsForPath(newMDB, [path], rank);
     if (manager.superstate.settings.enhancedLogs) {
       // Update Context Value

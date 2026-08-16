@@ -50,7 +50,10 @@ export const onlyUniquePropCaseInsensitive =
   
     return array.sort( function (a, b) {
       const A = order.indexOf(a), B = order.indexOf(b);
-      
+      if (A == -1 && B == -1) {
+        // neither is ranked: keep original relative order (stable sort)
+        return 0
+      }
       if (A > B) {
         if (A != -1 && B == -1) {
           return -1
@@ -62,9 +65,9 @@ export const onlyUniquePropCaseInsensitive =
         }
         return -1;
       }
-      
+
     });
-    
+
   };
 
   

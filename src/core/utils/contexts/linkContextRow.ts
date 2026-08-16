@@ -109,9 +109,13 @@ const resolvedPath = resolvePath(_row[PathPropertyName], path?.path, (spacePath)
 export const mergeContextRows = ( paths: string[], rows: DBRows, pathStates: Map<string, PathState>, spaceMap: IndexMap, path: PathState) => {
 
   // Filter existing rows to only include valid paths, preserving database order (rank)
+  // Dedupe by resolved path so a corrupted table with duplicate rows heals on merge
+  const seenPaths = new Set<string>();
   const validRows = rows.filter(row => {
     const resolvedPath = resolvePath(row[PathPropertyName], path?.path, (spacePath) => pathStates.get(spacePath)?.type == 'space');
-    return paths.includes(resolvedPath);
+    if (!paths.includes(resolvedPath) || seenPaths.has(resolvedPath)) return false;
+    seenPaths.add(resolvedPath);
+    return true;
   });
 
   // Find paths that are in the paths array but not in any existing row
