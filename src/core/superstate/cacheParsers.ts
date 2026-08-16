@@ -7,6 +7,7 @@ import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderStringArrayByArray, uniq } from "shared/utils/array";
 
 import { builtinSpaces } from "core/types/space";
+import { resolvePath } from "core/superstate/utils/path";
 import { linkContextRow, mergeContextRows, propertyDependencies, syncContextRow } from "core/utils/contexts/linkContextRow";
 import { pathByJoins } from "core/utils/spaces/query";
 import { ensureArray, initiateString, tagSpacePathFromTag } from "core/utils/strings";
@@ -47,10 +48,11 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
         cols = defaultContextFields.rows as SpaceProperty[];
     }
     const schema = mdb[defaultContextSchemaID]?.schema ?? defaultContextDBSchema;
-    const contextPaths = mdb[defaultContextSchemaID]?.rows?.map(f => f[PathPropertyName]) ?? [];
-    
+    const contextPaths = mdb[defaultContextSchemaID]?.rows?.map(f => resolvePath(f[PathPropertyName], space.path, (p) => pathsIndex.get(p)?.type == 'space')) ?? [];
+
     const missingPaths = paths.filter(f => !contextPaths.includes(f));
-    const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
+    const knownPaths = orderStringArrayByArray((paths ?? []).filter(f => contextPaths.includes(f)), contextPaths);
+    const newPaths = [...knownPaths, ...missingPaths];
     const dependencies = propertyDependencies(cols);
     const spacePath = pathsIndex.get(space.path);
     let rows = mergeContextRows(paths, mdb[defaultContextSchemaID]?.rows ?? [], pathsIndex, spacesMap, spacePath)
