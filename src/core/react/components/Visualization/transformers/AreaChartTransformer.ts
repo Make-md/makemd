@@ -95,7 +95,7 @@ export class AreaChartTransformer {
     let xEncodings = Array.isArray(config.encoding.x) ? config.encoding.x : [config.encoding.x];
     const yEncodings = Array.isArray(config.encoding.y) ? config.encoding.y : [config.encoding.y];
     const colorEncoding = config.encoding.color;
-    const isStacked = config.mark?.stack === true;
+    const isStacked = config.mark?.stack === true || config.stacked === true;
     
     // Ensure correct encoding type for x-axis (detect temporal fields)
     if (xEncodings[0] && tableProperties) {

@@ -137,7 +137,7 @@ export class BarChartTransformer {
     const seriesField = (colorEncoding?.field && colorEncoding.field !== xEncoding.field) 
       ? colorEncoding.field 
       : undefined;
-    const isStacked = config.mark?.stack === true;
+    const isStacked = config.mark?.stack === true || config.stacked === true;
     
     // Check if yField is an option type or other non-numeric field
     const yFieldProperty = tableProperties?.find(prop => prop.name === yEncoding.field);
