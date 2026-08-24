@@ -240,7 +240,7 @@ const dropListItem = async (
         if (groupValueMismatch) {
           {
             saveProperties(props.superstate, activePath, {
-              [props.props?._groupField]: props.props?._groupValue,
+              [props.props?._groupField?.name]: props.props?._groupValue,
             });
           }
         } else {
@@ -259,7 +259,7 @@ const dropListItem = async (
         spaceInfo,
         active.data.current.schema,
         active.data.current.contexts?.$context?.["_index"],
-        props.props?._groupField,
+        props.props?._groupField?.name,
         props.props?._groupValue,
         context?._index
       );
